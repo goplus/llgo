@@ -24,6 +24,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/closureiface.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/closureiface.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -115,6 +116,16 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/closureiface.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  %1 = call ptr @"__llgo_load__llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"()
+  %2 = call ptr @__llgo_load__llgo_Pointer()
+  %3 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/closureiface.struct$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"()
+  %4 = call ptr @__llgo_load__llgo_string()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load__llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"() {
 _llgo_0:

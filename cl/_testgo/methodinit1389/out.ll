@@ -38,6 +38,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/methodinit1389.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testgo/methodinit1389.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -137,6 +138,18 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/methodinit1389.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_uint32()
+  %1 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/methodinit1389.MyType"()
+  %2 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/methodinit1389.struct$F1YtB4UXXA_55JpungcN29bL4mLWdntomBxmcFXnAmY"()
+  %3 = call ptr @"__llgo_load__llgo_func$4mJNbBfcNfFu6gAmx3nCz3EJQfaPkLGSXjyM5QjoA3A"()
+  %4 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/methodinit1389.MyImpl"()
+  %5 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/methodinit1389.MyImpl"()
+  %6 = call ptr @"__llgo_load__llgo_iface$4FafzZPRYnkZgE2x1lwj0eWiYg-eTUyn6ddQ88Qli18"()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 

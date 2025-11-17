@@ -403,34 +403,6 @@ func (p Package) patchType(t types.Type) types.Type {
 	return p.patch(t)
 }
 
-// abiTypeInitInline performs inline type initialization without conditional blocks
-// This is used inside the lazy loader function
-func (p Package) abiTypeInitInline(b Builder, g Global, t types.Type, pub bool) {
-	if p.patch != nil {
-		t = p.patchType(t)
-	}
-	tabi := b.abiTypeOf(t)
-	expr := g.Expr
-
-	// Phase1: create type object
-	vexpr := tabi()
-	prog := p.Prog
-	if kind, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); kind == abi.Pointer {
-		b.InlineCall(b.Pkg.rtFunc("SetDirectIface"), vexpr)
-	}
-	b.Store(expr, vexpr)
-
-	// Phase2: initialize Named type methods (if applicable)
-	if named, ok := t.(*types.Named); ok {
-		if iface, ok := named.Underlying().(*types.Interface); ok {
-			tabi = b.abiInitNamedInterface(vexpr, iface)
-		} else {
-			tabi = b.abiInitNamed(vexpr, named)
-		}
-		tabi()
-	}
-}
-
 func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 	b := p.afterBuilder()
 	if p.patch != nil {
@@ -518,16 +490,16 @@ func (b Builder) checkAbi(t types.Type) {
 	b.abiType(t)
 }
 
-// typeLoaderName returns the name of the lazy loader function for the type
-func (pkg Package) typeLoaderName(t types.Type) string {
+// abiTypeLoaderName returns the name of the lazy loader function for the type
+func (pkg Package) abiTypeLoaderName(t types.Type) string {
 	name, _ := pkg.abi.TypeName(t)
 	return "__llgo_load_" + name
 }
 
-// createTypeLoader creates a lazy loader function for the given type
+// abiTypeInitLoader creates a lazy loader function for the given type
 // The loader function checks if the type is null and initializes it if needed
-func (pkg Package) createTypeLoader(g Global, t types.Type, pub bool) Function {
-	loaderName := pkg.typeLoaderName(t)
+func (pkg Package) abiTypeInitLoader(g Global, t types.Type, pub bool) Function {
+	loaderName := pkg.abiTypeLoaderName(t)
 
 	// Check if loader already exists
 	if fn := pkg.FuncOf(loaderName); fn != nil {
@@ -607,10 +579,15 @@ func (b Builder) loadType(t types.Type) Expr {
 		g.InitNil()
 		g.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 		// Create lazy loader function
-		pkg.createTypeLoader(g, t, pub)
+		pkg.abiTypeInitLoader(g, t, pub)
+		// Call loader in init$after to ensure package-level initialization
+		loaderName := pkg.abiTypeLoaderName(t)
+		loader := pkg.FuncOf(loaderName)
+		afterB := pkg.afterBuilder()
+		afterB.Call(loader.Expr)
 	}
-	// Call the lazy loader function instead of directly loading the global
-	loaderName := pkg.typeLoaderName(t)
+	// Call the lazy loader function
+	loaderName := pkg.abiTypeLoaderName(t)
 	loader := pkg.FuncOf(loaderName)
 	return b.Call(loader.Expr)
 }

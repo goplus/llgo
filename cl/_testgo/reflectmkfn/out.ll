@@ -31,6 +31,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.init$guard", align 1
   call void @reflect.init()
   call void @strings.init()
+  call void @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -168,6 +169,16 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  %1 = call ptr @__llgo_load__llgo_int()
+  %2 = call ptr @"__llgo_load__llgo_func$CFociaKlCvq9sERkLkn9LoCwUbRN_-idPZ-9Ui7-BZI"()
+  %3 = call ptr @__llgo_load__llgo_Pointer()
+  %4 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/reflectmkfn.struct$XBbb2Vd9fa-WWUcWFPjreitD8Eex4qtMIsPbz__3VQU"()
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 

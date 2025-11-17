@@ -47,6 +47,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/tpmap.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/tpmap.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -178,6 +179,24 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/tpmap.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  %1 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T1"()
+  %2 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmap.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88"()
+  %3 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T2"()
+  %4 = call ptr @__llgo_load__llgo_any()
+  %5 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmap.struct$op7q0963ur0ih9ul6OteH-C75UVydPxwKOVpX1hUjzo"()
+  %6 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/tpmap.T3[any]"()
+  %7 = call ptr @"__llgo_load_*_llgo_int"()
+  %8 = call ptr @__llgo_load__llgo_uintptr()
+  %9 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmap.struct$phCK-T684g3enhknCOfRlq7bWO8q6jPkTysM4zTiUJ8"()
+  %10 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey"()
+  %11 = call ptr @__llgo_load__llgo_string()
+  %12 = call ptr @"__llgo_load_map[_llgo_github.com/goplus/llgo/cl/_testrt/tpmap.cacheKey]_llgo_string"()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 

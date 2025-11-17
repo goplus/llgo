@@ -51,6 +51,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/errors.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testgo/errors.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -126,6 +127,17 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/errors.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  %1 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/errors.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ"()
+  %2 = call ptr @"__llgo_load__llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"()
+  %3 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString"()
+  %4 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString"()
+  %5 = call ptr @"__llgo_load__llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU"()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/errors.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ"() {
 _llgo_0:

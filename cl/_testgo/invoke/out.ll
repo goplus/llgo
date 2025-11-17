@@ -207,6 +207,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/invoke.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testgo/invoke.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -528,6 +529,40 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/invoke.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  %1 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/invoke.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ"()
+  %2 = call ptr @__llgo_load__llgo_int()
+  %3 = call ptr @"__llgo_load__llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"()
+  %4 = call ptr @"__llgo_load__llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"()
+  %5 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T"()
+  %6 = call ptr @"__llgo_load__llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0"()
+  %7 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T"()
+  %8 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1"()
+  %9 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1"()
+  %10 = call ptr @__llgo_load__llgo_float64()
+  %11 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2"()
+  %12 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2"()
+  %13 = call ptr @__llgo_load__llgo_int8()
+  %14 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3"()
+  %15 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3"()
+  %16 = call ptr @"__llgo_load_[1]_llgo_int"()
+  %17 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4"()
+  %18 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4"()
+  %19 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/invoke.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U"()
+  %20 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5"()
+  %21 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5"()
+  %22 = call ptr @__llgo_load__llgo_Pointer()
+  %23 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/invoke.struct$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s"()
+  %24 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6"()
+  %25 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6"()
+  %26 = call ptr @"__llgo_load__llgo_iface$jwmSdgh1zvY_TDIgLzCkvkbiyrdwl9N806DH0JGcyMI"()
+  %27 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/invoke.I"()
+  %28 = call ptr @__llgo_load__llgo_any()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/invoke.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ"() {
 _llgo_0:

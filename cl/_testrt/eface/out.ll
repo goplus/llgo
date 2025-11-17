@@ -167,6 +167,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/eface.init$guard", align 1
   call void @"github.com/goplus/llgo/runtime/abi.init"()
+  call void @"github.com/goplus/llgo/cl/_testrt/eface.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -324,6 +325,34 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/eface.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_bool()
+  %1 = call ptr @__llgo_load__llgo_int()
+  %2 = call ptr @__llgo_load__llgo_int8()
+  %3 = call ptr @__llgo_load__llgo_int16()
+  %4 = call ptr @__llgo_load__llgo_int32()
+  %5 = call ptr @__llgo_load__llgo_int64()
+  %6 = call ptr @__llgo_load__llgo_uint()
+  %7 = call ptr @__llgo_load__llgo_uint8()
+  %8 = call ptr @__llgo_load__llgo_uint16()
+  %9 = call ptr @__llgo_load__llgo_uint32()
+  %10 = call ptr @__llgo_load__llgo_uint64()
+  %11 = call ptr @__llgo_load__llgo_uintptr()
+  %12 = call ptr @__llgo_load__llgo_float32()
+  %13 = call ptr @__llgo_load__llgo_float64()
+  %14 = call ptr @"__llgo_load_[10]_llgo_int"()
+  %15 = call ptr @"__llgo_load__llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"()
+  %16 = call ptr @__llgo_load__llgo_Pointer()
+  %17 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/eface.struct$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8"()
+  %18 = call ptr @"__llgo_load_*_llgo_int"()
+  %19 = call ptr @"__llgo_load_[]_llgo_int"()
+  %20 = call ptr @__llgo_load__llgo_string()
+  %21 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/eface.struct$RKbUG45GE4henGMAdmt0Rju0JptyR8NsX7IZLsOI0OM"()
+  %22 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/eface.T"()
+  ret void
+}
 
 define linkonce ptr @__llgo_load__llgo_int() {
 _llgo_0:

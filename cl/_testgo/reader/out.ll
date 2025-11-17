@@ -309,6 +309,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/reader.init$guard", align 1
   call void @"unicode/utf8.init"()
+  call void @"github.com/goplus/llgo/cl/_testgo/reader.init$after"()
   %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 3 })
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, ptr @"github.com/goplus/llgo/cl/_testgo/reader.EOF", align 8
   %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 11 })
@@ -996,6 +997,47 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/reader.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_uint8()
+  %1 = call ptr @"__llgo_load_[]_llgo_uint8"()
+  %2 = call ptr @__llgo_load__llgo_int()
+  %3 = call ptr @__llgo_load__llgo_string()
+  %4 = call ptr @"__llgo_load__llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"()
+  %5 = call ptr @__llgo_load__llgo_error()
+  %6 = call ptr @"__llgo_load__llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"()
+  %7 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer"()
+  %8 = call ptr @__llgo_load__llgo_int64()
+  %9 = call ptr @"__llgo_load__llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4"()
+  %10 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo"()
+  %11 = call ptr @"__llgo_load__llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs"()
+  %12 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader"()
+  %13 = call ptr @"__llgo_load__llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8"()
+  %14 = call ptr @"__llgo_load__llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w"()
+  %15 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo"()
+  %16 = call ptr @"__llgo_load__llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84"()
+  %17 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser"()
+  %18 = call ptr @"__llgo_load__llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw"()
+  %19 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter"()
+  %20 = call ptr @"__llgo_load__llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU"()
+  %21 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/reader.struct$Mdt84yjYYwxF9D2i4cRmpEPiWaO6tsjtrbGUjyESypk"()
+  %22 = call ptr @"__llgo_load__llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"()
+  %23 = call ptr @"__llgo_load__llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4"()
+  %24 = call ptr @"__llgo_load__llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ"()
+  %25 = call ptr @__llgo_load__llgo_rune()
+  %26 = call ptr @"__llgo_load__llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU"()
+  %27 = call ptr @"__llgo_load__llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms"()
+  %28 = call ptr @"__llgo_load__llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug"()
+  %29 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader"()
+  %30 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader"()
+  %31 = call ptr @"__llgo_load__llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw"()
+  %32 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ"()
+  %33 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString"()
+  %34 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString"()
+  %35 = call ptr @"__llgo_load__llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU"()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load_[]_llgo_uint8"() {
 _llgo_0:

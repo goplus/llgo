@@ -696,6 +696,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/reflect.init$guard", align 1
   call void @reflect.init()
+  call void @"github.com/goplus/llgo/cl/_testgo/reflect.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -1087,6 +1088,25 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/reflect.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  %1 = call ptr @"__llgo_load__llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"()
+  %2 = call ptr @__llgo_load__llgo_Pointer()
+  %3 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/reflect.struct$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"()
+  %4 = call ptr @__llgo_load__llgo_string()
+  %5 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/reflect.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U"()
+  %6 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/reflect.T"()
+  %7 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T"()
+  %8 = call ptr @"__llgo_load__llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A"()
+  %9 = call ptr @__llgo_load__llgo_any()
+  %10 = call ptr @"__llgo_load_[]_llgo_any"()
+  %11 = call ptr @"__llgo_load__llgo_func$KK0iU4Wpi3BdRqssvycXqtgNe2Dq1riBlM61Rds1QsU"()
+  %12 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/reflect.struct$FjMjjQr3-2iTiWyZP1IIQFOz0hUCa0OS6pEm5uVV6Pk"()
+  %13 = call ptr @"__llgo_load_map[_llgo_int]_llgo_string"()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load__llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"() {
 _llgo_0:

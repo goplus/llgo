@@ -131,6 +131,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testgo/ifaceprom.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -483,6 +484,19 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.c
 declare %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/ifaceprom.init$after"() {
+_llgo_0:
+  %0 = call ptr @"__llgo_load__llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw"()
+  %1 = call ptr @__llgo_load__llgo_int()
+  %2 = call ptr @"__llgo_load__llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"()
+  %3 = call ptr @__llgo_load__llgo_string()
+  %4 = call ptr @"__llgo_load__llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"()
+  %5 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/ifaceprom.impl"()
+  %6 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/ifaceprom.iface$zZ89tENb5h_KNjvpxf1TXPfaWFYn0IZrZwyVf42lRtA"()
+  %7 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/ifaceprom.I"()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 

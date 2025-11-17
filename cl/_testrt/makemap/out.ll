@@ -59,6 +59,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/makemap.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/makemap.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -869,6 +870,31 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/makemap.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  %1 = call ptr @__llgo_load__llgo_string()
+  %2 = call ptr @"__llgo_load_map[_llgo_int]_llgo_string"()
+  %3 = call ptr @"__llgo_load_map[_llgo_string]_llgo_int"()
+  %4 = call ptr @__llgo_load__llgo_any()
+  %5 = call ptr @"__llgo_load_map[_llgo_any]_llgo_int"()
+  %6 = call ptr @"__llgo_load_[1]_llgo_int"()
+  %7 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1"()
+  %8 = call ptr @__llgo_load__llgo_int8()
+  %9 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/makemap.struct$e65EDK9vxC36Nz3YTgO1ulssLlNH03Bva_WWaCjH-4A"()
+  %10 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/makemap.N"()
+  %11 = call ptr @"__llgo_load_[1]_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N"()
+  %12 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/makemap.K"()
+  %13 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N"()
+  %14 = call ptr @"__llgo_load_[1]*_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N"()
+  %15 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2"()
+  %16 = call ptr @"__llgo_load_chan _llgo_int"()
+  %17 = call ptr @"__llgo_load_map[chan _llgo_int]_llgo_int"()
+  %18 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/makemap.M"()
+  %19 = call ptr @"__llgo_load_map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N]_llgo_string"()
+  ret void
+}
 
 define linkonce ptr @__llgo_load__llgo_string() {
 _llgo_0:

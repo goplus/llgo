@@ -73,6 +73,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/vamethod.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/vamethod.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -257,6 +258,26 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/vamethod.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int8()
+  %1 = call ptr @__llgo_load__llgo_any()
+  %2 = call ptr @"__llgo_load_[]_llgo_any"()
+  %3 = call ptr @__llgo_load__llgo_int32()
+  %4 = call ptr @"__llgo_load__llgo_func$sSO5Bw-E3E7TeJqIJF_OmmojTYyqWBhYrUwNYJNw7Bs"()
+  %5 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/vamethod.T"()
+  %6 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.T"()
+  %7 = call ptr @"__llgo_load__llgo_struct$quUppefyumGvUA5WNkqjeO0PomZGx9OI8NFZ2pfWLXw"()
+  %8 = call ptr @"__llgo_load_*_llgo_int8"()
+  %9 = call ptr @"__llgo_load__llgo_func$vAfTC3ZLX0_lZI-ZNliu0_DkE266FSmKXxj_cqKPPkA"()
+  %10 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt"()
+  %11 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt"()
+  %12 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/vamethod.IFmt"()
+  %13 = call ptr @"__llgo_load__llgo_iface$a85zs5wWQQoPIERm_en8plssh4spdIeeXZPC-E0TDh0"()
+  %14 = call ptr @__llgo_load__llgo_string()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 

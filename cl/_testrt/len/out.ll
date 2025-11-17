@@ -24,6 +24,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/len.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/len.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -156,6 +157,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/len.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  %1 = call ptr @__llgo_load__llgo_string()
+  %2 = call ptr @"__llgo_load_map[_llgo_int]_llgo_string"()
+  ret void
+}
 
 define linkonce ptr @__llgo_load__llgo_string() {
 _llgo_0:

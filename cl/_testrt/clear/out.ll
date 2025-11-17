@@ -70,6 +70,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/clear.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/clear.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -95,6 +96,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/clear.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  %1 = call ptr @"__llgo_load_[]_llgo_int"()
+  %2 = call ptr @"__llgo_load_map[_llgo_int]_llgo_int"()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load_[]_llgo_int"() {
 _llgo_0:

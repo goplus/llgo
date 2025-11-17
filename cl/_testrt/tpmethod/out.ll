@@ -65,6 +65,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/tpmethod.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -282,6 +283,26 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/tpmethod.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  %1 = call ptr @"__llgo_load__llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"()
+  %2 = call ptr @__llgo_load__llgo_error()
+  %3 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmethod.struct$ddtj0teo4LtYcagzh1w6BsSZ7226uefXlqreeHsfVRo"()
+  %4 = call ptr @"__llgo_load__llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w"()
+  %5 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]"()
+  %6 = call ptr @"__llgo_load__llgo_func$wp7b63sFyNWPTd8VyEOOosByqpZg5pKsGThGMOTpyvo"()
+  %7 = call ptr @__llgo_load__llgo_Pointer()
+  %8 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmethod.struct$s_pTkk2q6m_bRjfPic11Z1ogmQ-VdSHpGxyzvfszwb8"()
+  %9 = call ptr @"__llgo_load__llgo_func$pIyBXw4qkUL3JRjAVf_wwtiGz7b0evOvoFHlctBJd6o"()
+  %10 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmethod.struct$RKfcSKegPcHdzhxU0W5IivepgA09rDfPw-OLCUsxWOs"()
+  %11 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testrt/tpmethod.struct$kt0sK2vUcLNEVLy1xxIBee3YiHDiDSmGrh1CrSDZOYY"()
+  %12 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]"()
+  %13 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]"()
+  %14 = call ptr @"__llgo_load__llgo_iface$kSla6xFkiJD3PX1RdCGebCgULXloNxgSHKPEQsXsqos"()
+  ret void
+}
 
 define linkonce ptr @"__llgo_load__llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"() {
 _llgo_0:

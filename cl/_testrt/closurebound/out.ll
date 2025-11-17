@@ -42,6 +42,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/closurebound.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/closurebound.init$after"()
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
   %2 = getelementptr inbounds { %"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" }, ptr %1, i32 0, i32 0
   store %"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" zeroinitializer, ptr %2, align 1
@@ -113,5 +114,11 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/closurebound.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")

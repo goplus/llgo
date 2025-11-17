@@ -106,6 +106,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/print.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testdata/print.init$after"()
   store i64 0, ptr @"github.com/goplus/llgo/cl/_testdata/print.minhexdigits", align 4
   br label %_llgo_2
 
@@ -1189,6 +1190,28 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testdata/print.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_float32()
+  %1 = call ptr @__llgo_load__llgo_float64()
+  %2 = call ptr @__llgo_load__llgo_string()
+  %3 = call ptr @__llgo_load__llgo_bool()
+  %4 = call ptr @__llgo_load__llgo_int32()
+  %5 = call ptr @__llgo_load__llgo_int8()
+  %6 = call ptr @__llgo_load__llgo_int16()
+  %7 = call ptr @__llgo_load__llgo_int64()
+  %8 = call ptr @__llgo_load__llgo_int()
+  %9 = call ptr @__llgo_load__llgo_uint8()
+  %10 = call ptr @__llgo_load__llgo_uint16()
+  %11 = call ptr @__llgo_load__llgo_uint32()
+  %12 = call ptr @__llgo_load__llgo_uint64()
+  %13 = call ptr @__llgo_load__llgo_uintptr()
+  %14 = call ptr @__llgo_load__llgo_complex128()
+  %15 = call ptr @__llgo_load__llgo_uint()
+  %16 = call ptr @__llgo_load__llgo_complex64()
+  ret void
+}
 
 define linkonce ptr @__llgo_load__llgo_float64() {
 _llgo_0:

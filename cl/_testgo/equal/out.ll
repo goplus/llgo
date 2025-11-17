@@ -56,6 +56,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/equal.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testgo/equal.init$after"()
   call void @"github.com/goplus/llgo/cl/_testgo/equal.init#1"()
   call void @"github.com/goplus/llgo/cl/_testgo/equal.init#2"()
   call void @"github.com/goplus/llgo/cl/_testgo/equal.init#3"()
@@ -452,6 +453,19 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/equal.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  %1 = call ptr @__llgo_load__llgo_int()
+  %2 = call ptr @"__llgo_load__llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw"()
+  %3 = call ptr @__llgo_load__llgo_any()
+  %4 = call ptr @"__llgo_load__llgo_struct$5D_KhR3tDEp-wpx9caTiVZca43wS-XW6slE9Bsr8rsk"()
+  %5 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/equal.T"()
+  %6 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/equal.N"()
+  %7 = call ptr @"__llgo_load_map[_llgo_int]_llgo_string"()
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 

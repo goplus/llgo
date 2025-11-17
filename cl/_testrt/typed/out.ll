@@ -24,6 +24,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/typed.init$guard", align 1
+  call void @"github.com/goplus/llgo/cl/_testrt/typed.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -163,6 +164,16 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/typed.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  %1 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/typed.T"()
+  %2 = call ptr @__llgo_load__llgo_int()
+  %3 = call ptr @"__llgo_load_[2]_llgo_int"()
+  %4 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testrt/typed.A"()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 

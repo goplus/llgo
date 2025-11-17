@@ -86,6 +86,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/interface.init$guard", align 1
   call void @"github.com/goplus/llgo/cl/_testdata/foo.init"()
+  call void @"github.com/goplus/llgo/cl/_testgo/interface.init$after"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -301,6 +302,22 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.c
 declare %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testgo/interface.init$after"() {
+_llgo_0:
+  %0 = call ptr @"__llgo_load__llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw"()
+  %1 = call ptr @"__llgo_load__llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"()
+  %2 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testdata/foo.Game"()
+  %3 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game"()
+  %4 = call ptr @"__llgo_load__llgo_struct$4-TjwxozfgwR2wiuWBRPbxjG2hQENVAzi2bsR9iH62Q"()
+  %5 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1"()
+  %6 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1"()
+  %7 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2"()
+  %8 = call ptr @"__llgo_load_*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2"()
+  %9 = call ptr @"__llgo_load__llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer"()
+  %10 = call ptr @"__llgo_load_github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg"()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
