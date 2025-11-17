@@ -28,6 +28,9 @@ func (r *nameResolver) resolve(sym string) string {
 	symbol := trimSymbolForMatch(sym)
 	switch r.level {
 	case "full":
+		if sym != "" {
+			return sym
+		}
 		return base
 	case "package":
 		if pkg := r.matchPackage(symbol); pkg != "" {

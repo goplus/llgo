@@ -510,44 +510,49 @@ func (r *sizeReport) sortedModules() []*moduleSize {
 	return mods
 }
 
-// moduleNameFromSymbol extracts the Go package name from a symbol name.
-// It handles various symbol naming conventions:
-//   - C symbols: Strip leading underscore (e.g., "_main" -> "main")
-//   - Assembler symbols: Strip leading dot (e.g., ".text" -> "text")
-//   - Versioned symbols: Remove version suffix (e.g., "symbol@@GLIBC_2.2.5" -> "symbol")
-//   - Go symbols: Extract package from "package.symbol" format
-//   - Generic types: Strip type parameters (e.g., "pkg(T)" -> "pkg")
+// moduleNameFromSymbol extracts the Go package/module bucket from a symbol
+// name following the rules described in the size report.
 func moduleNameFromSymbol(raw string) string {
 	name := strings.TrimSpace(raw)
-	// Strip C symbol prefix
-	name = strings.TrimPrefix(name, "_")
-	// Strip assembler symbol prefix
-	name = strings.TrimPrefix(name, ".")
 	if name == "" {
 		return "(anonymous)"
 	}
-	// Remove trailing attributes (e.g., "symbol (weak)")
-	if idx := strings.Index(name, " "); idx > 0 {
-		name = name[:idx]
+	// Strip C / assembler prefixes when deriving pkgPath buckets.
+	trimmed := strings.TrimPrefix(name, "_")
+	trimmed = strings.TrimPrefix(trimmed, ".")
+	if idx := strings.Index(trimmed, " "); idx > 0 {
+		trimmed = trimmed[:idx]
 	}
-	// Remove version suffix for versioned symbols (e.g., "symbol@@GLIBC_2.2.5")
-	if idx := strings.Index(name, "@"); idx > 0 {
-		name = name[:idx]
+	if idx := strings.Index(trimmed, "@"); idx > 0 {
+		trimmed = trimmed[:idx]
 	}
-	// Extract Go package name from "package.symbol" format
-	lastDot := strings.LastIndex(name, ".")
+	if trimmed == "" {
+		return name
+	}
+	pkgPath := trimmed
+	firstDot := strings.Index(pkgPath, ".")
+	if firstDot < 0 {
+		firstDot = len(pkgPath)
+	}
+	if closeIdx := strings.LastIndex(pkgPath[:firstDot], "]"); closeIdx >= 0 {
+		pkgPath = pkgPath[closeIdx+1:]
+	}
+	if bracket := strings.Index(pkgPath, "["); bracket >= 0 {
+		pkgPath = pkgPath[:bracket]
+	}
+	lastDot := strings.LastIndex(pkgPath, ".")
 	if lastDot > 0 {
-		pkg := name[:lastDot]
-		// Strip generic type parameters (e.g., "slices.Sort[int]" -> "slices")
-		if paren := strings.Index(pkg, "("); paren > 0 {
-			pkg = pkg[:paren]
-		}
-		pkg = strings.Trim(pkg, " ")
-		if pkg != "" {
-			return pkg
-		}
+		pkgPath = pkgPath[:lastDot]
 	}
-	return name
+	if paren := strings.Index(pkgPath, "("); paren > 0 {
+		pkgPath = pkgPath[:paren]
+	}
+	pkgPath = strings.TrimSpace(pkgPath)
+	pkgPath = strings.TrimLeft(pkgPath, "._")
+	if pkgPath != "" {
+		return pkgPath
+	}
+	return trimmed
 }
 
 func parseNameField(field string) string {

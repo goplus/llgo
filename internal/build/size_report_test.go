@@ -147,10 +147,33 @@ func TestNameResolver(t *testing.T) {
 		t.Fatalf("module level want github.com/foo, got %q", got)
 	}
 	full := newNameResolver("full", pkgs).resolve(symbol)
-	if full != "github.com/foo/bar.Type" {
+	if full != symbol {
 		t.Fatalf("full level unexpected: %q", full)
 	}
 	if got := newNameResolver("package", nil).resolve("_llgo_stub.foo"); got != "llgo-stubs" {
 		t.Fatalf("llgo default grouping failed: %q", got)
+	}
+	generic := "_slices.SortFunc[[]io/fs.DirEntry,io/fs.DirEntry]"
+	if got := newNameResolver("module", nil).resolve(generic); got != "slices" {
+		t.Fatalf("module level generic want slices, got %q", got)
+	}
+}
+
+func TestModuleNameFromSymbolSpecialBrackets(t *testing.T) {
+	cases := []struct {
+		sym  string
+		want string
+	}{
+		{"_slices.SortFunc[[]io/fs.DirEntry,io/fs.DirEntry]", "slices"},
+		{"_slices.pdqsortCmpFunc[io/fs.DirEntry]", "slices"},
+		{"_slices.choosePivotCmpFunc[io/fs.DirEntry]", "slices"},
+		{"[]_llgo_float64", "llgo_float64"},
+		{"[200]_llgo_int8", "llgo_int8"},
+		{"*[]_llgo_Pointer", "llgo_Pointer"},
+	}
+	for _, tc := range cases {
+		if got := moduleNameFromSymbol(tc.sym); got != tc.want {
+			t.Fatalf("%q => %q, want %q", tc.sym, got, tc.want)
+		}
 	}
 }
