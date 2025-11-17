@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,17 @@ const (
 	sectionROData
 	sectionData
 	sectionBSS
+)
+
+const (
+	// readelfInitialBuffer is the initial buffer size for reading readelf output.
+	// Most lines in readelf output are less than 1KB.
+	readelfInitialBuffer = 64 * 1024
+
+	// readelfMaxBuffer is the maximum buffer size to handle very long symbol names
+	// or section dumps. Reduced from 64MB to prevent excessive memory consumption
+	// while still accommodating reasonably large binaries.
+	readelfMaxBuffer = 4 * 1024 * 1024
 )
 
 type sectionInfo struct {
@@ -154,7 +166,7 @@ func collectBinarySize(path string, pkgs []Package, level string) (*sizeReport, 
 
 func parseReadelfOutput(r io.Reader) (*readelfData, error) {
 	scanner := bufio.NewScanner(r)
-	scanner.Buffer(make([]byte, 0, 64*1024), 64*1024*1024)
+	scanner.Buffer(make([]byte, 0, readelfInitialBuffer), readelfMaxBuffer)
 
 	type ctxKind int
 	const (
@@ -342,6 +354,7 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 			report.add("(unknown "+sec.Name+")", sec.Kind, sec.Size)
 			continue
 		}
+		// Sort symbols by address to calculate sizes based on address ranges
 		sort.Slice(syms, func(i, j int) bool {
 			if syms[i].Address == syms[j].Address {
 				return syms[i].Name < syms[j].Name
@@ -351,17 +364,22 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 		cursor := sec.Address
 		for i := 0; i < len(syms); i++ {
 			sym := syms[i]
+			// Skip symbols that are beyond the section bounds
 			if sym.Address >= end {
 				continue
 			}
 			addr := sym.Address
+			// Clamp symbol address to section start if it's before the section
 			if addr < sec.Address {
 				addr = sec.Address
 			}
+			// Add padding bytes between cursor and current symbol
 			if addr > cursor {
 				report.add("(padding "+sec.Name+")", sec.Kind, addr-cursor)
 				cursor = addr
 			}
+			// Find the next symbol address to calculate this symbol's size.
+			// Symbols at the same address are handled by taking the next different address.
 			next := end
 			for j := i + 1; j < len(syms); j++ {
 				if syms[j].Address > addr {
@@ -372,13 +390,16 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 			if next > end {
 				next = end
 			}
+			// Skip symbols with zero size
 			if next <= addr {
 				continue
 			}
+			// Attribute the address range [addr, next) to the symbol's module
 			mod := res.resolve(sym.Name)
 			report.add(mod, sec.Kind, next-addr)
 			cursor = next
 		}
+		// Add any remaining padding at the end of the section
 		if cursor < end {
 			report.add("(padding "+sec.Name+")", sec.Kind, end-cursor)
 		}
@@ -459,22 +480,35 @@ func (r *sizeReport) sortedModules() []*moduleSize {
 	return mods
 }
 
+// moduleNameFromSymbol extracts the Go package name from a symbol name.
+// It handles various symbol naming conventions:
+//   - C symbols: Strip leading underscore (e.g., "_main" -> "main")
+//   - Assembler symbols: Strip leading dot (e.g., ".text" -> "text")
+//   - Versioned symbols: Remove version suffix (e.g., "symbol@@GLIBC_2.2.5" -> "symbol")
+//   - Go symbols: Extract package from "package.symbol" format
+//   - Generic types: Strip type parameters (e.g., "pkg(T)" -> "pkg")
 func moduleNameFromSymbol(raw string) string {
 	name := strings.TrimSpace(raw)
+	// Strip C symbol prefix
 	name = strings.TrimPrefix(name, "_")
+	// Strip assembler symbol prefix
 	name = strings.TrimPrefix(name, ".")
 	if name == "" {
 		return "(anonymous)"
 	}
+	// Remove trailing attributes (e.g., "symbol (weak)")
 	if idx := strings.Index(name, " "); idx > 0 {
 		name = name[:idx]
 	}
+	// Remove version suffix for versioned symbols (e.g., "symbol@@GLIBC_2.2.5")
 	if idx := strings.Index(name, "@"); idx > 0 {
 		name = name[:idx]
 	}
+	// Extract Go package name from "package.symbol" format
 	lastDot := strings.LastIndex(name, ".")
 	if lastDot > 0 {
 		pkg := name[:lastDot]
+		// Strip generic type parameters (e.g., "slices.Sort[int]" -> "slices")
 		if paren := strings.Index(pkg, "("); paren > 0 {
 			pkg = pkg[:paren]
 		}
@@ -513,7 +547,8 @@ func parseSectionRef(field string) (string, int) {
 	if err != nil {
 		return name, -1
 	}
-	if num == 0 {
+	// Check for valid section index (1-based in readelf output)
+	if num == 0 || num > math.MaxInt {
 		return name, -1
 	}
 	return name, int(num - 1)
