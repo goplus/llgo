@@ -36,6 +36,9 @@ var CheckLinkArgs bool
 var CheckLLFiles bool
 var GenLLFiles bool
 var ForceEspClang bool
+var SizeReport bool
+var SizeFormat string
+var SizeLevel string
 
 func AddCommonFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose output")
@@ -51,6 +54,10 @@ func AddBuildFlags(fs *flag.FlagSet) {
 		fs.BoolVar(&GenLLFiles, "gen-llfiles", false, "generate .ll files for pkg export")
 		fs.BoolVar(&ForceEspClang, "force-espclang", false, "force to use esp-clang")
 	}
+
+	fs.BoolVar(&SizeReport, "size", false, "Print size report after build")
+	fs.StringVar(&SizeFormat, "size:format", "", "Size report format (text,json)")
+	fs.StringVar(&SizeLevel, "size:level", "", "Size report aggregation level (full,module,package)")
 }
 
 func AddBuildModeFlags(fs *flag.FlagSet) {
@@ -79,6 +86,15 @@ func UpdateConfig(conf *build.Config) error {
 	conf.Target = Target
 	conf.Port = Port
 	conf.BaudRate = BaudRate
+	if SizeReport || SizeFormat != "" || SizeLevel != "" {
+		conf.SizeReport = true
+		if SizeFormat != "" {
+			conf.SizeFormat = SizeFormat
+		}
+		if SizeLevel != "" {
+			conf.SizeLevel = SizeLevel
+		}
+	}
 
 	switch conf.Mode {
 	case build.ModeBuild:
