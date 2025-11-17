@@ -32,8 +32,7 @@ const (
 	readelfInitialBuffer = 64 * 1024
 
 	// readelfMaxBuffer is the maximum buffer size to handle very long symbol names
-	// or section dumps. Reduced from 64MB to prevent excessive memory consumption
-	// while still accommodating reasonably large binaries.
+	// or section dumps.
 	readelfMaxBuffer = 4 * 1024 * 1024
 )
 
