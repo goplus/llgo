@@ -32,6 +32,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
@@ -505,7 +506,7 @@ type context struct {
 	initial []*packages.Package
 	pkgs    map[*packages.Package]Package // cache for lookup
 	mode    Mode
-	nLibdir int
+	nLibdir int32
 	output  bool
 
 	buildConf    *Config
@@ -568,46 +569,7 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 				pkg.ExportFile = ""
 			}
 			if kind == cl.PkgLinkExtern {
-				// need to be linked with external library
-				// format: ';' separated alternative link methods. e.g.
-				//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
-				altParts := strings.Split(param, ";")
-				expdArgs := make([]string, 0, len(altParts))
-				for _, param := range altParts {
-					param = strings.TrimSpace(param)
-					if strings.ContainsRune(param, '$') {
-						expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(param)...)
-						ctx.nLibdir++
-					} else {
-						fields := strings.Fields(param)
-						expdArgs = append(expdArgs, fields...)
-					}
-					if len(expdArgs) > 0 {
-						break
-					}
-				}
-				if len(expdArgs) == 0 {
-					panic(fmt.Sprintf("'%s' cannot locate the external library", param))
-				}
-
-				pkgLinkArgs := make([]string, 0, 3)
-				if expdArgs[0][0] == '-' {
-					pkgLinkArgs = append(pkgLinkArgs, expdArgs...)
-				} else {
-					linkFile := expdArgs[0]
-					dir, lib := filepath.Split(linkFile)
-					pkgLinkArgs = append(pkgLinkArgs, "-l"+lib)
-					if dir != "" {
-						pkgLinkArgs = append(pkgLinkArgs, "-L"+dir)
-						ctx.nLibdir++
-					}
-				}
-				if ctx.buildConf.CheckLinkArgs {
-					if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
-						panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", param, expdArgs, pkgLinkArgs, err))
-					}
-				}
-				aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
+				appendExternalLinkArgs(ctx, aPkg, param)
 			}
 		default:
 			err := buildPkg(ctx, aPkg, verbose)
@@ -618,6 +580,49 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 		}
 	}
 	return pkgs, nil
+}
+
+func appendExternalLinkArgs(ctx *context, aPkg *aPackage, spec string) {
+	// need to be linked with external library
+	// format: ';' separated alternative link methods. e.g.
+	//   link: $LLGO_LIB_PYTHON; $(pkg-config --libs python3-embed); -lpython3
+	altParts := strings.Split(spec, ";")
+	expdArgs := make([]string, 0, len(altParts))
+	for _, alt := range altParts {
+		alt = strings.TrimSpace(alt)
+		if strings.ContainsRune(alt, '$') {
+			expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(alt)...)
+			atomic.AddInt32(&ctx.nLibdir, 1)
+		} else {
+			fields := strings.Fields(alt)
+			expdArgs = append(expdArgs, fields...)
+		}
+		if len(expdArgs) > 0 {
+			break
+		}
+	}
+	if len(expdArgs) == 0 {
+		panic(fmt.Sprintf("'%s' cannot locate the external library", spec))
+	}
+
+	pkgLinkArgs := make([]string, 0, 3)
+	if expdArgs[0][0] == '-' {
+		pkgLinkArgs = append(pkgLinkArgs, expdArgs...)
+	} else {
+		linkFile := expdArgs[0]
+		dir, lib := filepath.Split(linkFile)
+		pkgLinkArgs = append(pkgLinkArgs, "-l"+lib)
+		if dir != "" {
+			pkgLinkArgs = append(pkgLinkArgs, "-L"+dir)
+			atomic.AddInt32(&ctx.nLibdir, 1)
+		}
+	}
+	if ctx.buildConf.CheckLinkArgs {
+		if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
+			panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", spec, expdArgs, pkgLinkArgs, err))
+		}
+	}
+	aPkg.LinkArgs = append(aPkg.LinkArgs, pkgLinkArgs...)
 }
 
 var (
