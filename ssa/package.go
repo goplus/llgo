@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"sync"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
@@ -210,7 +211,7 @@ type aProgram struct {
 	printfTy *types.Signature
 
 	paramObjPtr_ *types.Var
-	linkname     map[string]string // pkgPath.nameInPkg => linkname
+	linkname     sync.Map // pkgPath.nameInPkg => linkname
 
 	ptrSize int
 
@@ -262,7 +263,6 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]llvm.Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string),
 	}
 }
 
@@ -301,12 +301,14 @@ func (p Program) SetTypeBackground(fullName string, bg Background) {
 }
 
 func (p Program) SetLinkname(name, link string) {
-	p.linkname[name] = link
+	p.linkname.Store(name, link)
 }
 
 func (p Program) Linkname(name string) (link string, ok bool) {
-	link, ok = p.linkname[name]
-	return
+	if v, ok := p.linkname.Load(name); ok {
+		return v.(string), true
+	}
+	return "", false
 }
 
 func (p Program) runtime() *types.Package {
