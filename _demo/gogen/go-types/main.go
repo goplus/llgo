@@ -28,6 +28,10 @@ func main() {
 	testLookupFunctions()
 	testUtilityFunctions()
 	testMissingFunctions()
+	testAlias()
+	testGenerics()
+	testConfigCheck()
+	testAllStringMethods()
 }
 
 func testBasicTypes() {
@@ -779,10 +783,274 @@ func testMissingFunctions() {
 		fmt.Printf("EmbeddedType: %v\n", embType)
 	}
 
-	// Instantiate, Constraint, SetTypeParams, Index, Term
-	// Note: These require Go 1.18+ generics support
-	fmt.Println("\n--- Generic-related functions ---")
-	fmt.Println("Instantiate, Constraint, SetTypeParams, Index - require generics")
+	fmt.Println("\nSUCCESS: Missing functions tested\n")
+}
 
-	fmt.Println("\nSUCCESS: All missing functions tested\n")
+func testAlias() {
+	fmt.Println("\n=== Test Alias ===")
+
+	// Create a type alias
+	pkg := types.NewPackage("test", "test")
+	intType := types.Typ[types.Int]
+	alias := types.NewAlias(types.NewTypeName(token.NoPos, pkg, "MyInt", nil), intType)
+
+	// Test Obj()
+	obj := alias.Obj()
+	if obj == nil {
+		panic("Alias.Obj() returned nil")
+	}
+	fmt.Printf("Alias.Obj().Name(): %s\n", obj.Name())
+
+	// Test Underlying()
+	underlying := alias.Underlying()
+	if underlying == nil {
+		panic("Alias.Underlying() returned nil")
+	}
+	fmt.Printf("Alias.Underlying(): %v\n", underlying)
+
+	// Test TypeArgs() and TypeParams() - for generic aliases
+	typeArgs := alias.TypeArgs()
+	if typeArgs != nil {
+		fmt.Printf("Alias.TypeArgs().Len(): %d\n", typeArgs.Len())
+	} else {
+		fmt.Println("Alias.TypeArgs(): nil (non-generic)")
+	}
+
+	typeParams := alias.TypeParams()
+	if typeParams != nil {
+		fmt.Printf("Alias.TypeParams().Len(): %d\n", typeParams.Len())
+	} else {
+		fmt.Println("Alias.TypeParams(): nil (non-generic)")
+	}
+
+	fmt.Println("SUCCESS: Alias tests passed\n")
+}
+
+func testGenerics() {
+	fmt.Println("\n=== Test Generics ===")
+
+	pkg := types.NewPackage("test", "test")
+
+	// Create a type parameter
+	tparam := types.NewTypeParam(types.NewTypeName(token.NoPos, pkg, "T", nil), types.Universe.Lookup("any").Type())
+
+	// Test TypeParam.Obj()
+	tparamObj := tparam.Obj()
+	if tparamObj == nil {
+		panic("TypeParam.Obj() returned nil")
+	}
+	fmt.Printf("TypeParam.Obj().Name(): %s\n", tparamObj.Name())
+
+	// Test TypeParam.Constraint()
+	constraint := tparam.Constraint()
+	if constraint == nil {
+		panic("TypeParam.Constraint() returned nil")
+	}
+	fmt.Printf("TypeParam.Constraint(): %v\n", constraint)
+
+	// Test TypeParam.Index()
+	index := tparam.Index()
+	fmt.Printf("TypeParam.Index(): %d\n", index)
+
+	// Test TypeParamList through Named type
+	namedGeneric := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Generic", nil), nil, nil)
+	namedGeneric.SetTypeParams([]*types.TypeParam{tparam})
+
+	tparamList := namedGeneric.TypeParams()
+	if tparamList == nil {
+		panic("Named.TypeParams() returned nil")
+	}
+	fmt.Printf("TypeParamList.Len(): %d\n", tparamList.Len())
+
+	if tparamList.Len() > 0 {
+		tparamAt := tparamList.At(0)
+		fmt.Printf("TypeParamList.At(0).Obj().Name(): %s\n", tparamAt.Obj().Name())
+	}
+
+	// Test Term
+	term := types.NewTerm(false, types.Typ[types.Int])
+	fmt.Printf("Term.Tilde(): %v\n", term.Tilde())
+	fmt.Printf("Term.Type(): %v\n", term.Type())
+
+	// Create Union
+	union := types.NewUnion([]*types.Term{term})
+	fmt.Printf("Union.Len(): %d\n", union.Len())
+
+	if union.Len() > 0 {
+		unionTerm := union.Term(0)
+		fmt.Printf("Union.Term(0).Type(): %v\n", unionTerm.Type())
+	}
+
+	// Test Instantiate (requires generic type)
+	// Create new type parameter for this named type
+	tparam2 := types.NewTypeParam(types.NewTypeName(token.NoPos, pkg, "T2", nil), types.Universe.Lookup("any").Type())
+	namedType := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "GenericType", nil), nil, nil)
+	namedType.SetTypeParams([]*types.TypeParam{tparam2})
+
+	// Instantiate with Int
+	instantiated, err := types.Instantiate(nil, namedType, []types.Type{types.Typ[types.Int]}, false)
+	if err != nil {
+		fmt.Printf("Instantiate error (expected for simple case): %v\n", err)
+	} else {
+		fmt.Printf("Instantiate result: %v\n", instantiated)
+	}
+
+	// Test TypeList through instantiated type
+	if instantiated != nil {
+		if named, ok := instantiated.(*types.Named); ok {
+			typeArgs := named.TypeArgs()
+			if typeArgs != nil {
+				fmt.Printf("TypeList.Len(): %d\n", typeArgs.Len())
+				if typeArgs.Len() > 0 {
+					typeAt := typeArgs.At(0)
+					fmt.Printf("TypeList.At(0): %v\n", typeAt)
+				}
+			}
+		}
+	}
+
+	// Test Named.SetTypeParams() and Named.TypeParams()
+	// Create another new type parameter
+	tparam3 := types.NewTypeParam(types.NewTypeName(token.NoPos, pkg, "T3", nil), types.Universe.Lookup("any").Type())
+	namedWithParams := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "Container", nil), nil, nil)
+	namedWithParams.SetTypeParams([]*types.TypeParam{tparam3})
+
+	gotParams := namedWithParams.TypeParams()
+	if gotParams == nil {
+		panic("Named.TypeParams() returned nil after SetTypeParams")
+	}
+	fmt.Printf("Named.TypeParams().Len(): %d\n", gotParams.Len())
+
+	// Test Named.Method()
+	namedWithMethod := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "MyType", nil), types.NewStruct(nil, nil), nil)
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	method := types.NewFunc(token.NoPos, pkg, "TestMethod", sig)
+	namedWithMethod.AddMethod(method)
+
+	gotMethod := namedWithMethod.Method(0)
+	if gotMethod == nil {
+		panic("Named.Method() returned nil")
+	}
+	fmt.Printf("Named.Method(0).Name(): %s\n", gotMethod.Name())
+
+	fmt.Println("SUCCESS: Generics tests passed\n")
+}
+
+func testConfigCheck() {
+	fmt.Println("\n=== Test Config.Check ===")
+
+	// Create a simple file to check
+	fset := token.NewFileSet()
+	file := &ast.File{
+		Name: &ast.Ident{Name: "main"},
+		Decls: []ast.Decl{
+			&ast.GenDecl{
+				Tok: token.VAR,
+				Specs: []ast.Spec{
+					&ast.ValueSpec{
+						Names: []*ast.Ident{{Name: "x"}},
+						Type:  &ast.Ident{Name: "int"},
+					},
+				},
+			},
+		},
+	}
+
+	// Use Config.Check()
+	conf := &types.Config{
+		Importer: nil,
+		Error:    func(err error) { /* ignore errors */ },
+	}
+
+	pkg, err := conf.Check("testpkg", fset, []*ast.File{file}, nil)
+	if err != nil {
+		fmt.Printf("Config.Check() completed with errors (expected): %v\n", err)
+	}
+	if pkg != nil {
+		fmt.Printf("Config.Check() returned package: %s\n", pkg.Name())
+	} else {
+		fmt.Println("Config.Check() returned nil package")
+	}
+
+	// Test Package.Complete()
+	if pkg != nil {
+		isComplete := pkg.Complete()
+		fmt.Printf("Package.Complete(): %v\n", isComplete)
+	}
+
+	// Test Const.Val()
+	c := types.NewConst(token.NoPos, pkg, "PI", types.Typ[types.Float64], nil)
+	val := c.Val()
+	fmt.Printf("Const.Val(): %v\n", val)
+
+	// Test Func.Pkg()
+	f := types.NewFunc(token.NoPos, pkg, "testFunc", types.NewSignatureType(nil, nil, nil, nil, nil, false))
+	funcPkg := f.Pkg()
+	if funcPkg != nil {
+		fmt.Printf("Func.Pkg().Name(): %s\n", funcPkg.Name())
+	} else {
+		fmt.Println("Func.Pkg(): nil")
+	}
+
+	// Test Object.Type(), Object.Pos(), Object.Pkg()
+	obj := types.NewVar(token.NoPos, pkg, "testVar", types.Typ[types.Int])
+	objType := obj.Type()
+	fmt.Printf("Object.Type(): %v\n", objType)
+
+	objPos := obj.Pos()
+	fmt.Printf("Object.Pos(): %v\n", objPos)
+
+	objPkg := obj.Pkg()
+	if objPkg != nil {
+		fmt.Printf("Object.Pkg().Name(): %s\n", objPkg.Name())
+	}
+
+	// Test Interface.IsImplicit()
+	iface := types.NewInterfaceType(nil, nil)
+	iface.Complete()
+	isImplicit := iface.IsImplicit()
+	fmt.Printf("Interface.IsImplicit(): %v\n", isImplicit)
+
+	fmt.Println("SUCCESS: Config.Check tests passed\n")
+}
+
+func testAllStringMethods() {
+	fmt.Println("\n=== Test All String Methods ===")
+
+	pkg := types.NewPackage("test", "test")
+
+	// Array.String()
+	arrayType := types.NewArray(types.Typ[types.Int], 10)
+	fmt.Printf("Array.String(): %s\n", arrayType.String())
+
+	// Basic.String() and Basic.Name() and Basic.Info()
+	basicType := types.Typ[types.Int]
+	fmt.Printf("Basic.String(): %s\n", basicType.String())
+	fmt.Printf("Basic.Name(): %s\n", basicType.Name())
+	fmt.Printf("Basic.Info(): %v\n", basicType.Info())
+
+	// Chan.String()
+	chanType := types.NewChan(types.SendRecv, types.Typ[types.Int])
+	fmt.Printf("Chan.String(): %s\n", chanType.String())
+
+	// Map.String()
+	mapType := types.NewMap(types.Typ[types.String], types.Typ[types.Int])
+	fmt.Printf("Map.String(): %s\n", mapType.String())
+
+	// Pointer.String()
+	ptrType := types.NewPointer(types.Typ[types.Int])
+	fmt.Printf("Pointer.String(): %s\n", ptrType.String())
+
+	// Slice.String()
+	sliceType := types.NewSlice(types.Typ[types.Int])
+	fmt.Printf("Slice.String(): %s\n", sliceType.String())
+
+	// Type.String() and Type.Underlying()
+	namedType := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "MyInt", nil), types.Typ[types.Int], nil)
+	fmt.Printf("Type.String(): %s\n", namedType.String())
+
+	typeUnderlying := namedType.Underlying()
+	fmt.Printf("Type.Underlying(): %v\n", typeUnderlying)
+
+	fmt.Println("SUCCESS: All String method tests passed\n")
 }
