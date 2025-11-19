@@ -55,14 +55,6 @@ jobs:
           done
 
           echo "PKG_CONFIG_PATH=${ACTUAL_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}" >> $GITHUB_ENV
-      - name: Install further optional dependencies for demos
-        run: |
-          py_deps=(
-            numpy # for github.com/goplus/lib/py/numpy
-            torch # for github.com/goplus/lib/py/torch
-          )
-          pip3.12 install --break-system-packages "${py_deps[@]}"
-
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
@@ -71,6 +63,7 @@ jobs:
       - name: Install
         run: |
           go install ./...
+          go build -o _demo/gogen/gogen-test ./_demo/gogen
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -82,7 +75,6 @@ jobs:
         run: |
           echo "Testing GoGen dependencies with go compiler..."
           cd _demo/gogen
-          go build -o gogen-test main.go
           ./gogen-test --compiler=go | tee go-coverage.txt
           echo "✓ GoGen test with go completed"
 
