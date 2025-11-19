@@ -33,6 +33,7 @@ func main() {
 	// testConfigCheck() fail at ci
 	testAllStringMethods()
 	testInterfaceMethods()
+	testMiscMethods()
 }
 
 func testBasicTypes() {
@@ -1111,4 +1112,38 @@ func testInterfaceMethods() {
 	}
 
 	fmt.Println("SUCCESS: Interface method tests passed\n")
+}
+
+func testMiscMethods() {
+	fmt.Println("\n=== Test Misc Methods (Const.Val, Func.Pkg, Interface.IsImplicit, Package.Complete) ===")
+
+	pkg := types.NewPackage("test", "test")
+
+	// Test Const.Val()
+	constObj := types.NewConst(token.NoPos, pkg, "PI", types.Typ[types.Float64], nil)
+	val := constObj.Val()
+	fmt.Printf("Const.Val(): %v\n", val)
+
+	// Test Func.Pkg()
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	funcObj := types.NewFunc(token.NoPos, pkg, "testFunc", sig)
+	funcPkg := funcObj.Pkg()
+	if funcPkg != nil {
+		fmt.Printf("Func.Pkg().Name(): %s\n", funcPkg.Name())
+	} else {
+		fmt.Println("Func.Pkg(): nil")
+	}
+
+	// Test Interface.IsImplicit()
+	iface := types.NewInterfaceType(nil, nil)
+	iface.Complete()
+	isImplicit := iface.IsImplicit()
+	fmt.Printf("Interface.IsImplicit(): %v\n", isImplicit)
+
+	// Test Package.Complete()
+	pkg2 := types.NewPackage("testpkg", "testpkg")
+	isComplete := pkg2.Complete()
+	fmt.Printf("Package.Complete(): %v\n", isComplete)
+
+	fmt.Println("SUCCESS: Misc method tests passed\n")
 }
