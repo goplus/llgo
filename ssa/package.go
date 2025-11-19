@@ -181,6 +181,7 @@ type aProgram struct {
 	callNoArgs   *types.Signature
 	callOneArg   *types.Signature
 	callFOArgs   *types.Signature
+	callArgs     *types.Signature
 	loadPyModS   *types.Signature
 	getAttrStr   *types.Signature
 	pyUniStr     *types.Signature
