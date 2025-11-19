@@ -396,6 +396,11 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 			if addr < sec.Address {
 				addr = sec.Address
 			}
+			// Skip additional symbols that alias the same address to avoid
+			// counting the same range multiple times.
+			if i > 0 && syms[i-1].Address == sym.Address {
+				continue
+			}
 			// Add padding bytes between cursor and current symbol
 			if addr > cursor {
 				report.add("(padding "+sec.Name+")", sec.Kind, addr-cursor)

@@ -106,6 +106,41 @@ func TestParseReadelfOutput(t *testing.T) {
 	}
 }
 
+func TestBuildSizeReportSkipsSameAddressDuplicates(t *testing.T) {
+	data := &readelfData{
+		sections: map[int]*sectionInfo{
+			1: {
+				Index:   1,
+				Name:    "__text",
+				Address: 0x1000,
+				Size:    0x20,
+				Kind:    sectionText,
+			},
+		},
+		symbols: map[int][]symbolInfo{
+			1: {
+				{Name: "_module.first", SectionIndex: 1, Address: 0x1000},
+				{Name: "_module.alias", SectionIndex: 1, Address: 0x1000},
+				{Name: "_module.second", SectionIndex: 1, Address: 0x1010},
+			},
+		},
+	}
+	report := buildSizeReport("fake.bin", data, nil, "")
+	if report == nil {
+		t.Fatal("expected report")
+	}
+	mod := report.Modules["module"]
+	if mod == nil {
+		t.Fatalf("module bucket missing: %v", report.Modules)
+	}
+	if want := uint64(0x20); mod.Code != want {
+		t.Fatalf("module code size = %d, want %d", mod.Code, want)
+	}
+	if want := uint64(0x20); report.Total.Code != want {
+		t.Fatalf("total code size = %d, want %d", report.Total.Code, want)
+	}
+}
+
 func TestParseReadelfRealBinary(t *testing.T) {
 	path := os.Getenv("LLGO_SIZE_REPORT_BIN")
 	if path == "" {
