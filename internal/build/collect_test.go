@@ -275,6 +275,14 @@ func TestSaveToCache_Success(t *testing.T) {
 		},
 	}
 
+	// Create a temporary .o file
+	objFile, err := os.CreateTemp(td, "test-*.o")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	objFile.WriteString("fake object file")
+	objFile.Close()
+
 	pkg := &aPackage{
 		Package: &packages.Package{
 			PkgPath: "example.com/lib",
@@ -282,6 +290,7 @@ func TestSaveToCache_Success(t *testing.T) {
 		},
 		Fingerprint: "def456",
 		Manifest:    "Env:\nGOOS=darwin\n",
+		LLFiles:     []string{objFile.Name()},
 	}
 
 	if err := ctx.saveToCache(pkg); err != nil {
