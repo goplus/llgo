@@ -344,7 +344,15 @@ func pkgPathFor(t *abi.Type) string {
 
 func (t *rtype) Name() string {
 	if !t.t.HasName() {
-		return ""
+		// For basic types without TFlagNamed, String() returns the type name directly
+		s := t.String()
+		// Check if it's a basic type (no package path)
+		for i := 0; i < len(s); i++ {
+			if s[i] == '.' {
+				return "" // Has package path, not a basic type
+			}
+		}
+		return s // Basic type like "int", "string", etc.
 	}
 	s := t.String()
 	i := len(s) - 1
