@@ -571,29 +571,22 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return nil, err
 				}
 				// Try to load from cache
-				cacheHit := ctx.tryLoadFromCache(aPkg)
-				if cacheHit {
-					// Even with cache hit, we need to build the llssa.Package
-					// to register types with the program for method stub generation
-					err := buildPkgForTypes(ctx, aPkg, verbose)
-					if err != nil {
-						return nil, err
-					}
-					continue
-				}
+				ctx.tryLoadFromCache(aPkg)
 				err := buildPkg(ctx, aPkg, verbose)
 				if err != nil {
 					return nil, err
 				}
-				// Append external link args before saving to cache
-				if kind == cl.PkgLinkExtern {
-					appendExternalLinkArgs(ctx, aPkg, param)
-				}
-				// Save to cache after building (includes external link args)
-				if err := ctx.saveToCache(aPkg); err != nil {
-					// Log but don't fail on cache save errors
-					if verbose {
-						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+				if !aPkg.CacheHit {
+					// Append external link args before saving to cache
+					if kind == cl.PkgLinkExtern {
+						appendExternalLinkArgs(ctx, aPkg, param)
+					}
+					// Save to cache after building (includes external link args)
+					if err := ctx.saveToCache(aPkg); err != nil {
+						// Log but don't fail on cache save errors
+						if verbose {
+							fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+						}
 					}
 				}
 			} else {
@@ -610,26 +603,19 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 				return nil, err
 			}
 			// Try to load from cache
-			cacheHit := ctx.tryLoadFromCache(aPkg)
-			if cacheHit {
-				// Even with cache hit, we need to build the llssa.Package
-				// to register types with the program for method stub generation
-				err := buildPkgForTypes(ctx, aPkg, verbose)
-				if err != nil {
-					return nil, err
-				}
-				continue
-			}
+			ctx.tryLoadFromCache(aPkg)
 			err := buildPkg(ctx, aPkg, verbose)
 			if err != nil {
 				return nil, err
 			}
 			aPkg.setNeedRuntimeOrPyInit(aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
-			// Save to cache after building
-			if err := ctx.saveToCache(aPkg); err != nil {
-				// Log but don't fail on cache save errors
-				if verbose {
-					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+			if !aPkg.CacheHit {
+				// Save to cache after building
+				if err := ctx.saveToCache(aPkg); err != nil {
+					// Log but don't fail on cache save errors
+					if verbose {
+						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+					}
 				}
 			}
 		}
@@ -998,6 +984,12 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
 	aPkg.LPkg = ret
+
+	// If cache hit, we only needed to register types - skip compilation
+	if aPkg.CacheHit {
+		return nil
+	}
+
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
@@ -1024,36 +1016,6 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
 	}
-	return nil
-}
-
-// buildPkgForTypes builds the llssa.Package to register types with the program
-// but skips compilation to .o (uses cached .o files instead).
-// This is needed for cached packages so method stubs can be generated.
-func buildPkgForTypes(ctx *context, aPkg *aPackage, verbose bool) error {
-	pkg := aPkg.Package
-	pkgPath := pkg.PkgPath
-	if debugBuild || verbose {
-		fmt.Fprintln(os.Stderr, pkgPath, "(cached)")
-	}
-	if llruntime.SkipToBuild(pkgPath) {
-		return nil
-	}
-	var syntax = pkg.Syntax
-	if altPkg := aPkg.AltPkg; altPkg != nil {
-		syntax = append(syntax, altPkg.Syntax...)
-	}
-
-	ret, _, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.rewriteVars, aPkg.SSA, syntax)
-	if err != nil {
-		return err
-	}
-
-	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
-	aPkg.LPkg = ret
-
-	// NeedRuntime and NeedPyInit are already set from cache metadata,
-	// but we can verify/update them from the actual LPkg if needed
 	return nil
 }
 
