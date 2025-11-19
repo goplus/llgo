@@ -57,19 +57,21 @@ type TestResult struct {
 
 func main() {
 	compiler := flag.String("compiler", "go", "compiler to use (go or llgo)")
+	dir := flag.String("dir", ".", "directory containing test cases and usage.json")
 	flag.Parse()
 
 	fmt.Printf("=== GoGen Dependency Coverage Report ===\n")
 	fmt.Printf("Compiler: %s\n\n", *compiler)
 
 	// Load usage requirements from JSON
-	requirements, err := loadUsageData("usage.json")
+	usageFile := filepath.Join(*dir, "usage.json")
+	requirements, err := loadUsageData(usageFile)
 	if err != nil {
-		log.Fatalf("Failed to load usage.json: %v", err)
+		log.Fatalf("Failed to load %s: %v", usageFile, err)
 	}
 
 	// Find all test directories
-	testDirs, err := findTestDirs(".")
+	testDirs, err := findTestDirs(*dir)
 	if err != nil {
 		log.Fatalf("Failed to find test directories: %v", err)
 	}

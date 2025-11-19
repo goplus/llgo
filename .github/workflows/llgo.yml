@@ -63,7 +63,7 @@ jobs:
       - name: Install
         run: |
           go install ./...
-          go build -o _demo/gogen/gogen-test ./_demo/gogen
+          go build -o gogen-test ./_demo/gogen
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -74,13 +74,11 @@ jobs:
       - name: Test GoGen dependency coverage with go
         run: |
           echo "Testing GoGen dependencies with go compiler..."
-          cd _demo/gogen
-          ./gogen-test --compiler=go | tee go-coverage.txt
+          ./gogen-test --compiler=go --dir=_demo/gogen | tee _demo/gogen/go-coverage.txt
           echo "✓ GoGen test with go completed"
 
       - name: Test GoGen dependency coverage with llgo
         run: |
           echo "Testing GoGen dependencies with llgo compiler..."
-          cd _demo/gogen
-          ./gogen-test --compiler=llgo | tee llgo-coverage.txt
+          ./gogen-test --compiler=llgo --dir=_demo/gogen | tee _demo/gogen/llgo-coverage.txt
           echo "✓ GoGen test with llgo completed"
