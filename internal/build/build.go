@@ -350,6 +350,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
 		pkgs:         map[*packages.Package]Package{},
+		pkgByID:      map[string]Package{},
 		output:       output,
 		buildConf:    conf,
 		crossCompile: export,
@@ -505,6 +506,7 @@ type context struct {
 	built   map[string]none
 	initial []*packages.Package
 	pkgs    map[*packages.Package]Package // cache for lookup
+	pkgByID map[string]Package            // cache for lookup by pkg.ID
 	mode    Mode
 	nLibdir int32
 	output  bool
@@ -515,6 +517,10 @@ type context struct {
 	cTransformer *cabi.Transformer
 
 	testFail bool
+
+	// Cache related fields
+	cacheManager *CacheManager
+	llvmVersion  string
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -548,7 +554,8 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 	for _, aPkg := range pkgs {
 		pkg := aPkg.Package
 		if _, ok := built[pkg.ID]; ok {
-			pkg.ExportFile = ""
+			// Already built, skip but don't clear ExportFile
+			// as it's needed for linking
 			continue
 		}
 		built[pkg.ID] = none{}
@@ -559,24 +566,72 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if len(pkg.GoFiles) > 0 {
+				// Collect fingerprint before building
+				if err := ctx.collectFingerprint(aPkg); err != nil {
+					return nil, err
+				}
+				// Try to load from cache
+				cacheHit := ctx.tryLoadFromCache(aPkg)
+				if cacheHit {
+					// Even with cache hit, we need to build the llssa.Package
+					// to register types with the program for method stub generation
+					err := buildPkgForTypes(ctx, aPkg, verbose)
+					if err != nil {
+						return nil, err
+					}
+					continue
+				}
 				err := buildPkg(ctx, aPkg, verbose)
 				if err != nil {
 					return nil, err
+				}
+				// Append external link args before saving to cache
+				if kind == cl.PkgLinkExtern {
+					appendExternalLinkArgs(ctx, aPkg, param)
+				}
+				// Save to cache after building (includes external link args)
+				if err := ctx.saveToCache(aPkg); err != nil {
+					// Log but don't fail on cache save errors
+					if verbose {
+						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+					}
 				}
 			} else {
 				// panic("todo")
 				// TODO(xsw): support packages out of llgo
 				pkg.ExportFile = ""
-			}
-			if kind == cl.PkgLinkExtern {
-				appendExternalLinkArgs(ctx, aPkg, param)
+				if kind == cl.PkgLinkExtern {
+					appendExternalLinkArgs(ctx, aPkg, param)
+				}
 			}
 		default:
+			// Collect fingerprint before building
+			if err := ctx.collectFingerprint(aPkg); err != nil {
+				return nil, err
+			}
+			// Try to load from cache
+			cacheHit := ctx.tryLoadFromCache(aPkg)
+			if cacheHit {
+				// Even with cache hit, we need to build the llssa.Package
+				// to register types with the program for method stub generation
+				err := buildPkgForTypes(ctx, aPkg, verbose)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
 			err := buildPkg(ctx, aPkg, verbose)
 			if err != nil {
 				return nil, err
 			}
 			aPkg.setNeedRuntimeOrPyInit(aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
+			// Save to cache after building
+			if err := ctx.saveToCache(aPkg); err != nil {
+				// Log but don't fail on cache save errors
+				if verbose {
+					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+				}
+			}
 		}
 	}
 	return pkgs, nil
@@ -762,9 +817,19 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	}
 	var objFiles []string
 	var linkArgs []string
+	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
+		// Skip if already linked this package (by ID)
+		if linkedPkgs[p.ID] {
+			return
+		}
 		aPkg := ctx.pkgs[p]
+		if aPkg == nil {
+			// Fallback: lookup by pkg.ID for packages that may be different instances
+			aPkg = ctx.pkgByID[p.ID]
+		}
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
+			linkedPkgs[p.ID] = true
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
 			need1, need2 := aPkg.isNeedRuntimeOrPyInit()
@@ -962,6 +1027,36 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	return nil
 }
 
+// buildPkgForTypes builds the llssa.Package to register types with the program
+// but skips compilation to .o (uses cached .o files instead).
+// This is needed for cached packages so method stubs can be generated.
+func buildPkgForTypes(ctx *context, aPkg *aPackage, verbose bool) error {
+	pkg := aPkg.Package
+	pkgPath := pkg.PkgPath
+	if debugBuild || verbose {
+		fmt.Fprintln(os.Stderr, pkgPath, "(cached)")
+	}
+	if llruntime.SkipToBuild(pkgPath) {
+		return nil
+	}
+	var syntax = pkg.Syntax
+	if altPkg := aPkg.AltPkg; altPkg != nil {
+		syntax = append(syntax, altPkg.Syntax...)
+	}
+
+	ret, _, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.rewriteVars, aPkg.SSA, syntax)
+	if err != nil {
+		return err
+	}
+
+	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+	aPkg.LPkg = ret
+
+	// NeedRuntime and NeedPyInit are already set from cache metadata,
+	// but we can verify/update them from the actual LPkg if needed
+	return nil
+}
+
 func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
 	base := filepath.Base(exportFile)
 	f, err := os.CreateTemp("", base+"-*.ll")
@@ -1059,19 +1154,24 @@ type aPackage struct {
 	LinkArgs    []string
 	LLFiles     []string
 	rewriteVars map[string]string
+
+	// Cache related fields
+	Fingerprint string // fingerprint digest
+	Manifest    string // manifest text content
+	CacheHit    bool   // whether cache was hit
 }
 
 type Package = *aPackage
 
 func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*aPackage, error) {
 	prog := ctx.progSSA
-	built := ctx.built
 	var all []*aPackage
 	var errs []*packages.Package
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
-			if _, ok := built[pkgPath]; ok || strings.HasPrefix(pkgPath, altPkgPathPrefix) {
+			// Use p.ID to check duplicates since same pkgPath may have different IDs
+			if _, ok := ctx.pkgByID[p.ID]; ok || strings.HasPrefix(pkgPath, altPkgPathPrefix) {
 				return
 			}
 			var altPkg *packages.Cached
@@ -1094,6 +1194,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 				rewriteVars: rewrites,
 			}
 			ctx.pkgs[p] = aPkg
+			ctx.pkgByID[p.ID] = aPkg
 			all = append(all, aPkg)
 		} else {
 			errs = append(errs, p)
