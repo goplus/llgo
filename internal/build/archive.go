@@ -149,7 +149,6 @@ func ExtractArchive(archivePath, destDir string) ([]string, error) {
 
 // ArchiveMetadata holds metadata about a cached archive.
 type CacheArchiveMetadata struct {
-	Files      []string  // List of files in the archive
 	LinkArgs   []string  // Link arguments for this package
 	NeedRt     bool      // Whether this package needs runtime
 	NeedPyInit bool      // Whether this package needs Python init

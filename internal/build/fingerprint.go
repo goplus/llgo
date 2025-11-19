@@ -59,7 +59,7 @@ func (m *ManifestBuilder) AddPackage(key, value string) {
 	m.pkg = append(m.pkg, KeyValue{key, value})
 }
 
-// Build generates the sorted manifest text.
+// Build generates the sorted manifest text in INI format.
 func (m *ManifestBuilder) Build() string {
 	var b strings.Builder
 
@@ -71,15 +71,20 @@ func (m *ManifestBuilder) Build() string {
 	}
 
 	writeSection := func(name string, kvs []KeyValue) {
+		if len(kvs) == 0 {
+			return
+		}
 		sortKV(kvs)
+		b.WriteString("[")
 		b.WriteString(name)
-		b.WriteString(":\n")
+		b.WriteString("]\n")
 		for _, kv := range kvs {
 			b.WriteString(kv.Key)
-			b.WriteString("=")
+			b.WriteString(" = ")
 			b.WriteString(kv.Value)
 			b.WriteString("\n")
 		}
+		b.WriteString("\n")
 	}
 
 	writeSection("Env", m.env)

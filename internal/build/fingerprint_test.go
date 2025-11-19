@@ -34,13 +34,16 @@ func TestManifestBuilder_Build(t *testing.T) {
 
 	content := m.Build()
 
-	expected := `Env:
-GOARCH=arm64
-GOOS=darwin
-Common:
-DEBUG=false
-Package:
-PKG_PATH=example.com/foo
+	expected := `[Env]
+GOARCH = arm64
+GOOS = darwin
+
+[Common]
+DEBUG = false
+
+[Package]
+PKG_PATH = example.com/foo
+
 `
 	if content != expected {
 		t.Errorf("unexpected manifest:\ngot:\n%s\nwant:\n%s", content, expected)
@@ -68,11 +71,11 @@ func TestManifestBuilder_BuildSorting(t *testing.T) {
 	commonStart := -1
 	pkgStart := -1
 	for i, line := range lines {
-		if line == "Env:" {
+		if line == "[Env]" {
 			envStart = i
-		} else if line == "Common:" {
+		} else if line == "[Common]" {
 			commonStart = i
-		} else if line == "Package:" {
+		} else if line == "[Package]" {
 			pkgStart = i
 		}
 	}
@@ -82,17 +85,17 @@ func TestManifestBuilder_BuildSorting(t *testing.T) {
 	}
 
 	// Check Env section is sorted
-	if lines[envStart+1] != "A_KEY=a" || lines[envStart+2] != "M_KEY=m" || lines[envStart+3] != "Z_KEY=z" {
+	if lines[envStart+1] != "A_KEY = a" || lines[envStart+2] != "M_KEY = m" || lines[envStart+3] != "Z_KEY = z" {
 		t.Errorf("Env section not sorted properly:\n%s", content)
 	}
 
 	// Check Common section is sorted
-	if lines[commonStart+1] != "APPLE=2" || lines[commonStart+2] != "ZEBRA=1" {
+	if lines[commonStart+1] != "APPLE = 2" || lines[commonStart+2] != "ZEBRA = 1" {
 		t.Errorf("Common section not sorted properly:\n%s", content)
 	}
 
 	// Check Package section is sorted
-	if lines[pkgStart+1] != "AAA=first" || lines[pkgStart+2] != "ZZZ=last" {
+	if lines[pkgStart+1] != "AAA = first" || lines[pkgStart+2] != "ZZZ = last" {
 		t.Errorf("Package section not sorted properly:\n%s", content)
 	}
 }
@@ -155,10 +158,8 @@ func TestManifestBuilder_EmptySections(t *testing.T) {
 	m := NewManifestBuilder()
 	content := m.Build()
 
-	expected := `Env:
-Common:
-Package:
-`
+	// Empty sections should not be written
+	expected := ``
 	if content != expected {
 		t.Errorf("unexpected empty manifest:\ngot:\n%s\nwant:\n%s", content, expected)
 	}
@@ -338,10 +339,10 @@ func TestManifestBuilder_SpecialCharacters(t *testing.T) {
 	content := m.Build()
 
 	// Should contain the special characters as-is
-	if !strings.Contains(content, "PATH=/usr/bin:/usr/local/bin") {
+	if !strings.Contains(content, "PATH = /usr/bin:/usr/local/bin") {
 		t.Error("special characters not preserved in PATH")
 	}
-	if !strings.Contains(content, "FLAGS=-X main.version=1.0.0 -ldflags=-s") {
+	if !strings.Contains(content, "FLAGS = -X main.version=1.0.0 -ldflags=-s") {
 		t.Error("special characters not preserved in FLAGS")
 	}
 }
@@ -354,7 +355,7 @@ func TestManifestBuilder_MultipleValues(t *testing.T) {
 	content := m.Build()
 
 	// Both should appear (no deduplication)
-	if strings.Count(content, "KEY=") != 2 {
+	if strings.Count(content, "KEY = ") != 2 {
 		t.Errorf("duplicate keys should both appear:\n%s", content)
 	}
 }

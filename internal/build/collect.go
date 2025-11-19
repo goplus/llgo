@@ -17,7 +17,6 @@
 package build
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -59,11 +58,20 @@ func (c *context) collectEnvInputs(m *ManifestBuilder) {
 	m.AddEnv("LLVM_VERSION", c.getLLVMVersion())
 
 	// Environment variables that affect build
-	if v := os.Getenv("LLGO_STDIO_NOBUF"); v != "" {
-		m.AddEnv("LLGO_STDIO_NOBUF", v)
+	envVars := []string{
+		llgoDebug,
+		llgoDbgSyms,
+		llgoTrace,
+		llgoOptimize,
+		llgoWasmRuntime,
+		llgoWasiThreads,
+		llgoStdioNobuf,
+		llgoFullRpath,
 	}
-	if v := os.Getenv("LLGO_WASI_THREADS"); v != "" {
-		m.AddEnv("LLGO_WASI_THREADS", v)
+	for _, envVar := range envVars {
+		if v := os.Getenv(envVar); v != "" {
+			m.AddEnv(envVar, v)
+		}
 	}
 }
 
@@ -74,6 +82,31 @@ func (c *context) collectCommonInputs(m *ManifestBuilder) {
 	m.AddCommon("BUILD_TAGS", c.buildConf.Tags)
 	m.AddCommon("TARGET", c.buildConf.Target)
 	m.AddCommon("TARGET_ABI", c.crossCompile.TargetABI)
+
+	// Compiler configuration
+	if c.crossCompile.CC != "" {
+		m.AddCommon("CC", c.crossCompile.CC)
+	}
+	if len(c.crossCompile.CCFLAGS) > 0 {
+		m.AddCommon("CCFLAGS", strings.Join(c.crossCompile.CCFLAGS, " "))
+	}
+	if len(c.crossCompile.CFLAGS) > 0 {
+		m.AddCommon("CFLAGS", strings.Join(c.crossCompile.CFLAGS, " "))
+	}
+	if len(c.crossCompile.LDFLAGS) > 0 {
+		m.AddCommon("LDFLAGS", strings.Join(c.crossCompile.LDFLAGS, " "))
+	}
+	if c.crossCompile.Linker != "" {
+		m.AddCommon("LINKER", c.crossCompile.Linker)
+	}
+
+	// Extra files from target configuration
+	if len(c.crossCompile.ExtraFiles) > 0 {
+		extraDigest, err := DigestFiles(c.crossCompile.ExtraFiles)
+		if err == nil && extraDigest != "" {
+			m.AddCommon("EXTRA_FILES", extraDigest)
+		}
+	}
 }
 
 // collectPackageInputs collects package-specific inputs.
@@ -133,6 +166,17 @@ func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error 
 			sort.Strings(globals)
 			m.AddPackage("GLOBAL_REWRITES", strings.Join(globals, ","))
 		}
+	}
+
+	// Add metadata fields if available (for cache saving)
+	if len(pkg.LinkArgs) > 0 {
+		m.AddPackage("LINK_ARGS", strings.Join(pkg.LinkArgs, " "))
+	}
+	if pkg.NeedRt {
+		m.AddPackage("NEED_RT", "true")
+	}
+	if pkg.NeedPyInit {
+		m.AddPackage("NEED_PY_INIT", "true")
 	}
 
 	return nil
@@ -225,20 +269,48 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	return true
 }
 
-// parseManifestMetadata extracts JSON metadata from manifest content.
+// parseManifestMetadata extracts metadata from manifest [Package] section.
 func parseManifestMetadata(content string) (*CacheArchiveMetadata, error) {
-	// Find Metadata section
-	idx := strings.Index(content, "Metadata:\n")
+	meta := &CacheArchiveMetadata{}
+
+	// Find Package section
+	idx := strings.Index(content, "[Package]\n")
 	if idx == -1 {
-		return &CacheArchiveMetadata{}, nil
+		return meta, nil
 	}
 
-	jsonStr := strings.TrimPrefix(content[idx:], "Metadata:\n")
-	var meta CacheArchiveMetadata
-	if err := json.Unmarshal([]byte(jsonStr), &meta); err != nil {
-		return nil, err
+	// Extract Package section content (until next section or end)
+	pkgSection := content[idx+len("[Package]\n"):]
+	if nextIdx := strings.Index(pkgSection, "\n["); nextIdx != -1 {
+		pkgSection = pkgSection[:nextIdx]
 	}
-	return &meta, nil
+
+	// Parse key-value pairs in Package section
+	lines := strings.Split(pkgSection, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, " = ", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+
+		switch key {
+		case "LINK_ARGS":
+			if value != "" {
+				meta.LinkArgs = strings.Fields(value)
+			}
+		case "NEED_RT":
+			meta.NeedRt = value == "true"
+		case "NEED_PY_INIT":
+			meta.NeedPyInit = value == "true"
+		}
+	}
+
+	return meta, nil
 }
 
 // saveToCache saves a built package to cache.
@@ -289,21 +361,15 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return fmt.Errorf("create archive %s: %w\n%s", paths.Archive, err, output)
 	}
 
-	// Create metadata
-	meta := &CacheArchiveMetadata{
-		Files:      objectFiles,
-		LinkArgs:   pkg.LinkArgs,
-		NeedRt:     pkg.NeedRt,
-		NeedPyInit: pkg.NeedPyInit,
-	}
-
-	// Add metadata to manifest
-	metaJSON, err := json.Marshal(meta)
-	if err != nil {
+	// Rebuild manifest with metadata fields in Package section
+	m := NewManifestBuilder()
+	c.collectEnvInputs(m)
+	c.collectCommonInputs(m)
+	if err := c.collectPackageInputs(m, pkg); err != nil {
 		return err
 	}
 
-	manifestWithMeta := pkg.Manifest + "Metadata:\n" + string(metaJSON)
+	manifestWithMeta := m.Build()
 
 	// Write manifest with metadata
 	if err := WriteManifest(paths.Manifest, manifestWithMeta); err != nil {

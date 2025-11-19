@@ -70,21 +70,21 @@ func TestCollectFingerprint(t *testing.T) {
 	}
 
 	// Check manifest contains expected sections
-	if !strings.Contains(pkg.Manifest, "Env:") {
+	if !strings.Contains(pkg.Manifest, "[Env]") {
 		t.Error("manifest should contain Env section")
 	}
-	if !strings.Contains(pkg.Manifest, "Common:") {
+	if !strings.Contains(pkg.Manifest, "[Common]") {
 		t.Error("manifest should contain Common section")
 	}
-	if !strings.Contains(pkg.Manifest, "Package:") {
+	if !strings.Contains(pkg.Manifest, "[Package]") {
 		t.Error("manifest should contain Package section")
 	}
 
 	// Check specific values
-	if !strings.Contains(pkg.Manifest, "GOOS=darwin") {
-		t.Error("manifest should contain GOOS=darwin")
+	if !strings.Contains(pkg.Manifest, "GOOS = darwin") {
+		t.Error("manifest should contain GOOS = darwin")
 	}
-	if !strings.Contains(pkg.Manifest, "PKG_PATH=example.com/test") {
+	if !strings.Contains(pkg.Manifest, "PKG_PATH = example.com/test") {
 		t.Error("manifest should contain PKG_PATH")
 	}
 }
@@ -230,6 +230,7 @@ func TestSaveToCache_MainPackage(t *testing.T) {
 	defer func() { cacheRootFunc = oldFunc }()
 
 	ctx := &context{
+		conf: &packages.Config{},
 		buildConf: &Config{
 			Goos:   "darwin",
 			Goarch: "arm64",
@@ -268,6 +269,7 @@ func TestSaveToCache_Success(t *testing.T) {
 	defer func() { cacheRootFunc = oldFunc }()
 
 	ctx := &context{
+		conf: &packages.Config{},
 		buildConf: &Config{
 			Goos:   "darwin",
 			Goarch: "arm64",
@@ -289,9 +291,10 @@ func TestSaveToCache_Success(t *testing.T) {
 		Package: &packages.Package{
 			PkgPath: "example.com/lib",
 			Name:    "lib",
+			GoFiles: []string{objFile.Name()}, // Add GoFiles for manifest generation
 		},
 		Fingerprint: "def456",
-		Manifest:    "Env:\nGOOS=darwin\n",
+		Manifest:    "[Env]\nGOOS = darwin\n\n",
 		LLFiles:     []string{objFile.Name()},
 	}
 
@@ -303,16 +306,20 @@ func TestSaveToCache_Success(t *testing.T) {
 	cm := ctx.ensureCacheManager()
 	paths := cm.PackagePaths("arm64-apple-darwin", "example.com/lib", "def456")
 
-	// Check manifest contains original content and metadata
+	// Check manifest contains original content and metadata in Package section
 	content, err := ReadManifest(paths.Manifest)
 	if err != nil {
 		t.Fatalf("ReadManifest: %v", err)
 	}
-	if !strings.Contains(content, "GOOS=darwin") {
+	if !strings.Contains(content, "GOOS = darwin") {
 		t.Errorf("manifest should contain original content")
 	}
-	if !strings.Contains(content, "Metadata:") {
-		t.Errorf("manifest should contain metadata section")
+	if !strings.Contains(content, "[Package]") {
+		t.Errorf("manifest should contain Package section")
+	}
+	// Metadata should not be in JSON format
+	if strings.Contains(content, "[Metadata]") {
+		t.Errorf("manifest should not contain [Metadata] section (should be in Package section)")
 	}
 
 	// Check archive exists
