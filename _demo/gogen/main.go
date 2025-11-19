@@ -271,6 +271,19 @@ func getTypeName(t types.Type) string {
 		return named.Obj().Name()
 	}
 
+	// For basic types (like token.Token which is underlying int)
+	// we need to get the string representation
+	// token.Pos, token.Token, token.Position are all named types
+	// but might appear as their underlying types in some contexts
+
+	// Try to extract from string representation
+	typeStr := t.String()
+
+	// Handle cases like "go/token.Token", "go/token.Pos", etc.
+	if lastDot := strings.LastIndex(typeStr, "."); lastDot != -1 {
+		return typeStr[lastDot+1:]
+	}
+
 	// Interface or other types
 	return ""
 }
@@ -289,7 +302,24 @@ func generateReport(results []TestResult, requirements map[string]*PackageUsage)
 			successCount++
 			for pkg, cov := range result.Coverage {
 				if _, exists := requirements[pkg]; exists {
-					allCoverage[pkg] = cov
+					// Merge coverage instead of overwriting
+					if existing, ok := allCoverage[pkg]; ok {
+						// Merge functions
+						for fn := range cov.Funcs {
+							existing.Funcs[fn] = true
+						}
+						// Merge methods
+						for typ, methods := range cov.Methods {
+							if existing.Methods[typ] == nil {
+								existing.Methods[typ] = make(map[string]bool)
+							}
+							for method := range methods {
+								existing.Methods[typ][method] = true
+							}
+						}
+					} else {
+						allCoverage[pkg] = cov
+					}
 				}
 			}
 		} else {
