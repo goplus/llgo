@@ -394,4 +394,35 @@ func generateReport(results []TestResult, requirements map[string]*PackageUsage)
 			fmt.Printf("  ❌ %s: 0/%d items (not tested)\n", pkg, totalReq)
 		}
 	}
+
+	// Missing coverage details
+	fmt.Printf("\nMissing coverage:\n")
+	for _, pkg := range pkgNames {
+		if cov, ok := allCoverage[pkg]; !ok {
+			continue // Skip packages with no coverage at all
+		} else {
+			reqData := requirements[pkg]
+			var missing []string
+
+			// Collect missing functions
+			for _, fn := range reqData.Funcs {
+				if !cov.Funcs[fn.Name] {
+					missing = append(missing, fn.Name)
+				}
+			}
+
+			// Collect missing methods
+			for _, typ := range reqData.Types {
+				for _, method := range typ.Methods {
+					if cov.Methods[typ.Name] == nil || !cov.Methods[typ.Name][method.Name] {
+						missing = append(missing, typ.Name+"."+method.Name)
+					}
+				}
+			}
+
+			if len(missing) > 0 {
+				fmt.Printf("  %s: %s\n", pkg, strings.Join(missing, " "))
+			}
+		}
+	}
 }
