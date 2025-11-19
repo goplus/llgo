@@ -74,6 +74,16 @@ func main() {
 	ast.SortImports(fset, file)
 	fmt.Println("SortImports executed successfully")
 
+	// ParseDir - parse a directory of Go files
+	pkgs, err := parser.ParseDir(fset, ".", nil, 0)
+	if err != nil {
+		panic(fmt.Sprintf("ParseDir failed: %v", err))
+	}
+	fmt.Printf("ParseDir found %d package(s)\n", len(pkgs))
+	if len(pkgs) == 0 {
+		panic("ParseDir should find at least 1 package")
+	}
+
 	fmt.Println("SUCCESS: Functions work correctly\n")
 }
 
