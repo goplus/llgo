@@ -1,0 +1,1739 @@
+[
+  {
+    "packageName": "go/types",
+    "funcs": [
+      {
+        "name": "NewTuple",
+        "count": 39
+      },
+      {
+        "name": "NewVar",
+        "count": 38
+      },
+      {
+        "name": "NewParam",
+        "count": 30
+      },
+      {
+        "name": "NewSignatureType",
+        "count": 21
+      },
+      {
+        "name": "NewSlice",
+        "count": 18
+      },
+      {
+        "name": "NewPointer",
+        "count": 15
+      },
+      {
+        "name": "NewFunc",
+        "count": 13
+      },
+      {
+        "name": "Identical",
+        "count": 12
+      },
+      {
+        "name": "NewPackage",
+        "count": 12
+      },
+      {
+        "name": "NewMap",
+        "count": 10
+      },
+      {
+        "name": "Default",
+        "count": 9
+      },
+      {
+        "name": "Instantiate",
+        "count": 7
+      },
+      {
+        "name": "NewArray",
+        "count": 7
+      },
+      {
+        "name": "NewTypeName",
+        "count": 7
+      },
+      {
+        "name": "NewChan",
+        "count": 6
+      },
+      {
+        "name": "NewScope",
+        "count": 6
+      },
+      {
+        "name": "NewStruct",
+        "count": 6
+      },
+      {
+        "name": "ExprString",
+        "count": 5
+      },
+      {
+        "name": "AssignableTo",
+        "count": 4
+      },
+      {
+        "name": "NewConst",
+        "count": 4
+      },
+      {
+        "name": "NewNamed",
+        "count": 4
+      },
+      {
+        "name": "NewInterfaceType",
+        "count": 3
+      },
+      {
+        "name": "NewChecker",
+        "count": 2
+      },
+      {
+        "name": "SizesFor",
+        "count": 2
+      },
+      {
+        "name": "ConvertibleTo",
+        "count": 1
+      },
+      {
+        "name": "LookupFieldOrMethod",
+        "count": 1
+      },
+      {
+        "name": "MissingMethod",
+        "count": 1
+      },
+      {
+        "name": "NewAlias",
+        "count": 1
+      },
+      {
+        "name": "NewContext",
+        "count": 1
+      },
+      {
+        "name": "NewLabel",
+        "count": 1
+      },
+      {
+        "name": "NewTerm",
+        "count": 1
+      },
+      {
+        "name": "Unalias",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Alias",
+        "methods": [
+          {
+            "name": "Obj",
+            "count": 1
+          },
+          {
+            "name": "TypeArgs",
+            "count": 1
+          },
+          {
+            "name": "TypeParams",
+            "count": 1
+          },
+          {
+            "name": "Underlying",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Array",
+        "methods": [
+          {
+            "name": "Elem",
+            "count": 16
+          },
+          {
+            "name": "Len",
+            "count": 15
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Basic",
+        "methods": [
+          {
+            "name": "Kind",
+            "count": 22
+          },
+          {
+            "name": "Info",
+            "count": 15
+          },
+          {
+            "name": "Name",
+            "count": 2
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Chan",
+        "methods": [
+          {
+            "name": "Elem",
+            "count": 10
+          },
+          {
+            "name": "Dir",
+            "count": 8
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Config",
+        "methods": [
+          {
+            "name": "Check",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Const",
+        "methods": [
+          {
+            "name": "Val",
+            "count": 7
+          }
+        ]
+      },
+      {
+        "name": "Func",
+        "methods": [
+          {
+            "name": "Pkg",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Importer",
+        "methods": [
+          {
+            "name": "Import",
+            "count": 6
+          }
+        ]
+      },
+      {
+        "name": "Interface",
+        "methods": [
+          {
+            "name": "EmbeddedType",
+            "count": 4
+          },
+          {
+            "name": "NumEmbeddeds",
+            "count": 4
+          },
+          {
+            "name": "ExplicitMethod",
+            "count": 3
+          },
+          {
+            "name": "NumExplicitMethods",
+            "count": 3
+          },
+          {
+            "name": "NumMethods",
+            "count": 3
+          },
+          {
+            "name": "Complete",
+            "count": 2
+          },
+          {
+            "name": "Empty",
+            "count": 1
+          },
+          {
+            "name": "IsImplicit",
+            "count": 1
+          },
+          {
+            "name": "Method",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Map",
+        "methods": [
+          {
+            "name": "Key",
+            "count": 13
+          },
+          {
+            "name": "Elem",
+            "count": 11
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Named",
+        "methods": [
+          {
+            "name": "Obj",
+            "count": 24
+          },
+          {
+            "name": "Underlying",
+            "count": 13
+          },
+          {
+            "name": "NumMethods",
+            "count": 8
+          },
+          {
+            "name": "Method",
+            "count": 5
+          },
+          {
+            "name": "AddMethod",
+            "count": 3
+          },
+          {
+            "name": "SetUnderlying",
+            "count": 3
+          },
+          {
+            "name": "TypeArgs",
+            "count": 3
+          },
+          {
+            "name": "TypeParams",
+            "count": 2
+          },
+          {
+            "name": "SetTypeParams",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Object",
+        "methods": [
+          {
+            "name": "Type",
+            "count": 41
+          },
+          {
+            "name": "Name",
+            "count": 17
+          },
+          {
+            "name": "Pos",
+            "count": 8
+          },
+          {
+            "name": "Pkg",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Package",
+        "methods": [
+          {
+            "name": "Scope",
+            "count": 28
+          },
+          {
+            "name": "Path",
+            "count": 14
+          },
+          {
+            "name": "Name",
+            "count": 6
+          },
+          {
+            "name": "Complete",
+            "count": 1
+          },
+          {
+            "name": "Imports",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Pointer",
+        "methods": [
+          {
+            "name": "Elem",
+            "count": 33
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Scope",
+        "methods": [
+          {
+            "name": "Lookup",
+            "count": 47
+          },
+          {
+            "name": "Insert",
+            "count": 45
+          },
+          {
+            "name": "LookupParent",
+            "count": 3
+          },
+          {
+            "name": "Names",
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Signature",
+        "methods": [
+          {
+            "name": "Params",
+            "count": 37
+          },
+          {
+            "name": "Results",
+            "count": 24
+          },
+          {
+            "name": "Recv",
+            "count": 14
+          },
+          {
+            "name": "Variadic",
+            "count": 13
+          },
+          {
+            "name": "TypeParams",
+            "count": 11
+          }
+        ]
+      },
+      {
+        "name": "Sizes",
+        "methods": [
+          {
+            "name": "Alignof",
+            "count": 2
+          },
+          {
+            "name": "Offsetsof",
+            "count": 2
+          },
+          {
+            "name": "Sizeof",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Slice",
+        "methods": [
+          {
+            "name": "Elem",
+            "count": 20
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Struct",
+        "methods": [
+          {
+            "name": "NumFields",
+            "count": 14
+          },
+          {
+            "name": "Field",
+            "count": 13
+          },
+          {
+            "name": "Tag",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Term",
+        "methods": [
+          {
+            "name": "Type",
+            "count": 6
+          },
+          {
+            "name": "Tilde",
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Tuple",
+        "methods": [
+          {
+            "name": "Len",
+            "count": 49
+          },
+          {
+            "name": "At",
+            "count": 41
+          }
+        ]
+      },
+      {
+        "name": "Type",
+        "methods": [
+          {
+            "name": "Underlying",
+            "count": 13
+          },
+          {
+            "name": "String",
+            "count": 7
+          }
+        ]
+      },
+      {
+        "name": "TypeList",
+        "methods": [
+          {
+            "name": "At",
+            "count": 2
+          },
+          {
+            "name": "Len",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "TypeName",
+        "methods": [
+          {
+            "name": "IsAlias",
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "TypeParam",
+        "methods": [
+          {
+            "name": "Obj",
+            "count": 6
+          },
+          {
+            "name": "Constraint",
+            "count": 4
+          },
+          {
+            "name": "Index",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "TypeParamList",
+        "methods": [
+          {
+            "name": "Len",
+            "count": 9
+          },
+          {
+            "name": "At",
+            "count": 7
+          }
+        ]
+      },
+      {
+        "name": "Union",
+        "methods": [
+          {
+            "name": "Len",
+            "count": 2
+          },
+          {
+            "name": "Term",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Var",
+        "methods": [
+          {
+            "name": "Embedded",
+            "count": 4
+          },
+          {
+            "name": "Anonymous",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "object",
+        "methods": [
+          {
+            "name": "Type",
+            "count": 78
+          },
+          {
+            "name": "Name",
+            "count": 65
+          },
+          {
+            "name": "Pkg",
+            "count": 13
+          },
+          {
+            "name": "Pos",
+            "count": 10
+          },
+          {
+            "name": "Exported",
+            "count": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "fmt",
+    "funcs": [
+      {
+        "name": "Println",
+        "count": 121
+      },
+      {
+        "name": "Printf",
+        "count": 96
+      },
+      {
+        "name": "Sprintf",
+        "count": 32
+      },
+      {
+        "name": "Errorf",
+        "count": 19
+      },
+      {
+        "name": "Fprint",
+        "count": 5
+      },
+      {
+        "name": "Fprintf",
+        "count": 5
+      },
+      {
+        "name": "Print",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "log",
+    "funcs": [
+      {
+        "name": "Println",
+        "count": 94
+      },
+      {
+        "name": "Panicln",
+        "count": 18
+      },
+      {
+        "name": "Panicf",
+        "count": 12
+      },
+      {
+        "name": "Printf",
+        "count": 5
+      },
+      {
+        "name": "Fatalln",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "go/constant",
+    "funcs": [
+      {
+        "name": "MakeInt64",
+        "count": 28
+      },
+      {
+        "name": "MakeUint64",
+        "count": 6
+      },
+      {
+        "name": "MakeBool",
+        "count": 4
+      },
+      {
+        "name": "StringVal",
+        "count": 4
+      },
+      {
+        "name": "ToInt",
+        "count": 4
+      },
+      {
+        "name": "BinaryOp",
+        "count": 3
+      },
+      {
+        "name": "BoolVal",
+        "count": 3
+      },
+      {
+        "name": "Compare",
+        "count": 3
+      },
+      {
+        "name": "Val",
+        "count": 3
+      },
+      {
+        "name": "Int64Val",
+        "count": 2
+      },
+      {
+        "name": "Make",
+        "count": 2
+      },
+      {
+        "name": "MakeFromLiteral",
+        "count": 2
+      },
+      {
+        "name": "MakeString",
+        "count": 2
+      },
+      {
+        "name": "Sign",
+        "count": 2
+      },
+      {
+        "name": "MakeFloat64",
+        "count": 1
+      },
+      {
+        "name": "MakeImag",
+        "count": 1
+      },
+      {
+        "name": "Shift",
+        "count": 1
+      },
+      {
+        "name": "UnaryOp",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Value",
+        "methods": [
+          {
+            "name": "Kind",
+            "count": 11
+          },
+          {
+            "name": "ExactString",
+            "count": 4
+          },
+          {
+            "name": "String",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "go/ast",
+    "funcs": [
+      {
+        "name": "Walk",
+        "count": 8
+      },
+      {
+        "name": "NewIdent",
+        "count": 5
+      },
+      {
+        "name": "SortImports",
+        "count": 2
+      },
+      {
+        "name": "Inspect",
+        "count": 1
+      },
+      {
+        "name": "IsExported",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "AssignStmt",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "BadDecl",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "BlockStmt",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "CaseClause",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Comment",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 7
+          }
+        ]
+      },
+      {
+        "name": "CommentGroup",
+        "methods": [
+          {
+            "name": "End",
+            "count": 2
+          },
+          {
+            "name": "Pos",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "EmptyStmt",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Field",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 4
+          },
+          {
+            "name": "End",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "FieldList",
+        "methods": [
+          {
+            "name": "NumFields",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "File",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "FuncDecl",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "FuncType",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "GenDecl",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Ident",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Node",
+        "methods": [
+          {
+            "name": "Pos",
+            "count": 23
+          },
+          {
+            "name": "End",
+            "count": 11
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "math/big",
+    "funcs": [
+      {
+        "name": "NewInt",
+        "count": 4
+      },
+      {
+        "name": "NewRat",
+        "count": 3
+      }
+    ],
+    "types": [
+      {
+        "name": "Float",
+        "methods": [
+          {
+            "name": "Int",
+            "count": 1
+          },
+          {
+            "name": "SetRat",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Int",
+        "methods": [
+          {
+            "name": "Cmp",
+            "count": 8
+          },
+          {
+            "name": "SetString",
+            "count": 4
+          },
+          {
+            "name": "Int64",
+            "count": 3
+          },
+          {
+            "name": "IsInt64",
+            "count": 3
+          },
+          {
+            "name": "Add",
+            "count": 2
+          },
+          {
+            "name": "And",
+            "count": 2
+          },
+          {
+            "name": "Lsh",
+            "count": 2
+          },
+          {
+            "name": "Mul",
+            "count": 2
+          },
+          {
+            "name": "Or",
+            "count": 2
+          },
+          {
+            "name": "Quo",
+            "count": 2
+          },
+          {
+            "name": "Rem",
+            "count": 2
+          },
+          {
+            "name": "Rsh",
+            "count": 2
+          },
+          {
+            "name": "SetUint64",
+            "count": 2
+          },
+          {
+            "name": "Sub",
+            "count": 2
+          },
+          {
+            "name": "Xor",
+            "count": 2
+          },
+          {
+            "name": "AndNot",
+            "count": 1
+          },
+          {
+            "name": "Neg",
+            "count": 1
+          },
+          {
+            "name": "Not",
+            "count": 1
+          },
+          {
+            "name": "Set",
+            "count": 1
+          },
+          {
+            "name": "String",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Rat",
+        "methods": [
+          {
+            "name": "Cmp",
+            "count": 6
+          },
+          {
+            "name": "SetInt",
+            "count": 5
+          },
+          {
+            "name": "IsInt",
+            "count": 3
+          },
+          {
+            "name": "Num",
+            "count": 3
+          },
+          {
+            "name": "Add",
+            "count": 2
+          },
+          {
+            "name": "Mul",
+            "count": 2
+          },
+          {
+            "name": "Quo",
+            "count": 2
+          },
+          {
+            "name": "Denom",
+            "count": 1
+          },
+          {
+            "name": "Neg",
+            "count": 1
+          },
+          {
+            "name": "Set",
+            "count": 1
+          },
+          {
+            "name": "Sub",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "go/token",
+    "funcs": [
+      {
+        "name": "NewFileSet",
+        "count": 10
+      },
+      {
+        "name": "IsExported",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "FileSet",
+        "methods": [
+          {
+            "name": "PositionFor",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Pos",
+        "methods": [
+          {
+            "name": "IsValid",
+            "count": 14
+          }
+        ]
+      },
+      {
+        "name": "Position",
+        "methods": [
+          {
+            "name": "IsValid",
+            "count": 15
+          },
+          {
+            "name": "String",
+            "count": 2
+          }
+        ]
+      },
+      {
+        "name": "Token",
+        "methods": [
+          {
+            "name": "Precedence",
+            "count": 7
+          },
+          {
+            "name": "String",
+            "count": 5
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "strings",
+    "funcs": [
+      {
+        "name": "HasPrefix",
+        "count": 8
+      },
+      {
+        "name": "Split",
+        "count": 7
+      },
+      {
+        "name": "Join",
+        "count": 5
+      },
+      {
+        "name": "Index",
+        "count": 4
+      },
+      {
+        "name": "IndexByte",
+        "count": 4
+      },
+      {
+        "name": "Contains",
+        "count": 3
+      },
+      {
+        "name": "LastIndexByte",
+        "count": 3
+      },
+      {
+        "name": "ContainsAny",
+        "count": 2
+      },
+      {
+        "name": "HasSuffix",
+        "count": 2
+      },
+      {
+        "name": "SplitN",
+        "count": 2
+      },
+      {
+        "name": "TrimSuffix",
+        "count": 2
+      },
+      {
+        "name": "ContainsRune",
+        "count": 1
+      },
+      {
+        "name": "Repeat",
+        "count": 1
+      },
+      {
+        "name": "Title",
+        "count": 1
+      },
+      {
+        "name": "ToUpper",
+        "count": 1
+      },
+      {
+        "name": "TrimLeft",
+        "count": 1
+      },
+      {
+        "name": "TrimRight",
+        "count": 1
+      },
+      {
+        "name": "TrimRightFunc",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Builder",
+        "methods": [
+          {
+            "name": "String",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "bytes",
+    "funcs": [
+      {
+        "name": "TrimSpace",
+        "count": 2
+      },
+      {
+        "name": "TrimRight",
+        "count": 1
+      },
+      {
+        "name": "TrimSuffix",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Buffer",
+        "methods": [
+          {
+            "name": "WriteString",
+            "count": 8
+          },
+          {
+            "name": "WriteByte",
+            "count": 7
+          },
+          {
+            "name": "Bytes",
+            "count": 6
+          },
+          {
+            "name": "String",
+            "count": 6
+          },
+          {
+            "name": "Len",
+            "count": 4
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "strconv",
+    "funcs": [
+      {
+        "name": "FormatInt",
+        "count": 4
+      },
+      {
+        "name": "Itoa",
+        "count": 4
+      },
+      {
+        "name": "Quote",
+        "count": 4
+      },
+      {
+        "name": "Atoi",
+        "count": 1
+      },
+      {
+        "name": "FormatFloat",
+        "count": 1
+      },
+      {
+        "name": "QuoteRune",
+        "count": 1
+      },
+      {
+        "name": "Unquote",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "os",
+    "funcs": [
+      {
+        "name": "Open",
+        "count": 3
+      },
+      {
+        "name": "Getenv",
+        "count": 2
+      },
+      {
+        "name": "Setenv",
+        "count": 2
+      },
+      {
+        "name": "Create",
+        "count": 1
+      },
+      {
+        "name": "IsNotExist",
+        "count": 1
+      },
+      {
+        "name": "Lstat",
+        "count": 1
+      },
+      {
+        "name": "Remove",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "File",
+        "methods": [
+          {
+            "name": "Close",
+            "count": 1
+          },
+          {
+            "name": "WriteString",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "io",
+    "funcs": [],
+    "types": [
+      {
+        "name": "Writer",
+        "methods": [
+          {
+            "name": "Write",
+            "count": 10
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "errors",
+    "funcs": [
+      {
+        "name": "New",
+        "count": 9
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "reflect",
+    "funcs": [
+      {
+        "name": "TypeOf",
+        "count": 3
+      },
+      {
+        "name": "ValueOf",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Type",
+        "methods": [
+          {
+            "name": "Elem",
+            "count": 1
+          },
+          {
+            "name": "Kind",
+            "count": 1
+          },
+          {
+            "name": "Name",
+            "count": 1
+          }
+        ]
+      },
+      {
+        "name": "Value",
+        "methods": [
+          {
+            "name": "Pointer",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "flag",
+    "funcs": [
+      {
+        "name": "Arg",
+        "count": 2
+      },
+      {
+        "name": "NArg",
+        "count": 2
+      },
+      {
+        "name": "Bool",
+        "count": 1
+      },
+      {
+        "name": "Parse",
+        "count": 1
+      },
+      {
+        "name": "PrintDefaults",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "sync",
+    "funcs": [],
+    "types": [
+      {
+        "name": "Map",
+        "methods": [
+          {
+            "name": "Load",
+            "count": 3
+          },
+          {
+            "name": "Store",
+            "count": 3
+          },
+          {
+            "name": "Range",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "go/parser",
+    "funcs": [
+      {
+        "name": "ParseFile",
+        "count": 5
+      },
+      {
+        "name": "ParseDir",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "sync/atomic",
+    "funcs": [
+      {
+        "name": "LoadInt32",
+        "count": 3
+      },
+      {
+        "name": "AddInt32",
+        "count": 2
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "os/exec",
+    "funcs": [
+      {
+        "name": "Command",
+        "count": 2
+      }
+    ],
+    "types": [
+      {
+        "name": "Cmd",
+        "methods": [
+          {
+            "name": "Run",
+            "count": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "runtime",
+    "funcs": [
+      {
+        "name": "GOROOT",
+        "count": 3
+      },
+      {
+        "name": "FuncForPC",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "bufio",
+    "funcs": [
+      {
+        "name": "NewScanner",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Scanner",
+        "methods": [
+          {
+            "name": "Scan",
+            "count": 1
+          },
+          {
+            "name": "Text",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "go/importer",
+    "funcs": [
+      {
+        "name": "ForCompiler",
+        "count": 3
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "path/filepath",
+    "funcs": [
+      {
+        "name": "Join",
+        "count": 3
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "unicode",
+    "funcs": [
+      {
+        "name": "IsGraphic",
+        "count": 1
+      },
+      {
+        "name": "IsSpace",
+        "count": 1
+      },
+      {
+        "name": "IsUpper",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "io/fs",
+    "funcs": [],
+    "types": [
+      {
+        "name": "FileInfo",
+        "methods": [
+          {
+            "name": "IsDir",
+            "count": 1
+          },
+          {
+            "name": "Name",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "math",
+    "funcs": [
+      {
+        "name": "Exp",
+        "count": 1
+      },
+      {
+        "name": "Log",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "text/tabwriter",
+    "funcs": [
+      {
+        "name": "NewWriter",
+        "count": 1
+      }
+    ],
+    "types": [
+      {
+        "name": "Writer",
+        "methods": [
+          {
+            "name": "Flush",
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "packageName": "hash/maphash",
+    "funcs": [
+      {
+        "name": "MakeSeed",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "path",
+    "funcs": [
+      {
+        "name": "Join",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "sort",
+    "funcs": [
+      {
+        "name": "Slice",
+        "count": 1
+      }
+    ],
+    "types": []
+  },
+  {
+    "packageName": "unicode/utf8",
+    "funcs": [
+      {
+        "name": "RuneCountInString",
+        "count": 1
+      }
+    ],
+    "types": []
+  }
+]
