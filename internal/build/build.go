@@ -981,14 +981,14 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	check(err)
 
-	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
-
 	aPkg.LPkg = ret
 
 	// If cache hit, we only needed to register types - skip compilation
 	if aPkg.CacheHit {
 		return nil
 	}
+
+	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {
@@ -1277,6 +1277,7 @@ const llgoWasmRuntime = "LLGO_WASM_RUNTIME"
 const llgoWasiThreads = "LLGO_WASI_THREADS"
 const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const llgoFullRpath = "LLGO_FULL_RPATH"
+const llgoBuildCache = "LLGO_BUILD_CACHE"
 
 const defaultWasmRuntime = "wasmtime"
 
@@ -1294,6 +1295,12 @@ func isEnvOn(env string, defVal bool) bool {
 		return defVal
 	}
 	return envVal == "1" || envVal == "true" || envVal == "on"
+}
+
+// cacheEnabled checks if build cache is enabled.
+// Cache can be disabled by setting LLGO_BUILD_CACHE=off|0
+func cacheEnabled() bool {
+	return isEnvOn(llgoBuildCache, true)
 }
 
 func IsTraceEnabled() bool {
