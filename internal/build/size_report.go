@@ -394,7 +394,9 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 				addr = sec.Address
 			}
 			// Group aliases that share the same address and pick the most
-			// informative symbol (skip $x/$d placeholders when possible).
+			// informative symbol. LLVM's dedup linker inserts pseudo symbols
+			// like "$x" (text) / "$d" (data) that represent the shared blob,
+			// so prefer any real symbol name over those placeholders.
 			j := i + 1
 			for j < len(syms) && syms[j].Address == syms[i].Address {
 				j++
