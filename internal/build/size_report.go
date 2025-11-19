@@ -385,53 +385,46 @@ func buildSizeReport(path string, data *readelfData, pkgs []Package, level strin
 			return syms[i].Address < syms[j].Address
 		})
 		cursor := sec.Address
-		for i := 0; i < len(syms); i++ {
-			sym := syms[i]
-			// Skip symbols that are beyond the section bounds
-			if sym.Address >= end {
-				continue
+		for i := 0; i < len(syms); {
+			addr := syms[i].Address
+			if addr >= end {
+				break
 			}
-			addr := sym.Address
-			// Clamp symbol address to section start if it's before the section
 			if addr < sec.Address {
 				addr = sec.Address
 			}
-			// Skip additional symbols that alias the same address to avoid
-			// counting the same range multiple times.
-			if i > 0 && syms[i-1].Address == sym.Address {
-				continue
+			// Group aliases that share the same address and pick the most
+			// informative symbol (skip $x/$d placeholders when possible).
+			j := i + 1
+			for j < len(syms) && syms[j].Address == syms[i].Address {
+				j++
+			}
+			primary := syms[i]
+			for k := i; k < j; k++ {
+				name := syms[k].Name
+				if !strings.HasPrefix(name, "$x") && !strings.HasPrefix(name, "$d") {
+					primary = syms[k]
+					break
+				}
 			}
 			// Add padding bytes between cursor and current symbol
 			if addr > cursor {
 				report.add("(padding "+sec.Name+")", sec.Kind, addr-cursor)
 				cursor = addr
 			}
-			// Find the next symbol address to calculate this symbol's size.
-			// Symbols at the same address are handled by taking the next different address.
 			next := end
-			// Optimize: check next symbol first before scanning
-			if i+1 < len(syms) && syms[i+1].Address > addr {
-				next = syms[i+1].Address
-			} else {
-				// Only search if next symbol is at same address
-				for j := i + 1; j < len(syms); j++ {
-					if syms[j].Address > addr {
-						next = syms[j].Address
-						break
-					}
-				}
+			if j < len(syms) && syms[j].Address > addr {
+				next = syms[j].Address
 			}
 			if next > end {
 				next = end
 			}
-			// Skip symbols with zero size
-			if next <= addr {
-				continue
+			if next > addr {
+				mod := res.resolve(primary.Name)
+				report.add(mod, sec.Kind, next-addr)
+				cursor = next
 			}
-			// Attribute the address range [addr, next) to the symbol's module
-			mod := res.resolve(sym.Name)
-			report.add(mod, sec.Kind, next-addr)
-			cursor = next
+			i = j
 		}
 		// Add any remaining padding at the end of the section
 		if cursor < end {

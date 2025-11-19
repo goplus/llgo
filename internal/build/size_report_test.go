@@ -212,3 +212,33 @@ func TestModuleNameFromSymbolSpecialBrackets(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildSizeReportIgnoresDollarDedup(t *testing.T) {
+	data := &readelfData{
+		sections: map[int]*sectionInfo{
+			1: {Index: 1, Name: "__text", Address: 0x1000, Size: 0x20, Kind: sectionText},
+		},
+		symbols: map[int][]symbolInfo{
+			1: {
+				{Name: "$x", Address: 0x1000},
+				{Name: "runtime.main", Address: 0x1000},
+				{Name: "$d", Address: 0x1010},
+				{Name: "main.main", Address: 0x1010},
+				{Name: "other.sym", Address: 0x1018},
+			},
+		},
+	}
+	report := buildSizeReport("bin", data, nil, "module")
+	if report == nil {
+		t.Fatal("expected report")
+	}
+	if got := report.Modules["runtime"]; got == nil || got.Code != 0x10 {
+		t.Fatalf("runtime should get 0x10 bytes, got %v", got)
+	}
+	if got := report.Modules["main"]; got == nil || got.Code != 0x8 {
+		t.Fatalf("main should get 0x8 bytes, got %v", got)
+	}
+	if _, ok := report.Modules["$x"]; ok {
+		t.Fatalf("$x should be ignored when other aliases exist")
+	}
+}
