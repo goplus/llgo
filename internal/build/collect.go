@@ -29,12 +29,6 @@ import (
 	"github.com/goplus/llgo/internal/env"
 )
 
-// cacheEnabled checks if build cache is enabled.
-// Cache can be disabled by setting LLGO_CACHE=off
-func cacheEnabled() bool {
-	return os.Getenv("LLGO_CACHE") != "off"
-}
-
 // collectFingerprint collects all inputs and generates fingerprint for a package.
 func (c *context) collectFingerprint(pkg *aPackage) error {
 	m := NewManifestBuilder()
