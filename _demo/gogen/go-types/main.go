@@ -32,6 +32,7 @@ func main() {
 	testGenerics()
 	testConfigCheck()
 	testAllStringMethods()
+	testInterfaceMethods()
 }
 
 func testBasicTypes() {
@@ -1053,4 +1054,59 @@ func testAllStringMethods() {
 	fmt.Printf("Type.Underlying(): %v\n", typeUnderlying)
 
 	fmt.Println("SUCCESS: All String method tests passed\n")
+}
+
+// testImporter implements types.Importer for testing
+type testImporter struct{}
+
+func (ti testImporter) Import(path string) (*types.Package, error) {
+	// Simple implementation that returns a dummy package
+	return types.NewPackage(path, path), nil
+}
+
+func testInterfaceMethods() {
+	fmt.Println("\n=== Test Interface Methods (Object, Type, Importer) ===")
+
+	pkg := types.NewPackage("test", "test")
+
+	// Test Object interface methods through concrete type
+	v := types.NewVar(token.NoPos, pkg, "testVar", types.Typ[types.Int])
+
+	// Cast to Object interface and call methods
+	var obj types.Object = v
+	objType := obj.Type()
+	fmt.Printf("Object.Type(): %v\n", objType)
+
+	objName := obj.Name()
+	fmt.Printf("Object.Name(): %s\n", objName)
+
+	objPos := obj.Pos()
+	fmt.Printf("Object.Pos(): %v\n", objPos)
+
+	objPkg := obj.Pkg()
+	if objPkg != nil {
+		fmt.Printf("Object.Pkg().Name(): %s\n", objPkg.Name())
+	}
+
+	// Test Type interface methods through concrete type
+	intType := types.Typ[types.Int]
+
+	// Cast to Type interface and call methods
+	var typ types.Type = intType
+	typStr := typ.String()
+	fmt.Printf("Type.String(): %s\n", typStr)
+
+	typUnderlying := typ.Underlying()
+	fmt.Printf("Type.Underlying(): %v\n", typUnderlying)
+
+	// Test Importer.Import through a custom importer
+	var importer types.Importer = testImporter{}
+	importedPkg, err := importer.Import("fmt")
+	if err != nil {
+		fmt.Printf("Importer.Import() error: %v\n", err)
+	} else {
+		fmt.Printf("Importer.Import() returned: %s\n", importedPkg.Path())
+	}
+
+	fmt.Println("SUCCESS: Interface method tests passed\n")
 }
