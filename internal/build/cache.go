@@ -129,7 +129,10 @@ func ReadManifest(path string) (string, error) {
 
 // CacheExists checks if a valid cache entry exists
 func (cm *CacheManager) CacheExists(paths CachePaths) bool {
-	// Only manifest must exist (files are checked during load)
+	// Both archive and manifest must exist
+	if _, err := os.Stat(paths.Archive); err != nil {
+		return false
+	}
 	if _, err := os.Stat(paths.Manifest); err != nil {
 		return false
 	}

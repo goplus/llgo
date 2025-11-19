@@ -204,7 +204,8 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	cm := c.ensureCacheManager()
 	paths := cm.PackagePaths(c.targetTriple(), pkg.PkgPath, pkg.Fingerprint)
 
-	if !cm.CacheExists(paths) {
+	// Check if archive file exists
+	if _, err := os.Stat(paths.Archive); err != nil {
 		return false
 	}
 
@@ -220,20 +221,8 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 		return false
 	}
 
-	// Load cached .o files directly from cache directory
-	cacheDir := filepath.Dir(paths.Manifest)
-	var cachedFiles []string
-	for _, origFile := range meta.Files {
-		// Files are stored with their basename in cache directory
-		cachedFile := filepath.Join(cacheDir, filepath.Base(origFile))
-		if _, err := os.Stat(cachedFile); err != nil {
-			return false
-		}
-		cachedFiles = append(cachedFiles, cachedFile)
-	}
-
-	// Populate package fields from cache
-	pkg.LLFiles = cachedFiles
+	// Use the .a archive directly for linking (no extraction needed)
+	pkg.LLFiles = []string{paths.Archive}
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
 	pkg.NeedPyInit = meta.NeedPyInit
@@ -294,17 +283,16 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		}
 	}
 
-	// Copy object files directly to cache directory (no archive)
-	cacheDir := filepath.Dir(paths.Manifest)
-	for _, objFile := range objectFiles {
-		destFile := filepath.Join(cacheDir, filepath.Base(objFile))
-		content, err := os.ReadFile(objFile)
-		if err != nil {
-			return fmt.Errorf("read %s: %w", objFile, err)
-		}
-		if err := os.WriteFile(destFile, content, 0644); err != nil {
-			return fmt.Errorf("write %s: %w", destFile, err)
-		}
+	if len(objectFiles) == 0 {
+		return nil
+	}
+
+	// Create .a archive from object files
+	args := []string{"rcs", paths.Archive}
+	args = append(args, objectFiles...)
+	cmd := exec.Command("ar", args...)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("create archive %s: %w\n%s", paths.Archive, err, output)
 	}
 
 	// Create metadata
