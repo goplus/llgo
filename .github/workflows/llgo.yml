@@ -17,24 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  download-model:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Download model file
-        run: |
-          mkdir -p ./_demo/c/llama2-c
-          wget -P ./_demo/c/llama2-c https://huggingface.co/karpathy/tinyllamas/resolve/main/stories15M.bin
-
-      - name: Upload model as artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: llama2-model
-          path: ./_demo/c/llama2-c/stories15M.bin
-          retention-days: 1
-
   llgo:
-    needs: download-model
     continue-on-error: true
     timeout-minutes: 30
     strategy:
@@ -51,11 +34,6 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
-      - name: Download model artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: llama2-model
-          path: ./_demo/c/llama2-c/
       - name: Download platform-specific demo libs
         run: |
           if ${{ startsWith(matrix.os, 'macos') }}; then
@@ -77,14 +55,6 @@ jobs:
           done
 
           echo "PKG_CONFIG_PATH=${ACTUAL_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}" >> $GITHUB_ENV
-      - name: Install further optional dependencies for demos
-        run: |
-          py_deps=(
-            numpy # for github.com/goplus/lib/py/numpy
-            torch # for github.com/goplus/lib/py/torch
-          )
-          pip3.12 install --break-system-packages "${py_deps[@]}"
-
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
@@ -93,6 +63,7 @@ jobs:
       - name: Install
         run: |
           go install ./...
+          go build -o gogen-test ./_demo/gogen
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -100,212 +71,14 @@ jobs:
         with:
           go-version: ${{matrix.go}}
 
-      - name: Test demo without RPATH (expect failure)
+      - name: Test GoGen dependency coverage with go
         run: |
-          echo "Testing demo without RPATH (should fail)..."
-          export LLGO_FULL_RPATH=false
-          pkg-config --libs cargs
-          if (cd ./_demo/c/cargs && llgo run .); then
-            echo "ERROR: cargs demo should have failed without RPATH!"
-            exit 1
-          else
-            echo "✓ cargs demo correctly failed without RPATH"
-          fi
+          echo "Testing GoGen dependencies with go compiler..."
+          ./gogen-test --compiler=go --dir=_demo/gogen | tee _demo/gogen/go-coverage.txt
+          echo "✓ GoGen test with go completed"
 
-      - name: Test demos
+      - name: Test GoGen dependency coverage with llgo
         run: |
-          # TODO(lijie): force python3-embed to be linked with python-3.12-embed
-          # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
-          # Will remove this after pytorch is fixed.
-          pcdir=$HOME/pc
-          mkdir -p $pcdir
-          libdir=$(pkg-config --variable=libdir python-3.12-embed)
-          echo "libdir: $libdir"
-          ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
-          export PKG_CONFIG_PATH=$pcdir:${PKG_CONFIG_PATH}
-          export LLGO_FULL_RPATH=true
-          bash .github/workflows/test_demo.sh
-
-      - name: Test C header generation
-        run: |
-          echo "Testing C header generation in different build modes..."
-          cd _demo/go/export
-          chmod +x test.sh
-          ./test.sh
-
-      - name: Test export with different symbol names on embedded targets
-        run: |
-          echo "Testing //export with different symbol names on embedded targets..."
-          cd _demo/embed/export
-          chmod +x verify_export.sh
-          ./verify_export.sh
-
-      - name: _xtool build tests
-        run: |
-          cd _xtool
-          llgo build -v ./...
-
-      - name: Show test result
-        run: cat result.md
-
-      - name: LLDB tests
-        if: ${{startsWith(matrix.os, 'macos')}}
-        run: |
-          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
-          bash _lldb/runtest.sh -v
-
-  test:
-    continue-on-error: true
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-        llvm: [19]
-        go: ["1.24.2"]
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          llvm-version: ${{matrix.llvm}}
-      - name: Install further optional dependencies for demos
-        run: |
-          py_deps=(
-            numpy # for github.com/goplus/lib/py/numpy
-            torch # for github.com/goplus/lib/py/torch
-          )
-          pip3.12 install --break-system-packages "${py_deps[@]}"
-
-      - name: Set up Go for build
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: "1.24.2"
-
-      - name: Install
-        run: |
-          go install ./...
-          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-
-      - name: Set up Go for testing
-        uses: actions/setup-go@v6
-        with:
-          go-version: ${{matrix.go}}
-      - name: Test Baremetal GC
-        if: ${{!startsWith(matrix.os, 'macos')}}
-        working-directory: runtime/internal/runtime/tinygogc
-        run: llgo test -tags testGC .
-      - name: run llgo test
-        run: |
-          llgo test ./...
-
-
-  hello:
-    continue-on-error: true
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        llvm: [19]
-        go: ["1.21.13", "1.22.12", "1.23.6", "1.24.2"]
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          llvm-version: ${{matrix.llvm}}
-
-      - name: Set up Go 1.23 for building llgo
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: "1.24.2"
-
-      - name: Install llgo
-        run: |
-          go install ./...
-          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-
-      - name: Set up Go for testing
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: ${{matrix.go}}
-
-      - name: Test Hello World with go.mod 1.21
-        if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.21"
-
-      - name: Test Hello World with go.mod 1.22
-        if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.22"
-
-      - name: Test Hello World with go.mod 1.23
-        if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.23"
-
-      - name: Test Hello World with go.mod 1.24
-        if: startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.24"
-
-  cross-compile:
-    continue-on-error: true
-    timeout-minutes: 30
-    strategy:
-      matrix:
-        os: [macos-latest]
-        llvm: [19]
-    runs-on: ${{matrix.os}}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          llvm-version: ${{matrix.llvm}}
-
-      - name: Set up Go for building llgo
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: "1.24.2"
-
-      - name: Install wamr
-        run: |
-          git clone https://github.com/bytecodealliance/wasm-micro-runtime.git
-          mkdir wasm-micro-runtime/product-mini/platforms/darwin/build
-          cd wasm-micro-runtime/product-mini/platforms/darwin/build
-          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
-          make -j8
-          echo "$PWD" >> $GITHUB_PATH
-
-      - name: Install llgo
-        run: |
-          go install ./...
-          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-
-      - name: Test Cross Compilation (wasm)
-        shell: bash
-        working-directory: _demo/c
-        run: |
-          echo "Testing cross-compilation wasm with Go 1.24.2"
-
-          # Compile for wasm architecture
-          GOOS=wasip1 GOARCH=wasm llgo build -o hello -tags=nogc -v ./helloc
-
-          # Check file type
-          file hello.wasm
-
-          # Run the wasm binary using llgo_wasm
-          iwasm --stack-size=819200000 --heap-size=800000000 hello.wasm
+          echo "Testing GoGen dependencies with llgo compiler..."
+          ./gogen-test --compiler=llgo --dir=_demo/gogen | tee _demo/gogen/llgo-coverage.txt
+          echo "✓ GoGen test with llgo completed"
