@@ -31,6 +31,9 @@ func testFunctions() {
 	// NewIdent
 	ident := ast.NewIdent("testVar")
 	fmt.Printf("NewIdent(\"testVar\"): %s\n", ident.Name)
+	if ident.Name != "testVar" {
+		panic(fmt.Sprintf("NewIdent failed: expected \"testVar\", got \"%s\"", ident.Name))
+	}
 
 	// Create a sample AST for testing Walk and Inspect
 	src := `package main
@@ -47,6 +50,9 @@ func main() {
 	walkCount := 0
 	ast.Walk(ast.Visitor(astVisitor{&walkCount}), file)
 	fmt.Printf("Walk visited %d nodes\n", walkCount)
+	if walkCount == 0 {
+		panic("Walk should visit at least 1 node")
+	}
 
 	// Inspect
 	inspectCount := 0
@@ -57,6 +63,12 @@ func main() {
 		return true
 	})
 	fmt.Printf("Inspect visited %d nodes\n", inspectCount)
+	if inspectCount == 0 {
+		panic("Inspect should visit at least 1 node")
+	}
+	if inspectCount != walkCount {
+		panic(fmt.Sprintf("Walk and Inspect should visit same number of nodes: Walk=%d, Inspect=%d", walkCount, inspectCount))
+	}
 
 	// SortImports (requires imports in file)
 	ast.SortImports(fset, file)
@@ -132,6 +144,7 @@ func testNodeMethods() {
 	numFields := fieldList.NumFields()
 	fmt.Printf("FieldList.NumFields(): %d\n", numFields)
 
+	// Each field has 1 name, so 2 fields = 2 names total
 	if numFields != 2 {
 		panic(fmt.Sprintf("Expected 2 fields, got %d", numFields))
 	}
