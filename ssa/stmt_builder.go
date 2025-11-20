@@ -150,7 +150,12 @@ func notInit(instr llvm.Value) bool {
 	case llvm.Call:
 		if n := instr.OperandsCount(); n == 1 {
 			fn := instr.Operand(0)
-			return !strings.HasSuffix(fn.Name(), ".init")
+			name := fn.Name()
+			// Skip both .init and .init$hasPatch calls
+			// init$after should be inserted after init$hasPatch to ensure
+			// overlay package types can safely reference standard library types
+			return !strings.HasSuffix(name, ".init") &&
+				!strings.HasSuffix(name, ".init$hasPatch")
 		}
 	}
 	return true
