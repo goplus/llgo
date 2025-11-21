@@ -263,7 +263,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %100)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %101 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %102 = load ptr, ptr @_llgo_int, align 8
+  %102 = call ptr @__llgo_load__llgo_int()
   %103 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %102, 0
   %104 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, ptr inttoptr (i64 100 to ptr), 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %104, ptr %101, align 8
@@ -489,7 +489,7 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.init$after"() {
+define linkonce ptr @__llgo_load__llgo_int() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_int, align 8
   %1 = icmp eq ptr %0, null
@@ -501,10 +501,17 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  ret void
+  %3 = load ptr, ptr @_llgo_int, align 8
+  ret ptr %3
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_int()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
 

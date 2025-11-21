@@ -67,7 +67,7 @@ _llgo_0:
   br i1 %6, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %7 = load ptr, ptr @_llgo_string, align 8
+  %7 = call ptr @__llgo_load__llgo_string()
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %8, align 8
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
@@ -97,7 +97,7 @@ _llgo_0:
   ret i64 %3
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/closurebound.init$after"() {
+define linkonce ptr @__llgo_load__llgo_string() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null
@@ -109,9 +109,16 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  ret void
+  %3 = load ptr, ptr @_llgo_string, align 8
+  ret ptr %3
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/closurebound.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  ret void
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")

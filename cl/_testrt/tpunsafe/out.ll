@@ -56,7 +56,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %7 = load ptr, ptr @_llgo_string, align 8
+  %7 = call ptr @__llgo_load__llgo_string()
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 20 }, ptr %8, align 8
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
@@ -79,7 +79,7 @@ _llgo_3:                                          ; preds = %_llgo_2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %14 = load ptr, ptr @_llgo_string, align 8
+  %14 = call ptr @__llgo_load__llgo_string()
   %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %15, align 8
   %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %14, 0
@@ -103,7 +103,7 @@ _llgo_5:                                          ; preds = %_llgo_4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %22 = load ptr, ptr @_llgo_string, align 8
+  %22 = call ptr @__llgo_load__llgo_string()
   %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %23, align 8
   %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %22, 0
@@ -131,7 +131,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %7 = load ptr, ptr @_llgo_string, align 8
+  %7 = call ptr @__llgo_load__llgo_string()
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 20 }, ptr %8, align 8
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %7, 0
@@ -154,7 +154,7 @@ _llgo_3:                                          ; preds = %_llgo_2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %14 = load ptr, ptr @_llgo_string, align 8
+  %14 = call ptr @__llgo_load__llgo_string()
   %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %15, align 8
   %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %14, 0
@@ -178,7 +178,7 @@ _llgo_5:                                          ; preds = %_llgo_4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %22 = load ptr, ptr @_llgo_string, align 8
+  %22 = call ptr @__llgo_load__llgo_string()
   %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 21 }, ptr %23, align 8
   %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %22, 0
@@ -198,7 +198,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
 
-define void @"github.com/goplus/llgo/cl/_testrt/tpunsafe.init$after"() {
+define linkonce ptr @__llgo_load__llgo_string() {
 _llgo_0:
   %0 = load ptr, ptr @_llgo_string, align 8
   %1 = icmp eq ptr %0, null
@@ -210,10 +210,17 @@ _llgo_1:                                          ; preds = %_llgo_0
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  ret void
+  %3 = load ptr, ptr @_llgo_string, align 8
+  ret ptr %3
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+
+define void @"github.com/goplus/llgo/cl/_testrt/tpunsafe.init$after"() {
+_llgo_0:
+  %0 = call ptr @__llgo_load__llgo_string()
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
