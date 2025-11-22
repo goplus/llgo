@@ -44,6 +44,12 @@ func MakeSmallMap() *Map {
 }
 
 func MakeMap(t *maptype, hint int) *hmap {
+	if t == nil {
+		panic(errorString("MakeMap: maptype is nil"))
+	}
+	if t.Bucket == nil {
+		panic(errorString("MakeMap: t.Bucket is nil"))
+	}
 	return makemap(t, hint, nil)
 }
 

@@ -126,9 +126,10 @@ type context struct {
 	patches  Patches
 	blkInfos []blocks.Info
 
-	inits     []func()
-	phis      []func()
-	initAfter func()
+	inits                    []func()
+	phis                     []func()
+	initAfter                func()
+	hasPatchGlobalVarInitFunc llssa.Function // function holding init$hasPatch's global var init
 
 	state   pkgState
 	inCFunc bool
@@ -282,6 +283,21 @@ func isCgoCmacro(name string) bool {
 
 func isCgoVar(name string) bool {
 	return strings.HasPrefix(name, "__cgo_")
+}
+
+// isInitCall checks if an instruction is a call to a package init function
+func isInitCall(instr ssa.Instruction) bool {
+	call, ok := instr.(*ssa.Call)
+	if !ok {
+		return false
+	}
+	callee := call.Call.Value
+	if fn, ok := callee.(*ssa.Function); ok {
+		name := fn.Name()
+		// Check if it's a package init function
+		return name == "init" && fn.Signature.Recv() == nil
+	}
+	return false
 }
 
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
@@ -478,6 +494,63 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
 			instrs = instrs[:last]
+		} else if p.state == pkgHasPatch {
+			// For init$hasPatch: separate global variable initialization from dependency inits
+			// Find the first instruction that is not an init() call
+			firstGlobalVarInit := -1
+			for i, instr := range instrs {
+				if !isInitCall(instr) {
+					firstGlobalVarInit = i
+					break
+				}
+			}
+
+			if firstGlobalVarInit >= 0 {
+				// Collect global variable initialization instructions
+				// Exclude any terminator instructions (jump, if, return, etc.)
+				globalVarInstrs := instrs[firstGlobalVarInit:]
+				if len(globalVarInstrs) > 0 {
+					// Remove trailing terminator instructions
+					for len(globalVarInstrs) > 0 {
+						lastInstr := globalVarInstrs[len(globalVarInstrs)-1]
+						switch lastInstr.(type) {
+						case *ssa.Jump, *ssa.If, *ssa.Return:
+							globalVarInstrs = globalVarInstrs[:len(globalVarInstrs)-1]
+						default:
+							goto done
+						}
+					}
+				}
+			done:
+				// Create a separate function for global var initialization
+				if len(globalVarInstrs) > 0 {
+					globalsFnName := p.fn.Name() + "$globals"
+					globalsFn := pkg.NewFunc(globalsFnName, llssa.NoArgsNoRet, llssa.InC)
+					globalsFn.MakeBlocks(1)
+					p.hasPatchGlobalVarInitFunc = globalsFn
+
+					// Compile global var init instructions into this function
+					p.inits = append(p.inits, func() {
+						savedFn := p.fn
+						p.fn = globalsFn
+						defer func() { p.fn = savedFn }()
+
+						globalsB := globalsFn.NewBuilder()
+						globalsB.SetBlock(globalsFn.Block(0))
+						for _, instr := range globalVarInstrs {
+							p.compileInstr(globalsB, instr)
+						}
+						globalsB.Return()
+					})
+				}
+				// Only compile dependency init calls now
+				instrs = instrs[:firstGlobalVarInit]
+			}
+		} else if p.state == pkgInPatch {
+			// For overlay package's init: register callback to insert init$after
+			p.initAfter = func() {
+				pkg.AfterInit(b, ret)
+			}
 		} else if p.state != pkgHasPatch {
 			// TODO(xsw): confirm pyMod don't need to call AfterInit
 			p.initAfter = func() {
@@ -558,6 +631,16 @@ end:
 		b.SetBlockEx(newBlk, llssa.AtEnd, false)
 		b.Store(modPtr, b.PyImportMod(modPath))
 		b.Jump(jumpTo)
+	}
+	// For init$hasPatch: if we created global var init function, add return
+	if doModInit && p.state == pkgHasPatch && p.hasPatchGlobalVarInitFunc != nil {
+		b.Return()
+	}
+	// For overlay init: call init$hasPatch$globals after init$after
+	if doModInit && p.state == pkgInPatch && p.hasPatchGlobalVarInitFunc != nil {
+		// Insert call before the jump/return at end of block 1
+		b.SetBlockEx(ret, llssa.BeforeLast, false)
+		b.Call(p.hasPatchGlobalVarInitFunc.Expr)
 	}
 	return ret
 }
