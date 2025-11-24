@@ -150,7 +150,9 @@ func notInit(instr llvm.Value) bool {
 	case llvm.Call:
 		if n := instr.OperandsCount(); n == 1 {
 			fn := instr.Operand(0)
-			return !strings.HasSuffix(fn.Name(), ".init")
+			name := fn.Name()
+			// Skip .init and .init$hasPatch$deps calls
+			return !strings.HasSuffix(name, ".init") && !strings.HasSuffix(name, ".init$hasPatch$deps")
 		}
 	}
 	return true

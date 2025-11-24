@@ -139,6 +139,8 @@ type context struct {
 	cgoRet     llssa.Expr
 	cgoSymbols []string
 	rewrites   map[string]string
+
+	hasPatchDepsFunc llssa.Function // init$hasPatch$deps function
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -474,6 +476,28 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	if enableDbgSyms && block.Parent().Origin() == nil && block.Index == 0 {
 		p.debugParams(b, block.Parent())
 	}
+
+	// Handle init$hasPatch: split dependency init calls into separate function
+	var depsInstrs []ssa.Instruction
+	if doModInit && p.state == pkgHasPatch {
+		// Always create deps function for init$hasPatch (even if empty)
+		// This is needed because overlay init will call it
+		if p.hasPatchDepsFunc == nil {
+			// Remove $hasPatch suffix from function name to get base name
+			fnName := p.fn.Name()
+			baseName := strings.TrimSuffix(fnName, "$hasPatch")
+			depsName := initFnNameOfHasPatchDeps(baseName)
+			p.hasPatchDepsFunc = pkg.NewFunc(depsName, llssa.NoArgsNoRet, llssa.InC)
+		}
+
+		firstNonInit := findFirstNonInitInstruction(instrs)
+		if firstNonInit > 0 {
+			// Split dependency init calls from global var initialization
+			depsInstrs = instrs[:firstNonInit]
+			instrs = instrs[firstNonInit:]
+		}
+	}
+
 	if doModInit {
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
@@ -485,6 +509,37 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			}
 		}
 	}
+
+	// Create deps function (or create empty function)
+	if p.hasPatchDepsFunc != nil && !p.hasPatchDepsFunc.HasBody() {
+		p.hasPatchDepsFunc.MakeBlocks(1)
+		depsBuilder := p.hasPatchDepsFunc.NewBuilder()
+		depsBlk := p.hasPatchDepsFunc.Block(0)
+		depsBuilder.SetBlock(depsBlk)
+
+		// Generate calls to dependency init functions directly
+		for _, instr := range depsInstrs {
+			if call, ok := instr.(*ssa.Call); ok {
+				if fn, ok := call.Call.Value.(*ssa.Function); ok {
+					if fn.Name() == "init" && fn.Signature.Recv() == nil {
+						// Skip packages that don't need init (like unsafe)
+						if p.pkgNoInit(fn.Pkg.Pkg) {
+							continue
+						}
+						// This is a dependency init call
+						// Use funcName to get the correct function name (handles patches, linkname, etc.)
+						_, depInitName, ftype := p.funcName(fn)
+						if ftype == goFunc {
+							depInitFn := pkg.NewFunc(depInitName, llssa.NoArgsNoRet, llssa.InC)
+							depsBuilder.Call(depInitFn.Expr)
+						}
+					}
+				}
+			}
+		}
+		depsBuilder.Return()
+	}
+
 	fnName := block.Parent().Name()
 	cgoReturned := false
 	isCgoCfunc := isCgoCfunc(fnName)
@@ -492,6 +547,12 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	for i, instr := range instrs {
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
+
+			// Call deps function first
+			fnDeps := pkg.NewFunc(initFnNameOld+"$deps", llssa.NoArgsNoRet, llssa.InC)
+			b.Call(fnDeps.Expr)
+
+			// Then call hasPatch (global vars)
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnOld.Expr)
 		}
@@ -1147,6 +1208,35 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 
 func initFnNameOfHasPatch(name string) string {
 	return name + "$hasPatch"
+}
+
+func initFnNameOfHasPatchDeps(name string) string {
+	return name + "$hasPatch$deps"
+}
+
+// findFirstNonInitInstruction finds the index of the first non-init instruction
+// in the given instructions. Returns -1 if all instructions are init calls.
+// Skips non-call instructions (like store for guard).
+func findFirstNonInitInstruction(instrs []ssa.Instruction) int {
+	for i, instr := range instrs {
+		call, ok := instr.(*ssa.Call)
+		if !ok {
+			// Skip non-call instructions (like guard store)
+			continue
+		}
+		fn, ok := call.Call.Value.(*ssa.Function)
+		if !ok {
+			// Not a direct function call
+			return i
+		}
+		if fn.Name() == "init" && fn.Signature.Recv() == nil {
+			// This is an init call, continue looking
+			continue
+		}
+		// Found a non-init call
+		return i
+	}
+	return -1
 }
 
 func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
