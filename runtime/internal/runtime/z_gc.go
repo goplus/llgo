@@ -23,6 +23,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
+	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
 // AllocU allocates uninitialized memory.
@@ -34,4 +35,39 @@ func AllocU(size uintptr) unsafe.Pointer {
 func AllocZ(size uintptr) unsafe.Pointer {
 	ret := bdwgc.Malloc(size)
 	return c.Memset(ret, 0, size)
+}
+
+type entry struct {
+	fn   func()         // cleanup func
+	prev unsafe.Pointer // prev cleanup func ptr
+	stop int32
+}
+
+func finalizer(ptr unsafe.Pointer, cb unsafe.Pointer) {
+	e := (*entry)(cb)
+	if ptr := atomic.Load(&e.prev); ptr != nil {
+		(*(*func())(ptr))()
+	}
+	if atomic.Load(&e.stop) != 1 {
+		e.fn()
+	}
+}
+
+// AddCleanupPtr attaches a cleanup function to ptr. Some time after ptr is no longer
+// reachable, the runtime will call cleanup().
+func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
+	e := &entry{fn: cleanup}
+	var oldFn bdwgc.FinalizerFunc
+	var oldCb unsafe.Pointer
+	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
+	if oldCb != nil {
+		n := uintptr(ptr) ^ 0xffff // hides the pointer from escape analysis
+		fn := func() {
+			oldFn((unsafe.Pointer)(n^0xffff), oldCb)
+		}
+		atomic.Store(&e.prev, unsafe.Pointer(&fn))
+	}
+	return func() {
+		atomic.Store(&e.stop, 1)
+	}
 }

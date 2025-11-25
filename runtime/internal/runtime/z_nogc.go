@@ -35,3 +35,9 @@ func AllocZ(size uintptr) unsafe.Pointer {
 	ret := c.Malloc(size)
 	return c.Memset(ret, 0, size)
 }
+
+// AddCleanupPtr is not implemented when GC is disabled.
+// Cleanup functions will never be called.
+func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
+	return func() {} // no-op cancel
+}
