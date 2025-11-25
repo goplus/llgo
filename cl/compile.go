@@ -139,8 +139,6 @@ type context struct {
 	cgoRet     llssa.Expr
 	cgoSymbols []string
 	rewrites   map[string]string
-
-	hasPatchDepsFunc llssa.Function // init$hasPatch$deps function
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -478,24 +476,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	}
 
 	// Handle init$hasPatch: split dependency init calls into separate function
-	var depsInstrs []ssa.Instruction
 	if doModInit && p.state == pkgHasPatch {
-		// Always create deps function for init$hasPatch (even if empty)
-		// This is needed because overlay init will call it
-		if p.hasPatchDepsFunc == nil {
-			// Remove $hasPatch suffix from function name to get base name
-			fnName := p.fn.Name()
-			baseName := strings.TrimSuffix(fnName, "$hasPatch")
-			depsName := initFnNameOfHasPatchDeps(baseName)
-			p.hasPatchDepsFunc = pkg.NewFunc(depsName, llssa.NoArgsNoRet, llssa.InC)
-		}
-
-		firstNonInit := findFirstNonInitInstruction(instrs)
-		if firstNonInit > 0 {
-			// Split dependency init calls from global var initialization
-			depsInstrs = instrs[:firstNonInit]
-			instrs = instrs[firstNonInit:]
-		}
+		baseName := strings.TrimSuffix(p.fn.Name(), "$hasPatch")
+		instrs = p.createInitDepsFunction(pkg, baseName, instrs)
 	}
 
 	if doModInit {
@@ -510,46 +493,18 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 	}
 
-	// Create deps function (or create empty function)
-	if p.hasPatchDepsFunc != nil && !p.hasPatchDepsFunc.HasBody() {
-		p.hasPatchDepsFunc.MakeBlocks(1)
-		depsBuilder := p.hasPatchDepsFunc.NewBuilder()
-		depsBlk := p.hasPatchDepsFunc.Block(0)
-		depsBuilder.SetBlock(depsBlk)
-
-		// Generate calls to dependency init functions directly
-		for _, instr := range depsInstrs {
-			if call, ok := instr.(*ssa.Call); ok {
-				if fn, ok := call.Call.Value.(*ssa.Function); ok {
-					if fn.Name() == "init" && fn.Signature.Recv() == nil {
-						// Skip packages that don't need init (like unsafe)
-						if p.pkgNoInit(fn.Pkg.Pkg) {
-							continue
-						}
-						// This is a dependency init call
-						// Use funcName to get the correct function name (handles patches, linkname, etc.)
-						_, depInitName, ftype := p.funcName(fn)
-						if ftype == goFunc {
-							depInitFn := pkg.NewFunc(depInitName, llssa.NoArgsNoRet, llssa.InC)
-							depsBuilder.Call(depInitFn.Expr)
-						}
-					}
-				}
-			}
-		}
-		depsBuilder.Return()
-	}
-
 	fnName := block.Parent().Name()
 	cgoReturned := false
 	isCgoCfunc := isCgoCfunc(fnName)
 	isCgoCmacro := isCgoCmacro(fnName)
 	for i, instr := range instrs {
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
-			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
+			name := p.fn.Name()
+			initFnNameOld := initFnNameOfHasPatch(name)
+			initPatchDepsFnName := initDepsFnNameOfHasPatch(name)
 
 			// Call deps function first
-			fnDeps := pkg.NewFunc(initFnNameOld+"$deps", llssa.NoArgsNoRet, llssa.InC)
+			fnDeps := pkg.NewFunc(initPatchDepsFnName, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnDeps.Expr)
 
 			// Then call hasPatch (global vars)
@@ -1210,8 +1165,8 @@ func initFnNameOfHasPatch(name string) string {
 	return name + "$hasPatch"
 }
 
-func initFnNameOfHasPatchDeps(name string) string {
-	return name + "$hasPatch$deps"
+func initDepsFnNameOfHasPatch(name string) string {
+	return name + "$patchDeps"
 }
 
 // findFirstNonInitInstruction finds the index of the first non-init instruction
@@ -1237,6 +1192,50 @@ func findFirstNonInitInstruction(instrs []ssa.Instruction) int {
 		return i
 	}
 	return -1
+}
+
+// createInitDepsFunction creates and fills the init$patchDeps function
+// for the given init function, extracting dependency init calls from instrs.
+// Returns the remaining instructions after removing dependency inits.
+func (p *context) createInitDepsFunction(pkg llssa.Package, baseName string, instrs []ssa.Instruction) []ssa.Instruction {
+	// Create deps function
+	depsName := initDepsFnNameOfHasPatch(baseName)
+	depsFn := pkg.NewFunc(depsName, llssa.NoArgsNoRet, llssa.InC)
+	depsFn.MakeBlocks(1)
+	depsBuilder := depsFn.NewBuilder()
+	depsBuilder.SetBlock(depsFn.Block(0))
+
+	// Find and split dependency init calls
+	firstNonInit := findFirstNonInitInstruction(instrs)
+	var depsInstrs []ssa.Instruction
+	if firstNonInit > 0 {
+		depsInstrs = instrs[:firstNonInit]
+		instrs = instrs[firstNonInit:]
+
+		// Fill deps function body with dependency init calls
+		for _, instr := range depsInstrs {
+			if call, ok := instr.(*ssa.Call); ok {
+				if fn, ok := call.Call.Value.(*ssa.Function); ok {
+					if fn.Name() == "init" && fn.Signature.Recv() == nil {
+						// Skip packages that don't need init (like unsafe)
+						if p.pkgNoInit(fn.Pkg.Pkg) {
+							continue
+						}
+						// This is a dependency init call
+						// Use funcName to get the correct function name (handles patches, linkname, etc.)
+						_, depInitName, ftype := p.funcName(fn)
+						if ftype == goFunc {
+							depInitFn := pkg.NewFunc(depInitName, llssa.NoArgsNoRet, llssa.InC)
+							depsBuilder.Call(depInitFn.Expr)
+						}
+					}
+				}
+			}
+		}
+	}
+	depsBuilder.Return()
+
+	return instrs
 }
 
 func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
