@@ -60,4 +60,5 @@ var hasAltPkg = map[string]none{
 	"runtime/internal/syscall": {},
 	"io":                       {},
 	"io/fs":                    {},
+	"weak":                     {},
 }
