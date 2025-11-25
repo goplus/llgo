@@ -56,11 +56,14 @@ func RemoveRoots(start, end c.Pointer)
 
 // -----------------------------------------------------------------------------
 
+//llgo:type C
+type FinalizerFunc func(c.Pointer, c.Pointer)
+
 //go:linkname RegisterFinalizer C.GC_register_finalizer
 func RegisterFinalizer(
 	obj c.Pointer,
-	fn func(c.Pointer, c.Pointer), cd c.Pointer,
-	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
+	fn FinalizerFunc, cd c.Pointer,
+	oldFn *FinalizerFunc, oldCd *c.Pointer)
 
 //go:linkname RegisterFinalizerNoOrder C.GC_register_finalizer_no_order
 func RegisterFinalizerNoOrder(
@@ -71,14 +74,14 @@ func RegisterFinalizerNoOrder(
 //go:linkname RegisterFinalizerIgnoreSelf C.GC_register_finalizer_ignore_self
 func RegisterFinalizerIgnoreSelf(
 	obj c.Pointer,
-	fn func(c.Pointer, c.Pointer), cd c.Pointer,
-	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
+	fn FinalizerFunc, cd c.Pointer,
+	oldFn *FinalizerFunc, oldCd *c.Pointer)
 
 //go:linkname RegisterFinalizerUnreachable C.GC_register_finalizer_unreachable
 func RegisterFinalizerUnreachable(
 	obj c.Pointer,
-	fn func(c.Pointer, c.Pointer), cd c.Pointer,
-	oldFn *func(c.Pointer, c.Pointer), oldCd *c.Pointer)
+	fn FinalizerFunc, cd c.Pointer,
+	oldFn *FinalizerFunc, oldCd *c.Pointer)
 
 // -----------------------------------------------------------------------------
 
