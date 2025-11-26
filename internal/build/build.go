@@ -227,6 +227,17 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	verbose := conf.Verbose
 	patterns := args
+	// hasGoFile := false
+	// for _, p := range args {
+	// 	if strings.HasSuffix(p, ".go") {
+	// 		hasGoFile = true
+	// 		break
+	// 	}
+	// }
+	// if conf.Target != "" && !hasGoFile {
+	// 	const bootPkg = "github.com/goplus/llgo/runtime/embinit"
+	// 	patterns = append(patterns, bootPkg)
+	// }
 	tags := "llgo,math_big_pure_go"
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
@@ -307,8 +318,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
+	// altPkgPaths = append(altPkgPaths, "github.com/goplus/llgo/runtime/embinit")
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+	check(err)
+
+	embInitPkgs, err := packages.LoadEx(dedup, sizes, cfg, "github.com/goplus/llgo/runtime/embinit")
 	check(err)
 
 	noRt := 1
@@ -364,6 +379,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	check(err)
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, dpkg...)
+
+	if conf.Target != "" {
+		initPkg, err := buildAllPkgs(ctx, embInitPkgs, verbose)
+		check(err)
+		allPkgs = append(allPkgs, initPkg...)
+	}
 
 	for _, pkg := range initial {
 		if needLink(pkg, mode) {
