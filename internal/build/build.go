@@ -246,7 +246,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	cfg.Overlay = make(map[string][]byte)
-	clearRuntime(cfg.Overlay, filepath.Join(env.GOROOT(), "src", "runtime"))
 	for file, src := range llruntime.OverlayFiles {
 		overlay := unsafe.Slice(unsafe.StringData(src), len(src))
 		cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
@@ -453,23 +452,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	return dpkg, nil
-}
-
-func clearRuntime(overlay map[string][]byte, runtimePath string) {
-	files, err := filepath.Glob(runtimePath + "/*.go")
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range files {
-		overlay[file] = []byte("package runtime\n")
-	}
-	files, err = filepath.Glob(runtimePath + "/*.s")
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range files {
-		overlay[file] = []byte("\n")
-	}
 }
 
 func needLink(pkg *packages.Package, mode Mode) bool {
@@ -1125,10 +1107,15 @@ func cloneRewrites(src Rewrites) map[string]string {
 	return dup
 }
 
-type typeList struct{ types []types.Type }
-
 func toTypeList(args *types.TypeList) []types.Type {
-	return (*typeList)(unsafe.Pointer(args)).types
+	if args == nil {
+		return nil
+	}
+	result := make([]types.Type, args.Len())
+	for i := 0; i < args.Len(); i++ {
+		result[i] = args.At(i)
+	}
+	return result
 }
 
 func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
@@ -1140,11 +1127,15 @@ func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose 
 				if patch, ok := ctx.patches[obj.Pkg().Path()]; ok {
 					if robj := patch.Alt.Pkg.Scope().Lookup(obj.Name()); robj != nil {
 						typ, err := types.Instantiate(nil, robj.Type(), toTypeList(inst.TypeArgs), true)
-						if err == nil {
-							inst.Type = typ
-							p.TypesInfo.Instances[id] = inst
-							p.TypesInfo.Uses[id] = robj
+						if err != nil {
+							if debugBuild || verbose {
+								log.Printf("==> Instance patch failed for %q: %v\n", obj.Id(), err)
+							}
+							continue
 						}
+						inst.Type = typ
+						p.TypesInfo.Instances[id] = inst
+						p.TypesInfo.Uses[id] = robj
 					}
 				}
 			}
