@@ -1084,7 +1084,7 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				return
 			}
 			var altPkg *packages.Cached
-			var ssaPkg = createSSAPkg(prog, p, verbose)
+			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
 			if llruntime.HasAltPkg(pkgPath) {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
@@ -1125,9 +1125,30 @@ func cloneRewrites(src Rewrites) map[string]string {
 	return dup
 }
 
-func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
+type typeList struct{ types []types.Type }
+
+func toTypeList(args *types.TypeList) []types.Type {
+	return (*typeList)(unsafe.Pointer(args)).types
+}
+
+func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
 	pkgSSA := prog.ImportedPackage(p.ID)
 	if pkgSSA == nil {
+		// fix instance patch
+		for id, inst := range p.TypesInfo.Instances {
+			if obj := p.TypesInfo.Uses[id]; obj != nil && obj.Pkg() != nil {
+				if patch, ok := ctx.patches[obj.Pkg().Path()]; ok {
+					if robj := patch.Alt.Pkg.Scope().Lookup(obj.Name()); robj != nil {
+						typ, err := types.Instantiate(nil, robj.Type(), toTypeList(inst.TypeArgs), true)
+						if err == nil {
+							inst.Type = typ
+							p.TypesInfo.Instances[id] = inst
+							p.TypesInfo.Uses[id] = robj
+						}
+					}
+				}
+			}
+		}
 		if debugBuild || verbose {
 			log.Println("==> BuildSSA", p.ID)
 		}
