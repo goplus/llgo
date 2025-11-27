@@ -176,7 +176,7 @@ LLGO_ROOT=/path/to/llgo llgo run .
 
 1. **Testing Requirement:** All bug fixes and features MUST include tests
 2. **Demo Directory:** Examples in `_demo` are prefixed with `_` to prevent standard `go` command from trying to compile them
-3. **Defer in Loops:** LLGo intentionally does not support `defer` in loops (considered bad practice)
+3. **Defer in Loops:** LLGo now supports `defer` within loops, matching Go's semantics of executing defers in LIFO order for every iteration. Be mindful of loop-heavy defer usage as it allocates per iteration.
 4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
 5. **Python Integration:** Third-party Python libraries require separate installation of library files
 
