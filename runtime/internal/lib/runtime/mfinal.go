@@ -6,7 +6,17 @@
 
 package runtime
 
+import (
+	"unsafe"
+
+	"github.com/goplus/llgo/runtime/internal/runtime"
+)
+
 func SetFinalizer(obj any, finalizer any) {
 	// TODO(xsw):
 	// panic("todo: runtime.SetFinalizer")
+}
+
+func addCleanupPtr(ptr unsafe.Pointer, fn func()) (cancel func()) {
+	return runtime.AddCleanupPtr(ptr, fn)
 }
