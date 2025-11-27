@@ -1118,13 +1118,12 @@ func toTypeList(args *types.TypeList) []types.Type {
 	return result
 }
 
-func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
-	pkgSSA := prog.ImportedPackage(p.ID)
-	if pkgSSA == nil {
-		// fix instance patch
-		for id, inst := range p.TypesInfo.Instances {
-			if obj := p.TypesInfo.Uses[id]; obj != nil && obj.Pkg() != nil {
-				if patch, ok := ctx.patches[obj.Pkg().Path()]; ok {
+func applyPatches(ctx *context, p *packages.Package, verbose bool) {
+	// fix instance patch
+	for id, inst := range p.TypesInfo.Instances {
+		if obj := p.TypesInfo.Uses[id]; obj != nil && obj.Pkg() != nil && obj.Pkg() != p.Types {
+			if pkg := obj.Pkg(); pkg != nil && pkg != p.Types {
+				if patch, ok := ctx.patches[pkg.Path()]; ok {
 					if robj := patch.Alt.Pkg.Scope().Lookup(obj.Name()); robj != nil {
 						typ, err := types.Instantiate(nil, robj.Type(), toTypeList(inst.TypeArgs), true)
 						if err != nil {
@@ -1140,9 +1139,16 @@ func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose 
 				}
 			}
 		}
+	}
+}
+
+func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
+	pkgSSA := prog.ImportedPackage(p.ID)
+	if pkgSSA == nil {
 		if debugBuild || verbose {
 			log.Println("==> BuildSSA", p.ID)
 		}
+		applyPatches(ctx, p, verbose)
 		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 		pkgSSA.Build() // TODO(xsw): build concurrently
 	}
