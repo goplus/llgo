@@ -803,6 +803,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	}
 	var objFiles []string
 	var linkArgs []string
+	var rtObjFiles []string
+	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
 		// Skip if already linked this package (by ID)
@@ -816,13 +818,30 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		}
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkedPkgs[p.ID] = true
+
+			// Defer linking runtime packages unless we actually need the runtime.
+			if isRuntimePkg(p.PkgPath) {
+				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
+				rtObjFiles = append(rtObjFiles, aPkg.LLFiles...)
+				return
+			} else {
+				// Only let non-runtime packages influence whether runtime is needed.
+				need1, need2 := aPkg.isNeedRuntimeOrPyInit()
+				needRuntime = needRuntime || need1
+				needPyInit = needPyInit || need2
+			}
+
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
-			need1, need2 := aPkg.isNeedRuntimeOrPyInit()
-			needRuntime = needRuntime || need1
-			needPyInit = needPyInit || need2
 		}
 	})
+
+	// Only link runtime objects when needed (or for host builds where runtime is always required).
+	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
+		linkArgs = append(linkArgs, rtLinkArgs...)
+		objFiles = append(objFiles, rtObjFiles...)
+	}
+
 	// Generate main module file (needed for global variables even in library modes)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
@@ -861,6 +880,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	}
 
 	return nil
+}
+
+// isRuntimePkg reports whether the package path belongs to the llgo runtime tree.
+func isRuntimePkg(pkgPath string) bool {
+	rtRoot := env.LLGoRuntimePkg
+	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
