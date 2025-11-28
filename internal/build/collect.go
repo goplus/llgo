@@ -150,18 +150,6 @@ func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error 
 		m.AddPackage("REWRITE_VARS", strings.Join(rewrites, ","))
 	}
 
-	// Global rewrites for this package
-	if c.buildConf.GlobalRewrites != nil {
-		if vars := c.buildConf.GlobalRewrites[p.PkgPath]; vars != nil {
-			var globals []string
-			for k, v := range vars {
-				globals = append(globals, fmt.Sprintf("%s=%s", k, v))
-			}
-			sort.Strings(globals)
-			m.AddPackage("GLOBAL_REWRITES", strings.Join(globals, ","))
-		}
-	}
-
 	// Add metadata fields if available (for cache saving)
 	// (LINK_ARGS/NEED_RT/NEED_PY_INIT are appended later in saveToCache)
 
