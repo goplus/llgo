@@ -551,75 +551,90 @@ func (c *context) linker() *clang.Cmd {
 
 func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
 	built := ctx.built
-	for _, aPkg := range pkgs {
+
+	// Split packages into runtime tree vs others so we can defer runtime build.
+	var runtimePkgs []*aPackage
+	var normalPkgs []*aPackage
+	for _, p := range pkgs {
+		if isRuntimePkg(p.PkgPath) {
+			runtimePkgs = append(runtimePkgs, p)
+		} else {
+			normalPkgs = append(normalPkgs, p)
+		}
+	}
+
+	var needRuntime, needPyInit bool
+
+	buildOne := func(aPkg *aPackage) error {
 		pkg := aPkg.Package
 		if _, ok := built[pkg.ID]; ok {
-			// Already built, skip but don't clear ExportFile
-			// as it's needed for linking
-			continue
+			// Already built, skip but keep ExportFile for linking
+			return nil
 		}
 		built[pkg.ID] = none{}
+
 		switch kind, param := cl.PkgKindOf(pkg.Types); kind {
 		case cl.PkgDeclOnly:
-			// skip packages that only contain declarations
-			// and set no export file
 			pkg.ExportFile = ""
 		case cl.PkgLinkIR, cl.PkgLinkExtern, cl.PkgPyModule:
 			if len(pkg.GoFiles) > 0 {
-				// Collect fingerprint before building
 				if err := ctx.collectFingerprint(aPkg); err != nil {
-					return nil, err
+					return err
 				}
-				// Try to load from cache
 				ctx.tryLoadFromCache(aPkg)
-				err := buildPkg(ctx, aPkg, verbose)
-				if err != nil {
-					return nil, err
+				if err := buildPkg(ctx, aPkg, verbose); err != nil {
+					return err
 				}
 				if !aPkg.CacheHit {
-					// Append external link args before saving to cache
 					if kind == cl.PkgLinkExtern {
 						appendExternalLinkArgs(ctx, aPkg, param)
 					}
-					// Save to cache after building (includes external link args)
-					if err := ctx.saveToCache(aPkg); err != nil {
-						// Log but don't fail on cache save errors
-						if verbose {
-							fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
-						}
+					if err := ctx.saveToCache(aPkg); err != nil && verbose {
+						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
 					}
 				}
 			} else {
-				// panic("todo")
-				// TODO(xsw): support packages out of llgo
 				pkg.ExportFile = ""
 				if kind == cl.PkgLinkExtern {
 					appendExternalLinkArgs(ctx, aPkg, param)
 				}
 			}
 		default:
-			// Collect fingerprint before building
 			if err := ctx.collectFingerprint(aPkg); err != nil {
-				return nil, err
+				return err
 			}
-			// Try to load from cache
 			ctx.tryLoadFromCache(aPkg)
-			err := buildPkg(ctx, aPkg, verbose)
-			if err != nil {
-				return nil, err
+			if err := buildPkg(ctx, aPkg, verbose); err != nil {
+				return err
 			}
 			aPkg.setNeedRuntimeOrPyInit(aPkg.LPkg.NeedRuntime, aPkg.LPkg.NeedPyInit)
+			needRuntime = needRuntime || aPkg.NeedRt
+			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
-				// Save to cache after building
-				if err := ctx.saveToCache(aPkg); err != nil {
-					// Log but don't fail on cache save errors
-					if verbose {
-						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
-					}
+				if err := ctx.saveToCache(aPkg); err != nil && verbose {
+					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
 				}
 			}
 		}
+		return nil
 	}
+
+	// Build non-runtime packages first, so we know whether runtime is actually needed.
+	for _, p := range normalPkgs {
+		if err := buildOne(p); err != nil {
+			return nil, err
+		}
+	}
+
+	// Only build runtime packages when required (or host build with empty Target).
+	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
+		for _, p := range runtimePkgs {
+			if err := buildOne(p); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return pkgs, nil
 }
 
