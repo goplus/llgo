@@ -140,11 +140,6 @@ func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error 
 		m.AddPackage("OTHER_FILES", otherFilesDigest)
 	}
 
-	// Link args (collected after building, so we add them later)
-	if len(pkg.LinkArgs) > 0 {
-		m.AddPackage("LINK_ARGS", strings.Join(pkg.LinkArgs, " "))
-	}
-
 	// Rewrite vars
 	if len(pkg.rewriteVars) > 0 {
 		var rewrites []string
@@ -168,15 +163,7 @@ func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error 
 	}
 
 	// Add metadata fields if available (for cache saving)
-	if len(pkg.LinkArgs) > 0 {
-		m.AddPackage("LINK_ARGS", strings.Join(pkg.LinkArgs, " "))
-	}
-	if pkg.NeedRt {
-		m.AddPackage("NEED_RT", "true")
-	}
-	if pkg.NeedPyInit {
-		m.AddPackage("NEED_PY_INIT", "true")
-	}
+	// (LINK_ARGS/NEED_RT/NEED_PY_INIT are appended later in saveToCache)
 
 	return nil
 }
@@ -252,7 +239,7 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 		return false
 	}
 
-	// Parse metadata from manifest (last section contains JSON metadata)
+	// Parse metadata from manifest [Package] section (INI format)
 	meta, err := parseManifestMetadata(content)
 	if err != nil {
 		return false
@@ -312,6 +299,7 @@ func parseManifestMetadata(content string) (*CacheArchiveMetadata, error) {
 	return meta, nil
 }
 
+// CacheArchiveMetadata holds metadata about a cached archive.
 type CacheArchiveMetadata struct {
 	LinkArgs   []string
 	NeedRt     bool
@@ -363,15 +351,32 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
-	// Rebuild manifest with metadata fields in Package section
-	m := NewManifestBuilder()
-	c.collectEnvInputs(m)
-	c.collectCommonInputs(m)
-	if err := c.collectPackageInputs(m, pkg); err != nil {
-		return err
+	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).
+	manifestWithMeta := pkg.Manifest
+	if manifestWithMeta == "" {
+		// Fallback: rebuild if missing (should not happen in normal flow).
+		m := NewManifestBuilder()
+		c.collectEnvInputs(m)
+		c.collectCommonInputs(m)
+		if err := c.collectPackageInputs(m, pkg); err != nil {
+			return err
+		}
+		manifestWithMeta = m.Build()
 	}
-
-	manifestWithMeta := m.Build()
+	manifestWithMeta = strings.TrimRight(manifestWithMeta, "\n") + "\n"
+	if !strings.Contains(manifestWithMeta, "[Package]") {
+		manifestWithMeta += "[Package]\n"
+	}
+	if len(pkg.LinkArgs) > 0 {
+		manifestWithMeta += fmt.Sprintf("LINK_ARGS = %s\n", strings.Join(pkg.LinkArgs, " "))
+	}
+	if pkg.NeedRt {
+		manifestWithMeta += "NEED_RT = true\n"
+	}
+	if pkg.NeedPyInit {
+		manifestWithMeta += "NEED_PY_INIT = true\n"
+	}
+	manifestWithMeta += "\n"
 
 	// Write manifest with metadata
 	if err := WriteManifest(paths.Manifest, manifestWithMeta); err != nil {

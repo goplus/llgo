@@ -58,6 +58,8 @@ type CachePaths struct {
 
 // PackagePaths returns the cache paths for a package
 func (cm *CacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) CachePaths {
+	targetTriple = sanitizeComponent(targetTriple)
+	fingerprint = sanitizeComponent(fingerprint)
 	pkgDir := sanitizePkgPath(pkgPath)
 	dir := filepath.Join(cm.root, targetTriple, pkgDir)
 	return CachePaths{
@@ -67,6 +69,16 @@ func (cm *CacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) 
 	}
 }
 
+// sanitizeComponent ensures a single path component is safe.
+func sanitizeComponent(s string) string {
+	if s == "" || s == "." || s == ".." {
+		return "_"
+	}
+	s = strings.ReplaceAll(s, "/", "_")
+	s = strings.ReplaceAll(s, "\\", "_")
+	return s
+}
+
 // sanitizePkgPath converts a package path to a safe directory path
 func sanitizePkgPath(pkgPath string) string {
 	if pkgPath == "" {
@@ -74,7 +86,7 @@ func sanitizePkgPath(pkgPath string) string {
 	}
 	segments := strings.Split(pkgPath, "/")
 	for i, segment := range segments {
-		if segment == "" {
+		if segment == "" || segment == "." || segment == ".." {
 			segments[i] = "_"
 		}
 	}
