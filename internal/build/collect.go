@@ -77,7 +77,6 @@ func (c *context) collectEnvInputs(m *ManifestBuilder) {
 
 // collectCommonInputs collects common build configuration inputs.
 func (c *context) collectCommonInputs(m *ManifestBuilder) {
-	m.AddCommon("BUILD_MODE", string(c.buildConf.BuildMode))
 	m.AddCommon("ABI_MODE", fmt.Sprintf("%d", c.buildConf.AbiMode))
 	m.AddCommon("BUILD_TAGS", c.buildConf.Tags)
 	m.AddCommon("TARGET", c.buildConf.Target)
