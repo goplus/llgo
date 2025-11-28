@@ -352,12 +352,9 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return nil
 	}
 
-	// Create .a archive from object files
-	args := []string{"rcs", paths.Archive}
-	args = append(args, objectFiles...)
-	cmd := exec.Command("ar", args...)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("create archive %s: %w\n%s", paths.Archive, err, output)
+	// Create .a archive from object files (atomic write to avoid races)
+	if err := createArchiveFile(paths.Archive, objectFiles); err != nil {
+		return err
 	}
 
 	// Rebuild manifest with metadata fields in Package section

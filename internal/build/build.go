@@ -906,7 +906,7 @@ func isRuntimePkg(pkgPath string) bool {
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return createStaticArchive(ctx, app, objFiles, verbose)
+		return createArchiveFile(app, objFiles, verbose)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -952,24 +952,40 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	return cmd.Link(buildArgs...)
 }
 
-func createStaticArchive(ctx *context, archivePath string, objFiles []string, verbose bool) error {
-	// Use ar tool to create static archive
-	args := []string{"rcs", archivePath}
-	args = append(args, objFiles...)
+// createArchiveFile builds an archive at archivePath atomically to avoid races when
+// multiple builds target the same output concurrently.
+func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
+	if len(objFiles) == 0 {
+		return fmt.Errorf("no object files provided for archive %s", archivePath)
+	}
 
-	if verbose {
+	if err := os.MkdirAll(filepath.Dir(archivePath), 0o755); err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp(filepath.Dir(archivePath), filepath.Base(archivePath)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmp.Close()
+	tmpName := tmp.Name()
+	// Remove the placeholder so ar can create the archive fresh.
+	_ = os.Remove(tmpName)
+
+	args := append([]string{"rcs", tmpName}, objFiles...)
+	cmd := exec.Command("ar", args...)
+	if len(verbose) > 0 && verbose[0] {
 		fmt.Fprintf(os.Stderr, "ar %s\n", strings.Join(args, " "))
 	}
-
-	cmd := exec.Command("ar", args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		if verbose && len(output) > 0 {
-			fmt.Fprintf(os.Stderr, "ar output: %s\n", output)
-		}
-		return fmt.Errorf("ar command failed: %w", err)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("create archive %s: %w\n%s", archivePath, err, output)
 	}
 
+	if err := os.Rename(tmpName, archivePath); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("publish archive %s: %w", archivePath, err)
+	}
 	return nil
 }
 
