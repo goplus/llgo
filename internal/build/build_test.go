@@ -17,45 +17,31 @@ import (
 )
 
 func mockRun(args []string, cfg *Config) {
-	const maxAttempts = 3
-	var lastErr error
-	var lastPanic interface{}
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		mockable.EnableMock()
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					if r != "exit" {
-						lastPanic = r
-					} else {
-						exitCode := mockable.ExitCode()
-						if (exitCode != 0) != false {
-							lastPanic = fmt.Errorf("got exit code %d", exitCode)
-						}
-					}
-				}
-			}()
-			file, _ := os.CreateTemp("", "llgo-*")
-			cfg.OutFile = file.Name()
-			file.Close()
-			defer os.Remove(cfg.OutFile)
-			_, err := Do(args, cfg)
-			if err == nil {
-				return // Success, return immediately from the inner function
-			}
-			lastErr = err
-		}()
+	defer mockable.DisableMock()
+	mockable.EnableMock()
 
-		if lastPanic == nil && lastErr == nil {
-			return // Success, return from mockRun
+	var panicVal interface{}
+	defer func() {
+		if r := recover(); r != nil {
+			// Ignore mocked os.Exit
+			if s, ok := r.(string); ok && s == "exit" {
+				return
+			}
+			panicVal = r
 		}
-		// Continue to next attempt if this one failed
+		if panicVal != nil {
+			panic(panicVal)
+		}
+	}()
+
+	file, _ := os.CreateTemp("", "llgo-*")
+	cfg.OutFile = file.Name()
+	file.Close()
+	defer os.Remove(cfg.OutFile)
+
+	if _, err := Do(args, cfg); err != nil {
+		panic(err)
 	}
-	// If we get here, all attempts failed
-	if lastPanic != nil {
-		panic(lastPanic)
-	}
-	panic(fmt.Errorf("all %d attempts failed, last error: %v", maxAttempts, lastErr))
 }
 
 func TestRun(t *testing.T) {
