@@ -312,6 +312,12 @@ func parseManifestMetadata(content string) (*CacheArchiveMetadata, error) {
 	return meta, nil
 }
 
+type CacheArchiveMetadata struct {
+	LinkArgs   []string
+	NeedRt     bool
+	NeedPyInit bool
+}
+
 // saveToCache saves a built package to cache.
 func (c *context) saveToCache(pkg *aPackage) error {
 	if !cacheEnabled() {
