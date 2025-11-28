@@ -246,7 +246,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	cfg.Overlay = make(map[string][]byte)
-	clearRuntime(cfg.Overlay, filepath.Join(env.GOROOT(), "src", "runtime"))
 	for file, src := range llruntime.OverlayFiles {
 		overlay := unsafe.Slice(unsafe.StringData(src), len(src))
 		cfg.Overlay[filepath.Join(env.GOROOT(), "src", file)] = overlay
@@ -453,23 +452,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	return dpkg, nil
-}
-
-func clearRuntime(overlay map[string][]byte, runtimePath string) {
-	files, err := filepath.Glob(runtimePath + "/*.go")
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range files {
-		overlay[file] = []byte("package runtime\n")
-	}
-	files, err = filepath.Glob(runtimePath + "/*.s")
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range files {
-		overlay[file] = []byte("\n")
-	}
 }
 
 func needLink(pkg *packages.Package, mode Mode) bool {
@@ -1084,7 +1066,7 @@ func allPkgs(ctx *context, initial []*packages.Package, verbose bool) (all []*aP
 				return
 			}
 			var altPkg *packages.Cached
-			var ssaPkg = createSSAPkg(prog, p, verbose)
+			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
 			if llruntime.HasAltPkg(pkgPath) {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
@@ -1125,12 +1107,48 @@ func cloneRewrites(src Rewrites) map[string]string {
 	return dup
 }
 
-func createSSAPkg(prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
+func toTypeList(args *types.TypeList) []types.Type {
+	if args == nil {
+		return nil
+	}
+	result := make([]types.Type, args.Len())
+	for i := 0; i < args.Len(); i++ {
+		result[i] = args.At(i)
+	}
+	return result
+}
+
+func applyPatches(ctx *context, p *packages.Package, verbose bool) {
+	// fix instance patch
+	for id, inst := range p.TypesInfo.Instances {
+		if obj := p.TypesInfo.Uses[id]; obj != nil && obj.Pkg() != nil && obj.Pkg() != p.Types {
+			if pkg := obj.Pkg(); pkg != nil && pkg != p.Types {
+				if patch, ok := ctx.patches[pkg.Path()]; ok {
+					if robj := patch.Alt.Pkg.Scope().Lookup(obj.Name()); robj != nil {
+						typ, err := types.Instantiate(nil, robj.Type(), toTypeList(inst.TypeArgs), true)
+						if err != nil {
+							if debugBuild || verbose {
+								log.Printf("==> Instance patch failed for %q: %v\n", obj.Id(), err)
+							}
+							continue
+						}
+						inst.Type = typ
+						p.TypesInfo.Instances[id] = inst
+						p.TypesInfo.Uses[id] = robj
+					}
+				}
+			}
+		}
+	}
+}
+
+func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
 	pkgSSA := prog.ImportedPackage(p.ID)
 	if pkgSSA == nil {
 		if debugBuild || verbose {
 			log.Println("==> BuildSSA", p.ID)
 		}
+		applyPatches(ctx, p, verbose)
 		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 		pkgSSA.Build() // TODO(xsw): build concurrently
 	}
