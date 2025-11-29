@@ -97,13 +97,13 @@ func (m orderedStringMap) MarshalYAML() (interface{}, error) {
 
 // envSection holds fixed environment fields and optional vars.
 type envSection struct {
-	Goos        string           `yaml:"goos,omitempty"`
-	Goarch      string           `yaml:"goarch,omitempty"`
-	GoVersion   string           `yaml:"go_version,omitempty"`
-	LlgoVersion string           `yaml:"llgo_version,omitempty"`
-	LlvmTriple  string           `yaml:"llvm_triple,omitempty"`
-	LlvmVersion string           `yaml:"llvm_version,omitempty"`
-	Vars        orderedStringMap `yaml:"vars,omitempty"`
+	Goos        string           `yaml:"GOOS,omitempty"`
+	Goarch      string           `yaml:"GOARCH,omitempty"`
+	GoVersion   string           `yaml:"GO_VERSION,omitempty"`
+	LlgoVersion string           `yaml:"LLGO_VERSION,omitempty"`
+	LlvmTriple  string           `yaml:"LLVM_TRIPLE,omitempty"`
+	LlvmVersion string           `yaml:"LLVM_VERSION,omitempty"`
+	Vars        orderedStringMap `yaml:"VARS,omitempty"`
 }
 
 func (s *envSection) empty() bool {
@@ -111,16 +111,16 @@ func (s *envSection) empty() bool {
 }
 
 type commonSection struct {
-	AbiMode    string       `yaml:"abi_mode,omitempty"`
-	BuildTags  []string     `yaml:"build_tags,omitempty"`
-	Target     string       `yaml:"target,omitempty"`
-	TargetABI  string       `yaml:"target_abi,omitempty"`
-	CC         string       `yaml:"cc,omitempty"`
-	CCFlags    []string     `yaml:"ccflags,omitempty"`
-	CFlags     []string     `yaml:"cflags,omitempty"`
-	LDFlags    []string     `yaml:"ldflags,omitempty"`
-	Linker     string       `yaml:"linker,omitempty"`
-	ExtraFiles []fileDigest `yaml:"extra_files,omitempty"`
+	AbiMode    string       `yaml:"ABI_MODE,omitempty"`
+	BuildTags  []string     `yaml:"BUILD_TAGS,omitempty"`
+	Target     string       `yaml:"TARGET,omitempty"`
+	TargetABI  string       `yaml:"TARGET_ABI,omitempty"`
+	CC         string       `yaml:"CC,omitempty"`
+	CCFlags    []string     `yaml:"CCFLAGS,omitempty"`
+	CFlags     []string     `yaml:"CFLAGS,omitempty"`
+	LDFlags    []string     `yaml:"LDFLAGS,omitempty"`
+	Linker     string       `yaml:"LINKER,omitempty"`
+	ExtraFiles []fileDigest `yaml:"EXTRA_FILES,omitempty"`
 }
 
 func (s *commonSection) empty() bool {

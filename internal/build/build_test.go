@@ -16,6 +16,16 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 )
 
+func TestMain(m *testing.M) {
+	old := cacheRootFunc
+	td, _ := os.MkdirTemp("", "llgo-cache-*")
+	cacheRootFunc = func() string { return td }
+	code := m.Run()
+	cacheRootFunc = old
+	_ = os.RemoveAll(td)
+	os.Exit(code)
+}
+
 func mockRun(args []string, cfg *Config) {
 	defer mockable.DisableMock()
 	mockable.EnableMock()
