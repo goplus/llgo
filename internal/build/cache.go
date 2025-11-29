@@ -39,30 +39,30 @@ func buildCacheRootDir() string {
 	return filepath.Join(cacheRootFunc(), cacheBuildDirName)
 }
 
-// CacheManager manages the build cache directory structure
-type CacheManager struct {
+// cacheManager manages the build cache directory structure
+type cacheManager struct {
 	root string
 }
 
 // NewCacheManager creates a new cache manager
-func NewCacheManager() *CacheManager {
-	return &CacheManager{root: buildCacheRootDir()}
+func NewCacheManager() *cacheManager {
+	return &cacheManager{root: buildCacheRootDir()}
 }
 
-// CachePaths holds the paths for a cached package
-type CachePaths struct {
+// cachePaths holds the paths for a cached package
+type cachePaths struct {
 	Dir      string // Directory containing cache files
 	Archive  string // Path to .a file
 	Manifest string // Path to .manifest file
 }
 
 // PackagePaths returns the cache paths for a package
-func (cm *CacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) CachePaths {
+func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) cachePaths {
 	targetTriple = sanitizeComponent(targetTriple)
 	fingerprint = sanitizeComponent(fingerprint)
 	pkgDir := sanitizePkgPath(pkgPath)
 	dir := filepath.Join(cm.root, targetTriple, pkgDir)
-	return CachePaths{
+	return cachePaths{
 		Dir:      dir,
 		Archive:  filepath.Join(dir, fingerprint+cacheArchiveExt),
 		Manifest: filepath.Join(dir, fingerprint+cacheManifestExt),
@@ -94,12 +94,12 @@ func sanitizePkgPath(pkgPath string) string {
 }
 
 // EnsureDir creates the cache directory if it doesn't exist
-func (cm *CacheManager) EnsureDir(paths CachePaths) error {
+func (cm *cacheManager) EnsureDir(paths cachePaths) error {
 	return os.MkdirAll(paths.Dir, 0o755)
 }
 
-// WriteManifest writes manifest content to a file atomically
-func WriteManifest(path string, content string) error {
+// writeManifest writes manifest content to a file atomically
+func writeManifest(path string, content string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("create manifest dir: %w", err)
 	}
@@ -130,8 +130,8 @@ func WriteManifest(path string, content string) error {
 	return nil
 }
 
-// ReadManifest reads manifest content from a file
-func ReadManifest(path string) (string, error) {
+// readManifest reads manifest content from a file
+func readManifest(path string) (string, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
@@ -139,8 +139,8 @@ func ReadManifest(path string) (string, error) {
 	return string(content), nil
 }
 
-// CacheExists checks if a valid cache entry exists
-func (cm *CacheManager) CacheExists(paths CachePaths) bool {
+// cacheExists checks if a valid cache entry exists
+func (cm *cacheManager) cacheExists(paths cachePaths) bool {
 	// Both archive and manifest must exist
 	if _, err := os.Stat(paths.Archive); err != nil {
 		return false
@@ -151,15 +151,15 @@ func (cm *CacheManager) CacheExists(paths CachePaths) bool {
 	return true
 }
 
-// CleanPackageCache removes all cache entries for a package
-func (cm *CacheManager) CleanPackageCache(targetTriple, pkgPath string) error {
+// cleanPackageCache removes all cache entries for a package
+func (cm *cacheManager) cleanPackageCache(targetTriple, pkgPath string) error {
 	pkgDir := sanitizePkgPath(pkgPath)
 	dir := filepath.Join(cm.root, targetTriple, pkgDir)
 	return os.RemoveAll(dir)
 }
 
-// CleanAllCache removes the entire build cache
-func (cm *CacheManager) CleanAllCache() error {
+// cleanAllCache removes the entire build cache
+func (cm *cacheManager) cleanAllCache() error {
 	return os.RemoveAll(cm.root)
 }
 
@@ -175,8 +175,8 @@ func TargetTriple(goos, goarch, llvmTarget, targetABI string) string {
 	return triple
 }
 
-// ListCachedPackages returns all cached fingerprints for a package
-func (cm *CacheManager) ListCachedPackages(targetTriple, pkgPath string) ([]string, error) {
+// listCachedPackages returns all cached fingerprints for a package
+func (cm *cacheManager) listCachedPackages(targetTriple, pkgPath string) ([]string, error) {
 	pkgDir := sanitizePkgPath(pkgPath)
 	dir := filepath.Join(cm.root, targetTriple, pkgDir)
 
@@ -200,15 +200,15 @@ func (cm *CacheManager) ListCachedPackages(targetTriple, pkgPath string) ([]stri
 	return fingerprints, nil
 }
 
-// CacheStats holds statistics about the cache
-type CacheStats struct {
+// cacheStats holds statistics about the cache
+type cacheStats struct {
 	TotalPackages int
 	TotalSize     int64
 }
 
-// Stats returns statistics about the cache
-func (cm *CacheManager) Stats() (CacheStats, error) {
-	var stats CacheStats
+// stats returns statistics about the cache
+func (cm *cacheManager) stats() (cacheStats, error) {
+	var stats cacheStats
 
 	err := filepath.Walk(cm.root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

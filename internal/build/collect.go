@@ -68,7 +68,7 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 }
 
 // collectEnvInputs collects environment-related inputs.
-func (c *context) collectEnvInputs(m *ManifestBuilder) {
+func (c *context) collectEnvInputs(m *manifestBuilder) {
 	m.AddEnv("GOOS", c.buildConf.Goos)
 	m.AddEnv("GOARCH", c.buildConf.Goarch)
 	m.AddEnv("LLVM_TRIPLE", c.crossCompile.LLVMTarget)
@@ -95,7 +95,7 @@ func (c *context) collectEnvInputs(m *ManifestBuilder) {
 }
 
 // collectCommonInputs collects common build configuration inputs.
-func (c *context) collectCommonInputs(m *ManifestBuilder) {
+func (c *context) collectCommonInputs(m *manifestBuilder) {
 	m.AddCommon("ABI_MODE", fmt.Sprintf("%d", c.buildConf.AbiMode))
 	if c.buildConf.Tags != "" {
 		m.AddCommon("BUILD_TAGS", strings.Split(c.buildConf.Tags, ","))
@@ -130,7 +130,7 @@ func (c *context) collectCommonInputs(m *ManifestBuilder) {
 }
 
 // collectPackageInputs collects package-specific inputs.
-func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error {
+func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error {
 	p := pkg.Package
 
 	m.AddPackage("PKG_PATH", p.PkgPath)
@@ -177,7 +177,7 @@ func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error 
 }
 
 // collectDependencyInputs adds dependency fingerprints/versions into manifest.
-func (c *context) collectDependencyInputs(m *ManifestBuilder, pkg *aPackage) error {
+func (c *context) collectDependencyInputs(m *manifestBuilder, pkg *aPackage) error {
 	if len(pkg.Imports) == 0 {
 		return nil
 	}
@@ -203,8 +203,8 @@ func (c *context) collectDependencyInputs(m *ManifestBuilder, pkg *aPackage) err
 	return nil
 }
 
-func (c *context) dependencyFingerprint(dep *packages.Package) (DepEntry, error) {
-	entry := DepEntry{ID: dep.ID}
+func (c *context) dependencyFingerprint(dep *packages.Package) (depEntry, error) {
+	entry := depEntry{ID: dep.ID}
 	if v := moduleVersion(dep.Module); v != "" {
 		entry.Version = v
 		return entry, nil
@@ -287,7 +287,7 @@ func (c *context) targetTriple() string {
 }
 
 // ensureCacheManager creates cacheManager if not exists.
-func (c *context) ensureCacheManager() *CacheManager {
+func (c *context) ensureCacheManager() *cacheManager {
 	if c.cacheManager == nil {
 		c.cacheManager = NewCacheManager()
 	}
@@ -314,7 +314,7 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	}
 
 	// Read metadata from manifest
-	content, err := ReadManifest(paths.Manifest)
+	content, err := readManifest(paths.Manifest)
 	if err != nil {
 		return false
 	}
@@ -463,7 +463,7 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return fmt.Errorf("decode manifest: %w", err)
 	}
 
-	meta := &ManifestMetadata{
+	meta := &manifestMetadata{
 		LinkArgs:   append([]string(nil), pkg.LinkArgs...),
 		NeedRt:     pkg.NeedRt,
 		NeedPyInit: pkg.NeedPyInit,
@@ -480,7 +480,7 @@ func (c *context) saveToCache(pkg *aPackage) error {
 	}
 
 	// Write manifest with metadata
-	if err := WriteManifest(paths.Manifest, manifestWithMeta); err != nil {
+	if err := writeManifest(paths.Manifest, manifestWithMeta); err != nil {
 		return err
 	}
 

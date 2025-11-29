@@ -29,15 +29,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// DepEntry captures dependency identity plus either version or fingerprint.
-type DepEntry struct {
+// depEntry captures dependency identity plus either version or fingerprint.
+type depEntry struct {
 	ID          string `yaml:"id"`
 	Version     string `yaml:"version,omitempty"`
 	Fingerprint string `yaml:"fingerprint,omitempty"`
 }
 
-// ManifestMetadata stores metadata produced during build but not part of the fingerprint.
-type ManifestMetadata struct {
+// manifestMetadata stores metadata produced during build but not part of the fingerprint.
+type manifestMetadata struct {
 	LinkArgs   []string `yaml:"link_args,omitempty"`
 	NeedRt     bool     `yaml:"need_rt,omitempty"`
 	NeedPyInit bool     `yaml:"need_py_init,omitempty"`
@@ -48,51 +48,51 @@ type manifestData struct {
 	Env      map[string]interface{} `yaml:"env,omitempty"`
 	Common   map[string]interface{} `yaml:"common,omitempty"`
 	Package  map[string]interface{} `yaml:"package,omitempty"`
-	Deps     []DepEntry             `yaml:"deps,omitempty"`
-	Metadata *ManifestMetadata      `yaml:"metadata,omitempty"`
+	Deps     []depEntry             `yaml:"deps,omitempty"`
+	Metadata *manifestMetadata      `yaml:"metadata,omitempty"`
 }
 
-// ManifestBuilder builds manifest text with sorted sections.
-type ManifestBuilder struct {
+// manifestBuilder builds manifest text with sorted sections.
+type manifestBuilder struct {
 	env    map[string]interface{}
 	common map[string]interface{}
 	pkg    map[string]interface{}
-	deps   []DepEntry
-	meta   *ManifestMetadata
+	deps   []depEntry
+	meta   *manifestMetadata
 }
 
-// NewManifestBuilder creates a new ManifestBuilder.
-func NewManifestBuilder() *ManifestBuilder {
-	return &ManifestBuilder{}
+// NewManifestBuilder creates a new manifestBuilder.
+func NewManifestBuilder() *manifestBuilder {
+	return &manifestBuilder{}
 }
 
 // AddEnv adds a key-value pair to the Env section.
-func (m *ManifestBuilder) AddEnv(key, value string) {
+func (m *manifestBuilder) AddEnv(key, value string) {
 	m.env = mergeValue(m.env, key, value)
 }
 
 // AddCommon adds a key-value pair to the Common section.
-func (m *ManifestBuilder) AddCommon(key string, value interface{}) {
+func (m *manifestBuilder) AddCommon(key string, value interface{}) {
 	m.common = mergeValue(m.common, key, value)
 }
 
 // AddPackage adds a key-value pair to the Package section.
-func (m *ManifestBuilder) AddPackage(key string, value interface{}) {
+func (m *manifestBuilder) AddPackage(key string, value interface{}) {
 	m.pkg = mergeValue(m.pkg, key, value)
 }
 
 // AddDep adds a dependency entry to the manifest.
-func (m *ManifestBuilder) AddDep(dep DepEntry) {
+func (m *manifestBuilder) AddDep(dep depEntry) {
 	m.deps = append(m.deps, dep)
 }
 
 // SetMetadata sets the metadata block.
-func (m *ManifestBuilder) SetMetadata(meta *ManifestMetadata) {
+func (m *manifestBuilder) SetMetadata(meta *manifestMetadata) {
 	m.meta = meta
 }
 
 // Build generates the sorted manifest text in INI format.
-func (m *ManifestBuilder) Build() string {
+func (m *manifestBuilder) Build() string {
 	data := manifestData{
 		Env:      copyMap(m.env),
 		Common:   copyMap(m.common),
@@ -105,7 +105,7 @@ func (m *ManifestBuilder) Build() string {
 }
 
 // Fingerprint returns the sha256 hash of the manifest content.
-func (m *ManifestBuilder) Fingerprint() string {
+func (m *manifestBuilder) Fingerprint() string {
 	content := m.Build()
 	hash := sha256.Sum256([]byte(content))
 	return hex.EncodeToString(hash[:])
@@ -120,11 +120,11 @@ func sortMapKeys(m map[string]interface{}) []string {
 	return keys
 }
 
-func sortDeps(deps []DepEntry) []DepEntry {
+func sortDeps(deps []depEntry) []depEntry {
 	if len(deps) == 0 {
 		return nil
 	}
-	sorted := append([]DepEntry(nil), deps...)
+	sorted := append([]depEntry(nil), deps...)
 	sort.Slice(sorted, func(i, j int) bool {
 		if sorted[i].ID == sorted[j].ID {
 			if sorted[i].Version == sorted[j].Version {
@@ -165,7 +165,7 @@ func buildManifestYAML(data manifestData) (string, error) {
 		)
 	}
 
-	addDeps := func(name string, deps []DepEntry) {
+	addDeps := func(name string, deps []depEntry) {
 		if len(deps) == 0 {
 			return
 		}
@@ -196,7 +196,7 @@ func buildManifestYAML(data manifestData) (string, error) {
 		)
 	}
 
-	addMetadata := func(meta *ManifestMetadata) {
+	addMetadata := func(meta *manifestMetadata) {
 		if meta == nil {
 			return
 		}

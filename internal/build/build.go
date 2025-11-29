@@ -521,7 +521,7 @@ type context struct {
 	testFail bool
 
 	// Cache related fields
-	cacheManager *CacheManager
+	cacheManager *cacheManager
 	llvmVersion  string
 }
 

@@ -99,12 +99,12 @@ func TestWriteManifest(t *testing.T) {
 	path := filepath.Join(td, "subdir", "test.manifest")
 	content := "Env:\nGOOS=linux\n"
 
-	if err := WriteManifest(path, content); err != nil {
+	if err := writeManifest(path, content); err != nil {
 		t.Fatalf("WriteManifest: %v", err)
 	}
 
 	// Read back
-	got, err := ReadManifest(path)
+	got, err := readManifest(path)
 	if err != nil {
 		t.Fatalf("ReadManifest: %v", err)
 	}
@@ -119,16 +119,16 @@ func TestWriteManifest_Atomic(t *testing.T) {
 	path := filepath.Join(td, "test.manifest")
 
 	// Write first version
-	if err := WriteManifest(path, "version1"); err != nil {
+	if err := writeManifest(path, "version1"); err != nil {
 		t.Fatalf("WriteManifest v1: %v", err)
 	}
 
 	// Write second version (should replace atomically)
-	if err := WriteManifest(path, "version2"); err != nil {
+	if err := writeManifest(path, "version2"); err != nil {
 		t.Fatalf("WriteManifest v2: %v", err)
 	}
 
-	got, _ := ReadManifest(path)
+	got, _ := readManifest(path)
 	if got != "version2" {
 		t.Errorf("content = %q, want version2", got)
 	}
@@ -143,7 +143,7 @@ func TestWriteManifest_Atomic(t *testing.T) {
 }
 
 func TestReadManifest_NotExist(t *testing.T) {
-	_, err := ReadManifest("/nonexistent/file.manifest")
+	_, err := readManifest("/nonexistent/file.manifest")
 	if err == nil {
 		t.Error("expected error for nonexistent file")
 	}
@@ -159,7 +159,7 @@ func TestCacheManager_CacheExists(t *testing.T) {
 	paths := cm.PackagePaths("arm64-darwin", "test/pkg", "fp123")
 
 	// Initially should not exist
-	if cm.CacheExists(paths) {
+	if cm.cacheExists(paths) {
 		t.Error("cache should not exist initially")
 	}
 
@@ -170,7 +170,7 @@ func TestCacheManager_CacheExists(t *testing.T) {
 	os.WriteFile(paths.Archive, []byte("archive"), 0644)
 
 	// Still should not exist (manifest missing)
-	if cm.CacheExists(paths) {
+	if cm.cacheExists(paths) {
 		t.Error("cache should not exist without manifest")
 	}
 
@@ -178,7 +178,7 @@ func TestCacheManager_CacheExists(t *testing.T) {
 	os.WriteFile(paths.Manifest, []byte("manifest"), 0644)
 
 	// Now should exist
-	if !cm.CacheExists(paths) {
+	if !cm.cacheExists(paths) {
 		t.Error("cache should exist with both files")
 	}
 }
@@ -219,12 +219,12 @@ func TestCacheManager_CleanPackageCache(t *testing.T) {
 	os.WriteFile(paths.Manifest, []byte("manifest"), 0644)
 
 	// Clean
-	if err := cm.CleanPackageCache("arm64-darwin", "test/pkg"); err != nil {
+	if err := cm.cleanPackageCache("arm64-darwin", "test/pkg"); err != nil {
 		t.Fatalf("CleanPackageCache: %v", err)
 	}
 
 	// Should not exist
-	if cm.CacheExists(paths) {
+	if cm.cacheExists(paths) {
 		t.Error("cache should be cleaned")
 	}
 }
@@ -247,7 +247,7 @@ func TestCacheManager_CleanAllCache(t *testing.T) {
 	os.WriteFile(paths2.Archive, []byte("2"), 0644)
 
 	// Clean all
-	if err := cm.CleanAllCache(); err != nil {
+	if err := cm.cleanAllCache(); err != nil {
 		t.Fatalf("CleanAllCache: %v", err)
 	}
 
@@ -266,7 +266,7 @@ func TestCacheManager_ListCachedPackages(t *testing.T) {
 	cm := NewCacheManager()
 
 	// Initially empty
-	fps, err := cm.ListCachedPackages("arm64-darwin", "test/pkg")
+	fps, err := cm.listCachedPackages("arm64-darwin", "test/pkg")
 	if err != nil {
 		t.Fatalf("ListCachedPackages: %v", err)
 	}
@@ -281,7 +281,7 @@ func TestCacheManager_ListCachedPackages(t *testing.T) {
 	os.WriteFile(paths1.Archive, []byte("1"), 0644)
 	os.WriteFile(paths2.Archive, []byte("2"), 0644)
 
-	fps, err = cm.ListCachedPackages("arm64-darwin", "test/pkg")
+	fps, err = cm.listCachedPackages("arm64-darwin", "test/pkg")
 	if err != nil {
 		t.Fatalf("ListCachedPackages: %v", err)
 	}
@@ -311,7 +311,7 @@ func TestCacheManager_Stats(t *testing.T) {
 	os.WriteFile(paths1.Manifest, []byte("m1"), 0644)
 	os.WriteFile(paths2.Manifest, []byte("m2"), 0644)
 
-	stats, err := cm.Stats()
+	stats, err := cm.stats()
 	if err != nil {
 		t.Fatalf("Stats: %v", err)
 	}
@@ -335,7 +335,7 @@ func TestCacheManager_Stats_Empty(t *testing.T) {
 	cm := NewCacheManager()
 
 	// Stats on empty cache should not error
-	stats, err := cm.Stats()
+	stats, err := cm.stats()
 	if err != nil {
 		t.Fatalf("Stats on empty: %v", err)
 	}

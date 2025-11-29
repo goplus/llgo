@@ -268,7 +268,7 @@ replace github.com/pmezard/go-difflib v1.0.0 => ../depWork
 		t.Fatalf("decodeManifest: %v", err)
 	}
 
-	get := func(prefix string) *DepEntry {
+	get := func(prefix string) *depEntry {
 		for i := range data.Deps {
 			if strings.HasPrefix(data.Deps[i].ID, prefix) {
 				return &data.Deps[i]
@@ -467,7 +467,7 @@ func TestSaveToCache_Success(t *testing.T) {
 	paths := cm.PackagePaths("arm64-apple-darwin", "example.com/lib", "def456")
 
 	// Check manifest contains original content and metadata in Package section
-	content, err := ReadManifest(paths.Manifest)
+	content, err := readManifest(paths.Manifest)
 	if err != nil {
 		t.Fatalf("ReadManifest: %v", err)
 	}
