@@ -12,6 +12,7 @@ require (
 	github.com/goplus/llvm v0.8.5
 	github.com/goplus/mod v0.17.1
 	github.com/qiniu/x v1.15.1
+	gopkg.in/yaml.v3 v3.0.1
 	golang.org/x/tools v0.36.0
 )
 
