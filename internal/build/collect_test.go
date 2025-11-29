@@ -285,11 +285,12 @@ func TestBuildDo_DepFingerprintAndVersion(t *testing.T) {
 	must(os.MkdirAll(depPathDir, 0o755))
 	must(os.MkdirAll(depWorkDir, 0o755))
 
-	writeFile(t, filepath.Join(depPathDir, "go.mod"), "module example.com/deppath\n\ngo 1.23\n")
-	writeFile(t, filepath.Join(depPathDir, "dep.go"), "package deppath\nconst Name = \"path\"\n")
+	writeFile(t, filepath.Join(depPathDir, "go.mod"), "module github.com/matryer/is\n\ngo 1.23\n")
+	writeFile(t, filepath.Join(depPathDir, "is.go"), "package is\nfunc OK(v bool) bool { return v }\n")
 
-	writeFile(t, filepath.Join(depWorkDir, "go.mod"), "module example.com/depwork\n\ngo 1.23\n")
-	writeFile(t, filepath.Join(depWorkDir, "dep.go"), "package depwork\nconst Name = \"work\"\n")
+	writeFile(t, filepath.Join(depWorkDir, "go.mod"), "module github.com/pmezard/go-difflib\n\ngo 1.23\n")
+	must(os.MkdirAll(filepath.Join(depWorkDir, "difflib"), 0o755))
+	writeFile(t, filepath.Join(depWorkDir, "difflib", "difflib.go"), "package difflib\nconst Name = \"work\"\n")
 
 	mainMod := `module example.com/main
 
@@ -297,16 +298,16 @@ go 1.23
 
 require (
   github.com/davecgh/go-spew v1.1.1
-  example.com/deppath v0.1.0
-  example.com/depwork v0.0.1
+  github.com/matryer/is v1.4.1
+  github.com/pmezard/go-difflib v1.0.0
 )
 
 replace github.com/davecgh/go-spew v1.1.1 => github.com/davecgh/go-spew v1.1.0
-replace example.com/deppath v0.1.0 => ../depPath
-replace example.com/depwork v0.0.1 => ../depWork
+replace github.com/matryer/is v1.4.1 => ../depPath
+replace github.com/pmezard/go-difflib v1.0.0 => ../depWork
 `
 	writeFile(t, filepath.Join(mainDir, "go.mod"), mainMod)
-	writeFile(t, filepath.Join(mainDir, "main.go"), "package main\nimport (\"github.com/davecgh/go-spew/spew\"\n\"example.com/deppath\"\n\"example.com/depwork\"\n)\nvar _ = spew.Sdump(deppath.Name) + depwork.Name\nfunc main() {}\n")
+	writeFile(t, filepath.Join(mainDir, "main.go"), "package main\nimport (\"github.com/davecgh/go-spew/spew\"\n\"github.com/matryer/is\"\n\"github.com/pmezard/go-difflib/difflib\"\n)\nvar _ = spew.Sdump(is.OK(true)) + difflib.Name\nfunc main() {}\n")
 
 	oldWD, _ := os.Getwd()
 	goWork := "go 1.24\nuse ./main\nuse ./depWork\nuse ./depPath\n"
@@ -351,10 +352,10 @@ replace example.com/depwork v0.0.1 => ../depWork
 	if dep := get("github.com/davecgh/go-spew"); dep == nil || dep.Version != "v1.1.0" || dep.Fingerprint != "" {
 		t.Fatalf("version replace expected version only: %+v", dep)
 	}
-	if dep := get("example.com/deppath"); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
+	if dep := get("github.com/matryer/is"); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
 		t.Fatalf("relative replace should fingerprint: %+v", dep)
 	}
-	if dep := get("example.com/depwork"); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
+	if dep := get("github.com/pmezard/go-difflib"); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
 		t.Fatalf("workspace dep should fingerprint: %+v", dep)
 	}
 }
