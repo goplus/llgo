@@ -52,6 +52,15 @@ type manifestData struct {
 	Metadata *manifestMetadata      `yaml:"metadata,omitempty"`
 }
 
+// manifestDataOrdered wraps manifestData so we can marshal with deterministic key order.
+type manifestDataOrdered struct {
+	Env      orderedMap      `yaml:"env,omitempty"`
+	Common   orderedMap      `yaml:"common,omitempty"`
+	Package  orderedMap      `yaml:"package,omitempty"`
+	Deps     []depEntry      `yaml:"deps,omitempty"`
+	Metadata *manifestMetadata `yaml:"metadata,omitempty"`
+}
+
 // manifestBuilder builds manifest text with sorted sections.
 type manifestBuilder struct {
 	env    map[string]interface{}
@@ -146,104 +155,18 @@ func buildManifestYAML(data manifestData) (string, error) {
 		return "", nil
 	}
 
-	root := &yaml.Node{Kind: yaml.MappingNode}
-
-	addMapSection := func(name string, m map[string]interface{}) {
-		if len(m) == 0 {
-			return
-		}
-		sec := &yaml.Node{Kind: yaml.MappingNode}
-		for _, k := range sortMapKeys(m) {
-			sec.Content = append(sec.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: k},
-				nodeFromValue(m[k]),
-			)
-		}
-		root.Content = append(root.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: name},
-			sec,
-		)
+	ordered := manifestDataOrdered{
+		Env:      orderedMap(copyMap(data.Env)),
+		Common:   orderedMap(copyMap(data.Common)),
+		Package:  orderedMap(copyMap(data.Package)),
+		Deps:     sortDeps(data.Deps),
+		Metadata: data.Metadata,
 	}
-
-	addDeps := func(name string, deps []depEntry) {
-		if len(deps) == 0 {
-			return
-		}
-		seq := &yaml.Node{Kind: yaml.SequenceNode}
-		for _, dep := range deps {
-			item := &yaml.Node{Kind: yaml.MappingNode}
-			item.Content = append(item.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "id"},
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: dep.ID},
-			)
-			if dep.Version != "" {
-				item.Content = append(item.Content,
-					&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "version"},
-					&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: dep.Version},
-				)
-			}
-			if dep.Fingerprint != "" {
-				item.Content = append(item.Content,
-					&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "fingerprint"},
-					&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: dep.Fingerprint},
-				)
-			}
-			seq.Content = append(seq.Content, item)
-		}
-		root.Content = append(root.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: name},
-			seq,
-		)
-	}
-
-	addMetadata := func(meta *manifestMetadata) {
-		if meta == nil {
-			return
-		}
-		if len(meta.LinkArgs) == 0 && !meta.NeedRt && !meta.NeedPyInit {
-			return
-		}
-
-		n := &yaml.Node{Kind: yaml.MappingNode}
-		if len(meta.LinkArgs) > 0 {
-			seq := &yaml.Node{Kind: yaml.SequenceNode}
-			for _, arg := range meta.LinkArgs {
-				seq.Content = append(seq.Content, &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: arg})
-			}
-			n.Content = append(n.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "link_args"},
-				seq,
-			)
-		}
-		// keep deterministic order: link_args -> need_py_init -> need_rt
-		if meta.NeedPyInit {
-			n.Content = append(n.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "need_py_init"},
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"},
-			)
-		}
-		if meta.NeedRt {
-			n.Content = append(n.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "need_rt"},
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"},
-			)
-		}
-		root.Content = append(root.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "metadata"},
-			n,
-		)
-	}
-
-	addMapSection("env", data.Env)
-	addMapSection("common", data.Common)
-	addMapSection("package", data.Package)
-	addDeps("deps", data.Deps)
-	addMetadata(data.Metadata)
 
 	var buf bytes.Buffer
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
-	if err := enc.Encode(root); err != nil {
+	if err := enc.Encode(ordered); err != nil {
 		return "", err
 	}
 	_ = enc.Close()
@@ -271,6 +194,24 @@ func copyMap(src map[string]interface{}) map[string]interface{} {
 		dup[k] = v
 	}
 	return dup
+}
+
+// orderedMap marshals deterministically with keys sorted.
+type orderedMap map[string]interface{}
+
+// MarshalYAML implements yaml marshaling with sorted keys.
+func (m orderedMap) MarshalYAML() (interface{}, error) {
+	if len(m) == 0 {
+		return nil, nil
+	}
+	node := &yaml.Node{Kind: yaml.MappingNode}
+	for _, k := range sortMapKeys(m) {
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: k},
+			nodeFromValue(m[k]),
+		)
+	}
+	return node, nil
 }
 
 func mergeValue(m map[string]interface{}, key string, v interface{}) map[string]interface{} {
