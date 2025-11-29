@@ -165,34 +165,6 @@ func TestDigestBytes(t *testing.T) {
 	}
 }
 
-func TestDigestFile(t *testing.T) {
-	// Create temp file
-	td := t.TempDir()
-	path := filepath.Join(td, "test.txt")
-	content := []byte("test content")
-	if err := os.WriteFile(path, content, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	hash, err := digestFile(path)
-	if err != nil {
-		t.Fatalf("digestFile: %v", err)
-	}
-
-	// Should match digestBytes
-	expected := digestBytes(content)
-	if hash != expected {
-		t.Errorf("digestFile = %s, want %s", hash, expected)
-	}
-}
-
-func TestDigestFile_NotExist(t *testing.T) {
-	_, err := digestFile("/nonexistent/file.txt")
-	if err == nil {
-		t.Error("expected error for nonexistent file")
-	}
-}
-
 func TestDigestFiles(t *testing.T) {
 	td := t.TempDir()
 
@@ -215,15 +187,23 @@ func TestDigestFiles(t *testing.T) {
 		t.Fatalf("digestFiles: %v", err)
 	}
 
-	hash1 := digestBytes(content1)
-	hash2 := digestBytes(content2)
-
 	// Should be sorted by path
 	if len(list) != 2 || list[0].Path != file1 || list[1].Path != file2 {
 		t.Errorf("structured list not sorted: %+v", list)
 	}
-	if list[0].SHA256 != hash1 || list[1].SHA256 != hash2 {
-		t.Errorf("unexpected hashes: %+v", list)
+	info1, err := os.Stat(file1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	info2, err := os.Stat(file2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list[0].Size != info1.Size() || list[0].ModTime != info1.ModTime().UnixNano() {
+		t.Errorf("metadata mismatch for %s: %+v vs %v", file1, list[0], info1)
+	}
+	if list[1].Size != info2.Size() || list[1].ModTime != info2.ModTime().UnixNano() {
+		t.Errorf("metadata mismatch for %s: %+v vs %v", file2, list[1], info2)
 	}
 }
 
@@ -280,7 +260,6 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		t.Fatalf("digestFilesWithOverlay: %v", err)
 	}
 
-	hashReal := digestBytes(realContent)
 	hashOverlay := digestBytes(overlayContent)
 
 	// Should be sorted by path
@@ -288,11 +267,15 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		t.Fatalf("expected 2 digests, got %d", len(list))
 	}
 
-	if list[0].Path != overlayFile || list[0].SHA256 != hashOverlay {
+	if list[0].Path != overlayFile || list[0].OverlayHash != hashOverlay || list[0].Size != int64(len(overlayContent)) || list[0].ModTime != 0 {
 		t.Errorf("overlay digest mismatch: %+v", list[0])
 	}
-	if list[1].Path != realFile || list[1].SHA256 != hashReal {
-		t.Errorf("real file digest mismatch: %+v", list[1])
+	infoReal, err := os.Stat(realFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list[1].Path != realFile || list[1].Size != infoReal.Size() || list[1].ModTime != infoReal.ModTime().UnixNano() {
+		t.Errorf("real file digest mismatch: %+v vs %v", list[1], infoReal)
 	}
 }
 

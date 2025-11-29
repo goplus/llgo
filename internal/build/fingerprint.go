@@ -253,10 +253,12 @@ func digestBytes(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// fileDigest represents a file with its path and hash.
+// fileDigest represents a file with its path and metadata.
 type fileDigest struct {
-	Path   string `yaml:"path"`
-	SHA256 string `yaml:"sha256"`
+	Path        string `yaml:"path"`
+	Size        int64  `yaml:"size"`
+	ModTime     int64  `yaml:"mtime"`
+	OverlayHash string `yaml:"overlay_hash,omitempty"`
 }
 
 // digestFiles calculates digests for multiple files.
@@ -272,17 +274,25 @@ func digestFilesWithOverlay(paths []string, overlay map[string][]byte) ([]fileDi
 
 	digests := make([]fileDigest, 0, len(paths))
 	for _, path := range paths {
-		var hash string
 		if content, ok := overlay[path]; ok {
-			hash = digestBytes(content)
-		} else {
-			var err error
-			hash, err = digestFile(path)
-			if err != nil {
-				return nil, fmt.Errorf("digest file %q: %w", path, err)
+			fd := fileDigest{
+				Path:    path,
+				Size:    int64(len(content)),
+				ModTime: 0,
 			}
+			fd.OverlayHash = digestBytes(content)
+			digests = append(digests, fd)
+			continue
 		}
-		digests = append(digests, fileDigest{Path: path, SHA256: hash})
+		info, err := os.Stat(path)
+		if err != nil {
+			return nil, fmt.Errorf("stat file %q: %w", path, err)
+		}
+		digests = append(digests, fileDigest{
+			Path:    path,
+			Size:    info.Size(),
+			ModTime: info.ModTime().UnixNano(),
+		})
 	}
 
 	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
