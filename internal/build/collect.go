@@ -238,8 +238,12 @@ func moduleVersion(mod *gopackages.Module) string {
 	if mod == nil {
 		return ""
 	}
-	if mod.Replace != nil && mod.Replace.Version != "" {
-		return mod.Replace.Version
+	if mod.Replace != nil {
+		// replace to local path (Version empty) should not use version for fingerprint
+		if mod.Replace.Version != "" {
+			return mod.Replace.Version
+		}
+		return ""
 	}
 	return mod.Version
 }

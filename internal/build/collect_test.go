@@ -21,6 +21,7 @@ package build
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/crosscompile"
@@ -197,6 +198,78 @@ func TestCollectFingerprintDependencies(t *testing.T) {
 	}
 	if !seenFingerprint {
 		t.Fatalf("workspace dependency not recorded with fingerprint: %+v", data.Deps)
+	}
+}
+
+func TestCollectFingerprint_DepReplaceAndWork(t *testing.T) {
+	td := t.TempDir()
+
+	ctx := &context{
+		conf:         &packages.Config{},
+		buildConf:    &Config{Goos: "linux", Goarch: "amd64"},
+		crossCompile: crosscompile.Export{},
+		pkgs:         map[*packages.Package]Package{},
+		pkgByID:      map[string]Package{},
+	}
+
+	newPkg := func(id, path, content string, mod *gopackages.Module) *aPackage {
+		file := filepath.Join(td, strings.ReplaceAll(path, "/", "_")) + ".go"
+		if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+		p := &packages.Package{ID: id, PkgPath: path, GoFiles: []string{file}, Module: mod}
+		return &aPackage{Package: p}
+	}
+
+	// 1) go.mod replace with version
+	verMod := &gopackages.Module{Path: "example.com/depver", Version: "v1.0.0", Replace: &gopackages.Module{Path: "example.com/depver", Version: "v2.0.0"}}
+	depVer := newPkg("example.com/depver", "example.com/depver", "package depver", verMod)
+
+	// 2) go.mod replace to relative path -> fingerprint
+	relMod := &gopackages.Module{Path: "example.com/deppath", Version: "v0.1.0", Replace: &gopackages.Module{Path: "../local/deppath"}}
+	depPath := newPkg("example.com/deppath", "example.com/deppath", "package deppath", relMod)
+
+	// 3) go.work replace to local path -> fingerprint (Dir set)
+	workMod := &gopackages.Module{Path: "example.com/depwork", Version: "v0.0.5", Replace: &gopackages.Module{Path: "example.com/depwork", Dir: filepath.Join(td, "depwork")}}
+	depWork := newPkg("example.com/depwork", "example.com/depwork", "package depwork", workMod)
+
+	ctx.pkgByID[depVer.ID] = depVer
+	ctx.pkgByID[depPath.ID] = depPath
+	ctx.pkgByID[depWork.ID] = depWork
+
+	mainPkg := newPkg("example.com/main", "example.com/main", "package main", nil)
+	mainPkg.Package.Imports = map[string]*packages.Package{
+		depVer.PkgPath:  depVer.Package,
+		depPath.PkgPath: depPath.Package,
+		depWork.PkgPath: depWork.Package,
+	}
+
+	if err := ctx.collectFingerprint(mainPkg); err != nil {
+		t.Fatalf("collectFingerprint: %v", err)
+	}
+
+	data, err := decodeManifest(mainPkg.Manifest)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
+	}
+
+	find := func(id string) *DepEntry {
+		for i := range data.Deps {
+			if data.Deps[i].ID == id {
+				return &data.Deps[i]
+			}
+		}
+		return nil
+	}
+
+	if dep := find(depVer.ID); dep == nil || dep.Version != "v2.0.0" || dep.Fingerprint != "" {
+		t.Fatalf("version replace not recorded correctly: %+v", dep)
+	}
+	if dep := find(depPath.ID); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
+		t.Fatalf("relative replace should use fingerprint: %+v", dep)
+	}
+	if dep := find(depWork.ID); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
+		t.Fatalf("go.work replace should use fingerprint: %+v", dep)
 	}
 }
 
