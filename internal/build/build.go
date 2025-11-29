@@ -349,12 +349,13 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	output := conf.OutFile != ""
 	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
-		pkgs:         map[*packages.Package]Package{},
-		pkgByID:      map[string]Package{},
-		output:       output,
-		buildConf:    conf,
-		crossCompile: export,
-		cTransformer: cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
+		fingerprinting: make(map[string]bool),
+		pkgs:           map[*packages.Package]Package{},
+		pkgByID:        map[string]Package{},
+		output:         output,
+		buildConf:      conf,
+		crossCompile:   export,
+		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
 	}
 
 	// default runtime globals must be registered before packages are built
@@ -497,19 +498,20 @@ const (
 )
 
 type context struct {
-	env     *llvm.Env
-	conf    *packages.Config
-	progSSA *ssa.Program
-	prog    llssa.Program
-	dedup   packages.Deduper
-	patches cl.Patches
-	built   map[string]none
-	initial []*packages.Package
-	pkgs    map[*packages.Package]Package // cache for lookup
-	pkgByID map[string]Package            // cache for lookup by pkg.ID
-	mode    Mode
-	nLibdir int32
-	output  bool
+	env            *llvm.Env
+	conf           *packages.Config
+	progSSA        *ssa.Program
+	prog           llssa.Program
+	dedup          packages.Deduper
+	patches        cl.Patches
+	built          map[string]none
+	fingerprinting map[string]bool
+	initial        []*packages.Package
+	pkgs           map[*packages.Package]Package // cache for lookup
+	pkgByID        map[string]Package            // cache for lookup by pkg.ID
+	mode           Mode
+	nLibdir        int32
+	output         bool
 
 	buildConf    *Config
 	crossCompile crosscompile.Export

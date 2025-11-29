@@ -26,10 +26,24 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/packages"
+	gopackages "golang.org/x/tools/go/packages"
 )
 
 // collectFingerprint collects all inputs and generates fingerprint for a package.
 func (c *context) collectFingerprint(pkg *aPackage) error {
+	if pkg.Manifest != "" && pkg.Fingerprint != "" {
+		return nil
+	}
+	if c.fingerprinting == nil {
+		c.fingerprinting = make(map[string]bool)
+	}
+	if c.fingerprinting[pkg.ID] {
+		return fmt.Errorf("fingerprint cycle detected for %s", pkg.ID)
+	}
+	c.fingerprinting[pkg.ID] = true
+	defer delete(c.fingerprinting, pkg.ID)
+
 	m := NewManifestBuilder()
 
 	// Env section
@@ -40,6 +54,11 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 
 	// Package section
 	if err := c.collectPackageInputs(m, pkg); err != nil {
+		return err
+	}
+
+	// Dependency section
+	if err := c.collectDependencyInputs(m, pkg); err != nil {
 		return err
 	}
 
@@ -78,7 +97,9 @@ func (c *context) collectEnvInputs(m *ManifestBuilder) {
 // collectCommonInputs collects common build configuration inputs.
 func (c *context) collectCommonInputs(m *ManifestBuilder) {
 	m.AddCommon("ABI_MODE", fmt.Sprintf("%d", c.buildConf.AbiMode))
-	m.AddCommon("BUILD_TAGS", c.buildConf.Tags)
+	if c.buildConf.Tags != "" {
+		m.AddCommon("BUILD_TAGS", strings.Split(c.buildConf.Tags, ","))
+	}
 	m.AddCommon("TARGET", c.buildConf.Target)
 	m.AddCommon("TARGET_ABI", c.crossCompile.TargetABI)
 
@@ -87,13 +108,13 @@ func (c *context) collectCommonInputs(m *ManifestBuilder) {
 		m.AddCommon("CC", c.crossCompile.CC)
 	}
 	if len(c.crossCompile.CCFLAGS) > 0 {
-		m.AddCommon("CCFLAGS", strings.Join(c.crossCompile.CCFLAGS, " "))
+		m.AddCommon("CCFLAGS", c.crossCompile.CCFLAGS)
 	}
 	if len(c.crossCompile.CFLAGS) > 0 {
-		m.AddCommon("CFLAGS", strings.Join(c.crossCompile.CFLAGS, " "))
+		m.AddCommon("CFLAGS", c.crossCompile.CFLAGS)
 	}
 	if len(c.crossCompile.LDFLAGS) > 0 {
-		m.AddCommon("LDFLAGS", strings.Join(c.crossCompile.LDFLAGS, " "))
+		m.AddCommon("LDFLAGS", c.crossCompile.LDFLAGS)
 	}
 	if c.crossCompile.Linker != "" {
 		m.AddCommon("LINKER", c.crossCompile.Linker)
@@ -101,9 +122,9 @@ func (c *context) collectCommonInputs(m *ManifestBuilder) {
 
 	// Extra files from target configuration
 	if len(c.crossCompile.ExtraFiles) > 0 {
-		extraDigest, err := DigestFiles(c.crossCompile.ExtraFiles)
-		if err == nil && extraDigest != "" {
-			m.AddCommon("EXTRA_FILES", extraDigest)
+		_, extraList, err := DigestFiles(c.crossCompile.ExtraFiles)
+		if err == nil && len(extraList) > 0 {
+			m.AddCommon("EXTRA_FILES", extraList)
 		}
 	}
 }
@@ -116,44 +137,111 @@ func (c *context) collectPackageInputs(m *ManifestBuilder, pkg *aPackage) error 
 	m.AddPackage("PKG_ID", p.ID)
 
 	// Go source files
-	goFilesDigest, err := DigestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
+	_, goFilesList, err := DigestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
 	if err != nil {
 		return fmt.Errorf("digest go files: %w", err)
 	}
-	m.AddPackage("GO_FILES", goFilesDigest)
+	m.AddPackage("GO_FILES", goFilesList)
 
 	// Alt package files (if any)
 	if pkg.AltPkg != nil {
-		altFilesDigest, err := DigestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
+		_, altList, err := DigestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
 		if err != nil {
 			return fmt.Errorf("digest alt go files: %w", err)
 		}
-		m.AddPackage("ALT_GO_FILES", altFilesDigest)
+		m.AddPackage("ALT_GO_FILES", altList)
 	}
 
 	// Other files (C, assembly, etc.)
 	if len(p.OtherFiles) > 0 {
-		otherFilesDigest, err := DigestFiles(p.OtherFiles)
+		_, otherList, err := DigestFiles(p.OtherFiles)
 		if err != nil {
 			return fmt.Errorf("digest other files: %w", err)
 		}
-		m.AddPackage("OTHER_FILES", otherFilesDigest)
+		m.AddPackage("OTHER_FILES", otherList)
 	}
 
 	// Rewrite vars
 	if len(pkg.rewriteVars) > 0 {
-		var rewrites []string
+		rewrites := make(map[string]string, len(pkg.rewriteVars))
 		for k, v := range pkg.rewriteVars {
-			rewrites = append(rewrites, fmt.Sprintf("%s=%s", k, v))
+			rewrites[k] = v
 		}
-		sort.Strings(rewrites)
-		m.AddPackage("REWRITE_VARS", strings.Join(rewrites, ","))
+		m.AddPackage("REWRITE_VARS", rewrites)
 	}
 
 	// Add metadata fields if available (for cache saving)
 	// (LINK_ARGS/NEED_RT/NEED_PY_INIT are appended later in saveToCache)
 
 	return nil
+}
+
+// collectDependencyInputs adds dependency fingerprints/versions into manifest.
+func (c *context) collectDependencyInputs(m *ManifestBuilder, pkg *aPackage) error {
+	if len(pkg.Imports) == 0 {
+		return nil
+	}
+
+	deps := make([]*packages.Package, 0, len(pkg.Imports))
+	for _, dep := range pkg.Imports {
+		if dep == nil || dep.ID == pkg.ID {
+			continue
+		}
+		deps = append(deps, dep)
+	}
+
+	sort.Slice(deps, func(i, j int) bool { return deps[i].ID < deps[j].ID })
+
+	for _, dep := range deps {
+		depEntry, err := c.dependencyFingerprint(dep)
+		if err != nil {
+			return err
+		}
+		m.AddDep(depEntry)
+	}
+
+	return nil
+}
+
+func (c *context) dependencyFingerprint(dep *packages.Package) (DepEntry, error) {
+	entry := DepEntry{ID: dep.ID}
+	if v := moduleVersion(dep.Module); v != "" {
+		entry.Version = v
+		return entry, nil
+	}
+
+	if c.pkgByID != nil {
+		if aDep, ok := c.pkgByID[dep.ID]; ok {
+			if aDep.Fingerprint == "" {
+				if err := c.collectFingerprint(aDep); err != nil {
+					return entry, fmt.Errorf("collect fingerprint for %s: %w", dep.ID, err)
+				}
+			}
+			entry.Fingerprint = aDep.Fingerprint
+			return entry, nil
+		}
+	}
+
+	temp := &aPackage{Package: dep}
+	if c.pkgByID == nil {
+		c.pkgByID = make(map[string]Package)
+	}
+	c.pkgByID[dep.ID] = temp
+	if err := c.collectFingerprint(temp); err != nil {
+		return entry, fmt.Errorf("collect fingerprint for %s: %w", dep.ID, err)
+	}
+	entry.Fingerprint = temp.Fingerprint
+	return entry, nil
+}
+
+func moduleVersion(mod *gopackages.Module) string {
+	if mod == nil {
+		return ""
+	}
+	if mod.Replace != nil && mod.Replace.Version != "" {
+		return mod.Replace.Version
+	}
+	return mod.Version
 }
 
 // getLLVMVersion returns the cached LLVM version or detects it.
@@ -243,10 +331,24 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	return true
 }
 
-// parseManifestMetadata extracts metadata from manifest [Package] section.
+// parseManifestMetadata extracts metadata from manifest content.
+// It supports the new YAML format and falls back to the legacy INI layout for
+// backward compatibility with existing cache entries.
 func parseManifestMetadata(content string) (*CacheArchiveMetadata, error) {
 	meta := &CacheArchiveMetadata{}
+	if data, err := decodeManifest(content); err == nil {
+		if data.Metadata != nil {
+			meta.LinkArgs = append([]string(nil), data.Metadata.LinkArgs...)
+			meta.NeedRt = data.Metadata.NeedRt
+			meta.NeedPyInit = data.Metadata.NeedPyInit
+		}
+		return meta, nil
+	}
 
+	return parseManifestMetadataLegacy(content, meta)
+}
+
+func parseManifestMetadataLegacy(content string, meta *CacheArchiveMetadata) (*CacheArchiveMetadata, error) {
 	// Find Package section
 	idx := strings.Index(content, "[Package]\n")
 	if idx == -1 {
@@ -340,8 +442,8 @@ func (c *context) saveToCache(pkg *aPackage) error {
 	}
 
 	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).
-	manifestWithMeta := pkg.Manifest
-	if manifestWithMeta == "" {
+	manifestContent := pkg.Manifest
+	if manifestContent == "" {
 		// Fallback: rebuild if missing (should not happen in normal flow).
 		m := NewManifestBuilder()
 		c.collectEnvInputs(m)
@@ -349,22 +451,29 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		if err := c.collectPackageInputs(m, pkg); err != nil {
 			return err
 		}
-		manifestWithMeta = m.Build()
+		manifestContent = m.Build()
 	}
-	manifestWithMeta = strings.TrimRight(manifestWithMeta, "\n") + "\n"
-	if !strings.Contains(manifestWithMeta, "[Package]") {
-		manifestWithMeta += "[Package]\n"
+
+	data, err := decodeManifest(manifestContent)
+	if err != nil {
+		return fmt.Errorf("decode manifest: %w", err)
 	}
-	if len(pkg.LinkArgs) > 0 {
-		manifestWithMeta += fmt.Sprintf("LINK_ARGS = %s\n", strings.Join(pkg.LinkArgs, " "))
+
+	meta := &ManifestMetadata{
+		LinkArgs:   append([]string(nil), pkg.LinkArgs...),
+		NeedRt:     pkg.NeedRt,
+		NeedPyInit: pkg.NeedPyInit,
 	}
-	if pkg.NeedRt {
-		manifestWithMeta += "NEED_RT = true\n"
+	if len(meta.LinkArgs) == 0 && !meta.NeedRt && !meta.NeedPyInit {
+		data.Metadata = nil
+	} else {
+		data.Metadata = meta
 	}
-	if pkg.NeedPyInit {
-		manifestWithMeta += "NEED_PY_INIT = true\n"
+
+	manifestWithMeta, err := buildManifestYAML(data)
+	if err != nil {
+		return err
 	}
-	manifestWithMeta += "\n"
 
 	// Write manifest with metadata
 	if err := WriteManifest(paths.Manifest, manifestWithMeta); err != nil {

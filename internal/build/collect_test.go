@@ -21,11 +21,11 @@ package build
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/packages"
+	gopackages "golang.org/x/tools/go/packages"
 )
 
 func TestCollectFingerprint(t *testing.T) {
@@ -69,22 +69,17 @@ func TestCollectFingerprint(t *testing.T) {
 		t.Errorf("fingerprint length = %d, want 64", len(pkg.Fingerprint))
 	}
 
-	// Check manifest contains expected sections
-	if !strings.Contains(pkg.Manifest, "[Env]") {
-		t.Error("manifest should contain Env section")
+	data, err := decodeManifest(pkg.Manifest)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
 	}
-	if !strings.Contains(pkg.Manifest, "[Common]") {
-		t.Error("manifest should contain Common section")
+	if len(data.Env) == 0 || len(data.Common) == 0 || len(data.Package) == 0 {
+		t.Fatal("manifest sections should not be empty")
 	}
-	if !strings.Contains(pkg.Manifest, "[Package]") {
-		t.Error("manifest should contain Package section")
-	}
-
-	// Check specific values
-	if !strings.Contains(pkg.Manifest, "GOOS = darwin") {
+	if data.Env["GOOS"] != "darwin" {
 		t.Error("manifest should contain GOOS = darwin")
 	}
-	if !strings.Contains(pkg.Manifest, "PKG_PATH = example.com/test") {
+	if data.Package["PKG_PATH"] != "example.com/test" {
 		t.Error("manifest should contain PKG_PATH")
 	}
 }
@@ -130,6 +125,78 @@ func TestCollectFingerprintDeterminism(t *testing.T) {
 
 	if pkg1.Fingerprint != pkg2.Fingerprint {
 		t.Error("same inputs should produce same fingerprint")
+	}
+}
+
+func TestCollectFingerprintDependencies(t *testing.T) {
+	td := t.TempDir()
+
+	depFile := filepath.Join(td, "dep.go")
+	if err := os.WriteFile(depFile, []byte("package dep"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mainFile := filepath.Join(td, "main.go")
+	if err := os.WriteFile(mainFile, []byte("package main"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := &context{
+		conf:         &packages.Config{},
+		buildConf:    &Config{Goos: "linux", Goarch: "amd64"},
+		crossCompile: crosscompile.Export{},
+		pkgs:         map[*packages.Package]Package{},
+		pkgByID:      map[string]Package{},
+	}
+
+	depPkg := &aPackage{Package: &packages.Package{
+		ID:      "example.com/dep",
+		PkgPath: "example.com/dep",
+		GoFiles: []string{depFile},
+	}}
+	depWithVersion := &aPackage{Package: &packages.Package{
+		ID:      "example.com/depver",
+		PkgPath: "example.com/depver",
+		GoFiles: []string{depFile},
+		Module:  &gopackages.Module{Path: "example.com/depver", Version: "v1.0.0"},
+	}}
+	ctx.pkgByID[depPkg.ID] = depPkg
+	ctx.pkgByID[depWithVersion.ID] = depWithVersion
+
+	mainPkg := &aPackage{Package: &packages.Package{
+		ID:      "example.com/main",
+		PkgPath: "example.com/main",
+		GoFiles: []string{mainFile},
+		Imports: map[string]*packages.Package{
+			"example.com/dep":    depPkg.Package,
+			"example.com/depver": depWithVersion.Package,
+		},
+	}}
+
+	if err := ctx.collectFingerprint(mainPkg); err != nil {
+		t.Fatalf("collectFingerprint: %v", err)
+	}
+
+	data, err := decodeManifest(mainPkg.Manifest)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
+	}
+	if len(data.Deps) != 2 {
+		t.Fatalf("expected 2 deps, got %d", len(data.Deps))
+	}
+	var seenFingerprint, seenVersion bool
+	for _, dep := range data.Deps {
+		switch dep.ID {
+		case "example.com/depver":
+			seenVersion = dep.Version == "v1.0.0" && dep.Fingerprint == ""
+		case "example.com/dep":
+			seenFingerprint = dep.Fingerprint == depPkg.Fingerprint && dep.Version == ""
+		}
+	}
+	if !seenVersion {
+		t.Fatalf("versioned dependency not recorded with version: %+v", data.Deps)
+	}
+	if !seenFingerprint {
+		t.Fatalf("workspace dependency not recorded with fingerprint: %+v", data.Deps)
 	}
 }
 
@@ -294,8 +361,13 @@ func TestSaveToCache_Success(t *testing.T) {
 			GoFiles: []string{objFile.Name()}, // Add GoFiles for manifest generation
 		},
 		Fingerprint: "def456",
-		Manifest:    "[Env]\nGOOS = darwin\n\n",
-		LLFiles:     []string{objFile.Name()},
+		Manifest: func() string {
+			m := NewManifestBuilder()
+			m.AddEnv("GOOS", "darwin")
+			m.AddPackage("PKG_PATH", "example.com/lib")
+			return m.Build()
+		}(),
+		LLFiles: []string{objFile.Name()},
 	}
 
 	if err := ctx.saveToCache(pkg); err != nil {
@@ -311,15 +383,15 @@ func TestSaveToCache_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadManifest: %v", err)
 	}
-	if !strings.Contains(content, "GOOS = darwin") {
-		t.Errorf("manifest should contain original content")
+	data, err := decodeManifest(content)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
 	}
-	if !strings.Contains(content, "[Package]") {
-		t.Errorf("manifest should contain Package section")
+	if data.Env["GOOS"] != "darwin" {
+		t.Errorf("manifest should contain original env content")
 	}
-	// Metadata should not be in JSON format
-	if strings.Contains(content, "[Metadata]") {
-		t.Errorf("manifest should not contain [Metadata] section (should be in Package section)")
+	if data.Metadata != nil {
+		t.Errorf("metadata should be empty when no link args/runtime flags")
 	}
 
 	// Check archive exists

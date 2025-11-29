@@ -33,20 +33,19 @@ func TestManifestBuilder_Build(t *testing.T) {
 	m.AddPackage("PKG_PATH", "example.com/foo")
 
 	content := m.Build()
+	data, err := decodeManifest(content)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
+	}
 
-	expected := `[Env]
-GOARCH = arm64
-GOOS = darwin
-
-[Common]
-DEBUG = false
-
-[Package]
-PKG_PATH = example.com/foo
-
-`
-	if content != expected {
-		t.Errorf("unexpected manifest:\ngot:\n%s\nwant:\n%s", content, expected)
+	if data.Env["GOARCH"] != "arm64" || data.Env["GOOS"] != "darwin" {
+		t.Fatalf("env section mismatch: %+v", data.Env)
+	}
+	if data.Common["DEBUG"] != "false" {
+		t.Fatalf("common section mismatch: %+v", data.Common)
+	}
+	if data.Package["PKG_PATH"] != "example.com/foo" {
+		t.Fatalf("package section mismatch: %+v", data.Package)
 	}
 }
 
@@ -62,41 +61,15 @@ func TestManifestBuilder_BuildSorting(t *testing.T) {
 	m.AddPackage("AAA", "first")
 
 	content := m.Build()
-
-	// Verify sorting within sections
-	lines := strings.Split(content, "\n")
-
-	// Find Env section
-	envStart := -1
-	commonStart := -1
-	pkgStart := -1
-	for i, line := range lines {
-		if line == "[Env]" {
-			envStart = i
-		} else if line == "[Common]" {
-			commonStart = i
-		} else if line == "[Package]" {
-			pkgStart = i
-		}
+	// order should appear sorted in string output
+	if !strings.Contains(content, "env:\n  A_KEY: a\n  M_KEY: m\n  Z_KEY: z") {
+		t.Fatalf("env section not sorted:\n%s", content)
 	}
-
-	if envStart == -1 || commonStart == -1 || pkgStart == -1 {
-		t.Fatalf("missing sections in manifest:\n%s", content)
+	if !strings.Contains(content, "common:\n  APPLE: \"2\"\n  ZEBRA: \"1\"") {
+		t.Fatalf("common section not sorted:\n%s", content)
 	}
-
-	// Check Env section is sorted
-	if lines[envStart+1] != "A_KEY = a" || lines[envStart+2] != "M_KEY = m" || lines[envStart+3] != "Z_KEY = z" {
-		t.Errorf("Env section not sorted properly:\n%s", content)
-	}
-
-	// Check Common section is sorted
-	if lines[commonStart+1] != "APPLE = 2" || lines[commonStart+2] != "ZEBRA = 1" {
-		t.Errorf("Common section not sorted properly:\n%s", content)
-	}
-
-	// Check Package section is sorted
-	if lines[pkgStart+1] != "AAA = first" || lines[pkgStart+2] != "ZZZ = last" {
-		t.Errorf("Package section not sorted properly:\n%s", content)
+	if !strings.Contains(content, "package:\n  AAA: first\n  ZZZ: last") {
+		t.Fatalf("package section not sorted:\n%s", content)
 	}
 }
 
@@ -233,7 +206,7 @@ func TestDigestFiles(t *testing.T) {
 	}
 
 	// Test with files in reverse order (should be sorted)
-	result, err := DigestFiles([]string{file2, file1})
+	result, list, err := DigestFiles([]string{file2, file1})
 	if err != nil {
 		t.Fatalf("DigestFiles: %v", err)
 	}
@@ -246,15 +219,21 @@ func TestDigestFiles(t *testing.T) {
 	if result != expected {
 		t.Errorf("DigestFiles =\n%s\nwant:\n%s", result, expected)
 	}
+	if len(list) != 2 || list[0].Path != file1 || list[1].Path != file2 {
+		t.Errorf("structured list not sorted: %+v", list)
+	}
 }
 
 func TestDigestFiles_Empty(t *testing.T) {
-	result, err := DigestFiles([]string{})
+	result, list, err := DigestFiles([]string{})
 	if err != nil {
 		t.Fatalf("DigestFiles: %v", err)
 	}
 	if result != "" {
 		t.Errorf("DigestFiles empty = %q, want empty string", result)
+	}
+	if list != nil {
+		t.Errorf("DigestFiles empty list = %#v, want nil", list)
 	}
 }
 
@@ -271,8 +250,8 @@ func TestDigestFiles_Determinism(t *testing.T) {
 	}
 
 	// Different order should produce same result
-	result1, _ := DigestFiles([]string{file1, file2})
-	result2, _ := DigestFiles([]string{file2, file1})
+	result1, _, _ := DigestFiles([]string{file1, file2})
+	result2, _, _ := DigestFiles([]string{file2, file1})
 
 	if result1 != result2 {
 		t.Errorf("order should not affect DigestFiles result")
@@ -296,7 +275,7 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		overlayFile: overlayContent,
 	}
 
-	result, err := DigestFilesWithOverlay([]string{overlayFile, realFile}, overlay)
+	result, list, err := DigestFilesWithOverlay([]string{overlayFile, realFile}, overlay)
 	if err != nil {
 		t.Fatalf("DigestFilesWithOverlay: %v", err)
 	}
@@ -305,9 +284,8 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 	hashOverlay := DigestBytes(overlayContent)
 
 	// Should be sorted by path
-	parts := strings.Split(result, ",")
-	if len(parts) != 2 {
-		t.Fatalf("expected 2 parts, got %d", len(parts))
+	if len(list) != 2 {
+		t.Fatalf("expected 2 digests, got %d", len(list))
 	}
 
 	// Check overlay file uses overlay content
@@ -322,12 +300,15 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 }
 
 func TestDigestFilesWithOverlay_Empty(t *testing.T) {
-	result, err := DigestFilesWithOverlay([]string{}, nil)
+	result, list, err := DigestFilesWithOverlay([]string{}, nil)
 	if err != nil {
 		t.Fatalf("DigestFilesWithOverlay: %v", err)
 	}
 	if result != "" {
 		t.Errorf("DigestFilesWithOverlay empty = %q, want empty string", result)
+	}
+	if list != nil {
+		t.Errorf("DigestFilesWithOverlay empty list = %#v, want nil", list)
 	}
 }
 
@@ -337,13 +318,15 @@ func TestManifestBuilder_SpecialCharacters(t *testing.T) {
 	m.AddPackage("FLAGS", "-X main.version=1.0.0 -ldflags=-s")
 
 	content := m.Build()
-
-	// Should contain the special characters as-is
-	if !strings.Contains(content, "PATH = /usr/bin:/usr/local/bin") {
-		t.Error("special characters not preserved in PATH")
+	data, err := decodeManifest(content)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
 	}
-	if !strings.Contains(content, "FLAGS = -X main.version=1.0.0 -ldflags=-s") {
-		t.Error("special characters not preserved in FLAGS")
+	if data.Env["PATH"] != "/usr/bin:/usr/local/bin" {
+		t.Errorf("PATH not preserved: %+v", data.Env)
+	}
+	if data.Package["FLAGS"] != "-X main.version=1.0.0 -ldflags=-s" {
+		t.Errorf("FLAGS not preserved: %+v", data.Package)
 	}
 }
 
@@ -353,9 +336,15 @@ func TestManifestBuilder_MultipleValues(t *testing.T) {
 	m.AddEnv("KEY", "value2") // Duplicate key
 
 	content := m.Build()
-
-	// Both should appear (no deduplication)
-	if strings.Count(content, "KEY = ") != 2 {
-		t.Errorf("duplicate keys should both appear:\n%s", content)
+	data, err := decodeManifest(content)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
+	}
+	values, ok := data.Env["KEY"].([]interface{})
+	if !ok {
+		t.Fatalf("duplicate key should be slice, got %T", data.Env["KEY"])
+	}
+	if len(values) != 2 || values[0] != "value1" || values[1] != "value2" {
+		t.Errorf("duplicate values not preserved: %+v", values)
 	}
 }
