@@ -17,7 +17,6 @@
 package build
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -45,67 +44,129 @@ type manifestMetadata struct {
 
 // manifestData is the structured representation of manifest content.
 type manifestData struct {
-	Env      map[string]interface{} `yaml:"env,omitempty"`
-	Common   map[string]interface{} `yaml:"common,omitempty"`
-	Package  map[string]interface{} `yaml:"package,omitempty"`
-	Deps     []depEntry             `yaml:"deps,omitempty"`
-	Metadata *manifestMetadata      `yaml:"metadata,omitempty"`
+	Env      *envSection       `yaml:"env,omitempty"`
+	Common   *commonSection    `yaml:"common,omitempty"`
+	Package  *packageSection   `yaml:"package,omitempty"`
+	Deps     []depEntry        `yaml:"deps,omitempty"`
+	Metadata *manifestMetadata `yaml:"metadata,omitempty"`
 }
 
-// manifestDataOrdered wraps manifestData so we can marshal with deterministic key order.
-type manifestDataOrdered struct {
-	Env      orderedMap      `yaml:"env,omitempty"`
-	Common   orderedMap      `yaml:"common,omitempty"`
-	Package  orderedMap      `yaml:"package,omitempty"`
-	Deps     []depEntry      `yaml:"deps,omitempty"`
-	Metadata *manifestMetadata `yaml:"metadata,omitempty"`
+// orderedStringMap keeps deterministic order for map[string]string when marshaling.
+type orderedStringMap map[string]string
+
+func (m orderedStringMap) Add(key, val string) orderedStringMap {
+	if m == nil {
+		m = make(map[string]string)
+	}
+	m[key] = val
+	return m
+}
+
+func (m orderedStringMap) AddMap(src map[string]string) orderedStringMap {
+	if len(src) == 0 {
+		return m
+	}
+	if m == nil {
+		m = make(map[string]string, len(src))
+	}
+	for k, v := range src {
+		m[k] = v
+	}
+	return m
+}
+
+func (m orderedStringMap) MarshalYAML() (interface{}, error) {
+	if len(m) == 0 {
+		return nil, nil
+	}
+	type kv struct{ K, V string }
+	list := make([]kv, 0, len(m))
+	for k, v := range m {
+		list = append(list, kv{k, v})
+	}
+	sort.Slice(list, func(i, j int) bool { return list[i].K < list[j].K })
+	out := &yaml.Node{Kind: yaml.MappingNode}
+	for _, item := range list {
+		out.Content = append(out.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: item.K},
+			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: item.V},
+		)
+	}
+	return out, nil
+}
+
+// envSection holds fixed environment fields and optional vars.
+type envSection struct {
+	Goos        string           `yaml:"goos,omitempty"`
+	Goarch      string           `yaml:"goarch,omitempty"`
+	LlvmTriple  string           `yaml:"llvm_triple,omitempty"`
+	LlgoVersion string           `yaml:"llgo_version,omitempty"`
+	GoVersion   string           `yaml:"go_version,omitempty"`
+	LlvmVersion string           `yaml:"llvm_version,omitempty"`
+	Vars        orderedStringMap `yaml:"vars,omitempty"`
+}
+
+func (s *envSection) empty() bool {
+	return s.Goos == "" && s.Goarch == "" && s.LlvmTriple == "" && s.LlgoVersion == "" && s.GoVersion == "" && s.LlvmVersion == "" && len(s.Vars) == 0
+}
+
+type commonSection struct {
+	AbiMode    string       `yaml:"abi_mode,omitempty"`
+	BuildTags  []string     `yaml:"build_tags,omitempty"`
+	Target     string       `yaml:"target,omitempty"`
+	TargetABI  string       `yaml:"target_abi,omitempty"`
+	CC         string       `yaml:"cc,omitempty"`
+	CCFlags    []string     `yaml:"ccflags,omitempty"`
+	CFlags     []string     `yaml:"cflags,omitempty"`
+	LDFlags    []string     `yaml:"ldflags,omitempty"`
+	Linker     string       `yaml:"linker,omitempty"`
+	ExtraFiles []fileDigest `yaml:"extra_files,omitempty"`
+}
+
+func (s *commonSection) empty() bool {
+	return s.AbiMode == "" && len(s.BuildTags) == 0 && s.Target == "" && s.TargetABI == "" &&
+		s.CC == "" && len(s.CCFlags) == 0 && len(s.CFlags) == 0 && len(s.LDFlags) == 0 && s.Linker == "" && len(s.ExtraFiles) == 0
+}
+
+type packageSection struct {
+	PkgPath     string           `yaml:"pkg_path,omitempty"`
+	PkgID       string           `yaml:"pkg_id,omitempty"`
+	GoFiles     []fileDigest     `yaml:"go_files,omitempty"`
+	AltGoFiles  []fileDigest     `yaml:"alt_go_files,omitempty"`
+	OtherFiles  []fileDigest     `yaml:"other_files,omitempty"`
+	RewriteVars orderedStringMap `yaml:"rewrite_vars,omitempty"`
+}
+
+func (s *packageSection) empty() bool {
+	return s.PkgPath == "" && s.PkgID == "" && len(s.GoFiles) == 0 && len(s.AltGoFiles) == 0 && len(s.OtherFiles) == 0 && len(s.RewriteVars) == 0
 }
 
 // manifestBuilder builds manifest text with sorted sections.
 type manifestBuilder struct {
-	env    map[string]interface{}
-	common map[string]interface{}
-	pkg    map[string]interface{}
+	env    envSection
+	common commonSection
+	pkg    packageSection
 	deps   []depEntry
 	meta   *manifestMetadata
 }
 
-// NewManifestBuilder creates a new manifestBuilder.
-func NewManifestBuilder() *manifestBuilder {
+// newManifestBuilder creates a new manifestBuilder.
+func newManifestBuilder() *manifestBuilder {
 	return &manifestBuilder{}
-}
-
-// AddEnv adds a key-value pair to the Env section.
-func (m *manifestBuilder) AddEnv(key, value string) {
-	m.env = mergeValue(m.env, key, value)
-}
-
-// AddCommon adds a key-value pair to the Common section.
-func (m *manifestBuilder) AddCommon(key string, value interface{}) {
-	m.common = mergeValue(m.common, key, value)
-}
-
-// AddPackage adds a key-value pair to the Package section.
-func (m *manifestBuilder) AddPackage(key string, value interface{}) {
-	m.pkg = mergeValue(m.pkg, key, value)
-}
-
-// AddDep adds a dependency entry to the manifest.
-func (m *manifestBuilder) AddDep(dep depEntry) {
-	m.deps = append(m.deps, dep)
-}
-
-// SetMetadata sets the metadata block.
-func (m *manifestBuilder) SetMetadata(meta *manifestMetadata) {
-	m.meta = meta
 }
 
 // Build generates the sorted manifest text in INI format.
 func (m *manifestBuilder) Build() string {
+	env := m.env
+	common := m.common
+	pkg := m.pkg
+
+	sort.Strings(common.BuildTags)
+
 	data := manifestData{
-		Env:      copyMap(m.env),
-		Common:   copyMap(m.common),
-		Package:  copyMap(m.pkg),
+		Env:      &env,
+		Common:   &common,
+		Package:  &pkg,
 		Deps:     sortDeps(m.deps),
 		Metadata: m.meta,
 	}
@@ -118,15 +179,6 @@ func (m *manifestBuilder) Fingerprint() string {
 	content := m.Build()
 	hash := sha256.Sum256([]byte(content))
 	return hex.EncodeToString(hash[:])
-}
-
-func sortMapKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 func sortDeps(deps []depEntry) []depEntry {
@@ -147,30 +199,18 @@ func sortDeps(deps []depEntry) []depEntry {
 }
 
 func (d manifestData) isEmpty() bool {
-	return len(d.Env) == 0 && len(d.Common) == 0 && len(d.Package) == 0 && len(d.Deps) == 0 && (d.Metadata == nil)
+	return (d.Env == nil || d.Env.empty()) &&
+		(d.Common == nil || d.Common.empty()) &&
+		(d.Package == nil || d.Package.empty()) &&
+		len(d.Deps) == 0 && d.Metadata == nil
 }
 
 func buildManifestYAML(data manifestData) (string, error) {
 	if data.isEmpty() {
 		return "", nil
 	}
-
-	ordered := manifestDataOrdered{
-		Env:      orderedMap(copyMap(data.Env)),
-		Common:   orderedMap(copyMap(data.Common)),
-		Package:  orderedMap(copyMap(data.Package)),
-		Deps:     sortDeps(data.Deps),
-		Metadata: data.Metadata,
-	}
-
-	var buf bytes.Buffer
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(2)
-	if err := enc.Encode(ordered); err != nil {
-		return "", err
-	}
-	_ = enc.Close()
-	return buf.String(), nil
+	out, err := yaml.Marshal(data)
+	return string(out), err
 }
 
 func decodeManifest(content string) (manifestData, error) {
@@ -185,166 +225,8 @@ func decodeManifest(content string) (manifestData, error) {
 	return data, nil
 }
 
-func copyMap(src map[string]interface{}) map[string]interface{} {
-	if len(src) == 0 {
-		return nil
-	}
-	dup := make(map[string]interface{}, len(src))
-	for k, v := range src {
-		dup[k] = v
-	}
-	return dup
-}
-
-// orderedMap marshals deterministically with keys sorted.
-type orderedMap map[string]interface{}
-
-// MarshalYAML implements yaml marshaling with sorted keys.
-func (m orderedMap) MarshalYAML() (interface{}, error) {
-	if len(m) == 0 {
-		return nil, nil
-	}
-	node := &yaml.Node{Kind: yaml.MappingNode}
-	for _, k := range sortMapKeys(m) {
-		node.Content = append(node.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: k},
-			nodeFromValue(m[k]),
-		)
-	}
-	return node, nil
-}
-
-func mergeValue(m map[string]interface{}, key string, v interface{}) map[string]interface{} {
-	if m == nil {
-		m = make(map[string]interface{})
-	}
-	if exist, ok := m[key]; ok {
-		switch cur := exist.(type) {
-		case []interface{}:
-			m[key] = append(cur, v)
-		case []string:
-			if s, ok := v.(string); ok {
-				m[key] = append(cur, s)
-			} else {
-				m[key] = append(interfaceSlice(cur), v)
-			}
-		default:
-			m[key] = []interface{}{cur, v}
-		}
-	} else {
-		m[key] = v
-	}
-	return m
-}
-
-func interfaceSlice(src []string) []interface{} {
-	res := make([]interface{}, len(src))
-	for i, v := range src {
-		res[i] = v
-	}
-	return res
-}
-
-func nodeFromValue(v interface{}) *yaml.Node {
-	switch val := v.(type) {
-	case nil:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!null", Value: "~"}
-	case string:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: val}
-	case bool:
-		value := "false"
-		if val {
-			value = "true"
-		}
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: value}
-	case []string:
-		s := append([]string(nil), val...)
-		sort.Strings(s)
-		seq := &yaml.Node{Kind: yaml.SequenceNode}
-		for _, item := range s {
-			seq.Content = append(seq.Content, nodeFromValue(item))
-		}
-		return seq
-	case []FileDigest:
-		list := append([]FileDigest(nil), val...)
-		sort.Slice(list, func(i, j int) bool { return list[i].Path < list[j].Path })
-		seq := &yaml.Node{Kind: yaml.SequenceNode}
-		for _, fd := range list {
-			m := &yaml.Node{Kind: yaml.MappingNode}
-			m.Content = append(m.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "path"},
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: fd.Path},
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: "sha256"},
-				&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: fd.SHA256},
-			)
-			seq.Content = append(seq.Content, m)
-		}
-		return seq
-	case map[string]string:
-		return mapNodeStringString(val)
-	case map[string]interface{}:
-		return mapNodeInterface(val)
-	case []interface{}:
-		seq := &yaml.Node{Kind: yaml.SequenceNode}
-		// attempt to sort when all strings for determinism
-		if allStrings(val) {
-			strs := make([]string, 0, len(val))
-			for _, s := range val {
-				strs = append(strs, s.(string))
-			}
-			sort.Strings(strs)
-			for _, s := range strs {
-				seq.Content = append(seq.Content, nodeFromValue(s))
-			}
-			return seq
-		}
-		for _, item := range val {
-			seq.Content = append(seq.Content, nodeFromValue(item))
-		}
-		return seq
-	default:
-		return &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: fmt.Sprint(val)}
-	}
-}
-
-func mapNodeStringString(m map[string]string) *yaml.Node {
-	n := &yaml.Node{Kind: yaml.MappingNode}
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		n.Content = append(n.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: k},
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: m[k]},
-		)
-	}
-	return n
-}
-
-func mapNodeInterface(m map[string]interface{}) *yaml.Node {
-	n := &yaml.Node{Kind: yaml.MappingNode}
-	for _, k := range sortMapKeys(m) {
-		n.Content = append(n.Content,
-			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: k},
-			nodeFromValue(m[k]),
-		)
-	}
-	return n
-}
-
-func allStrings(list []interface{}) bool {
-	for _, v := range list {
-		if _, ok := v.(string); !ok {
-			return false
-		}
-	}
-	return true
-}
-
-// DigestFile calculates the sha256 hash of a file.
-func DigestFile(path string) (string, error) {
+// digestFile calculates the sha256 hash of a file.
+func digestFile(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -359,33 +241,33 @@ func DigestFile(path string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// DigestBytes calculates the sha256 hash of bytes.
-func DigestBytes(data []byte) string {
+// digestBytes calculates the sha256 hash of bytes.
+func digestBytes(data []byte) string {
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
 }
 
-// FileDigest represents a file with its path and hash.
-type FileDigest struct {
+// fileDigest represents a file with its path and hash.
+type fileDigest struct {
 	Path   string `yaml:"path"`
 	SHA256 string `yaml:"sha256"`
 }
 
-// DigestFiles calculates digests for multiple files and returns the
+// digestFiles calculates digests for multiple files and returns the
 // serialized digest plus structured list for manifest output.
 // Serialized format kept for backward compatibility: "file1]sha256:xxx,file2]sha256:yyy"
-func DigestFiles(paths []string) (string, []FileDigest, error) {
+func digestFiles(paths []string) (string, []fileDigest, error) {
 	if len(paths) == 0 {
 		return "", nil, nil
 	}
 
-	digests := make([]FileDigest, 0, len(paths))
+	digests := make([]fileDigest, 0, len(paths))
 	for _, path := range paths {
-		hash, err := DigestFile(path)
+		hash, err := digestFile(path)
 		if err != nil {
 			return "", nil, fmt.Errorf("digest file %q: %w", path, err)
 		}
-		digests = append(digests, FileDigest{Path: path, SHA256: hash})
+		digests = append(digests, fileDigest{Path: path, SHA256: hash})
 	}
 
 	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
@@ -398,25 +280,25 @@ func DigestFiles(paths []string) (string, []FileDigest, error) {
 	return strings.Join(parts, ","), digests, nil
 }
 
-// DigestFilesWithOverlay calculates digests for files, using overlay content when available.
-func DigestFilesWithOverlay(paths []string, overlay map[string][]byte) (string, []FileDigest, error) {
+// digestFilesWithOverlay calculates digests for files, using overlay content when available.
+func digestFilesWithOverlay(paths []string, overlay map[string][]byte) (string, []fileDigest, error) {
 	if len(paths) == 0 {
 		return "", nil, nil
 	}
 
-	digests := make([]FileDigest, 0, len(paths))
+	digests := make([]fileDigest, 0, len(paths))
 	for _, path := range paths {
 		var hash string
 		if content, ok := overlay[path]; ok {
-			hash = DigestBytes(content)
+			hash = digestBytes(content)
 		} else {
 			var err error
-			hash, err = DigestFile(path)
+			hash, err = digestFile(path)
 			if err != nil {
 				return "", nil, fmt.Errorf("digest file %q: %w", path, err)
 			}
 		}
-		digests = append(digests, FileDigest{Path: path, SHA256: hash})
+		digests = append(digests, fileDigest{Path: path, SHA256: hash})
 	}
 
 	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })

@@ -76,13 +76,13 @@ func TestCollectFingerprint(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decodeManifest: %v", err)
 	}
-	if len(data.Env) == 0 || len(data.Common) == 0 || len(data.Package) == 0 {
+	if data.Env == nil || data.Common == nil || data.Package == nil {
 		t.Fatal("manifest sections should not be empty")
 	}
-	if data.Env["GOOS"] != "darwin" {
+	if data.Env.Goos != "darwin" {
 		t.Error("manifest should contain GOOS = darwin")
 	}
-	if data.Package["pkg_path"] != "example.com/test" {
+	if data.Package.PkgPath != "example.com/test" {
 		t.Error("manifest should contain PKG_PATH")
 	}
 }
@@ -450,9 +450,9 @@ func TestSaveToCache_Success(t *testing.T) {
 		},
 		Fingerprint: "def456",
 		Manifest: func() string {
-			m := NewManifestBuilder()
-			m.AddEnv("GOOS", "darwin")
-			m.AddPackage("PKG_PATH", "example.com/lib")
+			m := newManifestBuilder()
+			m.env.Goos = "darwin"
+			m.pkg.PkgPath = "example.com/lib"
 			return m.Build()
 		}(),
 		LLFiles: []string{objFile.Name()},
@@ -475,7 +475,7 @@ func TestSaveToCache_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("decodeManifest: %v", err)
 	}
-	if data.Env["GOOS"] != "darwin" {
+	if data.Env.Goos != "darwin" {
 		t.Errorf("manifest should contain original env content")
 	}
 	if data.Metadata != nil {

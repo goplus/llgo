@@ -44,7 +44,7 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 	c.fingerprinting[pkg.ID] = true
 	defer delete(c.fingerprinting, pkg.ID)
 
-	m := NewManifestBuilder()
+	m := newManifestBuilder()
 
 	// Env section
 	c.collectEnvInputs(m)
@@ -69,12 +69,12 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 
 // collectEnvInputs collects environment-related inputs.
 func (c *context) collectEnvInputs(m *manifestBuilder) {
-	m.AddEnv("GOOS", c.buildConf.Goos)
-	m.AddEnv("GOARCH", c.buildConf.Goarch)
-	m.AddEnv("LLVM_TRIPLE", c.crossCompile.LLVMTarget)
-	m.AddEnv("LLGO_VERSION", env.Version())
-	m.AddEnv("GO_VERSION", runtime.Version())
-	m.AddEnv("LLVM_VERSION", c.getLLVMVersion())
+	m.env.Goos = c.buildConf.Goos
+	m.env.Goarch = c.buildConf.Goarch
+	m.env.LlvmTriple = c.crossCompile.LLVMTarget
+	m.env.LlgoVersion = env.Version()
+	m.env.GoVersion = runtime.Version()
+	m.env.LlvmVersion = c.getLLVMVersion()
 
 	// Environment variables that affect build
 	envVars := []string{
@@ -89,42 +89,42 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 	}
 	for _, envVar := range envVars {
 		if v := os.Getenv(envVar); v != "" {
-			m.AddEnv(envVar, v)
+			m.env.Vars = m.env.Vars.Add(envVar, v)
 		}
 	}
 }
 
 // collectCommonInputs collects common build configuration inputs.
 func (c *context) collectCommonInputs(m *manifestBuilder) {
-	m.AddCommon("abi_mode", fmt.Sprintf("%d", c.buildConf.AbiMode))
+	m.common.AbiMode = fmt.Sprintf("%d", c.buildConf.AbiMode)
 	if c.buildConf.Tags != "" {
-		m.AddCommon("build_tags", strings.Split(c.buildConf.Tags, ","))
+		m.common.BuildTags = strings.Split(c.buildConf.Tags, ",")
 	}
-	m.AddCommon("target", c.buildConf.Target)
-	m.AddCommon("target_abi", c.crossCompile.TargetABI)
+	m.common.Target = c.buildConf.Target
+	m.common.TargetABI = c.crossCompile.TargetABI
 
 	// Compiler configuration
 	if c.crossCompile.CC != "" {
-		m.AddCommon("cc", c.crossCompile.CC)
+		m.common.CC = c.crossCompile.CC
 	}
 	if len(c.crossCompile.CCFLAGS) > 0 {
-		m.AddCommon("ccflags", c.crossCompile.CCFLAGS)
+		m.common.CCFlags = append([]string(nil), c.crossCompile.CCFLAGS...)
 	}
 	if len(c.crossCompile.CFLAGS) > 0 {
-		m.AddCommon("cflags", c.crossCompile.CFLAGS)
+		m.common.CFlags = append([]string(nil), c.crossCompile.CFLAGS...)
 	}
 	if len(c.crossCompile.LDFLAGS) > 0 {
-		m.AddCommon("ldflags", c.crossCompile.LDFLAGS)
+		m.common.LDFlags = append([]string(nil), c.crossCompile.LDFLAGS...)
 	}
 	if c.crossCompile.Linker != "" {
-		m.AddCommon("linker", c.crossCompile.Linker)
+		m.common.Linker = c.crossCompile.Linker
 	}
 
 	// Extra files from target configuration
 	if len(c.crossCompile.ExtraFiles) > 0 {
-		_, extraList, err := DigestFiles(c.crossCompile.ExtraFiles)
+		_, extraList, err := digestFiles(c.crossCompile.ExtraFiles)
 		if err == nil && len(extraList) > 0 {
-			m.AddCommon("extra_files", extraList)
+			m.common.ExtraFiles = extraList
 		}
 	}
 }
@@ -133,32 +133,32 @@ func (c *context) collectCommonInputs(m *manifestBuilder) {
 func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error {
 	p := pkg.Package
 
-	m.AddPackage("pkg_path", p.PkgPath)
-	m.AddPackage("pkg_id", p.ID)
+	m.pkg.PkgPath = p.PkgPath
+	m.pkg.PkgID = p.ID
 
 	// Go source files
-	_, goFilesList, err := DigestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
+	_, goFilesList, err := digestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
 	if err != nil {
 		return fmt.Errorf("digest go files: %w", err)
 	}
-	m.AddPackage("go_files", goFilesList)
+	m.pkg.GoFiles = goFilesList
 
 	// Alt package files (if any)
 	if pkg.AltPkg != nil {
-		_, altList, err := DigestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
+		_, altList, err := digestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
 		if err != nil {
 			return fmt.Errorf("digest alt go files: %w", err)
 		}
-		m.AddPackage("alt_go_files", altList)
+		m.pkg.AltGoFiles = altList
 	}
 
 	// Other files (C, assembly, etc.)
 	if len(p.OtherFiles) > 0 {
-		_, otherList, err := DigestFiles(p.OtherFiles)
+		_, otherList, err := digestFiles(p.OtherFiles)
 		if err != nil {
 			return fmt.Errorf("digest other files: %w", err)
 		}
-		m.AddPackage("other_files", otherList)
+		m.pkg.OtherFiles = otherList
 	}
 
 	// Rewrite vars
@@ -167,7 +167,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 		for k, v := range pkg.rewriteVars {
 			rewrites[k] = v
 		}
-		m.AddPackage("rewrite_vars", rewrites)
+		m.pkg.RewriteVars = m.pkg.RewriteVars.AddMap(rewrites)
 	}
 
 	// Add metadata fields if available (for cache saving)
@@ -193,11 +193,11 @@ func (c *context) collectDependencyInputs(m *manifestBuilder, pkg *aPackage) err
 	sort.Slice(deps, func(i, j int) bool { return deps[i].ID < deps[j].ID })
 
 	for _, dep := range deps {
-	depEntry, err := c.dependencyFingerprint(dep)
+		depEntry, err := c.dependencyFingerprint(dep)
 		if err != nil {
 			return err
 		}
-		m.AddDep(depEntry)
+		m.deps = append(m.deps, depEntry)
 	}
 
 	return nil
@@ -278,7 +278,7 @@ func detectLLVMVersion(ctx *context) string {
 
 // targetTriple returns the target triple for cache directory.
 func (c *context) targetTriple() string {
-	return TargetTriple(
+	return targetTriple(
 		c.buildConf.Goos,
 		c.buildConf.Goarch,
 		c.crossCompile.LLVMTarget,
@@ -286,10 +286,22 @@ func (c *context) targetTriple() string {
 	)
 }
 
+// targetTriple returns the target triple string for cache directory
+func targetTriple(goos, goarch, llvmTarget, targetABI string) string {
+	triple := llvmTarget
+	if triple == "" {
+		triple = fmt.Sprintf("%s-%s", goarch, goos)
+	}
+	if targetABI != "" {
+		triple = triple + "-" + targetABI
+	}
+	return triple
+}
+
 // ensureCacheManager creates cacheManager if not exists.
 func (c *context) ensureCacheManager() *cacheManager {
 	if c.cacheManager == nil {
-		c.cacheManager = NewCacheManager()
+		c.cacheManager = newCacheManager()
 	}
 	return c.cacheManager
 }
@@ -338,8 +350,8 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 // parseManifestMetadata extracts metadata from manifest content.
 // It supports the new YAML format and falls back to the legacy INI layout for
 // backward compatibility with existing cache entries.
-func parseManifestMetadata(content string) (*CacheArchiveMetadata, error) {
-	meta := &CacheArchiveMetadata{}
+func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
+	meta := &cacheArchiveMetadata{}
 	if data, err := decodeManifest(content); err == nil {
 		if data.Metadata != nil {
 			meta.LinkArgs = append([]string(nil), data.Metadata.LinkArgs...)
@@ -352,7 +364,7 @@ func parseManifestMetadata(content string) (*CacheArchiveMetadata, error) {
 	return parseManifestMetadataLegacy(content, meta)
 }
 
-func parseManifestMetadataLegacy(content string, meta *CacheArchiveMetadata) (*CacheArchiveMetadata, error) {
+func parseManifestMetadataLegacy(content string, meta *cacheArchiveMetadata) (*cacheArchiveMetadata, error) {
 	// Find Package section
 	idx := strings.Index(content, "[Package]\n")
 	if idx == -1 {
@@ -393,8 +405,8 @@ func parseManifestMetadataLegacy(content string, meta *CacheArchiveMetadata) (*C
 	return meta, nil
 }
 
-// CacheArchiveMetadata holds metadata about a cached archive.
-type CacheArchiveMetadata struct {
+// cacheArchiveMetadata holds metadata about a cached archive.
+type cacheArchiveMetadata struct {
 	LinkArgs   []string
 	NeedRt     bool
 	NeedPyInit bool
@@ -449,7 +461,7 @@ func (c *context) saveToCache(pkg *aPackage) error {
 	manifestContent := pkg.Manifest
 	if manifestContent == "" {
 		// Fallback: rebuild if missing (should not happen in normal flow).
-		m := NewManifestBuilder()
+		m := newManifestBuilder()
 		c.collectEnvInputs(m)
 		c.collectCommonInputs(m)
 		if err := c.collectPackageInputs(m, pkg); err != nil {

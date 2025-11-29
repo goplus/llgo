@@ -52,7 +52,7 @@ func TestCacheManager_PackagePaths(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 	paths := cm.PackagePaths("arm64-darwin", "github.com/user/pkg", "abc123")
 
 	expectedDir := filepath.Join(td, "build", "arm64-darwin", "github.com", "user", "pkg")
@@ -77,7 +77,7 @@ func TestCacheManager_EnsureDir(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 	paths := cm.PackagePaths("x86_64-linux", "test/pkg", "fp123")
 
 	if err := cm.EnsureDir(paths); err != nil {
@@ -155,7 +155,7 @@ func TestCacheManager_CacheExists(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 	paths := cm.PackagePaths("arm64-darwin", "test/pkg", "fp123")
 
 	// Initially should not exist
@@ -196,7 +196,7 @@ func TestTargetTriple(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := TargetTriple(tt.goos, tt.goarch, tt.llvmTarget, tt.abi)
+		got := targetTriple(tt.goos, tt.goarch, tt.llvmTarget, tt.abi)
 		if got != tt.want {
 			t.Errorf("TargetTriple(%q, %q, %q, %q) = %q, want %q",
 				tt.goos, tt.goarch, tt.llvmTarget, tt.abi, got, tt.want)
@@ -210,7 +210,7 @@ func TestCacheManager_CleanPackageCache(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 	paths := cm.PackagePaths("arm64-darwin", "test/pkg", "fp123")
 
 	// Create cache
@@ -235,7 +235,7 @@ func TestCacheManager_CleanAllCache(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 
 	// Create multiple caches
 	paths1 := cm.PackagePaths("arm64-darwin", "pkg1", "fp1")
@@ -263,7 +263,7 @@ func TestCacheManager_ListCachedPackages(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 
 	// Initially empty
 	fps, err := cm.listCachedPackages("arm64-darwin", "test/pkg")
@@ -296,7 +296,7 @@ func TestCacheManager_Stats(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 
 	// Create some caches
 	paths1 := cm.PackagePaths("arm64-darwin", "pkg1", "fp1")
@@ -332,7 +332,7 @@ func TestCacheManager_Stats_Empty(t *testing.T) {
 	cacheRootFunc = func() string { return td }
 	defer func() { cacheRootFunc = oldFunc }()
 
-	cm := NewCacheManager()
+	cm := newCacheManager()
 
 	// Stats on empty cache should not error
 	stats, err := cm.stats()

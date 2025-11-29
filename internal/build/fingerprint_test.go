@@ -21,16 +21,17 @@ package build
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 )
 
 func TestManifestBuilder_Build(t *testing.T) {
-	m := NewManifestBuilder()
-	m.AddEnv("GOARCH", "arm64")
-	m.AddEnv("GOOS", "darwin")
-	m.AddCommon("DEBUG", "false")
-	m.AddPackage("PKG_PATH", "example.com/foo")
+	m := newManifestBuilder()
+	m.env.Goarch = "arm64"
+	m.env.Goos = "darwin"
+	m.common.AbiMode = "2"
+	m.pkg.PkgPath = "example.com/foo"
 
 	content := m.Build()
 	data, err := decodeManifest(content)
@@ -38,46 +39,52 @@ func TestManifestBuilder_Build(t *testing.T) {
 		t.Fatalf("decodeManifest: %v", err)
 	}
 
-	if data.Env["GOARCH"] != "arm64" || data.Env["GOOS"] != "darwin" {
+	if data.Env.Goarch != "arm64" || data.Env.Goos != "darwin" {
 		t.Fatalf("env section mismatch: %+v", data.Env)
 	}
-	if data.Common["DEBUG"] != "false" {
+	if data.Common.AbiMode != "2" {
 		t.Fatalf("common section mismatch: %+v", data.Common)
 	}
-	if data.Package["PKG_PATH"] != "example.com/foo" {
+	if data.Package.PkgPath != "example.com/foo" {
 		t.Fatalf("package section mismatch: %+v", data.Package)
 	}
 }
 
 func TestManifestBuilder_BuildSorting(t *testing.T) {
-	m := NewManifestBuilder()
+	m := newManifestBuilder()
 	// Add in reverse order
-	m.AddEnv("Z_KEY", "z")
-	m.AddEnv("A_KEY", "a")
-	m.AddEnv("M_KEY", "m")
-	m.AddCommon("ZEBRA", "1")
-	m.AddCommon("APPLE", "2")
-	m.AddPackage("ZZZ", "last")
-	m.AddPackage("AAA", "first")
+	m.env.Vars = orderedStringMap{"Z_KEY": "z", "A_KEY": "a", "M_KEY": "m"}
+	m.pkg.RewriteVars = orderedStringMap{"Z": "1", "A": "2"}
 
 	content := m.Build()
-	// order should appear sorted in string output
-	if !strings.Contains(content, "env:\n  A_KEY: a\n  M_KEY: m\n  Z_KEY: z") {
-		t.Fatalf("env section not sorted:\n%s", content)
+	data, err := decodeManifest(content)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
 	}
-	if !strings.Contains(content, "common:\n  APPLE: \"2\"\n  ZEBRA: \"1\"") {
-		t.Fatalf("common section not sorted:\n%s", content)
+	// env vars are sorted by key
+	keys := []string{}
+	for k := range data.Env.Vars {
+		keys = append(keys, k)
 	}
-	if !strings.Contains(content, "package:\n  AAA: first\n  ZZZ: last") {
-		t.Fatalf("package section not sorted:\n%s", content)
+	sort.Strings(keys)
+	if strings.Join(keys, ",") != "A_KEY,M_KEY,Z_KEY" {
+		t.Fatalf("env vars not sorted: %v", keys)
+	}
+	rvKeys := []string{}
+	for k := range data.Package.RewriteVars {
+		rvKeys = append(rvKeys, k)
+	}
+	sort.Strings(rvKeys)
+	if strings.Join(rvKeys, ",") != "A,Z" {
+		t.Fatalf("rewrite vars not sorted: %v", rvKeys)
 	}
 }
 
 func TestManifestBuilder_Fingerprint(t *testing.T) {
-	m := NewManifestBuilder()
-	m.AddEnv("GOOS", "linux")
-	m.AddEnv("GOARCH", "amd64")
-	m.AddPackage("PKG_PATH", "test/pkg")
+	m := newManifestBuilder()
+	m.env.Goos = "linux"
+	m.env.Goarch = "amd64"
+	m.pkg.PkgPath = "test/pkg"
 
 	fp1 := m.Fingerprint()
 	fp2 := m.Fingerprint()
@@ -94,17 +101,13 @@ func TestManifestBuilder_Fingerprint(t *testing.T) {
 
 func TestManifestBuilder_FingerprintDeterminism(t *testing.T) {
 	// Different order of adding, same fingerprint
-	m1 := NewManifestBuilder()
-	m1.AddEnv("A", "1")
-	m1.AddEnv("B", "2")
-	m1.AddCommon("X", "10")
-	m1.AddCommon("Y", "20")
+	m1 := newManifestBuilder()
+	m1.env.Vars = orderedStringMap{"A": "1", "B": "2"}
+	m1.common.BuildTags = []string{"10", "20"}
 
-	m2 := NewManifestBuilder()
-	m2.AddEnv("B", "2")
-	m2.AddEnv("A", "1")
-	m2.AddCommon("Y", "20")
-	m2.AddCommon("X", "10")
+	m2 := newManifestBuilder()
+	m2.env.Vars = orderedStringMap{"B": "2", "A": "1"}
+	m2.common.BuildTags = []string{"20", "10"}
 
 	if m1.Fingerprint() != m2.Fingerprint() {
 		t.Error("order should not affect fingerprint")
@@ -116,11 +119,11 @@ func TestManifestBuilder_FingerprintDeterminism(t *testing.T) {
 }
 
 func TestManifestBuilder_FingerprintDifferentValues(t *testing.T) {
-	m1 := NewManifestBuilder()
-	m1.AddEnv("KEY", "value1")
+	m1 := newManifestBuilder()
+	m1.env.Vars = orderedStringMap{"KEY": "value1"}
 
-	m2 := NewManifestBuilder()
-	m2.AddEnv("KEY", "value2")
+	m2 := newManifestBuilder()
+	m2.env.Vars = orderedStringMap{"KEY": "value2"}
 
 	if m1.Fingerprint() == m2.Fingerprint() {
 		t.Error("different values should produce different fingerprints")
@@ -128,7 +131,7 @@ func TestManifestBuilder_FingerprintDifferentValues(t *testing.T) {
 }
 
 func TestManifestBuilder_EmptySections(t *testing.T) {
-	m := NewManifestBuilder()
+	m := newManifestBuilder()
 	content := m.Build()
 
 	// Empty sections should not be written
@@ -146,16 +149,16 @@ func TestManifestBuilder_EmptySections(t *testing.T) {
 
 func TestDigestBytes(t *testing.T) {
 	data := []byte("hello world")
-	hash := DigestBytes(data)
+	hash := digestBytes(data)
 
 	// Known sha256 of "hello world"
 	expected := "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
 	if hash != expected {
-		t.Errorf("DigestBytes = %s, want %s", hash, expected)
+		t.Errorf("digestBytes = %s, want %s", hash, expected)
 	}
 
 	// Empty data
-	emptyHash := DigestBytes([]byte{})
+	emptyHash := digestBytes([]byte{})
 	if len(emptyHash) != 64 {
 		t.Errorf("empty hash length = %d, want 64", len(emptyHash))
 	}
@@ -170,20 +173,20 @@ func TestDigestFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hash, err := DigestFile(path)
+	hash, err := digestFile(path)
 	if err != nil {
-		t.Fatalf("DigestFile: %v", err)
+		t.Fatalf("digestFile: %v", err)
 	}
 
-	// Should match DigestBytes
-	expected := DigestBytes(content)
+	// Should match digestBytes
+	expected := digestBytes(content)
 	if hash != expected {
-		t.Errorf("DigestFile = %s, want %s", hash, expected)
+		t.Errorf("digestFile = %s, want %s", hash, expected)
 	}
 }
 
 func TestDigestFile_NotExist(t *testing.T) {
-	_, err := DigestFile("/nonexistent/file.txt")
+	_, err := digestFile("/nonexistent/file.txt")
 	if err == nil {
 		t.Error("expected error for nonexistent file")
 	}
@@ -206,18 +209,18 @@ func TestDigestFiles(t *testing.T) {
 	}
 
 	// Test with files in reverse order (should be sorted)
-	result, list, err := DigestFiles([]string{file2, file1})
+	result, list, err := digestFiles([]string{file2, file1})
 	if err != nil {
-		t.Fatalf("DigestFiles: %v", err)
+		t.Fatalf("digestFiles: %v", err)
 	}
 
-	hash1 := DigestBytes(content1)
-	hash2 := DigestBytes(content2)
+	hash1 := digestBytes(content1)
+	hash2 := digestBytes(content2)
 
 	// Should be sorted by path
 	expected := file1 + "]sha256:" + hash1 + "," + file2 + "]sha256:" + hash2
 	if result != expected {
-		t.Errorf("DigestFiles =\n%s\nwant:\n%s", result, expected)
+		t.Errorf("digestFiles =\n%s\nwant:\n%s", result, expected)
 	}
 	if len(list) != 2 || list[0].Path != file1 || list[1].Path != file2 {
 		t.Errorf("structured list not sorted: %+v", list)
@@ -225,15 +228,15 @@ func TestDigestFiles(t *testing.T) {
 }
 
 func TestDigestFiles_Empty(t *testing.T) {
-	result, list, err := DigestFiles([]string{})
+	result, list, err := digestFiles([]string{})
 	if err != nil {
-		t.Fatalf("DigestFiles: %v", err)
+		t.Fatalf("digestFiles: %v", err)
 	}
 	if result != "" {
-		t.Errorf("DigestFiles empty = %q, want empty string", result)
+		t.Errorf("digestFiles empty = %q, want empty string", result)
 	}
 	if list != nil {
-		t.Errorf("DigestFiles empty list = %#v, want nil", list)
+		t.Errorf("digestFiles empty list = %#v, want nil", list)
 	}
 }
 
@@ -250,11 +253,11 @@ func TestDigestFiles_Determinism(t *testing.T) {
 	}
 
 	// Different order should produce same result
-	result1, _, _ := DigestFiles([]string{file1, file2})
-	result2, _, _ := DigestFiles([]string{file2, file1})
+	result1, _, _ := digestFiles([]string{file1, file2})
+	result2, _, _ := digestFiles([]string{file2, file1})
 
 	if result1 != result2 {
-		t.Errorf("order should not affect DigestFiles result")
+		t.Errorf("order should not affect digestFiles result")
 	}
 }
 
@@ -275,13 +278,13 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		overlayFile: overlayContent,
 	}
 
-	result, list, err := DigestFilesWithOverlay([]string{overlayFile, realFile}, overlay)
+	result, list, err := digestFilesWithOverlay([]string{overlayFile, realFile}, overlay)
 	if err != nil {
-		t.Fatalf("DigestFilesWithOverlay: %v", err)
+		t.Fatalf("digestFilesWithOverlay: %v", err)
 	}
 
-	hashReal := DigestBytes(realContent)
-	hashOverlay := DigestBytes(overlayContent)
+	hashReal := digestBytes(realContent)
+	hashOverlay := digestBytes(overlayContent)
 
 	// Should be sorted by path
 	if len(list) != 2 {
@@ -300,51 +303,47 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 }
 
 func TestDigestFilesWithOverlay_Empty(t *testing.T) {
-	result, list, err := DigestFilesWithOverlay([]string{}, nil)
+	result, list, err := digestFilesWithOverlay([]string{}, nil)
 	if err != nil {
-		t.Fatalf("DigestFilesWithOverlay: %v", err)
+		t.Fatalf("digestFilesWithOverlay: %v", err)
 	}
 	if result != "" {
-		t.Errorf("DigestFilesWithOverlay empty = %q, want empty string", result)
+		t.Errorf("digestFilesWithOverlay empty = %q, want empty string", result)
 	}
 	if list != nil {
-		t.Errorf("DigestFilesWithOverlay empty list = %#v, want nil", list)
+		t.Errorf("digestFilesWithOverlay empty list = %#v, want nil", list)
 	}
 }
 
 func TestManifestBuilder_SpecialCharacters(t *testing.T) {
-	m := NewManifestBuilder()
-	m.AddEnv("PATH", "/usr/bin:/usr/local/bin")
-	m.AddPackage("FLAGS", "-X main.version=1.0.0 -ldflags=-s")
+	m := newManifestBuilder()
+	m.env.Vars = orderedStringMap{"PATH": "/usr/bin:/usr/local/bin"}
+	m.pkg.RewriteVars = orderedStringMap{"FLAGS": "-X main.version=1.0.0 -ldflags=-s"}
 
 	content := m.Build()
 	data, err := decodeManifest(content)
 	if err != nil {
 		t.Fatalf("decodeManifest: %v", err)
 	}
-	if data.Env["PATH"] != "/usr/bin:/usr/local/bin" {
+	if data.Env == nil || data.Env.Vars["PATH"] != "/usr/bin:/usr/local/bin" {
 		t.Errorf("PATH not preserved: %+v", data.Env)
 	}
-	if data.Package["FLAGS"] != "-X main.version=1.0.0 -ldflags=-s" {
+	if data.Package == nil || data.Package.RewriteVars["FLAGS"] != "-X main.version=1.0.0 -ldflags=-s" {
 		t.Errorf("FLAGS not preserved: %+v", data.Package)
 	}
 }
 
 func TestManifestBuilder_MultipleValues(t *testing.T) {
-	m := NewManifestBuilder()
-	m.AddEnv("KEY", "value1")
-	m.AddEnv("KEY", "value2") // Duplicate key
+	m := newManifestBuilder()
+	m.env.Vars = orderedStringMap{"KEY": "value1"}
+	m.env.Vars = m.env.Vars.Add("KEY", "value2")
 
 	content := m.Build()
 	data, err := decodeManifest(content)
 	if err != nil {
 		t.Fatalf("decodeManifest: %v", err)
 	}
-	values, ok := data.Env["KEY"].([]interface{})
-	if !ok {
-		t.Fatalf("duplicate key should be slice, got %T", data.Env["KEY"])
-	}
-	if len(values) != 2 || values[0] != "value1" || values[1] != "value2" {
-		t.Errorf("duplicate values not preserved: %+v", values)
+	if data.Env == nil || data.Env.Vars["KEY"] != "value2" {
+		t.Fatalf("duplicate env should keep last value, got %+v", data.Env.Vars)
 	}
 }

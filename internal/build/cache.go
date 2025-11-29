@@ -44,8 +44,8 @@ type cacheManager struct {
 	root string
 }
 
-// NewCacheManager creates a new cache manager
-func NewCacheManager() *cacheManager {
+// newCacheManager creates a new cache manager
+func newCacheManager() *cacheManager {
 	return &cacheManager{root: buildCacheRootDir()}
 }
 
@@ -161,18 +161,6 @@ func (cm *cacheManager) cleanPackageCache(targetTriple, pkgPath string) error {
 // cleanAllCache removes the entire build cache
 func (cm *cacheManager) cleanAllCache() error {
 	return os.RemoveAll(cm.root)
-}
-
-// TargetTriple returns the target triple string for cache directory
-func TargetTriple(goos, goarch, llvmTarget, targetABI string) string {
-	triple := llvmTarget
-	if triple == "" {
-		triple = fmt.Sprintf("%s-%s", goarch, goos)
-	}
-	if targetABI != "" {
-		triple = triple + "-" + targetABI
-	}
-	return triple
 }
 
 // listCachedPackages returns all cached fingerprints for a package
