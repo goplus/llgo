@@ -20,7 +20,9 @@ package build
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -273,6 +275,90 @@ func TestCollectFingerprint_DepReplaceAndWork(t *testing.T) {
 	}
 }
 
+func TestBuildDo_DepFingerprintAndVersion(t *testing.T) {
+	root := t.TempDir()
+	mainDir := filepath.Join(root, "main")
+	depPathDir := filepath.Join(root, "depPath")
+	depWorkDir := filepath.Join(root, "depWork")
+
+	must(os.MkdirAll(mainDir, 0o755))
+	must(os.MkdirAll(depPathDir, 0o755))
+	must(os.MkdirAll(depWorkDir, 0o755))
+
+	writeFile(t, filepath.Join(depPathDir, "go.mod"), "module example.com/deppath\n\ngo 1.23\n")
+	writeFile(t, filepath.Join(depPathDir, "dep.go"), "package deppath\nconst Name = \"path\"\n")
+
+	writeFile(t, filepath.Join(depWorkDir, "go.mod"), "module example.com/depwork\n\ngo 1.23\n")
+	writeFile(t, filepath.Join(depWorkDir, "dep.go"), "package depwork\nconst Name = \"work\"\n")
+
+	mainMod := `module example.com/main
+
+go 1.23
+
+require (
+  github.com/davecgh/go-spew v1.1.1
+  example.com/deppath v0.1.0
+  example.com/depwork v0.0.1
+)
+
+replace github.com/davecgh/go-spew v1.1.1 => github.com/davecgh/go-spew v1.1.0
+replace example.com/deppath v0.1.0 => ../depPath
+replace example.com/depwork v0.0.1 => ../depWork
+`
+	writeFile(t, filepath.Join(mainDir, "go.mod"), mainMod)
+	writeFile(t, filepath.Join(mainDir, "main.go"), "package main\nimport (\"github.com/davecgh/go-spew/spew\"\n\"example.com/deppath\"\n\"example.com/depwork\"\n)\nvar _ = spew.Sdump(deppath.Name) + depwork.Name\nfunc main() {}\n")
+
+	oldWD, _ := os.Getwd()
+	goWork := "go 1.24\nuse ./main\nuse ./depWork\nuse ./depPath\n"
+	writeFile(t, filepath.Join(root, "go.work"), goWork)
+	cmd := exec.Command("go", "work", "sync")
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("go work sync: %v\n%s", err, out)
+	}
+
+	must(os.Chdir(mainDir))
+	t.Cleanup(func() { _ = os.Chdir(oldWD) })
+
+	conf := &Config{Goos: runtime.GOOS, Goarch: runtime.GOARCH, Mode: ModeBuild, BinPath: filepath.Join(root, "bin")}
+	_ = os.MkdirAll(conf.BinPath, 0o755)
+
+	// Let Go discover workspace via parent go.work (no extra env needed)
+
+	pkgs, err := Do(nil, conf)
+	if err != nil {
+		t.Fatalf("Do: %v", err)
+	}
+
+	mainPkg := findPkg(pkgs, "example.com/main")
+	if mainPkg == nil {
+		t.Fatalf("main package not built")
+	}
+	data, err := decodeManifest(mainPkg.Manifest)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
+	}
+
+	get := func(prefix string) *DepEntry {
+		for i := range data.Deps {
+			if strings.HasPrefix(data.Deps[i].ID, prefix) {
+				return &data.Deps[i]
+			}
+		}
+		return nil
+	}
+
+	if dep := get("github.com/davecgh/go-spew"); dep == nil || dep.Version != "v1.1.0" || dep.Fingerprint != "" {
+		t.Fatalf("version replace expected version only: %+v", dep)
+	}
+	if dep := get("example.com/deppath"); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
+		t.Fatalf("relative replace should fingerprint: %+v", dep)
+	}
+	if dep := get("example.com/depwork"); dep == nil || dep.Version != "" || dep.Fingerprint == "" {
+		t.Fatalf("workspace dep should fingerprint: %+v", dep)
+	}
+}
+
 func TestTargetTripleMethod(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -487,4 +573,26 @@ func TestGetLLVMVersion(t *testing.T) {
 	if v1 != v2 {
 		t.Error("getLLVMVersion should return cached value")
 	}
+}
+
+func writeFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func findPkg(pkgs []Package, pkgPath string) Package {
+	for _, p := range pkgs {
+		if p.PkgPath == pkgPath {
+			return p
+		}
+	}
+	return nil
 }
