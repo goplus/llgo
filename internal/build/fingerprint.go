@@ -47,8 +47,8 @@ type manifestData struct {
 	Env      *envSection       `yaml:"env,omitempty"`
 	Common   *commonSection    `yaml:"common,omitempty"`
 	Package  *packageSection   `yaml:"package,omitempty"`
-	Deps     []depEntry        `yaml:"deps,omitempty"`
 	Metadata *manifestMetadata `yaml:"metadata,omitempty"`
+	Deps     []depEntry        `yaml:"deps,omitempty"`
 }
 
 // orderedStringMap keeps deterministic order for map[string]string when marshaling.
@@ -99,9 +99,9 @@ func (m orderedStringMap) MarshalYAML() (interface{}, error) {
 type envSection struct {
 	Goos        string           `yaml:"goos,omitempty"`
 	Goarch      string           `yaml:"goarch,omitempty"`
-	LlvmTriple  string           `yaml:"llvm_triple,omitempty"`
-	LlgoVersion string           `yaml:"llgo_version,omitempty"`
 	GoVersion   string           `yaml:"go_version,omitempty"`
+	LlgoVersion string           `yaml:"llgo_version,omitempty"`
+	LlvmTriple  string           `yaml:"llvm_triple,omitempty"`
 	LlvmVersion string           `yaml:"llvm_version,omitempty"`
 	Vars        orderedStringMap `yaml:"vars,omitempty"`
 }
