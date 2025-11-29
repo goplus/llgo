@@ -96,35 +96,35 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 
 // collectCommonInputs collects common build configuration inputs.
 func (c *context) collectCommonInputs(m *manifestBuilder) {
-	m.AddCommon("ABI_MODE", fmt.Sprintf("%d", c.buildConf.AbiMode))
+	m.AddCommon("abi_mode", fmt.Sprintf("%d", c.buildConf.AbiMode))
 	if c.buildConf.Tags != "" {
-		m.AddCommon("BUILD_TAGS", strings.Split(c.buildConf.Tags, ","))
+		m.AddCommon("build_tags", strings.Split(c.buildConf.Tags, ","))
 	}
-	m.AddCommon("TARGET", c.buildConf.Target)
-	m.AddCommon("TARGET_ABI", c.crossCompile.TargetABI)
+	m.AddCommon("target", c.buildConf.Target)
+	m.AddCommon("target_abi", c.crossCompile.TargetABI)
 
 	// Compiler configuration
 	if c.crossCompile.CC != "" {
-		m.AddCommon("CC", c.crossCompile.CC)
+		m.AddCommon("cc", c.crossCompile.CC)
 	}
 	if len(c.crossCompile.CCFLAGS) > 0 {
-		m.AddCommon("CCFLAGS", c.crossCompile.CCFLAGS)
+		m.AddCommon("ccflags", c.crossCompile.CCFLAGS)
 	}
 	if len(c.crossCompile.CFLAGS) > 0 {
-		m.AddCommon("CFLAGS", c.crossCompile.CFLAGS)
+		m.AddCommon("cflags", c.crossCompile.CFLAGS)
 	}
 	if len(c.crossCompile.LDFLAGS) > 0 {
-		m.AddCommon("LDFLAGS", c.crossCompile.LDFLAGS)
+		m.AddCommon("ldflags", c.crossCompile.LDFLAGS)
 	}
 	if c.crossCompile.Linker != "" {
-		m.AddCommon("LINKER", c.crossCompile.Linker)
+		m.AddCommon("linker", c.crossCompile.Linker)
 	}
 
 	// Extra files from target configuration
 	if len(c.crossCompile.ExtraFiles) > 0 {
 		_, extraList, err := DigestFiles(c.crossCompile.ExtraFiles)
 		if err == nil && len(extraList) > 0 {
-			m.AddCommon("EXTRA_FILES", extraList)
+			m.AddCommon("extra_files", extraList)
 		}
 	}
 }
@@ -133,15 +133,15 @@ func (c *context) collectCommonInputs(m *manifestBuilder) {
 func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error {
 	p := pkg.Package
 
-	m.AddPackage("PKG_PATH", p.PkgPath)
-	m.AddPackage("PKG_ID", p.ID)
+	m.AddPackage("pkg_path", p.PkgPath)
+	m.AddPackage("pkg_id", p.ID)
 
 	// Go source files
 	_, goFilesList, err := DigestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
 	if err != nil {
 		return fmt.Errorf("digest go files: %w", err)
 	}
-	m.AddPackage("GO_FILES", goFilesList)
+	m.AddPackage("go_files", goFilesList)
 
 	// Alt package files (if any)
 	if pkg.AltPkg != nil {
@@ -149,7 +149,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 		if err != nil {
 			return fmt.Errorf("digest alt go files: %w", err)
 		}
-		m.AddPackage("ALT_GO_FILES", altList)
+		m.AddPackage("alt_go_files", altList)
 	}
 
 	// Other files (C, assembly, etc.)
@@ -158,7 +158,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 		if err != nil {
 			return fmt.Errorf("digest other files: %w", err)
 		}
-		m.AddPackage("OTHER_FILES", otherList)
+		m.AddPackage("other_files", otherList)
 	}
 
 	// Rewrite vars
@@ -167,7 +167,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 		for k, v := range pkg.rewriteVars {
 			rewrites[k] = v
 		}
-		m.AddPackage("REWRITE_VARS", rewrites)
+		m.AddPackage("rewrite_vars", rewrites)
 	}
 
 	// Add metadata fields if available (for cache saving)
@@ -193,7 +193,7 @@ func (c *context) collectDependencyInputs(m *manifestBuilder, pkg *aPackage) err
 	sort.Slice(deps, func(i, j int) bool { return deps[i].ID < deps[j].ID })
 
 	for _, dep := range deps {
-		depEntry, err := c.dependencyFingerprint(dep)
+	depEntry, err := c.dependencyFingerprint(dep)
 		if err != nil {
 			return err
 		}

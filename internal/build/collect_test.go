@@ -82,7 +82,7 @@ func TestCollectFingerprint(t *testing.T) {
 	if data.Env["GOOS"] != "darwin" {
 		t.Error("manifest should contain GOOS = darwin")
 	}
-	if data.Package["PKG_PATH"] != "example.com/test" {
+	if data.Package["pkg_path"] != "example.com/test" {
 		t.Error("manifest should contain PKG_PATH")
 	}
 }
