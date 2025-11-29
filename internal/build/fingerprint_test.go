@@ -21,6 +21,7 @@ package build
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -209,7 +210,7 @@ func TestDigestFiles(t *testing.T) {
 	}
 
 	// Test with files in reverse order (should be sorted)
-	result, list, err := digestFiles([]string{file2, file1})
+	list, err := digestFiles([]string{file2, file1})
 	if err != nil {
 		t.Fatalf("digestFiles: %v", err)
 	}
@@ -218,22 +219,18 @@ func TestDigestFiles(t *testing.T) {
 	hash2 := digestBytes(content2)
 
 	// Should be sorted by path
-	expected := file1 + "]sha256:" + hash1 + "," + file2 + "]sha256:" + hash2
-	if result != expected {
-		t.Errorf("digestFiles =\n%s\nwant:\n%s", result, expected)
-	}
 	if len(list) != 2 || list[0].Path != file1 || list[1].Path != file2 {
 		t.Errorf("structured list not sorted: %+v", list)
+	}
+	if list[0].SHA256 != hash1 || list[1].SHA256 != hash2 {
+		t.Errorf("unexpected hashes: %+v", list)
 	}
 }
 
 func TestDigestFiles_Empty(t *testing.T) {
-	result, list, err := digestFiles([]string{})
+	list, err := digestFiles([]string{})
 	if err != nil {
 		t.Fatalf("digestFiles: %v", err)
-	}
-	if result != "" {
-		t.Errorf("digestFiles empty = %q, want empty string", result)
 	}
 	if list != nil {
 		t.Errorf("digestFiles empty list = %#v, want nil", list)
@@ -253,11 +250,11 @@ func TestDigestFiles_Determinism(t *testing.T) {
 	}
 
 	// Different order should produce same result
-	result1, _, _ := digestFiles([]string{file1, file2})
-	result2, _, _ := digestFiles([]string{file2, file1})
+	result1, _ := digestFiles([]string{file1, file2})
+	result2, _ := digestFiles([]string{file2, file1})
 
-	if result1 != result2 {
-		t.Errorf("order should not affect digestFiles result")
+	if !reflect.DeepEqual(result1, result2) {
+		t.Errorf("order should not affect digestFiles result: %+v vs %+v", result1, result2)
 	}
 }
 
@@ -278,7 +275,7 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		overlayFile: overlayContent,
 	}
 
-	result, list, err := digestFilesWithOverlay([]string{overlayFile, realFile}, overlay)
+	list, err := digestFilesWithOverlay([]string{overlayFile, realFile}, overlay)
 	if err != nil {
 		t.Fatalf("digestFilesWithOverlay: %v", err)
 	}
@@ -291,24 +288,18 @@ func TestDigestFilesWithOverlay(t *testing.T) {
 		t.Fatalf("expected 2 digests, got %d", len(list))
 	}
 
-	// Check overlay file uses overlay content
-	if !strings.Contains(result, overlayFile+"]sha256:"+hashOverlay) {
-		t.Errorf("overlay file should use overlay content hash")
+	if list[0].Path != overlayFile || list[0].SHA256 != hashOverlay {
+		t.Errorf("overlay digest mismatch: %+v", list[0])
 	}
-
-	// Check real file uses disk content
-	if !strings.Contains(result, realFile+"]sha256:"+hashReal) {
-		t.Errorf("real file should use disk content hash")
+	if list[1].Path != realFile || list[1].SHA256 != hashReal {
+		t.Errorf("real file digest mismatch: %+v", list[1])
 	}
 }
 
 func TestDigestFilesWithOverlay_Empty(t *testing.T) {
-	result, list, err := digestFilesWithOverlay([]string{}, nil)
+	list, err := digestFilesWithOverlay([]string{}, nil)
 	if err != nil {
 		t.Fatalf("digestFilesWithOverlay: %v", err)
-	}
-	if result != "" {
-		t.Errorf("digestFilesWithOverlay empty = %q, want empty string", result)
 	}
 	if list != nil {
 		t.Errorf("digestFilesWithOverlay empty list = %#v, want nil", list)

@@ -122,7 +122,7 @@ func (c *context) collectCommonInputs(m *manifestBuilder) {
 
 	// Extra files from target configuration
 	if len(c.crossCompile.ExtraFiles) > 0 {
-		_, extraList, err := digestFiles(c.crossCompile.ExtraFiles)
+		extraList, err := digestFiles(c.crossCompile.ExtraFiles)
 		if err == nil && len(extraList) > 0 {
 			m.common.ExtraFiles = extraList
 		}
@@ -137,7 +137,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 	m.pkg.PkgID = p.ID
 
 	// Go source files
-	_, goFilesList, err := digestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
+	goFilesList, err := digestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
 	if err != nil {
 		return fmt.Errorf("digest go files: %w", err)
 	}
@@ -145,7 +145,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 
 	// Alt package files (if any)
 	if pkg.AltPkg != nil {
-		_, altList, err := digestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
+		altList, err := digestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
 		if err != nil {
 			return fmt.Errorf("digest alt go files: %w", err)
 		}
@@ -154,7 +154,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 
 	// Other files (C, assembly, etc.)
 	if len(p.OtherFiles) > 0 {
-		_, otherList, err := digestFiles(p.OtherFiles)
+		otherList, err := digestFiles(p.OtherFiles)
 		if err != nil {
 			return fmt.Errorf("digest other files: %w", err)
 		}
@@ -223,10 +223,6 @@ func (c *context) dependencyFingerprint(dep *packages.Package) (depEntry, error)
 	}
 
 	temp := &aPackage{Package: dep}
-	if c.pkgByID == nil {
-		c.pkgByID = make(map[string]Package)
-	}
-	c.pkgByID[dep.ID] = temp
 	if err := c.collectFingerprint(temp); err != nil {
 		return entry, fmt.Errorf("collect fingerprint for %s: %w", dep.ID, err)
 	}
@@ -460,14 +456,7 @@ func (c *context) saveToCache(pkg *aPackage) error {
 	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).
 	manifestContent := pkg.Manifest
 	if manifestContent == "" {
-		// Fallback: rebuild if missing (should not happen in normal flow).
-		m := newManifestBuilder()
-		c.collectEnvInputs(m)
-		c.collectCommonInputs(m)
-		if err := c.collectPackageInputs(m, pkg); err != nil {
-			return err
-		}
-		manifestContent = m.Build()
+		return fmt.Errorf("package %s missing manifest for fingerprint %s", pkg.PkgPath, pkg.Fingerprint)
 	}
 
 	data, err := decodeManifest(manifestContent)

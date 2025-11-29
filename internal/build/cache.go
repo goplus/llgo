@@ -17,6 +17,8 @@
 package build
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -58,10 +60,8 @@ type cachePaths struct {
 
 // PackagePaths returns the cache paths for a package
 func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) cachePaths {
-	targetTriple = sanitizeComponent(targetTriple)
+	dir := cm.packageDir(targetTriple, pkgPath)
 	fingerprint = sanitizeComponent(fingerprint)
-	pkgDir := sanitizePkgPath(pkgPath)
-	dir := filepath.Join(cm.root, targetTriple, pkgDir)
 	return cachePaths{
 		Dir:      dir,
 		Archive:  filepath.Join(dir, fingerprint+cacheArchiveExt),
@@ -69,14 +69,47 @@ func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) 
 	}
 }
 
+func (cm *cacheManager) packageDir(targetTriple, pkgPath string) string {
+	root := filepath.Clean(cm.root)
+	dir := filepath.Join(root, sanitizeComponent(targetTriple), sanitizePkgPath(pkgPath))
+	dir = filepath.Clean(dir)
+	if dir != root && !strings.HasPrefix(dir, root+string(os.PathSeparator)) {
+		dir = filepath.Join(root, "_")
+	}
+	return dir
+}
+
 // sanitizeComponent ensures a single path component is safe.
 func sanitizeComponent(s string) string {
 	if s == "" || s == "." || s == ".." {
 		return "_"
 	}
-	s = strings.ReplaceAll(s, "/", "_")
-	s = strings.ReplaceAll(s, "\\", "_")
-	return s
+	if isSafeComponent(s) {
+		return s
+	}
+	sum := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(sum[:8])
+}
+
+func isSafeComponent(s string) bool {
+	for _, r := range s {
+		if r >= 'a' && r <= 'z' {
+			continue
+		}
+		if r >= 'A' && r <= 'Z' {
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			continue
+		}
+		switch r {
+		case '-', '_', '.':
+			continue
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // sanitizePkgPath converts a package path to a safe directory path
@@ -88,7 +121,9 @@ func sanitizePkgPath(pkgPath string) string {
 	for i, segment := range segments {
 		if segment == "" || segment == "." || segment == ".." {
 			segments[i] = "_"
+			continue
 		}
+		segments[i] = sanitizeComponent(segment)
 	}
 	return filepath.Join(segments...)
 }
@@ -153,9 +188,7 @@ func (cm *cacheManager) cacheExists(paths cachePaths) bool {
 
 // cleanPackageCache removes all cache entries for a package
 func (cm *cacheManager) cleanPackageCache(targetTriple, pkgPath string) error {
-	pkgDir := sanitizePkgPath(pkgPath)
-	dir := filepath.Join(cm.root, targetTriple, pkgDir)
-	return os.RemoveAll(dir)
+	return os.RemoveAll(cm.packageDir(targetTriple, pkgPath))
 }
 
 // cleanAllCache removes the entire build cache
@@ -165,8 +198,7 @@ func (cm *cacheManager) cleanAllCache() error {
 
 // listCachedPackages returns all cached fingerprints for a package
 func (cm *cacheManager) listCachedPackages(targetTriple, pkgPath string) ([]string, error) {
-	pkgDir := sanitizePkgPath(pkgPath)
-	dir := filepath.Join(cm.root, targetTriple, pkgDir)
+	dir := cm.packageDir(targetTriple, pkgPath)
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {

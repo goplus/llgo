@@ -213,11 +213,16 @@ func buildManifestYAML(data manifestData) (string, error) {
 	return string(out), err
 }
 
+const maxManifestSize = 10 * 1024 * 1024 // 10MB safety bound
+
 func decodeManifest(content string) (manifestData, error) {
 	var data manifestData
 	trimmed := strings.TrimSpace(content)
 	if trimmed == "" {
 		return data, nil
+	}
+	if len(trimmed) > maxManifestSize {
+		return manifestData{}, fmt.Errorf("manifest too large: %d bytes", len(trimmed))
 	}
 	if err := yaml.Unmarshal([]byte(trimmed), &data); err != nil {
 		return manifestData{}, err
@@ -234,7 +239,8 @@ func digestFile(path string) (string, error) {
 	defer f.Close()
 
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	buf := make([]byte, 32*1024)
+	if _, err := io.CopyBuffer(h, f, buf); err != nil {
 		return "", err
 	}
 
@@ -253,37 +259,15 @@ type fileDigest struct {
 	SHA256 string `yaml:"sha256"`
 }
 
-// digestFiles calculates digests for multiple files and returns the
-// serialized digest plus structured list for manifest output.
-// Serialized format kept for backward compatibility: "file1]sha256:xxx,file2]sha256:yyy"
-func digestFiles(paths []string) (string, []fileDigest, error) {
-	if len(paths) == 0 {
-		return "", nil, nil
-	}
-
-	digests := make([]fileDigest, 0, len(paths))
-	for _, path := range paths {
-		hash, err := digestFile(path)
-		if err != nil {
-			return "", nil, fmt.Errorf("digest file %q: %w", path, err)
-		}
-		digests = append(digests, fileDigest{Path: path, SHA256: hash})
-	}
-
-	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
-
-	var parts []string
-	for _, d := range digests {
-		parts = append(parts, fmt.Sprintf("%s]sha256:%s", d.Path, d.SHA256))
-	}
-
-	return strings.Join(parts, ","), digests, nil
+// digestFiles calculates digests for multiple files.
+func digestFiles(paths []string) ([]fileDigest, error) {
+	return digestFilesWithOverlay(paths, nil)
 }
 
 // digestFilesWithOverlay calculates digests for files, using overlay content when available.
-func digestFilesWithOverlay(paths []string, overlay map[string][]byte) (string, []fileDigest, error) {
+func digestFilesWithOverlay(paths []string, overlay map[string][]byte) ([]fileDigest, error) {
 	if len(paths) == 0 {
-		return "", nil, nil
+		return nil, nil
 	}
 
 	digests := make([]fileDigest, 0, len(paths))
@@ -295,7 +279,7 @@ func digestFilesWithOverlay(paths []string, overlay map[string][]byte) (string, 
 			var err error
 			hash, err = digestFile(path)
 			if err != nil {
-				return "", nil, fmt.Errorf("digest file %q: %w", path, err)
+				return nil, fmt.Errorf("digest file %q: %w", path, err)
 			}
 		}
 		digests = append(digests, fileDigest{Path: path, SHA256: hash})
@@ -303,10 +287,5 @@ func digestFilesWithOverlay(paths []string, overlay map[string][]byte) (string, 
 
 	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
 
-	var parts []string
-	for _, d := range digests {
-		parts = append(parts, fmt.Sprintf("%s]sha256:%s", d.Path, d.SHA256))
-	}
-
-	return strings.Join(parts, ","), digests, nil
+	return digests, nil
 }
