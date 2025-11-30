@@ -280,9 +280,6 @@ void
 github_com_goplus_llgo_runtime_abi_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/abi.init")
 
 void
-github_com_goplus_llgo_runtime_internal_clite_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/internal/clite.init")
-
-void
 github_com_goplus_llgo_runtime_internal_clite_bdwgc_init(void) GO_SYMBOL_RENAME("github.com/goplus/llgo/runtime/internal/clite/bdwgc.init")
 
 void
