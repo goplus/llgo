@@ -317,7 +317,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	if fn == nil {
-		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Pkg == nil)
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
@@ -1274,10 +1274,14 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		}
 	}
 
+	if pkg.Pkg.Name() != "main" {
+		return
+	}
+
 	// check instantiate named in RuntimeTypes
 	var typs []*types.Named
 	for _, T := range pkg.Prog.RuntimeTypes() {
-		if typ, ok := T.(*types.Named); ok && typ.TypeArgs() != nil && typ.Obj().Pkg() == pkg.Pkg {
+		if typ, ok := T.(*types.Named); ok && typ.TypeArgs() != nil /*&& typ.Obj().Pkg() == pkg.Pkg*/ {
 			typs = append(typs, typ)
 		}
 	}

@@ -25,6 +25,10 @@ func fastrand64() uint64 {
 	return hi ^ lo
 }
 
+func Rand() uint64 {
+	return fastrand64()
+}
+
 func init() {
 	srand(uint32(time.Time(nil)))
 	hashkey[0] = uintptr(fastrand()) | 1

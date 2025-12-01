@@ -538,6 +538,8 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		}
 		if fnPkg := fn.Pkg; fnPkg != nil {
 			pkg = fnPkg.Pkg
+		} else if obj := fn.Object(); obj != nil && obj.Pkg() != nil {
+			pkg = obj.Pkg()
 		} else {
 			pkg = p.goTyps
 		}

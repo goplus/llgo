@@ -38,7 +38,6 @@ var hasAltPkg = map[string]none{
 	"internal/runtime/atomic":  {},
 	"internal/runtime/maps":    {},
 	"internal/runtime/sys":     {},
-	"internal/sync":            {},
 	"internal/syscall/execenv": {},
 	"internal/syscall/unix":    {},
 	"math":                     {},
@@ -61,4 +60,5 @@ var hasAltPkg = map[string]none{
 	"io":                       {},
 	"io/fs":                    {},
 	"weak":                     {},
+	"unique":                   {},
 }
