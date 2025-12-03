@@ -11,9 +11,9 @@ require (
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
 	github.com/goplus/llvm v0.8.5
 	github.com/goplus/mod v0.17.1
-	github.com/qiniu/x v1.15.1
-	gopkg.in/yaml.v3 v3.0.1
+	github.com/qiniu/x v1.15.2
 	golang.org/x/tools v0.36.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
