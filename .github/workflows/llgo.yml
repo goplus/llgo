@@ -283,7 +283,7 @@ jobs:
 
       - name: Install wamr
         run: |
-          git clone https://github.com/bytecodealliance/wasm-micro-runtime.git
+          git clone -b WAMR-2.4.4 https://github.com/bytecodealliance/wasm-micro-runtime.git
           mkdir wasm-micro-runtime/product-mini/platforms/darwin/build
           cd wasm-micro-runtime/product-mini/platforms/darwin/build
           cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
