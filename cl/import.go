@@ -538,6 +538,9 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		}
 		if fnPkg := fn.Pkg; fnPkg != nil {
 			pkg = fnPkg.Pkg
+		} else if recv := fn.Type().(*types.Signature).Recv(); recv != nil && recv.Origin() != recv {
+			// Check if this is an instantiated generic method (receiver's origin differs from receiver itself)
+			pkg = recv.Pkg()
 		} else {
 			pkg = p.goTyps
 		}

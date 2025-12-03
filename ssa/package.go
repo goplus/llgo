@@ -109,6 +109,8 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
+	checkRuntimeNamed func(Package, *types.Named)
+
 	fnsCompiled map[string]bool
 
 	rt    *types.Package
@@ -283,6 +285,10 @@ func (p Program) patch(typ types.Type) types.Type {
 		return p.patchType(typ)
 	}
 	return typ
+}
+
+func (p Program) SetCheckRuntimeNamed(check func(Package, *types.Named)) {
+	p.checkRuntimeNamed = check
 }
 
 // SetRuntime sets the runtime.
