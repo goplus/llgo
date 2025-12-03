@@ -11,14 +11,14 @@ import (
 
 func TestGOROOT(t *testing.T) {
 	// Test with GOROOT environment variable set
-	t.Run("with GOROOT env", func(t *testing.T) {
+	t.Run("with GOROOT bad env", func(t *testing.T) {
 		origGoRoot := os.Getenv("GOROOT")
 		defer os.Setenv("GOROOT", origGoRoot)
 
-		expected := "/custom/goroot"
-		os.Setenv("GOROOT", expected)
-		if got := GOROOT(); got != expected {
-			t.Errorf("GOROOT() = %v, want %v", got, expected)
+		bad := "/custom/badgoroot"
+		os.Setenv("GOROOT", bad)
+		if got, err := GOROOT(); got == bad || err == nil {
+			t.Fatal("bad GOROOT")
 		}
 	})
 
@@ -28,7 +28,7 @@ func TestGOROOT(t *testing.T) {
 		defer os.Setenv("GOROOT", origGoRoot)
 
 		os.Setenv("GOROOT", "")
-		if got := GOROOT(); got == "" {
+		if got, _ := GOROOT(); got == "" {
 			t.Error("GOROOT() should not return empty when using go env")
 		}
 	})
