@@ -46,7 +46,7 @@ jobs:
         go: ["1.21.13", "1.22.12", "1.23.6", "1.24.2"]
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
@@ -61,7 +61,7 @@ jobs:
           if ${{ startsWith(matrix.os, 'macos') }}; then
             DEMO_PKG="cargs_darwin_arm64.zip"
           else
-            DEMO_PKG="cargs_linux_amd64.zip"  
+            DEMO_PKG="cargs_linux_amd64.zip"
           fi
 
           mkdir -p ./_demo/c/cargs/libs
@@ -133,6 +133,13 @@ jobs:
           chmod +x test.sh
           ./test.sh
 
+      - name: Test export with different symbol names on embedded targets
+        run: |
+          echo "Testing //export with different symbol names on embedded targets..."
+          cd _demo/embed/export
+          chmod +x verify_export.sh
+          ./verify_export.sh
+
       - name: _xtool build tests
         run: |
           cd _xtool
@@ -159,7 +166,7 @@ jobs:
         go: ["1.24.2"]
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
@@ -186,10 +193,14 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{matrix.go}}
-
+      - name: Test Baremetal GC
+        if: ${{!startsWith(matrix.os, 'macos')}}
+        working-directory: runtime/internal/runtime/tinygogc
+        run: llgo test -tags testGC .
       - name: run llgo test
         run: |
           llgo test ./...
+
 
   hello:
     continue-on-error: true
@@ -201,7 +212,7 @@ jobs:
         go: ["1.21.13", "1.22.12", "1.23.6", "1.24.2"]
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
@@ -259,7 +270,7 @@ jobs:
         llvm: [19]
     runs-on: ${{matrix.os}}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:

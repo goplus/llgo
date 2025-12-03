@@ -53,6 +53,11 @@ var (
 	enableDbg         bool
 	enableDbgSyms     bool
 	disableInline     bool
+
+	// enableExportRename enables //export to use different C symbol names than Go function names.
+	// This is for TinyGo compatibility when using -target flag for embedded targets.
+	// Currently, using -target implies TinyGo embedded target mode.
+	enableExportRename bool
 )
 
 // SetDebug sets debug flags.
@@ -71,6 +76,12 @@ func EnableDbgSyms(b bool) {
 
 func EnableTrace(b bool) {
 	enableCallTracing = b
+}
+
+// EnableExportRename enables or disables //export with different C symbol names.
+// This is enabled when using -target flag for TinyGo compatibility.
+func EnableExportRename(b bool) {
+	enableExportRename = b
 }
 
 // -----------------------------------------------------------------------------
@@ -127,6 +138,58 @@ type context struct {
 	cgoArgs    []llssa.Expr
 	cgoRet     llssa.Expr
 	cgoSymbols []string
+	rewrites   map[string]string
+}
+
+func (p *context) rewriteValue(name string) (string, bool) {
+	if p.rewrites == nil {
+		return "", false
+	}
+	dot := strings.LastIndex(name, ".")
+	if dot < 0 || dot == len(name)-1 {
+		return "", false
+	}
+	varName := name[dot+1:]
+	val, ok := p.rewrites[varName]
+	return val, ok
+}
+
+// isStringPtrType checks if typ is a pointer to the basic string type (*string).
+// This is used to validate that -ldflags -X can only rewrite variables of type *string,
+// not derived string types like "type T string".
+func (p *context) isStringPtrType(typ types.Type) bool {
+	ptr, ok := typ.(*types.Pointer)
+	if !ok {
+		return false
+	}
+	basic, ok := ptr.Elem().(*types.Basic)
+	return ok && basic.Kind() == types.String
+}
+
+func (p *context) globalFullName(g *ssa.Global) string {
+	name, _, _ := p.varName(g.Pkg.Pkg, g)
+	return name
+}
+
+func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, bool) {
+	if p.rewrites == nil {
+		return "", false
+	}
+	fn := store.Block().Parent()
+	if fn == nil || fn.Synthetic != "package initializer" {
+		return "", false
+	}
+	if _, ok := store.Val.(*ssa.Const); !ok {
+		return "", false
+	}
+	if !p.isStringPtrType(g.Type()) {
+		return "", false
+	}
+	value, ok := p.rewriteValue(p.globalFullName(g))
+	if !ok {
+		return "", false
+	}
+	return value, true
 }
 
 type pkgState byte
@@ -176,7 +239,16 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
-	if define {
+	if value, ok := p.rewriteValue(name); ok {
+		if p.isStringPtrType(gbl.Type()) {
+			g.Init(pkg.ConstString(value))
+		} else {
+			log.Printf("warning: ignoring rewrite for non-string variable %s (type: %v)", name, gbl.Type())
+			if define {
+				g.InitNil()
+			}
+		}
+	} else if define {
 		g.InitNil()
 	}
 }
@@ -402,6 +474,13 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	if enableDbgSyms && block.Parent().Origin() == nil && block.Index == 0 {
 		p.debugParams(b, block.Parent())
 	}
+
+	// Handle init$hasPatch: split dependency init calls into separate function
+	if doModInit && p.state == pkgHasPatch {
+		baseName := strings.TrimSuffix(p.fn.Name(), "$hasPatch")
+		instrs = p.createInitDepsFunction(pkg, baseName, instrs)
+	}
+
 	if doModInit {
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
@@ -413,13 +492,22 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			}
 		}
 	}
+
 	fnName := block.Parent().Name()
 	cgoReturned := false
 	isCgoCfunc := isCgoCfunc(fnName)
 	isCgoCmacro := isCgoCmacro(fnName)
 	for i, instr := range instrs {
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
-			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
+			name := p.fn.Name()
+			initFnNameOld := initFnNameOfHasPatch(name)
+			initPatchDepsFnName := initDepsFnNameOfHasPatch(name)
+
+			// Call deps function first
+			fnDeps := pkg.NewFunc(initPatchDepsFnName, llssa.NoArgsNoRet, llssa.InC)
+			b.Call(fnDeps.Expr)
+
+			// Then call hasPatch (global vars)
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnOld.Expr)
 		}
@@ -816,6 +904,13 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				return
 			}
 		}
+		if p.rewrites != nil {
+			if g, ok := va.(*ssa.Global); ok {
+				if _, ok := p.rewriteInitStore(v, g); ok {
+					return
+				}
+			}
+		}
 		ptr := p.compileValue(b, va)
 		val := p.compileValue(b, v.Val)
 		b.Store(ptr, val)
@@ -980,12 +1075,22 @@ type Patches = map[string]Patch
 
 // NewPackage compiles a Go package to LLVM IR package.
 func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, err error) {
-	ret, _, err = NewPackageEx(prog, nil, pkg, files)
+	ret, _, err = NewPackageEx(prog, nil, nil, pkg, files)
 	return
 }
 
 // NewPackageEx compiles a Go package to LLVM IR package.
-func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
+//
+// Parameters:
+//   - prog: target LLVM SSA program context
+//   - patches: optional package patches applied during compilation
+//   - rewrites: per-package string initializers rewritten at compile time
+//   - pkg: SSA package to compile
+//   - files: parsed AST files that belong to the package
+//
+// The rewrites map uses short variable names (without package qualifier) and
+// only affects string-typed globals defined in the current package.
+func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -1018,6 +1123,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
 		cgoSymbols: make([]string, 0, 128),
+		rewrites:   rewrites,
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")
@@ -1057,6 +1163,79 @@ func NewPackageEx(prog llssa.Program, patches Patches, pkg *ssa.Package, files [
 
 func initFnNameOfHasPatch(name string) string {
 	return name + "$hasPatch"
+}
+
+func initDepsFnNameOfHasPatch(name string) string {
+	return name + "$patchDeps"
+}
+
+// findFirstNonInitInstruction finds the index of the first non-init instruction
+// in the given instructions. Returns -1 if all instructions are init calls.
+// Skips non-call instructions (like store for guard).
+func findFirstNonInitInstruction(instrs []ssa.Instruction) int {
+	for i, instr := range instrs {
+		call, ok := instr.(*ssa.Call)
+		if !ok {
+			// Skip non-call instructions (like guard store)
+			continue
+		}
+		fn, ok := call.Call.Value.(*ssa.Function)
+		if !ok {
+			// Not a direct function call
+			return i
+		}
+		if fn.Name() == "init" && fn.Signature.Recv() == nil {
+			// This is an init call, continue looking
+			continue
+		}
+		// Found a non-init call
+		return i
+	}
+	return -1
+}
+
+// createInitDepsFunction creates and fills the init$patchDeps function
+// for the given init function, extracting dependency init calls from instrs.
+// Returns the remaining instructions after removing dependency inits.
+func (p *context) createInitDepsFunction(pkg llssa.Package, baseName string, instrs []ssa.Instruction) []ssa.Instruction {
+	// Create deps function
+	depsName := initDepsFnNameOfHasPatch(baseName)
+	depsFn := pkg.NewFunc(depsName, llssa.NoArgsNoRet, llssa.InC)
+	depsFn.MakeBlocks(1)
+	depsBuilder := depsFn.NewBuilder()
+	depsBuilder.SetBlock(depsFn.Block(0))
+
+	// Find and split dependency init calls
+	firstNonInit := findFirstNonInitInstruction(instrs)
+	var depsInstrs []ssa.Instruction
+	if firstNonInit > 0 {
+		depsInstrs = instrs[:firstNonInit]
+		instrs = instrs[firstNonInit:]
+
+		// Fill deps function body with dependency init calls
+		for _, instr := range depsInstrs {
+			if call, ok := instr.(*ssa.Call); ok {
+				if fn, ok := call.Call.Value.(*ssa.Function); ok {
+					if fn.Name() == "init" && fn.Signature.Recv() == nil {
+						// Skip packages that don't need init (like unsafe)
+						if p.pkgNoInit(fn.Pkg.Pkg) {
+							continue
+						}
+						// This is a dependency init call
+						// Use funcName to get the correct function name (handles patches, linkname, etc.)
+						_, depInitName, ftype := p.funcName(fn)
+						if ftype == goFunc {
+							depInitFn := pkg.NewFunc(depInitName, llssa.NoArgsNoRet, llssa.InC)
+							depsBuilder.Call(depInitFn.Expr)
+						}
+					}
+				}
+			}
+		}
+	}
+	depsBuilder.Return()
+
+	return instrs
 }
 
 func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {

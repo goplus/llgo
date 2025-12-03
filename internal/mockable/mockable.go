@@ -18,6 +18,11 @@ func EnableMock() {
 	}
 }
 
+// DisableMock restores the default os.Exit behavior
+func DisableMock() {
+	exitFunc = os.Exit
+}
+
 // Exit calls the current exit function
 func Exit(code int) {
 	exitFunc(code)

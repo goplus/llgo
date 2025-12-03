@@ -8,51 +8,50 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/internal/mockable"
 )
 
-func mockRun(args []string, cfg *Config) {
-	const maxAttempts = 3
-	var lastErr error
-	var lastPanic interface{}
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		mockable.EnableMock()
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					if r != "exit" {
-						lastPanic = r
-					} else {
-						exitCode := mockable.ExitCode()
-						if (exitCode != 0) != false {
-							lastPanic = fmt.Errorf("got exit code %d", exitCode)
-						}
-					}
-				}
-			}()
-			file, _ := os.CreateTemp("", "llgo-*")
-			cfg.OutFile = file.Name()
-			file.Close()
-			defer os.Remove(cfg.OutFile)
-			_, err := Do(args, cfg)
-			if err == nil {
-				return // Success, return immediately from the inner function
-			}
-			lastErr = err
-		}()
+func TestMain(m *testing.M) {
+	old := cacheRootFunc
+	td, _ := os.MkdirTemp("", "llgo-cache-*")
+	cacheRootFunc = func() string { return td }
+	code := m.Run()
+	cacheRootFunc = old
+	_ = os.RemoveAll(td)
+	os.Exit(code)
+}
 
-		if lastPanic == nil && lastErr == nil {
-			return // Success, return from mockRun
+func mockRun(args []string, cfg *Config) {
+	defer mockable.DisableMock()
+	mockable.EnableMock()
+
+	var panicVal interface{}
+	defer func() {
+		if r := recover(); r != nil {
+			// Ignore mocked os.Exit
+			if s, ok := r.(string); ok && s == "exit" {
+				return
+			}
+			panicVal = r
 		}
-		// Continue to next attempt if this one failed
+		if panicVal != nil {
+			panic(panicVal)
+		}
+	}()
+
+	file, _ := os.CreateTemp("", "llgo-*")
+	cfg.OutFile = file.Name()
+	file.Close()
+	defer os.Remove(cfg.OutFile)
+
+	if _, err := Do(args, cfg); err != nil {
+		panic(err)
 	}
-	// If we get here, all attempts failed
-	if lastPanic != nil {
-		panic(lastPanic)
-	}
-	panic(fmt.Errorf("all %d attempts failed, last error: %v", maxAttempts, lastErr))
 }
 
 func TestRun(t *testing.T) {
@@ -94,4 +93,70 @@ func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
 }
 
-// TestGenerateOutputFilenames removed - functionality moved to filename_test.go
+const (
+	rewriteMainPkg = "github.com/goplus/llgo/cl/_testgo/rewrite"
+	rewriteDepPkg  = rewriteMainPkg + "/dep"
+	rewriteDirPath = "../../cl/_testgo/rewrite"
+)
+
+func TestLdFlagsRewriteVars(t *testing.T) {
+	buildRewriteBinary(t, false, "build-main", "build-pkg")
+	buildRewriteBinary(t, false, "rerun-main", "rerun-pkg")
+}
+
+func TestLdFlagsRewriteVarsMainAlias(t *testing.T) {
+	buildRewriteBinary(t, true, "alias-main", "alias-pkg")
+}
+
+func buildRewriteBinary(t *testing.T, useMainAlias bool, mainVal, depVal string) {
+	t.Helper()
+	binPath := filepath.Join(t.TempDir(), "rewrite")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	mainKey := rewriteMainPkg
+	var mainPkgs []string
+	if useMainAlias {
+		mainKey = "main"
+		mainPkgs = []string{rewriteMainPkg}
+	}
+	mainPlain := mainVal + "-plain"
+	depPlain := depVal + "-plain"
+	gorootVal := "goroot-" + mainVal
+	versionVal := "version-" + mainVal
+	addGlobalString(cfg, mainKey+".VarName="+mainVal, mainPkgs)
+	addGlobalString(cfg, mainKey+".VarPlain="+mainPlain, mainPkgs)
+	addGlobalString(cfg, rewriteDepPkg+".VarName="+depVal, nil)
+	addGlobalString(cfg, rewriteDepPkg+".VarPlain="+depPlain, nil)
+	addGlobalString(cfg, "runtime.defaultGOROOT="+gorootVal, nil)
+	addGlobalString(cfg, "runtime.buildVersion="+versionVal, nil)
+
+	if _, err := Do([]string{rewriteDirPath}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	got := runBinary(t, binPath)
+	want := fmt.Sprintf(
+		"main.VarName: %s\nmain.VarPlain: %s\ndep.VarName: %s\ndep.VarPlain: %s\nruntime.GOROOT(): %s\nruntime.Version(): %s\n",
+		mainVal, mainPlain, depVal, depPlain, gorootVal, versionVal,
+	)
+	if got != want {
+		t.Fatalf("unexpected binary output:\nwant %q\ngot  %q", want, got)
+	}
+}
+
+func runBinary(t *testing.T, path string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command(path, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("failed to run %s: %v\n%s", path, err, output)
+	}
+	return string(output)
+}
+
+func TestRunPrintfWithStdioNobuf(t *testing.T) {
+	t.Setenv(llgoStdioNobuf, "1")
+	mockRun([]string{"../../cl/_testdata/printf"}, &Config{Mode: ModeRun})
+}

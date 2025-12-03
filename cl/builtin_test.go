@@ -393,10 +393,10 @@ func TestErrImport(t *testing.T) {
 
 func TestErrInitLinkname(t *testing.T) {
 	var ctx context
-	ctx.initLinkname("//llgo:link abc", func(name string) (string, bool, bool) {
+	ctx.initLinkname("//llgo:link abc", func(name string, isExport bool) (string, bool, bool) {
 		return "", false, false
 	})
-	ctx.initLinkname("//go:linkname Printf printf", func(name string) (string, bool, bool) {
+	ctx.initLinkname("//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
 		return "", false, false
 	})
 	defer func() {
@@ -404,7 +404,7 @@ func TestErrInitLinkname(t *testing.T) {
 			t.Fatal("initLinkname: no error?")
 		}
 	}()
-	ctx.initLinkname("//go:linkname Printf printf", func(name string) (string, bool, bool) {
+	ctx.initLinkname("//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
 		return "foo.Printf", false, name == "Printf"
 	})
 }
@@ -504,5 +504,240 @@ func TestInstantiate(t *testing.T) {
 	}
 	if typ := instantiate(obj.Type(), inamed.(*types.Named)); typ == obj.Type() || typ.(*types.Named).TypeArgs() == nil {
 		t.Fatal("error")
+	}
+}
+
+func TestHandleExportDiffName(t *testing.T) {
+	tests := []struct {
+		name               string
+		enableExportRename bool
+		line               string
+		fullName           string
+		inPkgName          string
+		wantHasLinkname    bool
+		wantLinkname       string
+		wantExport         string
+	}{
+		{
+			name:               "ExportDiffNames_DifferentName",
+			enableExportRename: true,
+			line:               "//export IRQ_Handler",
+			fullName:           "pkg.HandleInterrupt",
+			inPkgName:          "HandleInterrupt",
+			wantHasLinkname:    true,
+			wantLinkname:       "IRQ_Handler",
+			wantExport:         "IRQ_Handler",
+		},
+		{
+			name:               "ExportDiffNames_SameName",
+			enableExportRename: true,
+			line:               "//export SameName",
+			fullName:           "pkg.SameName",
+			inPkgName:          "SameName",
+			wantHasLinkname:    true,
+			wantLinkname:       "SameName",
+			wantExport:         "SameName",
+		},
+		{
+			name:               "ExportDiffNames_WithSpaces",
+			enableExportRename: true,
+			line:               "//export   Timer_Callback  ",
+			fullName:           "pkg.OnTimerTick",
+			inPkgName:          "OnTimerTick",
+			wantHasLinkname:    true,
+			wantLinkname:       "Timer_Callback",
+			wantExport:         "Timer_Callback",
+		},
+		{
+			name:               "ExportDiffNames_Disabled_MatchingName",
+			enableExportRename: false,
+			line:               "//export Func",
+			fullName:           "pkg.Func",
+			inPkgName:          "Func",
+			wantHasLinkname:    true,
+			wantLinkname:       "Func",
+			wantExport:         "Func",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Save and restore global state
+			oldEnableExportRename := enableExportRename
+			defer func() {
+				EnableExportRename(oldEnableExportRename)
+			}()
+			EnableExportRename(tt.enableExportRename)
+
+			// Setup context
+			prog := llssa.NewProgram(nil)
+			pkg := prog.NewPackage("test", "test")
+			ctx := &context{
+				prog: prog,
+				pkg:  pkg,
+			}
+
+			// Call initLinkname with closure that mimics initLinknameByDoc behavior
+			ret := ctx.initLinkname(tt.line, func(name string, isExport bool) (string, bool, bool) {
+				return tt.fullName, false, name == tt.inPkgName || (isExport && enableExportRename)
+			})
+
+			// Verify result
+			hasLinkname := (ret == hasLinkname)
+			if hasLinkname != tt.wantHasLinkname {
+				t.Errorf("hasLinkname = %v, want %v", hasLinkname, tt.wantHasLinkname)
+			}
+
+			if tt.wantHasLinkname {
+				// Check linkname was set
+				if link, ok := prog.Linkname(tt.fullName); !ok || link != tt.wantLinkname {
+					t.Errorf("linkname = %q (ok=%v), want %q", link, ok, tt.wantLinkname)
+				}
+
+				// Check export was set
+				exports := pkg.ExportFuncs()
+				if export, ok := exports[tt.fullName]; !ok || export != tt.wantExport {
+					t.Errorf("export = %q (ok=%v), want %q", export, ok, tt.wantExport)
+				}
+			}
+		})
+	}
+}
+
+func TestInitLinknameByDocExportDiffNames(t *testing.T) {
+	tests := []struct {
+		name               string
+		enableExportRename bool
+		doc                *ast.CommentGroup
+		fullName           string
+		inPkgName          string
+		wantExported       bool // Whether the symbol should be exported with different name
+		wantLinkname       string
+		wantExport         string
+	}{
+		{
+			name:               "WithExportDiffNames_DifferentNameExported",
+			enableExportRename: true,
+			doc: &ast.CommentGroup{
+				List: []*ast.Comment{
+					{Text: "//export IRQ_Handler"},
+				},
+			},
+			fullName:     "pkg.HandleInterrupt",
+			inPkgName:    "HandleInterrupt",
+			wantExported: true,
+			wantLinkname: "IRQ_Handler",
+			wantExport:   "IRQ_Handler",
+		},
+		{
+			name:               "WithoutExportDiffNames_NotExported",
+			enableExportRename: false,
+			doc: &ast.CommentGroup{
+				List: []*ast.Comment{
+					{Text: "//export DifferentName"},
+				},
+			},
+			fullName:     "pkg.HandleInterrupt",
+			inPkgName:    "HandleInterrupt",
+			wantExported: false,
+			// Without enableExportRename, it goes through normal flow which expects same name
+			// The symbol "DifferentName" won't be found, so no export happens
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Without enableExportRename, export with different name will panic
+			if !tt.wantExported && !tt.enableExportRename {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("expected panic for export with different name when enableExportRename=false")
+					}
+				}()
+			}
+
+			// Save and restore global state
+			oldEnableExportRename := enableExportRename
+			defer func() {
+				EnableExportRename(oldEnableExportRename)
+			}()
+			EnableExportRename(tt.enableExportRename)
+
+			// Setup context
+			prog := llssa.NewProgram(nil)
+			pkg := prog.NewPackage("test", "test")
+			ctx := &context{
+				prog: prog,
+				pkg:  pkg,
+			}
+
+			// Call initLinknameByDoc
+			ctx.initLinknameByDoc(tt.doc, tt.fullName, tt.inPkgName, false)
+
+			// Verify export behavior
+			exports := pkg.ExportFuncs()
+			if tt.wantExported {
+				// Should have exported the symbol with different name
+				if export, ok := exports[tt.fullName]; !ok || export != tt.wantExport {
+					t.Errorf("export = %q (ok=%v), want %q", export, ok, tt.wantExport)
+				}
+				// Check linkname was also set
+				if link, ok := prog.Linkname(tt.fullName); !ok || link != tt.wantLinkname {
+					t.Errorf("linkname = %q (ok=%v), want %q", link, ok, tt.wantLinkname)
+				}
+			}
+		})
+	}
+}
+
+func TestInitLinkExportDiffNames(t *testing.T) {
+	tests := []struct {
+		name               string
+		enableExportRename bool
+		line               string
+		wantPanic          bool
+	}{
+		{
+			name:               "ExportDiffNames_Enabled_NoError",
+			enableExportRename: true,
+			line:               "//export IRQ_Handler",
+			wantPanic:          false,
+		},
+		{
+			name:               "ExportDiffNames_Disabled_Panic",
+			enableExportRename: false,
+			line:               "//export IRQ_Handler",
+			wantPanic:          true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.wantPanic {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("expected panic but didn't panic")
+					}
+				}()
+			}
+
+			oldEnableExportRename := enableExportRename
+			defer func() {
+				EnableExportRename(oldEnableExportRename)
+			}()
+			EnableExportRename(tt.enableExportRename)
+
+			prog := llssa.NewProgram(nil)
+			pkg := prog.NewPackage("test", "test")
+			ctx := &context{
+				prog: prog,
+				pkg:  pkg,
+			}
+
+			ctx.initLinkname(tt.line, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+				// Simulate initLinknames scenario: symbol not found (like in decl packages)
+				return "", false, false
+			})
+		})
 	}
 }
