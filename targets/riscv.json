@@ -4,6 +4,5 @@
 	"extra-files": [
 		"targets/device/riscv/start.S",
 		"targets/device/riscv/handleinterrupt.S"
-	],
-	"gdb": ["riscv64-unknown-elf-gdb"]
+	]
 }

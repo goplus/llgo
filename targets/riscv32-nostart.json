@@ -1,5 +1,5 @@
 {
-	"inherits": ["riscv-llgo"],
+	"inherits": ["riscv-nostart"],
 	"llvm-target": "riscv32-unknown-none",
 	"cpu": "generic-rv32",
 	"target-abi": "ilp32",
