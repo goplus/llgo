@@ -34,7 +34,7 @@ fi
 echo "==> Checking for __libc_init_array call in _start..."
 
 # Disassemble _start and check for __libc_init_array call
-if llvm-objdump -d "$TEST_ELF" | grep -A30 "<_start>:" | grep "__libc_init_array" > /dev/null; then
+if llvm-objdump -d "$TEST_ELF" | grep -A50 "<_start>:" | grep "__libc_init_array" > /dev/null; then
     echo "✓ PASS: _start calls __libc_init_array"
     echo "        This confirms ESP32-C3 uses newlib's standard startup"
     echo "        (crt0-riscv32-unknown-none, not TinyGo's start.S)"
@@ -46,6 +46,6 @@ else
     echo ""
     echo "Expected: esp32c3 → riscv32-llgo → riscv-llgo → riscv-basic"
     echo "Current _start disassembly:"
-    llvm-objdump -d "$TEST_ELF" | grep -A30 "<_start>:" || true
+    llvm-objdump -d "$TEST_ELF" | grep -A50 "<_start>:" || true
     exit 1
 fi

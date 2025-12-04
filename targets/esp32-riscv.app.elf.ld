@@ -29,6 +29,10 @@ SECTIONS
     *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
     *(.sbss2 .sbss2.* .gnu.linkonce.sb2.*)
 
+    /* note(zzy): .preinit_array, .init_array and .fini_array were originally separate sections,
+     * but they get lost during ELF→BIN conversion. Following ESP-IDF's approach, merge them
+     * into .rodata for proper loading.
+     */
     . = ALIGN(4);
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array))
