@@ -1,0 +1,4 @@
+{
+	"inherits": ["riscv-basic"],
+	"build-tags": ["target_llgo"]
+}
