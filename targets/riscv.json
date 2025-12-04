@@ -1,6 +1,5 @@
 {
 	"inherits": ["riscv-basic"],
-	"build-tags": ["target_tinygo"],
 	"extra-files": [
 		"targets/device/riscv/start.S",
 		"targets/device/riscv/handleinterrupt.S"
