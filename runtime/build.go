@@ -59,6 +59,7 @@ var hasAltPkg = map[string]none{
 	"runtime/internal/syscall": {},
 	"io":                       {},
 	"io/fs":                    {},
-	"weak":                     {},
+	"internal/weak":            {}, // Go1.23
+	"weak":                     {}, // Go1.24
 	"unique":                   {},
 }
