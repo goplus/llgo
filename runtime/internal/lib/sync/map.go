@@ -33,6 +33,8 @@ import (
 // CompareAndSwap is a write operation when it returns swapped set to true;
 // and CompareAndDelete is a write operation when it returns deleted set to true.
 type Map struct {
+	_ noCopy
+
 	mu Mutex
 
 	// read contains the portion of the map's contents that are safe for
@@ -153,6 +155,27 @@ func (e *entry) load() (value any, ok bool) {
 // Store sets the value for a key.
 func (m *Map) Store(key, value any) {
 	_, _ = m.Swap(key, value)
+}
+
+// Clear deletes all the entries, resulting in an empty Map.
+func (m *Map) Clear() {
+	read := m.loadReadOnly()
+	if len(read.m) == 0 && !read.amended {
+		// Avoid allocating a new readOnly when the map is already clear.
+		return
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	read = m.loadReadOnly()
+	if len(read.m) > 0 || read.amended {
+		m.read.Store(&readOnly{})
+	}
+
+	m.dirty = nil
+	// Don't immediately promote the newly-cleared dirty map on the next operation.
+	m.misses = 0
 }
 
 // tryCompareAndSwap compare the entry with the given old value and swaps
