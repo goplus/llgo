@@ -378,6 +378,82 @@ func TestTryLoadFromCache_NoFingerprint(t *testing.T) {
 	}
 }
 
+func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
+	td := t.TempDir()
+	oldFunc := cacheRootFunc
+	cacheRootFunc = func() string { return td }
+	defer func() { cacheRootFunc = oldFunc }()
+
+	ctx := &context{
+		conf: &packages.Config{},
+		buildConf: &Config{
+			Goos:         "darwin",
+			Goarch:       "arm64",
+			ForceRebuild: true, // Force rebuild enabled
+		},
+		crossCompile: crosscompile.Export{
+			LLVMTarget: "arm64-apple-darwin",
+		},
+	}
+
+	// Create a fake cache entry
+	pkg := &aPackage{
+		Package: &packages.Package{
+			PkgPath: "example.com/cached",
+			Name:    "cached",
+		},
+		Fingerprint: "test123",
+		Manifest: func() string {
+			m := newManifestBuilder()
+			m.env.Goos = "darwin"
+			m.pkg.PkgPath = "example.com/cached"
+			return m.Build()
+		}(),
+	}
+
+	// Create a temporary .o file
+	objFile, err := os.CreateTemp(td, "test-*.o")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	objFile.WriteString("fake object file")
+	objFile.Close()
+
+	pkg.LLFiles = []string{objFile.Name()}
+
+	// First save to cache
+	ctx.buildConf.ForceRebuild = false
+	if err := ctx.saveToCache(pkg); err != nil {
+		t.Fatalf("saveToCache: %v", err)
+	}
+
+	// Verify cache exists
+	cm := ctx.ensureCacheManager()
+	paths := cm.PackagePaths("arm64-apple-darwin", "example.com/cached", "test123")
+	if _, err := os.Stat(paths.Archive); err != nil {
+		t.Fatalf("cache should exist: %v", err)
+	}
+
+	// Now enable ForceRebuild and try to load
+	ctx.buildConf.ForceRebuild = true
+
+	// Clear LLFiles to verify it's not loaded from cache
+	pkg.LLFiles = nil
+	pkg.CacheHit = false
+
+	if ctx.tryLoadFromCache(pkg) {
+		t.Error("should return false when ForceRebuild is enabled, even with valid cache")
+	}
+
+	if pkg.CacheHit {
+		t.Error("CacheHit should remain false when ForceRebuild is enabled")
+	}
+
+	if len(pkg.LLFiles) > 0 {
+		t.Error("LLFiles should not be populated when ForceRebuild is enabled")
+	}
+}
+
 func TestSaveToCache_MainPackage(t *testing.T) {
 	td := t.TempDir()
 	oldFunc := cacheRootFunc

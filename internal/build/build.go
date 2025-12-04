@@ -132,6 +132,7 @@ type Config struct {
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
+	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
 	Tags          string
 	SizeReport    bool   // print size report after successful build
 	SizeFormat    string // size report format: text,json (default text)

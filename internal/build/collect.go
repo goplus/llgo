@@ -309,6 +309,11 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 		return false
 	}
 
+	// Skip cache when force rebuild is enabled
+	if c.buildConf.ForceRebuild {
+		return false
+	}
+
 	if pkg.Fingerprint == "" {
 		return false
 	}

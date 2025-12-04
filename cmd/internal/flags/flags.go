@@ -39,12 +39,14 @@ var ForceEspClang bool
 var SizeReport bool
 var SizeFormat string
 var SizeLevel string
+var ForceRebuild bool
 
 func AddCommonFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose output")
 }
 
 func AddBuildFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&ForceRebuild, "a", false, "Force rebuilding of packages that are already up-to-date")
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	if buildenv.Dev {
@@ -86,6 +88,7 @@ func UpdateConfig(conf *build.Config) error {
 	conf.Target = Target
 	conf.Port = Port
 	conf.BaudRate = BaudRate
+	conf.ForceRebuild = ForceRebuild
 	if SizeReport || SizeFormat != "" || SizeLevel != "" {
 		conf.SizeReport = true
 		if SizeFormat != "" {
