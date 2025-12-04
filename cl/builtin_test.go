@@ -22,6 +22,7 @@ package cl
 import (
 	"go/ast"
 	"go/constant"
+	"go/token"
 	"go/types"
 	"strings"
 	"testing"
@@ -205,6 +206,25 @@ func TestRecvTypeName(t *testing.T) {
 		}
 	}()
 	recvTypeName(&ast.BadExpr{})
+}
+
+func TestRecvType(t *testing.T) {
+	pkg := types.NewPackage("", "main")
+	obj := types.NewTypeName(token.NoPos, pkg, "T", nil)
+	named := types.NewNamed(obj, types.Typ[types.Int], nil)
+	if ret := recvNamed(named); ret != named {
+		t.Fatal("error")
+	}
+	if ret := recvNamed(types.NewPointer(named)); ret != named {
+		t.Fatal("error")
+	}
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Fatal("must panic")
+		}
+	}()
+	recvNamed(types.NewPointer(types.Typ[types.Int]))
 }
 
 /*
