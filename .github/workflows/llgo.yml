@@ -143,6 +143,7 @@ jobs:
       - name: Test ESP32-C3 newlib startup
         run: |
           echo "Testing ESP32-C3 uses newlib startup (not TinyGo start.S)..."
+          pip3 install --break-system-packages esptool==5.1.0
           cd _demo/embed
           chmod +x test_esp32c3_startup.sh
           ./test_esp32c3_startup.sh
