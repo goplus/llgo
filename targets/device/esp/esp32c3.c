@@ -289,6 +289,104 @@ typedef volatile struct usb_serial_jtag_dev_s {
     uint32_t date;
 } usb_serial_jtag_dev_t;
 extern usb_serial_jtag_dev_t USB_SERIAL_JTAG;
+
+/**
+ * @brief  Flushes the TX buffer, that is, make it available for the
+ *         host to pick up.
+ *
+ * @note  When fifo is full (with 64 byte), HW will flush the buffer automatically,
+ *        if this function is called directly after, this effectively turns into a
+ *        no-op. Because a 64-byte packet will be interpreted as a not-complete USB
+ *        transaction, you need to transfer either more data or a zero-length packet
+ *        for the data to actually end up at the program listening to the CDC-ACM
+ *        serial port. To send a zero-length packet, call
+ *        usb_serial_jtag_ll_txfifo_flush() again when
+ *        usb_serial_jtag_ll_txfifo_writable() returns true.
+ *
+ * @return na
+ */
+static inline void usb_serial_jtag_ll_txfifo_flush(void) { USB_SERIAL_JTAG.ep1_conf.wr_done = 1; }
+
+/**
+ * @brief  Returns 1 if the USB_SERIAL_JTAG txfifo has room.
+ *
+ * @return 0 if no data available, 1 if data available
+ */
+static inline int usb_serial_jtag_ll_txfifo_writable(void) { return USB_SERIAL_JTAG.ep1_conf.serial_in_ep_data_free; }
+
+/**
+ * @brief  Write byte to the USB_SERIAL_JTAG txfifo. Only writes bytes as long / if there
+ *         is room in the buffer.
+ *
+ * @param  buf The data buffer.
+ * @param  wr_len The data length needs to be written.
+ *
+ * @return Amount of bytes actually written. May be less than wr_len.
+ */
+static inline int usb_serial_jtag_ll_write_txfifo(const uint8_t *buf, uint32_t wr_len) {
+    int i;
+    for (i = 0; i < (int)wr_len; i++) {
+        if (!USB_SERIAL_JTAG.ep1_conf.serial_in_ep_data_free)
+            break;
+        USB_SERIAL_JTAG.ep1.rdwr_byte = buf[i];
+    }
+    return i;
+}
+
+// ============================================================================
+// System Call Implementation for Bare-Metal ESP32-C3
+// ============================================================================
+
+#include <sys/types.h>
+
+/**
+ * @brief Write one character to USB Serial JTAG (non-blocking, simplified)
+ *
+ * If FIFO is full, character is dropped silently.
+ * This is a bare-metal implementation without timeout or retry logic.
+ */
+static void usb_serial_jtag_write_char(char c) {
+    // Check if TX FIFO has space
+    if (usb_serial_jtag_ll_txfifo_writable()) {
+        uint8_t byte = (uint8_t)c;
+        usb_serial_jtag_ll_write_txfifo(&byte, 1);
+
+        // Flush on newline to ensure output is displayed immediately
+        if (c == '\n') {
+            usb_serial_jtag_ll_txfifo_flush();
+        }
+    }
+    // If FIFO is full, character is dropped (non-blocking behavior)
+}
+
+/**
+ * @brief System call: write to file descriptor
+ *
+ * For bare-metal ESP32-C3, only stdout (1) and stderr (2) are supported
+ * via USB Serial JTAG. Other file descriptors return error.
+ *
+ * @param fd File descriptor (only 1 and 2 supported)
+ * @param buf Data buffer to write
+ * @param count Number of bytes to write
+ * @return Number of bytes written, or -1 on error
+ */
+ssize_t _write(int fd, const void *buf, size_t count) {
+    const char *data = (const char *)buf;
+
+    // Write each character
+    for (size_t i = 0; i < count; i++) {
+        char c = data[i];
+
+        // Auto convert LF to CRLF for terminal compatibility
+        if (c == '\n') {
+            usb_serial_jtag_write_char('\r');
+        }
+        usb_serial_jtag_write_char(c);
+    }
+
+    return (ssize_t)count; // Always report success (non-blocking)
+}
+
 #ifdef __cplusplus
 }
 #endif
