@@ -397,15 +397,14 @@ func (p Program) toType(raw types.Type) Type {
 	panic(fmt.Sprintf("toLLVMType: todo - %T\n", raw))
 }
 
-func (p Program) toLLVMNamedStruct(name string, raw *types.Struct) llvm.Type {
-	if typ, ok := p.named[name]; ok {
-		return typ
-	}
+func (p Program) toLLVMNamedStruct(name string, raw *types.Named, st *types.Struct, kind valueKind) Type {
 	t := p.ctx.StructCreateNamed(name)
-	p.named[name] = t
-	fields := p.toLLVMFields(raw)
+	typ := &aType{t, rawType{raw}, kind}
+	p.named[name] = typ
+	p.typs.Set(raw, typ)
+	fields := p.toLLVMFields(st)
 	t.StructSetBody(fields, false)
-	return t
+	return typ
 }
 
 func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind) {
@@ -504,14 +503,17 @@ func (p Program) llvmNameOf(named *types.Named) (name string) {
 }
 
 func (p Program) toNamed(raw *types.Named) Type {
+	name := p.llvmNameOf(raw)
+	if typ, ok := p.named[name]; ok {
+		return typ
+	}
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
-		name := p.llvmNameOf(raw)
 		kind := vkStruct
 		if IsClosure(t) {
 			kind = vkClosure
 		}
-		return &aType{p.toLLVMNamedStruct(name, t), rawType{raw}, kind}
+		return p.toLLVMNamedStruct(name, raw, t, kind)
 	default:
 		typ := p.rawType(t)
 		return &aType{typ.ll, rawType{raw}, typ.kind}
