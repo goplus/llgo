@@ -264,6 +264,9 @@ func (b Builder) sizeof(t types.Type) int64 {
 
 // func InitNamed(ret *Type, pkgPath, name string, underlying *Type, methods, ptrMethods []Method)
 func (b Builder) abiInitNamed(ret Expr, t *types.Named) func() Expr {
+	if b.Prog.checkRuntimeNamed != nil {
+		b.Prog.checkRuntimeNamed(b.Pkg, t)
+	}
 	under := b.abiType(t.Underlying())
 	return func() Expr {
 		pkg := b.Pkg

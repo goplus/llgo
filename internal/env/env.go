@@ -17,19 +17,17 @@ const (
 	envFileName        = "/internal/env/env.go"
 )
 
-func GOROOT() string {
-	root := os.Getenv("GOROOT")
-	if root != "" {
-		return root
-	}
+func GOROOT() (string, error) {
 	cmd := exec.Command("go", "env", "GOROOT")
 	var out bytes.Buffer
+	var buf bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &buf
 	err := cmd.Run()
-	if err == nil {
-		return strings.TrimSpace(out.String())
+	if err != nil {
+		return "", fmt.Errorf("%s, %w", buf.String(), err)
 	}
-	panic("cannot get GOROOT: " + err.Error())
+	return strings.TrimSpace(out.String()), nil
 }
 
 func LLGoCacheDir() string {

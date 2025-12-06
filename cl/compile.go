@@ -284,6 +284,17 @@ func isCgoVar(name string) bool {
 	return strings.HasPrefix(name, "__cgo_")
 }
 
+// isInstance reports whether f is an instance method or generic instantiation.
+func isInstance(f *ssa.Function) bool {
+	if f.Origin() != nil {
+		return true
+	}
+	if recv := f.Type().(*types.Signature).Recv(); recv != nil {
+		return recv.Origin() != recv
+	}
+	return false
+}
+
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
@@ -317,7 +328,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	if fn == nil {
-		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, f.Origin() != nil)
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
@@ -1128,6 +1139,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
+	ctx.prog.SetCheckRuntimeNamed(ctx.checkRuntimeNamed)
 	ret.SetPatch(ctx.patchType)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
 
@@ -1273,21 +1285,6 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			}
 		}
 	}
-
-	// check instantiate named in RuntimeTypes
-	var typs []*types.Named
-	for _, T := range pkg.Prog.RuntimeTypes() {
-		if typ, ok := T.(*types.Named); ok && typ.TypeArgs() != nil && typ.Obj().Pkg() == pkg.Pkg {
-			typs = append(typs, typ)
-		}
-	}
-	sort.Slice(typs, func(i, j int) bool {
-		return typs[i].String() < typs[j].String()
-	})
-	for _, typ := range typs {
-		ctx.compileMethods(ret, typ)
-		ctx.compileMethods(ret, types.NewPointer(typ))
-	}
 }
 
 func (p *context) type_(typ types.Type, bg llssa.Background) llssa.Type {
@@ -1354,6 +1351,17 @@ func (p *context) resolveLinkname(name string) string {
 		return ltarget
 	}
 	return name
+}
+
+// checkRuntimeNamed compiles methods for generic type instantiations.
+// Only types with type arguments (instantiated generics) need method compilation
+// here, as non-generic types have their methods compiled elsewhere.
+func (p *context) checkRuntimeNamed(pkg llssa.Package, typ *types.Named) {
+	if typ.TypeArgs() == nil {
+		return
+	}
+	p.compileMethods(pkg, typ)
+	p.compileMethods(pkg, types.NewPointer(typ))
 }
 
 // -----------------------------------------------------------------------------
