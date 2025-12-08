@@ -419,14 +419,7 @@ func (p Program) toLLVMStruct(raw *types.Struct) (ret llvm.Type, kind valueKind)
 }
 
 func IsClosure(raw *types.Struct) bool {
-	n := raw.NumFields()
-	if n == 2 {
-		f1, f2 := raw.Field(0), raw.Field(1)
-		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
-			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
-		}
-	}
-	return false
+	return abi.IsClosure(raw)
 }
 
 func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {

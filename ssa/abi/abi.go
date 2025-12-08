@@ -301,10 +301,24 @@ func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, private bool) {
 func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 	hash, private := b.structHash(t)
 	hashStr := base64.RawURLEncoding.EncodeToString(hash)
+	if IsClosure(t) {
+		return "_llgo_closure$" + hashStr, true
+	}
 	if private {
 		return b.Pkg + ".struct$" + hashStr, false
 	}
 	return "_llgo_struct$" + hashStr, false
+}
+
+func IsClosure(raw *types.Struct) bool {
+	n := raw.NumFields()
+	if n == 2 {
+		f1, f2 := raw.Field(0), raw.Field(1)
+		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
+			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
+		}
+	}
+	return false
 }
 
 func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
