@@ -11,6 +11,8 @@ extern "C" {
 #endif
 #include "stdint.h"
 
+// note(zzy): Structure definition from ESP-IDF:
+// components/soc/esp32c3/register/soc/usb_serial_jtag_struct.h
 typedef volatile struct usb_serial_jtag_dev_s {
     union {
         struct {
@@ -290,6 +292,9 @@ typedef volatile struct usb_serial_jtag_dev_s {
 } usb_serial_jtag_dev_t;
 extern usb_serial_jtag_dev_t USB_SERIAL_JTAG;
 
+// note(zzy): Functions below are based on ESP-IDF HAL layer:
+// https://github.com/espressif/esp-idf/blob/release/v6.0/components/hal/esp32c3/include/hal/usb_serial_jtag_ll.h
+
 /**
  * @brief  Flushes the TX buffer, that is, make it available for the
  *         host to pick up.
@@ -336,6 +341,8 @@ static inline int usb_serial_jtag_ll_write_txfifo(const uint8_t *buf, uint32_t w
 // ============================================================================
 // System Call Implementation for Bare-Metal ESP32-C3
 // ============================================================================
+// note(zzy): _write() implementation is inspired by ESP-IDF VFS layer:
+// https://github.com/espressif/esp-idf/blob/release/v6.0/components/esp_driver_usb_serial_jtag/src/usb_serial_jtag_vfs.c
 
 #include <sys/types.h>
 
