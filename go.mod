@@ -1,6 +1,6 @@
 module github.com/goplus/llgo
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -12,7 +12,7 @@ require (
 	github.com/goplus/llvm v0.8.5
 	github.com/goplus/mod v0.17.2
 	github.com/qiniu/x v1.15.2
-	golang.org/x/tools v0.36.0
+	golang.org/x/tools v0.40.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -26,9 +26,9 @@ require (
 require (
 	github.com/creack/goselect v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	golang.org/x/mod v0.27.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
 )
 
 replace github.com/goplus/llgo/runtime => ./runtime
