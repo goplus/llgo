@@ -18,7 +18,7 @@ func platformSpecifiedFiles(builtinsDir, target string) []string {
 			filepath.Join(builtinsDir, "riscv", "restore.S"),
 		}
 		// Only add atomic.c for non-ESP targets (ESP doesn't support A extension)
-		if !strings.Contains(target, "riscv32-esp-elf") {
+		if target != "riscv32-esp-elf" {
 			files = append(files, filepath.Join(builtinsDir, "atomic.c"))
 		}
 		return files

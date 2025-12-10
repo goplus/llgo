@@ -10,9 +10,6 @@
 	"serial": "usb",
 	"rtlib": "compiler-rt",
 	"libc": "newlib-esp32",
-	"cflags": [
-		"-march=rv32imc"
-	],
 	"linkerscript": "targets/esp32c3.memory.ld",
 	"extra-files": [],
 	"binary-format": "esp32c3",
