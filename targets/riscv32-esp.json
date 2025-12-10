@@ -1,13 +1,13 @@
 {
 	"inherits": ["riscv-nostart"],
-	"llvm-target": "riscv32-unknown-none",
+	"llvm-target": "riscv32-esp-elf",
 	"cpu": "generic-rv32",
 	"target-abi": "ilp32",
 	"build-tags": ["tinygo.riscv32"],
 	"scheduler": "tasks",
 	"default-stack-size": 2048,
 	"cflags": [
-		"-march=rv32imac"
+		"-march=rv32imc"
 	],
 	"ldflags": [
 		"-melf32lriscv"
