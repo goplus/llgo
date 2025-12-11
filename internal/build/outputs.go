@@ -72,14 +72,13 @@ func determineBaseNameAndDir(pkgName string, conf *Config, multiPkg bool) (baseN
 			// Otherwise, use the specified file path
 			dir = filepath.Dir(conf.OutFile)
 			baseName = strings.TrimSuffix(filepath.Base(conf.OutFile), conf.AppExt)
-			if dir == "." {
-				dir = ""
-			}
+			// Don't convert "." to "" for test mode with explicit output
+			// This preserves the information that user specified an output file
 			return baseName, dir
 		}
 		if conf.CompileOnly {
 			// -c without -o: write pkg.test in current directory
-			return pkgName + ".test", ""
+			return pkgName + ".test", "."
 		}
 		// Default test mode without -c or -o: use temp file
 		return pkgName, ""
@@ -134,8 +133,18 @@ func buildOutputPath(baseName, dir string, conf *Config, multiPkg bool, appExt s
 	baseName = applyPrefix(baseName, conf.BuildMode, conf.Target, conf.Goos)
 
 	if dir != "" {
+		// dir == "." means current directory (explicit user specification)
+		// other dir values are actual directory paths
+		if dir == "." {
+			return baseName + appExt, nil
+		}
 		return filepath.Join(dir, baseName+appExt), nil
-	} else if (conf.Mode == ModeBuild && multiPkg) || (conf.Mode != ModeBuild && conf.Mode != ModeInstall) {
+	} else if (conf.Mode == ModeBuild && multiPkg) || (conf.Mode != ModeBuild && conf.Mode != ModeInstall && conf.Mode != ModeTest) {
+		return genTempOutputFile(baseName, appExt)
+	} else if conf.Mode == ModeTest && !conf.CompileOnly && conf.OutFile == "" {
+		// Only create temp file for test mode when:
+		// - Not compile-only (-c flag not set)
+		// - No output file specified (-o flag not set)
 		return genTempOutputFile(baseName, appExt)
 	} else {
 		return baseName + appExt, nil
