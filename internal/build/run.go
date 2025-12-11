@@ -27,6 +27,11 @@ import (
 )
 
 func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mode) error {
+	// Skip execution if CompileOnly is true
+	if conf.CompileOnly {
+		return nil
+	}
+
 	switch mode {
 	case ModeRun:
 		args := make([]string, 0, len(conf.RunArgs)+1)
@@ -87,6 +92,11 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 }
 
 func runInEmulator(emulator string, envMap map[string]string, pkgDir, pkgName string, conf *Config, mode Mode, verbose bool) error {
+	// Skip execution if CompileOnly is true
+	if conf.CompileOnly {
+		return nil
+	}
+
 	if emulator == "" {
 		return fmt.Errorf("target %s does not have emulator configured", conf.Target)
 	}
