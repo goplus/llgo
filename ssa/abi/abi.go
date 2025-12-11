@@ -27,6 +27,7 @@ import (
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/runtime/abi"
+	"golang.org/x/tools/go/types/typeutil"
 )
 
 // -----------------------------------------------------------------------------
@@ -131,20 +132,25 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 
 // Builder is a helper for constructing ABI types.
 type Builder struct {
-	buf []byte
-	Pkg string
+	buf     []byte
+	Pkg     string
+	PtrSize uintptr
+	Sizes   types.Sizes
+	hasher  typeutil.Hasher
 }
 
 // New creates a new ABI type Builder.
-func New(pkg string) *Builder {
+func New(pkg string, ptrSize uintptr, sizes types.Sizes) *Builder {
 	ret := new(Builder)
-	ret.Init(pkg)
+	ret.Init(pkg, ptrSize, sizes)
 	return ret
 }
 
-func (b *Builder) Init(pkg string) {
+func (b *Builder) Init(pkg string, ptrSize uintptr, sizes types.Sizes) {
 	b.Pkg = pkg
 	b.buf = make([]byte, sha256.Size)
+	b.PtrSize = ptrSize
+	b.Sizes = sizes
 }
 
 // TypeName returns the ABI type name for the specified type.

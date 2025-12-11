@@ -443,7 +443,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
 		export: make(map[string]string),
 	}
-	ret.abi.Init(pkgPath)
+	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
 }
 

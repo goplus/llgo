@@ -11,6 +11,10 @@ import (
 )
 
 type _type = abi.Type
+type ptrtype = abi.PtrType
+type functype = abi.FuncType
+type slicetype = abi.SliceType
+type chantype = abi.ChanType
 
 /*
 type maptype = abi.MapType
