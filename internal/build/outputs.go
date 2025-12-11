@@ -67,7 +67,8 @@ func determineBaseNameAndDir(pkgName string, conf *Config, multiPkg bool) (baseN
 			// Handle -o flag for test mode
 			if strings.HasSuffix(conf.OutFile, "/") || isDir(conf.OutFile) {
 				// If OutFile ends in / or is a directory, write pkg.test in that directory
-				return pkgName + ".test", conf.OutFile
+				// pkgName for test packages already includes .test suffix
+				return pkgName, conf.OutFile
 			}
 			// Otherwise, use the specified file path
 			dir = filepath.Dir(conf.OutFile)
@@ -78,7 +79,8 @@ func determineBaseNameAndDir(pkgName string, conf *Config, multiPkg bool) (baseN
 		}
 		if conf.CompileOnly {
 			// -c without -o: write pkg.test in current directory
-			return pkgName + ".test", "."
+			// pkgName for test packages already includes .test suffix
+			return pkgName, "."
 		}
 		// Default test mode without -c or -o: use temp file
 		return pkgName, ""

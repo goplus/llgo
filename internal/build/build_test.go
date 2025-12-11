@@ -179,7 +179,7 @@ func TestTestOutputFileLogic(t *testing.T) {
 	}{
 		{
 			name:        "compile only without -o",
-			pkgName:     "mypackage",
+			pkgName:     "mypackage.test",
 			conf:        &Config{Mode: ModeTest, CompileOnly: true},
 			multiPkg:    false,
 			wantBase:    "mypackage.test",
@@ -206,7 +206,7 @@ func TestTestOutputFileLogic(t *testing.T) {
 		},
 		{
 			name:        "with -o directory",
-			pkgName:     "mypackage",
+			pkgName:     "mypackage.test",
 			conf:        &Config{Mode: ModeTest, OutFile: "/tmp/build/", AppExt: ".test"},
 			multiPkg:    false,
 			wantBase:    "mypackage.test",
