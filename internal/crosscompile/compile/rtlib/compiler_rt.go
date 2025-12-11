@@ -11,13 +11,17 @@ import (
 func platformSpecifiedFiles(builtinsDir, target string) []string {
 	switch {
 	case strings.Contains(target, "riscv32"):
-		return []string{
+		files := []string{
 			filepath.Join(builtinsDir, "riscv", "mulsi3.S"),
 			filepath.Join(builtinsDir, "riscv", "fp_mode.c"),
 			filepath.Join(builtinsDir, "riscv", "save.S"),
 			filepath.Join(builtinsDir, "riscv", "restore.S"),
-			filepath.Join(builtinsDir, "atomic.c"),
 		}
+		// Only add atomic.c for non-ESP targets (ESP doesn't support A extension)
+		if target != "riscv32-esp-elf" {
+			files = append(files, filepath.Join(builtinsDir, "atomic.c"))
+		}
+		return files
 	case strings.Contains(target, "riscv64"):
 		return []string{
 			filepath.Join(builtinsDir, "addtf3.c"),

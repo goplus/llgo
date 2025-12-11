@@ -175,6 +175,7 @@ func TestUseTarget(t *testing.T) {
 		expectError bool
 		expectLLVM  string
 		expectCPU   string
+		expectMarch string
 	}{
 		// FIXME(MeteorsLiu): wasi in useTarget
 		// {
@@ -204,6 +205,22 @@ func TestUseTarget(t *testing.T) {
 			expectError: false,
 			expectLLVM:  "avr",
 			expectCPU:   "atmega328p",
+		},
+		{
+			name:        "RISC-V32 Target (generic)",
+			targetName:  "riscv32",
+			expectError: false,
+			expectLLVM:  "riscv32-unknown-none",
+			expectCPU:   "generic-rv32",
+			expectMarch: "-march=rv32imac", // Generic RISC-V32 uses rv32imac (with A extension)
+		},
+		{
+			name:        "ESP32-C3 Target (ESP RISC-V)",
+			targetName:  "esp32c3",
+			expectError: false,
+			expectLLVM:  "riscv32-esp-elf",
+			expectCPU:   "generic-rv32",
+			expectMarch: "-march=rv32imc", // ESP32-C3 uses rv32imc (no A extension)
 		},
 		{
 			name:        "Nonexistent Target",
@@ -269,6 +286,20 @@ func TestUseTarget(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("Expected CPU %s in LDFLAGS or CCFLAGS, got LDFLAGS=%v, CCFLAGS=%v", tc.expectCPU, export.LDFLAGS, export.CCFLAGS)
+				}
+			}
+
+			// Check if -march flag is correct
+			if tc.expectMarch != "" {
+				found := false
+				for _, flag := range export.CCFLAGS {
+					if flag == tc.expectMarch {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected %s in CCFLAGS, got %v", tc.expectMarch, export.CCFLAGS)
 				}
 			}
 

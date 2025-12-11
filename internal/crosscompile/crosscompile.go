@@ -531,7 +531,15 @@ func UseTarget(targetName string) (export Export, err error) {
 		// double.
 		ccflags = append(ccflags, "-mdouble=64")
 	case "riscv32":
-		ccflags = append(ccflags, "-march=rv32imac", "-fforce-enable-int128")
+		// Check llvm-target to distinguish ESP RISC-V chips from others
+		// ESP series (riscv32-esp-elf) only supports RV32IMC (no A/D/F extensions)
+		// Other RISC-V32 targets support RV32IMAC (with A extension)
+		if config.LLVMTarget == "riscv32-esp-elf" {
+			ccflags = append(ccflags, "-march=rv32imc")
+		} else {
+			ccflags = append(ccflags, "-march=rv32imac")
+		}
+		ccflags = append(ccflags, "-fforce-enable-int128")
 	case "riscv64":
 		ccflags = append(ccflags, "-march=rv64gc")
 	case "mips":
