@@ -180,11 +180,15 @@ func goFunc(arg any, seq uintptr) {
 var (
 	timerLoop *libuv.Loop
 	timerOnce sync.Once
+	keepAlive libuv.Async
 )
 
 func init() {
 	timerOnce.Do(func() {
 		timerLoop = libuv.LoopNew()
+		timerLoop.Async(&keepAlive, func(a *libuv.Async) {
+			// no-op; keeps loop alive
+		})
 	})
 	go func() {
 		timerLoop.Run(libuv.RUN_DEFAULT)
