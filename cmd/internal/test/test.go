@@ -33,7 +33,8 @@ func runCmd(cmd *base.Command, args []string) {
 	llgoArgs, testBinaryArgs := splitArgsAt(args, "-args")
 
 	if err := cmd.Flag.Parse(llgoArgs); err != nil {
-		return
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
 	}
 
 	conf := build.NewDefaultConf(build.ModeTest)
@@ -64,8 +65,10 @@ func splitArgsAt(args []string, separator string) (before, after []string) {
 	return args, nil
 }
 
-// buildTestArgs constructs arguments to pass to the test binary
-// Converts llgo test flags to -test.* format and appends custom args
+// buildTestArgs constructs arguments to pass to the test binary.
+// Converts llgo test flags to -test.* format (required by Go test binaries) and appends custom args.
+// Note: Some flags are only added when they differ from defaults (e.g., TestCount only when >1,
+// TestParallel only when >0). TestTimeout is always included as it has a default value.
 func buildTestArgs(customArgs []string) []string {
 	var args []string
 
