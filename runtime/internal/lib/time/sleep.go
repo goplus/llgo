@@ -204,13 +204,16 @@ type asyncTimerEvent struct {
 }
 
 func timerCallback(t *libuv.Timer) {
+	r := (*runtimeTimer)(unsafe.Pointer(t))
+	r.f(r.arg, 0)
 }
 
 func startTimer(r *runtimeTimer) {
 	asyncTimer := &asyncTimerEvent{
 		cb: func() {
 			libuv.InitTimer(timerLoop, &r.Timer)
-			r.Start(timerCallback, uint64(r.when), 0)
+			delay := timerDelayMillis(r.when)
+			r.Start(timerCallback, delay, 0)
 		},
 	}
 	timerLoop.Async(&asyncTimer.Async, timerEvent)
@@ -231,9 +234,25 @@ func resetTimer(r *runtimeTimer, when int64) bool {
 	asyncTimer := &asyncTimerEvent{
 		cb: func() {
 			r.Stop()
-			r.Start(timerCallback, uint64(when), 0)
+			r.when = when
+			delay := timerDelayMillis(when)
+			r.Start(timerCallback, delay, 0)
 		},
 	}
 	timerLoop.Async(&asyncTimer.Async, timerEvent)
 	return asyncTimer.Send() == 0
+}
+
+func timerDelayMillis(when int64) uint64 {
+	now := runtimeNano()
+	if when <= now {
+		return 0
+	}
+	delta := when - now
+	// Convert nanoseconds to milliseconds, rounding up to avoid firing early.
+	ms := (delta + int64(Millisecond) - 1) / int64(Millisecond)
+	if ms < 0 {
+		return 0
+	}
+	return uint64(ms)
 }
