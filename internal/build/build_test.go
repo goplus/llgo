@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/mockable"
@@ -44,10 +45,14 @@ func mockRun(args []string, cfg *Config) {
 		}
 	}()
 
-	file, _ := os.CreateTemp("", "llgo-*")
-	cfg.OutFile = file.Name()
-	file.Close()
-	defer os.Remove(cfg.OutFile)
+	// Only set OutFile for modes that don't support multiple packages,
+	// or when OutFile is not already set
+	if cfg.OutFile == "" && (cfg.Mode == ModeBuild || cfg.Mode == ModeRun) {
+		file, _ := os.CreateTemp("", "llgo-*")
+		cfg.OutFile = file.Name()
+		file.Close()
+		defer os.Remove(cfg.OutFile)
+	}
 
 	if _, err := Do(args, cfg); err != nil {
 		panic(err)
@@ -159,4 +164,85 @@ func runBinary(t *testing.T, path string, args ...string) string {
 func TestRunPrintfWithStdioNobuf(t *testing.T) {
 	t.Setenv(llgoStdioNobuf, "1")
 	mockRun([]string{"../../cl/_testdata/printf"}, &Config{Mode: ModeRun})
+}
+
+func TestTestOutputFileLogic(t *testing.T) {
+	// Test output file path determination logic for test mode
+	tests := []struct {
+		name        string
+		pkgName     string
+		conf        *Config
+		multiPkg    bool
+		wantBase    string
+		wantDir     string
+		description string
+	}{
+		{
+			name:        "compile only without -o",
+			pkgName:     "mypackage",
+			conf:        &Config{Mode: ModeTest, CompileOnly: true},
+			multiPkg:    false,
+			wantBase:    "mypackage.test",
+			wantDir:     "",
+			description: "-c without -o: write pkg.test in current directory",
+		},
+		{
+			name:        "with -o file",
+			pkgName:     "mypackage",
+			conf:        &Config{Mode: ModeTest, OutFile: "/tmp/mytest.test", AppExt: ".test"},
+			multiPkg:    false,
+			wantBase:    "mytest",
+			wantDir:     "/tmp",
+			description: "-o with file path: use specified file",
+		},
+		{
+			name:        "with -o directory",
+			pkgName:     "mypackage",
+			conf:        &Config{Mode: ModeTest, OutFile: "/tmp/build/", AppExt: ".test"},
+			multiPkg:    false,
+			wantBase:    "mypackage.test",
+			wantDir:     "/tmp/build/",
+			description: "-o with directory: write pkg.test in that directory",
+		},
+		{
+			name:        "default test mode",
+			pkgName:     "mypackage",
+			conf:        &Config{Mode: ModeTest, AppExt: ".test"},
+			multiPkg:    false,
+			wantBase:    "mypackage",
+			wantDir:     "",
+			description: "default test mode: use temp file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			baseName, dir := determineBaseNameAndDir(tt.pkgName, tt.conf, tt.multiPkg)
+			if baseName != tt.wantBase {
+				t.Errorf("%s: got baseName=%q, want %q", tt.description, baseName, tt.wantBase)
+			}
+			if dir != tt.wantDir {
+				t.Errorf("%s: got dir=%q, want %q", tt.description, dir, tt.wantDir)
+			}
+		})
+	}
+}
+
+func TestTestMultiplePackagesWithOutputFile(t *testing.T) {
+	// Test that -o flag errors with multiple test packages
+	cfg := &Config{
+		Mode:    ModeTest,
+		OutFile: "/tmp/output",
+	}
+
+	// Create a scenario that would have multiple test packages
+	// This should error during Do() validation
+	args := []string{"../../cl/_testgo/runextest/..."}
+	_, err := Do(args, cfg)
+	if err == nil {
+		t.Fatal("Expected error when using -o flag with multiple packages, got nil")
+	}
+	if !strings.Contains(err.Error(), "cannot use -o flag with multiple packages") {
+		t.Errorf("Expected error about -o with multiple packages, got: %v", err)
+	}
 }
