@@ -9,6 +9,37 @@ import (
 	"github.com/goplus/llgo/cmd/internal/flags"
 )
 
+func resetTestFlags() {
+	flags.Verbose = false
+	flags.TestRun = ""
+	flags.TestBench = ""
+	flags.TestTimeout = flags.DefaultTestTimeout
+	flags.TestShort = false
+	flags.TestCount = 1
+	flags.TestCover = false
+	flags.TestCoverMode = ""
+	flags.TestCoverProfile = ""
+	flags.TestCoverPkg = ""
+	flags.TestParallel = 0
+	flags.TestFailfast = false
+	flags.TestJSON = false
+	flags.TestList = ""
+	flags.TestSkip = ""
+	flags.TestShuffle = ""
+	flags.TestFullpath = false
+	flags.TestBenchmem = false
+	flags.TestBenchtime = ""
+	flags.TestCPUProfile = ""
+	flags.TestMemProfile = ""
+	flags.TestBlockProfile = ""
+	flags.TestMutexProfile = ""
+	flags.TestTrace = ""
+	flags.TestOutputDir = ""
+	flags.TestFuzz = ""
+	flags.TestFuzzTime = ""
+	flags.TestFuzzMinimizeTime = ""
+}
+
 func TestSplitArgsAt(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -158,35 +189,7 @@ func TestBuildTestArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Reset flags
-			flags.Verbose = false
-			flags.TestRun = ""
-			flags.TestBench = ""
-			flags.TestTimeout = ""
-			flags.TestShort = false
-			flags.TestCount = 1
-			flags.TestCover = false
-			flags.TestCoverMode = ""
-			flags.TestCoverProfile = ""
-			flags.TestCoverPkg = ""
-			flags.TestParallel = 0
-			flags.TestFailfast = false
-			flags.TestJSON = false
-			flags.TestList = ""
-			flags.TestSkip = ""
-			flags.TestShuffle = ""
-			flags.TestFullpath = false
-			flags.TestBenchmem = false
-			flags.TestBenchtime = ""
-			flags.TestCPUProfile = ""
-			flags.TestMemProfile = ""
-			flags.TestBlockProfile = ""
-			flags.TestMutexProfile = ""
-			flags.TestTrace = ""
-			flags.TestOutputDir = ""
-			flags.TestFuzz = ""
-			flags.TestFuzzTime = ""
-			flags.TestFuzzMinimizeTime = ""
+			resetTestFlags()
 
 			// Setup test-specific flags
 			tt.setupFlags()

@@ -34,7 +34,8 @@ func runCmd(cmd *base.Command, args []string) {
 	llgoArgs, testBinaryArgs := splitArgsAt(args, "-args")
 
 	if err := cmd.Flag.Parse(llgoArgs); err != nil {
-		return
+		fmt.Fprintln(os.Stderr, err)
+		mockable.Exit(1)
 	}
 
 	conf := build.NewDefaultConf(build.ModeTest)
@@ -65,113 +66,63 @@ func splitArgsAt(args []string, separator string) (before, after []string) {
 	return args, nil
 }
 
-// buildTestArgs constructs arguments to pass to the test binary
-// Converts llgo test flags to -test.* format and appends custom args
+// buildTestArgs constructs arguments for the test binary.
+// Go test binaries expect flags in -test.* form; we only emit
+// non-default values to mirror go test's behavior. Custom args
+// provided after "-args" are appended unchanged.
 func buildTestArgs(customArgs []string) []string {
-	var args []string
+	args := make([]string, 0, 32)
 
-	// Add verbose flag
-	if flags.Verbose {
-		args = append(args, "-test.v")
+	appendBool := func(cond bool, flagName string) {
+		if cond {
+			args = append(args, flagName)
+		}
 	}
-
-	// Add test selection flags
-	if flags.TestRun != "" {
-		args = append(args, "-test.run="+flags.TestRun)
+	appendString := func(val, flagName string) {
+		if val != "" {
+			args = append(args, flagName+val)
+		}
 	}
-	if flags.TestBench != "" {
-		args = append(args, "-test.bench="+flags.TestBench)
-	}
-	if flags.TestList != "" {
-		args = append(args, "-test.list="+flags.TestList)
-	}
-	if flags.TestSkip != "" {
-		args = append(args, "-test.skip="+flags.TestSkip)
+	appendInt := func(val int, flagName string, defaultVal int) {
+		if val != defaultVal {
+			args = append(args, flagName+strconv.Itoa(val))
+		}
 	}
 
-	// Add test control flags
-	if flags.TestTimeout != "" {
-		args = append(args, "-test.timeout="+flags.TestTimeout)
-	}
-	if flags.TestShort {
-		args = append(args, "-test.short")
-	}
-	if flags.TestCount > 1 {
-		args = append(args, "-test.count="+strconv.Itoa(flags.TestCount))
-	}
-	if flags.TestParallel > 0 {
-		args = append(args, "-test.parallel="+strconv.Itoa(flags.TestParallel))
-	}
-	if flags.TestFailfast {
-		args = append(args, "-test.failfast")
-	}
-	if flags.TestShuffle != "" {
-		args = append(args, "-test.shuffle="+flags.TestShuffle)
-	}
+	appendBool(flags.Verbose, "-test.v")
+	appendString(flags.TestRun, "-test.run=")
+	appendString(flags.TestBench, "-test.bench=")
+	appendString(flags.TestList, "-test.list=")
+	appendString(flags.TestSkip, "-test.skip=")
 
-	// Add coverage flags
-	if flags.TestCover {
-		args = append(args, "-test.cover")
-	}
-	if flags.TestCoverMode != "" {
-		args = append(args, "-test.covermode="+flags.TestCoverMode)
-	}
-	if flags.TestCoverProfile != "" {
-		args = append(args, "-test.coverprofile="+flags.TestCoverProfile)
-	}
-	if flags.TestCoverPkg != "" {
-		args = append(args, "-test.coverpkg="+flags.TestCoverPkg)
-	}
+	appendString(flags.TestTimeout, "-test.timeout=") // always has a default
+	appendBool(flags.TestShort, "-test.short")
+	appendInt(flags.TestCount, "-test.count=", 1)
+	appendInt(flags.TestParallel, "-test.parallel=", 0)
+	appendBool(flags.TestFailfast, "-test.failfast")
+	appendString(flags.TestShuffle, "-test.shuffle=")
 
-	// Add output flags
-	if flags.TestJSON {
-		args = append(args, "-test.json")
-	}
-	if flags.TestFullpath {
-		args = append(args, "-test.fullpath")
-	}
+	appendBool(flags.TestCover, "-test.cover")
+	appendString(flags.TestCoverMode, "-test.covermode=")
+	appendString(flags.TestCoverProfile, "-test.coverprofile=")
+	appendString(flags.TestCoverPkg, "-test.coverpkg=")
 
-	// Add benchmark flags
-	if flags.TestBenchmem {
-		args = append(args, "-test.benchmem")
-	}
-	if flags.TestBenchtime != "" {
-		args = append(args, "-test.benchtime="+flags.TestBenchtime)
-	}
+	appendBool(flags.TestJSON, "-test.json")
+	appendBool(flags.TestFullpath, "-test.fullpath")
 
-	// Add profiling flags
-	if flags.TestCPUProfile != "" {
-		args = append(args, "-test.cpuprofile="+flags.TestCPUProfile)
-	}
-	if flags.TestMemProfile != "" {
-		args = append(args, "-test.memprofile="+flags.TestMemProfile)
-	}
-	if flags.TestBlockProfile != "" {
-		args = append(args, "-test.blockprofile="+flags.TestBlockProfile)
-	}
-	if flags.TestMutexProfile != "" {
-		args = append(args, "-test.mutexprofile="+flags.TestMutexProfile)
-	}
-	if flags.TestTrace != "" {
-		args = append(args, "-test.trace="+flags.TestTrace)
-	}
-	if flags.TestOutputDir != "" {
-		args = append(args, "-test.outputdir="+flags.TestOutputDir)
-	}
+	appendBool(flags.TestBenchmem, "-test.benchmem")
+	appendString(flags.TestBenchtime, "-test.benchtime=")
 
-	// Add fuzzing flags
-	if flags.TestFuzz != "" {
-		args = append(args, "-test.fuzz="+flags.TestFuzz)
-	}
-	if flags.TestFuzzTime != "" {
-		args = append(args, "-test.fuzztime="+flags.TestFuzzTime)
-	}
-	if flags.TestFuzzMinimizeTime != "" {
-		args = append(args, "-test.fuzzminimizetime="+flags.TestFuzzMinimizeTime)
-	}
+	appendString(flags.TestCPUProfile, "-test.cpuprofile=")
+	appendString(flags.TestMemProfile, "-test.memprofile=")
+	appendString(flags.TestBlockProfile, "-test.blockprofile=")
+	appendString(flags.TestMutexProfile, "-test.mutexprofile=")
+	appendString(flags.TestTrace, "-test.trace=")
+	appendString(flags.TestOutputDir, "-test.outputdir=")
 
-	// Append custom args passed after -args
-	args = append(args, customArgs...)
+	appendString(flags.TestFuzz, "-test.fuzz=")
+	appendString(flags.TestFuzzTime, "-test.fuzztime=")
+	appendString(flags.TestFuzzMinimizeTime, "-test.fuzzminimizetime=")
 
-	return args
+	return append(args, customArgs...)
 }

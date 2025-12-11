@@ -41,6 +41,8 @@ var SizeFormat string
 var SizeLevel string
 var ForceRebuild bool
 
+const DefaultTestTimeout = "10m" // Matches Go's default test timeout
+
 func AddCommonFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose output")
 }
@@ -76,6 +78,7 @@ var (
 	TestTimeout          string
 	TestShort            bool
 	TestCount            int
+	TestCover            bool
 	TestCoverMode        string
 	TestCoverProfile     string
 	TestCoverPkg         string
@@ -102,7 +105,7 @@ var (
 func AddTestBinaryFlags(fs *flag.FlagSet) {
 	fs.StringVar(&TestRun, "run", "", "Run only tests matching the regular expression")
 	fs.StringVar(&TestBench, "bench", "", "Run benchmarks matching the regular expression")
-	fs.StringVar(&TestTimeout, "timeout", "10m", "Test timeout duration (e.g., 10m, 30s)")
+	fs.StringVar(&TestTimeout, "timeout", DefaultTestTimeout, "Test timeout duration (e.g., 10m, 30s)")
 	fs.BoolVar(&TestShort, "short", false, "Tell long-running tests to shorten their run time")
 	fs.IntVar(&TestCount, "count", 1, "Run each test and benchmark n times")
 	fs.BoolVar(&TestCover, "cover", false, "Enable coverage analysis")
@@ -128,8 +131,6 @@ func AddTestBinaryFlags(fs *flag.FlagSet) {
 	fs.StringVar(&TestFuzzTime, "fuzztime", "", "Run fuzzing for the specified duration (e.g., 10s, 1m)")
 	fs.StringVar(&TestFuzzMinimizeTime, "fuzzminimizetime", "", "Time to spend minimizing a value after finding a crash (default: 60s)")
 }
-
-var TestCover bool
 
 func AddEmulatorFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Emulator, "emulator", false, "Run in emulator mode")
