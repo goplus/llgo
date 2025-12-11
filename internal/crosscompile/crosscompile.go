@@ -257,6 +257,10 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			}
 			export.CCFLAGS = append(export.CCFLAGS, []string{"--sysroot=" + sysrootPath}...)
 			export.LDFLAGS = append(export.LDFLAGS, []string{"--sysroot=" + sysrootPath}...)
+			// Set minimum macOS deployment target to avoid version warnings
+			// This ensures both compiled objects and linked binaries use the same minimum version
+			export.CCFLAGS = append(export.CCFLAGS, "-mmacosx-version-min=11.0")
+			export.LDFLAGS = append(export.LDFLAGS, "-mmacosx-version-min=11.0")
 		}
 
 		// Add OS-specific flags
