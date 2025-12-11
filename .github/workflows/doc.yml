@@ -6,8 +6,15 @@ on:
       - "**"
       - "!dependabot/**"
       - "!xgopilot/**"
+    paths:
+      - "**.md"
   pull_request:
     branches: ["**"]
+    paths:
+      - "**.md"
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: "0 0 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
