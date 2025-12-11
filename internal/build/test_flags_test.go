@@ -54,47 +54,6 @@ func TestConfigCompileOnlyFlag(t *testing.T) {
 	}
 }
 
-func TestConfigJsonOutputFlag(t *testing.T) {
-	tests := []struct {
-		name           string
-		mode           Mode
-		jsonOutput     bool
-		expectedOutput bool
-	}{
-		{
-			name:           "test mode with json output",
-			mode:           ModeTest,
-			jsonOutput:     true,
-			expectedOutput: true,
-		},
-		{
-			name:           "test mode without json output",
-			mode:           ModeTest,
-			jsonOutput:     false,
-			expectedOutput: false,
-		},
-		{
-			name:           "build mode with json output",
-			mode:           ModeBuild,
-			jsonOutput:     true,
-			expectedOutput: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			conf := &Config{
-				Mode:       tt.mode,
-				JsonOutput: tt.jsonOutput,
-			}
-
-			if conf.JsonOutput != tt.expectedOutput {
-				t.Errorf("Expected JsonOutput = %v, got %v", tt.expectedOutput, conf.JsonOutput)
-			}
-		})
-	}
-}
-
 func TestConfigTestOutFileFlag(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -148,7 +107,6 @@ func TestConfigTestModeWithMultipleFlags(t *testing.T) {
 		Mode:        ModeTest,
 		OutFile:     "custom.test",
 		CompileOnly: true,
-		JsonOutput:  true,
 	}
 
 	if conf.Mode != ModeTest {
@@ -161,9 +119,5 @@ func TestConfigTestModeWithMultipleFlags(t *testing.T) {
 
 	if !conf.CompileOnly {
 		t.Error("Expected CompileOnly = true, got false")
-	}
-
-	if !conf.JsonOutput {
-		t.Error("Expected JsonOutput = true, got false")
 	}
 }

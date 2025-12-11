@@ -32,83 +32,39 @@ func TestAddTestFlags(t *testing.T) {
 	}
 }
 
-func TestAddBuildFlagsIncludesJson(t *testing.T) {
-	fs := flag.NewFlagSet("build", flag.ContinueOnError)
-
-	// Add build flags
-	AddBuildFlags(fs)
-
-	// Verify -json flag is registered
-	jsonFlag := fs.Lookup("json")
-	if jsonFlag == nil {
-		t.Error("Expected -json flag to be registered in AddBuildFlags")
-	} else if jsonFlag.Usage != "Emit build output in JSON format" {
-		t.Errorf("Expected -json usage to be 'Emit build output in JSON format', got %q", jsonFlag.Usage)
-	}
-}
-
 func TestUpdateConfigModeTest(t *testing.T) {
 	tests := []struct {
 		name            string
 		setupFlags      func()
 		expectedOutFile string
 		expectedCompile bool
-		expectedJson    bool
 	}{
 		{
 			name: "test with -o flag",
 			setupFlags: func() {
 				OutputFile = "mytest.test"
 				CompileOnly = false
-				JsonOutput = false
 			},
 			expectedOutFile: "mytest.test",
 			expectedCompile: false,
-			expectedJson:    false,
 		},
 		{
 			name: "test with -c flag",
 			setupFlags: func() {
 				OutputFile = ""
 				CompileOnly = true
-				JsonOutput = false
 			},
 			expectedOutFile: "",
 			expectedCompile: true,
-			expectedJson:    false,
 		},
 		{
 			name: "test with -o and -c flags",
 			setupFlags: func() {
 				OutputFile = "custom.test"
 				CompileOnly = true
-				JsonOutput = false
 			},
 			expectedOutFile: "custom.test",
 			expectedCompile: true,
-			expectedJson:    false,
-		},
-		{
-			name: "test with -json flag",
-			setupFlags: func() {
-				OutputFile = ""
-				CompileOnly = false
-				JsonOutput = true
-			},
-			expectedOutFile: "",
-			expectedCompile: false,
-			expectedJson:    true,
-		},
-		{
-			name: "test with all flags",
-			setupFlags: func() {
-				OutputFile = "output.test"
-				CompileOnly = true
-				JsonOutput = true
-			},
-			expectedOutFile: "output.test",
-			expectedCompile: true,
-			expectedJson:    true,
 		},
 	}
 
@@ -117,7 +73,6 @@ func TestUpdateConfigModeTest(t *testing.T) {
 			// Reset flags
 			OutputFile = ""
 			CompileOnly = false
-			JsonOutput = false
 
 			// Setup flags for this test
 			tt.setupFlags()
@@ -138,10 +93,6 @@ func TestUpdateConfigModeTest(t *testing.T) {
 
 			if conf.CompileOnly != tt.expectedCompile {
 				t.Errorf("Expected CompileOnly = %v, got %v", tt.expectedCompile, conf.CompileOnly)
-			}
-
-			if conf.JsonOutput != tt.expectedJson {
-				t.Errorf("Expected JsonOutput = %v, got %v", tt.expectedJson, conf.JsonOutput)
 			}
 		})
 	}
