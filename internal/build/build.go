@@ -137,6 +137,8 @@ type Config struct {
 	SizeReport    bool   // print size report after successful build
 	SizeFormat    string // size report format: text,json (default text)
 	SizeLevel     string // size aggregation level: full,module,package (default module)
+	CompileOnly   bool   // only valid for ModeTest, compile but don't run
+	JsonOutput    bool   // emit output in JSON format
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only

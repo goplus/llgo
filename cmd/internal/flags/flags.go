@@ -49,6 +49,7 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&ForceRebuild, "a", false, "Force rebuilding of packages that are already up-to-date")
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
+	fs.BoolVar(&JsonOutput, "json", false, "Emit build output in JSON format")
 	if buildenv.Dev {
 		fs.IntVar(&AbiMode, "abi", 2, "ABI mode (default 2). 0 = none, 1 = cfunc, 2 = allfunc.")
 		fs.BoolVar(&CheckLinkArgs, "check-linkargs", false, "check link args valid")
@@ -67,9 +68,16 @@ func AddBuildModeFlags(fs *flag.FlagSet) {
 }
 
 var Gen bool
+var CompileOnly bool
+var JsonOutput bool
 
 func AddEmulatorFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Emulator, "emulator", false, "Run in emulator mode")
+}
+
+func AddTestFlags(fs *flag.FlagSet) {
+	fs.StringVar(&OutputFile, "o", "", "Compile test binary to the named file")
+	fs.BoolVar(&CompileOnly, "c", false, "Compile test binary but do not run it")
 }
 
 func AddEmbeddedFlags(fs *flag.FlagSet) {
@@ -109,8 +117,13 @@ func UpdateConfig(conf *build.Config) error {
 			Uf2: OutUf2,
 			Zip: OutZip,
 		}
-	case build.ModeRun, build.ModeTest:
+	case build.ModeRun:
 		conf.Emulator = Emulator
+	case build.ModeTest:
+		conf.Emulator = Emulator
+		conf.OutFile = OutputFile
+		conf.CompileOnly = CompileOnly
+		conf.JsonOutput = JsonOutput
 	case build.ModeInstall:
 
 	case build.ModeCmpTest:

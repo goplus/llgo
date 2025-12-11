@@ -63,6 +63,10 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 			mockable.Exit(s.ExitCode())
 		}
 	case ModeTest:
+		// Skip execution if CompileOnly is set
+		if conf.CompileOnly {
+			return nil
+		}
 		cmd := exec.Command(app, conf.RunArgs...)
 		cmd.Dir = pkgDir
 		cmd.Stdout = os.Stdout
@@ -98,6 +102,10 @@ func runInEmulator(emulator string, envMap map[string]string, pkgDir, pkgName st
 	case ModeRun:
 		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose)
 	case ModeTest:
+		// Skip execution if CompileOnly is set
+		if conf.CompileOnly {
+			return nil
+		}
 		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose)
 	case ModeCmpTest:
 		cmpTest(pkgDir, pkgName, envMap["out"], conf.GenExpect, conf.RunArgs)
