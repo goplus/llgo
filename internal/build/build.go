@@ -119,6 +119,7 @@ type Config struct {
 	AppExt        string  // ".exe" on Windows, empty on Unix
 	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
 	OutFmts       OutFmts // Output format specifications (only for Target != "")
+	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
 	Emulator      bool    // run in emulator mode
 	Port          string  // target port for flashing
 	BaudRate      int     // baudrate for serial communication
@@ -318,6 +319,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 				}
 			}
 			initial = newInitial
+			// Check -o flag after filtering to only test packages
+			if len(initial) > 1 && conf.OutFile != "" {
+				return nil, fmt.Errorf("cannot use -o flag with multiple packages")
+			}
 		}
 	}
 

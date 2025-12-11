@@ -62,9 +62,36 @@ func determineBaseNameAndDir(pkgName string, conf *Config, multiPkg bool) (baseN
 			return baseName, dir
 		}
 		return pkgName, ""
+	case ModeTest:
+		if conf.OutFile != "" {
+			// Handle -o flag for test mode
+			if strings.HasSuffix(conf.OutFile, "/") || isDir(conf.OutFile) {
+				// If OutFile ends in / or is a directory, write pkg.test in that directory
+				return pkgName + ".test", conf.OutFile
+			}
+			// Otherwise, use the specified file path
+			dir = filepath.Dir(conf.OutFile)
+			baseName = strings.TrimSuffix(filepath.Base(conf.OutFile), conf.AppExt)
+			if dir == "." {
+				dir = ""
+			}
+			return baseName, dir
+		}
+		if conf.CompileOnly {
+			// -c without -o: write pkg.test in current directory
+			return pkgName + ".test", ""
+		}
+		// Default test mode without -c or -o: use temp file
+		return pkgName, ""
 	}
-	// Other modes (run, test, etc.)
+	// Other modes (run, etc.)
 	return pkgName, ""
+}
+
+// isDir checks if path is a directory
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 // applyPrefix applies build mode specific naming conventions

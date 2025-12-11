@@ -67,9 +67,15 @@ func AddBuildModeFlags(fs *flag.FlagSet) {
 }
 
 var Gen bool
+var CompileOnly bool
 
 func AddEmulatorFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Emulator, "emulator", false, "Run in emulator mode")
+}
+
+func AddTestFlags(fs *flag.FlagSet) {
+	fs.StringVar(&OutputFile, "o", "", "Compile test binary to the named file")
+	fs.BoolVar(&CompileOnly, "c", false, "Compile test binary but do not run it")
 }
 
 func AddEmbeddedFlags(fs *flag.FlagSet) {
@@ -109,7 +115,11 @@ func UpdateConfig(conf *build.Config) error {
 			Uf2: OutUf2,
 			Zip: OutZip,
 		}
-	case build.ModeRun, build.ModeTest:
+	case build.ModeRun:
+		conf.Emulator = Emulator
+	case build.ModeTest:
+		conf.OutFile = OutputFile
+		conf.CompileOnly = CompileOnly
 		conf.Emulator = Emulator
 	case build.ModeInstall:
 
