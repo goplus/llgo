@@ -26,10 +26,7 @@ func init() {
 }
 
 func runCmd(cmd *base.Command, args []string) {
-	// Split args at -args if present
-	pkgArgs, testArgs := splitArgsAt(args, "-args")
-
-	if err := cmd.Flag.Parse(pkgArgs); err != nil {
+	if err := cmd.Flag.Parse(args); err != nil {
 		return
 	}
 
@@ -39,26 +36,10 @@ func runCmd(cmd *base.Command, args []string) {
 		mockable.Exit(1)
 	}
 
-	// Set test arguments if -args was provided
-	if len(testArgs) > 0 {
-		conf.RunArgs = testArgs
-	}
-
 	args = cmd.Flag.Args()
 	_, err := build.Do(args, conf)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		mockable.Exit(1)
 	}
-}
-
-// splitArgsAt splits args into two parts at the first occurrence of separator.
-// Returns (beforeSeparator, afterSeparator). If separator is not found, returns (args, nil).
-func splitArgsAt(args []string, separator string) ([]string, []string) {
-	for i, arg := range args {
-		if arg == separator {
-			return args[:i], args[i+1:]
-		}
-	}
-	return args, nil
 }
