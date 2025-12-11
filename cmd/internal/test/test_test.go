@@ -16,6 +16,7 @@ func resetTestFlags() {
 	flags.TestTimeout = flags.DefaultTestTimeout
 	flags.TestShort = false
 	flags.TestCount = 1
+	flags.TestCPU = ""
 	flags.TestCover = false
 	flags.TestCoverMode = ""
 	flags.TestCoverProfile = ""
@@ -29,12 +30,20 @@ func resetTestFlags() {
 	flags.TestFullpath = false
 	flags.TestBenchmem = false
 	flags.TestBenchtime = ""
+	flags.TestBlockProfileRate = 0
 	flags.TestCPUProfile = ""
 	flags.TestMemProfile = ""
+	flags.TestMemProfileRate = 0
 	flags.TestBlockProfile = ""
 	flags.TestMutexProfile = ""
+	flags.TestMutexProfileFrac = 0
 	flags.TestTrace = ""
 	flags.TestOutputDir = ""
+	flags.TestPaniconexit0 = false
+	flags.TestTestLogFile = ""
+	flags.TestGoCoverDir = ""
+	flags.TestFuzzWorker = false
+	flags.TestFuzzCacheDir = ""
 	flags.TestFuzz = ""
 	flags.TestFuzzTime = ""
 	flags.TestFuzzMinimizeTime = ""
@@ -104,6 +113,7 @@ func TestBuildTestArgs(t *testing.T) {
 		setupFlags  func()
 		customArgs  []string
 		wantContain []string // flags that should be present
+		wantAbsent  []string // flags that should NOT be forwarded
 	}{
 		{
 			name: "verbose only",
@@ -151,14 +161,61 @@ func TestBuildTestArgs(t *testing.T) {
 			wantContain: []string{"-test.bench=.", "-test.benchtime=5s", "-test.benchmem"},
 		},
 		{
-			name: "coverage flags",
+			name: "cpu list and parallel",
 			setupFlags: func() {
-				flags.TestCover = true
-				flags.TestCoverMode = "atomic"
-				flags.TestCoverProfile = "coverage.out"
+				flags.TestCPU = "1,2,4"
+				flags.TestParallel = 8
 			},
 			customArgs:  nil,
-			wantContain: []string{"-test.cover", "-test.covermode=atomic", "-test.coverprofile=coverage.out"},
+			wantContain: []string{"-test.cpu=1,2,4", "-test.parallel=8"},
+		},
+		{
+			name: "profiling rate flags",
+			setupFlags: func() {
+				flags.TestBlockProfileRate = 10
+				flags.TestMemProfileRate = 1
+				flags.TestMutexProfileFrac = 5
+			},
+			customArgs:  nil,
+			wantContain: []string{"-test.blockprofilerate=10", "-test.memprofilerate=1", "-test.mutexprofilefraction=5"},
+		},
+		{
+			name: "panic on exit and test log file",
+			setupFlags: func() {
+				flags.TestPaniconexit0 = true
+				flags.TestTestLogFile = "actions.log"
+			},
+			customArgs:  nil,
+			wantContain: []string{"-test.paniconexit0", "-test.testlogfile=actions.log"},
+		},
+		{
+			name: "fuzz worker and cache dir",
+			setupFlags: func() {
+				flags.TestFuzzWorker = true
+				flags.TestFuzzCacheDir = "fuzzcache"
+			},
+			customArgs:  nil,
+			wantContain: []string{"-test.fuzzworker", "-test.fuzzcachedir=fuzzcache"},
+		},
+		{
+			name: "json and gocoverdir",
+			setupFlags: func() {
+				flags.TestJSON = true
+				flags.TestGoCoverDir = "/tmp/cover"
+			},
+			customArgs:  nil,
+			wantContain: []string{"-test.json", "-test.gocoverdir=/tmp/cover"},
+		},
+		{
+			name: "coverage profile forwarded",
+			setupFlags: func() {
+				flags.TestCoverProfile = "coverage.out"
+				flags.TestCover = true
+				flags.TestCoverMode = "atomic"
+			},
+			customArgs:  nil,
+			wantContain: []string{"-test.coverprofile=coverage.out"},
+			wantAbsent:  []string{"-test.cover", "-test.covermode=atomic"},
 		},
 		{
 			name: "count flag",
@@ -207,6 +264,16 @@ func TestBuildTestArgs(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("buildTestArgs() missing expected flag %q, got %v", want, got)
+				}
+			}
+
+			// Ensure excluded flags are not present
+			for _, notWant := range tt.wantAbsent {
+				for _, arg := range got {
+					if arg == notWant {
+						t.Errorf("buildTestArgs() forwarded unexpected flag %q, got %v", notWant, got)
+						break
+					}
 				}
 			}
 

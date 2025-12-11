@@ -94,6 +94,8 @@ func buildTestArgs(customArgs []string) []string {
 	appendString(flags.TestBench, "-test.bench=")
 	appendString(flags.TestList, "-test.list=")
 	appendString(flags.TestSkip, "-test.skip=")
+	appendString(flags.TestCPU, "-test.cpu=")
+	appendString(flags.TestCoverProfile, "-test.coverprofile=")
 
 	appendString(flags.TestTimeout, "-test.timeout=") // always has a default
 	appendBool(flags.TestShort, "-test.short")
@@ -102,23 +104,26 @@ func buildTestArgs(customArgs []string) []string {
 	appendBool(flags.TestFailfast, "-test.failfast")
 	appendString(flags.TestShuffle, "-test.shuffle=")
 
-	appendBool(flags.TestCover, "-test.cover")
-	appendString(flags.TestCoverMode, "-test.covermode=")
-	appendString(flags.TestCoverProfile, "-test.coverprofile=")
-	appendString(flags.TestCoverPkg, "-test.coverpkg=")
-
 	appendBool(flags.TestJSON, "-test.json")
 	appendBool(flags.TestFullpath, "-test.fullpath")
 
 	appendBool(flags.TestBenchmem, "-test.benchmem")
 	appendString(flags.TestBenchtime, "-test.benchtime=")
+	appendInt(flags.TestBlockProfileRate, "-test.blockprofilerate=", 0)
 
 	appendString(flags.TestCPUProfile, "-test.cpuprofile=")
 	appendString(flags.TestMemProfile, "-test.memprofile=")
+	appendInt(flags.TestMemProfileRate, "-test.memprofilerate=", 0)
 	appendString(flags.TestBlockProfile, "-test.blockprofile=")
 	appendString(flags.TestMutexProfile, "-test.mutexprofile=")
+	appendInt(flags.TestMutexProfileFrac, "-test.mutexprofilefraction=", 0)
 	appendString(flags.TestTrace, "-test.trace=")
 	appendString(flags.TestOutputDir, "-test.outputdir=")
+	appendBool(flags.TestPaniconexit0, "-test.paniconexit0")
+	appendString(flags.TestTestLogFile, "-test.testlogfile=")
+	appendString(flags.TestGoCoverDir, "-test.gocoverdir=")
+	appendBool(flags.TestFuzzWorker, "-test.fuzzworker")
+	appendString(flags.TestFuzzCacheDir, "-test.fuzzcachedir=")
 
 	appendString(flags.TestFuzz, "-test.fuzz=")
 	appendString(flags.TestFuzzTime, "-test.fuzztime=")
