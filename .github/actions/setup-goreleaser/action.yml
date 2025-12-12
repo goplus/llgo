@@ -24,11 +24,11 @@ runs:
       id: cache-esp-clang
       uses: actions/cache/restore@v4
       with:
-        path:
-          - .sysroot/darwin/amd64/crosscompile/clang
-          - .sysroot/darwin/arm64/crosscompile/clang
-          - .sysroot/linux/amd64/crosscompile/clang
-          - .sysroot/linux/arm64/crosscompile/clang
+        path: |
+          .sysroot/darwin/amd64/crosscompile/clang
+          .sysroot/darwin/arm64/crosscompile/clang
+          .sysroot/linux/amd64/crosscompile/clang
+          .sysroot/linux/arm64/crosscompile/clang
         key: esp-clang-${{ hashFiles('.github/workflows/download_esp_clang.sh') }}
     - name: Download ESP Clang (if cache miss)
       if: steps.cache-esp-clang.outputs.cache-hit != 'true'
@@ -38,11 +38,11 @@ runs:
       if: steps.cache-esp-clang.outputs.cache-hit != 'true'
       uses: actions/cache/save@v4
       with:
-        path:
-          - .sysroot/darwin/amd64/crosscompile/clang
-          - .sysroot/darwin/arm64/crosscompile/clang
-          - .sysroot/linux/amd64/crosscompile/clang
-          - .sysroot/linux/arm64/crosscompile/clang
+        path: |
+          .sysroot/darwin/amd64/crosscompile/clang
+          .sysroot/darwin/arm64/crosscompile/clang
+          .sysroot/linux/amd64/crosscompile/clang
+          .sysroot/linux/arm64/crosscompile/clang
         key: esp-clang-${{ hashFiles('.github/workflows/download_esp_clang.sh') }}
     - name: Check file
       run: tree .sysroot
