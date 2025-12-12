@@ -556,62 +556,43 @@ func (t Time) String() string {
 // GoString implements fmt.GoStringer and formats t to be printed in Go source
 // code.
 func (t Time) GoString() string {
-	/*
-		abs := t.abs()
-		year, month, day, _ := absDate(abs, true)
-		hour, minute, second := absClock(abs)
+	abs := t.abs()
+	year, month, day, _ := absDate(abs, true)
+	hour, minute, second := absClock(abs)
 
-		buf := make([]byte, 0, len("time.Date(9999, time.September, 31, 23, 59, 59, 999999999, time.Local)"))
-		buf = append(buf, "time.Date("...)
-		buf = appendInt(buf, year, 0)
-		if January <= month && month <= December {
-			buf = append(buf, ", time."...)
-			buf = append(buf, longMonthNames[month-1]...)
-		} else {
-			// It's difficult to construct a time.Time with a date outside the
-			// standard range but we might as well try to handle the case.
-			buf = appendInt(buf, int(month), 0)
-		}
+	buf := make([]byte, 0, len("time.Date(9999, time.September, 31, 23, 59, 59, 999999999, time.Local)"))
+	buf = append(buf, "time.Date("...)
+	buf = appendInt(buf, year, 0)
+	if January <= month && month <= December {
+		buf = append(buf, ", time."...)
+		buf = append(buf, longMonthNames[month-1]...)
+	} else {
 		buf = append(buf, ", "...)
-		buf = appendInt(buf, day, 0)
-		buf = append(buf, ", "...)
-		buf = appendInt(buf, hour, 0)
-		buf = append(buf, ", "...)
-		buf = appendInt(buf, minute, 0)
-		buf = append(buf, ", "...)
-		buf = appendInt(buf, second, 0)
-		buf = append(buf, ", "...)
-		buf = appendInt(buf, t.Nanosecond(), 0)
-		buf = append(buf, ", "...)
-		switch loc := t.Location(); loc {
-		case UTC, nil:
-			buf = append(buf, "time.UTC"...)
-		case Local:
-			buf = append(buf, "time.Local"...)
-		default:
-			// there are several options for how we could display this, none of
-			// which are great:
-			//
-			// - use Location(loc.name), which is not technically valid syntax
-			// - use LoadLocation(loc.name), which will cause a syntax error when
-			// embedded and also would require us to escape the string without
-			// importing fmt or strconv
-			// - try to use FixedZone, which would also require escaping the name
-			// and would represent e.g. "America/Los_Angeles" daylight saving time
-			// shifts inaccurately
-			// - use the pointer format, which is no worse than you'd get with the
-			// old fmt.Sprintf("%#v", t) format.
-			//
-			// Of these, Location(loc.name) is the least disruptive. This is an edge
-			// case we hope not to hit too often.
-			buf = append(buf, `time.Location(`...)
-			buf = append(buf, quote(loc.name)...)
-			buf = append(buf, ')')
-		}
+		buf = appendInt(buf, int(month), 0)
+	}
+	buf = append(buf, ", "...)
+	buf = appendInt(buf, day, 0)
+	buf = append(buf, ", "...)
+	buf = appendInt(buf, hour, 0)
+	buf = append(buf, ", "...)
+	buf = appendInt(buf, minute, 0)
+	buf = append(buf, ", "...)
+	buf = appendInt(buf, second, 0)
+	buf = append(buf, ", "...)
+	buf = appendInt(buf, t.Nanosecond(), 0)
+	buf = append(buf, ", "...)
+	switch loc := t.Location(); loc {
+	case UTC, nil:
+		buf = append(buf, "time.UTC"...)
+	case Local:
+		buf = append(buf, "time.Local"...)
+	default:
+		buf = append(buf, "time.Location("...)
+		buf = append(buf, quote(loc.name)...)
 		buf = append(buf, ')')
-		return string(buf)
-	*/
-	panic("todo: time.GoString")
+	}
+	buf = append(buf, ')')
+	return string(buf)
 }
 
 // Format returns a textual representation of the time value formatted according
@@ -1008,16 +989,13 @@ func skip(value, prefix string) (string, error) {
 // differ by the actual zone offset. To avoid such problems, prefer time layouts
 // that use a numeric zone offset, or use ParseInLocation.
 func Parse(layout, value string) (Time, error) {
-	/*
-		// Optimize for RFC3339 as it accounts for over half of all representations.
-		if layout == RFC3339 || layout == RFC3339Nano {
-			if t, ok := parseRFC3339(value, Local); ok {
-				return t, nil
-			}
+	// Optimize for RFC3339 as it accounts for over half of all representations.
+	if layout == RFC3339 || layout == RFC3339Nano {
+		if t, ok := parseRFC3339(value, Local); ok {
+			return t, nil
 		}
-		return parse(layout, value, UTC, Local)
-	*/
-	panic("todo: time.Parse")
+	}
+	return parse(layout, value, UTC, Local)
 }
 
 // ParseInLocation is like Parse but differs in two important ways.
@@ -1026,388 +1004,382 @@ func Parse(layout, value string) (Time, error) {
 // Second, when given a zone offset or abbreviation, Parse tries to match it
 // against the Local location; ParseInLocation uses the given location.
 func ParseInLocation(layout, value string, loc *Location) (Time, error) {
-	/*
-		// Optimize for RFC3339 as it accounts for over half of all representations.
-		if layout == RFC3339 || layout == RFC3339Nano {
-			if t, ok := parseRFC3339(value, loc); ok {
-				return t, nil
-			}
+	// Optimize for RFC3339 as it accounts for over half of all representations.
+	if layout == RFC3339 || layout == RFC3339Nano {
+		if t, ok := parseRFC3339(value, loc); ok {
+			return t, nil
 		}
-		return parse(layout, value, loc, loc)
-	*/
-	panic("todo: time.ParseInLocation")
+	}
+	return parse(layout, value, loc, loc)
 }
 
 func parse(layout, value string, defaultLocation, local *Location) (Time, error) {
-	/*
-		alayout, avalue := layout, value
-		rangeErrString := "" // set if a value is out of range
-		amSet := false       // do we need to subtract 12 from the hour for midnight?
-		pmSet := false       // do we need to add 12 to the hour?
+	alayout, avalue := layout, value
+	rangeErrString := "" // set if a value is out of range
+	amSet := false       // do we need to subtract 12 from the hour for midnight?
+	pmSet := false       // do we need to add 12 to the hour?
 
-		// Time being constructed.
-		var (
-			year       int
-			month      int = -1
-			day        int = -1
-			yday       int = -1
-			hour       int
-			min        int
-			sec        int
-			nsec       int
-			z          *Location
-			zoneOffset int = -1
-			zoneName   string
-		)
+	// Time being constructed.
+	var (
+		year       int
+		month      int = -1
+		day        int = -1
+		yday       int = -1
+		hour       int
+		min        int
+		sec        int
+		nsec       int
+		z          *Location
+		zoneOffset int = -1
+		zoneName   string
+	)
 
-		// Each iteration processes one std value.
-		for {
-			var err error
-			prefix, std, suffix := nextStdChunk(layout)
-			stdstr := layout[len(prefix) : len(layout)-len(suffix)]
-			value, err = skip(value, prefix)
-			if err != nil {
-				return Time{}, newParseError(alayout, avalue, prefix, value, "")
+	// Each iteration processes one std value.
+	for {
+		var err error
+		prefix, std, suffix := nextStdChunk(layout)
+		stdstr := layout[len(prefix) : len(layout)-len(suffix)]
+		value, err = skip(value, prefix)
+		if err != nil {
+			return Time{}, newParseError(alayout, avalue, prefix, value, "")
+		}
+		if std == 0 {
+			if len(value) != 0 {
+				return Time{}, newParseError(alayout, avalue, "", value, ": extra text: "+quote(value))
 			}
-			if std == 0 {
-				if len(value) != 0 {
-					return Time{}, newParseError(alayout, avalue, "", value, ": extra text: "+quote(value))
-				}
+			break
+		}
+		layout = suffix
+		var p string
+		hold := value
+		switch std & stdMask {
+		case stdYear:
+			if len(value) < 2 {
+				err = errBad
 				break
 			}
-			layout = suffix
-			var p string
-			hold := value
-			switch std & stdMask {
-			case stdYear:
-				if len(value) < 2 {
-					err = errBad
-					break
-				}
-				p, value = value[0:2], value[2:]
-				year, err = atoi(p)
-				if err != nil {
-					break
-				}
-				if year >= 69 { // Unix time starts Dec 31 1969 in some time zones
-					year += 1900
-				} else {
-					year += 2000
-				}
-			case stdLongYear:
-				if len(value) < 4 || !isDigit(value, 0) {
-					err = errBad
-					break
-				}
-				p, value = value[0:4], value[4:]
-				year, err = atoi(p)
-			case stdMonth:
-				month, value, err = lookup(shortMonthNames, value)
-				month++
-			case stdLongMonth:
-				month, value, err = lookup(longMonthNames, value)
-				month++
-			case stdNumMonth, stdZeroMonth:
-				month, value, err = getnum(value, std == stdZeroMonth)
-				if err == nil && (month <= 0 || 12 < month) {
-					rangeErrString = "month"
-				}
-			case stdWeekDay:
-				// Ignore weekday except for error checking.
-				_, value, err = lookup(shortDayNames, value)
-			case stdLongWeekDay:
-				_, value, err = lookup(longDayNames, value)
-			case stdDay, stdUnderDay, stdZeroDay:
-				if std == stdUnderDay && len(value) > 0 && value[0] == ' ' {
-					value = value[1:]
-				}
-				day, value, err = getnum(value, std == stdZeroDay)
-				// Note that we allow any one- or two-digit day here.
-				// The month, day, year combination is validated after we've completed parsing.
-			case stdUnderYearDay, stdZeroYearDay:
-				for i := 0; i < 2; i++ {
-					if std == stdUnderYearDay && len(value) > 0 && value[0] == ' ' {
-						value = value[1:]
-					}
-				}
-				yday, value, err = getnum3(value, std == stdZeroYearDay)
-				// Note that we allow any one-, two-, or three-digit year-day here.
-				// The year-day, year combination is validated after we've completed parsing.
-			case stdHour:
-				hour, value, err = getnum(value, false)
-				if hour < 0 || 24 <= hour {
-					rangeErrString = "hour"
-				}
-			case stdHour12, stdZeroHour12:
-				hour, value, err = getnum(value, std == stdZeroHour12)
-				if hour < 0 || 12 < hour {
-					rangeErrString = "hour"
-				}
-			case stdMinute, stdZeroMinute:
-				min, value, err = getnum(value, std == stdZeroMinute)
-				if min < 0 || 60 <= min {
-					rangeErrString = "minute"
-				}
-			case stdSecond, stdZeroSecond:
-				sec, value, err = getnum(value, std == stdZeroSecond)
-				if err != nil {
-					break
-				}
-				if sec < 0 || 60 <= sec {
-					rangeErrString = "second"
-					break
-				}
-				// Special case: do we have a fractional second but no
-				// fractional second in the format?
-				if len(value) >= 2 && commaOrPeriod(value[0]) && isDigit(value, 1) {
-					_, std, _ = nextStdChunk(layout)
-					std &= stdMask
-					if std == stdFracSecond0 || std == stdFracSecond9 {
-						// Fractional second in the layout; proceed normally
-						break
-					}
-					// No fractional second in the layout but we have one in the input.
-					n := 2
-					for ; n < len(value) && isDigit(value, n); n++ {
-					}
-					nsec, rangeErrString, err = parseNanoseconds(value, n)
-					value = value[n:]
-				}
-			case stdPM:
-				if len(value) < 2 {
-					err = errBad
-					break
-				}
-				p, value = value[0:2], value[2:]
-				switch p {
-				case "PM":
-					pmSet = true
-				case "AM":
-					amSet = true
-				default:
-					err = errBad
-				}
-			case stdpm:
-				if len(value) < 2 {
-					err = errBad
-					break
-				}
-				p, value = value[0:2], value[2:]
-				switch p {
-				case "pm":
-					pmSet = true
-				case "am":
-					amSet = true
-				default:
-					err = errBad
-				}
-			case stdISO8601TZ, stdISO8601ColonTZ, stdISO8601SecondsTZ, stdISO8601ShortTZ, stdISO8601ColonSecondsTZ, stdNumTZ, stdNumShortTZ, stdNumColonTZ, stdNumSecondsTz, stdNumColonSecondsTZ:
-				if (std == stdISO8601TZ || std == stdISO8601ShortTZ || std == stdISO8601ColonTZ) && len(value) >= 1 && value[0] == 'Z' {
-					value = value[1:]
-					z = UTC
-					break
-				}
-				var sign, hour, min, seconds string
-				if std == stdISO8601ColonTZ || std == stdNumColonTZ {
-					if len(value) < 6 {
-						err = errBad
-						break
-					}
-					if value[3] != ':' {
-						err = errBad
-						break
-					}
-					sign, hour, min, seconds, value = value[0:1], value[1:3], value[4:6], "00", value[6:]
-				} else if std == stdNumShortTZ || std == stdISO8601ShortTZ {
-					if len(value) < 3 {
-						err = errBad
-						break
-					}
-					sign, hour, min, seconds, value = value[0:1], value[1:3], "00", "00", value[3:]
-				} else if std == stdISO8601ColonSecondsTZ || std == stdNumColonSecondsTZ {
-					if len(value) < 9 {
-						err = errBad
-						break
-					}
-					if value[3] != ':' || value[6] != ':' {
-						err = errBad
-						break
-					}
-					sign, hour, min, seconds, value = value[0:1], value[1:3], value[4:6], value[7:9], value[9:]
-				} else if std == stdISO8601SecondsTZ || std == stdNumSecondsTz {
-					if len(value) < 7 {
-						err = errBad
-						break
-					}
-					sign, hour, min, seconds, value = value[0:1], value[1:3], value[3:5], value[5:7], value[7:]
-				} else {
-					if len(value) < 5 {
-						err = errBad
-						break
-					}
-					sign, hour, min, seconds, value = value[0:1], value[1:3], value[3:5], "00", value[5:]
-				}
-				var hr, mm, ss int
-				hr, _, err = getnum(hour, true)
-				if err == nil {
-					mm, _, err = getnum(min, true)
-				}
-				if err == nil {
-					ss, _, err = getnum(seconds, true)
-				}
-				zoneOffset = (hr*60+mm)*60 + ss // offset is in seconds
-				switch sign[0] {
-				case '+':
-				case '-':
-					zoneOffset = -zoneOffset
-				default:
-					err = errBad
-				}
-			case stdTZ:
-				// Does it look like a time zone?
-				if len(value) >= 3 && value[0:3] == "UTC" {
-					z = UTC
-					value = value[3:]
-					break
-				}
-				n, ok := parseTimeZone(value)
-				if !ok {
-					err = errBad
-					break
-				}
-				zoneName, value = value[:n], value[n:]
-
-			case stdFracSecond0:
-				// stdFracSecond0 requires the exact number of digits as specified in
-				// the layout.
-				ndigit := 1 + digitsLen(std)
-				if len(value) < ndigit {
-					err = errBad
-					break
-				}
-				nsec, rangeErrString, err = parseNanoseconds(value, ndigit)
-				value = value[ndigit:]
-
-			case stdFracSecond9:
-				if len(value) < 2 || !commaOrPeriod(value[0]) || value[1] < '0' || '9' < value[1] {
-					// Fractional second omitted.
-					break
-				}
-				// Take any number of digits, even more than asked for,
-				// because it is what the stdSecond case would do.
-				i := 0
-				for i+1 < len(value) && '0' <= value[i+1] && value[i+1] <= '9' {
-					i++
-				}
-				nsec, rangeErrString, err = parseNanoseconds(value, 1+i)
-				value = value[1+i:]
-			}
-			if rangeErrString != "" {
-				return Time{}, newParseError(alayout, avalue, stdstr, value, ": "+rangeErrString+" out of range")
-			}
+			p, value = value[0:2], value[2:]
+			year, err = atoi(p)
 			if err != nil {
-				return Time{}, newParseError(alayout, avalue, stdstr, hold, "")
+				break
 			}
-		}
-		if pmSet && hour < 12 {
-			hour += 12
-		} else if amSet && hour == 12 {
-			hour = 0
-		}
-
-		// Convert yday to day, month.
-		if yday >= 0 {
-			var d int
-			var m int
-			if isLeap(year) {
-				if yday == 31+29 {
-					m = int(February)
-					d = 29
-				} else if yday > 31+29 {
-					yday--
+			if year >= 69 { // Unix time starts Dec 31 1969 in some time zones
+				year += 1900
+			} else {
+				year += 2000
+			}
+		case stdLongYear:
+			if len(value) < 4 || !isDigit(value, 0) {
+				err = errBad
+				break
+			}
+			p, value = value[0:4], value[4:]
+			year, err = atoi(p)
+		case stdMonth:
+			month, value, err = lookup(shortMonthNames, value)
+			month++
+		case stdLongMonth:
+			month, value, err = lookup(longMonthNames, value)
+			month++
+		case stdNumMonth, stdZeroMonth:
+			month, value, err = getnum(value, std == stdZeroMonth)
+			if err == nil && (month <= 0 || 12 < month) {
+				rangeErrString = "month"
+			}
+		case stdWeekDay:
+			// Ignore weekday except for error checking.
+			_, value, err = lookup(shortDayNames, value)
+		case stdLongWeekDay:
+			_, value, err = lookup(longDayNames, value)
+		case stdDay, stdUnderDay, stdZeroDay:
+			if std == stdUnderDay && len(value) > 0 && value[0] == ' ' {
+				value = value[1:]
+			}
+			day, value, err = getnum(value, std == stdZeroDay)
+			// Note that we allow any one- or two-digit day here.
+			// The month, day, year combination is validated after we've completed parsing.
+		case stdUnderYearDay, stdZeroYearDay:
+			for i := 0; i < 2; i++ {
+				if std == stdUnderYearDay && len(value) > 0 && value[0] == ' ' {
+					value = value[1:]
 				}
 			}
-			if yday < 1 || yday > 365 {
-				return Time{}, newParseError(alayout, avalue, "", value, ": day-of-year out of range")
+			yday, value, err = getnum3(value, std == stdZeroYearDay)
+			// Note that we allow any one-, two-, or three-digit year-day here.
+			// The year-day, year combination is validated after we've completed parsing.
+		case stdHour:
+			hour, value, err = getnum(value, false)
+			if hour < 0 || 24 <= hour {
+				rangeErrString = "hour"
 			}
-			if m == 0 {
-				m = (yday-1)/31 + 1
-				if int(daysBefore[m]) < yday {
-					m++
+		case stdHour12, stdZeroHour12:
+			hour, value, err = getnum(value, std == stdZeroHour12)
+			if hour < 0 || 12 < hour {
+				rangeErrString = "hour"
+			}
+		case stdMinute, stdZeroMinute:
+			min, value, err = getnum(value, std == stdZeroMinute)
+			if min < 0 || 60 <= min {
+				rangeErrString = "minute"
+			}
+		case stdSecond, stdZeroSecond:
+			sec, value, err = getnum(value, std == stdZeroSecond)
+			if err != nil {
+				break
+			}
+			if sec < 0 || 60 <= sec {
+				rangeErrString = "second"
+				break
+			}
+			// Special case: do we have a fractional second but no
+			// fractional second in the format?
+			if len(value) >= 2 && commaOrPeriod(value[0]) && isDigit(value, 1) {
+				_, std, _ = nextStdChunk(layout)
+				std &= stdMask
+				if std == stdFracSecond0 || std == stdFracSecond9 {
+					// Fractional second in the layout; proceed normally
+					break
 				}
-				d = yday - int(daysBefore[m-1])
+				// No fractional second in the layout but we have one in the input.
+				n := 2
+				for ; n < len(value) && isDigit(value, n); n++ {
+				}
+				nsec, rangeErrString, err = parseNanoseconds(value, n)
+				value = value[n:]
 			}
-			// If month, day already seen, yday's m, d must match.
-			// Otherwise, set them from m, d.
-			if month >= 0 && month != m {
-				return Time{}, newParseError(alayout, avalue, "", value, ": day-of-year does not match month")
+		case stdPM:
+			if len(value) < 2 {
+				err = errBad
+				break
 			}
-			month = m
-			if day >= 0 && day != d {
-				return Time{}, newParseError(alayout, avalue, "", value, ": day-of-year does not match day")
+			p, value = value[0:2], value[2:]
+			switch p {
+			case "PM":
+				pmSet = true
+			case "AM":
+				amSet = true
+			default:
+				err = errBad
 			}
-			day = d
-		} else {
-			if month < 0 {
-				month = int(January)
+		case stdpm:
+			if len(value) < 2 {
+				err = errBad
+				break
 			}
-			if day < 0 {
-				day = 1
+			p, value = value[0:2], value[2:]
+			switch p {
+			case "pm":
+				pmSet = true
+			case "am":
+				amSet = true
+			default:
+				err = errBad
+			}
+		case stdISO8601TZ, stdISO8601ColonTZ, stdISO8601SecondsTZ, stdISO8601ShortTZ, stdISO8601ColonSecondsTZ, stdNumTZ, stdNumShortTZ, stdNumColonTZ, stdNumSecondsTz, stdNumColonSecondsTZ:
+			if (std == stdISO8601TZ || std == stdISO8601ShortTZ || std == stdISO8601ColonTZ) && len(value) >= 1 && value[0] == 'Z' {
+				value = value[1:]
+				z = UTC
+				break
+			}
+			var sign, hour, min, seconds string
+			if std == stdISO8601ColonTZ || std == stdNumColonTZ {
+				if len(value) < 6 {
+					err = errBad
+					break
+				}
+				if value[3] != ':' {
+					err = errBad
+					break
+				}
+				sign, hour, min, seconds, value = value[0:1], value[1:3], value[4:6], "00", value[6:]
+			} else if std == stdNumShortTZ || std == stdISO8601ShortTZ {
+				if len(value) < 3 {
+					err = errBad
+					break
+				}
+				sign, hour, min, seconds, value = value[0:1], value[1:3], "00", "00", value[3:]
+			} else if std == stdISO8601ColonSecondsTZ || std == stdNumColonSecondsTZ {
+				if len(value) < 9 {
+					err = errBad
+					break
+				}
+				if value[3] != ':' || value[6] != ':' {
+					err = errBad
+					break
+				}
+				sign, hour, min, seconds, value = value[0:1], value[1:3], value[4:6], value[7:9], value[9:]
+			} else if std == stdISO8601SecondsTZ || std == stdNumSecondsTz {
+				if len(value) < 7 {
+					err = errBad
+					break
+				}
+				sign, hour, min, seconds, value = value[0:1], value[1:3], value[3:5], value[5:7], value[7:]
+			} else {
+				if len(value) < 5 {
+					err = errBad
+					break
+				}
+				sign, hour, min, seconds, value = value[0:1], value[1:3], value[3:5], "00", value[5:]
+			}
+			var hr, mm, ss int
+			hr, _, err = getnum(hour, true)
+			if err == nil {
+				mm, _, err = getnum(min, true)
+			}
+			if err == nil {
+				ss, _, err = getnum(seconds, true)
+			}
+			zoneOffset = (hr*60+mm)*60 + ss // offset is in seconds
+			switch sign[0] {
+			case '+':
+			case '-':
+				zoneOffset = -zoneOffset
+			default:
+				err = errBad
+			}
+		case stdTZ:
+			// Does it look like a time zone?
+			if len(value) >= 3 && value[0:3] == "UTC" {
+				z = UTC
+				value = value[3:]
+				break
+			}
+			n, ok := parseTimeZone(value)
+			if !ok {
+				err = errBad
+				break
+			}
+			zoneName, value = value[:n], value[n:]
+
+		case stdFracSecond0:
+			// stdFracSecond0 requires the exact number of digits as specified in
+			// the layout.
+			ndigit := 1 + digitsLen(std)
+			if len(value) < ndigit {
+				err = errBad
+				break
+			}
+			nsec, rangeErrString, err = parseNanoseconds(value, ndigit)
+			value = value[ndigit:]
+
+		case stdFracSecond9:
+			if len(value) < 2 || !commaOrPeriod(value[0]) || value[1] < '0' || '9' < value[1] {
+				// Fractional second omitted.
+				break
+			}
+			// Take any number of digits, even more than asked for,
+			// because it is what the stdSecond case would do.
+			i := 0
+			for i+1 < len(value) && '0' <= value[i+1] && value[i+1] <= '9' {
+				i++
+			}
+			nsec, rangeErrString, err = parseNanoseconds(value, 1+i)
+			value = value[1+i:]
+		}
+		if rangeErrString != "" {
+			return Time{}, newParseError(alayout, avalue, stdstr, value, ": "+rangeErrString+" out of range")
+		}
+		if err != nil {
+			return Time{}, newParseError(alayout, avalue, stdstr, hold, "")
+		}
+	}
+	if pmSet && hour < 12 {
+		hour += 12
+	} else if amSet && hour == 12 {
+		hour = 0
+	}
+
+	// Convert yday to day, month.
+	if yday >= 0 {
+		var d int
+		var m int
+		if isLeap(year) {
+			if yday == 31+29 {
+				m = int(February)
+				d = 29
+			} else if yday > 31+29 {
+				yday--
 			}
 		}
-
-		// Validate the day of the month.
-		if day < 1 || day > daysIn(Month(month), year) {
-			return Time{}, newParseError(alayout, avalue, "", value, ": day out of range")
+		if yday < 1 || yday > 365 {
+			return Time{}, newParseError(alayout, avalue, "", value, ": day-of-year out of range")
 		}
-
-		if z != nil {
-			return Date(year, Month(month), day, hour, min, sec, nsec, z), nil
-		}
-
-		if zoneOffset != -1 {
-			t := Date(year, Month(month), day, hour, min, sec, nsec, UTC)
-			t.addSec(-int64(zoneOffset))
-
-			// Look for local zone with the given offset.
-			// If that zone was in effect at the given time, use it.
-			name, offset, _, _, _ := local.lookup(t.unixSec())
-			if offset == zoneOffset && (zoneName == "" || name == zoneName) {
-				t.setLoc(local)
-				return t, nil
+		if m == 0 {
+			m = (yday-1)/31 + 1
+			if int(daysBefore[m]) < yday {
+				m++
 			}
+			d = yday - int(daysBefore[m-1])
+		}
+		// If month, day already seen, yday's m, d must match.
+		// Otherwise, set them from m, d.
+		if month >= 0 && month != m {
+			return Time{}, newParseError(alayout, avalue, "", value, ": day-of-year does not match month")
+		}
+		month = m
+		if day >= 0 && day != d {
+			return Time{}, newParseError(alayout, avalue, "", value, ": day-of-year does not match day")
+		}
+		day = d
+	} else {
+		if month < 0 {
+			month = int(January)
+		}
+		if day < 0 {
+			day = 1
+		}
+	}
 
-			// Otherwise create fake zone to record offset.
-			zoneNameCopy := cloneString(zoneName) // avoid leaking the input value
-			t.setLoc(FixedZone(zoneNameCopy, zoneOffset))
+	// Validate the day of the month.
+	if day < 1 || day > daysIn(Month(month), year) {
+		return Time{}, newParseError(alayout, avalue, "", value, ": day out of range")
+	}
+
+	if z != nil {
+		return Date(year, Month(month), day, hour, min, sec, nsec, z), nil
+	}
+
+	if zoneOffset != -1 {
+		t := Date(year, Month(month), day, hour, min, sec, nsec, UTC)
+		t.addSec(-int64(zoneOffset))
+
+		// Look for local zone with the given offset.
+		// If that zone was in effect at the given time, use it.
+		name, offset, _, _, _ := local.lookup(t.unixSec())
+		if offset == zoneOffset && (zoneName == "" || name == zoneName) {
+			t.setLoc(local)
 			return t, nil
 		}
 
-		if zoneName != "" {
-			t := Date(year, Month(month), day, hour, min, sec, nsec, UTC)
-			// Look for local zone with the given offset.
-			// If that zone was in effect at the given time, use it.
-			offset, ok := local.lookupName(zoneName, t.unixSec())
-			if ok {
-				t.addSec(-int64(offset))
-				t.setLoc(local)
-				return t, nil
-			}
+		// Otherwise create fake zone to record offset.
+		zoneNameCopy := cloneString(zoneName) // avoid leaking the input value
+		t.setLoc(FixedZone(zoneNameCopy, zoneOffset))
+		return t, nil
+	}
 
-			// Otherwise, create fake zone with unknown offset.
-			if len(zoneName) > 3 && zoneName[:3] == "GMT" {
-				offset, _ = atoi(zoneName[3:]) // Guaranteed OK by parseGMT.
-				offset *= 3600
-			}
-			zoneNameCopy := cloneString(zoneName) // avoid leaking the input value
-			t.setLoc(FixedZone(zoneNameCopy, offset))
+	if zoneName != "" {
+		t := Date(year, Month(month), day, hour, min, sec, nsec, UTC)
+		// Look for local zone with the given offset.
+		// If that zone was in effect at the given time, use it.
+		offset, ok := local.lookupName(zoneName, t.unixSec())
+		if ok {
+			t.addSec(-int64(offset))
+			t.setLoc(local)
 			return t, nil
 		}
 
-		// Otherwise, fall back to default.
-		return Date(year, Month(month), day, hour, min, sec, nsec, defaultLocation), nil
-	*/
-	panic("todo: time.parse")
+		// Otherwise, create fake zone with unknown offset.
+		if len(zoneName) > 3 && zoneName[:3] == "GMT" {
+			offset, _ = atoi(zoneName[3:]) // Guaranteed OK by parseGMT.
+			offset *= 3600
+		}
+		zoneNameCopy := cloneString(zoneName) // avoid leaking the input value
+		t.setLoc(FixedZone(zoneNameCopy, offset))
+		return t, nil
+	}
+
+	// Otherwise, fall back to default.
+	return Date(year, Month(month), day, hour, min, sec, nsec, defaultLocation), nil
 }
 
 // parseTimeZone parses a time zone string and returns its length. Time zones
