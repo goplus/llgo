@@ -1,4 +1,3 @@
-//go:build !llgo
 
 package log_test
 
