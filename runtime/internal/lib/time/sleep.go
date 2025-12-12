@@ -5,26 +5,13 @@
 package time
 
 import (
-	"sync"
-	"unsafe"
-
 	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/clite/libuv"
 )
 
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
 func Sleep(d Duration) {
 	c.Usleep(c.Uint(d.Microseconds()))
-}
-
-// Interface to timers implemented in package runtime.
-// Must be in sync with ../runtime/time.go:/^type timer
-type runtimeTimer struct {
-	libuv.Timer
-	when int64
-	f    func(any, uintptr)
-	arg  any
 }
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.
@@ -175,88 +162,4 @@ func AfterFunc(d Duration, f func()) *Timer {
 
 func goFunc(arg any, seq uintptr) {
 	go arg.(func())()
-}
-
-var (
-	timerLoop *libuv.Loop
-	timerOnce sync.Once
-	keepAlive libuv.Async
-)
-
-func init() {
-	timerOnce.Do(func() {
-		timerLoop = libuv.LoopNew()
-		timerLoop.Async(&keepAlive, func(a *libuv.Async) {
-			// no-op; keeps loop alive
-		})
-	})
-	go func() {
-		timerLoop.Run(libuv.RUN_DEFAULT)
-	}()
-}
-
-// cross thread
-func timerEvent(async *libuv.Async) {
-	a := (*asyncTimerEvent)(unsafe.Pointer(async))
-	a.cb()
-	a.Close(nil)
-}
-
-type asyncTimerEvent struct {
-	libuv.Async
-	cb func()
-}
-
-func timerCallback(t *libuv.Timer) {
-	r := (*runtimeTimer)(unsafe.Pointer(t))
-	r.f(r.arg, 0)
-}
-
-func startTimer(r *runtimeTimer) {
-	asyncTimer := &asyncTimerEvent{
-		cb: func() {
-			libuv.InitTimer(timerLoop, &r.Timer)
-			delay := timerDelayMillis(r.when)
-			r.Start(timerCallback, delay, 0)
-		},
-	}
-	timerLoop.Async(&asyncTimer.Async, timerEvent)
-	asyncTimer.Send()
-}
-
-func stopTimer(r *runtimeTimer) bool {
-	asyncTimer := &asyncTimerEvent{
-		cb: func() {
-			r.Stop()
-		},
-	}
-	timerLoop.Async(&asyncTimer.Async, timerEvent)
-	return asyncTimer.Send() == 0
-}
-
-func resetTimer(r *runtimeTimer, when int64) bool {
-	asyncTimer := &asyncTimerEvent{
-		cb: func() {
-			r.Stop()
-			r.when = when
-			delay := timerDelayMillis(when)
-			r.Start(timerCallback, delay, 0)
-		},
-	}
-	timerLoop.Async(&asyncTimer.Async, timerEvent)
-	return asyncTimer.Send() == 0
-}
-
-func timerDelayMillis(when int64) uint64 {
-	now := runtimeNano()
-	if when <= now {
-		return 0
-	}
-	delta := when - now
-	// Convert nanoseconds to milliseconds, rounding up to avoid firing early.
-	ms := (delta + int64(Millisecond) - 1) / int64(Millisecond)
-	if ms < 0 {
-		return 0
-	}
-	return uint64(ms)
 }
