@@ -19,11 +19,24 @@ func Sleep(d Duration) {
 // Interface to timers implemented in package runtime.
 // Must be in sync with ../runtime/time.go:/^type timer
 type runtimeTimer struct {
-	// libuv.Timer
-	when int64
-	f    func(any, uintptr)
-	arg  any
+	when   int64
+	f      func(any, uintptr)
+	arg    any
+	mu     sync.Mutex
+	seq    uint64
+	state  timerState
+	cookie *timerCookie
+	fd     int
 }
+
+type timerState uint8
+
+const (
+	timerIdle timerState = iota
+	timerWaiting
+	timerStopped
+	timerFired
+)
 
 // when is a helper function for setting the 'when' field of a runtimeTimer.
 // It returns what the time will be, in nanoseconds, Duration d in the future.
@@ -173,68 +186,4 @@ func AfterFunc(d Duration, f func()) *Timer {
 
 func goFunc(arg any, seq uintptr) {
 	go arg.(func())()
-}
-
-var (
-	// timerLoop *libuv.Loop
-	timerOnce sync.Once
-)
-
-// func init() {
-// 	timerOnce.Do(func() {
-// 		timerLoop = libuv.LoopNew()
-// 	})
-// 	go func() {
-// 		timerLoop.Run(libuv.RUN_DEFAULT)
-// 	}()
-// }
-
-// cross thread
-// func timerEvent(async *libuv.Async) {
-// 	a := (*asyncTimerEvent)(unsafe.Pointer(async))
-// 	a.cb()
-// 	a.Close(nil)
-// }
-
-type asyncTimerEvent struct {
-	// libuv.Async
-	cb func()
-}
-
-// func timerCallback(t *libuv.Timer) {
-// }
-
-func startTimer(r *runtimeTimer) {
-	panic("not implemented")
-	// asyncTimer := &asyncTimerEvent{
-	// 	cb: func() {
-	// 		libuv.InitTimer(timerLoop, &r.Timer)
-	// 		r.Start(timerCallback, uint64(r.when), 0)
-	// 	},
-	// }
-	// timerLoop.Async(&asyncTimer.Async, timerEvent)
-	// asyncTimer.Send()
-}
-
-func stopTimer(r *runtimeTimer) bool {
-	panic("not implemented")
-	// asyncTimer := &asyncTimerEvent{
-	// 	cb: func() {
-	// 		r.Stop()
-	// 	},
-	// }
-	// timerLoop.Async(&asyncTimer.Async, timerEvent)
-	// return asyncTimer.Send() == 0
-}
-
-func resetTimer(r *runtimeTimer, when int64) bool {
-	panic("not implemented")
-	// asyncTimer := &asyncTimerEvent{
-	// 	cb: func() {
-	// 		r.Stop()
-	// 		r.Start(timerCallback, uint64(when), 0)
-	// 	},
-	// }
-	// timerLoop.Async(&asyncTimer.Async, timerEvent)
-	// return asyncTimer.Send() == 0
 }
