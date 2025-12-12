@@ -13,7 +13,7 @@ runs:
         go-version: 1.24.x
     - name: Restore Linux sysroot cache
       id: cache-linux-sysroot
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: .sysroot/linux.tar.gz
         key: ${{ inputs.linux-cache-key }}
@@ -22,7 +22,7 @@ runs:
       shell: bash
     - name: Restore ESP Clang cache
       id: cache-esp-clang
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: |
           .sysroot/darwin/amd64/crosscompile/clang
@@ -36,7 +36,7 @@ runs:
       shell: bash
     - name: Save ESP Clang cache
       if: steps.cache-esp-clang.outputs.cache-hit != 'true'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: |
           .sysroot/darwin/amd64/crosscompile/clang
