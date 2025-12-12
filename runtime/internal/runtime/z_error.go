@@ -49,6 +49,12 @@ func AssertNegativeShift(b bool) {
 	}
 }
 
+func AssertDivideByZero(b bool) {
+	if b {
+		panic(divideError)
+	}
+}
+
 func AssertIndexRange(b bool) {
 	if b {
 		panic(errorString("index out of range").Error())

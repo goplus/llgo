@@ -41,6 +41,7 @@ var hasAltPkg = map[string]none{
 	"internal/syscall/execenv": {},
 	"internal/syscall/unix":    {},
 	"math":                     {},
+	"math/bits":                {},
 	"math/cmplx":               {},
 	"math/rand":                {},
 	"reflect":                  {},
