@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !timer_usleep
 
 package time
 
@@ -107,7 +107,7 @@ func kqueueLoop() {
 		}
 		r.state = timerFired
 		r.mu.Unlock()
-		r.f(r.arg, 0)
+		go r.f(r.arg, 0)
 	}
 }
 

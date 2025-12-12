@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && !timer_usleep
 
 package time
 
@@ -149,9 +149,6 @@ func stopTimer(r *runtimeTimer) bool {
 		r.state = timerStopped
 		r.seq++
 	}
-	if fd != 0 {
-		r.fd = 0
-	}
 	r.mu.Unlock()
 
 	if fd != 0 {
@@ -159,7 +156,6 @@ func stopTimer(r *runtimeTimer) bool {
 		epollCtlRetry(epfd, EPOLL_CTL_DEL, fd, nil)
 		var disarm itimerspec
 		setTimerfd(fd, &disarm)
-		cos.Close(c.Int(fd))
 	}
 
 	return active
@@ -247,9 +243,12 @@ func addOrModEpoll(fd int, ev *epollEvent) {
 	}
 	errno := cos.Errno()
 	if errno == c.Int(csys.EEXIST) {
-		// We expect DEL to remove the fd; EEXIST indicates logic error.
-		panicErrno("timer: unexpected epoll_ctl EEXIST", errno)
+		// fd already registered; update it.
+		if epoll_ctl(c.Int(epfd), EPOLL_CTL_MOD, c.Int(fd), ev) == 0 {
+			return
+		}
+		errno = cos.Errno()
 	}
 	cleanupTimerfd(fd)
-	panicErrno("timer: epoll_ctl ADD failed", errno)
+	panicErrno("timer: epoll_ctl ADD/MOD failed", errno)
 }
