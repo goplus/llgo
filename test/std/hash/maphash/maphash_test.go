@@ -1,4 +1,3 @@
-
 package maphash_test
 
 import (
