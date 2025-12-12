@@ -35,8 +35,8 @@ When changes affect multiple suites, finish with the aggregate sweeps before upd
 
 Ran `./llgo.sh test -c -o /tmp/llgo_<pkg>.test ./test/std/<pkg>` (15s timeout) then `/tmp/llgo_<pkg>.test -test.timeout=15s` after stripping `//go:build !llgo`. Outcomes:
 
-- ✅ Passed: `hash/maphash`, `log`
-- ❌ Test failed: `archive/tar`, `archive/zip`, `compress/flate`, `compress/gzip`, `compress/zlib`, `context`, `crypto/hmac`, `crypto/sha256`, `crypto/sha512`, `embed`, `encoding/hex`, `encoding/json`, `go/parser`, `io`, `io/fs`, `math/bits`, `os/exec`, `os/signal`, `os/user`, `path/filepath`, `runtime`, `testing`, `testing/fstest`, `text/scanner`, `text/template`, `unicode/utf16`, `unicode/utf8`
+- ✅ Passed: `hash/maphash`, `log`, `io`
+- ❌ Test failed: `archive/tar`, `archive/zip`, `compress/flate`, `compress/gzip`, `compress/zlib`, `context`, `crypto/hmac`, `crypto/sha256`, `crypto/sha512`, `embed`, `encoding/hex`, `encoding/json`, `go/parser`, `io/fs`, `math/bits`, `os/exec`, `os/signal`, `os/user`, `path/filepath`, `runtime`, `testing`, `testing/fstest`, `text/scanner`, `text/template`, `unicode/utf16`, `unicode/utf8`
 - 🛑 Compile failed: `crypto/aes`, `crypto/cipher`, `crypto/des`, `crypto/dsa`, `crypto/ecdh`, `crypto/ecdsa`, `crypto/ed25519`, `crypto/elliptic`, `crypto/rand`, `crypto/rc4`, `crypto/rsa`, `crypto/sha3`, `crypto/subtle`, `crypto/tls`, `crypto/x509`, `encoding/asn1`, `io/ioutil`, `iter`, `mime/multipart`, `net`, `net/http`, `net/http/httptest`, `net/http/httptrace`, `os`, `reflect`, `runtime/debug`, `runtime/pprof`, `runtime/trace`, `sync`
 
 ## Coverage Roadmap
@@ -77,7 +77,7 @@ Ran `./llgo.sh test -c -o /tmp/llgo_<pkg>.test ./test/std/<pkg>` (15s timeout) t
 
 - ✅ `bufio` — 51/51
 - 🟡 `embed` — 4/4 (llgo test fails in 15s sweep)
-- 🟡 `io` — 59/59 (llgo test timed out in 15s sweep)
+- ✅ `io` — 59/59
 - 🟡 `io/fs` — 22/22 (llgo test fails in 15s sweep)
 - 🟡 `io/ioutil` — 8/8 (llgo compile fails in 15s sweep)
 - 🟡 `os` — 157/157 (llgo compile fails in 15s sweep)

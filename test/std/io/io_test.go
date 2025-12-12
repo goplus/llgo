@@ -1,5 +1,3 @@
-//go:build !llgo
-
 package io_test
 
 import (
