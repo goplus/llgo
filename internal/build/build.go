@@ -274,8 +274,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
-		GOOS:   conf.Goos,
-		GOARCH: conf.Goarch,
+		GOOS:      conf.Goos,
+		GOARCH:    conf.Goarch,
+		Baremetal: slices.Contains(export.BuildTags, "baremetal"),
 	}
 
 	prog := llssa.NewProgram(target)
