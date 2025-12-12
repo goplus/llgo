@@ -67,46 +67,46 @@ Ran `./llgo.sh test -c -o /tmp/llgo_<pkg>.test ./test/std/<pkg>` (15s timeout) t
 
 ### Archives & Compression
 
-- 🟡 `archive/tar` — 33/33 (expected ErrInsecurePath, got <nil>)
-- 🟡 `archive/zip` — 36/36 (exit code -1)
-- 🟡 `compress/flate` — 22/22 (fails under llgo runtime - skipped for llgo)
-- 🟡 `compress/gzip` — 18/18 (fails under llgo runtime - skipped for llgo)
-- 🟡 `compress/zlib` — 16/16 (fails under llgo runtime - skipped for llgo)
+- 🟡 `archive/tar` — 33/33 (llgo test fails in 15s sweep: ErrInsecurePath <nil>)
+- 🟡 `archive/zip` — 36/36 (llgo test fails in 15s sweep: exit code -1)
+- 🟡 `compress/flate` — 22/22 (llgo test fails in 15s sweep)
+- 🟡 `compress/gzip` — 18/18 (llgo test fails in 15s sweep)
+- 🟡 `compress/zlib` — 16/16 (llgo test fails in 15s sweep)
 
 ### I/O & Filesystems
 
 - ✅ `bufio` — 51/51
-- 🟡 `embed` — 4/4 (fails under llgo runtime - skipped for llgo)
-- 🟡 `io` — 59/59
-- 🟡 `io/fs` — 22/22 (fails under llgo runtime - skipped for llgo)
-- 🟡 `io/ioutil` — 8/8
-- 🟡 `os` — 157/157 (timeout with llgo - skipped for llgo)
-- 🟡 `os/exec` — 7/7 (panic: todo: os.(\*File).WriteString)
-- 🟡 `os/signal` — 6/6 (panic: signal_enable not implemented)
-- 🟡 `os/user` — 11/11 (exit code -1)
+- 🟡 `embed` — 4/4 (llgo test fails in 15s sweep)
+- 🟡 `io` — 59/59 (llgo test timed out in 15s sweep)
+- 🟡 `io/fs` — 22/22 (llgo test fails in 15s sweep)
+- 🟡 `io/ioutil` — 8/8 (llgo compile fails in 15s sweep)
+- 🟡 `os` — 157/157 (llgo compile fails in 15s sweep)
+- 🟡 `os/exec` — 7/7 (llgo test fails in 15s sweep: todo File.WriteString)
+- 🟡 `os/signal` — 6/6 (llgo test fails in 15s sweep: signal_enable not implemented)
+- 🟡 `os/user` — 11/11 (llgo test fails in 15s sweep: exit code -1)
 - ✅ `path` — 9/9
 - 🟡 `path/filepath` — 27/27
 
 ### Encoding & Serialization
 
 - ✅ `encoding` — 6/6
-- 🟡 `encoding/asn1` — 42/42 (undefined symbol: reflect.Copy)
+- 🟡 `encoding/asn1` — 42/42 (llgo compile fails: undefined symbol reflect.Copy)
 - ✅ `encoding/base64` — 21/21
 - ✅ `encoding/binary` — 22/22
 - ✅ `encoding/csv` — 17/17
-- 🟡 `encoding/hex` — 15/15
-- 🟡 `encoding/json` — 48/48 (fails under llgo runtime - skipped for llgo)
+- 🟡 `encoding/hex` — 15/15 (llgo test fails in 15s sweep)
+- 🟡 `encoding/json` — 48/48 (llgo test fails in 15s sweep)
 - ✅ `encoding/pem` — 3/3
 
 ### Text & Unicode
 
-- 🟡 `text/scanner` — 29/29 (fails under llgo runtime — see #1366)
+- 🟡 `text/scanner` — 29/29 (llgo test fails in 15s sweep — see #1366)
 - ✅ `text/tabwriter` — 11/11
-- 🟡 `text/template` — 29/29 blocked (unique runtime gap — see #1358)
+- 🟡 `text/template` — 29/29 (llgo test timed out in 15s sweep; unique runtime gap — see #1358)
 - ✅ `text/template/parse` — 82/82
 - ✅ `unicode` — 292/292
-- 🟡 `unicode/utf16` — 7/7 (Decode fails for emoji and certain characters)
-- 🟡 `unicode/utf8` — 19/19 (DecodeLastRune/DecodeLastRuneInString return incorrect runes)
+- 🟡 `unicode/utf16` — 7/7 (llgo test fails in 15s sweep: Decode mismatch)
+- 🟡 `unicode/utf8` — 19/19 (llgo test fails in 15s sweep: DecodeLastRune*)
 - ✅ `unique` — 2/2
 
 ### Time & Scheduling
@@ -116,26 +116,26 @@ Ran `./llgo.sh test -c -o /tmp/llgo_<pkg>.test ./test/std/<pkg>` (15s timeout) t
 ### Crypto & Security
 
 - ✅ `crypto` — 13/13
-- 🟡 `crypto/aes` — 4/4 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/cipher` — 9/9 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/des` — 5/5 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/dsa` — 9/9 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/ecdh` — 12/12 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/ecdsa` — 12/12 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/ed25519` — 17/17 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/elliptic` — 13/13 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/hmac` — 2/2 (panic: todo: hmac.New: unsupported hash function)
+- 🟡 `crypto/aes` — 4/4 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/cipher` — 9/9 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/des` — 5/5 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/dsa` — 9/9 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/ecdh` — 12/12 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/ecdsa` — 12/12 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/ed25519` — 17/17 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/elliptic` — 13/13 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/hmac` — 2/2 (llgo test fails in 15s sweep: hmac.New unsupported)
 - ✅ `crypto/md5` — 4/4
-- 🟡 `crypto/rand` — 5/5 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/rc4` — 5/5 (timeout with llgo - skipped for llgo)
-- 🟡 `crypto/rsa` — 30/30 (timeout with llgo - skipped for llgo)
+- 🟡 `crypto/rand` — 5/5 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/rc4` — 5/5 (llgo compile fails in 15s sweep)
+- 🟡 `crypto/rsa` — 30/30 (llgo compile fails in 15s sweep)
 - ✅ `crypto/sha1` — 4/4
-- 🟡 `crypto/sha256` — 7/7 (hash length = 32, want 28)
-- 🟡 `crypto/sha3` — 23/23 (undefined symbol: crypto/internal/fips140.fatal crypto/internal/fips140.setIndicator crypto/internal/fips140.getIndicator crypto/internal/fips140/subtle.xorBytes)
-- 🟡 `crypto/sha512` — 13/13 (hash length = 64, want 48)
-- 🟡 `crypto/subtle` — 8/8 (undefined symbol: runtime.UnlockOSThread, internal/runtime/sys.EnableDIT, runtime.LockOSThread, internal/runtime/sys.DisableDIT, crypto/subtle.XORBytes)
-- 🟡 `crypto/tls` — 113/113 blocked (unique runtime gap — see #1358)
-- 🟡 `crypto/x509` — 76/76 (timeout with llgo - skipped for llgo)
+- 🟡 `crypto/sha256` — 7/7 (llgo test fails in 15s sweep: hash length = 32, want 28)
+- 🟡 `crypto/sha3` — 23/23 (llgo compile fails: missing fips140 symbols)
+- 🟡 `crypto/sha512` — 13/13 (llgo test fails in 15s sweep: hash length = 64, want 48)
+- 🟡 `crypto/subtle` — 8/8 (llgo compile fails: missing runtime.* and XORBytes)
+- 🟡 `crypto/tls` — 113/113 (llgo compile fails; unique runtime gap — see #1358)
+- 🟡 `crypto/x509` — 76/76 (llgo compile fails in 15s sweep)
 - ✅ `crypto/x509/pkix` — 15/15
 
 ### Hashing
