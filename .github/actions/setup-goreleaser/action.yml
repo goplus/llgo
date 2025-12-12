@@ -20,9 +20,30 @@ runs:
     - name: Populate Linux sysroot
       run: tar -xzvf .sysroot/linux.tar.gz -C .sysroot
       shell: bash
+    - name: Restore ESP Clang cache
+      id: cache-esp-clang
+      uses: actions/cache/restore@v4
+      with:
+        path:
+          - .sysroot/darwin/amd64/crosscompile/clang
+          - .sysroot/darwin/arm64/crosscompile/clang
+          - .sysroot/linux/amd64/crosscompile/clang
+          - .sysroot/linux/arm64/crosscompile/clang
+        key: esp-clang-${{ hashFiles('.github/workflows/download_esp_clang.sh') }}
+    - name: Download ESP Clang (if cache miss)
+      if: steps.cache-esp-clang.outputs.cache-hit != 'true'
+      run: bash .github/workflows/download_esp_clang.sh
+      shell: bash
+    - name: Save ESP Clang cache
+      if: steps.cache-esp-clang.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path:
+          - .sysroot/darwin/amd64/crosscompile/clang
+          - .sysroot/darwin/arm64/crosscompile/clang
+          - .sysroot/linux/amd64/crosscompile/clang
+          - .sysroot/linux/arm64/crosscompile/clang
+        key: esp-clang-${{ hashFiles('.github/workflows/download_esp_clang.sh') }}
     - name: Check file
       run: tree .sysroot
-      shell: bash
-    - name: Get Esp clang
-      run: bash .github/workflows/download_esp_clang.sh
       shell: bash
