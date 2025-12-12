@@ -1,5 +1,3 @@
-//go:build !llgo
-
 package exec_test
 
 import (
