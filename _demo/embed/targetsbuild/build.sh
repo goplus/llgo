@@ -3,7 +3,7 @@
 # Function to display usage information
 show_usage() {
 	cat << EOF
-Usage: $(basename "$0") [OPTIONS] [TARGET_FILE]
+Usage: $(basename "$0") [OPTIONS] <TEST_DIR> [TARGET_FILE]
 
 Build targets for llgo across multiple platforms.
 
@@ -11,6 +11,9 @@ OPTIONS:
     -h, --help      Show this help message and exit
 
 ARGUMENTS:
+    TEST_DIR        Required. The test directory containing main.go to build.
+                    Examples: empty, defer
+
     TARGET_FILE     Optional. A text file containing target names, one per line.
                     Lines starting with # are treated as comments and ignored.
                     Empty lines are also ignored.
@@ -41,9 +44,10 @@ EXIT CODES:
     1    One or more builds failed with errors
 
 EXAMPLES:
-    $(basename "$0")                    # Build all targets from JSON files
-    $(basename "$0") my-targets.txt     # Build targets from file
-    $(basename "$0") --help             # Show this help
+    $(basename "$0") empty                    # Build empty test for all targets
+    $(basename "$0") defer                    # Build defer test for all targets
+    $(basename "$0") empty my-targets.txt    # Build empty test for specific targets
+    $(basename "$0") --help                   # Show this help
 
 TARGET FILE FORMAT:
     # This is a comment
@@ -61,12 +65,30 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
 	exit 0
 fi
 
+# Check for required TEST_DIR argument
+if [ $# -lt 1 ]; then
+	echo "Error: TEST_DIR is required."
+	echo "Use '$(basename "$0") --help' for usage information."
+	exit 1
+fi
+
 # Check for invalid number of arguments
-if [ $# -gt 1 ]; then
+if [ $# -gt 2 ]; then
 	echo "Error: Too many arguments."
 	echo "Use '$(basename "$0") --help' for usage information."
 	exit 1
 fi
+
+# Get test directory
+test_dir="$1"
+if [ ! -d "$test_dir" ]; then
+	echo "Error: Test directory '$test_dir' not found."
+	echo "Use '$(basename "$0") --help' for usage information."
+	exit 1
+fi
+
+echo "Testing: $test_dir"
+echo "----------------------------------------"
 
 # Initialize arrays to store results
 successful_targets=()
@@ -90,9 +112,9 @@ ignore_list=(
 )
 
 # Build the targets list based on input method
-if [ $# -eq 1 ]; then
+if [ $# -eq 2 ]; then
 	# Read targets from file
-	target_file="$1"
+	target_file="$2"
 	if [ ! -f "$target_file" ]; then
 		echo "Error: Target file '$target_file' not found."
 		echo "Use '$(basename "$0") --help' for usage information."
@@ -127,7 +149,7 @@ for target in "${targets_to_build[@]}"; do
 		continue
 	fi
 
-	output=$(../../../dev/llgo.sh build -target $target -o hello.elf . 2>&1)
+	output=$(../../../dev/llgo.sh build -target $target -o hello.elf "./$test_dir" 2>&1)
 	if [ $? -eq 0 ]; then
 		echo ✅ $target `file hello.elf`
 		successful_targets+=("$target")
