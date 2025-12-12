@@ -25,9 +25,10 @@ import (
 // -----------------------------------------------------------------------------
 
 type Target struct {
-	GOOS   string
-	GOARCH string
-	GOARM  string // "5", "6", "7" (default)
+	GOOS      string
+	GOARCH    string
+	GOARM     string // "5", "6", "7" (default)
+	Baremetal bool   // true for baremetal/embedded targets (no setjmp/longjmp)
 }
 
 func (p *Target) targetData() llvm.TargetData {

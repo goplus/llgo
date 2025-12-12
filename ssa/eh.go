@@ -109,7 +109,8 @@ func (b Builder) addReturnsTwiceAttr(fn Expr) {
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
-	if b.Prog.target.GOARCH == "wasm" {
+	// wasm and baremetal don't have sigsetjmp, use setjmp instead
+	if b.Prog.target.GOARCH == "wasm" || b.Prog.target.Baremetal {
 		return b.Setjmp(jb)
 	}
 	fname := "sigsetjmp"
@@ -122,7 +123,8 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 }
 
 func (b Builder) Siglongjmp(jb, retval Expr) {
-	if b.Prog.target.GOARCH == "wasm" {
+	// wasm and baremetal don't have siglongjmp, use longjmp instead
+	if b.Prog.target.GOARCH == "wasm" || b.Prog.target.Baremetal {
 		b.Longjmp(jb, retval)
 		return
 	}
