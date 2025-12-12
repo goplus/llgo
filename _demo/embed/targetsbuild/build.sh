@@ -97,19 +97,41 @@ warned_targets=()
 failed_targets=()
 targets_to_build=()
 
-# Define ignore list
-ignore_list=(
-	"atmega1280"
-	"atmega2560"
-	"atmega328p"
-	"atmega32u4"
-	"attiny85"
-	"fe310"
-	"k210"
-	"riscv32"
-	"riscv64"
-	"rp2040"
-)
+# Define ignore list based on test directory
+case "$test_dir" in
+	empty)
+		ignore_list=(
+			"atmega1280"
+			"atmega2560"
+			"atmega328p"
+			"atmega32u4"
+			"attiny85"
+			"fe310"
+			"k210"
+			"riscv32"
+			"riscv64"
+			"rp2040"
+		)
+		;;
+	defer)
+		ignore_list=(
+			"atmega1280"
+			"atmega2560"
+			"atmega328p"
+			"atmega32u4"
+			"attiny85"
+			"fe310"
+			"k210"
+			"riscv32"
+			"riscv64"
+			"rp2040"
+		)
+		;;
+	*)
+		echo "Error: Unknown test directory '$test_dir'. Please add ignore_list in build.sh."
+		exit 1
+		;;
+esac
 
 # Build the targets list based on input method
 if [ $# -eq 2 ]; then
