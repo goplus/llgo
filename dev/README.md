@@ -2,6 +2,11 @@
 
 This directory contains scripts for running LLGo locally and inside reusable Linux dev containers.
 
+## Prerequisites
+
+- Docker installed and running
+- Docker Compose v2 (`docker compose`, not `docker-compose`)
+
 ## 1) Start a Linux container, then run `dev/llgo.sh` / `dev/llgo_wasm.sh`
 
 Start an interactive shell (pick one):
@@ -12,14 +17,18 @@ Start an interactive shell (pick one):
 ./dev/docker.sh i386
 ```
 
+Notes:
+- `amd64` uses the `pydeps` image target (includes extra Python demo deps like `numpy`/`torch`).
+- `arm64` and `i386` use the smaller `base` target (no extra Python ML deps).
+
 Inside the container, run tests/builds using the repo scripts:
 
 ```bash
-./dev/llgo.sh test ./test/std/os/signal
-./dev/llgo.sh test ./test/std/time
+./dev/llgo.sh test ./...
+./dev/llgo.sh test ./test
 
 # WASI/WASM (wasip1/wasm)
-./dev/llgo_wasm.sh test ./test/...
+./dev/llgo_wasm.sh build ./...
 ```
 
 Notes:
@@ -38,7 +47,7 @@ From anywhere inside the repo:
 
 ```bash
 ./dev/llgo.sh test ./test
-./dev/llgo_wasm.sh test ./test/...
+./dev/llgo_wasm.sh build ./...
 ```
 
 ## 4) Run local CI (covers most checks)
@@ -48,6 +57,7 @@ From anywhere inside the repo:
 ```
 
 This script creates a temporary workspace, runs formatting/build/tests, runs `llgo test`, and then runs demo checks.
+You can control demo parallelism via `LLGO_DEMO_JOBS` (defaults to up to 4 jobs).
 
 ## 5) `dev/docker.sh` (composition-friendly)
 
@@ -61,4 +71,3 @@ This script creates a temporary workspace, runs formatting/build/tests, runs `ll
 - If `[command...]` is omitted, it starts an interactive `bash`.
 - If `[command...]` is provided, it runs that command and exits.
 - You must run it from within the repo (within `LLGO_ROOT`), and it will start in the matching repo subdirectory inside the container.
-

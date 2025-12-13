@@ -39,21 +39,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN set -eux; \
   . /etc/os-release; \
   echo "deb http://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME}-${LLVM_VERSION} main" > /etc/apt/sources.list.d/llvm.list; \
-  if curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/llvm.gpg; then \
-    apt-get update; \
-    if ! apt-get install -y --no-install-recommends \
-      llvm-${LLVM_VERSION}-dev \
-      clang-${LLVM_VERSION} \
-      libclang-${LLVM_VERSION}-dev \
-      lld-${LLVM_VERSION} \
-      libunwind-${LLVM_VERSION}-dev \
-      libc++-${LLVM_VERSION}-dev \
-    ; then \
-      echo "apt.llvm.org install failed; falling back to distro LLVM packages" >&2; \
-      apt-get install -y --no-install-recommends llvm clang lld libunwind-dev libc++-dev; \
-    fi; \
-  else \
-    echo "failed to fetch llvm gpg key; falling back to distro LLVM packages" >&2; \
+  if ! curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/llvm.gpg; then \
+    echo "failed to fetch llvm gpg key; aborting (avoid unverified LLVM packages)" >&2; \
+    exit 1; \
+  fi; \
+  apt-get update; \
+  if ! apt-get install -y --no-install-recommends \
+    llvm-${LLVM_VERSION}-dev \
+    clang-${LLVM_VERSION} \
+    libclang-${LLVM_VERSION}-dev \
+    lld-${LLVM_VERSION} \
+    libunwind-${LLVM_VERSION}-dev \
+    libc++-${LLVM_VERSION}-dev \
+  ; then \
+    echo "apt.llvm.org install failed; falling back to distro LLVM packages" >&2; \
     apt-get update; \
     apt-get install -y --no-install-recommends llvm clang lld libunwind-dev libc++-dev; \
   fi; \
@@ -148,7 +147,5 @@ FROM base AS pydeps
 # Optional demo deps used by _demo/py (numpy/torch). Keep in a separate target
 # so users can build a smaller image when needed.
 RUN set -eux; \
-  pip install numpy; \
-  if ! pip install torch --index-url https://download.pytorch.org/whl/cpu; then \
-    pip install torch; \
-  fi
+  pip install numpy && \
+  (pip install torch --index-url https://download.pytorch.org/whl/cpu || pip install torch)

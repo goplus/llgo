@@ -1,22 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-LLGO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
-workdir="$(pwd -P)"
+LLGO_CALLER_PWD="$(pwd -P)"
+source "$(dirname "${BASH_SOURCE[0]}")/_llgo_setup.sh"
 
-case "$workdir" in
-	"$LLGO_ROOT" | "$LLGO_ROOT"/*) ;;
-	*)
-		echo "error: must run inside LLGO_ROOT ($LLGO_ROOT), got: $workdir" >&2
-		exit 2
-		;;
-esac
+_llgo_ensure_llgo_cli
 
-export LLGO_ROOT
-
-cd "$LLGO_ROOT"
-go install ./cmd/llgo
-cd "$workdir"
-
-GOOS=wasip1 GOARCH=wasm llgo "$@"
-
+cd "$LLGO_CALLER_PWD"
+GOOS=wasip1 GOARCH=wasm "$LLGO_BIN" "$@"
