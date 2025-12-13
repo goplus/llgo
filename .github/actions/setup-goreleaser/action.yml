@@ -23,7 +23,7 @@ runs:
     - name: Restore ESP Clang cache
       id: cache-esp-clang
       uses: actions/cache/restore@v5
-      with:
+      with: &esp-clang-cache
         path: |
           .sysroot/darwin/amd64/crosscompile/clang
           .sysroot/darwin/arm64/crosscompile/clang
@@ -37,13 +37,7 @@ runs:
     - name: Save ESP Clang cache
       if: steps.cache-esp-clang.outputs.cache-hit != 'true'
       uses: actions/cache/save@v5
-      with:
-        path: |
-          .sysroot/darwin/amd64/crosscompile/clang
-          .sysroot/darwin/arm64/crosscompile/clang
-          .sysroot/linux/amd64/crosscompile/clang
-          .sysroot/linux/arm64/crosscompile/clang
-        key: esp-clang-${{ hashFiles('.github/workflows/download_esp_clang.sh') }}
+      with: *esp-clang-cache
     - name: Check file
       run: tree .sysroot
       shell: bash
