@@ -41,6 +41,8 @@ var SizeFormat string
 var SizeLevel string
 var ForceRebuild bool
 
+const DefaultTestTimeout = "10m" // Matches Go's default test timeout
+
 func AddCommonFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose output")
 }
@@ -68,6 +70,85 @@ func AddBuildModeFlags(fs *flag.FlagSet) {
 
 var Gen bool
 var CompileOnly bool
+
+// Test binary flags
+var (
+	TestRun              string
+	TestBench            string
+	TestTimeout          string
+	TestShort            bool
+	TestCount            int
+	TestCPU              string
+	TestCover            bool
+	TestCoverMode        string
+	TestCoverProfile     string
+	TestCoverPkg         string
+	TestParallel         int
+	TestFailfast         bool
+	TestJSON             bool
+	TestList             string
+	TestSkip             string
+	TestShuffle          string
+	TestFullpath         bool
+	TestBenchmem         bool
+	TestBenchtime        string
+	TestBlockProfileRate int
+	TestCPUProfile       string
+	TestMemProfile       string
+	TestMemProfileRate   int
+	TestBlockProfile     string
+	TestMutexProfile     string
+	TestMutexProfileFrac int
+	TestTrace            string
+	TestOutputDir        string
+	TestPaniconexit0     bool
+	TestTestLogFile      string
+	TestGoCoverDir       string
+	TestFuzzWorker       bool
+	TestFuzzCacheDir     string
+	TestFuzz             string
+	TestFuzzTime         string
+	TestFuzzMinimizeTime string
+)
+
+func AddTestBinaryFlags(fs *flag.FlagSet) {
+	fs.StringVar(&TestRun, "run", "", "Run only tests matching the regular expression")
+	fs.StringVar(&TestBench, "bench", "", "Run benchmarks matching the regular expression")
+	fs.StringVar(&TestTimeout, "timeout", DefaultTestTimeout, "Test timeout duration (e.g., 10m, 30s)")
+	fs.BoolVar(&TestShort, "short", false, "Tell long-running tests to shorten their run time")
+	fs.IntVar(&TestCount, "count", 1, "Run each test and benchmark n times")
+	fs.StringVar(&TestCPU, "cpu", "", "Comma-separated list of GOMAXPROCS values for which the tests or benchmarks should be executed")
+	fs.BoolVar(&TestCover, "cover", false, "Enable coverage analysis")
+	fs.StringVar(&TestCoverMode, "covermode", "", "Coverage mode: set, count, atomic")
+	fs.StringVar(&TestCoverProfile, "coverprofile", "", "Write coverage profile to file")
+	fs.StringVar(&TestCoverPkg, "coverpkg", "", "Apply coverage analysis to packages matching the patterns")
+	fs.IntVar(&TestParallel, "parallel", 0, "Maximum number of tests to run simultaneously")
+	fs.BoolVar(&TestFailfast, "failfast", false, "Do not start new tests after the first test failure")
+	fs.BoolVar(&TestJSON, "json", false, "Log verbose output in JSON format")
+	fs.StringVar(&TestList, "list", "", "List tests, benchmarks, or examples matching the regular expression")
+	fs.StringVar(&TestSkip, "skip", "", "Skip tests matching the regular expression")
+	fs.StringVar(&TestShuffle, "shuffle", "", "Randomize the execution order of tests and benchmarks")
+	fs.BoolVar(&TestFullpath, "fullpath", false, "Show full file names in error messages")
+	fs.BoolVar(&TestBenchmem, "benchmem", false, "Print memory allocation statistics for benchmarks")
+	fs.StringVar(&TestBenchtime, "benchtime", "", "Run benchmarks for duration d (e.g., 1s, 100x)")
+	fs.IntVar(&TestBlockProfileRate, "blockprofilerate", 0, "Control the detail provided in goroutine blocking profiles by calling runtime.SetBlockProfileRate")
+	fs.StringVar(&TestCPUProfile, "cpuprofile", "", "Write a CPU profile to the specified file")
+	fs.StringVar(&TestMemProfile, "memprofile", "", "Write an allocation profile to the file")
+	fs.IntVar(&TestMemProfileRate, "memprofilerate", 0, "Enable more precise (and expensive) memory allocation profiles by setting runtime.MemProfileRate")
+	fs.StringVar(&TestBlockProfile, "blockprofile", "", "Write a goroutine blocking profile to the specified file")
+	fs.StringVar(&TestMutexProfile, "mutexprofile", "", "Write a mutex contention profile to the specified file")
+	fs.IntVar(&TestMutexProfileFrac, "mutexprofilefraction", 0, "Sample 1 in n stack traces of goroutines holding a contended mutex")
+	fs.StringVar(&TestTrace, "trace", "", "Write an execution trace to the specified file")
+	fs.StringVar(&TestOutputDir, "outputdir", "", "Write output files to the specified directory")
+	fs.BoolVar(&TestPaniconexit0, "paniconexit0", false, "Panic on call to os.Exit(0)")
+	fs.StringVar(&TestTestLogFile, "testlogfile", "", "Write test action log to file")
+	fs.StringVar(&TestGoCoverDir, "gocoverdir", "", "Directory where intermediate coverage files are written")
+	fs.BoolVar(&TestFuzzWorker, "fuzzworker", false, "Coordinate with the parent process to fuzz random values (for use only by cmd/go)")
+	fs.StringVar(&TestFuzzCacheDir, "fuzzcachedir", "", "Directory where interesting fuzzing inputs are stored (for use only by cmd/go)")
+	fs.StringVar(&TestFuzz, "fuzz", "", "Run the fuzz test matching the regular expression")
+	fs.StringVar(&TestFuzzTime, "fuzztime", "", "Run fuzzing for the specified duration (e.g., 10s, 1m)")
+	fs.StringVar(&TestFuzzMinimizeTime, "fuzzminimizetime", "", "Time to spend minimizing a value after finding a crash (default: 60s)")
+}
 
 func AddEmulatorFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Emulator, "emulator", false, "Run in emulator mode")
