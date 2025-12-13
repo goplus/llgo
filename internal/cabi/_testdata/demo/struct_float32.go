@@ -236,16 +236,16 @@ func init() {
 }
 
 type point11 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 }
 
@@ -263,16 +263,16 @@ func init() {
 }
 
 type point12 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 }
@@ -291,16 +291,16 @@ func init() {
 }
 
 type point13 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -320,16 +320,16 @@ func init() {
 }
 
 type point14 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -350,16 +350,16 @@ func init() {
 }
 
 type point15 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -381,16 +381,16 @@ func init() {
 }
 
 type point16 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -413,16 +413,16 @@ func init() {
 }
 
 type point17 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -446,16 +446,16 @@ func init() {
 }
 
 type point18 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -480,16 +480,16 @@ func init() {
 }
 
 type point19 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32
@@ -515,16 +515,16 @@ func init() {
 }
 
 type point20 struct {
-	x0 float32
-	x1 float32
-	x2 float32
-	x3 float32
-	x4 float32
-	x5 float32
-	x6 float32
-	x7 float32
-	x8 float32
-	x9 float32
+	x0  float32
+	x1  float32
+	x2  float32
+	x3  float32
+	x4  float32
+	x5  float32
+	x6  float32
+	x7  float32
+	x8  float32
+	x9  float32
 	x10 float32
 	x11 float32
 	x12 float32

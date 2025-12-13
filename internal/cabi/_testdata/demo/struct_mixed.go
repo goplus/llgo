@@ -123,7 +123,7 @@ func demo6(a point6) point6 {
 }
 
 func init() {
-	a := point6{1, func() pointer { var a int8 = 2; return &a}()}
+	a := point6{1, func() pointer { var a int8 = 2; return &a }()}
 	assert("cdemo6\000", cdemo6(a) == a)
 	assert("demo6\000", demo6(a) == a)
 }
@@ -231,7 +231,7 @@ func demo12(a point12) point12 {
 }
 
 func init() {
-	a := point12{1, func() pointer { var a int8 = 2; return &a}()}
+	a := point12{1, func() pointer { var a int8 = 2; return &a }()}
 	assert("cdemo12\000", cdemo12(a) == a)
 	assert("demo12\000", demo12(a) == a)
 }
@@ -339,7 +339,7 @@ func demo18(a point18) point18 {
 }
 
 func init() {
-	a := point18{1, func() pointer { var a int8 = 2; return &a}()}
+	a := point18{1, func() pointer { var a int8 = 2; return &a }()}
 	assert("cdemo18\000", cdemo18(a) == a)
 	assert("demo18\000", demo18(a) == a)
 }
@@ -447,7 +447,7 @@ func demo24(a point24) point24 {
 }
 
 func init() {
-	a := point24{1, func() pointer { var a int8 = 2; return &a}()}
+	a := point24{1, func() pointer { var a int8 = 2; return &a }()}
 	assert("cdemo24\000", cdemo24(a) == a)
 	assert("demo24\000", demo24(a) == a)
 }
@@ -555,7 +555,7 @@ func demo30(a point30) point30 {
 }
 
 func init() {
-	a := point30{1, func() pointer { var a int8 = 2; return &a}()}
+	a := point30{1, func() pointer { var a int8 = 2; return &a }()}
 	assert("cdemo30\000", cdemo30(a) == a)
 	assert("demo30\000", demo30(a) == a)
 }
@@ -663,7 +663,7 @@ func demo36(a point36) point36 {
 }
 
 func init() {
-	a := point36{1, func() pointer { var a int8 = 2; return &a}()}
+	a := point36{1, func() pointer { var a int8 = 2; return &a }()}
 	assert("cdemo36\000", cdemo36(a) == a)
 	assert("demo36\000", demo36(a) == a)
 }
@@ -681,7 +681,7 @@ func demo37(a point37) point37 {
 }
 
 func init() {
-	a := point37{func() pointer { var a int8 = 1; return &a}(), 2}
+	a := point37{func() pointer { var a int8 = 1; return &a }(), 2}
 	assert("cdemo37\000", cdemo37(a) == a)
 	assert("demo37\000", demo37(a) == a)
 }
@@ -699,7 +699,7 @@ func demo38(a point38) point38 {
 }
 
 func init() {
-	a := point38{func() pointer { var a int8 = 1; return &a}(), 2}
+	a := point38{func() pointer { var a int8 = 1; return &a }(), 2}
 	assert("cdemo38\000", cdemo38(a) == a)
 	assert("demo38\000", demo38(a) == a)
 }
@@ -717,7 +717,7 @@ func demo39(a point39) point39 {
 }
 
 func init() {
-	a := point39{func() pointer { var a int8 = 1; return &a}(), 2}
+	a := point39{func() pointer { var a int8 = 1; return &a }(), 2}
 	assert("cdemo39\000", cdemo39(a) == a)
 	assert("demo39\000", demo39(a) == a)
 }
@@ -735,7 +735,7 @@ func demo40(a point40) point40 {
 }
 
 func init() {
-	a := point40{func() pointer { var a int8 = 1; return &a}(), 2}
+	a := point40{func() pointer { var a int8 = 1; return &a }(), 2}
 	assert("cdemo40\000", cdemo40(a) == a)
 	assert("demo40\000", demo40(a) == a)
 }
@@ -753,7 +753,7 @@ func demo41(a point41) point41 {
 }
 
 func init() {
-	a := point41{func() pointer { var a int8 = 1; return &a}(), 2}
+	a := point41{func() pointer { var a int8 = 1; return &a }(), 2}
 	assert("cdemo41\000", cdemo41(a) == a)
 	assert("demo41\000", demo41(a) == a)
 }
@@ -771,7 +771,7 @@ func demo42(a point42) point42 {
 }
 
 func init() {
-	a := point42{func() pointer { var a int8 = 1; return &a}(), 2}
+	a := point42{func() pointer { var a int8 = 1; return &a }(), 2}
 	assert("cdemo42\000", cdemo42(a) == a)
 	assert("demo42\000", demo42(a) == a)
 }

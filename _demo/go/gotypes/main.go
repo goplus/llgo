@@ -335,7 +335,7 @@ func testMap() {
 }
 
 func testChan() {
-	fmt.Println("\n=== Test Chan ===" )
+	fmt.Println("\n=== Test Chan ===")
 
 	chanType := types.NewChan(types.SendRecv, types.Typ[types.Int])
 	fmt.Printf("Chan type: %v, Dir: %v, Elem: %v\n", chanType, chanType.Dir(), chanType.Elem())

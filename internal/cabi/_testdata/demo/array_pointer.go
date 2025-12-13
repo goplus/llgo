@@ -32,7 +32,7 @@ func demo1(a array1) array1 {
 }
 
 func init() {
-	a := array1{x: [1]pointer{func() pointer { var a int8 = 1; return &a}()}}
+	a := array1{x: [1]pointer{func() pointer { var a int8 = 1; return &a }()}}
 	assert("cdemo1\000", cdemo1(a) == a)
 	assert("demo1\000", demo1(a) == a)
 }
@@ -49,7 +49,7 @@ func demo2(a array2) array2 {
 }
 
 func init() {
-	a := array2{x: [2]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}()}}
+	a := array2{x: [2]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }()}}
 	assert("cdemo2\000", cdemo2(a) == a)
 	assert("demo2\000", demo2(a) == a)
 }
@@ -66,7 +66,7 @@ func demo3(a array3) array3 {
 }
 
 func init() {
-	a := array3{x: [3]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}()}}
+	a := array3{x: [3]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }()}}
 	assert("cdemo3\000", cdemo3(a) == a)
 	assert("demo3\000", demo3(a) == a)
 }
@@ -83,7 +83,7 @@ func demo4(a array4) array4 {
 }
 
 func init() {
-	a := array4{x: [4]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}()}}
+	a := array4{x: [4]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }()}}
 	assert("cdemo4\000", cdemo4(a) == a)
 	assert("demo4\000", demo4(a) == a)
 }
@@ -100,7 +100,7 @@ func demo5(a array5) array5 {
 }
 
 func init() {
-	a := array5{x: [5]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}()}}
+	a := array5{x: [5]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }()}}
 	assert("cdemo5\000", cdemo5(a) == a)
 	assert("demo5\000", demo5(a) == a)
 }
@@ -117,7 +117,7 @@ func demo6(a array6) array6 {
 }
 
 func init() {
-	a := array6{x: [6]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}()}}
+	a := array6{x: [6]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }()}}
 	assert("cdemo6\000", cdemo6(a) == a)
 	assert("demo6\000", demo6(a) == a)
 }
@@ -134,7 +134,7 @@ func demo7(a array7) array7 {
 }
 
 func init() {
-	a := array7{x: [7]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}()}}
+	a := array7{x: [7]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }()}}
 	assert("cdemo7\000", cdemo7(a) == a)
 	assert("demo7\000", demo7(a) == a)
 }
@@ -151,7 +151,7 @@ func demo8(a array8) array8 {
 }
 
 func init() {
-	a := array8{x: [8]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}()}}
+	a := array8{x: [8]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }()}}
 	assert("cdemo8\000", cdemo8(a) == a)
 	assert("demo8\000", demo8(a) == a)
 }
@@ -168,7 +168,7 @@ func demo9(a array9) array9 {
 }
 
 func init() {
-	a := array9{x: [9]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}()}}
+	a := array9{x: [9]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }()}}
 	assert("cdemo9\000", cdemo9(a) == a)
 	assert("demo9\000", demo9(a) == a)
 }
@@ -185,7 +185,7 @@ func demo10(a array10) array10 {
 }
 
 func init() {
-	a := array10{x: [10]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}()}}
+	a := array10{x: [10]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }()}}
 	assert("cdemo10\000", cdemo10(a) == a)
 	assert("demo10\000", demo10(a) == a)
 }
@@ -202,7 +202,7 @@ func demo11(a array11) array11 {
 }
 
 func init() {
-	a := array11{x: [11]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}()}}
+	a := array11{x: [11]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }()}}
 	assert("cdemo11\000", cdemo11(a) == a)
 	assert("demo11\000", demo11(a) == a)
 }
@@ -219,7 +219,7 @@ func demo12(a array12) array12 {
 }
 
 func init() {
-	a := array12{x: [12]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}()}}
+	a := array12{x: [12]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }()}}
 	assert("cdemo12\000", cdemo12(a) == a)
 	assert("demo12\000", demo12(a) == a)
 }
@@ -236,7 +236,7 @@ func demo13(a array13) array13 {
 }
 
 func init() {
-	a := array13{x: [13]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}()}}
+	a := array13{x: [13]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }()}}
 	assert("cdemo13\000", cdemo13(a) == a)
 	assert("demo13\000", demo13(a) == a)
 }
@@ -253,7 +253,7 @@ func demo14(a array14) array14 {
 }
 
 func init() {
-	a := array14{x: [14]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}()}}
+	a := array14{x: [14]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }()}}
 	assert("cdemo14\000", cdemo14(a) == a)
 	assert("demo14\000", demo14(a) == a)
 }
@@ -270,7 +270,7 @@ func demo15(a array15) array15 {
 }
 
 func init() {
-	a := array15{x: [15]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}(), func() pointer { var a int8 = 15; return &a}()}}
+	a := array15{x: [15]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }(), func() pointer { var a int8 = 15; return &a }()}}
 	assert("cdemo15\000", cdemo15(a) == a)
 	assert("demo15\000", demo15(a) == a)
 }
@@ -287,7 +287,7 @@ func demo16(a array16) array16 {
 }
 
 func init() {
-	a := array16{x: [16]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}(), func() pointer { var a int8 = 15; return &a}(), func() pointer { var a int8 = 16; return &a}()}}
+	a := array16{x: [16]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }(), func() pointer { var a int8 = 15; return &a }(), func() pointer { var a int8 = 16; return &a }()}}
 	assert("cdemo16\000", cdemo16(a) == a)
 	assert("demo16\000", demo16(a) == a)
 }
@@ -304,7 +304,7 @@ func demo17(a array17) array17 {
 }
 
 func init() {
-	a := array17{x: [17]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}(), func() pointer { var a int8 = 15; return &a}(), func() pointer { var a int8 = 16; return &a}(), func() pointer { var a int8 = 17; return &a}()}}
+	a := array17{x: [17]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }(), func() pointer { var a int8 = 15; return &a }(), func() pointer { var a int8 = 16; return &a }(), func() pointer { var a int8 = 17; return &a }()}}
 	assert("cdemo17\000", cdemo17(a) == a)
 	assert("demo17\000", demo17(a) == a)
 }
@@ -321,7 +321,7 @@ func demo18(a array18) array18 {
 }
 
 func init() {
-	a := array18{x: [18]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}(), func() pointer { var a int8 = 15; return &a}(), func() pointer { var a int8 = 16; return &a}(), func() pointer { var a int8 = 17; return &a}(), func() pointer { var a int8 = 18; return &a}()}}
+	a := array18{x: [18]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }(), func() pointer { var a int8 = 15; return &a }(), func() pointer { var a int8 = 16; return &a }(), func() pointer { var a int8 = 17; return &a }(), func() pointer { var a int8 = 18; return &a }()}}
 	assert("cdemo18\000", cdemo18(a) == a)
 	assert("demo18\000", demo18(a) == a)
 }
@@ -338,7 +338,7 @@ func demo19(a array19) array19 {
 }
 
 func init() {
-	a := array19{x: [19]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}(), func() pointer { var a int8 = 15; return &a}(), func() pointer { var a int8 = 16; return &a}(), func() pointer { var a int8 = 17; return &a}(), func() pointer { var a int8 = 18; return &a}(), func() pointer { var a int8 = 19; return &a}()}}
+	a := array19{x: [19]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }(), func() pointer { var a int8 = 15; return &a }(), func() pointer { var a int8 = 16; return &a }(), func() pointer { var a int8 = 17; return &a }(), func() pointer { var a int8 = 18; return &a }(), func() pointer { var a int8 = 19; return &a }()}}
 	assert("cdemo19\000", cdemo19(a) == a)
 	assert("demo19\000", demo19(a) == a)
 }
@@ -355,7 +355,7 @@ func demo20(a array20) array20 {
 }
 
 func init() {
-	a := array20{x: [20]pointer{func() pointer { var a int8 = 1; return &a}(), func() pointer { var a int8 = 2; return &a}(), func() pointer { var a int8 = 3; return &a}(), func() pointer { var a int8 = 4; return &a}(), func() pointer { var a int8 = 5; return &a}(), func() pointer { var a int8 = 6; return &a}(), func() pointer { var a int8 = 7; return &a}(), func() pointer { var a int8 = 8; return &a}(), func() pointer { var a int8 = 9; return &a}(), func() pointer { var a int8 = 10; return &a}(), func() pointer { var a int8 = 11; return &a}(), func() pointer { var a int8 = 12; return &a}(), func() pointer { var a int8 = 13; return &a}(), func() pointer { var a int8 = 14; return &a}(), func() pointer { var a int8 = 15; return &a}(), func() pointer { var a int8 = 16; return &a}(), func() pointer { var a int8 = 17; return &a}(), func() pointer { var a int8 = 18; return &a}(), func() pointer { var a int8 = 19; return &a}(), func() pointer { var a int8 = 20; return &a}()}}
+	a := array20{x: [20]pointer{func() pointer { var a int8 = 1; return &a }(), func() pointer { var a int8 = 2; return &a }(), func() pointer { var a int8 = 3; return &a }(), func() pointer { var a int8 = 4; return &a }(), func() pointer { var a int8 = 5; return &a }(), func() pointer { var a int8 = 6; return &a }(), func() pointer { var a int8 = 7; return &a }(), func() pointer { var a int8 = 8; return &a }(), func() pointer { var a int8 = 9; return &a }(), func() pointer { var a int8 = 10; return &a }(), func() pointer { var a int8 = 11; return &a }(), func() pointer { var a int8 = 12; return &a }(), func() pointer { var a int8 = 13; return &a }(), func() pointer { var a int8 = 14; return &a }(), func() pointer { var a int8 = 15; return &a }(), func() pointer { var a int8 = 16; return &a }(), func() pointer { var a int8 = 17; return &a }(), func() pointer { var a int8 = 18; return &a }(), func() pointer { var a int8 = 19; return &a }(), func() pointer { var a int8 = 20; return &a }()}}
 	assert("cdemo20\000", cdemo20(a) == a)
 	assert("demo20\000", demo20(a) == a)
 }
