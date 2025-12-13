@@ -455,6 +455,10 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 
 // abiType returns the abi type of the specified type.
 func (b Builder) abiType(t types.Type) Expr {
+	e := b.getAbiType(t)
+	if !e.IsNil() {
+		return e
+	}
 	switch t := t.(type) {
 	case *types.Pointer:
 		b.checkAbi(t.Elem())
@@ -507,6 +511,226 @@ func (b Builder) loadType(t types.Type) Global {
 		pkg.abiTypeInit(g, t, pub)
 	}
 	return g
+}
+
+/*
+type Type struct {
+	Size_       uintptr
+	PtrBytes    uintptr // number of (prefix) bytes in the type that can contain pointers
+	Hash        uint32  // hash of type; avoids computation in hash tables
+	TFlag       TFlag   // extra type information flags
+	Align_      uint8   // alignment of variable with this type
+	FieldAlign_ uint8   // alignment of struct field with this type
+	Kind_       uint8   // enumeration for C
+	// function for comparing objects of this type
+	// (ptr to object A, ptr to object B) -> ==?
+	Equal func(unsafe.Pointer, unsafe.Pointer) bool
+	// GCData stores the GC type data for the garbage collector.
+	// If the KindGCProg bit is set in kind, GCData is a GC program.
+	// Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
+	GCData     *byte
+	Str_       string // string form
+	PtrToThis_ *Type  // type for pointer to this type, may be nil
+}
+*/
+
+var (
+	equalFunc = types.NewSignature(nil, types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer])),
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])), false)
+)
+
+func (b Builder) abiTypeFields(t types.Type) (fields []llvm.Value) {
+	prog := b.Prog
+	pkg := b.Pkg
+	abi := pkg.abi
+	// Size uintptr
+	fields = append(fields, prog.IntVal(uint64(abi.Size(t)), prog.Uintptr()).impl)
+	// PtrBytes uintptr
+	fields = append(fields, prog.IntVal(uint64(abi.PtrBytes(t)), prog.Uintptr()).impl)
+	// Hash uint32
+	fields = append(fields, prog.IntVal(uint64(abi.Hash(t)), prog.Uint32()).impl)
+	// TFlag uint8
+	fields = append(fields, prog.IntVal(uint64(abi.TFlag(t)), prog.Byte()).impl)
+	// Align uint8
+	align := prog.IntVal(uint64(abi.Align(t)), prog.Byte()).impl
+	fields = append(fields, align)
+	// FieldAlign uint8
+	if _, ok := t.Underlying().(*types.Struct); ok {
+		fields = append(fields, align)
+	} else {
+		fields = append(fields, prog.IntVal(0, prog.Byte()).impl)
+	}
+	// Kind uint8
+	fields = append(fields, prog.IntVal(uint64(abi.Kind(t)), prog.Byte()).impl)
+	// Equal func(unsafe.Pointer, unsafe.Pointer) bool
+	if equal := abi.EqualName(t); equal != "" {
+		fields = append(fields, b.rtClosure(equal).impl)
+	} else {
+		fields = append(fields, prog.Nil(prog.Type(equalFunc, InGo)).impl)
+	}
+	// GCData     *byte
+	fields = append(fields, prog.Nil(prog.Pointer(prog.Byte())).impl)
+	// Str_       string
+	fields = append(fields, b.Str(abi.Str(t)).impl)
+	return
+}
+
+func (b Builder) rtClosure(name string) Expr {
+	fn := b.Pkg.rtFunc(name)
+	typ := b.Prog.Type(fn.raw.Type, InGo)
+	fn = checkExpr(fn, typ.raw.Type, b)
+	return fn
+}
+
+/*
+type StructField struct {
+	Name_  string  // name is always non-empty
+	Typ    *Type   // type of field
+	Offset uintptr // byte offset of field
+
+	Tag_      string
+	Embedded_ bool
+}
+*/
+
+func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
+	prog := b.Prog
+	ft := prog.rtType("structfield")
+	n := t.NumFields()
+	typ := prog.rawType(t)
+	fields := make([]llvm.Value, n)
+	for i := 0; i < n; i++ {
+		f := t.Field(i)
+		var values []llvm.Value
+		values = append(values, b.Str(f.Name()).impl)
+		values = append(values, b.getAbiType(f.Type()).impl)
+		values = append(values, prog.IntVal(prog.OffsetOf(typ, i), prog.Uintptr()).impl)
+		values = append(values, b.Str(t.Tag(i)).impl)
+		values = append(values, prog.BoolVal(f.Embedded()).impl)
+		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+	}
+	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
+	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
+	g.Init(data)
+	size := uint64(n)
+	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
+		g.impl,
+		prog.IntVal(size, prog.Int()).impl,
+		prog.IntVal(size, prog.Int()).impl,
+	})
+}
+
+func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
+	prog := b.Prog
+	n := t.Len()
+	fields := make([]llvm.Value, n)
+	for i := 0; i < n; i++ {
+		fields[i] = b.getAbiType(t.At(i).Type()).impl
+	}
+	ft := prog.AbiTypePtr()
+	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
+	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
+	g.Init(data)
+	size := uint64(n)
+	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
+		g.impl,
+		prog.IntVal(size, prog.Int()).impl,
+		prog.IntVal(size, prog.Int()).impl,
+	})
+}
+
+const newabi = false
+
+func (b Builder) getAbiType(t types.Type) Expr {
+	if !newabi {
+		return Expr{}
+	}
+	if b.Pkg.Path() == "github.com/goplus/llgo/runtime/internal/runtime" {
+		return Expr{}
+	}
+	name, pub := b.Pkg.abi.TypeName(t)
+	name = "abi." + name
+	g := b.Pkg.VarOf(name)
+	prog := b.Prog
+	pkg := b.Pkg
+	if g == nil {
+		rt := prog.rtType(pkg.abi.RuntimeName(t))
+		g = pkg.doNewVar(name, prog.Pointer(rt))
+		fields := b.abiTypeFields(t)
+		// PtrToThis_ *Type
+		if _, ok := t.(*types.Pointer); ok {
+			fields = append(fields, prog.Nil(prog.AbiTypePtr()).impl)
+		} else {
+			fields = append(fields, b.getAbiType(types.NewPointer(t)).impl)
+		}
+		switch t := t.(type) {
+		case *types.Basic:
+		case *types.Pointer:
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.getAbiType(t.Elem()).impl,
+			}
+		case *types.Chan:
+			dir, _ := abi.ChanDir(t.Dir())
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.getAbiType(t.Elem()).impl,
+				prog.IntVal(uint64(dir), prog.Int()).impl,
+			}
+		case *types.Slice:
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.getAbiType(t.Elem()).impl,
+			}
+		case *types.Array:
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.getAbiType(t.Elem()).impl,
+				b.getAbiType(types.NewSlice(t.Elem())).impl,
+				prog.IntVal(uint64(t.Len()), prog.Uintptr()).impl,
+			}
+		case *types.Map:
+			bucket := pkg.abi.MapBucket(t)
+			flags := pkg.abi.MapFlags(t)
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.getAbiType(t.Key()).impl,
+				b.getAbiType(t.Elem()).impl,
+				b.getAbiType(bucket).impl,
+				b.rtClosure("typehash").impl,
+				prog.IntVal(uint64(pkg.abi.Size(t.Key())), prog.Byte()).impl,
+				prog.IntVal(uint64(pkg.abi.Size(t.Elem())), prog.Byte()).impl,
+				prog.IntVal(uint64(pkg.abi.Size(bucket)), prog.Uint16()).impl,
+				prog.IntVal(uint64(flags), prog.Uint32()).impl,
+			}
+		case *types.Signature:
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.abiTuples(t.Params(), name+"$in"),
+				b.abiTuples(t.Results(), name+"$out"),
+			}
+		case *types.Struct:
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
+				b.Str(pkg.Path()).impl,
+				b.abiStructFields(t, name+"$fields"),
+			}
+		}
+		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
+		if pub {
+			g.impl.SetLinkage(llvm.WeakODRLinkage)
+		}
+	}
+	if g != nil && !g.IsNil() {
+		return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
+			llvm.ConstInt(prog.Int32().ll, 0, false),
+			llvm.ConstInt(prog.Int32().ll, 0, false),
+		}), prog.AbiTypePtr()}
+	}
+	return prog.Nil(prog.AbiTypePtr())
 }
 
 // -----------------------------------------------------------------------------

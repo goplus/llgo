@@ -7,6 +7,14 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 )
 
+func (b *Builder) MapBucket(t *types.Map) types.Type {
+	return MapBucketType(t, b.Sizes)
+}
+
+func (b *Builder) MapFlags(t *types.Map) (flags int) {
+	return MapTypeFlags(t, b.Sizes)
+}
+
 func (b *Builder) Hash(t types.Type) uint32 {
 	return b.hasher.Hash(t)
 }
@@ -312,7 +320,7 @@ func (b *Builder) PtrBytes(t types.Type) uintptr {
 	case *types.Slice:
 		return b.PtrSize
 	case *types.Signature:
-		return 2 * b.PtrSize
+		return b.PtrSize
 	case *types.Interface:
 		return 2 * b.PtrSize
 	case *types.Struct:
@@ -381,7 +389,7 @@ func (b *Builder) Size(t types.Type) uintptr {
 	case *types.Slice:
 		return 3 * b.PtrSize
 	case *types.Signature:
-		return 2 * b.PtrSize
+		return b.PtrSize
 	case *types.Interface:
 		return 2 * b.PtrSize
 	case *types.Struct:
@@ -399,7 +407,7 @@ func (b *Builder) Size(t types.Type) uintptr {
 }
 
 func (b *Builder) RuntimeName(t types.Type) string {
-	switch types.Unalias(t).(type) {
+	switch t := types.Unalias(t).(type) {
 	case *types.Basic:
 		return "_type"
 	case *types.Pointer:

@@ -99,6 +99,9 @@ func (p *goProgram) Alignof(T types.Type) int64 {
 func (p *goProgram) Offsetsof(fields []*types.Var) (ret []int64) {
 	prog := Program(unsafe.Pointer(p))
 	ptrSize := int64(prog.PointerSize())
+	if abi.IsClosureFields(fields) {
+		return []int64{0, ptrSize}
+	}
 	extra := int64(0)
 	ret = p.sizes.Offsetsof(fields)
 	for i, f := range fields {
@@ -134,6 +137,9 @@ retry:
 	case *types.Signature:
 		return ptrSize
 	case *types.Struct:
+		if IsClosure(t) {
+			return
+		}
 		n := t.NumFields()
 		for i := 0; i < n; i++ {
 			f := t.Field(i)
