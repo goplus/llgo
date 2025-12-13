@@ -11,7 +11,9 @@
 	"rtlib": "compiler-rt",
 	"libc": "newlib-esp32",
 	"linkerscript": "targets/esp32c3.memory.ld",
-	"extra-files": [],
+	"extra-files": [
+		"targets/device/esp/esp32c3.c"
+	],
 	"binary-format": "esp32c3",
 	"flash-command": "esptool.py --chip=esp32c3 --port {port} write_flash 0x0 {bin}",
 	"serial-port": [
