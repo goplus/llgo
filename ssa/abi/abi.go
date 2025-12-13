@@ -327,6 +327,16 @@ func IsClosure(raw *types.Struct) bool {
 	return false
 }
 
+func IsClosureFields(fields []*types.Var) bool {
+	if len(fields) == 2 {
+		f1, f2 := fields[0], fields[1]
+		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
+			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
+		}
+	}
+	return false
+}
+
 func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 	h := sha256.New()
 	n := t.NumFields()
