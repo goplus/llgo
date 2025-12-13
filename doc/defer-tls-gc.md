@@ -25,8 +25,8 @@ Prior experiments (`test-defer-dont-free` branch) confirmed the crash disappeare
 Run the stress and regression suites to validate the integration:
 
 ```sh
-./llgo.sh test ./test -run TestDeferLoopStress
-./llgo.sh test ./test
+./dev/llgo.sh test ./test -run TestDeferLoopStress
+./dev/llgo.sh test ./test
 ```
 
 The updated `TestDeferLoopStress` now asserts 1,000,000 loop defers execute without failure, catching regressions in GC root tracking.

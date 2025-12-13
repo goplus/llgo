@@ -83,10 +83,10 @@ cleanup() {
     done
 }
 
-# Check if llgo.sh exists
-LLGO_SCRIPT="../../../llgo.sh"
+# Check if the llgo wrapper exists
+LLGO_SCRIPT="../../../dev/llgo.sh"
 if [[ ! -f "$LLGO_SCRIPT" ]]; then
-    print_error "llgo.sh not found at $LLGO_SCRIPT"
+    print_error "llgo wrapper not found at $LLGO_SCRIPT"
     exit 1
 fi
 
