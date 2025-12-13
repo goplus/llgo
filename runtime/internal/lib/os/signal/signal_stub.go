@@ -1,3 +1,5 @@
+//go:build !unix || wasm || baremetal
+
 package signal
 
 func signal_disable(uint32) {

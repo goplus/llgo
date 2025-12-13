@@ -82,7 +82,7 @@ Ran `./llgo.sh test -c -o /tmp/llgo_<pkg>.test ./test/std/<pkg>` (15s timeout) t
 - 🟡 `io/ioutil` — 8/8 (llgo compile fails in 15s sweep)
 - 🟡 `os` — 157/157 (llgo compile fails in 15s sweep)
 - ✅ `os/exec` — 7/7 (llgo green after implementing File.WriteString — verified Dec 12 2025)
-- 🟡 `os/signal` — 6/6 (llgo test fails in 15s sweep: signal_enable not implemented)
+- ✅ `os/signal` — 6/6 (llgo green — verified Dec 13 2025)
 - 🟡 `os/user` — 11/11 (llgo test fails in 15s sweep: exit code -1)
 - ✅ `path` — 9/9
 - 🟡 `path/filepath` — 27/27

@@ -1,5 +1,3 @@
-//go:build !llgo
-
 package signal_test
 
 import (
