@@ -236,16 +236,16 @@ func init() {
 }
 
 type point11 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 }
 
@@ -263,16 +263,16 @@ func init() {
 }
 
 type point12 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 }
@@ -291,16 +291,16 @@ func init() {
 }
 
 type point13 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -320,16 +320,16 @@ func init() {
 }
 
 type point14 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -350,16 +350,16 @@ func init() {
 }
 
 type point15 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -381,16 +381,16 @@ func init() {
 }
 
 type point16 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -413,16 +413,16 @@ func init() {
 }
 
 type point17 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -446,16 +446,16 @@ func init() {
 }
 
 type point18 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -480,16 +480,16 @@ func init() {
 }
 
 type point19 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16
@@ -515,16 +515,16 @@ func init() {
 }
 
 type point20 struct {
-	x0 int16
-	x1 int16
-	x2 int16
-	x3 int16
-	x4 int16
-	x5 int16
-	x6 int16
-	x7 int16
-	x8 int16
-	x9 int16
+	x0  int16
+	x1  int16
+	x2  int16
+	x3  int16
+	x4  int16
+	x5  int16
+	x6  int16
+	x7  int16
+	x8  int16
+	x9  int16
 	x10 int16
 	x11 int16
 	x12 int16

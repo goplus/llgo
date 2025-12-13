@@ -62,21 +62,21 @@ func testSetSeed() {
 	fmt.Println("\n=== Test SetSeed ===")
 	var h1, h2 maphash.Hash
 	seed := maphash.MakeSeed()
-	
+
 	h1.SetSeed(seed)
 	_, err := h1.WriteString("test")
 	if err != nil {
 		panic(fmt.Sprintf("WriteString failed: %v", err))
 	}
 	hash1 := h1.Sum64()
-	
+
 	h2.SetSeed(seed)
 	_, err = h2.WriteString("test")
 	if err != nil {
 		panic(fmt.Sprintf("WriteString failed: %v", err))
 	}
 	hash2 := h2.Sum64()
-	
+
 	if hash1 != hash2 {
 		panic(fmt.Sprintf("Hashes with same seed should match: 0x%x != 0x%x", hash1, hash2))
 	}
@@ -86,7 +86,7 @@ func testSetSeed() {
 func testWriteMethods() {
 	fmt.Println("\n=== Test Write Methods ===")
 	var h maphash.Hash
-	
+
 	data := []byte("hello")
 	n, err := h.Write(data)
 	if err != nil {
@@ -97,7 +97,7 @@ func testWriteMethods() {
 	}
 	hash1 := h.Sum64()
 	fmt.Printf("Hash after Write: 0x%x\n", hash1)
-	
+
 	h.Reset()
 	err = h.WriteByte('A')
 	if err != nil {

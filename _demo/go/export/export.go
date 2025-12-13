@@ -149,12 +149,12 @@ func CreateNode(data int) *Node {
 func LinkNodes(first, second *Node) int {
 	if first != nil && second != nil {
 		first.Next = second
-		return first.Data + second.Data  // Return sum for verification
+		return first.Data + second.Data // Return sum for verification
 	}
 	if first != nil {
-		return first.Data + 1000  // Return data + offset if only first exists
+		return first.Data + 1000 // Return data + offset if only first exists
 	}
-	return 2000  // Return fixed value if both are nil
+	return 2000 // Return fixed value if both are nil
 }
 
 //export TraverseNodes
@@ -423,9 +423,9 @@ func ProcessWithStringCallback(s string, callback StringCallback) string {
 func ProcessWithVoidCallback(callback VoidCallback) int {
 	if callback != nil {
 		callback()
-		return 123  // Return non-zero to indicate callback was called
+		return 123 // Return non-zero to indicate callback was called
 	}
-	return 456  // Return different value if callback is nil
+	return 456 // Return different value if callback is nil
 }
 
 //export ProcessThreeUnnamedParams
@@ -447,7 +447,7 @@ func ProcessInterface(i interface{}) int {
 	case string:
 		return len(v) * 10
 	default:
-		return 999  // Non-zero default to avoid false positives
+		return 999 // Non-zero default to avoid false positives
 	}
 }
 
@@ -488,7 +488,7 @@ func MultipleParams(a int8, b uint16, c int32, d uint64, e float32, f float64, g
 
 //export NoParamNames
 func NoParamNames(int8, int16, bool) int32 {
-	return 789  // Return non-zero value for testing, params are unnamed by design
+	return 789 // Return non-zero value for testing, params are unnamed by design
 }
 
 // Functions returning no value
@@ -578,9 +578,9 @@ func main() {
 		panic("float assertion failed")
 	}
 	println("✓ ProcessFloat32(3.14) returns ~4.71")
-	
+
 	assert(ProcessString("hello"), "processed_hello", "ProcessString should prepend 'processed_'")
-	
+
 	println("Bool:", ProcessBool(true))
 	println("Int8:", ProcessInt8(10))
 	println("Float32:", ProcessFloat32(3.14))
@@ -641,7 +641,7 @@ func main() {
 	assert(TwoParams(65, "_test"), "A_test", "TwoParams should return 'A_test'")
 	assert(ThreeParams(10, 2.5, true), 25.0, "ThreeParams should return 25.0")
 	assert(NoParamNames(1, 2, false), int32(789), "NoParamNames should return 789")
-	
+
 	println("NoParams:", NoParams())
 	println("OneParam:", OneParam(5))
 	println("TwoParams:", TwoParams(65, "_test"))
