@@ -53,11 +53,11 @@ llgo build -size -size-format=json .   # JSON output (works with all levels)
 2. Real binary test:
    ```sh
    cd cl/_testgo/rewrite
-   ../../../llgo.sh build .
+   ../../../dev/llgo.sh build .
    LLGO_SIZE_REPORT_BIN=$(pwd)/rewrite \
      go test ./internal/build -run TestParseReadelfRealBinary -count=1
    ```
-3. Manual smoke test: `../../../llgo.sh build -size -size-level=module .` (or
+3. Manual smoke test: `../../../dev/llgo.sh build -size -size-level=module .` (or
    `package`/`full` as desired).
 
 The parser works across Mach-O and ELF targets as long as `llvm-readelf` is in
