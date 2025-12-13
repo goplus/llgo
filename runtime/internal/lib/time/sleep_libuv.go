@@ -18,9 +18,11 @@ import (
 // Must be in sync with ../runtime/time.go:/^type timer
 type runtimeTimer struct {
 	libuv.Timer
-	when int64
-	f    func(any, uintptr)
-	arg  any
+	when   int64
+	period int64
+	active bool
+	f      func(any, uintptr)
+	arg    any
 }
 
 var (
@@ -56,42 +58,64 @@ func init() {
 
 // cross thread
 func timerEvent(async *libuv.Async) {
+	if async == nil {
+		panic("time: timerEvent called with nil async")
+	}
 	a := (*asyncTimerEvent)(unsafe.Pointer(async))
+	res := a.cb()
+	a.done <- res
 	releaseAsyncEvent(a)
 	defer a.Close(nil)
-	a.cb()
 }
 
+// asyncTimerEvent embeds libuv.Async as the first field, ensuring
+// memory layout compatibility for unsafe pointer casts in timerEvent.
 type asyncTimerEvent struct {
-	libuv.Async
-	cb func()
+	libuv.Async // MUST be first field
+	cb          func() bool
+	done        chan bool
 }
 
 func timerCallback(t *libuv.Timer) {
 	r := (*runtimeTimer)(unsafe.Pointer(t))
 	r.f(r.arg, 0)
+	if r.period <= 0 {
+		r.active = false
+	}
 }
 
 func startTimer(r *runtimeTimer) {
-	submitTimerWork(func() {
+	submitTimerWork(func() bool {
 		checkUV("uv_timer_init", int(libuv.InitTimer(timerLoop, &r.Timer)))
 		delay := timerDelayMillis(r.when)
-		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, 0)))
+		repeat := timerPeriodMillis(r.period)
+		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
+		r.active = true
+		return true
 	})
 }
 
 func stopTimer(r *runtimeTimer) bool {
-	return submitTimerWork(func() {
-		checkUV("uv_timer_stop", int(r.Stop()))
+	return submitTimerWork(func() bool {
+		wasActive := r.active
+		if wasActive {
+			checkUV("uv_timer_stop", int(r.Stop()))
+			r.active = false
+		}
+		return wasActive
 	})
 }
 
 func resetTimer(r *runtimeTimer, when int64) bool {
-	return submitTimerWork(func() {
+	return submitTimerWork(func() bool {
+		wasActive := r.active
 		checkUV("uv_timer_stop", int(r.Stop()))
 		r.when = when
 		delay := timerDelayMillis(when)
-		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, 0)))
+		repeat := timerPeriodMillis(r.period)
+		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
+		r.active = true
+		return wasActive
 	})
 }
 
@@ -109,8 +133,21 @@ func timerDelayMillis(when int64) uint64 {
 	return uint64(ms)
 }
 
-func submitTimerWork(cb func()) bool {
-	a := &asyncTimerEvent{cb: cb}
+func timerPeriodMillis(period int64) uint64 {
+	if period <= 0 {
+		return 0
+	}
+	// Convert nanoseconds to milliseconds, rounding up. Ensure positive periods
+	// do not become 0ms, which would disable repeating timers.
+	ms := (period + int64(Millisecond) - 1) / int64(Millisecond)
+	if ms <= 0 {
+		return 1
+	}
+	return uint64(ms)
+}
+
+func submitTimerWork(cb func() bool) bool {
+	a := &asyncTimerEvent{cb: cb, done: make(chan bool, 1)}
 	trackAsyncEvent(a)
 	if code := timerLoop.Async(&a.Async, timerEvent); code != 0 {
 		releaseAsyncEvent(a)
@@ -120,7 +157,7 @@ func submitTimerWork(cb func()) bool {
 		releaseAsyncEvent(a)
 		panic(uvError("uv_async_send", int(code)))
 	}
-	return true
+	return <-a.done
 }
 
 func trackAsyncEvent(a *asyncTimerEvent) {
