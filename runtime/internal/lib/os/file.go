@@ -9,6 +9,7 @@ import (
 	"io"
 	"syscall"
 	"time"
+	"unsafe"
 )
 
 // Name returns the name of the file as presented to Open.
@@ -201,11 +202,9 @@ func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
 // WriteString is like Write, but writes the contents of string s rather than
 // a slice of bytes.
 func (f *File) WriteString(s string) (n int, err error) {
-	/*
-		b := unsafe.Slice(unsafe.StringData(s), len(s))
-		return f.Write(b)
-	*/
-	panic("todo: os.(*File).WriteString")
+	// Avoid allocating by re-slicing the string data directly.
+	b := unsafe.Slice(unsafe.StringData(s), len(s))
+	return f.Write(b)
 }
 
 // Open opens the named file for reading. If successful, methods on

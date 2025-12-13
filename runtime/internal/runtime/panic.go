@@ -218,8 +218,8 @@ func panicSlice3CU(x uint, y int)
 func panicSliceConvert(x int, y int)
 */
 
-var divideError error
-var overflowError error
+var divideError = error(errorString("integer divide by zero"))
+var overflowError = error(errorString("integer overflow"))
 
 var shiftError = error(errorString("negative shift amount"))
 

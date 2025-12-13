@@ -163,5 +163,10 @@ func Accept(fd int) (nfd int, sa origSyscall.Sockaddr, err error) {
 }
 
 func Kill(pid int, signum Signal) error {
-	return syscall.Kill(pid, syscall.Signal(signum))
+	// Use libc kill(2) via clite/os; clite/syscall.Kill is WASI-oriented.
+	ret := os.Kill(os.PidT(pid), c.Int(signum))
+	if ret == 0 {
+		return nil
+	}
+	return Errno(os.Errno())
 }

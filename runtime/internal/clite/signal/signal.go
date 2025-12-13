@@ -3,31 +3,22 @@
 package signal
 
 import (
-	"unsafe"
+	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
 const (
+	LLGoFiles   = "_wrap/signal.c"
 	LLGoPackage = "link"
 )
 
 //llgo:type C
 type SignalHandler func(c.Int)
 
-//llgo:type C
-type sigactiont struct {
-	handler SignalHandler
-	tramp   unsafe.Pointer
-	mask    c.Int
-	flags   c.Int
-}
-
-//go:linkname sigaction C.sigaction
-func sigaction(sig c.Int, act, old *sigactiont) c.Int
+//go:linkname sigaction C.llgo_clite_sigaction
+func sigaction(sig c.Int, handler SignalHandler) c.Int
 
 func Signal(sig c.Int, hanlder SignalHandler) c.Int {
-	var act sigactiont
-	act.handler = hanlder
-	return sigaction(sig, &act, nil)
+	return sigaction(sig, hanlder)
 }

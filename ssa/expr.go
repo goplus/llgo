@@ -505,6 +505,13 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				return b.aggregateValue(x.Type, r, i)
 			}
 		default:
+			// Integer divide by zero must panic.
+			if op == token.QUO && (kind == vkSigned || kind == vkUnsigned) {
+				zero := llvm.ConstInt(y.ll, 0, false)
+				isZero := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero), b.Prog.Bool()}
+				b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), isZero)
+			}
+
 			idx := mathOpIdx(op, kind)
 			if llop := mathOpToLLVM[idx]; llop != 0 {
 				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
