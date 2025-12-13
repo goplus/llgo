@@ -165,10 +165,12 @@ type aProgram struct {
 	u32Ty     Type
 	i64Ty     Type
 	u64Ty     Type
+	u16Ty     Type
 
 	pyObjPtr  Type
 	pyObjPPtr Type
 
+	abiTy     Type
 	abiTyPtr  Type
 	abiTyPPtr Type
 	deferTy   Type
@@ -472,10 +474,18 @@ func (p Program) DeferPtr() Type {
 	return p.deferPtr
 }
 
+// AbiType returns abi.Type type.
+func (p Program) AbiType() Type {
+	if p.abiTy == nil {
+		p.abiTy = p.rawType(p.rtNamed("Type"))
+	}
+	return p.abiTy
+}
+
 // AbiTypePtr returns *abi.Type type.
 func (p Program) AbiTypePtr() Type {
 	if p.abiTyPtr == nil {
-		p.abiTyPtr = p.rawType(types.NewPointer(p.rtNamed("Type")))
+		p.abiTyPtr = p.Pointer(p.AbiType())
 	}
 	return p.abiTyPtr
 }
@@ -646,6 +656,14 @@ func (p Program) Uint32() Type {
 		p.u32Ty = p.rawType(types.Typ[types.Uint32])
 	}
 	return p.u32Ty
+}
+
+// Uint16 returns uint16 type.
+func (p Program) Uint16() Type {
+	if p.u16Ty == nil {
+		p.u16Ty = p.rawType(types.Typ[types.Uint16])
+	}
+	return p.u16Ty
 }
 
 // Int64 returns int64 type.
