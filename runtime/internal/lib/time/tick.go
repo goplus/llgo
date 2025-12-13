@@ -11,8 +11,15 @@ func NewTicker(d Duration) *Ticker {
 		panic("non-positive interval for NewTicker")
 	}
 	c := make(chan Time, 1)
-	t := &Timer{C: c}
-	t.C = c
+	t := &Timer{
+		C: c,
+		r: runtimeTimer{
+			when:   when(d),
+			period: int64(d),
+			f:      sendTime,
+			arg:    c,
+		},
+	}
 	startTimer(&t.r)
 	return (*Ticker)(unsafe.Pointer(t))
 }
@@ -25,7 +32,9 @@ func (t *Ticker) Reset(d Duration) {
 	if d <= 0 {
 		panic("non-positive interval for Ticker.Reset")
 	}
-	resetTimer(&(*Timer)(unsafe.Pointer(t)).r, when(d))
+	rt := &(*Timer)(unsafe.Pointer(t)).r
+	rt.period = int64(d)
+	resetTimer(rt, when(d))
 }
 
 func Tick(d Duration) <-chan Time {
