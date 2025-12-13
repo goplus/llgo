@@ -27,12 +27,29 @@ jobs:
 
       - name: Check formatting
         run: |
-          for dir in . runtime; do
-            pushd $dir
-            if [ -n "$(go fmt ./... | grep -v xgo_autogen.go)" ]; then
-              echo "Some files are not properly formatted. Please run 'go fmt ./...'"
-              exit 1
+          set -euo pipefail
+
+          check_dir() {
+            local dir="$1"
+            pushd "$dir" >/dev/null
+            # gofmt won't traverse directories that start with '_' or 'testdata',
+            # so mirror dev/local_ci.sh and scan every Go file explicitly.
+            fmt_output="$(
+              find . -name '*.go' -type f ! -name 'xgo_autogen.go' -print0 \
+                | xargs -0 gofmt -l \
+                | sed 's|^\\./||' \
+                || true
+            )"
+            popd >/dev/null
+
+            if [ -n "$fmt_output" ]; then
+              printf 'Detected gofmt differences in %s:\\n%s\\n' "$dir" "$fmt_output"
+              return 1
             fi
-            popd
+          }
+
+          for dir in . runtime; do
+            check_dir "$dir"
           done
+
           echo "All files are properly formatted."
