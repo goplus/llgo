@@ -106,6 +106,12 @@ func (p *TypeInfoAmd64) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.T
 		} else {
 			types := elementTypes(p.td, typ)
 			if n == 2 {
+				// skip ret (i64|double,*) && (*,i64/double)
+				if index == 0 {
+					if p.Sizeof(types[0]) == 8 && p.Sizeof(types[1]) == 8 {
+						return info
+					}
+				}
 				// skip (i64|double,*) (*,i64/double)
 				if p.Sizeof(types[0]) == 8 || p.Sizeof(types[1]) == 8 {
 					info.Kind = AttrWidthType2
