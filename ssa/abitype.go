@@ -564,11 +564,18 @@ func (b Builder) abiTypeFields(t types.Type) (fields []llvm.Value) {
 	// Kind uint8
 	fields = append(fields, prog.IntVal(uint64(abi.Kind(t)), prog.Byte()).impl)
 	// Equal func(unsafe.Pointer, unsafe.Pointer) bool
-	if equal := abi.EqualName(t); equal != "" {
-		fields = append(fields, b.rtClosure(equal).impl)
-	} else {
-		fields = append(fields, prog.Nil(prog.Type(equalFunc, InGo)).impl)
+	var equal Expr
+	switch name := abi.EqualName(t); name {
+	case "":
+		equal = prog.Nil(prog.Type(equalFunc, InGo))
+	case "structequal", "arrayequal":
+		equal = b.Pkg.rtFunc(name)
+		env := b.getAbiType(t)
+		equal = b.aggregateValue(prog.Type(equalFunc, InGo), equal.impl, env.impl)
+	default:
+		equal = b.rtClosure(name)
 	}
+	fields = append(fields, equal.impl)
 	// GCData     *byte
 	fields = append(fields, prog.Nil(prog.Pointer(prog.Byte())).impl)
 	// Str_       string
@@ -642,7 +649,7 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	})
 }
 
-const newabi = false
+const newabi = true
 
 func (b Builder) getAbiType(t types.Type) Expr {
 	if !newabi {

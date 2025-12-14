@@ -266,8 +266,8 @@ func ifaceeq(tab *itab, x, y unsafe.Pointer) bool {
 	return eq(x, y)
 }
 
-func structequal(p, q unsafe.Pointer) bool {
-	x := (*structtype)(p)
+func structequal(t, p, q unsafe.Pointer) bool {
+	x := (*structtype)(t)
 	for _, ft := range x.Fields {
 		pi := add(p, ft.Offset)
 		qi := add(q, ft.Offset)
@@ -278,8 +278,8 @@ func structequal(p, q unsafe.Pointer) bool {
 	return true
 }
 
-func arrayequal(p, q unsafe.Pointer) bool {
-	x := (*arraytype)(p)
+func arrayequal(t, p, q unsafe.Pointer) bool {
+	x := (*arraytype)(t)
 	elem := x.Elem
 	for i := uintptr(0); i < x.Len; i++ {
 		pi := add(p, i*elem.Size_)
