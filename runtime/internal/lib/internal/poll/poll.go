@@ -1,5 +1,8 @@
 package poll
 
+// llgo:skipall
+type _poll struct{}
+
 func runtime_Semacquire(sema *uint32) {
 	panic("todo: poll.runtime_Semacquire")
 }

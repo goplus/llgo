@@ -22,6 +22,11 @@ type Process struct {
 	handle uintptr      // handle is accessed atomically on Windows
 	isdone atomic.Bool  // process has been successfully waited on
 	sigMu  sync.RWMutex // avoid race between wait and signal
+
+	// cleanup is used to clean up the process handle.
+	// This field exists for compatibility with Go 1.25+,
+	// but is not actively used in llgo's simplified implementation.
+	cleanup runtime.Cleanup
 }
 
 func newProcess(pid int, handle uintptr) *Process {
