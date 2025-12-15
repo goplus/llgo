@@ -73,6 +73,7 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 	m.env.Goarch = c.buildConf.Goarch
 	m.env.LlvmTriple = c.crossCompile.LLVMTarget
 	m.env.LlgoVersion = env.Version()
+	m.env.LlgoCompilerHash = c.getCompilerHash()
 	m.env.GoVersion = runtime.Version()
 	m.env.LlvmVersion = c.getLLVMVersion()
 
@@ -270,6 +271,28 @@ func detectLLVMVersion(ctx *context) string {
 		line = line[:idx]
 	}
 	return strings.TrimSpace(line)
+}
+
+// getCompilerHash returns the cached compiler hash or computes it.
+func (c *context) getCompilerHash() string {
+	if c.compilerHash != "" {
+		return c.compilerHash
+	}
+	c.compilerHash = computeCompilerHash()
+	return c.compilerHash
+}
+
+// computeCompilerHash computes a fast hash of the llgo compiler binary.
+func computeCompilerHash() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "" // Fallback gracefully
+	}
+	hash, err := fastHashFile(exe)
+	if err != nil {
+		return ""
+	}
+	return hash
 }
 
 // targetTriple returns the target triple for cache directory.

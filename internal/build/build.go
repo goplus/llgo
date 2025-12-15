@@ -531,6 +531,7 @@ type context struct {
 	// Cache related fields
 	cacheManager *cacheManager
 	llvmVersion  string
+	compilerHash string
 }
 
 func (c *context) compiler() *clang.Cmd {

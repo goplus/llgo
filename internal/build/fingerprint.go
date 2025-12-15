@@ -20,9 +20,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -97,17 +99,18 @@ func (m orderedStringMap) MarshalYAML() (interface{}, error) {
 
 // envSection holds fixed environment fields and optional vars.
 type envSection struct {
-	Goos        string           `yaml:"GOOS,omitempty"`
-	Goarch      string           `yaml:"GOARCH,omitempty"`
-	GoVersion   string           `yaml:"GO_VERSION,omitempty"`
-	LlgoVersion string           `yaml:"LLGO_VERSION,omitempty"`
-	LlvmTriple  string           `yaml:"LLVM_TRIPLE,omitempty"`
-	LlvmVersion string           `yaml:"LLVM_VERSION,omitempty"`
-	Vars        orderedStringMap `yaml:"VARS,omitempty"`
+	Goos             string           `yaml:"GOOS,omitempty"`
+	Goarch           string           `yaml:"GOARCH,omitempty"`
+	GoVersion        string           `yaml:"GO_VERSION,omitempty"`
+	LlgoVersion      string           `yaml:"LLGO_VERSION,omitempty"`
+	LlgoCompilerHash string           `yaml:"LLGO_COMPILER_HASH,omitempty"`
+	LlvmTriple       string           `yaml:"LLVM_TRIPLE,omitempty"`
+	LlvmVersion      string           `yaml:"LLVM_VERSION,omitempty"`
+	Vars             orderedStringMap `yaml:"VARS,omitempty"`
 }
 
 func (s *envSection) empty() bool {
-	return s.Goos == "" && s.Goarch == "" && s.LlvmTriple == "" && s.LlgoVersion == "" && s.GoVersion == "" && s.LlvmVersion == "" && len(s.Vars) == 0
+	return s.Goos == "" && s.Goarch == "" && s.LlvmTriple == "" && s.LlgoVersion == "" && s.LlgoCompilerHash == "" && s.GoVersion == "" && s.LlvmVersion == "" && len(s.Vars) == 0
 }
 
 type commonSection struct {
@@ -251,6 +254,25 @@ func digestFile(path string) (string, error) {
 func digestBytes(data []byte) string {
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
+}
+
+// fastHashFile calculates a fast FNV-1a 64-bit hash of a file.
+// This is much faster than SHA256 and suitable for cache fingerprinting.
+func fastHashFile(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := fnv.New64a()
+	buf := make([]byte, 32*1024)
+	if _, err := io.CopyBuffer(h, f, buf); err != nil {
+		return "", err
+	}
+
+	// Return as hex string for consistency with other hashes
+	return strconv.FormatUint(h.Sum64(), 16), nil
 }
 
 // fileDigest represents a file with its path and metadata.
