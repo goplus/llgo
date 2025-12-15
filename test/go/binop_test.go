@@ -73,12 +73,15 @@ func TestUint32ToFloatToInt32(t *testing.T) {
 	result := int32(float64(bigUint32))
 
 	// Note: In Go, converting a value larger than MaxInt32 to int32
-	// results in implementation-defined behavior. The most common
-	// behavior is to return MinInt32 (-2147483648), not 2147483647.
-	// This test documents the actual Go behavior.
-	expected := int32(-2147483648)
-	if result != expected {
-		t.Errorf("uint32 max -> float64 -> int32: got %d, want %d", result, expected)
+	// results in implementation-defined behavior per the Go spec.
+	// Different platforms/architectures may produce different results:
+	// - Most platforms return MinInt32 (-2147483648)
+	// - Some ARM64 systems return MaxInt32 (2147483647)
+	// Both are valid according to the spec, so we accept either.
+	expected1 := int32(-2147483648) // MinInt32 (most common)
+	expected2 := int32(2147483647)  // MaxInt32 (ARM64)
+	if result != expected1 && result != expected2 {
+		t.Errorf("uint32 max -> float64 -> int32: got %d, want %d or %d", result, expected1, expected2)
 	}
 }
 
