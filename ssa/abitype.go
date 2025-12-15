@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/ast"
 	"go/token"
 	"go/types"
 	"unsafe"
@@ -540,7 +541,7 @@ var (
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])), false)
 )
 
-func (b Builder) abiBaseFields(t types.Type) (fields []llvm.Value) {
+func (b Builder) abiBaseFields(t types.Type, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
 	abi := pkg.abi
@@ -551,7 +552,11 @@ func (b Builder) abiBaseFields(t types.Type) (fields []llvm.Value) {
 	// Hash uint32
 	fields = append(fields, prog.IntVal(uint64(abi.Hash(t)), prog.Uint32()).impl)
 	// TFlag uint8
-	fields = append(fields, prog.IntVal(uint64(abi.TFlag(t)), prog.Byte()).impl)
+	tflag := uint64(abi.TFlag(t))
+	if hasUncommon {
+		tflag |= (1 << 0) // TFlagUncommon
+	}
+	fields = append(fields, prog.IntVal(tflag, prog.Byte()).impl)
 	// Align uint8
 	align := prog.IntVal(uint64(abi.Align(t)), prog.Byte()).impl
 	fields = append(fields, align)
@@ -609,8 +614,11 @@ type StructField struct {
 
 func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 	prog := b.Prog
-	ft := prog.rtType("structfield")
 	n := t.NumFields()
+	if n == 0 {
+		return prog.Nil(prog.rtType("Slice")).impl
+	}
+	ft := prog.rtType("structfield")
 	typ := prog.rawType(t)
 	fields := make([]llvm.Value, n)
 	for i := 0; i < n; i++ {
@@ -644,8 +652,11 @@ type Imethod struct {
 
 func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Value {
 	prog := b.Prog
-	ft := prog.rtType("Imethod")
 	n := t.NumMethods()
+	if n == 0 {
+		return prog.Nil(prog.rtType("Slice")).impl
+	}
+	ft := prog.rtType("Imethod")
 	fields := make([]llvm.Value, n)
 	for i := 0; i < n; i++ {
 		f := t.Method(i)
@@ -747,6 +758,88 @@ func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Val
 	return
 }
 
+/*
+type Method struct {
+	Name_ string    // name of method
+	Mtyp_ *FuncType // method type (without receiver)
+	Ifn_  Text      // fn used in interface call (one-word receiver)
+	Tfn_  Text      // fn used for normal method call
+}
+
+type UncommonType struct {
+	PkgPath_ string // import path; empty for built-in types like int, string
+	Mcount   uint16 // number of methods
+	Xcount   uint16 // number of exported methods
+	Moff     uint32 // offset from this uncommontype to [mcount]Method
+}
+
+struct {
+	Type
+	UncommonType
+	[N]Method
+}
+*/
+
+func (b Builder) getUncommonPkg(t types.Type) *types.Package {
+retry:
+	switch typ := types.Unalias(t).(type) {
+	case *types.Pointer:
+		t = typ.Elem()
+		goto retry
+	case *types.Named:
+		return typ.Obj().Pkg()
+	}
+	return nil
+}
+
+func (b Builder) getUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok bool) {
+	switch t.(type) {
+	case *types.Named:
+		return types.NewMethodSet(t), true
+	case *types.Pointer, *types.Struct:
+		if mset := types.NewMethodSet(t); mset.Len() != 0 {
+			return mset, true
+		}
+	}
+	return
+}
+
+func (b Builder) getUncommonType(t types.Type, mset *types.MethodSet) llvm.Value {
+	prog := b.Prog
+	ft := prog.rtType("uncommonType")
+	var fields []llvm.Value
+	fields = append(fields, b.Str(abi.PathOf(b.getUncommonPkg(t))).impl)
+	mcount := mset.Len()
+	var xcount int
+	for i := 0; i < mcount; i++ {
+		if ast.IsExported(mset.At(i).Obj().Name()) {
+			xcount++
+		}
+	}
+	moff := prog.SizeOf(ft)
+	fields = append(fields, prog.IntVal(uint64(mcount), prog.Uint16()).impl)
+	fields = append(fields, prog.IntVal(uint64(xcount), prog.Uint16()).impl)
+	fields = append(fields, prog.IntVal(moff, prog.Uint32()).impl)
+	return llvm.ConstNamedStruct(ft.ll, fields)
+}
+
+func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Value {
+	prog := b.Prog
+	ft := prog.rtType("Method")
+	n := mset.Len()
+	fields := make([]llvm.Value, n)
+	for i := 0; i < n; i++ {
+		f := mset.At(i)
+		var values []llvm.Value
+		values = append(values, b.Str(f.Obj().Name()).impl)
+		values = append(values, b.getAbiType(f.Type()).impl)
+		values = append(values, prog.Nil(prog.VoidPtr()).impl)
+		values = append(values, prog.Nil(prog.VoidPtr()).impl)
+		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+	}
+	return llvm.ConstArray(ft.ll, fields)
+}
+
 func (b Builder) getAbiType(t types.Type) Expr {
 	if !newabi {
 		return Expr{}
@@ -760,13 +853,32 @@ func (b Builder) getAbiType(t types.Type) Expr {
 	prog := b.Prog
 	pkg := b.Pkg
 	if g == nil {
-		rt := prog.rtType(pkg.abi.RuntimeName(t))
-		g = pkg.doNewVar(name, prog.Pointer(rt))
-		fields := b.abiBaseFields(t)
+		mset, hasUncommon := b.getUncommonMethodSet(t)
+		rt := prog.rtNamed(pkg.abi.RuntimeName(t))
+		var typ types.Type = rt
+		if hasUncommon {
+			ut := prog.rtNamed("uncommonType")
+			mt := prog.rtNamed("Method")
+			fields := []*types.Var{
+				types.NewVar(token.NoPos, nil, "T", rt),
+				types.NewVar(token.NoPos, nil, "U", ut),
+				types.NewVar(token.NoPos, nil, "M", types.NewArray(mt, int64(mset.Len()))),
+			}
+			typ = types.NewStruct(fields, nil)
+		}
+		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
+		fields := b.abiBaseFields(t, hasUncommon)
 		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
 				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
 			}, exts...)
+		}
+		if hasUncommon {
+			fields = []llvm.Value{
+				llvm.ConstNamedStruct(prog.Type(rt, InGo).ll, fields),
+				b.getUncommonType(t, mset),
+				b.getUncommonMethods(t, mset),
+			}
 		}
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
 		if pub {
