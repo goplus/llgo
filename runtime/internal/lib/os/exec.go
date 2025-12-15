@@ -16,18 +16,8 @@ import (
 // ErrProcessDone indicates a Process has finished.
 var ErrProcessDone = errors.New("os: process already finished")
 
-// Process stores the information about a process created by StartProcess.
-type Process struct {
-	Pid    int
-	handle uintptr      // handle is accessed atomically on Windows
-	isdone atomic.Bool  // process has been successfully waited on
-	sigMu  sync.RWMutex // avoid race between wait and signal
-
-	// cleanup is used to clean up the process handle.
-	// This field exists for compatibility with Go 1.25+,
-	// but is not actively used in llgo's simplified implementation.
-	cleanup runtime.Cleanup
-}
+// Process struct is defined in exec_go123.go and exec_go124.go
+// to support different Go versions.
 
 func newProcess(pid int, handle uintptr) *Process {
 	p := &Process{Pid: pid, handle: handle}
