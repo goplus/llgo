@@ -17,6 +17,8 @@
 package gotest
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -261,5 +263,139 @@ func TestUint16ToInt32Conversion(t *testing.T) {
 	expected := int32(65535)
 	if result != expected {
 		t.Errorf("uint16(0xFFFF) to int32: got %d, want %d", result, expected)
+	}
+}
+
+// TestFmtSprintfIntegerOverflow tests integer overflow with fmt.Sprintf
+// This catches issues where conversion to any in fmt.Printf may hide bugs
+func TestFmtSprintfIntegerOverflow(t *testing.T) {
+	var i8max int8 = 127
+	result := i8max + 1
+
+	// Test direct value
+	if result != -128 {
+		t.Errorf("int8 overflow: got %d, want -128", result)
+	}
+
+	// Test fmt.Sprintf output
+	str := fmt.Sprintf("%d", result)
+	expectedStr := "-128"
+	if str != expectedStr {
+		t.Errorf("int8 overflow fmt.Sprintf: got %s, want %s", str, expectedStr)
+	}
+
+	// Test type preservation through any conversion
+	var anyVal any = result
+	if v, ok := anyVal.(int8); !ok || v != -128 {
+		t.Errorf("int8 overflow any conversion: got %v (type %T), want -128 (type int8)", anyVal, anyVal)
+	}
+}
+
+// TestFmtSprintfUint32ToInt64 tests uint32 to int64 conversion with fmt.Sprintf
+func TestFmtSprintfUint32ToInt64(t *testing.T) {
+	var u32 uint32 = 4000000000
+	result := int64(u32)
+
+	// Test direct value
+	if result != 4000000000 {
+		t.Errorf("uint32 to int64: got %d, want 4000000000", result)
+	}
+
+	// Test fmt.Sprintf output
+	str := fmt.Sprintf("%d", result)
+	expectedStr := "4000000000"
+	if str != expectedStr {
+		t.Errorf("uint32 to int64 fmt.Sprintf: got %s, want %s", str, expectedStr)
+	}
+
+	// Test with type in format
+	strTyped := fmt.Sprintf("%d (type %T)", result, result)
+	expectedTyped := "4000000000 (type int64)"
+	if strTyped != expectedTyped {
+		t.Errorf("uint32 to int64 with type: got %s, want %s", strTyped, expectedTyped)
+	}
+}
+
+// TestFmtSprintfMixedSignedUnsigned tests mixed operations with fmt.Sprintf
+func TestFmtSprintfMixedSignedUnsigned(t *testing.T) {
+	var i32 int32 = 70000
+	var u32 uint32 = 4000000000
+	result := int64(i32) + int64(u32)
+
+	// Test direct value
+	if result != 4000070000 {
+		t.Errorf("int32 + uint32 as int64: got %d, want 4000070000", result)
+	}
+
+	// Test fmt.Sprintf output
+	str := fmt.Sprintf("%d", result)
+	expectedStr := "4000070000"
+	if str != expectedStr {
+		t.Errorf("mixed addition fmt.Sprintf: got %s, want %s", str, expectedStr)
+	}
+}
+
+// TestFmtSprintfUntypedConstants tests untyped constant operations with fmt.Sprintf
+func TestFmtSprintfUntypedConstants(t *testing.T) {
+	const untypedInt = 42
+	var i32 int32 = 70000
+	result := untypedInt + i32
+
+	// Test value and type
+	str := fmt.Sprintf("%d (type %T)", result, result)
+	expectedStr := "70042 (type int32)"
+	if str != expectedStr {
+		t.Errorf("untypedInt + i32: got %s, want %s", str, expectedStr)
+	}
+
+	// Test float
+	const untypedFloat = 3.14
+	var f32 float32 = 3.14159
+	resultFloat := untypedFloat + f32
+	strFloat := fmt.Sprintf("%f (type %T)", resultFloat, resultFloat)
+	// Note: using Contains check due to float precision
+	if !contains(strFloat, "6.28") || !contains(strFloat, "float32") {
+		t.Errorf("untypedFloat + f32: got %s, want ~6.28... (type float32)", strFloat)
+	}
+
+	// Test complex
+	const untypedComplex = 1 + 2i
+	var c64 complex64 = 1 + 2i
+	resultComplex := untypedComplex + c64
+	strComplex := fmt.Sprintf("%v (type %T)", resultComplex, resultComplex)
+	if !contains(strComplex, "(2+4i)") || !contains(strComplex, "complex64") {
+		t.Errorf("untypedComplex + c64: got %s, want (2+4i) (type complex64)", strComplex)
+	}
+}
+
+// Helper function for string contains check
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
+}
+
+// TestFmtSprintfComplexOperations tests complex number operations with fmt.Sprintf
+func TestFmtSprintfComplexOperations(t *testing.T) {
+	var c64 complex64 = 1 + 2i
+	var c128 complex128 = 1 + 2i
+
+	// Test addition
+	resultAdd := complex128(c64) + c128
+	strAdd := fmt.Sprintf("%v", resultAdd)
+	if strAdd != "(2+4i)" {
+		t.Errorf("c64 + c128: got %s, want (2+4i)", strAdd)
+	}
+
+	// Test division
+	resultDiv := complex128(c64) / c128
+	strDiv := fmt.Sprintf("%v", resultDiv)
+	if strDiv != "(1+0i)" {
+		t.Errorf("complex division: got %s, want (1+0i)", strDiv)
+	}
+
+	// Test multiplication
+	resultMul := c64 * complex64(c128)
+	strMul := fmt.Sprintf("%v", resultMul)
+	if strMul != "(-3+4i)" {
+		t.Errorf("complex multiplication: got %s, want (-3+4i)", strMul)
 	}
 }
