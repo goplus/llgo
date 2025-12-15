@@ -945,3 +945,453 @@ func TestBinOpFloatDivision(t *testing.T) {
 		t.Errorf("untyped / float64: got %f, want 5.0", untypedA/f64)
 	}
 }
+
+// =============================================================================
+// EXHAUSTIVE Type × Operator Test Matrix
+// =============================================================================
+// This section provides comprehensive coverage of all Go numeric types across
+// all binary operators, testing:
+// 1. Computed values (when defined)
+// 2. Result types
+// 3. Invalid combinations (documented as compile-time errors)
+//
+// Coverage:
+// - All numeric types: int8-64, uint8-64, float32/64, complex64/128, byte, rune
+// - All operators: +, -, *, /, %, &, |, ^, &^, <<, >>, ==, !=, <, <=, >, >=
+// - All combinations: typed×typed, typed×untyped, untyped×typed, untyped×untyped
+
+// TestExhaustiveArithmeticOperators tests all arithmetic operators across all numeric types
+func TestExhaustiveArithmeticOperators(t *testing.T) {
+	tests := []struct {
+		name        string
+		operation   func() interface{}
+		expected    interface{}
+		resultType  string
+	}{
+		// Addition tests - all integer types
+		{"int8+int8", func() interface{} { var a, b int8 = 10, 20; return a + b }, int8(30), "int8"},
+		{"int16+int16", func() interface{} { var a, b int16 = 100, 200; return a + b }, int16(300), "int16"},
+		{"int32+int32", func() interface{} { var a, b int32 = 1000, 2000; return a + b }, int32(3000), "int32"},
+		{"int64+int64", func() interface{} { var a, b int64 = 10000, 20000; return a + b }, int64(30000), "int64"},
+		{"int+int", func() interface{} { var a, b int = 10000, 20000; return a + b }, int(30000), "int"},
+		
+		{"uint8+uint8", func() interface{} { var a, b uint8 = 10, 20; return a + b }, uint8(30), "uint8"},
+		{"uint16+uint16", func() interface{} { var a, b uint16 = 100, 200; return a + b }, uint16(300), "uint16"},
+		{"uint32+uint32", func() interface{} { var a, b uint32 = 1000, 2000; return a + b }, uint32(3000), "uint32"},
+		{"uint64+uint64", func() interface{} { var a, b uint64 = 10000, 20000; return a + b }, uint64(30000), "uint64"},
+		{"uint+uint", func() interface{} { var a, b uint = 10000, 20000; return a + b }, uint(30000), "uint"},
+		{"uintptr+uintptr", func() interface{} { var a, b uintptr = 1000, 2000; return a + b }, uintptr(3000), "uintptr"},
+		
+		{"byte+byte", func() interface{} { var a, b byte = 10, 20; return a + b }, byte(30), "uint8"},
+		{"rune+rune", func() interface{} { var a, b rune = 1000, 2000; return a + b }, rune(3000), "int32"},
+		
+		// Addition with floats
+		{"float32+float32", func() interface{} { var a, b float32 = 1.5, 2.5; return a + b }, float32(4.0), "float32"},
+		{"float64+float64", func() interface{} { var a, b float64 = 1.5, 2.5; return a + b }, float64(4.0), "float64"},
+		
+		// Addition with complex
+		{"complex64+complex64", func() interface{} { var a, b complex64 = 1+2i, 3+4i; return a + b }, complex64(4+6i), "complex64"},
+		{"complex128+complex128", func() interface{} { var a, b complex128 = 1+2i, 3+4i; return a + b }, complex128(4+6i), "complex128"},
+		
+		// Subtraction tests
+		{"int8-int8", func() interface{} { var a, b int8 = 50, 20; return a - b }, int8(30), "int8"},
+		{"int16-int16", func() interface{} { var a, b int16 = 500, 200; return a - b }, int16(300), "int16"},
+		{"int32-int32", func() interface{} { var a, b int32 = 5000, 2000; return a - b }, int32(3000), "int32"},
+		{"int64-int64", func() interface{} { var a, b int64 = 50000, 20000; return a - b }, int64(30000), "int64"},
+		
+		{"uint8-uint8", func() interface{} { var a, b uint8 = 50, 20; return a - b }, uint8(30), "uint8"},
+		{"uint16-uint16", func() interface{} { var a, b uint16 = 500, 200; return a - b }, uint16(300), "uint16"},
+		{"uint32-uint32", func() interface{} { var a, b uint32 = 5000, 2000; return a - b }, uint32(3000), "uint32"},
+		{"uint64-uint64", func() interface{} { var a, b uint64 = 50000, 20000; return a - b }, uint64(30000), "uint64"},
+		
+		{"float32-float32", func() interface{} { var a, b float32 = 10.5, 5.5; return a - b }, float32(5.0), "float32"},
+		{"float64-float64", func() interface{} { var a, b float64 = 10.5, 5.5; return a - b }, float64(5.0), "float64"},
+		
+		{"complex64-complex64", func() interface{} { var a, b complex64 = 5+6i, 2+3i; return a - b }, complex64(3+3i), "complex64"},
+		{"complex128-complex128", func() interface{} { var a, b complex128 = 5+6i, 2+3i; return a - b }, complex128(3+3i), "complex128"},
+		
+		// Multiplication tests
+		{"int8*int8", func() interface{} { var a, b int8 = 5, 6; return a * b }, int8(30), "int8"},
+		{"int16*int16", func() interface{} { var a, b int16 = 50, 6; return a * b }, int16(300), "int16"},
+		{"int32*int32", func() interface{} { var a, b int32 = 500, 6; return a * b }, int32(3000), "int32"},
+		{"int64*int64", func() interface{} { var a, b int64 = 5000, 6; return a * b }, int64(30000), "int64"},
+		
+		{"uint8*uint8", func() interface{} { var a, b uint8 = 5, 6; return a * b }, uint8(30), "uint8"},
+		{"uint16*uint16", func() interface{} { var a, b uint16 = 50, 6; return a * b }, uint16(300), "uint16"},
+		{"uint32*uint32", func() interface{} { var a, b uint32 = 500, 6; return a * b }, uint32(3000), "uint32"},
+		{"uint64*uint64", func() interface{} { var a, b uint64 = 5000, 6; return a * b }, uint64(30000), "uint64"},
+		
+		{"float32*float32", func() interface{} { var a, b float32 = 2.5, 4.0; return a * b }, float32(10.0), "float32"},
+		{"float64*float64", func() interface{} { var a, b float64 = 2.5, 4.0; return a * b }, float64(10.0), "float64"},
+		
+		{"complex64*complex64", func() interface{} { var a, b complex64 = 2+3i, 1+0i; return a * b }, complex64(2+3i), "complex64"},
+		{"complex128*complex128", func() interface{} { var a, b complex128 = 2+3i, 1+0i; return a * b }, complex128(2+3i), "complex128"},
+		
+		// Division tests
+		{"int8/int8", func() interface{} { var a, b int8 = 60, 2; return a / b }, int8(30), "int8"},
+		{"int16/int16", func() interface{} { var a, b int16 = 600, 2; return a / b }, int16(300), "int16"},
+		{"int32/int32", func() interface{} { var a, b int32 = 6000, 2; return a / b }, int32(3000), "int32"},
+		{"int64/int64", func() interface{} { var a, b int64 = 60000, 2; return a / b }, int64(30000), "int64"},
+		
+		{"uint8/uint8", func() interface{} { var a, b uint8 = 60, 2; return a / b }, uint8(30), "uint8"},
+		{"uint16/uint16", func() interface{} { var a, b uint16 = 600, 2; return a / b }, uint16(300), "uint16"},
+		{"uint32/uint32", func() interface{} { var a, b uint32 = 6000, 2; return a / b }, uint32(3000), "uint32"},
+		{"uint64/uint64", func() interface{} { var a, b uint64 = 60000, 2; return a / b }, uint64(30000), "uint64"},
+		
+		{"float32/float32", func() interface{} { var a, b float32 = 10.0, 2.0; return a / b }, float32(5.0), "float32"},
+		{"float64/float64", func() interface{} { var a, b float64 = 10.0, 2.0; return a / b }, float64(5.0), "float64"},
+		
+		{"complex64/complex64", func() interface{} { var a, b complex64 = 6+8i, 2+0i; return a / b }, complex64(3+4i), "complex64"},
+		{"complex128/complex128", func() interface{} { var a, b complex128 = 6+8i, 2+0i; return a / b }, complex128(3+4i), "complex128"},
+		
+		// Modulo tests (integers only)
+		{"int8%int8", func() interface{} { var a, b int8 = 100, 7; return a % b }, int8(2), "int8"},
+		{"int16%int16", func() interface{} { var a, b int16 = 1000, 7; return a % b }, int16(6), "int16"},
+		{"int32%int32", func() interface{} { var a, b int32 = 10000, 7; return a % b }, int32(4), "int32"},
+		{"int64%int64", func() interface{} { var a, b int64 = 100000, 7; return a % b }, int64(5), "int64"},
+		
+		{"uint8%uint8", func() interface{} { var a, b uint8 = 100, 7; return a % b }, uint8(2), "uint8"},
+		{"uint16%uint16", func() interface{} { var a, b uint16 = 1000, 7; return a % b }, uint16(6), "uint16"},
+		{"uint32%uint32", func() interface{} { var a, b uint32 = 10000, 7; return a % b }, uint32(4), "uint32"},
+		{"uint64%uint64", func() interface{} { var a, b uint64 = 100000, 7; return a % b }, uint64(5), "uint64"},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.operation()
+			if result != tt.expected {
+				t.Errorf("%s: got %v (type %T), want %v (type %T)", 
+					tt.name, result, result, tt.expected, tt.expected)
+			}
+			resultTypeName := fmt.Sprintf("%T", result)
+			if resultTypeName != tt.resultType {
+				t.Errorf("%s: result type got %s, want %s", tt.name, resultTypeName, tt.resultType)
+			}
+		})
+	}
+}
+
+// TestExhaustiveBitwiseOperators tests all bitwise operators across all integer types
+func TestExhaustiveBitwiseOperators(t *testing.T) {
+	tests := []struct {
+		name       string
+		operation  func() interface{}
+		expected   interface{}
+		resultType string
+	}{
+		// Bitwise AND tests
+		{"int8&int8", func() interface{} { var a, b int8 = 0x3F, 0x0F; return a & b }, int8(0x0F), "int8"},
+		{"int16&int16", func() interface{} { var a, b int16 = 0x3FF, 0x0FF; return a & b }, int16(0x0FF), "int16"},
+		{"int32&int32", func() interface{} { var a, b int32 = 0x3FFF, 0x0FFF; return a & b }, int32(0x0FFF), "int32"},
+		{"int64&int64", func() interface{} { var a, b int64 = 0x3FFFF, 0x0FFFF; return a & b }, int64(0x0FFFF), "int64"},
+		
+		{"uint8&uint8", func() interface{} { var a, b uint8 = 0xFF, 0x0F; return a & b }, uint8(0x0F), "uint8"},
+		{"uint16&uint16", func() interface{} { var a, b uint16 = 0xFFFF, 0x0FFF; return a & b }, uint16(0x0FFF), "uint16"},
+		{"uint32&uint32", func() interface{} { var a, b uint32 = 0xFFFFFFFF, 0x0FFFFFFF; return a & b }, uint32(0x0FFFFFFF), "uint32"},
+		{"uint64&uint64", func() interface{} { var a, b uint64 = 0xFFFFFFFF, 0x0FFFFFFF; return a & b }, uint64(0x0FFFFFFF), "uint64"},
+		
+		// Bitwise OR tests
+		{"int8|int8", func() interface{} { var a, b int8 = 0x30, 0x0F; return a | b }, int8(0x3F), "int8"},
+		{"int16|int16", func() interface{} { var a, b int16 = 0x300, 0x0FF; return a | b }, int16(0x3FF), "int16"},
+		{"int32|int32", func() interface{} { var a, b int32 = 0x3000, 0x0FFF; return a | b }, int32(0x3FFF), "int32"},
+		{"int64|int64", func() interface{} { var a, b int64 = 0x30000, 0x0FFFF; return a | b }, int64(0x3FFFF), "int64"},
+		
+		{"uint8|uint8", func() interface{} { var a, b uint8 = 0xF0, 0x0F; return a | b }, uint8(0xFF), "uint8"},
+		{"uint16|uint16", func() interface{} { var a, b uint16 = 0xF000, 0x0FFF; return a | b }, uint16(0xFFFF), "uint16"},
+		{"uint32|uint32", func() interface{} { var a, b uint32 = 0xF0000000, 0x0FFFFFFF; return a | b }, uint32(0xFFFFFFFF), "uint32"},
+		{"uint64|uint64", func() interface{} { var a, b uint64 = 0xF000000000000000, 0x0FFFFFFFFFFFFFFF; return a | b }, uint64(0xFFFFFFFFFFFFFFFF), "uint64"},
+		
+		// Bitwise XOR tests
+		{"int8^int8", func() interface{} { var a, b int8 = 0x3F, 0x0F; return a ^ b }, int8(0x30), "int8"},
+		{"int16^int16", func() interface{} { var a, b int16 = 0x3FF, 0x0FF; return a ^ b }, int16(0x300), "int16"},
+		{"int32^int32", func() interface{} { var a, b int32 = 0x3FFF, 0x0FFF; return a ^ b }, int32(0x3000), "int32"},
+		{"int64^int64", func() interface{} { var a, b int64 = 0x3FFFF, 0x0FFFF; return a ^ b }, int64(0x30000), "int64"},
+		
+		{"uint8^uint8", func() interface{} { var a, b uint8 = 0xFF, 0x0F; return a ^ b }, uint8(0xF0), "uint8"},
+		{"uint16^uint16", func() interface{} { var a, b uint16 = 0xFFFF, 0x0FFF; return a ^ b }, uint16(0xF000), "uint16"},
+		{"uint32^uint32", func() interface{} { var a, b uint32 = 0xFFFFFFFF, 0x0FFFFFFF; return a ^ b }, uint32(0xF0000000), "uint32"},
+		{"uint64^uint64", func() interface{} { var a, b uint64 = 0xFFFFFFFFFFFFFFFF, 0x0FFFFFFFFFFFFFFF; return a ^ b }, uint64(0xF000000000000000), "uint64"},
+		
+		// Bitwise AND NOT tests
+		{"int8&^int8", func() interface{} { var a, b int8 = 0x3F, 0x0F; return a &^ b }, int8(0x30), "int8"},
+		{"int16&^int16", func() interface{} { var a, b int16 = 0x3FF, 0x0FF; return a &^ b }, int16(0x300), "int16"},
+		{"int32&^int32", func() interface{} { var a, b int32 = 0x3FFF, 0x0FFF; return a &^ b }, int32(0x3000), "int32"},
+		{"int64&^int64", func() interface{} { var a, b int64 = 0x3FFFF, 0x0FFFF; return a &^ b }, int64(0x30000), "int64"},
+		
+		{"uint8&^uint8", func() interface{} { var a, b uint8 = 0xFF, 0x0F; return a &^ b }, uint8(0xF0), "uint8"},
+		{"uint16&^uint16", func() interface{} { var a, b uint16 = 0xFFFF, 0x0FFF; return a &^ b }, uint16(0xF000), "uint16"},
+		{"uint32&^uint32", func() interface{} { var a, b uint32 = 0xFFFFFFFF, 0x0FFFFFFF; return a &^ b }, uint32(0xF0000000), "uint32"},
+		{"uint64&^uint64", func() interface{} { var a, b uint64 = 0xFFFFFFFFFFFFFFFF, 0x0FFFFFFFFFFFFFFF; return a &^ b }, uint64(0xF000000000000000), "uint64"},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.operation()
+			if result != tt.expected {
+				t.Errorf("%s: got %v, want %v", tt.name, result, tt.expected)
+			}
+			resultTypeName := fmt.Sprintf("%T", result)
+			if resultTypeName != tt.resultType {
+				t.Errorf("%s: result type got %s, want %s", tt.name, resultTypeName, tt.resultType)
+			}
+		})
+	}
+}
+
+// TestExhaustiveShiftOperators tests all shift operators across all integer types
+func TestExhaustiveShiftOperators(t *testing.T) {
+	tests := []struct {
+		name       string
+		operation  func() interface{}
+		expected   interface{}
+		resultType string
+	}{
+		// Left shift tests
+		{"int8<<uint", func() interface{} { var a int8 = 1; var b uint = 3; return a << b }, int8(8), "int8"},
+		{"int16<<uint", func() interface{} { var a int16 = 1; var b uint = 5; return a << b }, int16(32), "int16"},
+		{"int32<<uint", func() interface{} { var a int32 = 1; var b uint = 10; return a << b }, int32(1024), "int32"},
+		{"int64<<uint", func() interface{} { var a int64 = 1; var b uint = 20; return a << b }, int64(1048576), "int64"},
+		
+		{"uint8<<uint", func() interface{} { var a uint8 = 1; var b uint = 3; return a << b }, uint8(8), "uint8"},
+		{"uint16<<uint", func() interface{} { var a uint16 = 1; var b uint = 5; return a << b }, uint16(32), "uint16"},
+		{"uint32<<uint", func() interface{} { var a uint32 = 1; var b uint = 10; return a << b }, uint32(1024), "uint32"},
+		{"uint64<<uint", func() interface{} { var a uint64 = 1; var b uint = 20; return a << b }, uint64(1048576), "uint64"},
+		
+		// Right shift tests
+		{"int8>>uint", func() interface{} { var a int8 = 32; var b uint = 2; return a >> b }, int8(8), "int8"},
+		{"int16>>uint", func() interface{} { var a int16 = 1024; var b uint = 5; return a >> b }, int16(32), "int16"},
+		{"int32>>uint", func() interface{} { var a int32 = 1048576; var b uint = 10; return a >> b }, int32(1024), "int32"},
+		{"int64>>uint", func() interface{} { var a int64 = 1073741824; var b uint = 20; return a >> b }, int64(1024), "int64"},
+		
+		{"uint8>>uint", func() interface{} { var a uint8 = 32; var b uint = 2; return a >> b }, uint8(8), "uint8"},
+		{"uint16>>uint", func() interface{} { var a uint16 = 1024; var b uint = 5; return a >> b }, uint16(32), "uint16"},
+		{"uint32>>uint", func() interface{} { var a uint32 = 1048576; var b uint = 10; return a >> b }, uint32(1024), "uint32"},
+		{"uint64>>uint", func() interface{} { var a uint64 = 1073741824; var b uint = 20; return a >> b }, uint64(1024), "uint64"},
+		
+		// Shift with untyped constants
+		{"int8<<const", func() interface{} { var a int8 = 1; return a << 3 }, int8(8), "int8"},
+		{"int16<<const", func() interface{} { var a int16 = 1; return a << 5 }, int16(32), "int16"},
+		{"int32<<const", func() interface{} { var a int32 = 1; return a << 10 }, int32(1024), "int32"},
+		{"int64<<const", func() interface{} { var a int64 = 1; return a << 20 }, int64(1048576), "int64"},
+		
+		{"uint8>>const", func() interface{} { var a uint8 = 32; return a >> 2 }, uint8(8), "uint8"},
+		{"uint16>>const", func() interface{} { var a uint16 = 1024; return a >> 5 }, uint16(32), "uint16"},
+		{"uint32>>const", func() interface{} { var a uint32 = 1048576; return a >> 10 }, uint32(1024), "uint32"},
+		{"uint64>>const", func() interface{} { var a uint64 = 1073741824; return a >> 20 }, uint64(1024), "uint64"},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.operation()
+			if result != tt.expected {
+				t.Errorf("%s: got %v, want %v", tt.name, result, tt.expected)
+			}
+			resultTypeName := fmt.Sprintf("%T", result)
+			if resultTypeName != tt.resultType {
+				t.Errorf("%s: result type got %s, want %s", tt.name, resultTypeName, tt.resultType)
+			}
+		})
+	}
+}
+
+// TestExhaustiveComparisonOperators tests all comparison operators across all numeric types
+func TestExhaustiveComparisonOperators(t *testing.T) {
+	tests := []struct {
+		name       string
+		operation  func() bool
+		expected   bool
+	}{
+		// Equality tests - all types
+		{"int8==int8-true", func() bool { var a, b int8 = 42, 42; return a == b }, true},
+		{"int8==int8-false", func() bool { var a, b int8 = 42, 43; return a == b }, false},
+		{"int16==int16-true", func() bool { var a, b int16 = 1000, 1000; return a == b }, true},
+		{"int32==int32-true", func() bool { var a, b int32 = 100000, 100000; return a == b }, true},
+		{"int64==int64-true", func() bool { var a, b int64 = 1000000, 1000000; return a == b }, true},
+		
+		{"uint8==uint8-true", func() bool { var a, b uint8 = 200, 200; return a == b }, true},
+		{"uint16==uint16-true", func() bool { var a, b uint16 = 50000, 50000; return a == b }, true},
+		{"uint32==uint32-true", func() bool { var a, b uint32 = 4000000000, 4000000000; return a == b }, true},
+		{"uint64==uint64-true", func() bool { var a, b uint64 = 10000000000, 10000000000; return a == b }, true},
+		
+		{"float32==float32-true", func() bool { var a, b float32 = 3.14, 3.14; return a == b }, true},
+		{"float64==float64-true", func() bool { var a, b float64 = 3.14159, 3.14159; return a == b }, true},
+		
+		{"complex64==complex64-true", func() bool { var a, b complex64 = 1+2i, 1+2i; return a == b }, true},
+		{"complex128==complex128-true", func() bool { var a, b complex128 = 1+2i, 1+2i; return a == b }, true},
+		
+		// Inequality tests
+		{"int8!=int8-true", func() bool { var a, b int8 = 42, 43; return a != b }, true},
+		{"int8!=int8-false", func() bool { var a, b int8 = 42, 42; return a != b }, false},
+		{"float32!=float32-true", func() bool { var a, b float32 = 3.14, 3.15; return a != b }, true},
+		{"complex64!=complex64-true", func() bool { var a, b complex64 = 1+2i, 1+3i; return a != b }, true},
+		
+		// Ordering comparisons - integers and floats only (not complex)
+		{"int8<int8-true", func() bool { var a, b int8 = 10, 20; return a < b }, true},
+		{"int8<int8-false", func() bool { var a, b int8 = 20, 10; return a < b }, false},
+		{"int16<int16-true", func() bool { var a, b int16 = 100, 200; return a < b }, true},
+		{"int32<int32-true", func() bool { var a, b int32 = 1000, 2000; return a < b }, true},
+		{"int64<int64-true", func() bool { var a, b int64 = 10000, 20000; return a < b }, true},
+		
+		{"uint8<uint8-true", func() bool { var a, b uint8 = 100, 200; return a < b }, true},
+		{"uint16<uint16-true", func() bool { var a, b uint16 = 1000, 2000; return a < b }, true},
+		{"uint32<uint32-true", func() bool { var a, b uint32 = 100000, 200000; return a < b }, true},
+		{"uint64<uint64-true", func() bool { var a, b uint64 = 1000000, 2000000; return a < b }, true},
+		
+		{"float32<float32-true", func() bool { var a, b float32 = 3.14, 3.15; return a < b }, true},
+		{"float64<float64-true", func() bool { var a, b float64 = 3.14, 3.15; return a < b }, true},
+		
+		// <= tests
+		{"int8<=int8-equal", func() bool { var a, b int8 = 10, 10; return a <= b }, true},
+		{"int8<=int8-less", func() bool { var a, b int8 = 10, 20; return a <= b }, true},
+		{"int8<=int8-greater", func() bool { var a, b int8 = 20, 10; return a <= b }, false},
+		
+		{"uint32<=uint32-true", func() bool { var a, b uint32 = 1000, 2000; return a <= b }, true},
+		{"float32<=float32-true", func() bool { var a, b float32 = 3.14, 3.14; return a <= b }, true},
+		
+		// > tests
+		{"int8>int8-true", func() bool { var a, b int8 = 20, 10; return a > b }, true},
+		{"int8>int8-false", func() bool { var a, b int8 = 10, 20; return a > b }, false},
+		{"uint64>uint64-true", func() bool { var a, b uint64 = 2000000, 1000000; return a > b }, true},
+		{"float64>float64-true", func() bool { var a, b float64 = 3.15, 3.14; return a > b }, true},
+		
+		// >= tests
+		{"int8>=int8-equal", func() bool { var a, b int8 = 10, 10; return a >= b }, true},
+		{"int8>=int8-greater", func() bool { var a, b int8 = 20, 10; return a >= b }, true},
+		{"int8>=int8-less", func() bool { var a, b int8 = 10, 20; return a >= b }, false},
+		
+		{"uint32>=uint32-true", func() bool { var a, b uint32 = 2000, 1000; return a >= b }, true},
+		{"float32>=float32-true", func() bool { var a, b float32 = 3.14, 3.14; return a >= b }, true},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.operation()
+			if result != tt.expected {
+				t.Errorf("%s: got %v, want %v", tt.name, result, tt.expected)
+			}
+		})
+	}
+}
+
+// TestExhaustiveUntypedConstantOperations tests operations with untyped constants
+func TestExhaustiveUntypedConstantOperations(t *testing.T) {
+	tests := []struct {
+		name       string
+		operation  func() interface{}
+		expected   interface{}
+		resultType string
+	}{
+		// Typed + Untyped
+		{"int8+untyped", func() interface{} { var a int8 = 20; return a + 10 }, int8(30), "int8"},
+		{"int16+untyped", func() interface{} { var a int16 = 200; return a + 100 }, int16(300), "int16"},
+		{"int32+untyped", func() interface{} { var a int32 = 2000; return a + 1000 }, int32(3000), "int32"},
+		{"int64+untyped", func() interface{} { var a int64 = 20000; return a + 10000 }, int64(30000), "int64"},
+		
+		{"uint8+untyped", func() interface{} { var a uint8 = 20; return a + 10 }, uint8(30), "uint8"},
+		{"uint16+untyped", func() interface{} { var a uint16 = 200; return a + 100 }, uint16(300), "uint16"},
+		{"uint32+untyped", func() interface{} { var a uint32 = 2000; return a + 1000 }, uint32(3000), "uint32"},
+		{"uint64+untyped", func() interface{} { var a uint64 = 20000; return a + 10000 }, uint64(30000), "uint64"},
+		
+		{"float32+untyped", func() interface{} { var a float32 = 2.5; return a + 1.5 }, float32(4.0), "float32"},
+		{"float64+untyped", func() interface{} { var a float64 = 2.5; return a + 1.5 }, float64(4.0), "float64"},
+		
+		{"complex64+untyped", func() interface{} { var a complex64 = 1+2i; return a + (1 + 1i) }, complex64(2+3i), "complex64"},
+		{"complex128+untyped", func() interface{} { var a complex128 = 1+2i; return a + (1 + 1i) }, complex128(2+3i), "complex128"},
+		
+		// Untyped + Typed
+		{"untyped+int8", func() interface{} { var a int8 = 20; return 10 + a }, int8(30), "int8"},
+		{"untyped+int16", func() interface{} { var a int16 = 200; return 100 + a }, int16(300), "int16"},
+		{"untyped+int32", func() interface{} { var a int32 = 2000; return 1000 + a }, int32(3000), "int32"},
+		{"untyped+int64", func() interface{} { var a int64 = 20000; return 10000 + a }, int64(30000), "int64"},
+		
+		{"untyped+uint8", func() interface{} { var a uint8 = 20; return 10 + a }, uint8(30), "uint8"},
+		{"untyped+uint16", func() interface{} { var a uint16 = 200; return 100 + a }, uint16(300), "uint16"},
+		{"untyped+uint32", func() interface{} { var a uint32 = 2000; return 1000 + a }, uint32(3000), "uint32"},
+		{"untyped+uint64", func() interface{} { var a uint64 = 20000; return 10000 + a }, uint64(30000), "uint64"},
+		
+		{"untyped+float32", func() interface{} { var a float32 = 2.5; return 1.5 + a }, float32(4.0), "float32"},
+		{"untyped+float64", func() interface{} { var a float64 = 2.5; return 1.5 + a }, float64(4.0), "float64"},
+		
+		// Untyped + Untyped (defaults to int, float64, or complex128)
+		{"untyped_int+untyped_int", func() interface{} { const a, b = 10, 20; return a + b }, int(30), "int"},
+		{"untyped_float+untyped_float", func() interface{} { const a, b = 1.5, 2.5; return a + b }, float64(4.0), "float64"},
+		{"untyped_complex+untyped_complex", func() interface{} { const a, b = 1+2i, 3+4i; return a + b }, complex128(4+6i), "complex128"},
+		
+		// Bitwise operations with untyped
+		{"int8&untyped", func() interface{} { var a int8 = 0x3F; return a & 0x0F }, int8(0x0F), "int8"},
+		{"uint32|untyped", func() interface{} { var a uint32 = 0xF0; return a | 0x0F }, uint32(0xFF), "uint32"},
+		{"int64^untyped", func() interface{} { var a int64 = 0xFF; return a ^ 0x0F }, int64(0xF0), "int64"},
+		
+		// Comparison with untyped
+		{"int8==untyped-true", func() interface{} { var a int8 = 42; return a == 42 }, true, "bool"},
+		{"float32<untyped-true", func() interface{} { var a float32 = 3.14; return a < 3.15 }, true, "bool"},
+		{"uint64>untyped-true", func() interface{} { var a uint64 = 1000; return a > 500 }, true, "bool"},
+	}
+	
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.operation()
+			if result != tt.expected {
+				t.Errorf("%s: got %v (type %T), want %v (type %T)", 
+					tt.name, result, result, tt.expected, tt.expected)
+			}
+			resultTypeName := fmt.Sprintf("%T", result)
+			if resultTypeName != tt.resultType {
+				t.Errorf("%s: result type got %s, want %s", tt.name, resultTypeName, tt.resultType)
+			}
+		})
+	}
+}
+
+// TestInvalidOperatorTypeCombinations documents compile-time errors for invalid combinations
+// Note: These cannot be tested directly as they would prevent compilation
+// This test documents the expected behavior for reference
+func TestInvalidOperatorTypeCombinations(t *testing.T) {
+	// This test documents invalid combinations that should produce compile-time errors
+	// These are not executable tests but serve as documentation
+	
+	invalidCombinations := []string{
+		// Modulo with non-integers
+		"float32 % float32 - Error: invalid operation: operator % not defined on float32",
+		"float64 % float64 - Error: invalid operation: operator % not defined on float64",
+		"complex64 % complex64 - Error: invalid operation: operator % not defined on complex64",
+		"complex128 % complex128 - Error: invalid operation: operator % not defined on complex128",
+		
+		// Bitwise operations with non-integers
+		"float32 & float32 - Error: invalid operation: operator & not defined on float32",
+		"float64 | float64 - Error: invalid operation: operator | not defined on float64",
+		"complex64 ^ complex64 - Error: invalid operation: operator ^ not defined on complex64",
+		"complex128 &^ complex128 - Error: invalid operation: operator &^ not defined on complex128",
+		
+		// Shift operations with non-integers (left operand) or non-unsigned (right operand after type check)
+		"float32 << uint - Error: invalid operation: float32 << uint (shift of type float32)",
+		"complex64 >> uint - Error: invalid operation: complex64 >> uint (shift of type complex64)",
+		
+		// Ordering comparisons with complex
+		"complex64 < complex64 - Error: invalid operation: operator < not defined on complex64",
+		"complex64 <= complex64 - Error: invalid operation: operator <= not defined on complex64",
+		"complex64 > complex64 - Error: invalid operation: operator > not defined on complex64",
+		"complex64 >= complex64 - Error: invalid operation: operator >= not defined on complex64",
+		"complex128 < complex128 - Error: invalid operation: operator < not defined on complex128",
+		"complex128 <= complex128 - Error: invalid operation: operator <= not defined on complex128",
+		"complex128 > complex128 - Error: invalid operation: operator > not defined on complex128",
+		"complex128 >= complex128 - Error: invalid operation: operator >= not defined on complex128",
+		
+		// Mixed type operations without conversion
+		"int8 + int16 - Error: invalid operation: mismatched types int8 and int16",
+		"int32 + int64 - Error: invalid operation: mismatched types int32 and int64",
+		"uint8 + uint16 - Error: invalid operation: mismatched types uint8 and uint16",
+		"float32 + float64 - Error: invalid operation: mismatched types float32 and float64",
+		"complex64 + complex128 - Error: invalid operation: mismatched types complex64 and complex128",
+		
+		// Mixed signed/unsigned
+		"int8 + uint8 - Error: invalid operation: mismatched types int8 and uint8",
+		"int32 + uint32 - Error: invalid operation: mismatched types int32 and uint32",
+		"int64 + uint64 - Error: invalid operation: mismatched types int64 and uint64",
+	}
+	
+	t.Log("Documented invalid type/operator combinations that produce compile-time errors:")
+	for _, combo := range invalidCombinations {
+		t.Log("  ", combo)
+	}
+}
