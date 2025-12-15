@@ -246,8 +246,9 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 		typ = prog.Uint()
 	}
 	if prog.SizeOf(idx.Type) != prog.SizeOf(typ) {
+		srcType := idx.Type
 		idx.Type = typ
-		idx.impl = castUintptr(b, idx.impl, typ)
+		idx.impl = castUintptr(b, idx.impl, srcType, typ)
 	}
 	// check range expr
 	var check Expr
@@ -429,8 +430,9 @@ func (b Builder) fitIntSize(n Expr) Expr {
 	prog := b.Prog
 	typ := prog.Int()
 	if prog.SizeOf(n.Type) != prog.SizeOf(typ) {
+		srcType := n.Type
 		n.Type = typ
-		n.impl = castInt(b, n.impl, typ)
+		n.impl = castInt(b, n.impl, srcType, typ)
 	}
 	return n
 }

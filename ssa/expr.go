@@ -814,7 +814,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	case *types.Basic:
 		switch typ.Kind() {
 		case types.Uintptr:
-			ret.impl = castUintptr(b, x.impl, t)
+			ret.impl = castUintptr(b, x.impl, x.Type, t)
 			return
 		case types.UnsafePointer:
 			ret.impl = castPtr(b.impl, x.impl, t.ll)
@@ -834,8 +834,9 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 				}
 			case *types.Basic:
 				if x.Type != b.Prog.Int32() {
+					srcType := x.Type
 					x.Type = b.Prog.Int32()
-					x.impl = castInt(b, x.impl, b.Prog.Int32())
+					x.impl = castInt(b, x.impl, srcType, b.Prog.Int32())
 				}
 				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
 				return
@@ -858,7 +859,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 			if typ.Info()&types.IsInteger != 0 {
 				// int <- int/float
 				if xtyp.Info()&types.IsInteger != 0 {
-					ret.impl = castInt(b, x.impl, t)
+					ret.impl = castInt(b, x.impl, x.Type, t)
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
 					if typ.Info()&types.IsUnsigned != 0 {
@@ -913,21 +914,23 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	panic("todo")
 }
 
-func castUintptr(b Builder, x llvm.Value, typ Type) llvm.Value {
+func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 	if x.Type().TypeKind() == llvm.PointerTypeKind {
 		return llvm.CreatePtrToInt(b.impl, x, typ.ll)
 	}
-	return castInt(b, x, typ)
+	return castInt(b, x, xtyp, typ)
 }
 
-func castInt(b Builder, x llvm.Value, typ Type) llvm.Value {
+func castInt(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 	xsize := b.Prog.td.TypeAllocSize(x.Type())
 	size := b.Prog.td.TypeAllocSize(typ.ll)
 	if xsize > size {
 		return llvm.CreateTrunc(b.impl, x, typ.ll)
-	} else if typ.kind == vkUnsigned {
+	} else if xtyp.kind == vkUnsigned {
+		// Source is unsigned, use zero extension
 		return llvm.CreateZExt(b.impl, x, typ.ll)
 	} else {
+		// Source is signed, use sign extension
 		return llvm.CreateSExt(b.impl, x, typ.ll)
 	}
 }

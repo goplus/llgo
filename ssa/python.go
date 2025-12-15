@@ -484,7 +484,7 @@ func (b Builder) PyVal(v Expr) (ret Expr) {
 func (b Builder) PyBool(bVal Expr) (ret Expr) {
 	fn := b.Pkg.pyFunc("PyBool_FromLong", b.Prog.tyBoolFromLong())
 	typ := b.Prog.Int32()
-	return b.Call(fn, Expr{castInt(b, bVal.impl, typ), typ})
+	return b.Call(fn, Expr{castInt(b, bVal.impl, bVal.Type, typ), typ})
 }
 
 // PyFloat(fltVal float64) *Object
