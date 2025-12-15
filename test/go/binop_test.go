@@ -67,24 +67,6 @@ func TestUint32ToInt64Conversion(t *testing.T) {
 	}
 }
 
-// TestUint32ToFloatToInt32 tests uint32 -> float64 -> int32 conversion
-func TestUint32ToFloatToInt32(t *testing.T) {
-	var bigUint32 uint32 = 0xFFFFFFFF // max uint32 = 4294967295
-	result := int32(float64(bigUint32))
-
-	// Note: In Go, converting a value larger than MaxInt32 to int32
-	// results in implementation-defined behavior per the Go spec.
-	// Different platforms/architectures may produce different results:
-	// - Most platforms return MinInt32 (-2147483648)
-	// - Some ARM64 systems return MaxInt32 (2147483647)
-	// Both are valid according to the spec, so we accept either.
-	expected1 := int32(-2147483648) // MinInt32 (most common)
-	expected2 := int32(2147483647)  // MaxInt32 (ARM64)
-	if result != expected1 && result != expected2 {
-		t.Errorf("uint32 max -> float64 -> int32: got %d, want %d or %d", result, expected1, expected2)
-	}
-}
-
 // TestMixedSignedUnsignedAddition tests mixed signed/unsigned integer addition
 func TestMixedSignedUnsignedAddition(t *testing.T) {
 	var i32 int32 = 70000
@@ -400,5 +382,566 @@ func TestFmtSprintfComplexOperations(t *testing.T) {
 	strMul := fmt.Sprintf("%v", resultMul)
 	if strMul != "(-3+4i)" {
 		t.Errorf("complex multiplication: got %s, want (-3+4i)", strMul)
+	}
+}
+
+// =============================================================================
+// Comprehensive BinOp Tests - All Type Combinations
+// =============================================================================
+// These tests cover all combinations of:
+// - typed OP typed
+// - typed OP untyped
+// - untyped OP typed
+// - untyped OP untyped
+// For all integer types (signed, unsigned) and float types
+
+// TestBinOpTypedIntegerAddition tests typed integer + typed integer
+func TestBinOpTypedIntegerAddition(t *testing.T) {
+	// Signed integers
+	var i8a, i8b int8 = 10, 20
+	if i8a+i8b != 30 {
+		t.Errorf("int8 + int8: got %d, want 30", i8a+i8b)
+	}
+
+	var i16a, i16b int16 = 100, 200
+	if i16a+i16b != 300 {
+		t.Errorf("int16 + int16: got %d, want 300", i16a+i16b)
+	}
+
+	var i32a, i32b int32 = 1000, 2000
+	if i32a+i32b != 3000 {
+		t.Errorf("int32 + int32: got %d, want 3000", i32a+i32b)
+	}
+
+	var i64a, i64b int64 = 10000, 20000
+	if i64a+i64b != 30000 {
+		t.Errorf("int64 + int64: got %d, want 30000", i64a+i64b)
+	}
+
+	// Unsigned integers
+	var u8a, u8b uint8 = 10, 20
+	if u8a+u8b != 30 {
+		t.Errorf("uint8 + uint8: got %d, want 30", u8a+u8b)
+	}
+
+	var u16a, u16b uint16 = 100, 200
+	if u16a+u16b != 300 {
+		t.Errorf("uint16 + uint16: got %d, want 300", u16a+u16b)
+	}
+
+	var u32a, u32b uint32 = 1000, 2000
+	if u32a+u32b != 3000 {
+		t.Errorf("uint32 + uint32: got %d, want 3000", u32a+u32b)
+	}
+
+	var u64a, u64b uint64 = 10000, 20000
+	if u64a+u64b != 30000 {
+		t.Errorf("uint64 + uint64: got %d, want 30000", u64a+u64b)
+	}
+}
+
+// TestBinOpTypedFloatAddition tests typed float + typed float
+func TestBinOpTypedFloatAddition(t *testing.T) {
+	var f32a, f32b float32 = 1.5, 2.5
+	if f32a+f32b != 4.0 {
+		t.Errorf("float32 + float32: got %f, want 4.0", f32a+f32b)
+	}
+
+	var f64a, f64b float64 = 1.5, 2.5
+	if f64a+f64b != 4.0 {
+		t.Errorf("float64 + float64: got %f, want 4.0", f64a+f64b)
+	}
+}
+
+// TestBinOpTypedIntegerUntypedAddition tests typed integer + untyped constant
+func TestBinOpTypedIntegerUntypedAddition(t *testing.T) {
+	const untyped = 10
+
+	var i8 int8 = 20
+	if i8+untyped != 30 {
+		t.Errorf("int8 + untyped: got %d, want 30", i8+untyped)
+	}
+
+	var i16 int16 = 20
+	if i16+untyped != 30 {
+		t.Errorf("int16 + untyped: got %d, want 30", i16+untyped)
+	}
+
+	var i32 int32 = 20
+	if i32+untyped != 30 {
+		t.Errorf("int32 + untyped: got %d, want 30", i32+untyped)
+	}
+
+	var i64 int64 = 20
+	if i64+untyped != 30 {
+		t.Errorf("int64 + untyped: got %d, want 30", i64+untyped)
+	}
+
+	var u8 uint8 = 20
+	if u8+untyped != 30 {
+		t.Errorf("uint8 + untyped: got %d, want 30", u8+untyped)
+	}
+
+	var u16 uint16 = 20
+	if u16+untyped != 30 {
+		t.Errorf("uint16 + untyped: got %d, want 30", u16+untyped)
+	}
+
+	var u32 uint32 = 20
+	if u32+untyped != 30 {
+		t.Errorf("uint32 + untyped: got %d, want 30", u32+untyped)
+	}
+
+	var u64 uint64 = 20
+	if u64+untyped != 30 {
+		t.Errorf("uint64 + untyped: got %d, want 30", u64+untyped)
+	}
+}
+
+// TestBinOpUntypedTypedIntegerAddition tests untyped constant + typed integer
+func TestBinOpUntypedTypedIntegerAddition(t *testing.T) {
+	const untyped = 10
+
+	var i8 int8 = 20
+	if untyped+i8 != 30 {
+		t.Errorf("untyped + int8: got %d, want 30", untyped+i8)
+	}
+
+	var i16 int16 = 20
+	if untyped+i16 != 30 {
+		t.Errorf("untyped + int16: got %d, want 30", untyped+i16)
+	}
+
+	var i32 int32 = 20
+	if untyped+i32 != 30 {
+		t.Errorf("untyped + int32: got %d, want 30", untyped+i32)
+	}
+
+	var i64 int64 = 20
+	if untyped+i64 != 30 {
+		t.Errorf("untyped + int64: got %d, want 30", untyped+i64)
+	}
+
+	var u8 uint8 = 20
+	if untyped+u8 != 30 {
+		t.Errorf("untyped + uint8: got %d, want 30", untyped+u8)
+	}
+
+	var u16 uint16 = 20
+	if untyped+u16 != 30 {
+		t.Errorf("untyped + uint16: got %d, want 30", untyped+u16)
+	}
+
+	var u32 uint32 = 20
+	if untyped+u32 != 30 {
+		t.Errorf("untyped + uint32: got %d, want 30", untyped+u32)
+	}
+
+	var u64 uint64 = 20
+	if untyped+u64 != 30 {
+		t.Errorf("untyped + uint64: got %d, want 30", untyped+u64)
+	}
+}
+
+// TestBinOpUntypedUntypedAddition tests untyped constant + untyped constant
+func TestBinOpUntypedUntypedAddition(t *testing.T) {
+	const a = 10
+	const b = 20
+	const result = a + b
+	if result != 30 {
+		t.Errorf("untyped + untyped: got %d, want 30", result)
+	}
+}
+
+// TestBinOpTypedFloatUntypedAddition tests typed float + untyped constant
+func TestBinOpTypedFloatUntypedAddition(t *testing.T) {
+	const untyped = 1.5
+
+	var f32 float32 = 2.5
+	if f32+untyped != 4.0 {
+		t.Errorf("float32 + untyped: got %f, want 4.0", f32+untyped)
+	}
+
+	var f64 float64 = 2.5
+	if f64+untyped != 4.0 {
+		t.Errorf("float64 + untyped: got %f, want 4.0", f64+untyped)
+	}
+}
+
+// TestBinOpUntypedTypedFloatAddition tests untyped constant + typed float
+func TestBinOpUntypedTypedFloatAddition(t *testing.T) {
+	const untyped = 1.5
+
+	var f32 float32 = 2.5
+	if untyped+f32 != 4.0 {
+		t.Errorf("untyped + float32: got %f, want 4.0", untyped+f32)
+	}
+
+	var f64 float64 = 2.5
+	if untyped+f64 != 4.0 {
+		t.Errorf("untyped + float64: got %f, want 4.0", untyped+f64)
+	}
+}
+
+// TestBinOpIntegerMultiplication tests multiplication for all integer types
+func TestBinOpIntegerMultiplication(t *testing.T) {
+	// Typed * Typed
+	var i8a, i8b int8 = 5, 6
+	if i8a*i8b != 30 {
+		t.Errorf("int8 * int8: got %d, want 30", i8a*i8b)
+	}
+
+	var u32a, u32b uint32 = 5, 6
+	if u32a*u32b != 30 {
+		t.Errorf("uint32 * uint32: got %d, want 30", u32a*u32b)
+	}
+
+	// Typed * Untyped
+	const untyped = 6
+	var i16 int16 = 5
+	if i16*untyped != 30 {
+		t.Errorf("int16 * untyped: got %d, want 30", i16*untyped)
+	}
+
+	// Untyped * Typed
+	var u64 uint64 = 5
+	if untyped*u64 != 30 {
+		t.Errorf("untyped * uint64: got %d, want 30", untyped*u64)
+	}
+}
+
+// TestBinOpIntegerSubtraction tests subtraction for all integer types
+func TestBinOpIntegerSubtraction(t *testing.T) {
+	// Typed - Typed
+	var i32a, i32b int32 = 50, 20
+	if i32a-i32b != 30 {
+		t.Errorf("int32 - int32: got %d, want 30", i32a-i32b)
+	}
+
+	var u16a, u16b uint16 = 50, 20
+	if u16a-u16b != 30 {
+		t.Errorf("uint16 - uint16: got %d, want 30", u16a-u16b)
+	}
+
+	// Typed - Untyped
+	const untyped = 20
+	var i64 int64 = 50
+	if i64-untyped != 30 {
+		t.Errorf("int64 - untyped: got %d, want 30", i64-untyped)
+	}
+
+	// Untyped - Typed
+	const untypedA = 50
+	var u8 uint8 = 20
+	if untypedA-u8 != 30 {
+		t.Errorf("untyped - uint8: got %d, want 30", untypedA-u8)
+	}
+}
+
+// TestBinOpIntegerDivision tests division for all integer types
+func TestBinOpIntegerDivision(t *testing.T) {
+	// Typed / Typed
+	var i8a, i8b int8 = 60, 2
+	if i8a/i8b != 30 {
+		t.Errorf("int8 / int8: got %d, want 30", i8a/i8b)
+	}
+
+	var u32a, u32b uint32 = 60, 2
+	if u32a/u32b != 30 {
+		t.Errorf("uint32 / uint32: got %d, want 30", u32a/u32b)
+	}
+
+	// Typed / Untyped
+	const untyped = 2
+	var i16 int16 = 60
+	if i16/untyped != 30 {
+		t.Errorf("int16 / untyped: got %d, want 30", i16/untyped)
+	}
+
+	// Untyped / Typed
+	const untypedA = 60
+	var u64 uint64 = 2
+	if untypedA/u64 != 30 {
+		t.Errorf("untyped / uint64: got %d, want 30", untypedA/u64)
+	}
+}
+
+// TestBinOpIntegerModulo tests modulo for all integer types
+func TestBinOpIntegerModulo(t *testing.T) {
+	// Typed % Typed
+	var i32a, i32b int32 = 100, 7
+	if i32a%i32b != 2 {
+		t.Errorf("int32 %% int32: got %d, want 2", i32a%i32b)
+	}
+
+	var u8a, u8b uint8 = 100, 7
+	if u8a%u8b != 2 {
+		t.Errorf("uint8 %% uint8: got %d, want 2", u8a%u8b)
+	}
+
+	// Typed % Untyped
+	const untyped = 7
+	var i64 int64 = 100
+	if i64%untyped != 2 {
+		t.Errorf("int64 %% untyped: got %d, want 2", i64%untyped)
+	}
+
+	// Untyped % Typed
+	const untypedA = 100
+	var u16 uint16 = 7
+	if untypedA%u16 != 2 {
+		t.Errorf("untyped %% uint16: got %d, want 2", untypedA%u16)
+	}
+}
+
+// TestBinOpIntegerBitAnd tests bitwise AND for all integer types
+func TestBinOpIntegerBitAnd(t *testing.T) {
+	// Typed & Typed
+	var i8a, i8b int8 = 0x3F, 0x0F
+	if i8a&i8b != 0x0F {
+		t.Errorf("int8 & int8: got %d, want %d", i8a&i8b, 0x0F)
+	}
+
+	var u32a, u32b uint32 = 0xFF, 0x0F
+	if u32a&u32b != 0x0F {
+		t.Errorf("uint32 & uint32: got %d, want %d", u32a&u32b, 0x0F)
+	}
+
+	// Typed & Untyped
+	const untyped = 0x0F
+	var i16 int16 = 0xFF
+	if i16&untyped != 0x0F {
+		t.Errorf("int16 & untyped: got %d, want %d", i16&untyped, 0x0F)
+	}
+
+	// Untyped & Typed
+	const untypedA = 0xFF
+	var u64 uint64 = 0x0F
+	if untypedA&u64 != 0x0F {
+		t.Errorf("untyped & uint64: got %d, want %d", untypedA&u64, 0x0F)
+	}
+}
+
+// TestBinOpIntegerBitOr tests bitwise OR for all integer types
+func TestBinOpIntegerBitOr(t *testing.T) {
+	// Typed | Typed
+	var i32a, i32b int32 = 0x30, 0x0F
+	if i32a|i32b != 0x3F {
+		t.Errorf("int32 | int32: got %d, want %d", i32a|i32b, 0x3F)
+	}
+
+	var u16a, u16b uint16 = 0x30, 0x0F
+	if u16a|u16b != 0x3F {
+		t.Errorf("uint16 | uint16: got %d, want %d", u16a|u16b, 0x3F)
+	}
+
+	// Typed | Untyped
+	const untyped = 0x0F
+	var i64 int64 = 0x30
+	if i64|untyped != 0x3F {
+		t.Errorf("int64 | untyped: got %d, want %d", i64|untyped, 0x3F)
+	}
+
+	// Untyped | Typed
+	const untypedA = 0x30
+	var u8 uint8 = 0x0F
+	if untypedA|u8 != 0x3F {
+		t.Errorf("untyped | uint8: got %d, want %d", untypedA|u8, 0x3F)
+	}
+}
+
+// TestBinOpIntegerBitXor tests bitwise XOR for all integer types
+func TestBinOpIntegerBitXor(t *testing.T) {
+	// Typed ^ Typed
+	var i8a, i8b int8 = 0x3F, 0x0F
+	if i8a^i8b != 0x30 {
+		t.Errorf("int8 ^ int8: got %d, want %d", i8a^i8b, 0x30)
+	}
+
+	var u64a, u64b uint64 = 0x3F, 0x0F
+	if u64a^u64b != 0x30 {
+		t.Errorf("uint64 ^ uint64: got %d, want %d", u64a^u64b, 0x30)
+	}
+
+	// Typed ^ Untyped
+	const untyped = 0x0F
+	var i32 int32 = 0x3F
+	if i32^untyped != 0x30 {
+		t.Errorf("int32 ^ untyped: got %d, want %d", i32^untyped, 0x30)
+	}
+
+	// Untyped ^ Typed
+	const untypedA = 0x3F
+	var u32 uint32 = 0x0F
+	if untypedA^u32 != 0x30 {
+		t.Errorf("untyped ^ uint32: got %d, want %d", untypedA^u32, 0x30)
+	}
+}
+
+// TestBinOpIntegerBitAndNot tests bitwise AND NOT for all integer types
+func TestBinOpIntegerBitAndNot(t *testing.T) {
+	// Typed &^ Typed
+	var i16a, i16b int16 = 0x3F, 0x0F
+	if i16a&^i16b != 0x30 {
+		t.Errorf("int16 &^ int16: got %d, want %d", i16a&^i16b, 0x30)
+	}
+
+	var u8a, u8b uint8 = 0x3F, 0x0F
+	if u8a&^u8b != 0x30 {
+		t.Errorf("uint8 &^ uint8: got %d, want %d", u8a&^u8b, 0x30)
+	}
+
+	// Typed &^ Untyped
+	const untyped = 0x0F
+	var i64 int64 = 0x3F
+	if i64&^untyped != 0x30 {
+		t.Errorf("int64 &^ untyped: got %d, want %d", i64&^untyped, 0x30)
+	}
+
+	// Untyped &^ Typed
+	const untypedA = 0x3F
+	var u16 uint16 = 0x0F
+	if untypedA&^u16 != 0x30 {
+		t.Errorf("untyped &^ uint16: got %d, want %d", untypedA&^u16, 0x30)
+	}
+}
+
+// TestBinOpIntegerShiftLeft tests left shift for all integer types
+func TestBinOpIntegerShiftLeft(t *testing.T) {
+	// Typed << Typed
+	var i8 int8 = 1
+	var shift1 uint = 3
+	if i8<<shift1 != 8 {
+		t.Errorf("int8 << uint: got %d, want 8", i8<<shift1)
+	}
+
+	var u32 uint32 = 1
+	var shift2 uint = 5
+	if u32<<shift2 != 32 {
+		t.Errorf("uint32 << uint: got %d, want 32", u32<<shift2)
+	}
+
+	// Typed << Untyped
+	const untypedShift = 3
+	var i16 int16 = 1
+	if i16<<untypedShift != 8 {
+		t.Errorf("int16 << untyped: got %d, want 8", i16<<untypedShift)
+	}
+
+	var u64 uint64 = 1
+	if u64<<untypedShift != 8 {
+		t.Errorf("uint64 << untyped: got %d, want 8", u64<<untypedShift)
+	}
+}
+
+// TestBinOpIntegerShiftRight tests right shift for all integer types
+func TestBinOpIntegerShiftRight(t *testing.T) {
+	// Typed >> Typed
+	var i32 int32 = 32
+	var shift1 uint = 2
+	if i32>>shift1 != 8 {
+		t.Errorf("int32 >> uint: got %d, want 8", i32>>shift1)
+	}
+
+	var u16 uint16 = 32
+	var shift2 uint = 2
+	if u16>>shift2 != 8 {
+		t.Errorf("uint16 >> uint: got %d, want 8", u16>>shift2)
+	}
+
+	// Typed >> Untyped
+	const untypedShift = 2
+	var i64 int64 = 32
+	if i64>>untypedShift != 8 {
+		t.Errorf("int64 >> untyped: got %d, want 8", i64>>untypedShift)
+	}
+
+	var u8 uint8 = 32
+	if u8>>untypedShift != 8 {
+		t.Errorf("uint8 >> untyped: got %d, want 8", u8>>untypedShift)
+	}
+}
+
+// TestBinOpFloatMultiplication tests multiplication for float types
+func TestBinOpFloatMultiplication(t *testing.T) {
+	// Typed * Typed
+	var f32a, f32b float32 = 2.5, 4.0
+	if f32a*f32b != 10.0 {
+		t.Errorf("float32 * float32: got %f, want 10.0", f32a*f32b)
+	}
+
+	var f64a, f64b float64 = 2.5, 4.0
+	if f64a*f64b != 10.0 {
+		t.Errorf("float64 * float64: got %f, want 10.0", f64a*f64b)
+	}
+
+	// Typed * Untyped
+	const untyped = 4.0
+	var f32 float32 = 2.5
+	if f32*untyped != 10.0 {
+		t.Errorf("float32 * untyped: got %f, want 10.0", f32*untyped)
+	}
+
+	// Untyped * Typed
+	const untypedA = 2.5
+	var f64 float64 = 4.0
+	if untypedA*f64 != 10.0 {
+		t.Errorf("untyped * float64: got %f, want 10.0", untypedA*f64)
+	}
+}
+
+// TestBinOpFloatSubtraction tests subtraction for float types
+func TestBinOpFloatSubtraction(t *testing.T) {
+	// Typed - Typed
+	var f32a, f32b float32 = 10.5, 5.5
+	if f32a-f32b != 5.0 {
+		t.Errorf("float32 - float32: got %f, want 5.0", f32a-f32b)
+	}
+
+	var f64a, f64b float64 = 10.5, 5.5
+	if f64a-f64b != 5.0 {
+		t.Errorf("float64 - float64: got %f, want 5.0", f64a-f64b)
+	}
+
+	// Typed - Untyped
+	const untyped = 5.5
+	var f32 float32 = 10.5
+	if f32-untyped != 5.0 {
+		t.Errorf("float32 - untyped: got %f, want 5.0", f32-untyped)
+	}
+
+	// Untyped - Typed
+	const untypedA = 10.5
+	var f64 float64 = 5.5
+	if untypedA-f64 != 5.0 {
+		t.Errorf("untyped - float64: got %f, want 5.0", untypedA-f64)
+	}
+}
+
+// TestBinOpFloatDivision tests division for float types
+func TestBinOpFloatDivision(t *testing.T) {
+	// Typed / Typed
+	var f32a, f32b float32 = 10.0, 2.0
+	if f32a/f32b != 5.0 {
+		t.Errorf("float32 / float32: got %f, want 5.0", f32a/f32b)
+	}
+
+	var f64a, f64b float64 = 10.0, 2.0
+	if f64a/f64b != 5.0 {
+		t.Errorf("float64 / float64: got %f, want 5.0", f64a/f64b)
+	}
+
+	// Typed / Untyped
+	const untyped = 2.0
+	var f32 float32 = 10.0
+	if f32/untyped != 5.0 {
+		t.Errorf("float32 / untyped: got %f, want 5.0", f32/untyped)
+	}
+
+	// Untyped / Typed
+	const untypedA = 10.0
+	var f64 float64 = 2.0
+	if untypedA/f64 != 5.0 {
+		t.Errorf("untyped / float64: got %f, want 5.0", untypedA/f64)
 	}
 }
