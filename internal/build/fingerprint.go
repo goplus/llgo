@@ -20,13 +20,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"hash/fnv"
 	"io"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/cespare/xxhash/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -256,8 +256,8 @@ func digestBytes(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// fastHashFile calculates a fast FNV-1a 64-bit hash of a file.
-// This is much faster than SHA256 and suitable for cache fingerprinting.
+// fastHashFile calculates a fast XXH3 64-bit hash of a file.
+// XXH3 is extremely fast and suitable for cache fingerprinting.
 func fastHashFile(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -265,7 +265,7 @@ func fastHashFile(path string) (string, error) {
 	}
 	defer f.Close()
 
-	h := fnv.New64a()
+	h := xxhash.New()
 	buf := make([]byte, 32*1024)
 	if _, err := io.CopyBuffer(h, f, buf); err != nil {
 		return "", err
