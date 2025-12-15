@@ -540,7 +540,7 @@ var (
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])), false)
 )
 
-func (b Builder) abiTypeFields(t types.Type) (fields []llvm.Value) {
+func (b Builder) abiBaseFields(t types.Type) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
 	abi := pkg.abi
@@ -580,6 +580,12 @@ func (b Builder) abiTypeFields(t types.Type) (fields []llvm.Value) {
 	fields = append(fields, prog.Nil(prog.Pointer(prog.Byte())).impl)
 	// Str_       string
 	fields = append(fields, b.Str(abi.Str(t)).impl)
+	// PtrToThis_ *Type
+	if _, ok := t.(*types.Pointer); ok {
+		fields = append(fields, prog.Nil(prog.AbiTypePtr()).impl)
+	} else {
+		fields = append(fields, b.getAbiType(types.NewPointer(t)).impl)
+	}
 	return
 }
 
@@ -629,6 +635,37 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 	})
 }
 
+/*
+type Imethod struct {
+	Name_ string    // name of method
+	Typ_  *FuncType // .(*FuncType) underneath
+}
+*/
+
+func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Value {
+	prog := b.Prog
+	ft := prog.rtType("Imethod")
+	n := t.NumMethods()
+	fields := make([]llvm.Value, n)
+	for i := 0; i < n; i++ {
+		f := t.Method(i)
+		var values []llvm.Value
+		values = append(values, b.Str(f.Name()).impl)
+		values = append(values, b.getAbiType(f.Type()).impl)
+		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+	}
+	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
+	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
+	g.Init(data)
+	size := uint64(n)
+	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
+		g.impl,
+		prog.IntVal(size, prog.Int()).impl,
+		prog.IntVal(size, prog.Int()).impl,
+	})
+}
+
 func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	prog := b.Prog
 	n := t.Len()
@@ -651,6 +688,65 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 
 const newabi = true
 
+func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Value) {
+	prog := b.Prog
+	pkg := b.Pkg
+	switch t := t.(type) {
+	case *types.Basic:
+	case *types.Pointer:
+		fields = []llvm.Value{
+			b.getAbiType(t.Elem()).impl,
+		}
+	case *types.Chan:
+		dir, _ := abi.ChanDir(t.Dir())
+		fields = []llvm.Value{
+			b.getAbiType(t.Elem()).impl,
+			prog.IntVal(uint64(dir), prog.Int()).impl,
+		}
+	case *types.Slice:
+		fields = []llvm.Value{
+			b.getAbiType(t.Elem()).impl,
+		}
+	case *types.Array:
+		fields = []llvm.Value{
+			b.getAbiType(t.Elem()).impl,
+			b.getAbiType(types.NewSlice(t.Elem())).impl,
+			prog.IntVal(uint64(t.Len()), prog.Uintptr()).impl,
+		}
+	case *types.Map:
+		bucket := pkg.abi.MapBucket(t)
+		flags := pkg.abi.MapFlags(t)
+		fields = []llvm.Value{
+			b.getAbiType(t.Key()).impl,
+			b.getAbiType(t.Elem()).impl,
+			b.getAbiType(bucket).impl,
+			b.rtClosure("typehash").impl,
+			prog.IntVal(uint64(pkg.abi.Size(t.Key())), prog.Byte()).impl,
+			prog.IntVal(uint64(pkg.abi.Size(t.Elem())), prog.Byte()).impl,
+			prog.IntVal(uint64(pkg.abi.Size(bucket)), prog.Uint16()).impl,
+			prog.IntVal(uint64(flags), prog.Uint32()).impl,
+		}
+	case *types.Signature:
+		fields = []llvm.Value{
+			b.abiTuples(t.Params(), name+"$in"),
+			b.abiTuples(t.Results(), name+"$out"),
+		}
+	case *types.Struct:
+		fields = []llvm.Value{
+			b.Str(pkg.Path()).impl,
+			b.abiStructFields(t, name+"$fields"),
+		}
+	case *types.Interface:
+		fields = []llvm.Value{
+			b.Str(pkg.Path()).impl,
+			b.abiInterfaceImethods(t, name+"$imethods"),
+		}
+	case *types.Named:
+		return b.getExtendedFields(t.Underlying(), name)
+	}
+	return
+}
+
 func (b Builder) getAbiType(t types.Type) Expr {
 	if !newabi {
 		return Expr{}
@@ -666,65 +762,11 @@ func (b Builder) getAbiType(t types.Type) Expr {
 	if g == nil {
 		rt := prog.rtType(pkg.abi.RuntimeName(t))
 		g = pkg.doNewVar(name, prog.Pointer(rt))
-		fields := b.abiTypeFields(t)
-		// PtrToThis_ *Type
-		if _, ok := t.(*types.Pointer); ok {
-			fields = append(fields, prog.Nil(prog.AbiTypePtr()).impl)
-		} else {
-			fields = append(fields, b.getAbiType(types.NewPointer(t)).impl)
-		}
-		switch t := t.(type) {
-		case *types.Basic:
-		case *types.Pointer:
-			fields = []llvm.Value{
+		fields := b.abiBaseFields(t)
+		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
+			fields = append([]llvm.Value{
 				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.getAbiType(t.Elem()).impl,
-			}
-		case *types.Chan:
-			dir, _ := abi.ChanDir(t.Dir())
-			fields = []llvm.Value{
-				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.getAbiType(t.Elem()).impl,
-				prog.IntVal(uint64(dir), prog.Int()).impl,
-			}
-		case *types.Slice:
-			fields = []llvm.Value{
-				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.getAbiType(t.Elem()).impl,
-			}
-		case *types.Array:
-			fields = []llvm.Value{
-				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.getAbiType(t.Elem()).impl,
-				b.getAbiType(types.NewSlice(t.Elem())).impl,
-				prog.IntVal(uint64(t.Len()), prog.Uintptr()).impl,
-			}
-		case *types.Map:
-			bucket := pkg.abi.MapBucket(t)
-			flags := pkg.abi.MapFlags(t)
-			fields = []llvm.Value{
-				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.getAbiType(t.Key()).impl,
-				b.getAbiType(t.Elem()).impl,
-				b.getAbiType(bucket).impl,
-				b.rtClosure("typehash").impl,
-				prog.IntVal(uint64(pkg.abi.Size(t.Key())), prog.Byte()).impl,
-				prog.IntVal(uint64(pkg.abi.Size(t.Elem())), prog.Byte()).impl,
-				prog.IntVal(uint64(pkg.abi.Size(bucket)), prog.Uint16()).impl,
-				prog.IntVal(uint64(flags), prog.Uint32()).impl,
-			}
-		case *types.Signature:
-			fields = []llvm.Value{
-				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.abiTuples(t.Params(), name+"$in"),
-				b.abiTuples(t.Results(), name+"$out"),
-			}
-		case *types.Struct:
-			fields = []llvm.Value{
-				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
-				b.Str(pkg.Path()).impl,
-				b.abiStructFields(t, name+"$fields"),
-			}
+			}, exts...)
 		}
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
 		if pub {
