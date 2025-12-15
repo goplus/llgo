@@ -347,23 +347,23 @@ static inline int usb_serial_jtag_ll_write_txfifo(const uint8_t *buf, uint32_t w
 #include <sys/types.h>
 
 /**
- * @brief Write one character to USB Serial JTAG (non-blocking, simplified)
+ * @brief Write one character to USB Serial JTAG (blocking)
  *
- * If FIFO is full, character is dropped silently.
- * This is a bare-metal implementation without timeout or retry logic.
+ * Waits until FIFO has space before writing.
  */
 static void usb_serial_jtag_write_char(char c) {
-    // Check if TX FIFO has space
-    if (usb_serial_jtag_ll_txfifo_writable()) {
-        uint8_t byte = (uint8_t)c;
-        usb_serial_jtag_ll_write_txfifo(&byte, 1);
-
-        // Flush on newline to ensure output is displayed immediately
-        if (c == '\n') {
-            usb_serial_jtag_ll_txfifo_flush();
-        }
+    // Wait until TX FIFO has space (blocking)
+    while (!usb_serial_jtag_ll_txfifo_writable()) {
+        // Busy wait
     }
-    // If FIFO is full, character is dropped (non-blocking behavior)
+
+    uint8_t byte = (uint8_t)c;
+    usb_serial_jtag_ll_write_txfifo(&byte, 1);
+
+    // Flush on newline to ensure output is displayed immediately
+    if (c == '\n') {
+        usb_serial_jtag_ll_txfifo_flush();
+    }
 }
 
 /**
