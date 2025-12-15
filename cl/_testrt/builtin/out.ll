@@ -401,7 +401,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %159)
   %160 = getelementptr inbounds i8, ptr %157, i64 3
   %161 = load i8, ptr %160, align 1
-  %162 = sext i8 %161 to i32
+  %162 = zext i8 %161 to i32
   %163 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %162)
   %164 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %154, 0
   %165 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %154, 1

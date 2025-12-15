@@ -219,7 +219,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr"(i32 %0, i64 %1) {
 _llgo_0:
-  %2 = zext i32 %0 to i64
+  %2 = sext i32 %0 to i64
   %3 = icmp ne i64 %2, %1
   br i1 %3, label %_llgo_1, label %_llgo_2
 

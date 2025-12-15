@@ -98,12 +98,12 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %41)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %42 = load i8, ptr getelementptr inbounds (i8, ptr @0, i64 2), align 1
-  %43 = sext i8 %42 to i32
+  %43 = zext i8 %42 to i32
   %44 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %43)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %44)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %45 = load i8, ptr getelementptr inbounds (i8, ptr @0, i64 1), align 1
-  %46 = sext i8 %45 to i32
+  %46 = zext i8 %45 to i32
   %47 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %46)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %47)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
