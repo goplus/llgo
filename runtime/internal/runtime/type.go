@@ -16,6 +16,7 @@ type functype = abi.FuncType
 type slicetype = abi.SliceType
 type chantype = abi.ChanType
 type structfield = abi.StructField
+type uncommonType = abi.UncommonType
 
 /*
 type maptype = abi.MapType
