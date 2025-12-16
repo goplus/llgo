@@ -548,29 +548,33 @@ var (
 func (b Builder) abiBaseFields(t types.Type, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
-	abi := pkg.abi
+	ab := pkg.abi
 	// Size uintptr
-	fields = append(fields, prog.IntVal(uint64(abi.Size(t)), prog.Uintptr()).impl)
+	fields = append(fields, prog.IntVal(uint64(ab.Size(t)), prog.Uintptr()).impl)
 	// PtrBytes uintptr
-	fields = append(fields, prog.IntVal(uint64(abi.PtrBytes(t)), prog.Uintptr()).impl)
+	fields = append(fields, prog.IntVal(uint64(ab.PtrBytes(t)), prog.Uintptr()).impl)
 	// Hash uint32
-	fields = append(fields, prog.IntVal(uint64(abi.Hash(t)), prog.Uint32()).impl)
+	fields = append(fields, prog.IntVal(uint64(ab.Hash(t)), prog.Uint32()).impl)
 	// TFlag uint8
-	tflag := uint64(abi.TFlag(t))
+	tflag := uint64(ab.TFlag(t))
 	if hasUncommon {
 		tflag |= (1 << 0) // TFlagUncommon
 	}
 	fields = append(fields, prog.IntVal(tflag, prog.Byte()).impl)
 	// Align uint8
-	align := prog.IntVal(uint64(abi.Align(t)), prog.Byte()).impl
+	align := prog.IntVal(uint64(ab.Align(t)), prog.Byte()).impl
 	fields = append(fields, align)
 	// FieldAlign uint8
 	fields = append(fields, align)
 	// Kind uint8
-	fields = append(fields, prog.IntVal(uint64(abi.Kind(t)), prog.Byte()).impl)
+	kind := uint8(ab.Kind(t))
+	if k, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); k != abi.Indirect {
+		kind |= (1 << 5) //KindDirectIface
+	}
+	fields = append(fields, prog.IntVal(uint64(kind), prog.Byte()).impl)
 	// Equal func(unsafe.Pointer, unsafe.Pointer) bool
 	var equal Expr
-	switch name := abi.EqualName(t); name {
+	switch name := ab.EqualName(t); name {
 	case "":
 		equal = prog.Nil(prog.Type(equalFunc, InGo))
 	case "structequal", "arrayequal":
@@ -584,7 +588,7 @@ func (b Builder) abiBaseFields(t types.Type, hasUncommon bool) (fields []llvm.Va
 	// GCData     *byte
 	fields = append(fields, prog.Nil(prog.Pointer(prog.Byte())).impl)
 	// Str_       string
-	fields = append(fields, b.Str(abi.Str(t)).impl)
+	fields = append(fields, b.Str(ab.Str(t)).impl)
 	// PtrToThis_ *Type
 	if _, ok := t.(*types.Pointer); ok {
 		fields = append(fields, prog.Nil(prog.AbiTypePtr()).impl)
@@ -862,7 +866,7 @@ func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		mSig := m.Type().(*types.Signature)
 		tfn := b.getMethodFunc(mPkg, mName, mSig)
 		ifn := tfn
-		if !m.Indirect() {
+		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
 			pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
 			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
 			ifn = b.getMethodFunc(mPkg, mName, pSig)
@@ -939,13 +943,10 @@ func (b Builder) getAbiType(t types.Type) Expr {
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
-	if g != nil && !g.IsNil() {
-		return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
-			llvm.ConstInt(prog.Int32().ll, 0, false),
-			llvm.ConstInt(prog.Int32().ll, 0, false),
-		}), prog.AbiTypePtr()}
-	}
-	return prog.Nil(prog.AbiTypePtr())
+	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
+		llvm.ConstInt(prog.Int32().ll, 0, false),
+		llvm.ConstInt(prog.Int32().ll, 0, false),
+	}), prog.AbiTypePtr()}
 }
 
 // -----------------------------------------------------------------------------

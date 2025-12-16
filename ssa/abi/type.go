@@ -447,7 +447,7 @@ func (b *Builder) EqualName(t types.Type) string {
 		case types.Int64, types.Uint64:
 			return "memequal64"
 		case types.Int, types.Uint, types.Uintptr:
-			if b.PtrSize == 64 {
+			if b.PtrSize == 8 {
 				return "memequal64"
 			}
 			return "memequal32"
