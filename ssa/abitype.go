@@ -539,6 +539,10 @@ var (
 	equalFunc = types.NewSignature(nil, types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
 		types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer])),
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])), false)
+	// p unsafe.Pointer, h uintptr) uintptr
+	hashFunc = types.NewSignature(nil, types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])),
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])), false)
 )
 
 func (b Builder) abiBaseFields(t types.Type, hasUncommon bool) (fields []llvm.Value) {
@@ -734,11 +738,14 @@ func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Val
 	case *types.Map:
 		bucket := pkg.abi.MapBucket(t)
 		flags := pkg.abi.MapFlags(t)
+		hash := b.Pkg.rtFunc("typehash")
+		env := b.getAbiType(t.Elem())
+		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
 		fields = []llvm.Value{
 			b.getAbiType(t.Key()).impl,
 			b.getAbiType(t.Elem()).impl,
 			b.getAbiType(bucket).impl,
-			b.rtClosure("typehash").impl,
+			hasher.impl,
 			prog.IntVal(uint64(pkg.abi.Size(t.Key())), prog.Byte()).impl,
 			prog.IntVal(uint64(pkg.abi.Size(t.Elem())), prog.Byte()).impl,
 			prog.IntVal(uint64(pkg.abi.Size(bucket)), prog.Uint16()).impl,
