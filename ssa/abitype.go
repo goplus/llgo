@@ -561,11 +561,7 @@ func (b Builder) abiBaseFields(t types.Type, hasUncommon bool) (fields []llvm.Va
 	align := prog.IntVal(uint64(abi.Align(t)), prog.Byte()).impl
 	fields = append(fields, align)
 	// FieldAlign uint8
-	if _, ok := t.Underlying().(*types.Struct); ok {
-		fields = append(fields, align)
-	} else {
-		fields = append(fields, prog.IntVal(0, prog.Byte()).impl)
-	}
+	fields = append(fields, align)
 	// Kind uint8
 	fields = append(fields, prog.IntVal(uint64(abi.Kind(t)), prog.Byte()).impl)
 	// Equal func(unsafe.Pointer, unsafe.Pointer) bool
@@ -635,6 +631,7 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
 	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
 	g.Init(data)
+	g.impl.SetLinkage(llvm.WeakODRLinkage)
 	size := uint64(n)
 	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
 		g.impl,
@@ -644,6 +641,12 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 }
 
 /*
+type InterfaceType struct {
+	Type
+	PkgPath_ string    // import path
+	Methods  []Imethod // sorted by hash
+}
+
 type Imethod struct {
 	Name_ string    // name of method
 	Typ_  *FuncType // .(*FuncType) underneath
@@ -661,7 +664,11 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 	for i := 0; i < n; i++ {
 		f := t.Method(i)
 		var values []llvm.Value
-		values = append(values, b.Str(f.Name()).impl)
+		name := f.Name()
+		if !token.IsExported(name) {
+			name = abi.FullName(f.Pkg(), name)
+		}
+		values = append(values, b.Str(name).impl)
 		values = append(values, b.getAbiType(f.Type()).impl)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 	}
@@ -669,6 +676,7 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
 	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
 	g.Init(data)
+	g.impl.SetLinkage(llvm.WeakODRLinkage)
 	size := uint64(n)
 	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
 		g.impl,
@@ -689,6 +697,7 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
 	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
 	g.Init(data)
+	g.impl.SetLinkage(llvm.WeakODRLinkage)
 	size := uint64(n)
 	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
 		g.impl,
@@ -697,12 +706,10 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	})
 }
 
-const newabi = true
-
 func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
-	switch t := t.(type) {
+	switch t := types.Unalias(t).(type) {
 	case *types.Basic:
 	case *types.Pointer:
 		fields = []llvm.Value{
@@ -758,28 +765,6 @@ func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Val
 	return
 }
 
-/*
-type Method struct {
-	Name_ string    // name of method
-	Mtyp_ *FuncType // method type (without receiver)
-	Ifn_  Text      // fn used in interface call (one-word receiver)
-	Tfn_  Text      // fn used for normal method call
-}
-
-type UncommonType struct {
-	PkgPath_ string // import path; empty for built-in types like int, string
-	Mcount   uint16 // number of methods
-	Xcount   uint16 // number of exported methods
-	Moff     uint32 // offset from this uncommontype to [mcount]Method
-}
-
-struct {
-	Type
-	UncommonType
-	[N]Method
-}
-*/
-
 func (b Builder) getUncommonPkg(t types.Type) *types.Package {
 retry:
 	switch typ := types.Unalias(t).(type) {
@@ -793,8 +778,14 @@ retry:
 }
 
 func (b Builder) getUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok bool) {
-	switch t.(type) {
+	switch t := types.Unalias(t).(type) {
 	case *types.Named:
+		if _, b := t.Underlying().(*types.Interface); b {
+			return
+		}
+		if b.Prog.checkRuntimeNamed != nil {
+			b.Prog.checkRuntimeNamed(b.Pkg, t)
+		}
 		return types.NewMethodSet(t), true
 	case *types.Pointer, *types.Struct:
 		if mset := types.NewMethodSet(t); mset.Len() != 0 {
@@ -803,6 +794,15 @@ func (b Builder) getUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok b
 	}
 	return
 }
+
+/*
+type UncommonType struct {
+	PkgPath_ string // import path; empty for built-in types like int, string
+	Mcount   uint16 // number of methods
+	Xcount   uint16 // number of exported methods
+	Moff     uint32 // offset from this uncommontype to [mcount]Method
+}
+*/
 
 func (b Builder) getUncommonType(t types.Type, mset *types.MethodSet) llvm.Value {
 	prog := b.Prog
@@ -823,32 +823,80 @@ func (b Builder) getUncommonType(t types.Type, mset *types.MethodSet) llvm.Value
 	return llvm.ConstNamedStruct(ft.ll, fields)
 }
 
+/*
+type Method struct {
+	Name_ string    // name of method
+	Mtyp_ *FuncType // method type (without receiver)
+	Ifn_  Text      // fn used in interface call (one-word receiver)
+	Tfn_  Text      // fn used for normal method call
+}
+*/
+
 func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Value {
 	prog := b.Prog
 	ft := prog.rtType("Method")
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
+	pkg := b.getUncommonPkg(t)
+	var mPkg *types.Package
 	for i := 0; i < n; i++ {
-		f := mset.At(i)
+		m := mset.At(i)
+		obj := m.Obj()
+		mName := obj.Name()
+		if token.IsExported(mName) {
+			mPkg = pkg
+		} else {
+			mPkg = obj.Pkg()
+		}
+		name := b.Str(mName).impl
+		if !token.IsExported(mName) {
+			name = b.Str(abi.FullName(mPkg, mName)).impl
+		}
+		mSig := m.Type().(*types.Signature)
+		tfn := b.getMethodFunc(mPkg, mName, mSig)
+		ifn := tfn
+		if !m.Indirect() {
+			pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
+			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
+			ifn = b.getMethodFunc(mPkg, mName, pSig)
+		}
 		var values []llvm.Value
-		values = append(values, b.Str(f.Obj().Name()).impl)
-		values = append(values, b.getAbiType(f.Type()).impl)
-		values = append(values, prog.Nil(prog.VoidPtr()).impl)
-		values = append(values, prog.Nil(prog.VoidPtr()).impl)
+		values = append(values, name)
+		values = append(values, b.getAbiType(m.Type()).impl)
+		values = append(values, ifn)
+		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 	}
 	return llvm.ConstArray(ft.ll, fields)
 }
 
+func (b Builder) getMethodFunc(mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
+	fullName := FuncName(mPkg, mName, mSig.Recv(), false)
+	if mSig.TypeParams().Len() > 0 || mSig.RecvTypeParams().Len() > 0 {
+		if !b.Pkg.Prog.FuncCompiled(fullName) {
+			return
+		}
+	}
+	if b.Pkg.fnlink != nil {
+		fullName = b.Pkg.fnlink(fullName)
+	}
+	return b.Pkg.NewFunc(fullName, mSig, InGo).impl // TODO(xsw): use rawType to speed up
+}
+
+/*
+	struct Type {
+		CommonType (_type)
+		Extended
+	}
+
+	struct {
+		Type
+		UncommonType
+		[N]Method
+	}
+*/
 func (b Builder) getAbiType(t types.Type) Expr {
-	if !newabi {
-		return Expr{}
-	}
-	if b.Pkg.Path() == "github.com/goplus/llgo/runtime/internal/runtime" {
-		return Expr{}
-	}
-	name, pub := b.Pkg.abi.TypeName(t)
-	name = "abi." + name
+	name, _ := b.Pkg.abi.TypeName(t)
 	g := b.Pkg.VarOf(name)
 	prog := b.Prog
 	pkg := b.Pkg
@@ -867,6 +915,7 @@ func (b Builder) getAbiType(t types.Type) Expr {
 			typ = types.NewStruct(fields, nil)
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
+
 		fields := b.abiBaseFields(t, hasUncommon)
 		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
@@ -881,9 +930,7 @@ func (b Builder) getAbiType(t types.Type) Expr {
 			}
 		}
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
-		if pub {
-			g.impl.SetLinkage(llvm.WeakODRLinkage)
-		}
+		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
 	if g != nil && !g.IsNil() {
 		return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
