@@ -740,6 +740,22 @@ func (p Package) closureStub(b Builder, t types.Type, v Expr) Expr {
 	name := v.impl.Name()
 	prog := b.Prog
 	nilVal := prog.Nil(prog.VoidPtr()).impl
+
+	// Only create a stub for function declarations or function pointers.
+	// For vkFuncPtr, we can only create a stub if it's a named global function.
+	// Temporary values (unnamed or register names starting with %) cannot be
+	// referenced across function contexts.
+	if v.kind != vkFuncDecl && v.kind != vkFuncPtr {
+		// For other types, wrap the value directly as a closure
+		return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
+	}
+
+	// Check if v has a proper global name
+	if name == "" || (len(name) > 0 && name[0] == '%') {
+		// Temporary value - cannot create a valid stub
+		return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
+	}
+
 	if fn, ok := p.stubs[name]; ok {
 		v = fn.Expr
 	} else {
