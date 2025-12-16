@@ -115,4 +115,8 @@ type SigjmpBuf struct {
 	Unused [setjmp.SigjmpBufSize]byte
 }
 
+func getSigjmpBufSize() uintptr {
+	return unsafe.Sizeof(SigjmpBuf{})
+}
+
 // -----------------------------------------------------------------------------
