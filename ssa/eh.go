@@ -16,22 +16,6 @@
 
 package ssa
 
-/*
-#include <setjmp.h>
-#ifdef WIN32
-#if defined(__MINGW64__) && !defined(_UCRT)
-typedef intptr_t sigjmp_buf[5];
-#define sigsetjmp(x,y) __builtin_setjmp(x)
-#define siglongjmp __builtin_longjmp
-#else
-#define sigjmp_buf jmp_buf
-#define sigsetjmp(x,y) setjmp(x)
-#define siglongjmp longjmp
-#endif
-#endif
-*/
-import "C"
-
 import (
 	"go/token"
 	"go/types"
@@ -42,8 +26,6 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-
-type sigjmpbuf = C.sigjmp_buf
 
 // func setjmp(env unsafe.Pointer) c.Int
 func (p Program) tySetjmp() *types.Signature {
@@ -103,8 +85,9 @@ func (p Program) tyStacksave() *types.Signature {
 
 func (b Builder) AllocaSigjmpBuf() Expr {
 	prog := b.Prog
-	n := unsafe.Sizeof(sigjmpbuf{})
-	size := prog.IntVal(uint64(n), prog.Uintptr())
+	sigjmpBufTy := prog.rtType("SigjmpBuf") // Get type from runtime (target architecture)
+	n := prog.SizeOf(sigjmpBufTy)           // Get size for target architecture
+	size := prog.IntVal(n, prog.Uintptr())
 	return b.Alloca(size)
 }
 
