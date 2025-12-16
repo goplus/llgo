@@ -334,6 +334,7 @@ func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 		return nil
 	}
 	prog := b.Prog
+	sig := deferCallSignature(fn)
 	offset := 1
 	if fn.kind == vkClosure {
 		offset++
@@ -347,13 +348,50 @@ func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 		flds[1] = fn.impl
 	}
 	for i, arg := range args {
-		typs[i+offset] = arg.Type
-		flds[i+offset] = arg.impl
+		argVal := arg
+		if pt := deferParamType(sig, i); pt != nil {
+			argVal = checkExpr(arg, pt, b)
+		}
+		typs[i+offset] = argVal.Type
+		flds[i+offset] = argVal.impl
 	}
 	typ := prog.Struct(typs...)
 	ptr := Expr{b.aggregateAllocU(typ, flds...), prog.VoidPtr()}
 	b.Store(self.argsPtr, ptr)
 	return typ
+}
+
+func deferCallSignature(fn Expr) *types.Signature {
+	switch fn.kind {
+	case vkClosure, vkBuiltin:
+		return nil
+	}
+	switch raw := fn.raw.Type.(type) {
+	case *types.Signature:
+		return raw
+	default:
+		if sig, ok := raw.Underlying().(*types.Signature); ok {
+			return sig
+		}
+	}
+	return nil
+}
+
+func deferParamType(sig *types.Signature, idx int) types.Type {
+	if sig == nil {
+		return nil
+	}
+	params := sig.Params()
+	n := params.Len()
+	if idx < n {
+		return params.At(idx).Type()
+	}
+	if sig.Variadic() && n > 0 {
+		if slice, ok := params.At(n - 1).Type().(*types.Slice); ok {
+			return slice.Elem()
+		}
+	}
+	return nil
 }
 
 func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
