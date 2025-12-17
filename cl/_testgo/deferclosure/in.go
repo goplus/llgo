@@ -52,8 +52,27 @@ func testDeferStructClosure() {
 	println("struct closure test")
 }
 
+// Test case 4: Defer a function accessed through a struct field
+// This should trigger the v.kind != vkFuncDecl && v.kind != vkFuncPtr branch
+// because accessing p.callback returns a value that's not a function declaration
+type FuncHolder struct {
+	callback func()
+}
+
+func testDeferFieldAccess() {
+	var holder FuncHolder
+	holder.callback = func() {
+		println("callback from field")
+	}
+	// When we defer holder.callback directly, it's accessed as a field load
+	// which might have a different value kind than vkFuncDecl/vkFuncPtr
+	defer holder.callback()
+	println("field access test")
+}
+
 func main() {
 	testDeferMethodLiteral()
 	testDeferClosureValue()
 	testDeferStructClosure()
+	testDeferFieldAccess()
 }
