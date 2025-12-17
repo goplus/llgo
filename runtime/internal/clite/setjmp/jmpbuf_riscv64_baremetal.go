@@ -3,8 +3,8 @@
 package setjmp
 
 // RISC-V 64-bit using picolibc/newlib
-// TODO: confirm size from machine/setjmp.h
+// https://github.com/picolibc/picolibc/blob/1.7.9/newlib/libc/include/machine/setjmp.h
 const (
-	SigjmpBufSize = 200
-	JmpBufSize    = 200
+	SigjmpBufSize = 208
+	JmpBufSize    = 208
 )

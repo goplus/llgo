@@ -2,9 +2,10 @@
 
 package setjmp
 
-// Generic ARM (Linux ARM, ARM7TDMI) using libc
-// TODO: confirm size from machine/setjmp.h
+// ARM7TDMI (ARMv4T) for Game Boy Advance
+// Target: armv4t-unknown-unknown-eabi
+// Size from picolibc jmp_buf definition
 const (
-	SigjmpBufSize = 200
-	JmpBufSize    = 200
+	SigjmpBufSize = 160
+	JmpBufSize    = 160
 )
