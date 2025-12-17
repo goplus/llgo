@@ -141,7 +141,7 @@ func (b *Builder) funcStr(t *types.Signature) string {
 func (b *Builder) TFlag(t types.Type) (flag abi.TFlag) {
 	switch t := types.Unalias(t).(type) {
 	case *types.Named:
-		return b.TFlag(t.Underlying()) | abi.TFlagNamed | abi.TFlagUncommon
+		return b.TFlag(t.Underlying()) | abi.TFlagNamed
 	case *types.Struct:
 		if IsClosure(t) {
 			flag |= abi.TFlagClosure

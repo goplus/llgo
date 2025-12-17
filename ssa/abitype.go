@@ -456,10 +456,7 @@ func (p Package) abiTypeInit(g Global, t types.Type, pub bool) {
 
 // abiType returns the abi type of the specified type.
 func (b Builder) abiType(t types.Type) Expr {
-	e := b.getAbiType(t)
-	if !e.IsNil() {
-		return e
-	}
+	return b.getAbiType(t)
 	switch t := t.(type) {
 	case *types.Pointer:
 		b.checkAbi(t.Elem())
@@ -667,24 +664,28 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 	if n == 0 {
 		return prog.Nil(prog.rtType("Slice")).impl
 	}
-	ft := prog.rtType("Imethod")
-	fields := make([]llvm.Value, n)
-	for i := 0; i < n; i++ {
-		f := t.Method(i)
-		var values []llvm.Value
-		name := f.Name()
-		if !token.IsExported(name) {
-			name = abi.FullName(f.Pkg(), name)
+	g := b.Pkg.VarOf(name)
+	if g == nil {
+		ft := prog.rtType("Imethod")
+		fields := make([]llvm.Value, n)
+		for i := 0; i < n; i++ {
+			f := t.Method(i)
+			var values []llvm.Value
+			name := f.Name()
+			if !token.IsExported(name) {
+				name = abi.FullName(f.Pkg(), name)
+			}
+			values = append(values, b.Str(name).impl)
+			ftyp := prog.Type(f.Type(), InGo)
+			values = append(values, b.getAbiType(ftyp.raw.Type).impl)
+			fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 		}
-		values = append(values, b.Str(name).impl)
-		values = append(values, b.getAbiType(f.Type()).impl)
-		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+		atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
+		data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+		g = b.Pkg.doNewVar(name, prog.Pointer(atyp))
+		g.Init(data)
+		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
-	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
-	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
-	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
-	g.Init(data)
-	g.impl.SetLinkage(llvm.WeakODRLinkage)
 	size := uint64(n)
 	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
 		g.impl,
@@ -766,6 +767,7 @@ func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Val
 			b.abiStructFields(t, name+"$fields"),
 		}
 	case *types.Interface:
+		name, _ = b.Pkg.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.Str(pkg.Path()).impl,
 			b.abiInterfaceImethods(t, name+"$imethods"),
@@ -873,7 +875,8 @@ func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		}
 		var values []llvm.Value
 		values = append(values, name)
-		values = append(values, b.getAbiType(m.Type()).impl)
+		ftyp := prog.Type(m.Type(), InGo)
+		values = append(values, b.getAbiType(ftyp.raw.Type).impl)
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
@@ -926,7 +929,7 @@ func (b Builder) getAbiType(t types.Type) Expr {
 			typ = types.NewStruct(fields, nil)
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
-
+		t = prog.patchType(t)
 		fields := b.abiBaseFields(t, hasUncommon)
 		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
