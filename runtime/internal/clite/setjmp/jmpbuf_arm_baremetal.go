@@ -1,4 +1,4 @@
-//go:build (arm && !baremetal && !tinygo.wasm) || (arm && arm7tdmi)
+//go:build arm && arm7tdmi
 
 package setjmp
 
