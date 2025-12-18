@@ -744,7 +744,7 @@ func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Val
 		bucket := pkg.abi.MapBucket(t)
 		flags := pkg.abi.MapFlags(t)
 		hash := b.Pkg.rtFunc("typehash")
-		env := b.getAbiType(t.Elem())
+		env := b.getAbiType(t.Key())
 		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
 		fields = []llvm.Value{
 			b.getAbiType(t.Key()).impl,
