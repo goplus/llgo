@@ -862,16 +862,24 @@ func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 			mPkg = obj.Pkg()
 		}
 		name := b.Str(mName).impl
+		var skipfn bool
 		if !token.IsExported(mName) {
 			name = b.Str(abi.FullName(mPkg, mName)).impl
+			skipfn = mPkg != pkg
 		}
 		mSig := m.Type().(*types.Signature)
-		tfn := b.getMethodFunc(mPkg, mName, mSig)
-		ifn := tfn
-		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
-			pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
-			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
-			ifn = b.getMethodFunc(mPkg, mName, pSig)
+		var tfn, ifn llvm.Value
+		if skipfn {
+			tfn = prog.Nil(prog.VoidPtr()).impl
+			ifn = tfn
+		} else {
+			tfn = b.getMethodFunc(mPkg, mName, mSig)
+			ifn = tfn
+			if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
+				pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
+				pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
+				ifn = b.getMethodFunc(mPkg, mName, pSig)
+			}
 		}
 		var values []llvm.Value
 		values = append(values, name)
