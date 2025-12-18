@@ -9,6 +9,7 @@ import (
 
 func main() {
 	fmt.Printf("runtime.Compiler = %q\n", runtime.Compiler)
+
 	// Test 1: Check build.Default context
 	ctx := build.Default
 	fmt.Printf("build.Default.Compiler = %q\n", ctx.Compiler)
