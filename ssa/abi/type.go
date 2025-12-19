@@ -193,8 +193,8 @@ func (b *Builder) IsRegularMemory(t types.Type) bool {
 			offsets := b.Sizes.Offsetsof(fields)
 			end := b.Size(t)
 			for i := 0; i < n; i++ {
-				f := t.Field(i)
-				if f.Name() == "_" || !b.IsRegularMemory(f.Type()) || b.ispaddedfield(t, i, end, offsets) {
+				f := fields[i]
+				if f.Name() == "_" || !b.IsRegularMemory(f.Type()) || b.ispaddedfield(t, i, f, end, offsets) {
 					return false
 				}
 			}
@@ -217,11 +217,11 @@ func (b *Builder) IsRegularMemory(t types.Type) bool {
 	return true
 }
 
-func (b *Builder) ispaddedfield(st *types.Struct, i int, end uintptr, offsets []int64) bool {
+func (b *Builder) ispaddedfield(st *types.Struct, i int, field *types.Var, end uintptr, offsets []int64) bool {
 	if i+1 < len(offsets) {
 		end = uintptr(offsets[i+1])
 	}
-	return uintptr(offsets[i])+b.Size(st.Field(i).Type()) != end
+	return uintptr(offsets[i])+b.Size(field.Type()) != end
 }
 
 func (b *Builder) Kind(t types.Type) abi.Kind {
