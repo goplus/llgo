@@ -17,6 +17,8 @@
 package ssa
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"go/ast"
 	"go/token"
 	"go/types"
@@ -543,7 +545,7 @@ var (
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])), false)
 )
 
-func (b Builder) getCommonFields(t types.Type, hasUncommon bool) (fields []llvm.Value) {
+func (b Builder) getCommonFields(t types.Type, name string, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
 	ab := pkg.abi
@@ -552,7 +554,9 @@ func (b Builder) getCommonFields(t types.Type, hasUncommon bool) (fields []llvm.
 	// PtrBytes uintptr
 	fields = append(fields, prog.IntVal(uint64(ab.PtrBytes(t)), prog.Uintptr()).impl)
 	// Hash uint32
-	fields = append(fields, prog.IntVal(uint64(ab.Hash(t)), prog.Uint32()).impl)
+	h := sha256.Sum256([]byte(name))
+	hash := binary.LittleEndian.Uint32(h[:4])
+	fields = append(fields, prog.IntVal(uint64(hash), prog.Uint32()).impl)
 	// TFlag uint8
 	tflag := uint64(ab.TFlag(t))
 	if hasUncommon {
@@ -956,7 +960,7 @@ func (b Builder) getAbiType(t types.Type) Expr {
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
 		t = prog.patchType(t)
-		fields := b.getCommonFields(t, hasUncommon)
+		fields := b.getCommonFields(t, name, hasUncommon)
 		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
 				llvm.ConstNamedStruct(prog.AbiType().ll, fields),

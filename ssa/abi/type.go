@@ -15,10 +15,6 @@ func (b *Builder) MapFlags(t *types.Map) (flags int) {
 	return MapTypeFlags(t, b.Sizes)
 }
 
-func (b *Builder) Hash(t types.Type) uint32 {
-	return b.hasher.Hash(t)
-}
-
 func (b *Builder) Str(t types.Type) string {
 	switch t := types.Unalias(t).(type) {
 	case *types.Basic:
