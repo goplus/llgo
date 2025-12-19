@@ -142,12 +142,13 @@ func (o *Once) Do(f func()) {
 // -----------------------------------------------------------------------------
 
 type Cond struct {
+	_    noCopy
+	L    gosync.Locker
 	cond sync.Cond
-	m    *sync.Mutex
 }
 
 func NewCond(l gosync.Locker) *Cond {
-	ret := &Cond{m: l.(*sync.Mutex)}
+	ret := &Cond{L: l}
 	ret.cond.Init(nil)
 	runtime.SetFinalizer(ret, func(ret *Cond) {
 		ret.cond.Destroy()
@@ -155,22 +156,21 @@ func NewCond(l gosync.Locker) *Cond {
 	return ret
 }
 
-//go:linkname c_pthread_cond_signal C.pthread_cond_signal
-func c_pthread_cond_signal(c *Cond) c.Int
-
-//go:linkname c_pthread_cond_broadcast C.pthread_cond_broadcast
-func c_pthread_cond_broadcast(c *Cond) c.Int
-
 func (c *Cond) Signal() {
-	c_pthread_cond_signal(c)
+	c.cond.Signal()
 }
 
 func (c *Cond) Broadcast() {
-	c_pthread_cond_broadcast(c)
+	c.cond.Broadcast()
 }
 
 func (c *Cond) Wait() {
-	c.cond.Wait(c.m)
+	m, ok := c.L.(*Mutex)
+	if !ok || m == nil {
+		panic("sync: Cond.L is not *sync.Mutex")
+	}
+	m.ensureInit()
+	c.cond.Wait((*sync.Mutex)(&m.Mutex))
 }
 
 // -----------------------------------------------------------------------------
