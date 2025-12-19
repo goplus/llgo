@@ -20,6 +20,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"log"
 	"unsafe"
 
 	"github.com/goplus/llgo/ssa/abi"
@@ -851,6 +852,7 @@ func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
 	pkg := b.getUncommonPkg(t)
+	anonymous := pkg == nil
 	var mPkg *types.Package
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
@@ -873,12 +875,12 @@ func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 			tfn = prog.Nil(prog.VoidPtr()).impl
 			ifn = tfn
 		} else {
-			tfn = b.getMethodFunc(mPkg, mName, mSig)
+			tfn = b.getMethodFunc(anonymous, mPkg, mName, mSig)
 			ifn = tfn
 			if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
 				pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
 				pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
-				ifn = b.getMethodFunc(mPkg, mName, pSig)
+				ifn = b.getMethodFunc(anonymous, mPkg, mName, pSig)
 			}
 		}
 		var values []llvm.Value
@@ -892,7 +894,12 @@ func (b Builder) getUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	return llvm.ConstArray(ft.ll, fields)
 }
 
-func (b Builder) getMethodFunc(mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
+func (b Builder) getMethodFunc(anonymous bool, mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
+	if anonymous {
+		// TODO implement
+		log.Printf("not implement %q (%v).%v\n", b.Pkg.Path(), mSig.Recv().Type(), mName)
+		return b.Prog.Nil(b.Prog.VoidPtr()).impl
+	}
 	fullName := FuncName(mPkg, mName, mSig.Recv(), false)
 	if mSig.TypeParams().Len() > 0 || mSig.RecvTypeParams().Len() > 0 {
 		if !b.Pkg.Prog.FuncCompiled(fullName) {
