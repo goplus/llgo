@@ -543,7 +543,7 @@ var (
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])), false)
 )
 
-func (b Builder) abiBaseFields(t types.Type, hasUncommon bool) (fields []llvm.Value) {
+func (b Builder) getCommonFields(t types.Type, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
 	pkg := b.Pkg
 	ab := pkg.abi
@@ -620,24 +620,27 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 	if n == 0 {
 		return prog.Nil(prog.rtType("Slice")).impl
 	}
-	ft := prog.rtType("structfield")
-	typ := prog.rawType(t)
-	fields := make([]llvm.Value, n)
-	for i := 0; i < n; i++ {
-		f := t.Field(i)
-		var values []llvm.Value
-		values = append(values, b.Str(f.Name()).impl)
-		values = append(values, b.getAbiType(f.Type()).impl)
-		values = append(values, prog.IntVal(prog.OffsetOf(typ, i), prog.Uintptr()).impl)
-		values = append(values, b.Str(t.Tag(i)).impl)
-		values = append(values, prog.BoolVal(f.Embedded()).impl)
-		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+	g := b.Pkg.VarOf(name)
+	if g == nil {
+		ft := prog.rtType("structfield")
+		typ := prog.rawType(t)
+		fields := make([]llvm.Value, n)
+		for i := 0; i < n; i++ {
+			f := t.Field(i)
+			var values []llvm.Value
+			values = append(values, b.Str(f.Name()).impl)
+			values = append(values, b.getAbiType(f.Type()).impl)
+			values = append(values, prog.IntVal(prog.OffsetOf(typ, i), prog.Uintptr()).impl)
+			values = append(values, b.Str(t.Tag(i)).impl)
+			values = append(values, prog.BoolVal(f.Embedded()).impl)
+			fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+		}
+		atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
+		data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+		g = b.Pkg.doNewVar(name, prog.Pointer(atyp))
+		g.Init(data)
+		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
-	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
-	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
-	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
-	g.Init(data)
-	g.impl.SetLinkage(llvm.WeakODRLinkage)
 	size := uint64(n)
 	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
 		g.impl,
@@ -698,16 +701,22 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	prog := b.Prog
 	n := t.Len()
-	fields := make([]llvm.Value, n)
-	for i := 0; i < n; i++ {
-		fields[i] = b.getAbiType(t.At(i).Type()).impl
+	if n == 0 {
+		return prog.Nil(prog.rtType("Slice")).impl
 	}
-	ft := prog.AbiTypePtr()
-	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
-	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
-	g := b.Pkg.doNewVar(name, prog.Pointer(atyp))
-	g.Init(data)
-	g.impl.SetLinkage(llvm.WeakODRLinkage)
+	g := b.Pkg.VarOf(name)
+	if g == nil {
+		fields := make([]llvm.Value, n)
+		for i := 0; i < n; i++ {
+			fields[i] = b.getAbiType(t.At(i).Type()).impl
+		}
+		ft := prog.AbiTypePtr()
+		atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
+		data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+		g = b.Pkg.doNewVar(name, prog.Pointer(atyp))
+		g.Init(data)
+		g.impl.SetLinkage(llvm.WeakODRLinkage)
+	}
 	size := uint64(n)
 	return llvm.ConstNamedStruct(prog.rtType("Slice").ll, []llvm.Value{
 		g.impl,
@@ -758,11 +767,13 @@ func (b Builder) getExtendedFields(t types.Type, name string) (fields []llvm.Val
 			prog.IntVal(uint64(flags), prog.Uint32()).impl,
 		}
 	case *types.Signature:
+		name, _ := b.Pkg.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.abiTuples(t.Params(), name+"$in"),
 			b.abiTuples(t.Results(), name+"$out"),
 		}
 	case *types.Struct:
+		name, _ = b.Pkg.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.Str(pkg.Path()).impl,
 			b.abiStructFields(t, name+"$fields"),
@@ -945,7 +956,7 @@ func (b Builder) getAbiType(t types.Type) Expr {
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
 		t = prog.patchType(t)
-		fields := b.abiBaseFields(t, hasUncommon)
+		fields := b.getCommonFields(t, hasUncommon)
 		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
 				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
