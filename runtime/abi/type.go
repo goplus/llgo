@@ -591,6 +591,10 @@ func (t *Type) NumMethod() int {
 	return len(t.ExportedMethods())
 }
 
+func (t *Type) GcSlice(begin, end uintptr) []byte {
+	return unsafe.Slice(t.GCData, int(end))[begin:]
+}
+
 // -----------------------------------------------------------------------------
 
 // addChecked returns p+x.
