@@ -27,7 +27,6 @@ import (
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/runtime/abi"
-	"golang.org/x/tools/go/types/typeutil"
 )
 
 // -----------------------------------------------------------------------------
@@ -136,7 +135,6 @@ type Builder struct {
 	Pkg     string
 	PtrSize uintptr
 	Sizes   types.Sizes
-	hasher  typeutil.Hasher
 }
 
 // New creates a new ABI type Builder.
