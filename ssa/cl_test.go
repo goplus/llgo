@@ -21,16 +21,15 @@ package ssa_test
 
 import (
 	"flag"
+	"go/token"
 	"go/types"
 	"io"
 	"log"
-	"os"
-	"runtime"
 	"testing"
 
+	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/ssa"
-	"github.com/goplus/llgo/ssa/ssatest"
 )
 
 func TestMain(m *testing.M) {
@@ -67,13 +66,26 @@ func TestFromTestdata(t *testing.T) {
 }
 
 func TestMakeInterface(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Chdir("../runtime")
-	defer os.Chdir(wd)
-	prog := ssatest.NewProgram(t, &ssa.Target{GOARCH: runtime.GOARCH})
+	prog := ssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		imp := packages.NewImporter(token.NewFileSet())
+		rt, err := imp.Import(ssa.PkgRuntime)
+		if err != nil {
+			t.Fatal("load runtime failed:", err)
+		}
+		if scope := rt.Scope(); scope.Lookup("ptrtype") == nil {
+			obj := types.NewTypeName(token.NoPos, rt, "ptrtype", nil)
+			types.NewNamed(obj, types.Typ[types.UnsafePointer], nil)
+			scope.Insert(obj)
+			sig := types.NewSignature(nil, types.NewTuple(
+				types.NewVar(token.NoPos, rt, "p", types.Typ[types.UnsafePointer]),
+				types.NewVar(token.NoPos, rt, "q", types.Typ[types.UnsafePointer]),
+			), types.NewTuple(types.NewVar(token.NoPos, rt, "", types.Typ[types.Bool])), false)
+			scope.Insert(types.NewFunc(token.NoPos, rt, "memequal64", sig))
+			scope.Insert(types.NewFunc(token.NoPos, rt, "f64equal", sig))
+		}
+		return rt
+	})
 	pkg := prog.NewPackage("foo", "foo")
 	fn := pkg.NewFunc("main", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.InC)
 	b := fn.MakeBody(1)

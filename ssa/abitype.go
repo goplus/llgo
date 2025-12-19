@@ -945,6 +945,9 @@ func (b Builder) getAbiType(t types.Type) Expr {
 	prog := b.Prog
 	pkg := b.Pkg
 	if g == nil {
+		if pkg.patch != nil {
+			t = pkg.patchType(t)
+		}
 		mset, hasUncommon := b.getUncommonMethodSet(t)
 		rt := prog.rtNamed(pkg.abi.RuntimeName(t))
 		var typ types.Type = rt
@@ -959,7 +962,6 @@ func (b Builder) getAbiType(t types.Type) Expr {
 			typ = types.NewStruct(fields, nil)
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
-		t = prog.patchType(t)
 		fields := b.getCommonFields(t, name, hasUncommon)
 		if exts := b.getExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
