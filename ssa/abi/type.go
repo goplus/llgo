@@ -150,6 +150,10 @@ func (b *Builder) TFlag(t types.Type) (flag abi.TFlag) {
 		if b.TFlag(t.Elem())&abi.TFlagExtraStar == 0 {
 			flag |= abi.TFlagExtraStar
 		}
+	case *types.Signature:
+		if t.Variadic() {
+			flag |= abi.TFlagVariadic
+		}
 	}
 	if b.IsRegularMemory(t) {
 		flag |= abi.TFlagRegularMemory
