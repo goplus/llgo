@@ -7,6 +7,7 @@ import (
 	"github.com/goplus/llvm"
 )
 
+// removeCtx drops the leading __llgo_ctx parameter, if present.
 func removeCtx(sig *types.Signature) *types.Signature {
 	if closureCtxParam(sig) == nil {
 		return sig
@@ -20,6 +21,7 @@ func removeCtx(sig *types.Signature) *types.Signature {
 	return types.NewSignature(sig.Recv(), types.NewTuple(args...), sig.Results(), sig.Variadic())
 }
 
+// closureCtxParam returns the leading __llgo_ctx parameter if present.
 func closureCtxParam(sig *types.Signature) *types.Var {
 	if sig == nil {
 		return nil
@@ -38,6 +40,7 @@ func closureCtxParam(sig *types.Signature) *types.Var {
 	return first
 }
 
+// closureWrapArgs returns wrapper arguments excluding the ctx parameter.
 func closureWrapArgs(fn Function) []Expr {
 	n := len(fn.params)
 	if n <= 1 {
@@ -50,6 +53,7 @@ func closureWrapArgs(fn Function) []Expr {
 	return args
 }
 
+// closureWrapReturn returns from wrapper, preserving tail-call eligibility.
 func closureWrapReturn(b Builder, sig *types.Signature, ret Expr) {
 	n := sig.Results().Len()
 	if n == 0 {
@@ -63,6 +67,8 @@ func closureWrapReturn(b Builder, sig *types.Signature, ret Expr) {
 	b.impl.CreateRet(ret.impl)
 }
 
+// closureWrapDecl wraps a function declaration that lacks __llgo_ctx.
+// It directly calls the target symbol and ignores the ctx parameter.
 func (p Package) closureWrapDecl(fn Expr, sig *types.Signature) Function {
 	name := closureStub + fn.impl.Name()
 	if wrap := p.FuncOf(name); wrap != nil {
@@ -79,6 +85,8 @@ func (p Package) closureWrapDecl(fn Expr, sig *types.Signature) Function {
 	return wrap
 }
 
+// closureWrapPtr wraps a raw function pointer by loading it from ctx.
+// The ctx parameter is treated as a pointer to a stored function pointer cell.
 func (p Package) closureWrapPtr(sig *types.Signature) Function {
 	name := closureStub + p.abi.FuncName(sig)
 	if wrap := p.FuncOf(name); wrap != nil {
@@ -92,6 +100,8 @@ func (p Package) closureWrapPtr(sig *types.Signature) Function {
 	ctxArg := wrap.Param(0)
 	fnType := p.Prog.rawType(sig)
 	fnPtrType := p.Prog.Pointer(fnType)
+	// ctxArg is expected to be a non-nil pointer to a stored function pointer cell.
+	// We intentionally avoid runtime null checks here; invalid ctx is a compiler/user error.
 	fnPtr := b.Convert(fnPtrType, ctxArg)
 	fnVal := b.Load(fnPtr)
 	args := closureWrapArgs(wrap)

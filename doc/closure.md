@@ -51,6 +51,8 @@ To keep the explicit-ctx ABI while avoiding mismatched calls:
   - Body: treats `__llgo_ctx` as a pointer to a stored function pointer, loads
     it, and calls it.
   - Linkage: `linkonce`
+  - Note: the ctx pointer is guaranteed non-nil for this wrapper; we do not
+    emit runtime null checks.
 
 This is the only remaining use of the `__llgo_stub.` prefix; it is no longer
 used to generate a global stub for every closure. The prefix and `__llgo_ctx`
