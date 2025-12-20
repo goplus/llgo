@@ -324,3 +324,26 @@ func TestPanicCrossTwoFunctionsRecover(t *testing.T) {
 		t.Fatalf("unexpected cross-function defer order: got %v, want %v", order, wantOrder)
 	}
 }
+
+// Test for issue #1488: Deferred method literal stub uses undefined value
+type emitRecorder struct {
+	last func(int)
+}
+
+func (d *emitRecorder) SetEmitFunc(fn func(int)) {
+	d.last = fn
+}
+
+func runEmitRecorder(d *emitRecorder) {
+	d.SetEmitFunc(func(int) {})
+	defer d.SetEmitFunc(func(int) {})
+}
+
+func TestDeferMethodFuncLiteral(t *testing.T) {
+	var rec emitRecorder
+	runEmitRecorder(&rec)
+	if rec.last == nil {
+		t.Fatalf("expected SetEmitFunc to record closure")
+	}
+	rec.last(0) // ensure stored callback is callable
+}
