@@ -345,9 +345,15 @@ func TestCvtClosureDropsRecv(t *testing.T) {
 	if fnSig.Recv() != nil {
 		t.Fatalf("closure signature should not keep recv: %v", fnSig.Recv())
 	}
-	if !fnSig.Variadic() || fnSig.Params().Len() != 1 || fnSig.Params().At(0).Name() != NameValist {
-		t.Fatalf("closure signature variadic mismatch: variadic=%v params=%v name=%q",
-			fnSig.Variadic(), fnSig.Params().Len(), fnSig.Params().At(0).Name())
+	if !fnSig.Variadic() {
+		t.Fatal("closure signature should be variadic")
+	}
+	if fnSig.Params().Len() != 1 {
+		t.Fatalf("closure signature should have 1 param for variadic, got %d", fnSig.Params().Len())
+	}
+	if fnSig.Params().At(0).Name() != NameValist {
+		t.Fatalf("closure signature param name mismatch: got %q, want %q",
+			fnSig.Params().At(0).Name(), NameValist)
 	}
 }
 
