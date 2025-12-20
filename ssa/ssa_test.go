@@ -410,6 +410,154 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 `)
 }
 
+func TestClosureCtxHelpers(t *testing.T) {
+	params := types.NewTuple()
+	rets := types.NewTuple()
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	if closureCtxParam(sig) != nil {
+		t.Fatal("closureCtxParam should be nil for empty params")
+	}
+	if removeCtx(sig) != sig {
+		t.Fatal("removeCtx should return original signature when no ctx param")
+	}
+
+	badCtx := types.NewParam(0, nil, closureCtx, types.Typ[types.Int])
+	badSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(badCtx), rets, false)
+	if closureCtxParam(badSig) != nil {
+		t.Fatal("closureCtxParam should ignore non-pointer ctx param")
+	}
+
+	ctxStruct := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "v", types.Typ[types.Int]),
+	}, nil)
+	goodCtx := types.NewParam(0, nil, closureCtx, types.NewPointer(ctxStruct))
+	arg := types.NewParam(0, nil, "x", types.Typ[types.Int])
+	goodSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(goodCtx, arg), rets, false)
+	if closureCtxParam(goodSig) == nil {
+		t.Fatal("closureCtxParam should detect ctx param")
+	}
+	noCtx := removeCtx(goodSig)
+	if noCtx.Params().Len() != 1 || noCtx.Params().At(0).Name() != "x" {
+		t.Fatalf("removeCtx result mismatch: params=%v", noCtx.Params().Len())
+	}
+}
+
+func TestClosureWrapHelpers(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	ctx := types.NewParam(0, nil, closureCtx, types.Typ[types.UnsafePointer])
+	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(), types.NewTuple(), false)
+	sigCtx := FuncAddCtx(ctx, sig)
+	wrap := pkg.NewFunc("wrap", sigCtx, InGo)
+	b := wrap.MakeBody(1)
+	if args := closureWrapArgs(wrap); len(args) != 0 {
+		t.Fatalf("closureWrapArgs should return 0 args, got %d", len(args))
+	}
+	closureWrapReturn(b, sig, Expr{})
+}
+
+func TestClosureWrapCache(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Return(fn.Param(0))
+
+	w1 := pkg.closureWrapDecl(fn.Expr, sig)
+	w2 := pkg.closureWrapDecl(fn.Expr, sig)
+	if w1 != w2 {
+		t.Fatal("closureWrapDecl should reuse existing wrapper")
+	}
+
+	p1 := pkg.closureWrapPtr(sig)
+	p2 := pkg.closureWrapPtr(sig)
+	if p1 != p2 {
+		t.Fatal("closureWrapPtr should reuse existing wrapper")
+	}
+}
+
+func TestMakeInterfaceKinds(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	emptyType := prog.Type(emptyIface, InGo)
+
+	makeFn := func(name string, x Expr) {
+		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
+		fn := pkg.NewFunc(name, sig, InGo)
+		b := fn.MakeBody(1)
+		iface := b.MakeInterface(emptyType, x)
+		b.Return(iface)
+	}
+
+	makeFn("intIface", prog.Val(1))
+	makeFn("ptrIface", prog.Nil(prog.VoidPtr()))
+	makeFn("floatIface", prog.FloatVal(3.5, prog.Float32()))
+
+	st := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Int]),
+	}, nil)
+	makeFn("structIface", prog.Zero(prog.Type(st, InGo)))
+
+	single := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "v", types.Typ[types.Int]),
+	}, nil)
+	makeFn("singleFieldIface", prog.Zero(prog.Type(single, InGo)))
+
+	pkgTypes := types.NewPackage("foo/bar", "bar")
+	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	rawMeth := types.NewFunc(0, pkgTypes, "M", rawSig)
+	nonEmpty := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
+	nonEmpty.Complete()
+	nonEmptyType := prog.Type(nonEmpty, InGo)
+	sigNE := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", nonEmpty)), false)
+	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, InGo)
+	bNE := fnNE.MakeBody(1)
+	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
+}
+
+func TestValFromDataKinds(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("caller", sig, InGo)
+	b := fn.MakeBody(1)
+	data := prog.Nil(prog.VoidPtr()).impl
+
+	b.valFromData(prog.Int(), data)
+	b.valFromData(prog.Float32(), data)
+	b.valFromData(prog.Type(types.NewPointer(types.Typ[types.Int]), InGo), data)
+
+	st := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Int]),
+	}, nil)
+	b.valFromData(prog.Type(st, InGo), data)
+
+	single := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "v", types.Typ[types.Int]),
+	}, nil)
+	b.valFromData(prog.Type(single, InGo), data)
+
+	arr := types.NewArray(types.Typ[types.Int], 1)
+	b.valFromData(prog.Type(arr, InGo), data)
+
+	b.Return()
+}
+
 func TestTypes(t *testing.T) {
 	ctx := llvm.NewContext()
 	llvmIntType(ctx, 4)
