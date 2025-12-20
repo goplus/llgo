@@ -68,7 +68,19 @@ func iMethodOf(rawIntf *types.Interface, name string) int {
 func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	prog := b.Prog
 	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
-	tclosure := prog.Type(method.Type(), InGo)
+	sig := method.Type().(*types.Signature)
+	if sig.Recv() == nil && sig.Params().Len() > 0 {
+		pt := types.Unalias(sig.Params().At(0).Type())
+		if types.Identical(pt, rawIntf) {
+			n := sig.Params().Len()
+			vars := make([]*types.Var, n-1)
+			for i := 1; i < n; i++ {
+				vars[i-1] = sig.Params().At(i)
+			}
+			sig = types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
+		}
+	}
+	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl

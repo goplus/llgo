@@ -967,20 +967,13 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	prog := b.Prog
 	tfn := fn.Type
 	sig := tfn.raw.Type.(*types.Signature)
-	tctx := sig.Params().At(0).Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
-	flds := llvmFields(bindings, tctx, b)
-	data := b.aggregateAllocU(prog.rawType(tctx), flds...)
-	return b.aggregateValue(prog.Closure(removeCtx(sig)), fn.impl, data)
-}
-
-func removeCtx(sig *types.Signature) *types.Signature {
-	params := sig.Params()
-	n := params.Len()
-	args := make([]*types.Var, n-1)
-	for i := 0; i < n-1; i++ {
-		args[i] = params.At(i + 1)
+	data := prog.Nil(prog.VoidPtr()).impl
+	if ctxParam := closureCtxParam(sig); ctxParam != nil {
+		tctx := ctxParam.Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
+		ptr := b.aggregateAllocU(prog.rawType(tctx), llvmFields(bindings, tctx, b)...)
+		data = ptr
 	}
-	return types.NewSignature(sig.Recv(), types.NewTuple(args...), sig.Results(), sig.Variadic())
+	return b.aggregateValue(prog.Closure(removeCtx(sig)), fn.impl, data)
 }
 
 // -----------------------------------------------------------------------------
@@ -1016,9 +1009,13 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	case vkClosure:
 		data = b.Field(fn, 1)
 		fn = b.Field(fn, 0)
+		sig = fn.raw.Type.(*types.Signature)
 		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-		raw = FuncAddCtx(ctx, fn.raw.Type.(*types.Signature))
-		fallthrough
+		sigCtx := FuncAddCtx(ctx, sig)
+		ret.Type = b.Prog.retType(sig)
+		ll = b.Prog.FuncDecl(sigCtx, InC).ll
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sigCtx.Params(), b))
+		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
 		ll = b.Prog.FuncDecl(sig, InC).ll
@@ -1361,9 +1358,28 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if st, ok := t.Underlying().(*types.Struct); ok && IsClosure(st) {
-		if v.kind != vkClosure {
-			return b.Pkg.closureStub(b, t, v)
+		if v.kind == vkClosure {
+			return v
 		}
+		prog := b.Prog
+		origKind := v.kind
+		tclosure := prog.rawType(t)
+		fnType := prog.Field(tclosure, 0)
+		if v.Type != fnType {
+			// Signature conversions are representationally identical.
+			if v.Type.kind == vkFuncDecl || v.Type.kind == vkFuncPtr {
+				v = b.ChangeType(fnType, v)
+			} else {
+				v = b.Convert(fnType, v)
+			}
+		}
+		data := prog.Nil(prog.VoidPtr())
+		if origKind == vkFuncDecl || origKind == vkFuncPtr {
+			if sig, ok := fnType.raw.Type.(*types.Signature); ok && closureCtxParam(sig) == nil {
+				v, data = b.Pkg.closureStub(b, v, sig, origKind)
+			}
+		}
+		return b.aggregateValue(tclosure, v.impl, data.impl)
 	}
 	return v
 }

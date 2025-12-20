@@ -535,13 +535,17 @@ func FuncName(pkg *types.Package, name string, recv *types.Var, org bool) string
 	if recv != nil {
 		named, ptr := recvNamed(recv.Type())
 		var tName string
-		if org {
-			tName = named.Obj().Name()
+		if named != nil {
+			if org {
+				tName = named.Obj().Name()
+			} else {
+				tName = abi.NamedName(named)
+			}
+			if ptr {
+				tName = "(*" + tName + ")"
+			}
 		} else {
-			tName = abi.NamedName(named)
-		}
-		if ptr {
-			tName = "(*" + tName + ")"
+			tName = types.TypeString(recv.Type(), PathOf)
 		}
 		return PathOf(pkg) + "." + tName + "." + name
 	}

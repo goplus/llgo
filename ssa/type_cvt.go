@@ -178,6 +178,9 @@ func Instantiate(orig types.Type, t *types.Named) (types.Type, bool) {
 }
 
 func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
+	if sig.Recv() != nil {
+		sig = types.NewSignatureType(nil, nil, nil, sig.Params(), sig.Results(), sig.Variadic())
+	}
 	raw := p.cvtFunc(sig, nil)
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "$f", raw, false),

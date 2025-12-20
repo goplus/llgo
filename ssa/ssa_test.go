@@ -20,10 +20,12 @@
 package ssa
 
 import (
+	"fmt"
 	"go/constant"
 	"go/token"
 	"go/types"
 	"os"
+	"strings"
 	"testing"
 	"unsafe"
 
@@ -139,6 +141,267 @@ func TestClosureCtx(t *testing.T) {
 	}()
 	var f aFunction
 	f.closureCtx(nil)
+}
+
+func TestClosureNoCtxValue(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Return(fn.Param(0))
+
+	holderSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	holder := pkg.NewFunc("holder", holderSig, InGo)
+	hb := holder.MakeBody(1)
+	closureT := prog.Closure(sig)
+	ptr := hb.AllocaT(closureT)
+	hb.Store(ptr, fn.Expr)
+	hb.Return()
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %0) {
+_llgo_0:
+  ret i64 %0
+}
+
+define void @holder() {
+_llgo_0:
+  %0 = alloca { ptr, ptr }, align 8
+  store { ptr, ptr } { ptr @__llgo_stub.fn, ptr null }, ptr %0, align 8
+  ret void
+}
+
+define linkonce i64 @__llgo_stub.fn(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = tail call i64 @fn(i64 %1)
+  ret i64 %2
+}
+`)
+}
+
+func TestClosureFuncPtrValue(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Return(fn.Param(0))
+
+	holderSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	holder := pkg.NewFunc("holder", holderSig, InGo)
+	hb := holder.MakeBody(1)
+	closureT := prog.Closure(sig)
+	ptr := hb.AllocaT(closureT)
+	fnPtrType := prog.rawType(sig)
+	fnPtr := hb.ChangeType(fnPtrType, fn.Expr)
+	hb.Store(ptr, fnPtr)
+	hb.Return()
+
+	wrapName := "__llgo_stub." + pkg.abi.FuncName(sig)
+	wrapRef := wrapName
+	if strings.Contains(wrapName, "$") {
+		wrapRef = fmt.Sprintf("\"%s\"", wrapName)
+	}
+	expected := fmt.Sprintf(`; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @fn(i64 %%0) {
+_llgo_0:
+  ret i64 %%0
+}
+
+define void @holder() {
+_llgo_0:
+  %%0 = alloca { ptr, ptr }, align 8
+  %%1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store ptr @fn, ptr %%1, align 8
+  %%2 = insertvalue { ptr, ptr } { ptr @%s, ptr undef }, ptr %%1, 1
+  store { ptr, ptr } %%2, ptr %%0, align 8
+  ret void
+}
+
+define linkonce i64 @%s(ptr %%0, i64 %%1) {
+_llgo_0:
+  %%2 = load ptr, ptr %%0, align 8
+  %%3 = tail call i64 %%2(i64 %%1)
+  ret i64 %%3
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+`, wrapRef, wrapRef)
+	assertPkg(t, pkg, expected)
+}
+
+func TestCallClosureDynamic(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	callerParams := types.NewTuple(
+		types.NewVar(0, nil, "f", sig),
+		types.NewVar(0, nil, "x", types.Typ[types.Int]),
+	)
+	callerSig := types.NewSignatureType(nil, nil, nil, callerParams, rets, false)
+	caller := pkg.NewFunc("caller", callerSig, InGo)
+	b := caller.MakeBody(1)
+	b.Return(b.Call(caller.Param(0), caller.Param(1)))
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @caller({ ptr, ptr } %0, i64 %1) {
+_llgo_0:
+  %2 = extractvalue { ptr, ptr } %0, 1
+  %3 = extractvalue { ptr, ptr } %0, 0
+  %4 = call i64 %3(ptr %2, i64 %1)
+  ret i64 %4
+}
+`)
+}
+
+func TestMakeClosureWithCtx(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+	ctxPtr := types.NewPointer(ctxStruct)
+	ctxParam := types.NewParam(0, nil, "__llgo_ctx", ctxPtr)
+	innerParams := types.NewTuple(ctxParam, types.NewVar(0, nil, "y", types.Typ[types.Int]))
+	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
+	inner := pkg.NewFunc("inner", innerSig, InGo)
+	ib := inner.MakeBody(1)
+	ib.Return(inner.Param(1))
+
+	outerParams := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	outerRetSig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int])),
+		innerRets, false)
+	outerSig := types.NewSignatureType(nil, nil, nil, outerParams,
+		types.NewTuple(types.NewVar(0, nil, "", outerRetSig)), false)
+	outer := pkg.NewFunc("outer", outerSig, InGo)
+	ob := outer.MakeBody(1)
+	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
+	ob.Return(closure)
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @inner(ptr %0, i64 %1) {
+_llgo_0:
+  ret i64 %1
+}
+
+define { ptr, ptr } @outer(i64 %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
+  store i64 %0, ptr %2, align 4
+  %3 = insertvalue { ptr, ptr } { ptr @inner, ptr undef }, ptr %1, 1
+  ret { ptr, ptr } %3
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+`)
+}
+
+func TestCvtClosureDropsRecv(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := types.NewPackage("foo", "foo")
+	iface := types.NewInterfaceType(nil, nil)
+	namedIface := types.NewNamed(types.NewTypeName(0, pkg, "IFmt", nil), iface, nil)
+	recv := types.NewVar(0, pkg, "recv", namedIface)
+	params := types.NewTuple(VArg())
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(recv, nil, nil, params, rets, true)
+
+	st := prog.gocvt.cvtClosure(sig)
+	fnSig, ok := st.Field(0).Type().(*types.Signature)
+	if !ok {
+		t.Fatalf("closure field[0] not signature: %T", st.Field(0).Type())
+	}
+	if fnSig.Recv() != nil {
+		t.Fatalf("closure signature should not keep recv: %v", fnSig.Recv())
+	}
+	if !fnSig.Variadic() || fnSig.Params().Len() != 1 || fnSig.Params().At(0).Name() != NameValist {
+		t.Fatalf("closure signature variadic mismatch: variadic=%v params=%v name=%q",
+			fnSig.Variadic(), fnSig.Params().Len(), fnSig.Params().At(0).Name())
+	}
+}
+
+func TestIfaceMethodClosureCallIR(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkgTypes := types.NewPackage("foo/bar", "bar")
+	rawSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(VArg()),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), true)
+	rawMeth := types.NewFunc(0, pkgTypes, "Printf", rawSig)
+	rawIface := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
+	rawIface.Complete()
+	namedIface := types.NewNamed(types.NewTypeName(0, pkgTypes, "IFmt", nil), rawIface, nil)
+	recv := types.NewVar(0, pkgTypes, "recv", namedIface)
+	recvSig := types.NewSignatureType(recv, nil, nil, types.NewTuple(VArg()),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), true)
+	recvMeth := types.NewFunc(0, pkgTypes, "Printf", recvSig)
+
+	pkg := prog.NewPackage("bar", "foo/bar")
+	callerSig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, pkgTypes, "i", namedIface)),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), false)
+	caller := pkg.NewFunc("caller", callerSig, InGo)
+	b := caller.MakeBody(1)
+	closure := b.Imethod(caller.Param(0), recvMeth)
+	ret := b.Call(closure, prog.Val(100), prog.Val(200))
+	b.Return(ret)
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+%"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
+
+define i64 @caller(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %3 = getelementptr ptr, ptr %2, i64 3
+  %4 = load ptr, ptr %3, align 8
+  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
+  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  %9 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
+  ret i64 %9
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+`)
 }
 
 func TestTypes(t *testing.T) {
