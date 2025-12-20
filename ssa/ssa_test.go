@@ -411,6 +411,9 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 }
 
 func TestClosureCtxHelpers(t *testing.T) {
+	if closureCtxParam(nil) != nil {
+		t.Fatal("closureCtxParam should be nil for nil signature")
+	}
 	params := types.NewTuple()
 	rets := types.NewTuple()
 	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
@@ -529,6 +532,42 @@ func TestMakeInterfaceKinds(t *testing.T) {
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 }
 
+func TestInterfaceHelpers(t *testing.T) {
+	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	rawMeth := types.NewFunc(0, nil, "M", rawSig)
+	rawIface := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
+	rawIface.Complete()
+
+	if got := iMethodOf(rawIface, "missing"); got != -1 {
+		t.Fatalf("iMethodOf missing: got %d", got)
+	}
+
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	intfType := prog.Type(rawIface, InGo)
+	fn := pkg.NewFunc("call", types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "i", rawIface)), nil, false), InGo)
+	b := fn.MakeBody(1)
+
+	// Method signature with first param being the interface itself.
+	params := types.NewTuple(types.NewVar(0, nil, "self", rawIface),
+		types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params,
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), false)
+	method := types.NewFunc(0, nil, "M", sig)
+	closure := b.Imethod(fn.Param(0), method)
+	if got := closure.raw.Type.(*types.Struct).Field(0).Type().(*types.Signature).Params().Len(); got != 1 {
+		t.Fatalf("Imethod should drop interface param: got %d params", got)
+	}
+	_ = intfType
+}
+
 func TestValFromDataKinds(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
@@ -555,6 +594,47 @@ func TestValFromDataKinds(t *testing.T) {
 	arr := types.NewArray(types.Typ[types.Int], 1)
 	b.valFromData(prog.Type(arr, InGo), data)
 
+	b.Return()
+}
+
+func TestPackageCoverageHelpers(t *testing.T) {
+	if !is32Bits("386") {
+		t.Fatal("is32Bits should return true for 386")
+	}
+	if is32Bits("amd64") {
+		t.Fatal("is32Bits should return false for amd64")
+	}
+	prog := NewProgram(nil)
+	_ = prog.CIntPtr()
+	pkg := prog.NewPackage("bar", "foo/bar")
+	if len(pkg.ExportFuncs()) != 0 {
+		t.Fatal("ExportFuncs should be empty for new package")
+	}
+
+	// cover closureStub default branch
+	fn := pkg.NewFunc("noop", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+	expr := prog.Val(1)
+	got, data := pkg.closureStub(b, expr, nil, vkString)
+	if got.impl.IsNil() || !data.impl.IsNull() {
+		t.Fatal("closureStub default branch should return expr and nil data")
+	}
+	b.Return()
+}
+
+func TestExprCoverageHelpers(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+
+	// SetName coverage
+	tmp := b.AllocaT(prog.Int())
+	tmp.SetName("tmp0")
+
+	// Printf / tyPrintf coverage
+	b.Printf("value=%d", prog.Val(1))
 	b.Return()
 }
 
