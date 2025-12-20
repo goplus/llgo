@@ -5,9 +5,11 @@ This document describes the current LLGo SSA closure implementation.
 ## Goals
 
 - Keep function values pointing to **real symbols** (no global stub for every
-  closure).
+  closure). For non-ctx functions, a thin `__llgo_stub` wrapper is used as the
+  callable symbol.
 - Preserve a `funcval`-like layout: `{fn, data}`.
-- Use an explicit `ctx` parameter in the call ABI (no runtime branching).
+- Use an explicit `ctx` parameter in the call ABI (no runtime branching);
+  adaptation happens at conversion time via wrappers.
 
 ## Representation
 
@@ -27,7 +29,7 @@ Closures are lowered to a 2-field struct:
 
 ## Calling a Closure
 
-`Builder.Call` always emits:
+Calls to **closure values** always emit:
 
 ```
 fn(ctx, args...)
@@ -41,7 +43,7 @@ does not naturally accept a ctx is adapted at conversion time (see below).
 To keep the explicit-ctx ABI while avoiding mismatched calls:
 
 - **Function declarations** without ctx are wrapped by a thin adapter:
-  - Name: `__llgo_stub.<fn>` (see `closureStub`)
+  - Name: `__llgo_stub.<fn>`
   - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
   - Body: ignores ctx, calls the original function.
   - Linkage: `linkonce`
@@ -55,8 +57,7 @@ To keep the explicit-ctx ABI while avoiding mismatched calls:
     emit runtime null checks.
 
 This is the only remaining use of the `__llgo_stub.` prefix; it is no longer
-used to generate a global stub for every closure. The prefix and `__llgo_ctx`
-names are defined alongside each other in `ssa/package.go`.
+used to generate a global stub for every closure.
 
 ## Interface Method Values
 
@@ -77,16 +78,6 @@ interface method into a closure:
 - `go:linkname` to C (`C.xxx`) and `llgo:type C` callback parameters.
 - `defer` / `go` invocation of closure values.
 - `FuncPCABI0` points at the real symbol (wrappers only for ctx adaptation).
-
-## Tests
-
-SSA unit tests cover:
-
-- Closure values with and without ctx.
-- Dynamic closure call path (always ctx).
-- Closure signatures derived from interface methods (receiver removed).
-
-Runtime tests (via `gentests`) validate generated IR for runtime and testdata.
 
 ## Notes / Limitations
 
