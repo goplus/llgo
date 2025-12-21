@@ -66,7 +66,7 @@ _llgo_0:
   %17 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %16, i64 0
   %18 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %19, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %19, align 8
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %18, 0
   %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %20, ptr %19, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %21, ptr %17, align 8
@@ -78,7 +78,7 @@ _llgo_0:
   %27 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %26, i64 0
   %28 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %29, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %29, align 8
   %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %28, 0
   %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %30, ptr %29, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %31, ptr %27, align 8
@@ -105,7 +105,7 @@ _llgo_0:
   %50 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @fmt.Println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %49)
   %51 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %52 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %52, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %52, align 8
   %53 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %51, 0
   %54 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %53, ptr %52, 1
   %55 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %54)
@@ -122,7 +122,7 @@ _llgo_0:
   %65 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @fmt.Println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %64)
   %66 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %67 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %67, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/reflectfn.demo", ptr null }, ptr %67, align 8
   %68 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %66, 0
   %69 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %68, ptr %67, 1
   %70 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %69)
@@ -140,8 +140,9 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/reflectfn.main$1"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testgo/reflectfn.main$1"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -238,12 +239,6 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.c
 declare %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1)
 
 declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @fmt.Println(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/reflectfn.demo"(ptr %0) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testgo/reflectfn.demo"()
-  ret void
-}
 
 declare %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

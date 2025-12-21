@@ -103,8 +103,8 @@ func Pkg(t *testing.T, pkgPath, outFile string) {
 			t.Fatal("decodeLinkFile failed:", err)
 		}
 	}
-	expected := string(b)
-	if v := llgen.GenFrom(pkgPath); v != expected {
+	expected := llgen.NormalizeIR(string(b))
+	if v := llgen.NormalizeIR(llgen.GenFrom(pkgPath)); v != expected {
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }
@@ -118,7 +118,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	out := pkgDir + "/out.ll"
 	b, _ := os.ReadFile(out)
 	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
-		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
+		if test.Diff(t, pkgDir+"/result.txt", []byte(llgen.NormalizeIR(v)), []byte(llgen.NormalizeIR(string(b)))) {
 			t.Fatal("llgen.GenFrom: unexpect result")
 		}
 	}
@@ -153,7 +153,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
 
-	if v := ret.String(); v != expected && expected != ";" { // expected == ";" means skipping out.ll
+	if v := llgen.NormalizeIR(ret.String()); v != llgen.NormalizeIR(expected) && expected != ";" { // expected == ";" means skipping out.ll
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }

@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"fmt"
 	"runtime"
 
 	"github.com/goplus/llvm"
@@ -28,6 +29,38 @@ type Target struct {
 	GOOS   string
 	GOARCH string
 	GOARM  string // "5", "6", "7" (default)
+}
+
+// CtxRegister describes the closure context register for a target architecture.
+// Use a callee-saved register that is not used for C ABI parameters/returns.
+//   - amd64: R12 (r12)
+//   - arm64: X26 (x26)
+//   - arm: R8 (r8)
+//   - 386: ESI (esi)
+type CtxRegister struct {
+	Name       string // LLVM register name for inline asm, e.g., "r12", "x19"
+	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x19}"
+}
+
+// CtxRegister returns the closure context register for the target architecture.
+// Every supported GOARCH must define a register for closure context.
+func (t *Target) CtxRegister() CtxRegister {
+	goarch := t.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	switch goarch {
+	case "amd64":
+		return CtxRegister{Name: "r12", Constraint: "{r12}"}
+	case "arm64":
+		return CtxRegister{Name: "x26", Constraint: "{x26}"}
+	case "arm":
+		return CtxRegister{Name: "r8", Constraint: "{r8}"}
+	case "386":
+		return CtxRegister{Name: "esi", Constraint: "{esi}"}
+	default:
+		panic(fmt.Sprintf("closure ctx register not defined for GOARCH=%q", goarch))
+	}
 }
 
 func (p *Target) targetData() llvm.TargetData {
@@ -149,9 +182,9 @@ func (p *Target) Spec() (spec TargetSpec) {
 	case "arm64":
 		spec.CPU = "generic"
 		if goos == "darwin" {
-			spec.Features = "+neon"
+			spec.Features = "+neon,+reserve-x26"
 		} else { // windows, linux
-			spec.Features = "+neon,-fmv"
+			spec.Features = "+neon,-fmv,+reserve-x26"
 		}
 	case "wasm":
 		spec.CPU = "generic"

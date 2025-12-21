@@ -25,7 +25,7 @@ _llgo_0:
   %2 = load ptr, ptr @_llgo_Pointer, align 8
   %3 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null }, ptr %4, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null }, ptr %4, align 8
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %3, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, ptr %4, 1
   %7 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
@@ -126,13 +126,7 @@ define void @"github.com/goplus/llgo/cl/_testrt/funcdecl.main"() {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 5 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/cl/_testrt/funcdecl.check"({ ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null })
-  ret void
-}
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/funcdecl.demo"(ptr %0) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/funcdecl.demo"()
+  call void @"github.com/goplus/llgo/cl/_testrt/funcdecl.check"({ ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.demo", ptr null })
   ret void
 }
 

@@ -200,6 +200,7 @@ func compileWithConfig(
 func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, err error) {
 	targetTriple := llvm.GetTargetTriple(goos, goarch)
 	llgoRoot := env.LLGoROOT()
+	export.LLVMTarget = targetTriple
 
 	// Check for ESP Clang support for target-based builds
 	clangRoot, err := getESPClangRoot(forceEspClang)

@@ -182,10 +182,11 @@ type aFunction struct {
 	defer_ *aDefer
 	recov  BasicBlock
 
-	params   []Type
-	freeVars Expr
-	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+	params      []Type
+	freeVars    Expr
+	ctxType     Type // closure context struct type (for register-based ctx)
+	hasFreeVars bool // true if function is a closure with free variables
+	hasVArg     bool
 
 	diFunc DIFunction
 }
@@ -223,17 +224,13 @@ func (p Package) FuncOf(name string) Function {
 
 func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool) Function {
 	params, hasVArg := newParams(t, prog)
-	base := 0
-	if hasFreeVars {
-		base = 1
-	}
 	return &aFunction{
-		Expr:    Expr{fn, t},
-		Pkg:     pkg,
-		Prog:    prog,
-		params:  params,
-		base:    base,
-		hasVArg: hasVArg,
+		Expr:        Expr{fn, t},
+		Pkg:         pkg,
+		Prog:        prog,
+		params:      params,
+		hasFreeVars: hasFreeVars,
+		hasVArg:     hasVArg,
 	}
 }
 
@@ -257,25 +254,39 @@ func (p Function) Name() string {
 	return p.impl.Name()
 }
 
-// Params returns the function's ith parameter.
+// Param returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
-	i += p.base // skip if hasFreeVars
 	return Expr{p.impl.Param(i), p.params[i]}
 }
 
+// SetCtxType sets the closure context struct type for register-based ctx passing.
+// Must be called before accessing free variables if hasFreeVars is true.
+func (p Function) SetCtxType(t Type) {
+	p.ctxType = t
+}
+
+// closureCtx reads and caches the closure context from the register.
 func (p Function) closureCtx(b Builder) Expr {
 	if p.freeVars.IsNil() {
-		if p.base == 0 {
+		if !p.hasFreeVars {
 			panic("ssa: function has no free variables")
 		}
-		ptr := Expr{p.impl.Param(0), p.params[0]}
+		if p.ctxType == nil {
+			panic("ssa: closure context type not set, call SetCtxType first")
+		}
+		// Read closure context pointer from register and cast to correct type.
+		// All operations must be in the entry block to ensure proper SSA form.
+		var blk llvm.BasicBlock
 		if b.blk.Index() != 0 {
-			blk := b.impl.GetInsertBlock()
+			blk = b.impl.GetInsertBlock()
 			b.SetBlockEx(p.blks[0], AtStart, false)
-			p.freeVars = b.Load(ptr)
+		}
+		rawPtr := b.ReadCtxReg()
+		ctxPtrType := b.Prog.Pointer(p.ctxType)
+		ptr := b.Convert(ctxPtrType, rawPtr)
+		p.freeVars = b.Load(ptr)
+		if !blk.IsNil() {
 			b.impl.SetInsertPointAtEnd(blk)
-		} else {
-			p.freeVars = b.Load(ptr)
 		}
 	}
 	return p.freeVars

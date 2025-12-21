@@ -326,7 +326,8 @@ _llgo_17:                                         ; preds = %_llgo_4
   %114 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound", ptr undef }, ptr %112, 1
   %115 = extractvalue { ptr, ptr } %114, 1
   %116 = extractvalue { ptr, ptr } %114, 0
-  %117 = call i64 %116(ptr %115)
+  call void asm sideeffect "", "{x26}"(ptr %115)
+  %117 = call i64 %116()
   %118 = icmp ne i64 %117, 1
   br i1 %118, label %_llgo_5, label %_llgo_6
 
@@ -346,7 +347,8 @@ _llgo_19:                                         ; preds = %_llgo_6
   %125 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound", ptr undef }, ptr %123, 1
   %126 = extractvalue { ptr, ptr } %125, 1
   %127 = extractvalue { ptr, ptr } %125, 0
-  %128 = call i64 %127(ptr %126)
+  call void asm sideeffect "", "{x26}"(ptr %126)
+  %128 = call i64 %127()
   %129 = icmp ne i64 %128, 1
   br i1 %129, label %_llgo_7, label %_llgo_8
 
@@ -366,7 +368,8 @@ _llgo_21:                                         ; preds = %_llgo_12
   %136 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound", ptr undef }, ptr %134, 1
   %137 = extractvalue { ptr, ptr } %136, 1
   %138 = extractvalue { ptr, ptr } %136, 0
-  %139 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %138(ptr %137)
+  call void asm sideeffect "", "{x26}"(ptr %137)
+  %139 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %138()
   %140 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %139, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %141 = xor i1 %140, true
   br i1 %141, label %_llgo_13, label %_llgo_14
@@ -387,7 +390,8 @@ _llgo_23:                                         ; preds = %_llgo_14
   %148 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound", ptr undef }, ptr %146, 1
   %149 = extractvalue { ptr, ptr } %148, 1
   %150 = extractvalue { ptr, ptr } %148, 0
-  %151 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %150(ptr %149)
+  call void asm sideeffect "", "{x26}"(ptr %149)
+  %151 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %150()
   %152 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %151, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %153 = xor i1 %152, true
   br i1 %153, label %_llgo_15, label %_llgo_16
@@ -589,8 +593,9 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound"(ptr %0) {
+define i64 @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)
@@ -607,8 +612,9 @@ _llgo_0:
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound"(ptr %0) {
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)

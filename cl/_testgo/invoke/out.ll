@@ -185,7 +185,8 @@ define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke"(%"github.com/go
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 0
-  %3 = call i64 %2(ptr %1)
+  call void asm sideeffect "", "{x26}"(ptr %1)
+  %3 = call i64 %2()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
@@ -248,7 +249,7 @@ _llgo_0:
   %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/invoke.T5", ptr %7, i32 0, i32 0
   store i64 300, ptr %8, align 4
   %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  store %"github.com/goplus/llgo/cl/_testgo/invoke.T6" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/invoke.main$1", ptr null }, ptr %9, align 8
+  store %"github.com/goplus/llgo/cl/_testgo/invoke.T6" { ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main$1", ptr null }, ptr %9, align 8
   %10 = load %"github.com/goplus/llgo/cl/_testgo/invoke.T", ptr %0, align 8
   %11 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T", align 8
   %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
@@ -458,12 +459,6 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(doubl
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
-
-define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/invoke.main$1"(ptr %0) {
-_llgo_0:
-  %1 = tail call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.main$1"()
-  ret i64 %1
-}
 
 define void @"github.com/goplus/llgo/cl/_testgo/invoke.init$after"() {
 _llgo_0:
