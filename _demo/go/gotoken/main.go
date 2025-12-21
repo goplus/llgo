@@ -18,10 +18,10 @@ func main() {
 
 func testPos() {
 	fmt.Println("=== Test Pos ===")
-	
+
 	pos1 := token.Pos(100)
 	pos2 := token.Pos(200)
-	
+
 	if pos1 != 100 {
 		panic(fmt.Sprintf("Expected pos1 to be 100, got %d", pos1))
 	}
@@ -29,12 +29,12 @@ func testPos() {
 		panic(fmt.Sprintf("Expected pos2 to be 200, got %d", pos2))
 	}
 	fmt.Printf("Pos1: %d, Pos2: %d\n", pos1, pos2)
-	
+
 	if !pos1.IsValid() {
 		panic("Expected pos1.IsValid() to be true")
 	}
 	fmt.Printf("Pos1.IsValid(): %v\n", pos1.IsValid())
-	
+
 	noPos := token.NoPos
 	if noPos != 0 {
 		panic(fmt.Sprintf("Expected NoPos to be 0, got %d", noPos))
@@ -43,13 +43,13 @@ func testPos() {
 		panic("Expected NoPos.IsValid() to be false")
 	}
 	fmt.Printf("NoPos: %d, IsValid: %v\n", noPos, noPos.IsValid())
-	
+
 	fmt.Println("SUCCESS: Pos operations work correctly\n")
 }
 
 func testToken() {
 	fmt.Println("\n=== Test Token Types ===")
-	
+
 	expectedStrings := map[token.Token]string{
 		token.ADD:    "+",
 		token.SUB:    "-",
@@ -60,13 +60,13 @@ func testToken() {
 		token.EQL:    "==",
 		token.NEQ:    "!=",
 	}
-	
+
 	for tok, expected := range expectedStrings {
 		if tok.String() != expected {
 			panic(fmt.Sprintf("Expected %v.String() to be %q, got %q", tok, expected, tok.String()))
 		}
 	}
-	
+
 	tokens := []token.Token{
 		token.ILLEGAL,
 		token.EOF,
@@ -125,17 +125,17 @@ func testToken() {
 		token.SEMICOLON,
 		token.COLON,
 	}
-	
+
 	for _, tok := range tokens {
 		fmt.Printf("Token: %s (String: %q)\n", tok, tok.String())
 	}
-	
+
 	fmt.Println("SUCCESS: Token types work correctly\n")
 }
 
 func testTokenKeywords() {
 	fmt.Println("\n=== Test Keywords ===")
-	
+
 	keywords := []token.Token{
 		token.BREAK,
 		token.CASE,
@@ -163,27 +163,27 @@ func testTokenKeywords() {
 		token.TYPE,
 		token.VAR,
 	}
-	
+
 	for _, kw := range keywords {
 		if !kw.IsKeyword() {
 			panic(fmt.Sprintf("Expected %s to be a keyword", kw))
 		}
 		fmt.Printf("Keyword: %s, IsKeyword: %v\n", kw, kw.IsKeyword())
 	}
-	
+
 	if token.ADD.IsKeyword() {
 		panic("Expected ADD operator to not be a keyword")
 	}
 	if token.IDENT.IsKeyword() {
 		panic("Expected IDENT token to not be a keyword")
 	}
-	
+
 	fmt.Println("SUCCESS: Keyword checks work correctly\n")
 }
 
 func testTokenPrecedence() {
 	fmt.Println("\n=== Test Token Precedence ===")
-	
+
 	if token.MUL.Precedence() <= token.ADD.Precedence() {
 		panic("Expected MUL to have higher precedence than ADD")
 	}
@@ -196,7 +196,7 @@ func testTokenPrecedence() {
 	if token.ADD.Precedence() != token.SUB.Precedence() {
 		panic("Expected ADD and SUB to have same precedence")
 	}
-	
+
 	operators := []token.Token{
 		token.ADD,
 		token.SUB,
@@ -209,97 +209,97 @@ func testTokenPrecedence() {
 		token.LSS,
 		token.GTR,
 	}
-	
+
 	for _, op := range operators {
 		fmt.Printf("Operator: %s, Precedence: %d\n", op, op.Precedence())
 	}
-	
+
 	fmt.Println("SUCCESS: Precedence operations work correctly\n")
 }
 
 func testFileSet() {
 	fmt.Println("\n=== Test FileSet ===")
-	
+
 	fset := token.NewFileSet()
-	
+
 	file1 := fset.AddFile("file1.go", -1, 1000)
 	file2 := fset.AddFile("file2.go", -1, 2000)
-	
+
 	fmt.Printf("Added file1: %s, Base: %d, Size: %d\n", file1.Name(), file1.Base(), file1.Size())
 	fmt.Printf("Added file2: %s, Base: %d, Size: %d\n", file2.Name(), file2.Base(), file2.Size())
-	
+
 	pos := file1.Pos(100)
 	retrievedFile := fset.File(pos)
 	if retrievedFile != file1 {
 		panic("FileSet.File failed to retrieve correct file")
 	}
-	
+
 	position := fset.Position(pos)
 	fmt.Printf("Position at offset 100: %s\n", position)
-	
+
 	fmt.Println("SUCCESS: FileSet operations work correctly\n")
 }
 
 func testFile() {
 	fmt.Println("\n=== Test File ===")
-	
+
 	fset := token.NewFileSet()
 	file := fset.AddFile("test.go", -1, 1000)
-	
+
 	if file.Name() != "test.go" {
 		panic(fmt.Sprintf("Expected file name to be 'test.go', got %q", file.Name()))
 	}
 	if file.Size() != 1000 {
 		panic(fmt.Sprintf("Expected file size to be 1000, got %d", file.Size()))
 	}
-	
+
 	file.AddLine(0)
 	file.AddLine(50)
 	file.AddLine(100)
-	
+
 	if file.LineCount() != 3 {
 		panic(fmt.Sprintf("Expected line count to be 3, got %d", file.LineCount()))
 	}
-	
+
 	fmt.Printf("File name: %s\n", file.Name())
 	fmt.Printf("File base: %d\n", file.Base())
 	fmt.Printf("File size: %d\n", file.Size())
 	fmt.Printf("File line count: %d\n", file.LineCount())
-	
+
 	pos := file.Pos(50)
 	fmt.Printf("Pos at offset 50: %d\n", pos)
-	
+
 	offset := file.Offset(pos)
 	if offset != 50 {
 		panic(fmt.Sprintf("Expected offset to be 50, got %d", offset))
 	}
 	fmt.Printf("Offset of pos: %d\n", offset)
-	
+
 	line := file.Line(pos)
 	if line != 2 {
 		panic(fmt.Sprintf("Expected line to be 2, got %d", line))
 	}
 	fmt.Printf("Line number at pos: %d\n", line)
-	
+
 	lineStart := file.LineStart(2)
 	fmt.Printf("Line 2 starts at pos: %d\n", lineStart)
-	
+
 	position := file.Position(pos)
 	fmt.Printf("Position: %s\n", position)
-	
+
 	fmt.Println("SUCCESS: File operations work correctly\n")
 }
 
 func testPosition() {
-	fmt.Println("\n=== Test Position ===" )
-	
+	fmt.Println("\n=== Test Position ===")
+
 	pos := token.Position{
 		Filename: "test.go",
 		Offset:   100,
 		Line:     5,
 		Column:   10,
 	}
-	
+
 	if !pos.IsValid() {
 		panic("Expected valid position to be valid")
 	}
@@ -312,18 +312,18 @@ func testPosition() {
 	if pos.Column != 10 {
 		panic(fmt.Sprintf("Expected column to be 10, got %d", pos.Column))
 	}
-	
+
 	fmt.Printf("Position: %s\n", pos.String())
-	fmt.Printf("Filename: %s, Line: %d, Column: %d, Offset: %d\n", 
+	fmt.Printf("Filename: %s, Line: %d, Column: %d, Offset: %d\n",
 		pos.Filename, pos.Line, pos.Column, pos.Offset)
 	fmt.Printf("IsValid: %v\n", pos.IsValid())
-	
+
 	invalidPos := token.Position{}
 	if invalidPos.IsValid() {
 		panic("Expected empty position to be invalid")
 	}
 	fmt.Printf("Invalid position IsValid: %v\n", invalidPos.IsValid())
-	
+
 	fmt.Println("SUCCESS: Position operations work correctly\n")
 }
 
