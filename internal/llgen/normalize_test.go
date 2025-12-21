@@ -37,11 +37,6 @@ func TestNormalizeIR(t *testing.T) {
 			expected: `%0 = call ptr asm sideeffect "", "={CTX_REG}"()`,
 		},
 		{
-			name:     "normalize r8 register",
-			input:    `call void asm sideeffect "", "{r8}"(ptr %ctx)`,
-			expected: `call void asm sideeffect "", "{CTX_REG}"(ptr %ctx)`,
-		},
-		{
 			name:     "normalize esi register",
 			input:    `call void asm sideeffect "", "{esi}"(ptr %0)`,
 			expected: `call void asm sideeffect "", "{CTX_REG}"(ptr %0)`,

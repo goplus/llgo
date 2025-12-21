@@ -21,8 +21,9 @@ import "regexp"
 var (
 	targetFeaturesRe = regexp.MustCompile(`\s*"target-features"="[^"]*"`)
 	// Normalize platform-specific ctx registers to a generic placeholder.
-	// Matches: {r12}, {x26}, {r8}, {esi}, {x27} in inline asm constraints.
-	ctxRegisterRe = regexp.MustCompile(`\{(r12|x26|r8|esi|x27)\}`)
+	// Matches: {r12}, {x26}, {esi}, {x27} in inline asm constraints.
+	// Note: arm32 uses global fallback, not register.
+	ctxRegisterRe = regexp.MustCompile(`\{(r12|x26|esi|x27)\}`)
 )
 
 // NormalizeIR strips platform-specific IR attributes that are irrelevant for

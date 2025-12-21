@@ -31,21 +31,27 @@ type Target struct {
 }
 
 // CtxRegister describes the closure context register for a target architecture.
-// Use a callee-saved register that is not used for C ABI parameters/returns.
-// If no register is defined for the target, Name/Constraint are empty and
-// the backend should fall back to non-register-based context passing.
-//   - amd64: R12 (r12)
-//   - arm64: X26 (x26)
-//   - arm: R8 (r8)
-//   - 386: ESI (esi)
-//   - riscv64: X27 (x27 / s11)
+// Requirements for a ctx register:
+//  1. Must be callee-saved (preserved across function calls)
+//  2. Not used for C ABI parameters/returns
+//  3. Must be usable in LLVM inline asm constraints
+//
+// Supported platforms:
+//   - amd64: R12 - callee-saved, not used by C ABI
+//   - arm64: X26 - callee-saved, reservable via +reserve-x26
+//   - 386: ESI - callee-saved in cdecl convention
+//   - riscv64: X27 (s11) - callee-saved register
+//
+// Platforms using global variable fallback:
+//   - arm: r8-r15 are "high registers", LLVM can't use {rN} constraint in ARM mode
+//   - wasm: no registers available
 type CtxRegister struct {
-	Name       string // LLVM register name for inline asm, e.g., "r12", "x19"
-	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x19}"
+	Name       string // LLVM register name for inline asm, e.g., "r12", "x26"
+	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x26}"
 }
 
 // CtxRegister returns the closure context register for the target architecture.
-// Every supported GOARCH must define a register for closure context.
+// Platforms without register support will use global variable fallback.
 func (t *Target) CtxRegister() CtxRegister {
 	goarch := t.GOARCH
 	if goarch == "" {
@@ -56,15 +62,12 @@ func (t *Target) CtxRegister() CtxRegister {
 		return CtxRegister{Name: "r12", Constraint: "{r12}"}
 	case "arm64":
 		return CtxRegister{Name: "x26", Constraint: "{x26}"}
-	case "arm":
-		return CtxRegister{Name: "r8", Constraint: "{r8}"}
 	case "386":
 		return CtxRegister{Name: "esi", Constraint: "{esi}"}
 	case "riscv64":
 		return CtxRegister{Name: "x27", Constraint: "{x27}"}
-	case "wasm":
-		return CtxRegister{}
 	default:
+		// arm, wasm, and other platforms use global variable fallback
 		return CtxRegister{}
 	}
 }

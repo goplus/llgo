@@ -506,7 +506,7 @@ func TestCtxRegisterDefinitions(t *testing.T) {
 	}{
 		{"amd64", "r12", "{r12}"},
 		{"arm64", "x26", "{x26}"},
-		{"arm", "r8", "{r8}"},
+		{"arm", "", ""}, // arm32 uses global fallback (r8 not usable)
 		{"386", "esi", "{esi}"},
 		{"riscv64", "x27", "{x27}"},
 		{"wasm", "", ""},
