@@ -4,7 +4,11 @@
 
 package time
 
-import "sync"
+import (
+	"errors"
+	"sync"
+	"syscall"
+)
 
 // A Location maps time instants to the zone in use at that time.
 // Typically, the Location represents the collection of time offsets
@@ -97,6 +101,12 @@ func (l *Location) String() string {
 var unnamedFixedZones []*Location
 var unnamedFixedZonesOnce sync.Once
 
+var (
+	errLocation  = errors.New("time: invalid location name")
+	zoneinfo     *string
+	zoneinfoOnce sync.Once
+)
+
 // FixedZone returns a Location that always uses
 // the given zone name and offset (seconds east of UTC).
 func FixedZone(name string, offset int) *Location {
@@ -129,6 +139,53 @@ func fixedZone(name string, offset int) *Location {
 	return l
 }
 
+// LoadLocation returns the Location with the given name. See the package
+// documentation for a list of supported locations.
+func LoadLocation(name string) (*Location, error) {
+	if name == "" || name == "UTC" {
+		return UTC, nil
+	}
+	if name == "Local" {
+		return Local, nil
+	}
+	if containsDotDot(name) || name[0] == '/' || name[0] == '\\' {
+		return nil, errLocation
+	}
+
+	zoneinfoOnce.Do(func() {
+		env, _ := syscall.Getenv("ZONEINFO")
+		zoneinfo = &env
+	})
+
+	if *zoneinfo != "" {
+		if zoneData, err := loadTzinfoFromDirOrZip(*zoneinfo, name); err == nil {
+			if z, err := LoadLocationFromTZData(name, zoneData); err == nil {
+				return z, nil
+			}
+		}
+	}
+
+	if z, err := loadLocation(name, platformZoneSources); err == nil {
+		return z, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return nil, errLocation
+}
+
+func containsDotDot(s string) bool {
+	if len(s) < 2 {
+		return false
+	}
+	for i := 0; i < len(s)-1; i++ {
+		if s[i] == '.' && s[i+1] == '.' {
+			return true
+		}
+	}
+	return false
+}
+
 // lookup returns information about the time zone in use at an
 // instant in time expressed as seconds since January 1, 1970 00:00:00 UTC.
 //
@@ -157,55 +214,108 @@ func (l *Location) lookup(sec int64) (name string, offset int, start, end int64,
 		return
 	}
 
-	/*
-		if len(l.tx) == 0 || sec < l.tx[0].when {
-			zone := &l.zone[l.lookupFirstZone()]
-			name = zone.name
-			offset = zone.offset
-			start = alpha
-			if len(l.tx) > 0 {
-				end = l.tx[0].when
-			} else {
-				end = omega
-			}
-			isDST = zone.isDST
-			return
-		}
-
-		// Binary search for entry with largest time <= sec.
-		// Not using sort.Search to avoid dependencies.
-		tx := l.tx
-		end = omega
-		lo := 0
-		hi := len(tx)
-		for hi-lo > 1 {
-			m := lo + (hi-lo)/2
-			lim := tx[m].when
-			if sec < lim {
-				end = lim
-				hi = m
-			} else {
-				lo = m
-			}
-		}
-		zone := &l.zone[tx[lo].index]
+	if len(l.tx) == 0 || sec < l.tx[0].when {
+		zone := &l.zone[l.lookupFirstZone()]
 		name = zone.name
 		offset = zone.offset
-		start = tx[lo].when
-		// end = maintained during the search
+		start = alpha
+		if len(l.tx) > 0 {
+			end = l.tx[0].when
+		} else {
+			end = omega
+		}
 		isDST = zone.isDST
+		return
+	}
 
-		// If we're at the end of the known zone transitions,
-		// try the extend string.
-		if lo == len(tx)-1 && l.extend != "" {
-			if ename, eoffset, estart, eend, eisDST, ok := tzset(l.extend, start, sec); ok {
-				return ename, eoffset, estart, eend, eisDST
+	// Binary search for entry with largest time <= sec.
+	tx := l.tx
+	end = omega
+	lo := 0
+	hi := len(tx)
+	for hi-lo > 1 {
+		m := int(uint(lo+hi) >> 1)
+		lim := tx[m].when
+		if sec < lim {
+			end = lim
+			hi = m
+		} else {
+			lo = m
+		}
+	}
+	zone := &l.zone[tx[lo].index]
+	name = zone.name
+	offset = zone.offset
+	start = tx[lo].when
+	// end = maintained during the search
+	isDST = zone.isDST
+
+	// If we're at the end of the known zone transitions,
+	// try the extend string.
+	if lo == len(tx)-1 && l.extend != "" {
+		if ename, eoffset, estart, eend, eisDST, ok := tzset(l.extend, start, sec); ok {
+			return ename, eoffset, estart, eend, eisDST
+		}
+	}
+
+	return
+}
+
+// lookupFirstZone returns the index of the zone to use before the first
+// recorded transition (or when there are no transitions).
+func (l *Location) lookupFirstZone() int {
+	if !l.firstZoneUsed() {
+		return 0
+	}
+
+	if len(l.tx) > 0 && l.zone[l.tx[0].index].isDST {
+		for zi := int(l.tx[0].index) - 1; zi >= 0; zi-- {
+			if !l.zone[zi].isDST {
+				return zi
 			}
 		}
+	}
 
-		return
-	*/
-	panic("todo: Location.lookup")
+	for zi := range l.zone {
+		if !l.zone[zi].isDST {
+			return zi
+		}
+	}
+
+	return 0
+}
+
+func (l *Location) firstZoneUsed() bool {
+	for _, tx := range l.tx {
+		if tx.index == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// lookupName returns the offset associated with a zone abbreviation.
+func (l *Location) lookupName(name string, unix int64) (offset int, ok bool) {
+	l = l.get()
+
+	for i := range l.zone {
+		zone := &l.zone[i]
+		if zone.name == name {
+			nam, off, _, _, _ := l.lookup(unix - int64(zone.offset))
+			if nam == zone.name {
+				return off, true
+			}
+		}
+	}
+
+	for i := range l.zone {
+		zone := &l.zone[i]
+		if zone.name == name {
+			return zone.offset, true
+		}
+	}
+
+	return 0, false
 }
 
 // tzset takes a timezone string like the one found in the TZ environment

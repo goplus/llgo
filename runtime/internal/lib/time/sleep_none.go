@@ -7,9 +7,11 @@
 package time
 
 type runtimeTimer struct {
-	when int64
-	f    func(any, uintptr)
-	arg  any
+	when   int64
+	period int64
+	active bool
+	f      func(any, uintptr)
+	arg    any
 }
 
 func startTimer(r *runtimeTimer) {
