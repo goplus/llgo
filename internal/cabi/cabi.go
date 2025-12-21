@@ -456,7 +456,7 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				}
 				b.CreateStore(ret, params[0])
 				rv = b.CreateRetVoid()
-			case AttrWidthType, AttrWidthType2:
+			case AttrWidthType:
 				if p.optimize {
 					if load := ret.IsALoadInst(); !load.IsNil() {
 						iptr := b.CreateBitCast(ret.Operand(0), llvm.PointerType(nft.ReturnType(), 0), "")
@@ -464,6 +464,11 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 						break
 					}
 				}
+				ptr := llvm.CreateAlloca(b, info.Return.Type)
+				b.CreateStore(ret, ptr)
+				iptr := b.CreateBitCast(ptr, llvm.PointerType(nft.ReturnType(), 0), "")
+				rv = b.CreateRet(b.CreateLoad(nft.ReturnType(), iptr, ""))
+			case AttrWidthType2:
 				ptr := llvm.CreateAlloca(b, info.Return.Type)
 				b.CreateStore(ret, ptr)
 				iptr := b.CreateBitCast(ptr, llvm.PointerType(nft.ReturnType(), 0), "")
