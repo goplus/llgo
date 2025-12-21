@@ -1,0 +1,69 @@
+x-common-env: &llgo-common-env
+  LLGO_ROOT: /repo
+  LLGO_FULL_RPATH: "true"
+  GOMODCACHE: /go/pkg/mod
+  GOCACHE: /root/.cache/go-build
+  PIP_CACHE_DIR: /root/.cache/pip
+  PKG_CONFIG_PATH: /opt/llgo-assets/cargs/lib/pkgconfig
+  LLGO_ASSETS_DIR: /opt/llgo-assets
+
+x-common-build: &llgo-build
+  context: .
+  dockerfile: dev/Dockerfile.dev
+
+x-common-service: &llgo-service
+  working_dir: /repo
+  environment: *llgo-common-env
+  tty: true
+  stdin_open: true
+  command: ["bash"]
+
+services:
+  llgo-dev-amd64:
+    <<: *llgo-service
+    build:
+      <<: *llgo-build
+      target: pydeps
+    platform: linux/amd64
+    volumes:
+      - .:/repo:delegated
+      - go_mod_amd64:/go/pkg/mod
+      - go_cache_amd64:/root/.cache/go-build
+      - pip_cache_amd64:/root/.cache/pip
+
+  llgo-dev-arm64:
+    <<: *llgo-service
+    build:
+      <<: *llgo-build
+      target: base
+    platform: linux/arm64
+    volumes:
+      - .:/repo:delegated
+      - go_mod_arm64:/go/pkg/mod
+      - go_cache_arm64:/root/.cache/go-build
+      - pip_cache_arm64:/root/.cache/pip
+
+  llgo-dev-i386:
+    <<: *llgo-service
+    build:
+      <<: *llgo-build
+      target: base
+      args:
+        BASE_IMAGE: i386/debian:bookworm
+    platform: linux/386
+    volumes:
+      - .:/repo:delegated
+      - go_mod_i386:/go/pkg/mod
+      - go_cache_i386:/root/.cache/go-build
+      - pip_cache_i386:/root/.cache/pip
+
+volumes:
+  go_mod_amd64: {}
+  go_cache_amd64: {}
+  pip_cache_amd64: {}
+  go_mod_arm64: {}
+  go_cache_arm64: {}
+  pip_cache_arm64: {}
+  go_mod_i386: {}
+  go_cache_i386: {}
+  pip_cache_i386: {}

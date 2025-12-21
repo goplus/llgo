@@ -127,7 +127,7 @@ for target in "${targets_to_build[@]}"; do
 		continue
 	fi
 
-	output=$(../../../llgo.sh build -target $target -o hello.elf . 2>&1)
+	output=$(../../../dev/llgo.sh build -target $target -o hello.elf . 2>&1)
 	if [ $? -eq 0 ]; then
 		echo ✅ $target `file hello.elf`
 		successful_targets+=("$target")
