@@ -429,7 +429,6 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// mod.Finalize()
 	gbls := make(map[string]Global)
 	fns := make(map[string]Function)
-	stubs := make(map[string]Function)
 	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
@@ -438,7 +437,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
-		mod: mod, vars: gbls, fns: fns, stubs: stubs,
+		mod: mod, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
@@ -687,7 +686,6 @@ type aPackage struct {
 
 	vars   map[string]Global
 	fns    map[string]Function
-	stubs  map[string]Function
 	pyobjs map[string]PyObjRef
 	pymods map[string]Global
 	strs   map[string]llvm.Value
@@ -736,37 +734,23 @@ const (
 	closureStub = "__llgo_stub."
 )
 
-func (p Package) closureStub(b Builder, t types.Type, v Expr) Expr {
-	name := v.impl.Name()
+// closureStub creates or reuses a wrapper for function values that lack closure ctx.
+// It stays on Package to match the original placement of closure stubs.
+func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind valueKind) (Expr, Expr) {
 	prog := b.Prog
-	nilVal := prog.Nil(prog.VoidPtr()).impl
-	if fn, ok := p.stubs[name]; ok {
-		v = fn.Expr
-	} else {
-		sig := v.raw.Type.(*types.Signature)
-		n := sig.Params().Len()
-		nret := sig.Results().Len()
-		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-		sig = FuncAddCtx(ctx, sig)
-		fn := p.NewFunc(closureStub+name, sig, InC)
-		fn.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
-		args := make([]Expr, n)
-		for i := 0; i < n; i++ {
-			args[i] = fn.Param(i + 1)
-		}
-		b := fn.MakeBody(1)
-		call := b.Call(v, args...)
-		call.impl.SetTailCall(true)
-		switch nret {
-		case 0:
-			b.impl.CreateRetVoid()
-		default: // TODO(xsw): support multiple return values
-			b.impl.CreateRet(call.impl)
-		}
-		p.stubs[name] = fn
-		v = fn.Expr
+	switch origKind {
+	case vkFuncDecl:
+		wrap := p.closureWrapDecl(fn, sig)
+		return wrap.Expr, prog.Nil(prog.VoidPtr())
+	case vkFuncPtr:
+		wrap := p.closureWrapPtr(sig)
+		ptr := b.AllocU(prog.rawType(sig))
+		b.Store(ptr, fn)
+		data := b.Convert(prog.VoidPtr(), ptr)
+		return wrap.Expr, data
+	default:
+		return fn, prog.Nil(prog.VoidPtr())
 	}
-	return b.aggregateValue(prog.rawType(t), v.impl, nilVal)
 }
 
 // -----------------------------------------------------------------------------
