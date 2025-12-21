@@ -18,10 +18,17 @@ package llgen
 
 import "regexp"
 
-var targetFeaturesRe = regexp.MustCompile(`\s*"target-features"="[^"]*"`)
+var (
+	targetFeaturesRe = regexp.MustCompile(`\s*"target-features"="[^"]*"`)
+	// Normalize platform-specific ctx registers to a generic placeholder.
+	// Matches: {r12}, {x26}, {r8}, {esi}, {x27} in inline asm constraints.
+	ctxRegisterRe = regexp.MustCompile(`\{(r12|x26|r8|esi|x27)\}`)
+)
 
 // NormalizeIR strips platform-specific IR attributes that are irrelevant for
-// regression comparisons (e.g. target-features).
+// regression comparisons (e.g. target-features, ctx register names).
 func NormalizeIR(ir string) string {
-	return targetFeaturesRe.ReplaceAllString(ir, "")
+	ir = targetFeaturesRe.ReplaceAllString(ir, "")
+	ir = ctxRegisterRe.ReplaceAllString(ir, "{CTX_REG}")
+	return ir
 }

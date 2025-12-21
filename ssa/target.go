@@ -17,7 +17,6 @@
 package ssa
 
 import (
-	"fmt"
 	"runtime"
 
 	"github.com/goplus/llvm"
@@ -33,10 +32,13 @@ type Target struct {
 
 // CtxRegister describes the closure context register for a target architecture.
 // Use a callee-saved register that is not used for C ABI parameters/returns.
+// If no register is defined for the target, Name/Constraint are empty and
+// the backend should fall back to non-register-based context passing.
 //   - amd64: R12 (r12)
 //   - arm64: X26 (x26)
 //   - arm: R8 (r8)
 //   - 386: ESI (esi)
+//   - riscv64: X27 (x27 / s11)
 type CtxRegister struct {
 	Name       string // LLVM register name for inline asm, e.g., "r12", "x19"
 	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x19}"
@@ -58,8 +60,36 @@ func (t *Target) CtxRegister() CtxRegister {
 		return CtxRegister{Name: "r8", Constraint: "{r8}"}
 	case "386":
 		return CtxRegister{Name: "esi", Constraint: "{esi}"}
+	case "riscv64":
+		return CtxRegister{Name: "x27", Constraint: "{x27}"}
+	case "wasm":
+		return CtxRegister{}
 	default:
-		panic(fmt.Sprintf("closure ctx register not defined for GOARCH=%q", goarch))
+		return CtxRegister{}
+	}
+}
+
+// SupportsTLS returns whether the target platform supports thread-local storage.
+// This is used to determine if __llgo_closure_ctx should be thread-local.
+// Platforms that use ctx registers don't need this (it's only for fallback).
+//
+// TLS is supported on standard OS platforms (linux, darwin, windows, etc.)
+// but NOT on:
+//   - wasm/js/wasip1 (WebAssembly environments with limited threading)
+//   - bare metal / embedded (no OS, typically single-threaded)
+//   - empty GOOS (treated as bare-metal)
+func (t *Target) SupportsTLS() bool {
+	// Whitelist of GOOS that support TLS
+	// These are standard OS platforms with proper thread support
+	// Empty GOOS is treated as bare-metal (no TLS)
+	switch t.GOOS {
+	case "linux", "darwin", "windows", "freebsd", "netbsd", "openbsd",
+		"dragonfly", "solaris", "illumos", "aix", "android", "ios":
+		return true
+	default:
+		// wasm, js, wasip1, bare-metal, empty, or unknown platforms
+		// Default to no TLS for safety
+		return false
 	}
 }
 

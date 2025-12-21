@@ -299,13 +299,33 @@ func (b Builder) InlineAsmFull(instruction, constraints string, retType Type, ex
 	return Expr{b.impl.CreateCall(ftype, asm, vals, ""), retType}
 }
 
+const ctxGlobalName = "__llgo_closure_ctx"
+
+func (b Builder) ctxGlobal() llvm.Value {
+	g := b.Pkg.VarOf(ctxGlobalName)
+	if g == nil {
+		g = b.Pkg.NewVarEx(ctxGlobalName, b.Prog.Pointer(b.Prog.VoidPtr()))
+		g.impl.SetLinkage(llvm.InternalLinkage)
+		// Use TLS on platforms that support it for thread safety
+		if b.Prog.target.SupportsTLS() {
+			g.impl.SetThreadLocal(true)
+		}
+		g.InitNil()
+	}
+	return g.impl
+}
+
 // WriteCtxReg writes a pointer value to the closure context register.
 // On architectures that don't support register-based context (e.g., wasm),
-// this is a no-op. The caller should use parameter passing instead.
+// it falls back to a module-local global slot.
 func (b Builder) WriteCtxReg(val Expr) {
 	reg := b.Prog.target.CtxRegister()
 	if debugInstr {
 		log.Printf("WriteCtxReg %v to %s\n", val.impl, reg.Name)
+	}
+	if reg.Name == "" {
+		b.impl.CreateStore(val.impl, b.ctxGlobal())
+		return
 	}
 	// Use inline asm with output constraint to write to the register.
 	// The instruction is empty because we just want the constraint to
@@ -321,11 +341,16 @@ func (b Builder) WriteCtxReg(val Expr) {
 
 // ReadCtxReg reads the closure context pointer from the context register.
 // On architectures that don't support register-based context (e.g., wasm),
-// returns nil. The caller should use parameter passing instead.
+// it falls back to a module-local global slot.
 func (b Builder) ReadCtxReg() Expr {
 	reg := b.Prog.target.CtxRegister()
 	if debugInstr {
 		log.Printf("ReadCtxReg from %s\n", reg.Name)
+	}
+	if reg.Name == "" {
+		ptrType := b.Prog.VoidPtr()
+		ret := b.impl.CreateLoad(ptrType.ll, b.ctxGlobal(), "")
+		return Expr{ret, ptrType}
 	}
 	// Use inline asm with input constraint to read from the register.
 	// Example for amd64: constraint "={r12}" forces output from r12
