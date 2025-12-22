@@ -579,6 +579,10 @@ func (r *rtypes) addType(typ *Type) {
 
 var rtypeList rtypes
 
+func addType(typ *abi.Type) {
+	rtypeList.addType(typ)
+}
+
 // hashString computes the Fowler–Noll–Vo hash of s.
 func hashString(s string) uint32 {
 	var h uint32

@@ -216,6 +216,8 @@ type aProgram struct {
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
 
+	abiTypes typeutil.Map
+
 	ptrSize int
 
 	is32Bits bool
