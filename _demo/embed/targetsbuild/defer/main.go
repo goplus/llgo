@@ -16,11 +16,8 @@ func main() {
 		defer c.Printf(c.Str("defer in else\n"))
 	}
 
-	// FIXME(zzy): When defer in loop captures variables (e.g., defer c.Printf(c.Str("%d\n"), i)),
-	// panic exit will cause issues with preceding defer normal execution.
-	// Without variable capture, it works correctly.
 	for i := 0; i < 3; i++ {
-		defer c.Printf(c.Str("defer in loop\n"))
+		defer c.Printf(c.Str("defer in loop %d\n"), i)
 	}
 	panic("panic occured")
 }
