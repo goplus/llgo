@@ -22,9 +22,11 @@ package ssa
 import (
 	"fmt"
 	"go/constant"
+	"go/importer"
 	"go/token"
 	"go/types"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"unsafe"
@@ -485,10 +487,12 @@ func TestClosureWrapCache(t *testing.T) {
 
 func TestMakeInterfaceKinds(t *testing.T) {
 	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
 	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
 		return pkg
 	})
 	pkg := prog.NewPackage("bar", "foo/bar")
