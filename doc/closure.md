@@ -4,14 +4,38 @@ This document describes the current LLGo SSA closure implementation.
 
 ## Goals
 
-- Keep function values pointing to **real symbols** (no global stub for every
-  closure). For non-ctx functions, a thin `__llgo_stub` wrapper is used as the
-  callable symbol.
+- Pass closure context (ctx) via a **dedicated register** (like Go's official implementation), eliminating stub overhead.
+- Keep function values pointing to **real symbols** (no global stub for every closure).
 - Preserve a `funcval`-like layout: `{fn, data}`.
-- Use an explicit `ctx` parameter in the call ABI (no runtime branching);
-  adaptation happens at conversion time via wrappers.
 
-## Representation
+## Context Register
+
+The closure context pointer is passed via a dedicated CPU register:
+
+| GOARCH | Register | Constraint |
+|--------|----------|------------|
+| amd64 | R12 | `{r12}` |
+| arm64 | X26 | `{x26}` |
+| arm | R8 | `{r8}` |
+| 386 | ESI | `{esi}` |
+| riscv64 | X27 | `{x27}` |
+| wasm | (none) | fallback to global |
+
+For platforms without register support, a module-local global variable `__llgo_closure_ctx` is used as fallback.
+
+### Thread-Local Storage (TLS)
+
+When using the global fallback, TLS is used for thread safety on supported platforms:
+
+| GOOS | TLS Support |
+|------|-------------|
+| linux, darwin, windows, freebsd, netbsd, openbsd, dragonfly, solaris, illumos, aix, android, ios | ✅ Yes |
+| js, wasip1 (wasm) | ❌ No |
+| empty / unknown / bare-metal | ❌ No |
+
+Empty GOOS is treated as bare-metal (no TLS, single-threaded safe).
+
+## Closure Representation
 
 Closures are lowered to a 2-field struct:
 
@@ -19,66 +43,94 @@ Closures are lowered to a 2-field struct:
 { fn: *func, data: unsafe.Pointer }
 ```
 
-- `fn` is always a function whose signature **includes** a `__llgo_ctx`
-  parameter.
+- `fn` is the closure function (signature does NOT include ctx parameter).
 - `data` is:
-  - `nil` for plain functions or wrappers that ignore ctx.
-  - a pointer to a heap-allocated context for free variables.
-  - a pointer to a heap cell that stores a function pointer (for `func` values
-    represented as raw function pointers).
+  - `nil` for plain functions without free variables.
+  - a pointer to a heap-allocated context for closures with free variables.
 
 ## Calling a Closure
 
-Calls to **closure values** always emit:
+Before calling a closure, the caller:
+1. Writes `data` to the ctx register (inline asm)
+2. Calls `fn` directly (no ctx parameter in signature)
 
+```llvm
+; Write ctx to register
+call void asm sideeffect "", "{r12}"(ptr %data)
+; Call function
+%result = call i64 %fn(i64 %arg)
 ```
-fn(ctx, args...)
+
+The closure function reads ctx from the register at entry:
+```llvm
+%ctx = call ptr asm sideeffect "", "={r12}"()
+%captured = load { i64 }, ptr %ctx
 ```
 
-There is no runtime `ctx==nil` check and no sentinel. Any function value that
-does not naturally accept a ctx is adapted at conversion time (see below).
+## Closure Scenarios
 
-## Function Value -> Closure Wrappers
+### Generates Wrapper (Bound Function)
 
-To keep the explicit-ctx ABI while avoiding mismatched calls:
+| Scenario | Wrapper Name | Reason |
+|----------|--------------|--------|
+| Pointer receiver method value (`s.Add`) | `(*S).Add$bound` | Unpack receiver from ctx |
+| Value receiver method value (`s.Inc`) | `S.Inc$bound` | Copy receiver value from ctx |
+| Interface method value (`i.Add`) | `interface{...}.Add$bound` | Lookup vtable, extract data |
+| Method expression (`(*T).Add`) | `Add$thunk` | Signature adaptor (not ctx-related) |
+| goroutine wrapper | `_llgo_routine$N` | Thread entry point, sets ctx register |
 
-- **Function declarations** without ctx are wrapped by a thin adapter:
-  - Name: `__llgo_stub.<fn>`
-  - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
-  - Body: ignores ctx, calls the original function.
-  - Linkage: `linkonce`
-- **Function pointers** use a generic wrapper:
-  - Name: `__llgo_stub._llgo_func$<hash>`
-  - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
-  - Body: treats `__llgo_ctx` as a pointer to a stored function pointer, loads
-    it, and calls it.
-  - Linkage: `linkonce`
-  - Note: the ctx pointer is guaranteed non-nil for this wrapper; we do not
-    emit runtime null checks.
+### No Wrapper Needed
 
-This is the only remaining use of the `__llgo_stub.` prefix; it is no longer
-used to generate a global stub for every closure.
+| Scenario | Reason |
+|----------|--------|
+| Anonymous closure (no free vars) | `data = nil`, direct call |
+| Anonymous closure (with free vars) | Reads ctx from register directly |
+| Global function as closure | Direct call, no ctx needed |
+| `go:linkname` C function | Direct C call |
+| `llgo:link` C function | Direct C call |
+| `llgo:type C` callback | C ABI, no ctx register |
+| IIFE | Same as anonymous closure |
+| defer closure | Same as anonymous closure |
+| go closure | Uses `_llgo_routine$N` wrapper for thread setup |
+| Closure as parameter | Caller sets ctx register |
+| Nested closure | Each level reads from ctx register |
 
-## Interface Method Values
+## Bound Wrapper Internals
 
-Interface method signatures in `go/types` include a receiver. When turning an
-interface method into a closure:
+### Method Value (`s.Add` → `(*S).Add$bound`)
 
-- The receiver parameter is dropped from the closure signature.
-- The resulting closure is built with `{fn, data}` and will be wrapped if it
-  does not already accept `__llgo_ctx`.
+```llvm
+define i64 @"(*S).Add$bound"(i64 %arg) {
+  %ctx = call ptr asm sideeffect "", "={r12}"()
+  %receiver = load ptr, ptr %ctx
+  %result = call i64 @"(*S).Add"(ptr %receiver, i64 %arg)
+  ret i64 %result
+}
+```
 
-## Covered Scenarios
+### Interface Method Value
 
-- Plain functions (no free variables).
-- Closures with captured variables (`__llgo_ctx`).
-- Method values / method expressions.
-- Interface method values (receiver dropped).
-- Variadic functions (`__llgo_va_list`).
-- `go:linkname` to C (`C.xxx`) and `llgo:type C` callback parameters.
-- `defer` / `go` invocation of closure values.
-- `FuncPCABI0` points at the real symbol (wrappers only for ctx adaptation).
+```llvm
+define i64 @"interface{...}.Add$bound"(i64 %arg) {
+  %ctx = call ptr asm sideeffect "", "={r12}"()
+  %iface = load { ptr, ptr }, ptr %ctx
+  %data = call ptr @IfacePtrData(%iface)
+  %itab = extractvalue %iface, 0
+  %fn = load ptr, getelementptr ptr, ptr %itab, i64 3  ; vtable lookup
+  %result = call i64 %fn(ptr %data, i64 %arg)
+  ret i64 %result
+}
+```
+
+## Test Coverage
+
+All scenarios are covered in:
+- `test/closure_test.go` - Runtime tests
+- `ssa/ssa_test.go` - IR-level tests
+- `cl/_testgo/closureall/in.go` - Comprehensive compilation test
 
 ## Notes / Limitations
 
-- Python closures are intentionally out of scope for now.
+- Python closures are intentionally out of scope.
+- The ctx register must be callee-saved and not used for C ABI parameters.
+- TinyGo target configurations (`targets/*.json`) define embedded platforms that use fallback.

@@ -1118,6 +1118,9 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	objFile.Close()
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
+	if ctx.crossCompile.LLVMTarget != "" {
+		args = append([]string{"-target", ctx.crossCompile.LLVMTarget}, args...)
+	}
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}

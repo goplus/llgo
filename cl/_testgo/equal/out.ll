@@ -100,8 +100,9 @@ _llgo_0:
   ret i64 %2
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/equal.init#1$2"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testgo/equal.init#1$2"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4

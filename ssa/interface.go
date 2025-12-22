@@ -88,6 +88,7 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
 	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
+	ret.Type = ret.Type.withKind(vkIfaceClosure)
 	return ret
 }
 

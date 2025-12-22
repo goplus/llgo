@@ -41,7 +41,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpmethod"
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.Async[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]"({ ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile$1", ptr null })
+  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.Async[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]"({ ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile$1", ptr null })
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1
 }
 
@@ -54,7 +54,8 @@ _llgo_0:
   %3 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, align 8
   %4 = extractvalue { ptr, ptr } %0, 1
   %5 = extractvalue { ptr, ptr } %0, 0
-  call void %5(ptr %4, %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %3)
+  call void asm sideeffect "", "{x26}"(ptr %4)
+  call void %5(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %3)
   ret void
 }
 
@@ -83,7 +84,7 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  call void %8(ptr %7, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.main$1", ptr null })
+  call void %8(ptr %7, { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.main$1", ptr null })
   ret void
 }
 
@@ -112,22 +113,10 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %11
 }
 
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile$1"(ptr %0, { ptr, ptr } %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile$1"({ ptr, ptr } %1)
-  ret void
-}
-
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.main$1"(ptr %0, %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/tpmethod.main$1"(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %1)
-  ret void
-}
 
 define linkonce %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error].Get"(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %0) {
 _llgo_0:
@@ -553,7 +542,8 @@ _llgo_0:
   %3 = load { ptr, ptr }, ptr %2, align 8
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  call void %5(ptr %4, { ptr, ptr } %1)
+  call void asm sideeffect "", "{x26}"(ptr %4)
+  call void %5({ ptr, ptr } %1)
   ret void
 }
 

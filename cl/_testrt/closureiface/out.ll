@@ -64,7 +64,8 @@ _llgo_1:                                          ; preds = %_llgo_5
 _llgo_2:                                          ; preds = %_llgo_5
   %18 = extractvalue { ptr, ptr } %26, 1
   %19 = extractvalue { ptr, ptr } %26, 0
-  %20 = call i64 %19(ptr %18, i64 100)
+  call void asm sideeffect "", "{x26}"(ptr %18)
+  %20 = call i64 %19(i64 100)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
@@ -86,12 +87,13 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
   br i1 %27, label %_llgo_2, label %_llgo_1
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/closureiface.main$1"(ptr %0, i64 %1) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/closureiface.main$1"(i64 %0) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
+  %1 = call ptr asm sideeffect "", "={x26}"()
+  %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
-  %5 = add i64 %4, %1
+  %5 = add i64 %4, %0
   ret i64 %5
 }
 

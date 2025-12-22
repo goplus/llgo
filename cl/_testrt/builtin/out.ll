@@ -253,7 +253,7 @@ _llgo_0:
   %92 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %91, i64 0, 2
   %93 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %94 = getelementptr inbounds { ptr, ptr }, ptr %93, i64 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/builtin.main$1", ptr null }, ptr %94, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/builtin.main$1", ptr null }, ptr %94, align 8
   %95 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %93, 0
   %96 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %95, i64 1, 1
   %97 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %96, i64 1, 2
@@ -457,8 +457,9 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$3"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$3"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -482,12 +483,6 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/g
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64)
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/builtin.main$1"(ptr %0) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/builtin.main$1"()
-  ret void
-}
 
 define void @"github.com/goplus/llgo/cl/_testrt/builtin.init$after"() {
 _llgo_0:

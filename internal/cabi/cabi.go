@@ -17,7 +17,19 @@ const (
 
 func targetArch(llvmTarget string) string {
 	if pos := strings.Index(llvmTarget, "-"); pos != -1 {
-		return llvmTarget[:pos]
+		llvmTarget = llvmTarget[:pos]
+	}
+	switch llvmTarget {
+	case "x86_64":
+		return "amd64"
+	case "i386", "i486", "i586", "i686":
+		return "386"
+	case "aarch64", "arm64":
+		return "arm64"
+	case "armv5", "armv6", "armv7", "arm":
+		return "arm"
+	case "wasm32":
+		return "wasm"
 	}
 	return llvmTarget
 }

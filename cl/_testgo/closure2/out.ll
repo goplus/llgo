@@ -29,16 +29,19 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closure2.main$1", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call { ptr, ptr } %5(ptr %4, i64 1)
+  call void asm sideeffect "", "{x26}"(ptr %4)
+  %6 = call { ptr, ptr } %5(i64 1)
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  call void %8(ptr %7, i64 2)
+  call void asm sideeffect "", "{x26}"(ptr %7)
+  call void %8(i64 2)
   ret void
 }
 
-define { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/closure2.main$1"(ptr %0, i64 %1) {
+define { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/closure2.main$1"(i64 %0) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
+  %1 = call ptr asm sideeffect "", "={x26}"()
+  %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %5 = getelementptr inbounds { ptr }, ptr %4, i32 0, i32 0
@@ -47,14 +50,15 @@ _llgo_0:
   ret { ptr, ptr } %6
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/closure2.main$1$1"(ptr %0, i64 %1) {
+define void @"github.com/goplus/llgo/cl/_testgo/closure2.main$1$1"(i64 %0) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
+  %1 = call ptr asm sideeffect "", "={x26}"()
+  %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)

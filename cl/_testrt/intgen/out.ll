@@ -24,7 +24,8 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1
   %7 = extractvalue { ptr, ptr } %1, 1
   %8 = extractvalue { ptr, ptr } %1, 0
-  %9 = call i32 %8(ptr %7)
+  call void asm sideeffect "", "{x26}"(ptr %7)
+  %9 = call i32 %8()
   %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %2, 0
   %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %2, 1
   %12 = icmp slt i64 %5, 0
@@ -66,7 +67,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/intgen.main"() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } { ptr @__llgo_stub.rand, ptr null })
+  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } { ptr @rand, ptr null })
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
 
@@ -151,8 +152,9 @@ _llgo_9:                                          ; preds = %_llgo_7
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.main$1"(ptr %0) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.main$1"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i32, ptr %2, align 4
@@ -170,20 +172,15 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"
 
 declare i32 @rand()
 
-define linkonce i32 @__llgo_stub.rand(ptr %0) {
-_llgo_0:
-  %1 = tail call i32 @rand()
-  ret i32 %1
-}
-
 declare i32 @printf(ptr, ...)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound"(ptr %0) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "", "={x26}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = call i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next"(ptr %2)

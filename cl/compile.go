@@ -253,14 +253,16 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	}
 }
 
-func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
+// makeClosureCtxType returns the struct type for closure context.
+// This is used for register-based ctx passing where we need to know
+// the type to properly cast the pointer read from register.
+func makeClosureCtxType(pkg *types.Package, vars []*ssa.FreeVar) *types.Struct {
 	n := len(vars)
 	flds := make([]*types.Var, n)
 	for i, v := range vars {
 		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), v.Type(), false)
 	}
-	t := types.NewPointer(types.NewStruct(flds, nil))
-	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
+	return types.NewStruct(flds, nil)
 }
 
 func isCgoExternSymbol(f *ssa.Function) bool {
@@ -315,23 +317,28 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		return fn, nil, goFunc
 	}
 
-	var hasCtx = len(f.FreeVars) > 0
-	if hasCtx {
+	var hasFreeVars = len(f.FreeVars) > 0
+	if hasFreeVars {
 		if debugInstr {
 			log.Println("==> NewClosure", name, "type:", sig)
 		}
-		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
-		sig = llssa.FuncAddCtx(ctx, sig)
+		// In register-based ctx mode, we don't add ctx to function signature.
+		// Instead, ctx is passed via register and read by the closure function.
 	} else {
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
 	}
 	if fn == nil {
-		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasFreeVars, isInstance(f))
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
+	}
+	// For closures, set the context type for register-based ctx passing
+	if hasFreeVars {
+		ctxType := makeClosureCtxType(pkgTypes, f.FreeVars)
+		fn.SetCtxType(pkg.Prog.Type(ctxType, llssa.InGo))
 	}
 	// set compiled to check generic function global instantiation
 	pkg.Prog.SetFuncCompiled(name)

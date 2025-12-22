@@ -47,6 +47,7 @@ const (
 	vkFuncDecl
 	vkFuncPtr
 	vkClosure
+	vkIfaceClosure
 	vkBuiltin
 	vkPyFuncRef
 	vkPyVarRef
@@ -59,6 +60,10 @@ const (
 	vkStruct
 	vkChan
 )
+
+func isClosureKind(k valueKind) bool {
+	return k == vkClosure || k == vkIfaceClosure
+}
 
 // -----------------------------------------------------------------------------
 
@@ -163,6 +168,13 @@ type aType struct {
 }
 
 type Type = *aType
+
+func (t Type) withKind(kind valueKind) Type {
+	if t.kind == kind {
+		return t
+	}
+	return &aType{ll: t.ll, raw: t.raw, kind: kind}
+}
 
 // RawType returns the raw type.
 func (t Type) RawType() types.Type {

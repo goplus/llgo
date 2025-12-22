@@ -242,7 +242,7 @@ _llgo_0:
   %47 = load ptr, ptr @_llgo_Pointer, align 8
   %48 = load ptr, ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", align 8
   %49 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/eface.main$1", ptr null }, ptr %49, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/eface.main$1", ptr null }, ptr %49, align 8
   %50 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %48, 0
   %51 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %50, ptr %49, 1
   call void @"github.com/goplus/llgo/cl/_testrt/eface.dump"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %51)
@@ -608,12 +608,6 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ArrayOf"(i64, ptr)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/eface.main$1"(ptr %0) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/eface.main$1"()
-  ret void
-}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1)
 
