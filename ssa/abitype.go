@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"sort"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -466,13 +467,13 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 	}
 */
 func (b Builder) abiType(t types.Type) Expr {
-	name, _ := b.Pkg.abi.TypeName(t)
+	name, pub := b.Pkg.abi.TypeName(t)
 	g := b.Pkg.VarOf(name)
 	prog := b.Prog
 	pkg := b.Pkg
 	if g == nil {
-		if pkg.patch != nil {
-			t = pkg.patch(t)
+		if prog.patchType != nil {
+			t = prog.patchType(t)
 		}
 		mset, hasUncommon := b.abiUncommonMethodSet(t)
 		rt := prog.rtNamed(pkg.abi.RuntimeName(t))
@@ -504,11 +505,35 @@ func (b Builder) abiType(t types.Type) Expr {
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
 		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
+		if pub {
+			prog.abiTypes.Set(t, true)
+		}
 	}
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 		llvm.ConstInt(prog.Int32().ll, 0, false),
 		llvm.ConstInt(prog.Int32().ll, 0, false),
 	}), prog.AbiTypePtr()}
+}
+
+func (p Package) InitAbiTypes(name string) Function {
+	initFn := p.NewFunc(name, NoArgsNoRet, InC)
+	b := initFn.MakeBody(1)
+	prog := p.Prog
+	check := prog.checkRuntimeNamed
+	prog.checkRuntimeNamed = nil
+	defer func() {
+		prog.checkRuntimeNamed = check
+	}()
+	typs := prog.abiTypes.Keys()
+	sort.Slice(typs, func(i, j int) bool {
+		return typs[i].String() < typs[j].String()
+	})
+	fn := p.rtFunc("addType")
+	for _, t := range typs {
+		b.Call(fn, b.abiType(t))
+	}
+	b.Return()
+	return initFn
 }
 
 // -----------------------------------------------------------------------------
