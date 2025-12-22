@@ -115,23 +115,16 @@ func (b Builder) StackSave() Expr {
 }
 
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
-	if b.Prog.target.GOARCH == "wasm" {
-		return b.Setjmp(jb)
-	}
-	fname := "sigsetjmp"
-	if b.Prog.target.GOOS == "linux" {
-		fname = "__sigsetjmp"
-	}
-	fn := b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
+	// Platform-specific implementation is handled by runtime via build tags.
+	// - Non-baremetal: uses sigsetjmp/siglongjmp (with __sigsetjmp on Linux)
+	// - Baremetal/wasm: uses setjmp/longjmp
+	fn := b.Pkg.rtFunc("Sigsetjmp")
 	return b.Call(fn, jb, savemask)
 }
 
 func (b Builder) Siglongjmp(jb, retval Expr) {
-	if b.Prog.target.GOARCH == "wasm" {
-		b.Longjmp(jb, retval)
-		return
-	}
-	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
+	// Platform-specific implementation is handled by runtime via build tags.
+	fn := b.Pkg.rtFunc("Siglongjmp")
 	b.Call(fn, jb, retval)
 	// b.Unreachable()
 }

@@ -1,3 +1,5 @@
+//go:build linux && !baremetal
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -22,21 +24,10 @@ import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
-const (
-	LLGoPackage = "link"
-)
+// On Linux, sigsetjmp is called __sigsetjmp
+//
+//go:linkname Sigsetjmp C.__sigsetjmp
+func Sigsetjmp(env *SigjmpBuf, savemask c.Int) c.Int
 
-type (
-	SigjmpBuf [SigjmpBufSize]byte
-	JmpBuf    [JmpBufSize]byte
-)
-
-// -----------------------------------------------------------------------------
-
-//go:linkname Setjmp C.setjmp
-func Setjmp(env *JmpBuf) c.Int
-
-//go:linkname Longjmp C.longjmp
-func Longjmp(env *JmpBuf, val c.Int)
-
-// -----------------------------------------------------------------------------
+//go:linkname Siglongjmp C.siglongjmp
+func Siglongjmp(env *SigjmpBuf, val c.Int)

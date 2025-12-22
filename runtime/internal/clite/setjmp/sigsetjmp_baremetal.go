@@ -1,3 +1,5 @@
+//go:build baremetal || wasm
+
 /*
  * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
  *
@@ -17,26 +19,16 @@
 package setjmp
 
 import (
-	_ "unsafe"
-
 	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
-const (
-	LLGoPackage = "link"
-)
+// On baremetal and wasm, use setjmp instead of sigsetjmp
+// since these platforms don't support signal handling.
+func Sigsetjmp(env *SigjmpBuf, savemask c.Int) c.Int {
+	return Setjmp((*JmpBuf)(env))
+}
 
-type (
-	SigjmpBuf [SigjmpBufSize]byte
-	JmpBuf    [JmpBufSize]byte
-)
-
-// -----------------------------------------------------------------------------
-
-//go:linkname Setjmp C.setjmp
-func Setjmp(env *JmpBuf) c.Int
-
-//go:linkname Longjmp C.longjmp
-func Longjmp(env *JmpBuf, val c.Int)
-
-// -----------------------------------------------------------------------------
+// On baremetal and wasm, use longjmp instead of siglongjmp
+func Siglongjmp(env *SigjmpBuf, val c.Int) {
+	Longjmp((*JmpBuf)(env), val)
+}
