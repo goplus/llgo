@@ -166,6 +166,7 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 		data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
 		g = b.Pkg.doNewVar(name, prog.Pointer(atyp))
 		g.Init(data)
+		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
 	size := uint64(n)
@@ -215,6 +216,7 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 		data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
 		g = b.Pkg.doNewVar(name, prog.Pointer(atyp))
 		g.Init(data)
+		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
 	size := uint64(n)
@@ -242,6 +244,7 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 		data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
 		g = b.Pkg.doNewVar(name, prog.Pointer(atyp))
 		g.Init(data)
+		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
 	size := uint64(n)
@@ -499,6 +502,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			}
 		}
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
+		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 	}
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
