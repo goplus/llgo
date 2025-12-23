@@ -506,7 +506,7 @@ func (b Builder) abiType(t types.Type) Expr {
 		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 		if pub {
-			prog.abiTypes.Set(t, true)
+			prog.abiSymbol[name] = g.Type
 		}
 	}
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
@@ -515,22 +515,27 @@ func (b Builder) abiType(t types.Type) Expr {
 	}), prog.AbiTypePtr()}
 }
 
-func (p Package) InitAbiTypes(name string) Function {
-	initFn := p.NewFunc(name, NoArgsNoRet, InC)
+func (p Package) InitAbiTypes(fname string) Function {
+	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
 	prog := p.Prog
-	check := prog.checkRuntimeNamed
-	prog.checkRuntimeNamed = nil
-	defer func() {
-		prog.checkRuntimeNamed = check
-	}()
-	typs := prog.abiTypes.Keys()
-	sort.Slice(typs, func(i, j int) bool {
-		return typs[i].String() < typs[j].String()
-	})
+	names := make([]string, len(prog.abiSymbol))
+	n := 0
+	for k, _ := range prog.abiSymbol {
+		names[n] = k
+		n++
+	}
+	sort.Strings(names)
 	fn := p.rtFunc("addType")
-	for _, t := range typs {
-		b.Call(fn, b.abiType(t))
+	for _, name := range names {
+		g := p.doNewVar(name, prog.abiSymbol[name])
+		g.impl.SetLinkage(llvm.ExternalLinkage)
+		g.impl.SetGlobalConstant(true)
+		ptr := Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
+			llvm.ConstInt(prog.Int32().ll, 0, false),
+			llvm.ConstInt(prog.Int32().ll, 0, false),
+		}), prog.AbiTypePtr()}
+		b.Call(fn, ptr)
 	}
 	b.Return()
 	return initFn

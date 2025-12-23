@@ -215,8 +215,7 @@ type aProgram struct {
 
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
-
-	abiTypes typeutil.Map
+	abiSymbol    map[string]Type   // abi symbol name => Type
 
 	ptrSize int
 
@@ -268,7 +267,7 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string),
+		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
 }
 

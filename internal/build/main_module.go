@@ -84,7 +84,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 
 	var abiInit llssa.Function
 	if needAbiInit {
-		abiInit = mainPkg.InitAbiTypes(".init$abitypes")
+		abiInit = mainPkg.InitAbiTypes("init$abitypes")
 	}
 
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
