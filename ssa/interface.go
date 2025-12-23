@@ -170,12 +170,12 @@ func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	case abi.Pointer:
 		return b.buildVal(typ, data, lvl)
 	case abi.Integer:
-		x := castUintptr(b, data, prog.Uintptr())
-		return b.buildVal(typ, castInt(b, x, t), lvl)
+		x := castUintptr(b, data, prog.VoidPtr(), prog.Uintptr())
+		return b.buildVal(typ, castInt(b, x, prog.Uintptr(), t), lvl)
 	case abi.BitCast:
-		x := castUintptr(b, data, prog.Uintptr())
+		x := castUintptr(b, data, prog.VoidPtr(), prog.Uintptr())
 		if int(prog.SizeOf(t)) != prog.PointerSize() {
-			x = castInt(b, x, prog.Int32())
+			x = castInt(b, x, prog.Uintptr(), prog.Int32())
 		}
 		return b.buildVal(typ, llvm.CreateBitCast(b.impl, x, t.ll), lvl)
 	}

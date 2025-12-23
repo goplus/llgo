@@ -58,7 +58,7 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.Basic"(i64 24)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %0, i32 0, i32 6
   %2 = load i8, ptr %1, align 1
-  %3 = sext i8 %2 to i64
+  %3 = zext i8 %2 to i64
   %4 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %0, i32 0, i32 0
   %5 = load i64, ptr %4, align 4
   %6 = call i32 (ptr, ...) @printf(ptr @0, i64 %3, i64 %5)

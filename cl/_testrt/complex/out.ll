@@ -30,7 +30,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double -5.000000e+00, double 1.000000e+01 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double 4.400000e-01, double -8.000000e-02 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double 4.400000e-01, double 8.000000e-02 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double 0x7FF0000000000000, double 0x7FF0000000000000 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)

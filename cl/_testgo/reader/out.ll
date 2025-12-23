@@ -708,7 +708,7 @@ _llgo_3:                                          ; preds = %_llgo_2
   %27 = add i64 %26, 1
   %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
   store i64 %27, ptr %28, align 4
-  %29 = sext i8 %23 to i32
+  %29 = zext i8 %23 to i32
   %30 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i32 %29, 0
   %31 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %30, i64 1, 1
   %32 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %31, %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer, 2
