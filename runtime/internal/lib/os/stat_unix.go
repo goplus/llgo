@@ -23,6 +23,7 @@ func (f *File) Stat() (FileInfo, error) {
 	if err != 0 {
 		return nil, &PathError{Op: "stat", Path: f.name, Err: syscall.Errno(err)}
 	}
+	fillFileStatFromSys(&fs, f.name)
 	return &fs, nil
 }
 
