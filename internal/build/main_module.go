@@ -41,7 +41,7 @@ import (
 // The module contains argc/argv globals and, for executable build modes,
 // the entry function that wires initialization and main. For C archive or
 // shared library modes, only the globals are emitted.
-func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit, needRelectInit bool) Package {
+func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit, needAbiInit bool) Package {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.ID+".main")
 
@@ -83,7 +83,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	var abiInit llssa.Function
-	if needRelectInit {
+	if needAbiInit {
 		abiInit = mainPkg.InitAbiTypes(".init$abitypes")
 	}
 
