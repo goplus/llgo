@@ -321,3 +321,81 @@ func TestManifestBuilder_MultipleValues(t *testing.T) {
 		t.Fatalf("duplicate env should keep last value, got %+v", data.Env.Vars)
 	}
 }
+
+func TestFastHashFile(t *testing.T) {
+	td := t.TempDir()
+
+	// Create test file
+	testFile := filepath.Join(td, "test.bin")
+	content := []byte("test content for hashing")
+	if err := os.WriteFile(testFile, content, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test hash computation
+	hash1, err := fastHashFile(testFile)
+	if err != nil {
+		t.Fatalf("fastHashFile: %v", err)
+	}
+
+	// Hash should be deterministic
+	hash2, err := fastHashFile(testFile)
+	if err != nil {
+		t.Fatalf("fastHashFile: %v", err)
+	}
+	if hash1 != hash2 {
+		t.Error("hash not deterministic")
+	}
+
+	// Hash should be hex string
+	if hash1 == "" {
+		t.Error("hash should not be empty")
+	}
+
+	// Different content should produce different hash
+	testFile2 := filepath.Join(td, "test2.bin")
+	content2 := []byte("different content")
+	if err := os.WriteFile(testFile2, content2, 0644); err != nil {
+		t.Fatal(err)
+	}
+	hash3, err := fastHashFile(testFile2)
+	if err != nil {
+		t.Fatalf("fastHashFile: %v", err)
+	}
+	if hash1 == hash3 {
+		t.Error("different files should produce different hashes")
+	}
+}
+
+func TestFastHashFile_NonExistent(t *testing.T) {
+	_, err := fastHashFile("/nonexistent/file")
+	if err == nil {
+		t.Error("expected error for nonexistent file")
+	}
+}
+
+func TestManifestBuilder_WithCompilerHash(t *testing.T) {
+	m := newManifestBuilder()
+	m.env.Goos = "linux"
+	m.env.Goarch = "amd64"
+	m.env.LlgoCompilerHash = "abc123def456"
+	m.pkg.PkgPath = "test/pkg"
+
+	content := m.Build()
+	data, err := decodeManifest(content)
+	if err != nil {
+		t.Fatalf("decodeManifest: %v", err)
+	}
+
+	if data.Env.LlgoCompilerHash != "abc123def456" {
+		t.Errorf("compiler hash = %s, want abc123def456", data.Env.LlgoCompilerHash)
+	}
+
+	// Changing compiler hash should change fingerprint
+	fp1 := m.Fingerprint()
+	m.env.LlgoCompilerHash = "different123"
+	fp2 := m.Fingerprint()
+	if fp1 == fp2 {
+		t.Error("different compiler hash should produce different fingerprints")
+	}
+}
