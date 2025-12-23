@@ -62,4 +62,5 @@ var hasAltPkg = map[string]none{
 	"internal/weak":            {}, // Go1.23
 	"weak":                     {}, // Go1.24
 	"unique":                   {},
+	"crypto/internal/fips140":  {},
 }
