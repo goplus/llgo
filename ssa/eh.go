@@ -114,6 +114,17 @@ func (b Builder) StackSave() Expr {
 	return b.InlineCall(fn)
 }
 
+// addReturnsTwiceAttr adds the returns_twice attribute to a function.
+// This attribute tells LLVM that the function returns twice (once directly, once via longjmp),
+// ensuring that variables used across setjmp/longjmp boundaries are placed in
+// callee-saved registers or spilled to stack, preventing them from becoming invalid
+// after longjmp returns (e.g., the caller's DeferFrame pointer).
+func (b Builder) addReturnsTwiceAttr(fn Expr) {
+	ctx := b.Pkg.mod.Context()
+	attr := ctx.CreateEnumAttribute(llvm.AttributeKindID("returns_twice"), 0)
+	fn.impl.AddFunctionAttr(attr)
+}
+
 func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 	if b.Prog.target.GOARCH == "wasm" {
 		return b.Setjmp(jb)
@@ -123,6 +134,7 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 		fname = "__sigsetjmp"
 	}
 	fn := b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
+	b.addReturnsTwiceAttr(fn)
 	return b.Call(fn, jb, savemask)
 }
 
@@ -138,6 +150,7 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 
 func (b Builder) Setjmp(jb Expr) Expr {
 	fn := b.Pkg.cFunc("setjmp", b.Prog.tySetjmp())
+	b.addReturnsTwiceAttr(fn)
 	return b.Call(fn, jb)
 }
 

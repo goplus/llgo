@@ -1152,3 +1152,34 @@ source_filename = "global"
 @"foo/bar.b" = global %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 4 }, align 8
 `)
 }
+
+func TestSetjmpReturnsTwice(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	// func test(jmpbuf unsafe.Pointer) int32
+	params := types.NewTuple(
+		types.NewVar(0, nil, "jmpbuf", types.Typ[types.UnsafePointer]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+
+	fn := pkg.NewFunc("test", sig, InGo)
+	b := fn.MakeBody(1)
+	ret := b.Setjmp(fn.Param(0))
+	b.Return(ret)
+
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i32 @test(ptr %0) {
+_llgo_0:
+  %1 = call i32 @setjmp(ptr %0)
+  ret i32 %1
+}
+
+; Function Attrs: returns_twice
+declare i32 @setjmp(ptr) #0
+
+attributes #0 = { returns_twice }
+`)
+}
