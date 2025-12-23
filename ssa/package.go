@@ -719,6 +719,7 @@ type aPackage struct {
 
 	NeedRuntime bool
 	NeedPyInit  bool
+	NeedAbiInit bool // need load all abi types for reflect make type
 
 	export map[string]string // pkgPath.nameInPkg => exportname
 }
