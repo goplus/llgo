@@ -515,9 +515,7 @@ func (b Builder) abiType(t types.Type) Expr {
 	}), prog.AbiTypePtr()}
 }
 
-func (p Package) InitAbiTypes(fname string) Function {
-	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
-	b := initFn.MakeBody(1)
+func (p Package) getAbiTypes(name string) Expr {
 	prog := p.Prog
 	names := make([]string, len(prog.abiSymbol))
 	n := 0
@@ -526,8 +524,8 @@ func (p Package) InitAbiTypes(fname string) Function {
 		n++
 	}
 	sort.Strings(names)
-	fn := p.rtFunc("addType")
-	for _, name := range names {
+	fields := make([]llvm.Value, len(names))
+	for i, name := range names {
 		g := p.doNewVar(name, prog.abiSymbol[name])
 		g.impl.SetLinkage(llvm.ExternalLinkage)
 		g.impl.SetGlobalConstant(true)
@@ -535,8 +533,31 @@ func (p Package) InitAbiTypes(fname string) Function {
 			llvm.ConstInt(prog.Int32().ll, 0, false),
 			llvm.ConstInt(prog.Int32().ll, 0, false),
 		}), prog.AbiTypePtr()}
-		b.Call(fn, ptr)
+		fields[i] = ptr.impl
 	}
+	ft := prog.AbiTypePtr()
+	atyp := prog.rawType(types.NewArray(ft.RawType(), int64(len(names))))
+	data := Expr{llvm.ConstArray(ft.ll, fields), atyp}
+	array := p.doNewVar(name+"$array", prog.Pointer(atyp))
+	array.Init(data)
+	array.impl.SetGlobalConstant(true)
+	size := uint64(len(names))
+	typ := prog.Slice(prog.AbiTypePtr())
+	g := p.doNewVar(name+"$slice", prog.Pointer(typ))
+	g.impl.SetInitializer(prog.ctx.ConstStruct([]llvm.Value{
+		array.impl,
+		prog.IntVal(size, prog.Int()).impl,
+		prog.IntVal(size, prog.Int()).impl,
+	}, false))
+	g.impl.SetGlobalConstant(true)
+	return g.Expr
+}
+
+func (p Package) InitAbiTypes(fname string) Function {
+	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
+	b := initFn.MakeBody(1)
+	fn := p.rtFunc("initTypes")
+	b.Call(fn, p.getAbiTypes(fname))
 	b.Return()
 	return initFn
 }
