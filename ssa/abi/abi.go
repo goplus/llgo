@@ -75,7 +75,7 @@ func ChanDir(dir types.ChanDir) (abi.ChanDir, string) {
 	case types.RecvOnly:
 		return abi.RecvDir, "<-chan"
 	}
-	panic("invlid chan dir")
+	panic("invalid chan dir")
 }
 
 // -----------------------------------------------------------------------------

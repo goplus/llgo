@@ -75,11 +75,11 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 	hash := binary.LittleEndian.Uint32(h[:4])
 	fields = append(fields, prog.IntVal(uint64(hash), prog.Uint32()).impl)
 	// TFlag uint8
-	tflag := uint64(ab.TFlag(t))
+	tflag := ab.TFlag(t)
 	if hasUncommon {
-		tflag |= (1 << 0) // TFlagUncommon
+		tflag |= abi.TFlagUncommon
 	}
-	fields = append(fields, prog.IntVal(tflag, prog.Byte()).impl)
+	fields = append(fields, prog.IntVal(uint64(tflag), prog.Byte()).impl)
 	// Align uint8
 	align := prog.IntVal(uint64(ab.Align(t)), prog.Byte()).impl
 	fields = append(fields, align)
@@ -88,7 +88,7 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 	// Kind uint8
 	kind := uint8(ab.Kind(t))
 	if k, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); k != abi.Indirect {
-		kind |= (1 << 5) //KindDirectIface
+		kind |= uint8(abi.KindDirectIface)
 	}
 	fields = append(fields, prog.IntVal(uint64(kind), prog.Byte()).impl)
 	// Equal func(unsafe.Pointer, unsafe.Pointer) bool
