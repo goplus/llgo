@@ -30,6 +30,7 @@ import (
 
 	"github.com/goplus/llgo/internal/env"
 	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/ssa/abi"
 )
 
 // -----------------------------------------------------------------------------
@@ -628,6 +629,11 @@ func (p *context) initPyModule() {
 // This is called during package loading to preload linknames before compilation.
 func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 	pkgPath := pkg.Path()
+	// For alt packages (e.g. github.com/goplus/llgo/runtime/internal/lib/os),
+	// use the original package path (e.g. os) for linkname registration.
+	if strings.HasPrefix(pkgPath, abi.PatchPathPrefix) {
+		pkgPath = strings.TrimPrefix(pkgPath, abi.PatchPathPrefix)
+	}
 	cPkg := pkg.Name() == "C"
 	for _, file := range files {
 		for _, decl := range file.Decls {
