@@ -109,9 +109,7 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
-	checkRuntimeNamed func(Package, *types.Named)
-
-	fnsCompiled map[string]bool
+	compileMethods func(Package, types.Type)
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -251,7 +249,6 @@ func NewProgram(target *Target) Program {
 	}
 	ctx := llvm.NewContext()
 	td := target.targetData() // TODO(xsw): target config
-	fnsCompiled := make(map[string]bool)
 	/*
 		arch := target.GOARCH
 		if arch == "" {
@@ -264,7 +261,7 @@ func NewProgram(target *Target) Program {
 	*/
 	is32Bits := (td.PointerSize() == 4 || is32Bits(target.GOARCH))
 	return &aProgram{
-		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
+		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
@@ -290,8 +287,8 @@ func (p Program) patch(typ types.Type) types.Type {
 	return typ
 }
 
-func (p Program) SetCheckRuntimeNamed(check func(Package, *types.Named)) {
-	p.checkRuntimeNamed = check
+func (p Program) SetCompileMethods(check func(Package, types.Type)) {
+	p.compileMethods = check
 }
 
 // SetRuntime sets the runtime.
@@ -323,16 +320,6 @@ func (p Program) runtime() *types.Package {
 		p.rt = p.rtget()
 	}
 	return p.rt
-}
-
-// check generic function instantiation
-func (p Program) FuncCompiled(name string) bool {
-	_, ok := p.fnsCompiled[name]
-	return ok
-}
-
-func (p Program) SetFuncCompiled(name string) {
-	p.fnsCompiled[name] = true
 }
 
 func (p Program) rtNamed(name string) *types.Named {
