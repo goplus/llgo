@@ -756,6 +756,11 @@ func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
 	return b.aggregateValue(b.Prog.Struct(typs...), results...)
 }
 
+func lastParamType(prog Program, fn Expr) Type {
+	params := fn.raw.Type.(*types.Signature).Params()
+	return prog.rawType(params.At(params.Len() - 1).Type())
+}
+
 func (b Builder) chanOp(s *SelectState) Expr {
 	prog := b.Prog
 	var val Expr

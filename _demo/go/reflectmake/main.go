@@ -13,6 +13,14 @@ func main() {
 	})
 	r := fn.Interface().(func(string, int) string)("abc", 2)
 	if r != "abcabc" {
-		panic("reflect.MakeFunc error")
+		panic("reflect.FuncOf error")
 	}
+	_, ok := reflect.New(reflect.SliceOf(reflect.TypeOf(t{}))).Elem().Interface().([]t)
+	if !ok {
+		panic("reflect.SliceOf error")
+	}
+}
+
+type t struct {
+	n int
 }

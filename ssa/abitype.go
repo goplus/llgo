@@ -22,19 +22,11 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"log"
 	"sort"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
-
-// -----------------------------------------------------------------------------
-
-func lastParamType(prog Program, fn Expr) Type {
-	params := fn.raw.Type.(*types.Signature).Params()
-	return prog.rawType(params.At(params.Len() - 1).Type())
-}
 
 // -----------------------------------------------------------------------------
 
@@ -60,10 +52,11 @@ type Type struct {
 */
 
 var (
+	// func(unsafe.Pointer, unsafe.Pointer) bool
 	equalFunc = types.NewSignature(nil, types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
 		types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer])),
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Bool])), false)
-	// p unsafe.Pointer, h uintptr) uintptr
+	// func(p unsafe.Pointer, h uintptr) uintptr
 	hashFunc = types.NewSignature(nil, types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
 		types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])),
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])), false)
@@ -321,30 +314,38 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 	return
 }
 
-func (b Builder) abiUncommonPkg(t types.Type) *types.Package {
+func (b Builder) abiUncommonPkg(t types.Type) (*types.Package, string) {
 retry:
 	switch typ := types.Unalias(t).(type) {
 	case *types.Pointer:
 		t = typ.Elem()
 		goto retry
 	case *types.Named:
-		return typ.Obj().Pkg()
+		pkg := typ.Obj().Pkg()
+		return pkg, abi.PathOf(pkg)
 	}
-	return nil
+	return nil, b.Pkg.Path()
 }
 
 func (b Builder) abiUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok bool) {
+	prog := b.Prog
 	switch t := types.Unalias(t).(type) {
 	case *types.Named:
 		if _, b := t.Underlying().(*types.Interface); b {
 			return
 		}
-		if b.Prog.checkRuntimeNamed != nil {
-			b.Prog.checkRuntimeNamed(b.Pkg, t)
+		mset := types.NewMethodSet(t)
+		if mset.Len() != 0 {
+			if prog.compileMethods != nil {
+				prog.compileMethods(b.Pkg, t)
+			}
 		}
-		return types.NewMethodSet(t), true
-	case *types.Pointer, *types.Struct:
+		return mset, true
+	case *types.Struct, *types.Pointer:
 		if mset := types.NewMethodSet(t); mset.Len() != 0 {
+			if prog.compileMethods != nil {
+				prog.compileMethods(b.Pkg, t)
+			}
 			return mset, true
 		}
 	}
@@ -364,7 +365,8 @@ func (b Builder) abiUncommonType(t types.Type, mset *types.MethodSet) llvm.Value
 	prog := b.Prog
 	ft := prog.rtType("uncommonType")
 	var fields []llvm.Value
-	fields = append(fields, b.Str(abi.PathOf(b.abiUncommonPkg(t))).impl)
+	_, pkgPath := b.abiUncommonPkg(t)
+	fields = append(fields, b.Str(pkgPath).impl)
 	mcount := mset.Len()
 	var xcount int
 	for i := 0; i < mcount; i++ {
@@ -393,8 +395,11 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	ft := prog.rtType("Method")
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
-	pkg := b.abiUncommonPkg(t)
+	pkg, pkgPath := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
+	if anonymous {
+		pkg = types.NewPackage(b.Pkg.Path(), "")
+	}
 	var mPkg *types.Package
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
@@ -409,7 +414,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		var skipfn bool
 		if !token.IsExported(mName) {
 			name = b.Str(abi.FullName(mPkg, mName)).impl
-			skipfn = mPkg != pkg
+			skipfn = PathOf(mPkg) != pkgPath
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
@@ -437,16 +442,11 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 }
 
 func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
+	var fullName string
 	if anonymous {
-		// TODO implement
-		log.Printf("not implement %q (%v).%v\n", b.Pkg.Path(), mSig.Recv().Type(), mName)
-		return b.Prog.Nil(b.Prog.VoidPtr()).impl
-	}
-	fullName := FuncName(mPkg, mName, mSig.Recv(), false)
-	if mSig.TypeParams().Len() > 0 || mSig.RecvTypeParams().Len() > 0 {
-		if !b.Pkg.Prog.FuncCompiled(fullName) {
-			return
-		}
+		fullName = b.Pkg.Path() + "." + mSig.Recv().Type().String() + "." + mName
+	} else {
+		fullName = FuncName(mPkg, mName, mSig.Recv(), false)
 	}
 	if b.Pkg.fnlink != nil {
 		fullName = b.Pkg.fnlink(fullName)
@@ -467,7 +467,7 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 	}
 */
 func (b Builder) abiType(t types.Type) Expr {
-	name, pub := b.Pkg.abi.TypeName(t)
+	name, _ := b.Pkg.abi.TypeName(t)
 	g := b.Pkg.VarOf(name)
 	prog := b.Prog
 	pkg := b.Pkg
@@ -505,9 +505,7 @@ func (b Builder) abiType(t types.Type) Expr {
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
 		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
-		if pub {
-			prog.abiSymbol[name] = g.Type
-		}
+		prog.abiSymbol[name] = g.Type
 	}
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 		llvm.ConstInt(prog.Int32().ll, 0, false),
