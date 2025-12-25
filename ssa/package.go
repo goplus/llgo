@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -214,6 +215,7 @@ type aProgram struct {
 
 	paramObjPtr_ *types.Var
 	linkname     sync.Map // pkgPath.nameInPkg => linkname (concurrent safe)
+	exports      sync.Map // pkgPath.nameInPkg => exportName (concurrent safe)
 
 	ptrSize int
 
@@ -315,6 +317,29 @@ func (p Program) Linkname(name string) (link string, ok bool) {
 		return v.(string), true
 	}
 	return "", false
+}
+
+func (p Program) SetExportName(name, export string) {
+	p.exports.Store(name, export)
+}
+
+func (p Program) ExportName(name string) (export string, ok bool) {
+	if v, exists := p.exports.Load(name); exists {
+		return v.(string), true
+	}
+	return "", false
+}
+
+// CopyExportsTo copies export entries for a specific package path to the given package.
+func (p Program) CopyExportsTo(pkgPath string, pkg Package) {
+	prefix := pkgPath + "."
+	p.exports.Range(func(key, value any) bool {
+		name := key.(string)
+		if strings.HasPrefix(name, prefix) {
+			pkg.SetExport(name, value.(string))
+		}
+		return true
+	})
 }
 
 func (p Program) runtime() *types.Package {

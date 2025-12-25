@@ -174,35 +174,19 @@ start:
 	syms.initLinknames(p)
 }
 
+// initFiles collects skip names from AST. Linkname and export collection
+// has been moved to ParsePkgSyntax which runs during package loading.
 func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
+	_ = pkgPath // unused after refactoring
+	_ = cPkg    // unused after refactoring, package C logic moved to ParsePkgSyntax
 	for _, file := range files {
 		for _, decl := range file.Decls {
-			switch decl := decl.(type) {
-			case *ast.FuncDecl:
-				fullName, inPkgName := astFuncName(pkgPath, decl)
-				if !p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false) && cPkg {
-					// package C (https://github.com/goplus/llgo/issues/1165)
-					if decl.Recv == nil && token.IsExported(inPkgName) {
-						exportName := strings.TrimPrefix(inPkgName, "X")
-						p.prog.SetLinkname(fullName, exportName)
-						p.pkg.SetExport(fullName, exportName)
-					}
-				}
-			case *ast.GenDecl:
-				switch decl.Tok {
-				case token.VAR:
-					if len(decl.Specs) == 1 {
-						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-							inPkgName := names[0].Name
-							p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
-						}
-					}
-				case token.CONST:
-					fallthrough
-				case token.TYPE:
-					p.collectSkipNamesByDoc(decl.Doc)
+			if genDecl, ok := decl.(*ast.GenDecl); ok {
+				switch genDecl.Tok {
+				case token.CONST, token.TYPE:
+					p.collectSkipNamesByDoc(genDecl.Doc)
 				case token.IMPORT:
-					if doc := decl.Doc; doc != nil {
+					if doc := genDecl.Doc; doc != nil {
 						if n := len(doc.List); n > 0 {
 							line := doc.List[n-1].Text
 							if p.collectSkipNames(line) {
@@ -640,16 +624,25 @@ func (p *context) initPyModule() {
 	}
 }
 
-// ParsePkgSyntax parses AST of a package to collect linknames and type backgrounds.
+// ParsePkgSyntax parses AST of a package to collect linknames, exports and type backgrounds.
 // This is called during package loading to preload linknames before compilation.
 func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 	pkgPath := pkg.Path()
+	cPkg := pkg.Name() == "C"
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				collectLinknameFromDoc(prog, decl.Doc, fullName, inPkgName)
+				hasLinkname := collectLinknameFromDoc(prog, decl.Doc, fullName, inPkgName)
+				// package C auto-export logic (https://github.com/goplus/llgo/issues/1165)
+				if !hasLinkname && cPkg {
+					if decl.Recv == nil && token.IsExported(inPkgName) {
+						exportName := strings.TrimPrefix(inPkgName, "X")
+						prog.SetLinkname(fullName, exportName)
+						prog.SetExportName(fullName, exportName)
+					}
+				}
 			case *ast.GenDecl:
 				switch decl.Tok {
 				case token.VAR:
@@ -668,38 +661,53 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 	}
 }
 
-// collectLinknameFromDoc collects //go:linkname directive from doc comments.
-func collectLinknameFromDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string) {
+// collectLinknameFromDoc collects //go:linkname and //export directives from doc comments.
+// Returns true if a linkname or export directive was found.
+func collectLinknameFromDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string) bool {
 	if doc == nil {
-		return
+		return false
 	}
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
 		llgolink2 = "// llgo:link "
+		export    = "//export "
 	)
 	for n := len(doc.List) - 1; n >= 0; n-- {
 		line := doc.List[n].Text
 		var prefix string
+		var isExport bool
 		if strings.HasPrefix(line, linkname) {
 			prefix = linkname
 		} else if strings.HasPrefix(line, llgolink) {
 			prefix = llgolink
 		} else if strings.HasPrefix(line, llgolink2) {
 			prefix = llgolink2
+		} else if strings.HasPrefix(line, export) {
+			prefix = export
+			isExport = true
 		} else {
 			continue
 		}
 		text := strings.TrimSpace(line[len(prefix):])
-		if idx := strings.IndexByte(text, ' '); idx > 0 {
+		if isExport {
+			// //export FuncName -> link to FuncName
+			if text == inPkgName || enableExportRename {
+				prog.SetLinkname(fullName, text)
+				prog.SetExportName(fullName, text)
+				return true
+			}
+		} else if idx := strings.IndexByte(text, ' '); idx > 0 {
 			name := text[:idx]
 			if name == inPkgName {
 				link := strings.TrimLeft(text[idx+1:], " ")
 				prog.SetLinkname(fullName, link)
+				return true
 			}
 		}
-		return
+		return false
 	}
+	return false
 }
 
 func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
