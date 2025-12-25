@@ -1,4 +1,4 @@
-//go:build !baremetal
+//go:build baremetal
 
 /*
  * Copyright (c) 2025 The GoPlus Authors (goplus.org). All rights reserved.
@@ -18,25 +18,22 @@
 
 package runtime
 
-import "github.com/goplus/llgo/runtime/internal/clite/tls"
-
-var deferTLS = tls.Alloc[*Defer](func(head **Defer) {
-	if head != nil {
-		*head = nil
-	}
-})
+// globalDeferHead stores the current defer chain head.
+// In baremetal single-threaded environment, a global variable
+// replaces pthread TLS.
+var globalDeferHead *Defer
 
 // SetThreadDefer associates the current thread with the given defer chain.
 func SetThreadDefer(head *Defer) {
-	deferTLS.Set(head)
+	globalDeferHead = head
 }
 
 // GetThreadDefer returns the current thread's defer chain head.
 func GetThreadDefer() *Defer {
-	return deferTLS.Get()
+	return globalDeferHead
 }
 
 // ClearThreadDefer resets the current thread's defer chain to nil.
 func ClearThreadDefer() {
-	deferTLS.Clear()
+	globalDeferHead = nil
 }

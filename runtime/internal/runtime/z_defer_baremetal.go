@@ -1,4 +1,4 @@
-//go:build !baremetal
+//go:build baremetal && !nogc
 
 /*
  * Copyright (c) 2025 The GoPlus Authors (goplus.org). All rights reserved.
@@ -18,25 +18,11 @@
 
 package runtime
 
-import "github.com/goplus/llgo/runtime/internal/clite/tls"
+import "unsafe"
 
-var deferTLS = tls.Alloc[*Defer](func(head **Defer) {
-	if head != nil {
-		*head = nil
-	}
-})
-
-// SetThreadDefer associates the current thread with the given defer chain.
-func SetThreadDefer(head *Defer) {
-	deferTLS.Set(head)
-}
-
-// GetThreadDefer returns the current thread's defer chain head.
-func GetThreadDefer() *Defer {
-	return deferTLS.Get()
-}
-
-// ClearThreadDefer resets the current thread's defer chain to nil.
-func ClearThreadDefer() {
-	deferTLS.Clear()
+// FreeDeferNode is a no-op in baremetal environment.
+// Defer nodes become unreachable after being unlinked from the chain,
+// and tinygogc will reclaim them in the next GC cycle.
+func FreeDeferNode(ptr unsafe.Pointer) {
+	// no-op: let tinygogc collect
 }
