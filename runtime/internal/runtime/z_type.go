@@ -26,114 +26,6 @@ type Kind = abi.Kind
 type Type = abi.Type
 
 // -----------------------------------------------------------------------------
-var (
-	tyBasic [abi.UnsafePointer + 1]*Type
-)
-
-func basicEqual(kind Kind, size uintptr) func(a, b unsafe.Pointer) bool {
-	switch kind {
-	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
-		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr:
-		switch size {
-		case 1:
-			return memequal8
-		case 2:
-			return memequal16
-		case 4:
-			return memequal32
-		case 8:
-			return memequal64
-		}
-	case abi.Float32:
-		return f32equal
-	case abi.Float64:
-		return f64equal
-	case abi.Complex64:
-		return c64equal
-	case abi.Complex128:
-		return c128equal
-	case abi.String:
-		return strequal
-	case abi.UnsafePointer:
-		return memequalptr
-	}
-	panic("unreachable")
-}
-
-func basicFlags(kind Kind) abi.TFlag {
-	switch kind {
-	case abi.Float32, abi.Float64, abi.Complex64, abi.Complex128, abi.String:
-		return 0
-	}
-	return abi.TFlagRegularMemory
-}
-
-func Basic(_kind Kind) *Type {
-	kind := _kind & abi.KindMask
-	if tyBasic[kind] == nil {
-		name, size, align := basicTypeInfo(kind)
-		var ptrBytes uintptr
-		if kind == abi.String || kind == abi.UnsafePointer {
-			ptrBytes = pointerSize
-		}
-		tyBasic[kind] = &Type{
-			Size_:       size,
-			PtrBytes:    ptrBytes,
-			Hash:        uint32(kind),
-			Align_:      uint8(align),
-			FieldAlign_: uint8(align),
-			Kind_:       uint8(_kind),
-			Equal:       basicEqual(kind, size),
-			TFlag:       basicFlags(kind),
-			Str_:        name,
-		}
-	}
-	return tyBasic[kind]
-}
-
-func basicTypeInfo(kind abi.Kind) (string, uintptr, uintptr) {
-	switch kind {
-	case abi.Bool:
-		return "bool", unsafe.Sizeof(false), unsafe.Alignof(false)
-	case abi.Int:
-		return "int", unsafe.Sizeof(0), unsafe.Alignof(0)
-	case abi.Int8:
-		return "int8", 1, 1
-	case abi.Int16:
-		return "int16", 2, 2
-	case abi.Int32:
-		return "int32", 4, 4
-	case abi.Int64:
-		return "int64", 8, 8
-	case abi.Uint:
-		return "uint", unsafe.Sizeof(uint(0)), unsafe.Alignof(uint(0))
-	case abi.Uint8:
-		return "uint8", 1, 1
-	case abi.Uint16:
-		return "uint16", 2, 2
-	case abi.Uint32:
-		return "uint32", 4, 4
-	case abi.Uint64:
-		return "uint64", 8, 8
-	case abi.Uintptr:
-		return "uintptr", unsafe.Sizeof(uintptr(0)), unsafe.Alignof(uintptr(0))
-	case abi.Float32:
-		return "float32", 4, 4
-	case abi.Float64:
-		return "float64", 8, 8
-	case abi.Complex64:
-		return "complex64", 8, 4
-	case abi.Complex128:
-		return "complex128", 16, 8
-	case abi.String:
-		return "string", unsafe.Sizeof(String{}), unsafe.Alignof("")
-	case abi.UnsafePointer:
-		return "unsafe.Pointer", unsafe.Sizeof(unsafe.Pointer(nil)), unsafe.Alignof(unsafe.Pointer(nil))
-	}
-	panic("unreachable")
-}
-
-// -----------------------------------------------------------------------------
 
 // StructField returns a struct field.
 func StructField(name string, typ *Type, off uintptr, tag string, embedded bool) abi.StructField {
@@ -578,10 +470,6 @@ func (r *rtypes) addType(typ *Type) {
 }
 
 var rtypeList rtypes
-
-func addType(typ *abi.Type) {
-	rtypeList.addType(typ)
-}
 
 func initTypes(typs *[]*abi.Type) {
 	rtypeList.types = *typs

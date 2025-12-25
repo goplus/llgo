@@ -435,14 +435,12 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
-	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
-		mod: mod, vars: gbls, fns: fns,
+		mod: mod, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
-		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
 		export: make(map[string]string),
 	}
@@ -709,9 +707,6 @@ type aPackage struct {
 	pymods map[string]Global
 	strs   map[string]llvm.Value
 	goStrs map[string]llvm.Value
-	chkabi map[types.Type]bool
-	afterb unsafe.Pointer
-	patch  func(types.Type) types.Type
 	fnlink func(string) string
 
 	iRoutine int
@@ -785,11 +780,6 @@ func (p Package) String() string {
 	return p.mod.String()
 }
 
-// SetPatch sets a patch function.
-func (p Package) SetPatch(fn func(types.Type) types.Type) {
-	p.patch = fn
-}
-
 // SetResolveLinkname sets a function to resolve linkname.
 func (p Package) SetResolveLinkname(fn func(string) string) {
 	p.fnlink = fn
@@ -797,29 +787,12 @@ func (p Package) SetResolveLinkname(fn func(string) string) {
 
 // -----------------------------------------------------------------------------
 
-func (p Package) afterBuilder() Builder {
-	if p.afterb == nil {
-		fn := p.NewFunc(p.Path()+".init$after", NoArgsNoRet, InC)
-		fnb := fn.MakeBody(1)
-		p.afterb = unsafe.Pointer(fnb)
-	}
-	return Builder(p.afterb)
-}
-
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
-	if doAfterb || doPyLoadModSyms {
+	if doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
-		if doAfterb {
-			afterb := Builder(p.afterb)
-			afterb.Return()
-			b.Call(afterb.Func.Expr)
-		}
-		if doPyLoadModSyms {
-			p.pyLoadModSyms(b)
-		}
+		p.pyLoadModSyms(b)
 	}
 }
 

@@ -1140,7 +1140,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
 	ctx.prog.SetCheckRuntimeNamed(ctx.checkRuntimeNamed)
-	ret.SetPatch(ctx.patchType)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
 
 	if hasPatch {
