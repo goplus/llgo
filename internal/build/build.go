@@ -338,6 +338,12 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		return dedup.Check(llssa.PkgPython).Types
 	})
 
+	// Pre-collect runtime package linknames before SSA compilation
+	// This ensures linknames are available when rtFunc() is called during user code compilation
+	if len(altPkgs) > 0 && altPkgs[0].Types != nil && altPkgs[0].Syntax != nil {
+		cl.PreCollectRuntimeLinknames(prog, llssa.PathOf(altPkgs[0].Types), altPkgs[0].Types, altPkgs[0].Syntax)
+	}
+
 	buildMode := ssaBuildMode
 	cabiOptimize := true
 	if IsDbgEnabled() {

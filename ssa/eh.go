@@ -112,11 +112,18 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 	if b.Prog.target.GOARCH == "wasm" {
 		return b.Setjmp(jb)
 	}
-	fname := "sigsetjmp"
-	if b.Prog.target.GOOS == "linux" {
-		fname = "__sigsetjmp"
+	var fn Expr
+	if b.Prog.target.GOOS == "darwin" {
+		// On darwin, use rtFunc to leverage go:linkname in runtime/internal/runtime
+		fn = b.Pkg.rtFunc("Sigsetjmp")
+	} else {
+		// On other platforms, use direct C function call
+		fname := "sigsetjmp"
+		if b.Prog.target.GOOS == "linux" {
+			fname = "__sigsetjmp"
+		}
+		fn = b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
 	}
-	fn := b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
 	b.addReturnsTwiceAttr(fn)
 	return b.Call(fn, jb, savemask)
 }
@@ -126,7 +133,13 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 		b.Longjmp(jb, retval)
 		return
 	}
-	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
+	var fn Expr
+	if b.Prog.target.GOOS == "darwin" {
+		// On darwin, use rtFunc to leverage go:linkname in runtime/internal/runtime
+		fn = b.Pkg.rtFunc("Siglongjmp")
+	} else {
+		fn = b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
+	}
 	b.Call(fn, jb, retval)
 	// b.Unreachable()
 }

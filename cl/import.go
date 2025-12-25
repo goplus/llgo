@@ -711,3 +711,97 @@ func replaceGoName(v string, pos int) string {
 }
 
 // -----------------------------------------------------------------------------
+
+// PreCollectRuntimeLinknames pre-collects linkname directives from runtime package AST files.
+// This ensures runtime linknames are available before user code compilation begins.
+func PreCollectRuntimeLinknames(prog llssa.Program, pkgPath string, pkg *types.Package, files []*ast.File) {
+	if pkgPath != llssa.PkgRuntime {
+		return
+	}
+
+	// Build a map of function and variable names to their full names
+	syms := make(map[string]string)
+	scope := pkg.Scope()
+	for _, name := range scope.Names() {
+		obj := scope.Lookup(name)
+		if _, ok := obj.(*types.Func); ok {
+			syms[name] = pkgPath + "." + name
+		} else if _, ok := obj.(*types.Var); ok {
+			syms[name] = pkgPath + "." + name
+		}
+	}
+
+	// Scan files for linkname directives
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			var doc *ast.CommentGroup
+			var inPkgName string
+
+			switch d := decl.(type) {
+			case *ast.FuncDecl:
+				doc = d.Doc
+				if d.Recv == nil {
+					inPkgName = d.Name.Name
+				} else {
+					// For methods, construct the full name
+					recvType := d.Recv.List[0].Type
+					if star, ok := recvType.(*ast.StarExpr); ok {
+						recvType = star.X
+					}
+					if ident, ok := recvType.(*ast.Ident); ok {
+						inPkgName = ident.Name + "." + d.Name.Name
+					}
+				}
+			case *ast.GenDecl:
+				if d.Tok == token.VAR && len(d.Specs) == 1 {
+					if vs, ok := d.Specs[0].(*ast.ValueSpec); ok && len(vs.Names) == 1 {
+						doc = d.Doc
+						inPkgName = vs.Names[0].Name
+					}
+				}
+			}
+
+			if doc != nil && inPkgName != "" {
+				for _, comment := range doc.List {
+					line := comment.Text
+					if processRuntimeLinkname(prog, line, inPkgName, syms) {
+						break
+					}
+				}
+			}
+		}
+	}
+}
+
+// processRuntimeLinkname processes a single linkname directive for runtime package
+func processRuntimeLinkname(prog llssa.Program, line, inPkgName string, syms map[string]string) bool {
+	const (
+		linkname  = "//go:linkname "
+		llgolink  = "//llgo:link "
+		llgolink2 = "// llgo:link "
+	)
+
+	var prefix int
+	if strings.HasPrefix(line, linkname) {
+		prefix = len(linkname)
+	} else if strings.HasPrefix(line, llgolink2) {
+		prefix = len(llgolink2)
+	} else if strings.HasPrefix(line, llgolink) {
+		prefix = len(llgolink)
+	} else {
+		return false
+	}
+
+	text := strings.TrimSpace(line[prefix:])
+	if idx := strings.IndexByte(text, ' '); idx > 0 {
+		name := text[:idx]
+		link := strings.TrimLeft(text[idx+1:], " ")
+		if fullName, ok := syms[name]; ok {
+			prog.SetLinkname(fullName, link)
+			return true
+		}
+	}
+	return false
+}
+
+// -----------------------------------------------------------------------------
