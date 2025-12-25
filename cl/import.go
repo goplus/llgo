@@ -703,6 +703,8 @@ func collectLinknameFromDoc(prog llssa.Program, doc *ast.CommentGroup, fullName,
 				prog.SetExportName(fullName, text)
 				return true
 			}
+			// Different export name without enableExportRename is an error
+			panic(fmt.Sprintf("export comment has wrong name %q", text))
 		} else if idx := strings.IndexByte(text, ' '); idx > 0 {
 			name := text[:idx]
 			if name == inPkgName {
