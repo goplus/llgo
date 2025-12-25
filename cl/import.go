@@ -640,18 +640,65 @@ func (p *context) initPyModule() {
 	}
 }
 
-// ParsePkgSyntax parses AST of a package to check llgo:type in type declaration.
+// ParsePkgSyntax parses AST of a package to collect linknames and type backgrounds.
+// This is called during package loading to preload linknames before compilation.
 func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
+	pkgPath := pkg.Path()
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
+			case *ast.FuncDecl:
+				fullName, inPkgName := astFuncName(pkgPath, decl)
+				collectLinknameFromDoc(prog, decl.Doc, fullName, inPkgName)
 			case *ast.GenDecl:
 				switch decl.Tok {
+				case token.VAR:
+					// Handle variable linknames
+					if len(decl.Specs) == 1 {
+						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+							inPkgName := names[0].Name
+							collectLinknameFromDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName)
+						}
+					}
 				case token.TYPE:
 					handleTypeDecl(prog, pkg, decl)
 				}
 			}
 		}
+	}
+}
+
+// collectLinknameFromDoc collects //go:linkname directive from doc comments.
+func collectLinknameFromDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string) {
+	if doc == nil {
+		return
+	}
+	const (
+		linkname  = "//go:linkname "
+		llgolink  = "//llgo:link "
+		llgolink2 = "// llgo:link "
+	)
+	for n := len(doc.List) - 1; n >= 0; n-- {
+		line := doc.List[n].Text
+		var prefix string
+		if strings.HasPrefix(line, linkname) {
+			prefix = linkname
+		} else if strings.HasPrefix(line, llgolink) {
+			prefix = llgolink
+		} else if strings.HasPrefix(line, llgolink2) {
+			prefix = llgolink2
+		} else {
+			continue
+		}
+		text := strings.TrimSpace(line[len(prefix):])
+		if idx := strings.IndexByte(text, ' '); idx > 0 {
+			name := text[:idx]
+			if name == inPkgName {
+				link := strings.TrimLeft(text[idx+1:], " ")
+				prog.SetLinkname(fullName, link)
+			}
+		}
+		return
 	}
 }
 
