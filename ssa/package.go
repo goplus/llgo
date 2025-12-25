@@ -168,11 +168,10 @@ type aProgram struct {
 	pyObjPtr  Type
 	pyObjPPtr Type
 
-	abiTy     Type
-	abiTyPtr  Type
-	abiTyPPtr Type
-	deferTy   Type
-	deferPtr  Type
+	abiTy    Type
+	abiTyPtr Type
+	deferTy  Type
+	deferPtr Type
 
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
@@ -474,14 +473,6 @@ func (p Program) AbiTypePtr() Type {
 		p.abiTyPtr = p.Pointer(p.AbiType())
 	}
 	return p.abiTyPtr
-}
-
-// AbiTypePtrPtr returns **abi.Type type.
-func (p Program) AbiTypePtrPtr() Type {
-	if p.abiTyPPtr == nil {
-		p.abiTyPPtr = p.Pointer(p.AbiTypePtr())
-	}
-	return p.abiTyPPtr
 }
 
 // Void returns void type.

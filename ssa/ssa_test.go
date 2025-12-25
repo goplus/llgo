@@ -1187,3 +1187,64 @@ declare i32 @setjmp(ptr) #0
 attributes #0 = { returns_twice }
 `)
 }
+
+func TestAbiTables(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	emptyType := prog.Type(emptyIface, InGo)
+
+	makeFn := func(name string, x Expr) {
+		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
+		fn := pkg.NewFunc(name, sig, InGo)
+		b := fn.MakeBody(1)
+		iface := b.MakeInterface(emptyType, x)
+		b.Return(iface)
+	}
+
+	makeFn("intIface", prog.Val(1))
+	makeFn("ptrIface", prog.Nil(prog.VoidPtr()))
+	makeFn("floatIface", prog.FloatVal(3.5, prog.Float32()))
+
+	st := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Int]),
+	}, nil)
+	makeFn("structIface", prog.Zero(prog.Type(st, InGo)))
+
+	single := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "v", types.Typ[types.Int]),
+	}, nil)
+	makeFn("singleFieldIface", prog.Zero(prog.Type(single, InGo)))
+
+	pkgTypes := types.NewPackage("foo/bar", "bar")
+	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	rawMeth := types.NewFunc(0, pkgTypes, "M", rawSig)
+	nonEmpty := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
+	nonEmpty.Complete()
+	nonEmptyType := prog.Type(nonEmpty, InGo)
+	sigNE := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", nonEmpty)), false)
+	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, InGo)
+	bNE := fnNE.MakeBody(1)
+	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
+
+	fn := pkg.InitAbiTypes(pkg.Path() + ".init$abitables")
+	s := fn.impl.String()
+	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
+_llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.initTypes"(ptr @"foo/bar.init$abitables$slice")
+  ret void
+}`) {
+		t.Fatal("error abi tables", s)
+	}
+}

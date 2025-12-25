@@ -7,6 +7,11 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 )
 
+const (
+	TFlagUncommon   = abi.TFlagUncommon
+	KindDirectIface = abi.KindDirectIface
+)
+
 func (b *Builder) MapBucket(t *types.Map) types.Type {
 	return MapBucketType(t, b.Sizes)
 }
