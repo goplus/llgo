@@ -258,21 +258,6 @@ func (p *context) collectSkip(line string, prefix int) {
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
-	if doc != nil {
-		for n := len(doc.List) - 1; n >= 0; n-- {
-			line := doc.List[n].Text
-			ret := p.initLinkname(line, func(name string, isExport bool) (_ string, _, ok bool) {
-				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
-			})
-			if ret != unknownDirective {
-				return ret == hasLinkname
-			}
-		}
-	}
-	return false
-}
-
 const (
 	noDirective = iota
 	hasLinkname
