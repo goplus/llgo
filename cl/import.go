@@ -126,7 +126,9 @@ func initLinknameByDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPk
 	if doc != nil {
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
-			ret := initLinkname(prog, line, fullName, inPkgName)
+			ret := initLinkname(prog, line, func(name string, isExport bool) (string, bool, bool) {
+				return fullName, false, name == inPkgName || (isExport && enableExportRename)
+			})
 			if ret != unknownDirective {
 				return ret == hasLinkname
 			}
@@ -142,7 +144,7 @@ const (
 )
 
 // initLinkname processes a single comment line for linkname/export directives.
-func initLinkname(prog llssa.Program, line string, fullName, inPkgName string) int {
+func initLinkname(prog llssa.Program, line string, f func(name string, isExport bool) (fullName string, isVar, ok bool)) int {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
@@ -151,19 +153,19 @@ func initLinkname(prog llssa.Program, line string, fullName, inPkgName string) i
 		directive = "//go:"
 	)
 	if strings.HasPrefix(line, linkname) {
-		initLink(prog, line, len(linkname), false, fullName, inPkgName)
+		initLink(prog, line, len(linkname), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink2) {
-		initLink(prog, line, len(llgolink2), false, fullName, inPkgName)
+		initLink(prog, line, len(llgolink2), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink) {
-		initLink(prog, line, len(llgolink), false, fullName, inPkgName)
+		initLink(prog, line, len(llgolink), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, export) {
 		// rewrite //export FuncName to //export FuncName FuncName
 		funcName := strings.TrimSpace(line[len(export):])
 		line = line + " " + funcName
-		initLink(prog, line, len(export), true, fullName, inPkgName)
+		initLink(prog, line, len(export), true, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, directive) {
 		return unknownDirective
@@ -172,11 +174,11 @@ func initLinkname(prog llssa.Program, line string, fullName, inPkgName string) i
 }
 
 // initLink processes the linkname/export directive and sets the linkname.
-func initLink(prog llssa.Program, line string, prefix int, export bool, fullName, inPkgName string) {
+func initLink(prog llssa.Program, line string, prefix int, export bool, f func(name string, isExport bool) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
 		name := text[:idx]
-		if name == inPkgName || (export && enableExportRename) {
+		if fullName, _, ok := f(name, export); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
 			prog.SetLinkname(fullName, link)
 			if export {
