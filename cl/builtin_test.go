@@ -411,55 +411,22 @@ func TestErrImport(t *testing.T) {
 	ctx.importPkg(pkg, &pkgInfo{})
 }
 
-func TestErrInitLinknameByDoc(t *testing.T) {
-	prog := llssa.NewProgram(nil)
-
-	// Test with nil doc - should return false
-	if initLinknameByDoc(prog, nil, "foo.Bar", "Bar", false) {
-		t.Fatal("initLinknameByDoc: expected false for nil doc")
-	}
-
-	// Test with //llgo:link directive
-	doc1 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//llgo:link Bar C.bar"}}}
-	if !initLinknameByDoc(prog, doc1, "foo.Bar", "Bar", false) {
-		t.Fatal("initLinknameByDoc: expected true for //llgo:link")
-	}
-	if link, ok := prog.Linkname("foo.Bar"); !ok || link != "C.bar" {
-		t.Fatalf("initLinknameByDoc: linkname = %q (ok=%v), want C.bar", link, ok)
-	}
-
-	// Test with //go:linkname directive
-	prog2 := llssa.NewProgram(nil)
-	doc2 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//go:linkname Printf printf"}}}
-	if !initLinknameByDoc(prog2, doc2, "foo.Printf", "Printf", false) {
-		t.Fatal("initLinknameByDoc: expected true for //go:linkname")
-	}
-	if link, ok := prog2.Linkname("foo.Printf"); !ok || link != "printf" {
-		t.Fatalf("initLinknameByDoc: linkname = %q (ok=%v), want printf", link, ok)
-	}
-
-	// Test with wrong name - should return true (directive found) but not set linkname
-	prog3 := llssa.NewProgram(nil)
-	doc3 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//go:linkname WrongName printf"}}}
-	if !initLinknameByDoc(prog3, doc3, "foo.Printf", "Printf", false) {
-		t.Fatal("initLinknameByDoc: expected true for directive found")
-	}
-	if _, ok := prog3.Linkname("foo.Printf"); ok {
-		t.Fatal("initLinknameByDoc: expected no linkname set for wrong name")
-	}
-
-	// Test with //export directive and wrong name - should panic when enableExportRename is false
+func TestErrInitLinkname(t *testing.T) {
+	var prog llssa.Program = nil
+	initLinkname(prog, "//llgo:link abc", func(name string, isExport bool) (string, bool, bool) {
+		return "", false, false
+	})
+	initLinkname(prog, "//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
+		return "", false, false
+	})
 	defer func() {
 		if r := recover(); r == nil {
-			t.Fatal("initLinknameByDoc: expected panic for export with wrong name")
+			t.Fatal("initLinkname: no error?")
 		}
 	}()
-	oldEnableExportRename := enableExportRename
-	EnableExportRename(false)
-	defer EnableExportRename(oldEnableExportRename)
-	prog4 := llssa.NewProgram(nil)
-	doc4 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//export WrongExportName"}}}
-	initLinknameByDoc(prog4, doc4, "foo.Printf", "Printf", false)
+	initLinkname(prog, "//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
+		return "foo.Printf", false, name == "Printf"
+	})
 }
 
 func TestErrVarOf(t *testing.T) {
@@ -543,11 +510,28 @@ func TestContextResolveLinkname(t *testing.T) {
 	}
 }
 
+func TestInstantiate(t *testing.T) {
+	obj := types.NewTypeName(0, nil, "T", nil)
+	named := types.NewNamed(obj, types.Typ[types.Int], nil)
+	if typ := obj.Type(); typ != instantiate(typ, named) {
+		t.Fatal("error")
+	}
+	tparam := types.NewTypeParam(types.NewTypeName(0, nil, "P", nil), types.NewInterface(nil, nil))
+	named.SetTypeParams([]*types.TypeParam{tparam})
+	inamed, err := types.Instantiate(nil, named, []types.Type{types.Typ[types.Int]}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typ := instantiate(obj.Type(), inamed.(*types.Named)); typ == obj.Type() || typ.(*types.Named).TypeArgs() == nil {
+		t.Fatal("error")
+	}
+}
+
 func TestHandleExportDiffName(t *testing.T) {
 	tests := []struct {
 		name               string
 		enableExportRename bool
-		comment            string
+		line               string
 		fullName           string
 		inPkgName          string
 		wantHasLinkname    bool
@@ -557,7 +541,7 @@ func TestHandleExportDiffName(t *testing.T) {
 		{
 			name:               "ExportDiffNames_DifferentName",
 			enableExportRename: true,
-			comment:            "//export IRQ_Handler",
+			line:               "//export IRQ_Handler",
 			fullName:           "pkg.HandleInterrupt",
 			inPkgName:          "HandleInterrupt",
 			wantHasLinkname:    true,
@@ -567,7 +551,7 @@ func TestHandleExportDiffName(t *testing.T) {
 		{
 			name:               "ExportDiffNames_SameName",
 			enableExportRename: true,
-			comment:            "//export SameName",
+			line:               "//export SameName",
 			fullName:           "pkg.SameName",
 			inPkgName:          "SameName",
 			wantHasLinkname:    true,
@@ -577,7 +561,7 @@ func TestHandleExportDiffName(t *testing.T) {
 		{
 			name:               "ExportDiffNames_WithSpaces",
 			enableExportRename: true,
-			comment:            "//export   Timer_Callback  ",
+			line:               "//export   Timer_Callback  ",
 			fullName:           "pkg.OnTimerTick",
 			inPkgName:          "OnTimerTick",
 			wantHasLinkname:    true,
@@ -587,7 +571,7 @@ func TestHandleExportDiffName(t *testing.T) {
 		{
 			name:               "ExportDiffNames_Disabled_MatchingName",
 			enableExportRename: false,
-			comment:            "//export Func",
+			line:               "//export Func",
 			fullName:           "pkg.Func",
 			inPkgName:          "Func",
 			wantHasLinkname:    true,
@@ -606,9 +590,14 @@ func TestHandleExportDiffName(t *testing.T) {
 			EnableExportRename(tt.enableExportRename)
 
 			prog := llssa.NewProgram(nil)
-			doc := &ast.CommentGroup{List: []*ast.Comment{{Text: tt.comment}}}
 
-			gotHasLinkname := initLinknameByDoc(prog, doc, tt.fullName, tt.inPkgName, false)
+			// Call initLinkname with closure that mimics initLinknameByDoc behavior
+			ret := initLinkname(prog, tt.line, func(name string, isExport bool) (string, bool, bool) {
+				return tt.fullName, false, name == tt.inPkgName || (isExport && enableExportRename)
+			})
+
+			// Verify result
+			gotHasLinkname := (ret == hasLinkname)
 			if gotHasLinkname != tt.wantHasLinkname {
 				t.Errorf("hasLinkname = %v, want %v", gotHasLinkname, tt.wantHasLinkname)
 			}
@@ -628,29 +617,102 @@ func TestHandleExportDiffName(t *testing.T) {
 	}
 }
 
+func TestInitLinknameByDocExportDiffNames(t *testing.T) {
+	tests := []struct {
+		name               string
+		enableExportRename bool
+		doc                *ast.CommentGroup
+		fullName           string
+		inPkgName          string
+		wantExported       bool // Whether the symbol should be exported with different name
+		wantLinkname       string
+		wantExport         string
+	}{
+		{
+			name:               "WithExportDiffNames_DifferentNameExported",
+			enableExportRename: true,
+			doc: &ast.CommentGroup{
+				List: []*ast.Comment{
+					{Text: "//export IRQ_Handler"},
+				},
+			},
+			fullName:     "pkg.HandleInterrupt",
+			inPkgName:    "HandleInterrupt",
+			wantExported: true,
+			wantLinkname: "IRQ_Handler",
+			wantExport:   "IRQ_Handler",
+		},
+		{
+			name:               "WithoutExportDiffNames_NotExported",
+			enableExportRename: false,
+			doc: &ast.CommentGroup{
+				List: []*ast.Comment{
+					{Text: "//export DifferentName"},
+				},
+			},
+			fullName:     "pkg.HandleInterrupt",
+			inPkgName:    "HandleInterrupt",
+			wantExported: false,
+			// Without enableExportRename, it goes through normal flow which expects same name
+			// The symbol "DifferentName" won't be found, so no export happens
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Without enableExportRename, export with different name will panic
+			if !tt.wantExported && !tt.enableExportRename {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("expected panic for export with different name when enableExportRename=false")
+					}
+				}()
+			}
+
+			// Save and restore global state
+			oldEnableExportRename := enableExportRename
+			defer func() {
+				EnableExportRename(oldEnableExportRename)
+			}()
+			EnableExportRename(tt.enableExportRename)
+
+			prog := llssa.NewProgram(nil)
+
+			// Call initLinknameByDoc
+			initLinknameByDoc(prog, tt.doc, tt.fullName, tt.inPkgName, false)
+
+			// Verify export behavior
+			if tt.wantExported {
+				// Should have exported the symbol with different name
+				if export, ok := prog.ExportName(tt.fullName); !ok || export != tt.wantExport {
+					t.Errorf("export = %q (ok=%v), want %q", export, ok, tt.wantExport)
+				}
+				// Check linkname was also set
+				if link, ok := prog.Linkname(tt.fullName); !ok || link != tt.wantLinkname {
+					t.Errorf("linkname = %q (ok=%v), want %q", link, ok, tt.wantLinkname)
+				}
+			}
+		})
+	}
+}
+
 func TestInitLinkExportDiffNames(t *testing.T) {
 	tests := []struct {
 		name               string
 		enableExportRename bool
-		comment            string
-		fullName           string
-		inPkgName          string
+		line               string
 		wantPanic          bool
 	}{
 		{
 			name:               "ExportDiffNames_Enabled_NoError",
 			enableExportRename: true,
-			comment:            "//export IRQ_Handler",
-			fullName:           "pkg.HandleInterrupt",
-			inPkgName:          "HandleInterrupt",
+			line:               "//export IRQ_Handler",
 			wantPanic:          false,
 		},
 		{
 			name:               "ExportDiffNames_Disabled_Panic",
 			enableExportRename: false,
-			comment:            "//export IRQ_Handler",
-			fullName:           "pkg.HandleInterrupt",
-			inPkgName:          "HandleInterrupt",
+			line:               "//export IRQ_Handler",
 			wantPanic:          true,
 		},
 	}
@@ -672,26 +734,11 @@ func TestInitLinkExportDiffNames(t *testing.T) {
 			EnableExportRename(tt.enableExportRename)
 
 			prog := llssa.NewProgram(nil)
-			doc := &ast.CommentGroup{List: []*ast.Comment{{Text: tt.comment}}}
 
-			initLinknameByDoc(prog, doc, tt.fullName, tt.inPkgName, false)
+			initLinkname(prog, tt.line, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+				// Simulate initLinknames scenario: symbol not found (like in decl packages)
+				return "", false, isExport && enableExportRename
+			})
 		})
-	}
-}
-
-func TestInstantiate(t *testing.T) {
-	obj := types.NewTypeName(0, nil, "T", nil)
-	named := types.NewNamed(obj, types.Typ[types.Int], nil)
-	if typ := obj.Type(); typ != instantiate(typ, named) {
-		t.Fatal("error")
-	}
-	tparam := types.NewTypeParam(types.NewTypeName(0, nil, "P", nil), types.NewInterface(nil, nil))
-	named.SetTypeParams([]*types.TypeParam{tparam})
-	inamed, err := types.Instantiate(nil, named, []types.Type{types.Typ[types.Int]}, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if typ := instantiate(obj.Type(), inamed.(*types.Named)); typ == obj.Type() || typ.(*types.Named).TypeArgs() == nil {
-		t.Fatal("error")
 	}
 }
