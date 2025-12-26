@@ -179,15 +179,19 @@ func initLinkname(prog llssa.Program, line string, f func(name string, isExport 
 func initLink(prog llssa.Program, line string, prefix int, export bool, f func(name string, isExport bool) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
-		name := text[:idx]
-		if fullName, _, ok := f(name, export); ok {
+		inPkgName := text[:idx]
+		if fullName, _, ok := f(inPkgName, export); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
 			prog.SetLinkname(fullName, link)
 			if export {
 				prog.SetExportName(fullName, link)
 			}
-		} else if export {
-			panic(fmt.Sprintf("export comment has wrong name %q", name))
+		} else {
+			if export {
+				panic(fmt.Sprintf("export comment has wrong name %q", inPkgName))
+			}
+			fmt.Fprintln(os.Stderr, "==>", line)
+			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
 		}
 	}
 }
