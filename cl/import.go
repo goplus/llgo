@@ -120,6 +120,74 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	}
 }
 
+// initLinknameByDoc collects //go:linkname and //export directives from doc comments.
+// Returns true if a linkname or export directive was found and processed, false otherwise.
+func initLinknameByDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string) bool {
+	if doc != nil {
+		for n := len(doc.List) - 1; n >= 0; n-- {
+			line := doc.List[n].Text
+			ret := initLinkname(prog, line, fullName, inPkgName)
+			if ret != unknownDirective {
+				return ret == hasLinkname
+			}
+		}
+	}
+	return false
+}
+
+const (
+	noDirective      = iota // not a directive comment
+	hasLinkname             // directive found and processed
+	unknownDirective = -1   // unknown //go: directive
+)
+
+// initLinkname processes a single comment line for linkname/export directives.
+func initLinkname(prog llssa.Program, line string, fullName, inPkgName string) int {
+	const (
+		linkname  = "//go:linkname "
+		llgolink  = "//llgo:link "
+		llgolink2 = "// llgo:link "
+		export    = "//export "
+		directive = "//go:"
+	)
+	if strings.HasPrefix(line, linkname) {
+		initLink(prog, line, len(linkname), false, fullName, inPkgName)
+		return hasLinkname
+	} else if strings.HasPrefix(line, llgolink2) {
+		initLink(prog, line, len(llgolink2), false, fullName, inPkgName)
+		return hasLinkname
+	} else if strings.HasPrefix(line, llgolink) {
+		initLink(prog, line, len(llgolink), false, fullName, inPkgName)
+		return hasLinkname
+	} else if strings.HasPrefix(line, export) {
+		// rewrite //export FuncName to //export FuncName FuncName
+		funcName := strings.TrimSpace(line[len(export):])
+		line = line + " " + funcName
+		initLink(prog, line, len(export), true, fullName, inPkgName)
+		return hasLinkname
+	} else if strings.HasPrefix(line, directive) {
+		return unknownDirective
+	}
+	return noDirective
+}
+
+// initLink processes the linkname/export directive and sets the linkname.
+func initLink(prog llssa.Program, line string, prefix int, export bool, fullName, inPkgName string) {
+	text := strings.TrimSpace(line[prefix:])
+	if idx := strings.IndexByte(text, ' '); idx > 0 {
+		name := text[:idx]
+		if name == inPkgName || (export && enableExportRename) {
+			link := strings.TrimLeft(text[idx+1:], " ")
+			prog.SetLinkname(fullName, link)
+			if export {
+				prog.SetExportName(fullName, link)
+			}
+		} else if export {
+			panic(fmt.Sprintf("export comment has wrong name %q", name))
+		}
+	}
+}
+
 // Collect skip names and skip other annotations, such as go: and llgo:
 // llgo:skip symbol1 symbol2 ...
 // llgo:skipall
@@ -483,9 +551,9 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				hasLinkname := collectLinknameFromDoc(prog, decl.Doc, fullName, inPkgName)
+				hasLink := initLinknameByDoc(prog, decl.Doc, fullName, inPkgName)
 				// package C auto-export logic (https://github.com/goplus/llgo/issues/1165)
-				if !hasLinkname && cPkg {
+				if !hasLink && cPkg {
 					if decl.Recv == nil && token.IsExported(inPkgName) {
 						exportName := strings.TrimPrefix(inPkgName, "X")
 						prog.SetLinkname(fullName, exportName)
@@ -499,7 +567,7 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 					if len(decl.Specs) == 1 {
 						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
 							inPkgName := names[0].Name
-							collectLinknameFromDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName)
+							initLinknameByDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName)
 						}
 					}
 				case token.TYPE:
@@ -508,57 +576,6 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 			}
 		}
 	}
-}
-
-// collectLinknameFromDoc collects //go:linkname and //export directives from doc comments.
-// Returns true if a linkname or export directive was found.
-func collectLinknameFromDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string) bool {
-	if doc == nil {
-		return false
-	}
-	const (
-		linkname  = "//go:linkname "
-		llgolink  = "//llgo:link "
-		llgolink2 = "// llgo:link "
-		export    = "//export "
-	)
-	for n := len(doc.List) - 1; n >= 0; n-- {
-		line := doc.List[n].Text
-		var prefix string
-		var isExport bool
-		if strings.HasPrefix(line, linkname) {
-			prefix = linkname
-		} else if strings.HasPrefix(line, llgolink) {
-			prefix = llgolink
-		} else if strings.HasPrefix(line, llgolink2) {
-			prefix = llgolink2
-		} else if strings.HasPrefix(line, export) {
-			prefix = export
-			isExport = true
-		} else {
-			continue
-		}
-		text := strings.TrimSpace(line[len(prefix):])
-		if isExport {
-			// //export FuncName -> link to FuncName
-			if text == inPkgName || enableExportRename {
-				prog.SetLinkname(fullName, text)
-				prog.SetExportName(fullName, text)
-				return true
-			}
-			// Different export name without enableExportRename is an error
-			panic(fmt.Sprintf("export comment has wrong name %q", text))
-		} else if idx := strings.IndexByte(text, ' '); idx > 0 {
-			name := text[:idx]
-			if name == inPkgName {
-				link := strings.TrimLeft(text[idx+1:], " ")
-				prog.SetLinkname(fullName, link)
-				return true
-			}
-		}
-		return false
-	}
-	return false
 }
 
 func handleTypeDecl(prog llssa.Program, pkg *types.Package, decl *ast.GenDecl) {
