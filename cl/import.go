@@ -172,7 +172,6 @@ start:
 			}
 		}
 	}
-	syms.initLinknames(p)
 }
 
 // initFiles collects skip names from AST. Linkname and export collection
