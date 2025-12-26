@@ -122,6 +122,62 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	}
 }
 
+// Collect skip names and skip other annotations, such as go: and llgo:
+// llgo:skip symbol1 symbol2 ...
+// llgo:skipall
+func (p *context) collectSkipNames(line string) bool {
+	const (
+		llgo1   = "//llgo:"
+		llgo2   = "// llgo:"
+		go1     = "//go:"
+		skip    = "skip"
+		skipAll = "skipall"
+	)
+	if strings.HasPrefix(line, go1) {
+		return true
+	}
+	var skipLine string
+	if strings.HasPrefix(line, llgo1) {
+		skipLine = line[len(llgo1):]
+	} else if strings.HasPrefix(line, llgo2) {
+		skipLine = line[len(llgo2):]
+	} else {
+		return false
+	}
+	if strings.HasPrefix(skipLine, skip) {
+		p.collectSkip(skipLine, len(skip))
+	}
+	return true
+}
+
+func (p *context) collectSkipNamesByDoc(doc *ast.CommentGroup) {
+	if doc != nil {
+		for n := len(doc.List) - 1; n >= 0; n-- {
+			line := doc.List[n].Text
+			if !p.collectSkipNames(line) {
+				break
+			}
+		}
+	}
+}
+
+func (p *context) collectSkip(line string, prefix int) {
+	line = line[prefix:]
+	if line == "all" {
+		p.skipall = true
+		return
+	}
+	if len(line) == 0 || line[0] != ' ' {
+		return
+	}
+	names := strings.Split(line[1:], " ")
+	for _, name := range names {
+		if name != "" {
+			p.skips[name] = none{}
+		}
+	}
+}
+
 // initLinknameByDoc collects //go:linkname and //export directives from doc comments.
 // Returns true if a linkname or export directive was found and processed, false otherwise.
 func initLinknameByDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
@@ -192,62 +248,6 @@ func initLink(prog llssa.Program, line string, prefix int, export bool, f func(n
 			}
 			fmt.Fprintln(os.Stderr, "==>", line)
 			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
-		}
-	}
-}
-
-// Collect skip names and skip other annotations, such as go: and llgo:
-// llgo:skip symbol1 symbol2 ...
-// llgo:skipall
-func (p *context) collectSkipNames(line string) bool {
-	const (
-		llgo1   = "//llgo:"
-		llgo2   = "// llgo:"
-		go1     = "//go:"
-		skip    = "skip"
-		skipAll = "skipall"
-	)
-	if strings.HasPrefix(line, go1) {
-		return true
-	}
-	var skipLine string
-	if strings.HasPrefix(line, llgo1) {
-		skipLine = line[len(llgo1):]
-	} else if strings.HasPrefix(line, llgo2) {
-		skipLine = line[len(llgo2):]
-	} else {
-		return false
-	}
-	if strings.HasPrefix(skipLine, skip) {
-		p.collectSkip(skipLine, len(skip))
-	}
-	return true
-}
-
-func (p *context) collectSkipNamesByDoc(doc *ast.CommentGroup) {
-	if doc != nil {
-		for n := len(doc.List) - 1; n >= 0; n-- {
-			line := doc.List[n].Text
-			if !p.collectSkipNames(line) {
-				break
-			}
-		}
-	}
-}
-
-func (p *context) collectSkip(line string, prefix int) {
-	line = line[prefix:]
-	if line == "all" {
-		p.skipall = true
-		return
-	}
-	if len(line) == 0 || line[0] != ' ' {
-		return
-	}
-	names := strings.Split(line[1:], " ")
-	for _, name := range names {
-		if name != "" {
-			p.skips[name] = none{}
 		}
 	}
 }
