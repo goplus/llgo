@@ -122,12 +122,12 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 
 // initLinknameByDoc collects //go:linkname and //export directives from doc comments.
 // Returns true if a linkname or export directive was found and processed, false otherwise.
-func initLinknameByDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string) bool {
+func initLinknameByDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
 	if doc != nil {
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
 			ret := initLinkname(prog, line, func(name string, isExport bool) (string, bool, bool) {
-				return fullName, false, name == inPkgName || (isExport && enableExportRename)
+				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
 			})
 			if ret != unknownDirective {
 				return ret == hasLinkname
@@ -553,7 +553,7 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				hasLink := initLinknameByDoc(prog, decl.Doc, fullName, inPkgName)
+				hasLink := initLinknameByDoc(prog, decl.Doc, fullName, inPkgName, false)
 				// package C auto-export logic (https://github.com/goplus/llgo/issues/1165)
 				if !hasLink && cPkg {
 					if decl.Recv == nil && token.IsExported(inPkgName) {
@@ -569,7 +569,7 @@ func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
 					if len(decl.Specs) == 1 {
 						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
 							inPkgName := names[0].Name
-							initLinknameByDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName)
+							initLinknameByDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 						}
 					}
 				case token.TYPE:

@@ -415,13 +415,13 @@ func TestErrInitLinknameByDoc(t *testing.T) {
 	prog := llssa.NewProgram(nil)
 
 	// Test with nil doc - should return false
-	if initLinknameByDoc(prog, nil, "foo.Bar", "Bar") {
+	if initLinknameByDoc(prog, nil, "foo.Bar", "Bar", false) {
 		t.Fatal("initLinknameByDoc: expected false for nil doc")
 	}
 
 	// Test with //llgo:link directive
 	doc1 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//llgo:link Bar C.bar"}}}
-	if !initLinknameByDoc(prog, doc1, "foo.Bar", "Bar") {
+	if !initLinknameByDoc(prog, doc1, "foo.Bar", "Bar", false) {
 		t.Fatal("initLinknameByDoc: expected true for //llgo:link")
 	}
 	if link, ok := prog.Linkname("foo.Bar"); !ok || link != "C.bar" {
@@ -431,7 +431,7 @@ func TestErrInitLinknameByDoc(t *testing.T) {
 	// Test with //go:linkname directive
 	prog2 := llssa.NewProgram(nil)
 	doc2 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//go:linkname Printf printf"}}}
-	if !initLinknameByDoc(prog2, doc2, "foo.Printf", "Printf") {
+	if !initLinknameByDoc(prog2, doc2, "foo.Printf", "Printf", false) {
 		t.Fatal("initLinknameByDoc: expected true for //go:linkname")
 	}
 	if link, ok := prog2.Linkname("foo.Printf"); !ok || link != "printf" {
@@ -441,7 +441,7 @@ func TestErrInitLinknameByDoc(t *testing.T) {
 	// Test with wrong name - should return true (directive found) but not set linkname
 	prog3 := llssa.NewProgram(nil)
 	doc3 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//go:linkname WrongName printf"}}}
-	if !initLinknameByDoc(prog3, doc3, "foo.Printf", "Printf") {
+	if !initLinknameByDoc(prog3, doc3, "foo.Printf", "Printf", false) {
 		t.Fatal("initLinknameByDoc: expected true for directive found")
 	}
 	if _, ok := prog3.Linkname("foo.Printf"); ok {
@@ -459,7 +459,7 @@ func TestErrInitLinknameByDoc(t *testing.T) {
 	defer EnableExportRename(oldEnableExportRename)
 	prog4 := llssa.NewProgram(nil)
 	doc4 := &ast.CommentGroup{List: []*ast.Comment{{Text: "//export WrongExportName"}}}
-	initLinknameByDoc(prog4, doc4, "foo.Printf", "Printf")
+	initLinknameByDoc(prog4, doc4, "foo.Printf", "Printf", false)
 }
 
 func TestErrVarOf(t *testing.T) {
@@ -608,7 +608,7 @@ func TestHandleExportDiffName(t *testing.T) {
 			prog := llssa.NewProgram(nil)
 			doc := &ast.CommentGroup{List: []*ast.Comment{{Text: tt.comment}}}
 
-			gotHasLinkname := initLinknameByDoc(prog, doc, tt.fullName, tt.inPkgName)
+			gotHasLinkname := initLinknameByDoc(prog, doc, tt.fullName, tt.inPkgName, false)
 			if gotHasLinkname != tt.wantHasLinkname {
 				t.Errorf("hasLinkname = %v, want %v", gotHasLinkname, tt.wantHasLinkname)
 			}
@@ -674,7 +674,7 @@ func TestInitLinkExportDiffNames(t *testing.T) {
 			prog := llssa.NewProgram(nil)
 			doc := &ast.CommentGroup{List: []*ast.Comment{{Text: tt.comment}}}
 
-			initLinknameByDoc(prog, doc, tt.fullName, tt.inPkgName)
+			initLinknameByDoc(prog, doc, tt.fullName, tt.inPkgName, false)
 		})
 	}
 }
