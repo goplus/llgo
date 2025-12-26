@@ -112,10 +112,6 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 	if b.Prog.target.GOARCH == "wasm" {
 		return b.Setjmp(jb)
 	}
-	// fname := "sigsetjmp"
-	// if b.Prog.target.GOOS == "linux" {
-	// 	fname = "__sigsetjmp"
-	// }
 	fn := b.Pkg.rtFunc("Sigsetjmp")
 	b.addReturnsTwiceAttr(fn)
 	return b.Call(fn, jb, savemask)
