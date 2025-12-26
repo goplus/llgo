@@ -1116,6 +1116,8 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 		prog.SetRuntime(pkgTypes)
 	}
 	ret = prog.NewPackage(pkgName, pkgPath)
+	// Copy exports from prog to pkg (collected by ParsePkgSyntax)
+	prog.CopyExportsTo(pkgPath, ret)
 	if enableDbg {
 		ret.InitDebug(pkgName, pkgPath, pkgProg.Fset)
 	}
