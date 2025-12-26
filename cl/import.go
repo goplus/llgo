@@ -17,7 +17,6 @@
 package cl
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -34,56 +33,6 @@ import (
 )
 
 // -----------------------------------------------------------------------------
-
-type symInfo struct {
-	file     string
-	fullName string
-	isVar    bool
-}
-
-type pkgSymInfo struct {
-	files map[string][]byte  // file => content
-	syms  map[string]symInfo // name => isVar
-}
-
-func newPkgSymInfo() *pkgSymInfo {
-	return &pkgSymInfo{
-		files: make(map[string][]byte),
-		syms:  make(map[string]symInfo),
-	}
-}
-
-func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, fullName, inPkgName string, isVar bool) {
-	f := fset.File(pos)
-	if fp := f.Position(pos); fp.Line > 2 {
-		file := fp.Filename
-		if _, ok := p.files[file]; !ok {
-			b, err := os.ReadFile(file)
-			if err == nil {
-				p.files[file] = b
-			}
-		}
-		p.syms[inPkgName] = symInfo{file, fullName, isVar}
-	}
-}
-
-func (p *pkgSymInfo) initLinknames(ctx *context) {
-	sep := []byte{'\n'}
-	commentPrefix := []byte{'/', '/'}
-	for file, b := range p.files {
-		lines := bytes.Split(b, sep)
-		for _, line := range lines {
-			if bytes.HasPrefix(line, commentPrefix) {
-				ctx.initLinkname(string(line), func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
-					if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
-						return sym.fullName, sym.isVar, true
-					}
-					return
-				})
-			}
-		}
-	}
-}
 
 // PkgKindOf returns the kind of a package.
 func PkgKindOf(pkg *types.Package) (int, string) {
@@ -130,48 +79,18 @@ func pkgKindByScope(scope *types.Scope) (int, string) {
 }
 
 func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
-	pkgPath := llssa.PathOf(pkg)
 	scope := pkg.Scope()
 	kind, _ := pkgKindByScope(scope)
 	if kind == PkgNormal {
-		if patch, ok := p.patches[pkgPath]; ok {
-			pkg = patch.Alt.Pkg
-			scope = pkg.Scope()
+		if patch, ok := p.patches[llssa.PathOf(pkg)]; ok {
+			scope = patch.Alt.Pkg.Scope()
 			if kind, _ = pkgKindByScope(scope); kind != PkgNormal {
-				goto start
+				i.kind = kind
 			}
 		}
 		return
 	}
-start:
 	i.kind = kind
-	fset := p.fset
-	names := scope.Names()
-	syms := newPkgSymInfo()
-	for _, name := range names {
-		obj := scope.Lookup(name)
-		switch obj := obj.(type) {
-		case *types.Func:
-			if pos := obj.Pos(); pos != token.NoPos {
-				fullName, inPkgName := typesFuncName(pkgPath, obj)
-				syms.addSym(fset, pos, fullName, inPkgName, false)
-			}
-		case *types.TypeName:
-			if !obj.IsAlias() {
-				if t, ok := obj.Type().(*types.Named); ok {
-					for i, n := 0, t.NumMethods(); i < n; i++ {
-						fn := t.Method(i)
-						fullName, inPkgName := typesFuncName(pkgPath, fn)
-						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
-					}
-				}
-			}
-		case *types.Var:
-			if pos := obj.Pos(); pos != token.NoPos {
-				syms.addSym(fset, pos, pkgPath+"."+name, name, true)
-			}
-		}
-	}
 }
 
 // initFiles collects skip names from AST. Linkname and export collection
@@ -253,66 +172,6 @@ func (p *context) collectSkip(line string, prefix int) {
 	for _, name := range names {
 		if name != "" {
 			p.skips[name] = none{}
-		}
-	}
-}
-
-const (
-	noDirective = iota
-	hasLinkname
-	unknownDirective = -1
-)
-
-func (p *context) initLinkname(line string, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
-	const (
-		linkname  = "//go:linkname "
-		llgolink  = "//llgo:link "
-		llgolink2 = "// llgo:link "
-		export    = "//export "
-		directive = "//go:"
-	)
-	if strings.HasPrefix(line, linkname) {
-		p.initLink(line, len(linkname), false, f)
-		return hasLinkname
-	} else if strings.HasPrefix(line, llgolink2) {
-		p.initLink(line, len(llgolink2), false, f)
-		return hasLinkname
-	} else if strings.HasPrefix(line, llgolink) {
-		p.initLink(line, len(llgolink), false, f)
-		return hasLinkname
-	} else if strings.HasPrefix(line, export) {
-		// rewrite //export FuncName to //export FuncName FuncName
-		funcName := strings.TrimSpace(line[len(export):])
-		line = line + " " + funcName
-		p.initLink(line, len(export), true, f)
-		return hasLinkname
-	} else if strings.HasPrefix(line, directive) {
-		// skip unknown annotation but continue to parse the next annotation
-		return unknownDirective
-	}
-	return noDirective
-}
-
-func (p *context) initLink(line string, prefix int, export bool, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) {
-	text := strings.TrimSpace(line[prefix:])
-	if idx := strings.IndexByte(text, ' '); idx > 0 {
-		inPkgName := text[:idx]
-		if fullName, _, ok := f(inPkgName, export); ok {
-			link := strings.TrimLeft(text[idx+1:], " ")
-			p.prog.SetLinkname(fullName, link)
-			if export {
-				p.pkg.SetExport(fullName, link)
-			}
-		} else {
-			// Export with different names already processed by initLinknameByDoc
-			if export && enableExportRename {
-				return
-			}
-			if export {
-				panic(fmt.Sprintf("export comment has wrong name %q", inPkgName))
-			}
-			fmt.Fprintln(os.Stderr, "==>", line)
-			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
 		}
 	}
 }
