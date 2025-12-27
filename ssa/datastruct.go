@@ -504,6 +504,13 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 //
 //	t0[t1] = t2
 func (b Builder) MapUpdate(m, k, v Expr) {
+	// Convert function declarations to proper closure form when stored in maps.
+	// This ensures function values are correctly wrapped as closures, similar to
+	// interface assignment (see MakeInterface).
+	if v.kind == vkFuncDecl {
+		typ := b.Prog.Type(v.raw.Type, InGo)
+		v = checkExpr(v, typ.raw.Type, b)
+	}
 	if debugInstr {
 		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
 	}
