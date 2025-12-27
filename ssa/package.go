@@ -109,9 +109,7 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
-	checkRuntimeNamed func(Package, *types.Named)
-
-	fnsCompiled map[string]bool
+	compileMethods func(Package, types.Type)
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -165,14 +163,15 @@ type aProgram struct {
 	u32Ty     Type
 	i64Ty     Type
 	u64Ty     Type
+	u16Ty     Type
 
 	pyObjPtr  Type
 	pyObjPPtr Type
 
-	abiTyPtr  Type
-	abiTyPPtr Type
-	deferTy   Type
-	deferPtr  Type
+	abiTy    Type
+	abiTyPtr Type
+	deferTy  Type
+	deferPtr Type
 
 	pyImpTy      *types.Signature
 	pyNewList    *types.Signature
@@ -213,6 +212,7 @@ type aProgram struct {
 
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
+	abiSymbol    map[string]Type   // abi symbol name => Type
 
 	ptrSize int
 
@@ -248,7 +248,6 @@ func NewProgram(target *Target) Program {
 	}
 	ctx := llvm.NewContext()
 	td := target.targetData() // TODO(xsw): target config
-	fnsCompiled := make(map[string]bool)
 	/*
 		arch := target.GOARCH
 		if arch == "" {
@@ -261,10 +260,10 @@ func NewProgram(target *Target) Program {
 	*/
 	is32Bits := (td.PointerSize() == 4 || is32Bits(target.GOARCH))
 	return &aProgram{
-		ctx: ctx, gocvt: newGoTypes(), fnsCompiled: fnsCompiled,
+		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string),
+		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
 }
 
@@ -287,8 +286,8 @@ func (p Program) patch(typ types.Type) types.Type {
 	return typ
 }
 
-func (p Program) SetCheckRuntimeNamed(check func(Package, *types.Named)) {
-	p.checkRuntimeNamed = check
+func (p Program) SetCompileMethods(check func(Package, types.Type)) {
+	p.compileMethods = check
 }
 
 // SetRuntime sets the runtime.
@@ -320,16 +319,6 @@ func (p Program) runtime() *types.Package {
 		p.rt = p.rtget()
 	}
 	return p.rt
-}
-
-// check generic function instantiation
-func (p Program) FuncCompiled(name string) bool {
-	_, ok := p.fnsCompiled[name]
-	return ok
-}
-
-func (p Program) SetFuncCompiled(name string) {
-	p.fnsCompiled[name] = true
 }
 
 func (p Program) rtNamed(name string) *types.Named {
@@ -432,18 +421,16 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pyobjs := make(map[string]PyObjRef)
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
-	chkabi := make(map[types.Type]bool)
 	glbDbgVars := make(map[Expr]bool)
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
-		mod: mod, vars: gbls, fns: fns,
+		mod: mod, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
-		chkabi: chkabi, Prog: p,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
 		export: make(map[string]string),
 	}
-	ret.abi.Init(pkgPath)
+	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
 }
 
@@ -472,20 +459,20 @@ func (p Program) DeferPtr() Type {
 	return p.deferPtr
 }
 
+// AbiType returns abi.Type type.
+func (p Program) AbiType() Type {
+	if p.abiTy == nil {
+		p.abiTy = p.rawType(p.rtNamed("Type"))
+	}
+	return p.abiTy
+}
+
 // AbiTypePtr returns *abi.Type type.
 func (p Program) AbiTypePtr() Type {
 	if p.abiTyPtr == nil {
-		p.abiTyPtr = p.rawType(types.NewPointer(p.rtNamed("Type")))
+		p.abiTyPtr = p.Pointer(p.AbiType())
 	}
 	return p.abiTyPtr
-}
-
-// AbiTypePtrPtr returns **abi.Type type.
-func (p Program) AbiTypePtrPtr() Type {
-	if p.abiTyPPtr == nil {
-		p.abiTyPPtr = p.Pointer(p.AbiTypePtr())
-	}
-	return p.abiTyPPtr
 }
 
 // Void returns void type.
@@ -648,6 +635,14 @@ func (p Program) Uint32() Type {
 	return p.u32Ty
 }
 
+// Uint16 returns uint16 type.
+func (p Program) Uint16() Type {
+	if p.u16Ty == nil {
+		p.u16Ty = p.rawType(types.Typ[types.Uint16])
+	}
+	return p.u16Ty
+}
+
 // Int64 returns int64 type.
 func (p Program) Int64() Type {
 	if p.i64Ty == nil {
@@ -690,15 +685,13 @@ type aPackage struct {
 	pymods map[string]Global
 	strs   map[string]llvm.Value
 	goStrs map[string]llvm.Value
-	chkabi map[types.Type]bool
-	afterb unsafe.Pointer
-	patch  func(types.Type) types.Type
 	fnlink func(string) string
 
 	iRoutine int
 
 	NeedRuntime bool
 	NeedPyInit  bool
+	NeedAbiInit bool // need load all abi types for reflect make type
 
 	export map[string]string // pkgPath.nameInPkg => exportname
 }
@@ -765,11 +758,6 @@ func (p Package) String() string {
 	return p.mod.String()
 }
 
-// SetPatch sets a patch function.
-func (p Package) SetPatch(fn func(types.Type) types.Type) {
-	p.patch = fn
-}
-
 // SetResolveLinkname sets a function to resolve linkname.
 func (p Package) SetResolveLinkname(fn func(string) string) {
 	p.fnlink = fn
@@ -777,29 +765,12 @@ func (p Package) SetResolveLinkname(fn func(string) string) {
 
 // -----------------------------------------------------------------------------
 
-func (p Package) afterBuilder() Builder {
-	if p.afterb == nil {
-		fn := p.NewFunc(p.Path()+".init$after", NoArgsNoRet, InC)
-		fnb := fn.MakeBody(1)
-		p.afterb = unsafe.Pointer(fnb)
-	}
-	return Builder(p.afterb)
-}
-
 // AfterInit is called after the package is initialized (init all packages that depends on).
 func (p Package) AfterInit(b Builder, ret BasicBlock) {
-	doAfterb := p.afterb != nil
 	doPyLoadModSyms := p.pyHasModSyms()
-	if doAfterb || doPyLoadModSyms {
+	if doPyLoadModSyms {
 		b.SetBlockEx(ret, afterInit, false)
-		if doAfterb {
-			afterb := Builder(p.afterb)
-			afterb.Return()
-			b.Call(afterb.Func.Expr)
-		}
-		if doPyLoadModSyms {
-			p.pyLoadModSyms(b)
-		}
+		p.pyLoadModSyms(b)
 	}
 }
 

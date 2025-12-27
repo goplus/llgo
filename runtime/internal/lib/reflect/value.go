@@ -3165,5 +3165,61 @@ func MakeMapWithSize(typ Type, n int) Value {
 	return Value{t, m, flag(Map)}
 }
 
+// Comparable reports whether the value v is comparable.
+// If the type of v is an interface, this checks the dynamic type.
+// If this reports true then v.Interface() == x will not panic for any x,
+// nor will v.Equal(u) for any Value u.
+func (v Value) Comparable() bool {
+	k := v.Kind()
+	switch k {
+	case Invalid:
+		return false
+
+	case Array:
+		switch v.Type().Elem().Kind() {
+		case Interface, Array, Struct:
+			for i := 0; i < v.Type().Len(); i++ {
+				if !v.Index(i).Comparable() {
+					return false
+				}
+			}
+			return true
+		}
+		return v.Type().Comparable()
+
+	case Interface:
+		return v.IsNil() || v.Elem().Comparable()
+
+	case Struct:
+		for i := 0; i < v.NumField(); i++ {
+			if !v.Field(i).Comparable() {
+				return false
+			}
+		}
+		return true
+
+	default:
+		return v.Type().Comparable()
+	}
+}
+
+// Clear clears the contents of a map or zeros the contents of a slice.
+//
+// It panics if v's Kind is not [Map] or [Slice].
+func (v Value) Clear() {
+	switch v.Kind() {
+	case Slice:
+		sh := *(*unsafeheaderSlice)(v.ptr)
+		sliceclear(v.typ(), sh)
+	case Map:
+		mapclear(v.typ(), v.pointer())
+	default:
+		panic(&ValueError{"reflect.Value.Clear", v.Kind()})
+	}
+}
+
+//go:linkname sliceclear github.com/goplus/llgo/runtime/internal/runtime.SliceClear
+func sliceclear(t *abi.Type, s unsafeheaderSlice)
+
 //go:linkname ifaceE2I github.com/goplus/llgo/runtime/internal/runtime.IfaceE2I
 func ifaceE2I(t *abi.Type, src any, dst unsafe.Pointer)
