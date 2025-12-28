@@ -26,12 +26,10 @@ var idTLS = tls.Alloc[uint8](func(head *uint8) {
 	}
 })
 
-//go:linkname getIndicator crypto/internal/fips140.getIndicator
 func getIndicator() uint8 {
 	return idTLS.Get()
 }
 
-//go:linkname setIndicator crypto/internal/fips140.setIndicator
 func setIndicator(v uint8) {
 	idTLS.Set(v)
 }
@@ -41,3 +39,7 @@ const (
 	indicatorFalse
 	indicatorTrue
 )
+
+func fatal(s string) {
+	print("fatal error: ", s, "\n")
+}
