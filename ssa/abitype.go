@@ -552,6 +552,9 @@ func (p Package) getAbiTypes(name string) Expr {
 }
 
 func (p Package) InitAbiTypes(fname string) Function {
+	if len(p.Prog.abiSymbol) == 0 {
+		return nil
+	}
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
 	fn := p.rtFunc("initTypes")
