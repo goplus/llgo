@@ -274,6 +274,34 @@ func MapOf(key, elem *Type, bucket *Type, flags int) *Type {
 	return &ret.Type
 }
 
+// Func returns a function type.
+func Func(in, out []*Type, variadic bool) *FuncType {
+	if t := rtypeList.findFunc(in, out, variadic); t != nil {
+		return t
+	}
+	ret := &FuncType{
+		Type: Type{
+			Size_:       2 * unsafe.Sizeof(uintptr(0)),
+			PtrBytes:    2 * pointerSize,
+			Align_:      uint8(pointerAlign),
+			FieldAlign_: uint8(pointerAlign),
+			Kind_:       uint8(abi.Func),
+		},
+		In:  in,
+		Out: out,
+	}
+	var hash uint32 = 9091
+	if variadic {
+		hash *= 8863
+		ret.TFlag |= abi.TFlagVariadic
+	}
+	hash += 3*hashTuple(in) + 5*hashTuple(out)
+	ret.Hash = hash
+	ret.Str_ = funcStr(ret)
+	rtypeList.addType(&ret.Type)
+	return ret
+}
+
 func isRegularMemory(t *_type) bool {
 	switch t.Kind() {
 	case abi.Func, abi.Map, abi.Slice, abi.String, abi.Interface:
@@ -344,6 +372,43 @@ func structStr(fields []abi.StructField) string {
 	}
 	repr = append(repr, '}')
 	return string(repr)
+}
+
+func funcStr(ft *abi.FuncType) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "func("...)
+	for i, t := range ft.In {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		if ft.Variadic() && i == len(ft.In)-1 {
+			repr = append(repr, "..."...)
+			repr = append(repr, (*abi.SliceType)(unsafe.Pointer(t)).Elem.String()...)
+		} else {
+			repr = append(repr, t.String()...)
+		}
+	}
+	repr = append(repr, ')')
+	out := ft.Out
+	if len(out) == 1 {
+		repr = append(repr, ' ')
+	} else if len(out) > 1 {
+		repr = append(repr, " ("...)
+	}
+	for i, t := range out {
+		if i > 0 {
+			repr = append(repr, ", "...)
+		}
+		repr = append(repr, t.String()...)
+	}
+	if len(out) > 1 {
+		repr = append(repr, ')')
+	}
+	return string(repr)
+}
+
+func isDirectIface(t *_type) bool {
+	return t.Kind_&abi.KindDirectIface != 0
 }
 
 type rtypes struct {
@@ -483,6 +548,90 @@ func hashString(s string) uint32 {
 		h *= 16777619
 	}
 	return h
+}
+
+func hashTuple(tuple []*Type) uint32 {
+	// See go/types.identicalTypes for rationale.
+	n := len(tuple)
+	hash := 9137 + 2*uint32(n)
+	for i := 0; i < n; i++ {
+		hash += 3 * tuple[i].Hash
+	}
+	return hash
+}
+
+// shallowHash computes a hash of t without looking at any of its
+// element Types, to avoid potential anonymous cycles in the types of
+// interface methods.
+//
+// When an unnamed non-empty interface type appears anywhere among the
+// arguments or results of an interface method, there is a potential
+// for endless recursion. Consider:
+//
+//	type X interface { m() []*interface { X } }
+//
+// The problem is that the Methods of the interface in m's result type
+// include m itself; there is no mention of the named type X that
+// might help us break the cycle.
+// (See comment in go/types.identical, case *Interface, for more.)
+func shallowHash(t *abi.Type) uint32 {
+	// t is the type of an interface method (Signature),
+	// its params or results (Tuples), or their immediate
+	// elements (mostly Slice, Pointer, Basic, Named),
+	// so there's no need to optimize anything else.
+
+	if t.HasName() {
+		return 9157 + hashString(t.Uncommon().PkgPath_) + hashString(t.Str_)
+	}
+
+	switch t.Kind() {
+	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64, abi.Complex64, abi.Complex128, abi.String, abi.UnsafePointer:
+		return 45212177 * uint32(t.Kind())
+
+	case abi.Func:
+		t := t.FuncType()
+		var hash uint32 = 604171
+		if t.Variadic() {
+			hash *= 971767
+		}
+		// The Signature/Tuple recursion is always finite
+		// and invariably shallow.
+		return hash + 1062599*shallowHashTuple(t.In) + 1282529*shallowHashTuple(t.Out)
+
+	case abi.Array:
+		return 1524181 + 2*uint32(t.ArrayType().Len)
+
+	case abi.Slice:
+		return 2690201
+
+	case abi.Struct:
+		return 3326489
+
+	case abi.Pointer:
+		return 4393139
+
+	case abi.Interface:
+		return 2124679 // no recursion here
+
+	case abi.Map:
+		return 9109
+
+	case abi.Chan:
+		return 9127
+	}
+
+	panic("shallowHash:" + t.String())
+}
+
+func shallowHashTuple(tuple []*Type) uint32 {
+	n := len(tuple)
+	hash := 9137 + 2*uint32(n)
+	for i := 0; i < n; i++ {
+		hash += 53471161 * shallowHash(tuple[i])
+	}
+	return hash
 }
 
 // -----------------------------------------------------------------------------

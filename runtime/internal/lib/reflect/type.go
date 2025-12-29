@@ -344,11 +344,6 @@ func pkgPathFor(t *abi.Type) string {
 
 func (t *rtype) Name() string {
 	if !t.t.HasName() {
-		// For basic types (int, string, etc.), String() returns the type name directly.
-		// Basic types don't have TFlagNamed set, but they do have names.
-		if t.t.Kind() <= abi.UnsafePointer {
-			return t.String()
-		}
 		return ""
 	}
 	s := t.String()
