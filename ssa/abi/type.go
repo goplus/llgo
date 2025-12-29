@@ -20,6 +20,13 @@ func (b *Builder) MapFlags(t *types.Map) (flags int) {
 	return MapTypeFlags(t, b.Sizes)
 }
 
+func (b *Builder) realStr(t types.Type) string {
+	if b.TFlag(t)&abi.TFlagExtraStar != 0 {
+		return "*" + b.Str(t)
+	}
+	return b.Str(t)
+}
+
 func (b *Builder) Str(t types.Type) string {
 	switch t := types.Unalias(t).(type) {
 	case *types.Basic:
@@ -35,7 +42,7 @@ func (b *Builder) Str(t types.Type) string {
 		}
 		return b.Str(elem)
 	case *types.Slice:
-		return "[]" + b.Str(t.Elem())
+		return "[]" + b.realStr(t.Elem())
 	case *types.Signature:
 		return b.funcStr(t)
 	case *types.Interface:
@@ -43,12 +50,12 @@ func (b *Builder) Str(t types.Type) string {
 	case *types.Struct:
 		return b.structStr(t)
 	case *types.Map:
-		return "map[" + b.Str(t.Key()) + "]" + b.Str(t.Elem())
+		return "map[" + b.Str(t.Key()) + "]" + b.realStr(t.Elem())
 	case *types.Array:
-		return "[" + strconv.Itoa(int(t.Len())) + "]" + b.Str(t.Elem())
+		return "[" + strconv.Itoa(int(t.Len())) + "]" + b.realStr(t.Elem())
 	case *types.Chan:
 		_, s := ChanDir(t.Dir())
-		return s + " " + b.Str(t.Elem())
+		return s + " " + b.realStr(t.Elem())
 	case *types.Named:
 		obj := t.Obj()
 		pkg := PathOf(obj.Pkg())
@@ -75,7 +82,7 @@ func (b *Builder) structStr(t *types.Struct) string {
 			repr = append(repr, f.Name()...)
 			repr = append(repr, ' ')
 		}
-		repr = append(repr, b.Str(f.Type())...)
+		repr = append(repr, b.realStr(f.Type())...)
 	}
 	if n > 0 {
 		repr = append(repr, ' ')
@@ -94,8 +101,12 @@ func (b *Builder) interfaceStr(t *types.Interface) string {
 		}
 		repr = append(repr, ' ')
 		m := t.Method(i)
-		repr = append(repr, m.Name()...)
-		repr = append(repr, b.Str(m.Type())[4:]...)
+		name := m.Name()
+		if !m.Exported() {
+			name = m.Pkg().Name() + "." + name
+		}
+		repr = append(repr, name...)
+		repr = append(repr, b.realStr(m.Type())[4:]...)
 	}
 	if n > 0 {
 		repr = append(repr, ' ')
@@ -115,9 +126,9 @@ func (b *Builder) funcStr(t *types.Signature) string {
 		it := t.Params().At(i).Type()
 		if t.Variadic() && i == in-1 {
 			repr = append(repr, "..."...)
-			repr = append(repr, b.Str(types.Unalias(it).(*types.Slice).Elem())...)
+			repr = append(repr, b.realStr(types.Unalias(it).(*types.Slice).Elem())...)
 		} else {
-			repr = append(repr, b.Str(it)...)
+			repr = append(repr, b.realStr(it)...)
 		}
 	}
 	repr = append(repr, ')')
@@ -131,7 +142,7 @@ func (b *Builder) funcStr(t *types.Signature) string {
 		if i > 0 {
 			repr = append(repr, ", "...)
 		}
-		repr = append(repr, b.Str(t.Results().At(i).Type())...)
+		repr = append(repr, b.realStr(t.Results().At(i).Type())...)
 	}
 	if out > 1 {
 		repr = append(repr, ')')
@@ -278,9 +289,9 @@ func (b *Builder) Align(t types.Type) uintptr {
 		case types.Float64:
 			return 8
 		case types.Complex64:
-			return 8
+			return 4
 		case types.Complex128:
-			return 16
+			return 8
 		case types.String:
 			return b.PtrSize
 		}
@@ -293,7 +304,7 @@ func (b *Builder) Align(t types.Type) uintptr {
 	case *types.Interface:
 		return b.PtrSize
 	case *types.Struct:
-		var typalign uintptr
+		var typalign uintptr = 1
 		n := t.NumFields()
 		for i := 0; i < n; i++ {
 			ft := t.Field(i).Type()
@@ -312,6 +323,10 @@ func (b *Builder) Align(t types.Type) uintptr {
 		return b.Align(t.Underlying())
 	}
 	panic("unsupported align: " + t.String())
+}
+
+func (b *Builder) FieldAlign(t types.Type) uintptr {
+	return b.Align(t)
 }
 
 func (b *Builder) PtrBytes(t types.Type) uintptr {

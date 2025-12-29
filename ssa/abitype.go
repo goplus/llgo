@@ -84,7 +84,8 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 	align := prog.IntVal(uint64(ab.Align(t)), prog.Byte()).impl
 	fields = append(fields, align)
 	// FieldAlign uint8
-	fields = append(fields, align)
+	fieldAlign := prog.IntVal(uint64(ab.FieldAlign(t)), prog.Byte()).impl
+	fields = append(fields, fieldAlign)
 	// Kind uint8
 	kind := uint8(ab.Kind(t))
 	if k, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); k != abi.Indirect {

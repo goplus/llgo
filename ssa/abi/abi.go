@@ -71,7 +71,7 @@ func ChanDir(dir types.ChanDir) (abi.ChanDir, string) {
 	case types.SendRecv:
 		return abi.BothDir, "chan"
 	case types.SendOnly:
-		return abi.SendDir, "chan->"
+		return abi.SendDir, "chan<-"
 	case types.RecvOnly:
 		return abi.RecvDir, "<-chan"
 	}
