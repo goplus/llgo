@@ -412,11 +412,11 @@ func TestErrImport(t *testing.T) {
 }
 
 func TestErrInitLinkname(t *testing.T) {
-	var ctx context
-	ctx.initLinkname("//llgo:link abc", func(name string, isExport bool) (string, bool, bool) {
+	var prog llssa.Program = nil
+	initLinkname(prog, "//llgo:link abc", func(name string, isExport bool) (string, bool, bool) {
 		return "", false, false
 	})
-	ctx.initLinkname("//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
+	initLinkname(prog, "//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
 		return "", false, false
 	})
 	defer func() {
@@ -424,7 +424,7 @@ func TestErrInitLinkname(t *testing.T) {
 			t.Fatal("initLinkname: no error?")
 		}
 	}()
-	ctx.initLinkname("//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
+	initLinkname(prog, "//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
 		return "foo.Printf", false, name == "Printf"
 	})
 }
@@ -589,23 +589,17 @@ func TestHandleExportDiffName(t *testing.T) {
 			}()
 			EnableExportRename(tt.enableExportRename)
 
-			// Setup context
 			prog := llssa.NewProgram(nil)
-			pkg := prog.NewPackage("test", "test")
-			ctx := &context{
-				prog: prog,
-				pkg:  pkg,
-			}
 
 			// Call initLinkname with closure that mimics initLinknameByDoc behavior
-			ret := ctx.initLinkname(tt.line, func(name string, isExport bool) (string, bool, bool) {
+			ret := initLinkname(prog, tt.line, func(name string, isExport bool) (string, bool, bool) {
 				return tt.fullName, false, name == tt.inPkgName || (isExport && enableExportRename)
 			})
 
 			// Verify result
-			hasLinkname := (ret == hasLinkname)
-			if hasLinkname != tt.wantHasLinkname {
-				t.Errorf("hasLinkname = %v, want %v", hasLinkname, tt.wantHasLinkname)
+			gotHasLinkname := (ret == hasLinkname)
+			if gotHasLinkname != tt.wantHasLinkname {
+				t.Errorf("hasLinkname = %v, want %v", gotHasLinkname, tt.wantHasLinkname)
 			}
 
 			if tt.wantHasLinkname {
@@ -615,8 +609,7 @@ func TestHandleExportDiffName(t *testing.T) {
 				}
 
 				// Check export was set
-				exports := pkg.ExportFuncs()
-				if export, ok := exports[tt.fullName]; !ok || export != tt.wantExport {
+				if export, ok := prog.ExportName(tt.fullName); !ok || export != tt.wantExport {
 					t.Errorf("export = %q (ok=%v), want %q", export, ok, tt.wantExport)
 				}
 			}
@@ -683,22 +676,15 @@ func TestInitLinknameByDocExportDiffNames(t *testing.T) {
 			}()
 			EnableExportRename(tt.enableExportRename)
 
-			// Setup context
 			prog := llssa.NewProgram(nil)
-			pkg := prog.NewPackage("test", "test")
-			ctx := &context{
-				prog: prog,
-				pkg:  pkg,
-			}
 
 			// Call initLinknameByDoc
-			ctx.initLinknameByDoc(tt.doc, tt.fullName, tt.inPkgName, false)
+			initLinknameByDoc(prog, tt.doc, tt.fullName, tt.inPkgName, false)
 
 			// Verify export behavior
-			exports := pkg.ExportFuncs()
 			if tt.wantExported {
 				// Should have exported the symbol with different name
-				if export, ok := exports[tt.fullName]; !ok || export != tt.wantExport {
+				if export, ok := prog.ExportName(tt.fullName); !ok || export != tt.wantExport {
 					t.Errorf("export = %q (ok=%v), want %q", export, ok, tt.wantExport)
 				}
 				// Check linkname was also set
@@ -748,15 +734,10 @@ func TestInitLinkExportDiffNames(t *testing.T) {
 			EnableExportRename(tt.enableExportRename)
 
 			prog := llssa.NewProgram(nil)
-			pkg := prog.NewPackage("test", "test")
-			ctx := &context{
-				prog: prog,
-				pkg:  pkg,
-			}
 
-			ctx.initLinkname(tt.line, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+			initLinkname(prog, tt.line, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 				// Simulate initLinknames scenario: symbol not found (like in decl packages)
-				return "", false, false
+				return "", false, isExport && enableExportRename
 			})
 		})
 	}

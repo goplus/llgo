@@ -17,7 +17,6 @@
 package cl
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -30,59 +29,10 @@ import (
 
 	"github.com/goplus/llgo/internal/env"
 	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/ssa/abi"
 )
 
 // -----------------------------------------------------------------------------
-
-type symInfo struct {
-	file     string
-	fullName string
-	isVar    bool
-}
-
-type pkgSymInfo struct {
-	files map[string][]byte  // file => content
-	syms  map[string]symInfo // name => isVar
-}
-
-func newPkgSymInfo() *pkgSymInfo {
-	return &pkgSymInfo{
-		files: make(map[string][]byte),
-		syms:  make(map[string]symInfo),
-	}
-}
-
-func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, fullName, inPkgName string, isVar bool) {
-	f := fset.File(pos)
-	if fp := f.Position(pos); fp.Line > 2 {
-		file := fp.Filename
-		if _, ok := p.files[file]; !ok {
-			b, err := os.ReadFile(file)
-			if err == nil {
-				p.files[file] = b
-			}
-		}
-		p.syms[inPkgName] = symInfo{file, fullName, isVar}
-	}
-}
-
-func (p *pkgSymInfo) initLinknames(ctx *context) {
-	sep := []byte{'\n'}
-	commentPrefix := []byte{'/', '/'}
-	for file, b := range p.files {
-		lines := bytes.Split(b, sep)
-		for _, line := range lines {
-			if bytes.HasPrefix(line, commentPrefix) {
-				ctx.initLinkname(string(line), func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
-					if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
-						return sym.fullName, sym.isVar, true
-					}
-					return
-				})
-			}
-		}
-	}
-}
 
 // PkgKindOf returns the kind of a package.
 func PkgKindOf(pkg *types.Package) (int, string) {
@@ -137,72 +87,27 @@ func (p *context) importPkg(pkg *types.Package, i *pkgInfo) {
 			pkg = patch.Alt.Pkg
 			scope = pkg.Scope()
 			if kind, _ = pkgKindByScope(scope); kind != PkgNormal {
-				goto start
+				i.kind = kind
 			}
 		}
 		return
 	}
-start:
 	i.kind = kind
-	fset := p.fset
-	names := scope.Names()
-	syms := newPkgSymInfo()
-	for _, name := range names {
-		obj := scope.Lookup(name)
-		switch obj := obj.(type) {
-		case *types.Func:
-			if pos := obj.Pos(); pos != token.NoPos {
-				fullName, inPkgName := typesFuncName(pkgPath, obj)
-				syms.addSym(fset, pos, fullName, inPkgName, false)
-			}
-		case *types.TypeName:
-			if !obj.IsAlias() {
-				if t, ok := obj.Type().(*types.Named); ok {
-					for i, n := 0, t.NumMethods(); i < n; i++ {
-						fn := t.Method(i)
-						fullName, inPkgName := typesFuncName(pkgPath, fn)
-						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
-					}
-				}
-			}
-		case *types.Var:
-			if pos := obj.Pos(); pos != token.NoPos {
-				syms.addSym(fset, pos, pkgPath+"."+name, name, true)
-			}
-		}
-	}
-	syms.initLinknames(p)
 }
 
+// initFiles collects skip names from AST. Linkname and export collection
+// has been moved to ParsePkgSyntax which runs during package loading.
 func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
+	_ = pkgPath // unused after refactoring
+	_ = cPkg    // unused after refactoring, package C logic moved to ParsePkgSyntax
 	for _, file := range files {
 		for _, decl := range file.Decls {
-			switch decl := decl.(type) {
-			case *ast.FuncDecl:
-				fullName, inPkgName := astFuncName(pkgPath, decl)
-				if !p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false) && cPkg {
-					// package C (https://github.com/goplus/llgo/issues/1165)
-					if decl.Recv == nil && token.IsExported(inPkgName) {
-						exportName := strings.TrimPrefix(inPkgName, "X")
-						p.prog.SetLinkname(fullName, exportName)
-						p.pkg.SetExport(fullName, exportName)
-					}
-				}
-			case *ast.GenDecl:
-				switch decl.Tok {
-				case token.VAR:
-					if len(decl.Specs) == 1 {
-						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-							inPkgName := names[0].Name
-							p.initLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
-						}
-					}
-				case token.CONST:
-					fallthrough
-				case token.TYPE:
-					p.collectSkipNamesByDoc(decl.Doc)
+			if genDecl, ok := decl.(*ast.GenDecl); ok {
+				switch genDecl.Tok {
+				case token.CONST, token.TYPE:
+					p.collectSkipNamesByDoc(genDecl.Doc)
 				case token.IMPORT:
-					if doc := decl.Doc; doc != nil {
+					if doc := genDecl.Doc; doc != nil {
 						if n := len(doc.List); n > 0 {
 							line := doc.List[n-1].Text
 							if p.collectSkipNames(line) {
@@ -273,11 +178,13 @@ func (p *context) collectSkip(line string, prefix int) {
 	}
 }
 
-func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
+// initLinknameByDoc collects //go:linkname and //export directives from doc comments.
+// Returns true if a linkname or export directive was found and processed, false otherwise.
+func initLinknameByDoc(prog llssa.Program, doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
 	if doc != nil {
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
-			ret := p.initLinkname(line, func(name string, isExport bool) (_ string, _, ok bool) {
+			ret := initLinkname(prog, line, func(name string, isExport bool) (string, bool, bool) {
 				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
 			})
 			if ret != unknownDirective {
@@ -289,12 +196,13 @@ func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName s
 }
 
 const (
-	noDirective = iota
-	hasLinkname
-	unknownDirective = -1
+	noDirective      = iota // not a directive comment
+	hasLinkname             // directive found and processed
+	unknownDirective = -1   // unknown //go: directive
 )
 
-func (p *context) initLinkname(line string, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
+// initLinkname processes a single comment line for linkname/export directives.
+func initLinkname(prog llssa.Program, line string, f func(name string, isExport bool) (fullName string, isVar, ok bool)) int {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
@@ -303,42 +211,38 @@ func (p *context) initLinkname(line string, f func(inPkgName string, isExport bo
 		directive = "//go:"
 	)
 	if strings.HasPrefix(line, linkname) {
-		p.initLink(line, len(linkname), false, f)
+		initLink(prog, line, len(linkname), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink2) {
-		p.initLink(line, len(llgolink2), false, f)
+		initLink(prog, line, len(llgolink2), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, llgolink) {
-		p.initLink(line, len(llgolink), false, f)
+		initLink(prog, line, len(llgolink), false, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, export) {
 		// rewrite //export FuncName to //export FuncName FuncName
 		funcName := strings.TrimSpace(line[len(export):])
 		line = line + " " + funcName
-		p.initLink(line, len(export), true, f)
+		initLink(prog, line, len(export), true, f)
 		return hasLinkname
 	} else if strings.HasPrefix(line, directive) {
-		// skip unknown annotation but continue to parse the next annotation
 		return unknownDirective
 	}
 	return noDirective
 }
 
-func (p *context) initLink(line string, prefix int, export bool, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) {
+// initLink processes the linkname/export directive and sets the linkname.
+func initLink(prog llssa.Program, line string, prefix int, export bool, f func(name string, isExport bool) (fullName string, isVar, ok bool)) {
 	text := strings.TrimSpace(line[prefix:])
 	if idx := strings.IndexByte(text, ' '); idx > 0 {
 		inPkgName := text[:idx]
 		if fullName, _, ok := f(inPkgName, export); ok {
 			link := strings.TrimLeft(text[idx+1:], " ")
-			p.prog.SetLinkname(fullName, link)
+			prog.SetLinkname(fullName, link)
 			if export {
-				p.pkg.SetExport(fullName, link)
+				prog.SetExportName(fullName, link)
 			}
 		} else {
-			// Export with different names already processed by initLinknameByDoc
-			if export && enableExportRename {
-				return
-			}
 			if export {
 				panic(fmt.Sprintf("export comment has wrong name %q", inPkgName))
 			}
@@ -640,13 +544,40 @@ func (p *context) initPyModule() {
 	}
 }
 
-// ParsePkgSyntax parses AST of a package to check llgo:type in type declaration.
+// ParsePkgSyntax parses AST of a package to collect linknames, exports and type backgrounds.
+// This is called during package loading to preload linknames before compilation.
 func ParsePkgSyntax(prog llssa.Program, pkg *types.Package, files []*ast.File) {
+	pkgPath := pkg.Path()
+	// For alt packages (e.g. github.com/goplus/llgo/runtime/internal/lib/os),
+	// use the original package path (e.g. os) for linkname registration.
+	if strings.HasPrefix(pkgPath, abi.PatchPathPrefix) {
+		pkgPath = strings.TrimPrefix(pkgPath, abi.PatchPathPrefix)
+	}
+	cPkg := pkg.Name() == "C"
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
+			case *ast.FuncDecl:
+				fullName, inPkgName := astFuncName(pkgPath, decl)
+				hasLink := initLinknameByDoc(prog, decl.Doc, fullName, inPkgName, false)
+				// package C auto-export logic (https://github.com/goplus/llgo/issues/1165)
+				if !hasLink && cPkg {
+					if decl.Recv == nil && token.IsExported(inPkgName) {
+						exportName := strings.TrimPrefix(inPkgName, "X")
+						prog.SetLinkname(fullName, exportName)
+						prog.SetExportName(fullName, exportName)
+					}
+				}
 			case *ast.GenDecl:
 				switch decl.Tok {
+				case token.VAR:
+					// Handle variable linknames
+					if len(decl.Specs) == 1 {
+						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+							inPkgName := names[0].Name
+							initLinknameByDoc(prog, decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						}
+					}
 				case token.TYPE:
 					handleTypeDecl(prog, pkg, decl)
 				}
