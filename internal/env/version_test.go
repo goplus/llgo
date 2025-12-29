@@ -78,3 +78,53 @@ func TestSetCompilerHashForTest(t *testing.T) {
 		}
 	}
 }
+
+func TestVersion(t *testing.T) {
+	// Test default behavior - Version() should return something
+	version := Version()
+	if version == "" {
+		t.Error("Version() should not return empty string")
+	}
+}
+
+func TestDevel(t *testing.T) {
+	// Test Devel() function
+	isDevel := Devel()
+	version := Version()
+	expectedDevel := (version == devel)
+	if isDevel != expectedDevel {
+		t.Errorf("Devel() = %v, but Version() = %q (expected Devel() = %v)", isDevel, version, expectedDevel)
+	}
+}
+
+func TestCompilerHashWithBuildVersion(t *testing.T) {
+	// Save original buildVersion
+	origVersion := buildVersion
+	origHash := compilerHash
+	defer func() {
+		buildVersion = origVersion
+		compilerHash = origHash
+	}()
+
+	// Test: When buildVersion is set (release build), CompilerHash should return empty string
+	buildVersion = "v1.0.0"
+	compilerHash = "" // Even if hash is not set
+
+	hash, err := CompilerHash()
+	if err != nil {
+		t.Errorf("CompilerHash() for release build should not error, got: %v", err)
+	}
+	if hash != "" {
+		t.Errorf("CompilerHash() for release build should return empty string, got: %q", hash)
+	}
+
+	// Test: When buildVersion is set and compilerHash is set, should still return empty
+	compilerHash = "some-hash"
+	hash, err = CompilerHash()
+	if err != nil {
+		t.Errorf("CompilerHash() for release build should not error, got: %v", err)
+	}
+	if hash != "" {
+		t.Errorf("CompilerHash() for release build should return empty string even when hash is set, got: %q", hash)
+	}
+}
