@@ -47,7 +47,9 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 	m := newManifestBuilder()
 
 	// Env section
-	c.collectEnvInputs(m)
+	if err := c.collectEnvInputs(m); err != nil {
+		return err
+	}
 
 	// Common section
 	c.collectCommonInputs(m)
@@ -68,7 +70,7 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 }
 
 // collectEnvInputs collects environment-related inputs.
-func (c *context) collectEnvInputs(m *manifestBuilder) {
+func (c *context) collectEnvInputs(m *manifestBuilder) error {
 	m.env.Goos = c.buildConf.Goos
 	m.env.Goarch = c.buildConf.Goarch
 	m.env.LlvmTriple = c.crossCompile.LLVMTarget
@@ -77,7 +79,11 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 	m.env.LlvmVersion = c.getLLVMVersion()
 
 	// Include compiler hash for devel builds
-	if hash, err := env.CompilerHash(); err == nil && hash != "" {
+	hash, err := env.CompilerHash()
+	if err != nil {
+		return err
+	}
+	if hash != "" {
 		m.env.Vars = m.env.Vars.Add("LLGO_COMPILER_HASH", hash)
 	}
 
@@ -97,6 +103,7 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 			m.env.Vars = m.env.Vars.Add(envVar, v)
 		}
 	}
+	return nil
 }
 
 // collectCommonInputs collects common build configuration inputs.

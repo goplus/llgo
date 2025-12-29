@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/mockable"
 )
 
@@ -21,7 +22,13 @@ func TestMain(m *testing.M) {
 	old := cacheRootFunc
 	td, _ := os.MkdirTemp("", "llgo-cache-*")
 	cacheRootFunc = func() string { return td }
+
+	// Set compiler hash for devel builds during testing
+	restore := env.SetCompilerHashForTest("test-hash-for-build")
+
 	code := m.Run()
+
+	restore()
 	cacheRootFunc = old
 	_ = os.RemoveAll(td)
 	os.Exit(code)
