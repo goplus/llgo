@@ -23,6 +23,7 @@ log() {
 }
 
 # compute_dep_hash generates a deterministic hash of all compiler dependencies
+# and the llgo workspace itself (to capture uncommitted local changes)
 compute_dep_hash() {
 	local tmpdir
 	tmpdir="$(mktemp -d)"
@@ -67,6 +68,14 @@ compute_dep_hash() {
 				echo "LOCAL:$local_dir:$dir_hash"
 			fi
 		done
+
+		# Hash the llgo workspace itself to capture uncommitted local changes
+		# This ensures that any edits to compiler source files invalidate the cache
+		echo "WORKSPACE_HASH_START"
+		find . -type f \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) \
+			! -path './.git/*' \
+			! -path './.*' \
+			-print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1
 	} > "$digest_input"
 
 	# Generate final hash from the sorted dependency list
