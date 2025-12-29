@@ -17,6 +17,7 @@
 package env
 
 import (
+	"fmt"
 	"runtime/debug"
 	"strings"
 )
@@ -28,6 +29,10 @@ const (
 // buildVersion is the LLGo tree's version string at build time. It should be
 // set by the linker.
 var buildVersion string
+
+// compilerHash is the compiler's source hash at build time. It should be
+// set by the linker via all.bash for development builds.
+var compilerHash string
 
 // Version returns the version of the running LLGo binary.
 func Version() string {
@@ -43,4 +48,26 @@ func Version() string {
 
 func Devel() bool {
 	return Version() == devel
+}
+
+// CompilerHash returns the compiler's source hash.
+// For development builds (Version() == "(devel)"), it returns the hash
+// embedded at build time via ldflags, or an error if not set.
+// For release builds, it returns an empty string (version serves as fingerprint).
+func CompilerHash() (string, error) {
+	if Version() != devel {
+		return "", nil
+	}
+	if compilerHash == "" {
+		return "", fmt.Errorf("LLGO_COMPILER_HASH not set; please build via all.bash instead of 'go install' directly")
+	}
+	return compilerHash, nil
+}
+
+// SetCompilerHashForTest allows tests to inject a fake compiler hash.
+// This should only be used in test code.
+func SetCompilerHashForTest(hash string) func() {
+	old := compilerHash
+	compilerHash = hash
+	return func() { compilerHash = old }
 }

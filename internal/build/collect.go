@@ -76,6 +76,11 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 	m.env.GoVersion = runtime.Version()
 	m.env.LlvmVersion = c.getLLVMVersion()
 
+	// Include compiler hash for devel builds
+	if hash, err := env.CompilerHash(); err == nil && hash != "" {
+		m.env.Vars = m.env.Vars.Add("LLGO_COMPILER_HASH", hash)
+	}
+
 	// Environment variables that affect build
 	envVars := []string{
 		llgoDebug,

@@ -50,7 +50,7 @@ _llgo_ensure_llgo_cli() {
 	if [ "${needs_install}" -eq 1 ]; then
 		(
 			cd "${LLGO_ROOT}"
-			go install ./cmd/llgo
+			./all.bash
 		)
 	fi
 }

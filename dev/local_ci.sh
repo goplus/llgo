@@ -162,7 +162,7 @@ log_section "Go Test"
 (cd "$workdir" && go test ./...)
 
 log_section "Install llgo"
-(cd "$workdir" && go install ./cmd/llgo)
+(cd "$workdir" && ./all.bash)
 gobin="$(cd "$workdir" && go env GOBIN)"
 if [ -z "$gobin" ]; then
 	gopath_raw="$(cd "$workdir" && go env GOPATH)"

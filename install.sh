@@ -40,7 +40,7 @@ get_system_info() {
 # Function to install from local source
 install_local() {
     echo "Installing llgo from local source..."
-    go install ./cmd/llgo
+    ./all.bash
     echo "Local installation complete."
     echo "llgo is now available in your GOPATH."
     if [ -n "$GITHUB_ENV" ]; then
