@@ -25,10 +25,12 @@ import (
 	"go/types"
 	"io"
 	"log"
+	"os"
 	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/ssa"
 )
 
@@ -38,7 +40,13 @@ func TestMain(m *testing.M) {
 	if !testing.Verbose() {
 		log.SetOutput(io.Discard)
 	}
-	m.Run()
+
+	// Set compiler hash for devel builds during testing
+	restore := env.SetCompilerHashForTest("test-hash-for-ssa")
+	code := m.Run()
+	restore()
+
+	os.Exit(code)
 }
 
 func TestFromTestlibgo(t *testing.T) {
