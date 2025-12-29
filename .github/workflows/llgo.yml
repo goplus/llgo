@@ -92,7 +92,7 @@ jobs:
 
       - name: Install
         run: |
-          go install ./...
+          ./all.bash
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -194,7 +194,7 @@ jobs:
 
       - name: Install
         run: |
-          go install ./...
+          ./all.bash
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -233,7 +233,7 @@ jobs:
 
       - name: Install llgo
         run: |
-          go install ./...
+          ./all.bash
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -300,7 +300,7 @@ jobs:
 
       - name: Install llgo
         run: |
-          go install ./...
+          ./all.bash
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Test Cross Compilation (wasm)
