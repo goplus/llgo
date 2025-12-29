@@ -1,7 +1,7 @@
 # shellcheck disable=all
 git clone https://github.com/goplus/llgo.git
 cd llgo
-go install -v ./cmd/...
+./all.bash
 go install -v ./chore/...  # compile all tools except pydump
 export LLGO_ROOT=$PWD
 cd _xtool
