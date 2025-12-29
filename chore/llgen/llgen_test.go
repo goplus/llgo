@@ -9,9 +9,19 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/goplus/llgo/internal/env"
 )
 
-func TestMain(t *testing.T) {
+func TestMain(m *testing.M) {
+	// Set compiler hash for devel builds during testing
+	restore := env.SetCompilerHashForTest("test-hash-for-llgen")
+	code := m.Run()
+	restore()
+	os.Exit(code)
+}
+
+func TestLLGenMain(t *testing.T) {
 	// Create test package in current module
 	testPkg := filepath.Join(".testdata_dont_commit", "hello")
 	err := os.MkdirAll(testPkg, 0755)
