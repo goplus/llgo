@@ -21,16 +21,15 @@ package ssa_test
 
 import (
 	"flag"
+	"go/importer"
 	"go/types"
 	"io"
 	"log"
-	"os"
 	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/ssa"
-	"github.com/goplus/llgo/ssa/ssatest"
 )
 
 func TestMain(m *testing.M) {
@@ -67,13 +66,15 @@ func TestFromTestdata(t *testing.T) {
 }
 
 func TestMakeInterface(t *testing.T) {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Chdir("../runtime")
-	defer os.Chdir(wd)
-	prog := ssatest.NewProgram(t, &ssa.Target{GOARCH: runtime.GOARCH})
+	prog := ssa.NewProgram(nil)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(ssa.PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
 	pkg := prog.NewPackage("foo", "foo")
 	fn := pkg.NewFunc("main", types.NewSignatureType(nil, nil, nil, nil, nil, false), ssa.InC)
 	b := fn.MakeBody(1)

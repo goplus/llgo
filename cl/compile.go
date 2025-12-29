@@ -333,8 +333,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
-	// set compiled to check generic function global instantiation
-	pkg.Prog.SetFuncCompiled(name)
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
@@ -1139,8 +1137,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
-	ctx.prog.SetCheckRuntimeNamed(ctx.checkRuntimeNamed)
-	ret.SetPatch(ctx.patchType)
+	ctx.prog.SetCompileMethods(ctx.checkCompileMethods)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
 
 	if hasPatch {
@@ -1353,15 +1350,26 @@ func (p *context) resolveLinkname(name string) string {
 	return name
 }
 
-// checkRuntimeNamed compiles methods for generic type instantiations.
-// Only types with type arguments (instantiated generics) need method compilation
-// here, as non-generic types have their methods compiled elsewhere.
-func (p *context) checkRuntimeNamed(pkg llssa.Package, typ *types.Named) {
-	if typ.TypeArgs() == nil {
-		return
+// checkCompileMethods ensures that all methods attached to the given type
+// (and to the types it refers to) are compiled and emitted into the
+// current SSA package. Generic named types and struct types are the
+// primary targets; pointer types are followed until a non-pointer is
+// reached. non-generic named have their methods compiled elsewhere.
+func (p *context) checkCompileMethods(pkg llssa.Package, typ types.Type) {
+	nt := typ
+retry:
+	switch t := nt.(type) {
+	case *types.Named:
+		if t.TypeArgs() == nil {
+			return
+		}
+		p.compileMethods(pkg, typ)
+	case *types.Struct:
+		p.compileMethods(pkg, typ)
+	case *types.Pointer:
+		nt = t.Elem()
+		goto retry
 	}
-	p.compileMethods(pkg, typ)
-	p.compileMethods(pkg, types.NewPointer(typ))
 }
 
 // -----------------------------------------------------------------------------

@@ -71,11 +71,11 @@ func ChanDir(dir types.ChanDir) (abi.ChanDir, string) {
 	case types.SendRecv:
 		return abi.BothDir, "chan"
 	case types.SendOnly:
-		return abi.SendDir, "chan->"
+		return abi.SendDir, "chan<-"
 	case types.RecvOnly:
 		return abi.RecvDir, "<-chan"
 	}
-	panic("invlid chan dir")
+	panic("invalid chan dir")
 }
 
 // -----------------------------------------------------------------------------
@@ -131,20 +131,24 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 
 // Builder is a helper for constructing ABI types.
 type Builder struct {
-	buf []byte
-	Pkg string
+	buf     []byte
+	Pkg     string
+	PtrSize uintptr
+	Sizes   types.Sizes
 }
 
 // New creates a new ABI type Builder.
-func New(pkg string) *Builder {
+func New(pkg string, ptrSize uintptr, sizes types.Sizes) *Builder {
 	ret := new(Builder)
-	ret.Init(pkg)
+	ret.Init(pkg, ptrSize, sizes)
 	return ret
 }
 
-func (b *Builder) Init(pkg string) {
+func (b *Builder) Init(pkg string, ptrSize uintptr, sizes types.Sizes) {
 	b.Pkg = pkg
 	b.buf = make([]byte, sha256.Size)
+	b.PtrSize = ptrSize
+	b.Sizes = sizes
 }
 
 // TypeName returns the ABI type name for the specified type.
@@ -314,6 +318,16 @@ func IsClosure(raw *types.Struct) bool {
 	n := raw.NumFields()
 	if n == 2 {
 		f1, f2 := raw.Field(0), raw.Field(1)
+		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
+			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
+		}
+	}
+	return false
+}
+
+func IsClosureFields(fields []*types.Var) bool {
+	if len(fields) == 2 {
+		f1, f2 := fields[0], fields[1]
 		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
 			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
 		}

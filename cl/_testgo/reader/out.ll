@@ -2,151 +2,274 @@
 source_filename = "github.com/goplus/llgo/cl/_testgo/reader"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/runtime/abi.InterfaceType" = type { %"github.com/goplus/llgo/runtime/abi.Type", %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" }
+%"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+%"github.com/goplus/llgo/runtime/abi.PtrType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr }
+%"github.com/goplus/llgo/runtime/abi.StructType" = type { %"github.com/goplus/llgo/runtime/abi.Type", %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" }
+%"github.com/goplus/llgo/runtime/abi.FuncType" = type { %"github.com/goplus/llgo/runtime/abi.Type", %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" }
+%"github.com/goplus/llgo/runtime/abi.SliceType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr }
+%"github.com/goplus/llgo/runtime/abi.StructField" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1 }
+%"github.com/goplus/llgo/runtime/abi.Imethod" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
+%"github.com/goplus/llgo/runtime/abi.UncommonType" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", i16, i16, i32 }
+%"github.com/goplus/llgo/runtime/abi.Method" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, ptr, ptr }
 %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }
 %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }
-%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/cl/_testgo/reader.errorString" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String" }
 %"github.com/goplus/llgo/cl/_testgo/reader.stringReader" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", i64, i64 }
-%"github.com/goplus/llgo/runtime/abi.Imethod" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
-%"github.com/goplus/llgo/runtime/abi.StructField" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1 }
-%"github.com/goplus/llgo/runtime/abi.Method" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, ptr, ptr }
 
 @"github.com/goplus/llgo/cl/_testgo/reader.EOF" = global %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer, align 8
 @"github.com/goplus/llgo/cl/_testgo/reader.ErrShortWrite" = global %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer, align 8
 @"github.com/goplus/llgo/cl/_testgo/reader.init$guard" = global i1 false, align 1
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo" = linkonce global ptr null, align 8
-@0 = private unnamed_addr constant [40 x i8] c"github.com/goplus/llgo/cl/_testgo/reader", align 1
-@1 = private unnamed_addr constant [8 x i8] c"WriterTo", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer" = linkonce global ptr null, align 8
-@2 = private unnamed_addr constant [6 x i8] c"Writer", align 1
-@_llgo_uint8 = linkonce global ptr null, align 8
-@"[]_llgo_uint8" = linkonce global ptr null, align 8
-@_llgo_int = linkonce global ptr null, align 8
-@_llgo_error = linkonce global ptr null, align 8
-@3 = private unnamed_addr constant [5 x i8] c"error", align 1
-@_llgo_string = linkonce global ptr null, align 8
-@"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" = linkonce global ptr null, align 8
-@4 = private unnamed_addr constant [5 x i8] c"Error", align 1
-@"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk" = linkonce global ptr null, align 8
-@5 = private unnamed_addr constant [5 x i8] c"Write", align 1
-@_llgo_int64 = linkonce global ptr null, align 8
-@"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4" = linkonce global ptr null, align 8
-@6 = private unnamed_addr constant [7 x i8] c"WriteTo", align 1
-@"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs" = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" = linkonce global ptr null, align 8
-@7 = private unnamed_addr constant [17 x i8] c"nopCloserWriterTo", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader" = linkonce global ptr null, align 8
-@8 = private unnamed_addr constant [6 x i8] c"Reader", align 1
-@9 = private unnamed_addr constant [4 x i8] c"Read", align 1
-@"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8" = linkonce global ptr null, align 8
-@10 = private unnamed_addr constant [5 x i8] c"Close", align 1
-@"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w" = linkonce global ptr null, align 8
-@"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84" = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser" = linkonce global ptr null, align 8
-@11 = private unnamed_addr constant [9 x i8] c"nopCloser", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter" = linkonce global ptr null, align 8
-@12 = private unnamed_addr constant [12 x i8] c"StringWriter", align 1
-@"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw" = linkonce global ptr null, align 8
-@13 = private unnamed_addr constant [11 x i8] c"WriteString", align 1
-@"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU" = linkonce global ptr null, align 8
-@14 = private unnamed_addr constant [3 x i8] c"EOF", align 1
-@15 = private unnamed_addr constant [11 x i8] c"short write", align 1
-@16 = private unnamed_addr constant [11 x i8] c"hello world", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" = linkonce global ptr null, align 8
-@17 = private unnamed_addr constant [12 x i8] c"stringReader", align 1
-@"github.com/goplus/llgo/cl/_testgo/reader.struct$Mdt84yjYYwxF9D2i4cRmpEPiWaO6tsjtrbGUjyESypk" = linkonce global ptr null, align 8
-@18 = private unnamed_addr constant [1 x i8] c"s", align 1
-@19 = private unnamed_addr constant [1 x i8] c"i", align 1
-@20 = private unnamed_addr constant [8 x i8] c"prevRune", align 1
-@21 = private unnamed_addr constant [3 x i8] c"Len", align 1
-@"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" = linkonce global ptr null, align 8
-@22 = private unnamed_addr constant [6 x i8] c"ReadAt", align 1
-@"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4" = linkonce global ptr null, align 8
-@23 = private unnamed_addr constant [8 x i8] c"ReadByte", align 1
-@"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ" = linkonce global ptr null, align 8
-@24 = private unnamed_addr constant [8 x i8] c"ReadRune", align 1
-@_llgo_rune = linkonce global ptr null, align 8
-@"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU" = linkonce global ptr null, align 8
-@25 = private unnamed_addr constant [4 x i8] c"Seek", align 1
-@"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms" = linkonce global ptr null, align 8
-@26 = private unnamed_addr constant [4 x i8] c"Size", align 1
-@"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug" = linkonce global ptr null, align 8
-@27 = private unnamed_addr constant [10 x i8] c"UnreadByte", align 1
-@28 = private unnamed_addr constant [10 x i8] c"UnreadRune", align 1
-@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" = linkonce global ptr null, align 8
-@"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw" = linkonce global ptr null, align 8
-@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" = linkonce global ptr null, align 8
-@29 = private unnamed_addr constant [11 x i8] c"errorString", align 1
-@"github.com/goplus/llgo/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ" = linkonce global ptr null, align 8
-@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" = linkonce global ptr null, align 8
-@"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = linkonce global ptr null, align 8
-@30 = private unnamed_addr constant [122 x i8] c"type assertion github.com/goplus/llgo/cl/_testgo/reader.Reader -> github.com/goplus/llgo/cl/_testgo/reader.WriterTo failed", align 1
-@31 = private unnamed_addr constant [37 x i8] c"stringsReader.ReadAt: negative offset", align 1
-@32 = private unnamed_addr constant [34 x i8] c"stringsReader.Seek: invalid whence", align 1
-@33 = private unnamed_addr constant [37 x i8] c"stringsReader.Seek: negative position", align 1
-@34 = private unnamed_addr constant [48 x i8] c"stringsReader.UnreadByte: at beginning of string", align 1
-@35 = private unnamed_addr constant [49 x i8] c"strings.Reader.UnreadRune: at beginning of string", align 1
-@36 = private unnamed_addr constant [62 x i8] c"strings.Reader.UnreadRune: previous operation was not ReadRune", align 1
-@37 = private unnamed_addr constant [48 x i8] c"stringsReader.WriteTo: invalid WriteString count", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1496804321, i8 4, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 49 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs$imethods", i64 1, i64 1 } }, align 8
+@0 = private unnamed_addr constant [49 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.WriterTo", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -2025713268, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 49 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo" }, align 8
+@1 = private unnamed_addr constant [40 x i8] c"github.com/goplus/llgo/cl/_testgo/reader", align 1
+@2 = private unnamed_addr constant [7 x i8] c"WriteTo", align 1
+@"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 874216849, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 104 }, ptr @"*_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk$fields", i64 2, i64 2 } }, align 8
+@3 = private unnamed_addr constant [104 x i8] c"struct { $f func(github.com/goplus/llgo/cl/_testgo/reader.Writer) (int64, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 2131787701, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 104 }, ptr null }, ptr @"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk" }, align 8
+@4 = private unnamed_addr constant [2 x i8] c"$f", align 1
+@"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 306543811, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 68 }, ptr @"*_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4$in", i64 1, i64 1 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4$out", i64 2, i64 2 } }, align 8
+@5 = private unnamed_addr constant [68 x i8] c"func(github.com/goplus/llgo/cl/_testgo/reader.Writer) (int64, error)", align 1
+@"*_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1170995737, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 68 }, ptr null }, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4" }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 2135553712, i8 4, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 47 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$kr1iSWwMezh0B9LdQN0MhEZUNZvBlHPhlst95jAyxE0$imethods", i64 1, i64 1 } }, align 8
+@6 = private unnamed_addr constant [47 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.Writer", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 466144066, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 47 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer" }, align 8
+@7 = private unnamed_addr constant [5 x i8] c"Write", align 1
+@"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -397254206, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 61 }, ptr @"*_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk$fields", i64 2, i64 2 } }, align 8
+@8 = private unnamed_addr constant [61 x i8] c"struct { $f func([]byte) (int, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 307112797, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 61 }, ptr null }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" }, align 8
+@"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -58533757, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 25 }, ptr @"*_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk$in", i64 1, i64 1 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk$out", i64 2, i64 2 } }, align 8
+@9 = private unnamed_addr constant [25 x i8] c"func([]byte) (int, error)", align 1
+@"*_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1244675479, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 25 }, ptr null }, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk" }, align 8
+@"[]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.SliceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 24, i64 8, i32 370346748, i8 0, i8 8, i8 8, i8 23, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 6 }, ptr @"*[]_llgo_uint8" }, ptr @_llgo_uint8 }, align 8
+@10 = private unnamed_addr constant [6 x i8] c"[]byte", align 1
+@"*[]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -2143776929, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 6 }, ptr null }, ptr @"[]_llgo_uint8" }, align 8
+@_llgo_uint8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 269156761, i8 12, i8 1, i8 1, i8 40, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 4 }, ptr @"*_llgo_uint8" }, align 8
+@11 = private unnamed_addr constant [4 x i8] c"byte", align 1
+@"*_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1277858201, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 4 }, ptr null }, ptr @_llgo_uint8 }, align 8
+@"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk$in" = weak_odr constant [1 x ptr] [ptr @"[]_llgo_uint8"], align 8
+@_llgo_int = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 -25294021, i8 12, i8 8, i8 8, i8 34, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 3 }, ptr @"*_llgo_int" }, align 8
+@12 = private unnamed_addr constant [3 x i8] c"int", align 1
+@"*_llgo_int" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -939606833, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 3 }, ptr null }, ptr @_llgo_int }, align 8
+@_llgo_error = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -1462738452, i8 4, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 5 }, ptr @"*_llgo_error" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU$imethods", i64 1, i64 1 } }, align 8
+@13 = private unnamed_addr constant [5 x i8] c"error", align 1
+@"*_llgo_error" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1621558991, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 5 }, ptr null }, ptr @_llgo_error }, align 8
+@14 = private unnamed_addr constant [5 x i8] c"Error", align 1
+@"_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1567758122, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 49 }, ptr @"*_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I$fields", i64 2, i64 2 } }, align 8
+@15 = private unnamed_addr constant [49 x i8] c"struct { $f func() string; $data unsafe.Pointer }", align 1
+@"*_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1096129650, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 49 }, ptr null }, ptr @"_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I" }, align 8
+@"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1419376263, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 13 }, ptr @"*_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to$out", i64 1, i64 1 } }, align 8
+@16 = private unnamed_addr constant [13 x i8] c"func() string", align 1
+@"*_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1900367307, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 13 }, ptr null }, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" }, align 8
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 6 }, ptr @"*_llgo_string" }, align 8
+@17 = private unnamed_addr constant [6 x i8] c"string", align 1
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to$out" = weak_odr constant [1 x ptr] [ptr @_llgo_string], align 8
+@18 = private unnamed_addr constant [5 x i8] c"$data", align 1
+@_llgo_Pointer = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 507576105, i8 12, i8 8, i8 8, i8 58, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 14 }, ptr @"*_llgo_Pointer" }, align 8
+@19 = private unnamed_addr constant [14 x i8] c"unsafe.Pointer", align 1
+@"*_llgo_Pointer" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1134390089, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 14 }, ptr null }, ptr @_llgo_Pointer }, align 8
+@"_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 5 }, ptr @"_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I" }], align 8
+@"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int, ptr @_llgo_error], align 8
+@"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"_llgo_iface$kr1iSWwMezh0B9LdQN0MhEZUNZvBlHPhlst95jAyxE0$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" }], align 8
+@"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4$in" = weak_odr constant [1 x ptr] [ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer"], align 8
+@_llgo_int64 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 394795202, i8 12, i8 8, i8 8, i8 38, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @20, i64 5 }, ptr @"*_llgo_int64" }, align 8
+@20 = private unnamed_addr constant [5 x i8] c"int64", align 1
+@"*_llgo_int64" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1901231210, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @20, i64 5 }, ptr null }, ptr @_llgo_int64 }, align 8
+@"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int64, ptr @_llgo_error], align 8
+@"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 }, ptr @"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk" }], align 8
+@"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 999934762, i8 0, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 85 }, ptr @"*_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs$imethods", i64 1, i64 1 } }, align 8
+@21 = private unnamed_addr constant [85 x i8] c"interface { WriteTo(github.com/goplus/llgo/cl/_testgo/reader.Writer) (int64, error) }", align 1
+@"*_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1324065545, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 85 }, ptr null }, ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs" }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [3 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -2131804033, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 58 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8$fields", i64 1, i64 1 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 3, i16 3, i32 24 }, [3 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 5 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Close" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Read" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 }, ptr @"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo" }] }, align 8
+@22 = private unnamed_addr constant [58 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [3 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 2074015848, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 58 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 3, i16 3, i32 24 }, [3 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 5 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 }, ptr @"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo" }] }, align 8
+@23 = private unnamed_addr constant [5 x i8] c"Close", align 1
+@"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -1325413050, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 48 }, ptr @"*_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0$fields", i64 2, i64 2 } }, align 8
+@24 = private unnamed_addr constant [48 x i8] c"struct { $f func() error; $data unsafe.Pointer }", align 1
+@"*_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -100012334, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 48 }, ptr null }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0" }, align 8
+@"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1183719404, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 12 }, ptr @"*_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w$out", i64 1, i64 1 } }, align 8
+@25 = private unnamed_addr constant [12 x i8] c"func() error", align 1
+@"*_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1571491799, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 12 }, ptr null }, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w" }, align 8
+@"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w$out" = weak_odr constant [1 x ptr] [ptr @_llgo_error], align 8
+@"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@26 = private unnamed_addr constant [4 x i8] c"Read", align 1
+@27 = private unnamed_addr constant [6 x i8] c"Reader", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1318060398, i8 4, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 47 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw$imethods", i64 1, i64 1 } }, align 8
+@28 = private unnamed_addr constant [47 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.Reader", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 688483744, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 47 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader" }, align 8
+@"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" }], align 8
+@"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8$fields" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 6 }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 true }], align 8
+@"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -330631760, i8 0, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 54 }, ptr @"*_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84$imethods", i64 2, i64 2 } }, align 8
+@29 = private unnamed_addr constant [54 x i8] c"interface { Close() error; Read([]byte) (int, error) }", align 1
+@"*_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -322135592, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 54 }, ptr null }, ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84" }, align 8
+@"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84$imethods" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 5 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0" }, %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk" }], align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -1105494488, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 50 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8$fields", i64 1, i64 1 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 5 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Close" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Read" }] }, align 8
+@30 = private unnamed_addr constant [50 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1379326590, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 50 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 5 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read" }] }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 907110884, i8 4, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @31, i64 53 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU$imethods", i64 1, i64 1 } }, align 8
+@31 = private unnamed_addr constant [53 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.StringWriter", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 128707447, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @31, i64 53 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter" }, align 8
+@32 = private unnamed_addr constant [11 x i8] c"WriteString", align 1
+@"_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -1123233770, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 61 }, ptr @"*_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4$fields", i64 2, i64 2 } }, align 8
+@33 = private unnamed_addr constant [61 x i8] c"struct { $f func(string) (int, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -209661603, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 61 }, ptr null }, ptr @"_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4" }, align 8
+@"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -183202291, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @34, i64 25 }, ptr @"*_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw$in", i64 1, i64 1 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw$out", i64 2, i64 2 } }, align 8
+@34 = private unnamed_addr constant [25 x i8] c"func(string) (int, error)", align 1
+@"*_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1229992101, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @34, i64 25 }, ptr null }, ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw" }, align 8
+@"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw$in" = weak_odr constant [1 x ptr] [ptr @_llgo_string], align 8
+@"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int, ptr @_llgo_error], align 8
+@"_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 11 }, ptr @"_llgo_closure$YmPi-wybieA4Oe5EUOyLhZm9uEUQ1nSoZW6sEwkvFK4" }], align 8
+@"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1973521222, i8 0, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 46 }, ptr @"*_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU$imethods", i64 1, i64 1 } }, align 8
+@35 = private unnamed_addr constant [46 x i8] c"interface { WriteString(string) (int, error) }", align 1
+@"*_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1598946471, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 46 }, ptr null }, ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU" }, align 8
+@36 = private unnamed_addr constant [3 x i8] c"EOF", align 1
+@37 = private unnamed_addr constant [11 x i8] c"short write", align 1
+@38 = private unnamed_addr constant [11 x i8] c"hello world", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [10 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1218063015, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 53 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 10, i16 10, i32 24 }, [10 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @43, i64 3 }, ptr @"_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr @"_llgo_closure$MQ2ZWlodL7TEMdmgiMKeZQg05eYQM3XSFySxP1VTspk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @46, i64 6 }, ptr @"_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @49, i64 8 }, ptr @"_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @52, i64 8 }, ptr @"_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 4 }, ptr @"_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 4 }, ptr @"_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 10 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 10 }, ptr @"_llgo_closure$4K_FAnAKFaUKLsb0_0sXP_DpYP7RzrSYBS0f6xeYpf0", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 }, ptr @"_llgo_closure$fzsyWd8-EIUJziwfM01jsQ6m3025_M1NDiv52sVs1uk", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo" }] }, align 8
+@39 = private unnamed_addr constant [53 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.stringReader", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 32, i64 0, i32 -2042302092, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 53 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testgo/reader.struct$Mdt84yjYYwxF9D2i4cRmpEPiWaO6tsjtrbGUjyESypk$fields", i64 3, i64 3 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@40 = private unnamed_addr constant [1 x i8] c"s", align 1
+@41 = private unnamed_addr constant [1 x i8] c"i", align 1
+@42 = private unnamed_addr constant [8 x i8] c"prevRune", align 1
+@"github.com/goplus/llgo/cl/_testgo/reader.struct$Mdt84yjYYwxF9D2i4cRmpEPiWaO6tsjtrbGUjyESypk$fields" = weak_odr constant [3 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @40, i64 1 }, ptr @_llgo_string, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @41, i64 1 }, ptr @_llgo_int64, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 8 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@43 = private unnamed_addr constant [3 x i8] c"Len", align 1
+@"_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1058413686, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 46 }, ptr @"*_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s$fields", i64 2, i64 2 } }, align 8
+@44 = private unnamed_addr constant [46 x i8] c"struct { $f func() int; $data unsafe.Pointer }", align 1
+@"*_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1449453798, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 46 }, ptr null }, ptr @"_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s" }, align 8
+@"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 2131144854, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @45, i64 10 }, ptr @"*_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA$out", i64 1, i64 1 } }, align 8
+@45 = private unnamed_addr constant [10 x i8] c"func() int", align 1
+@"*_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1805835775, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @45, i64 10 }, ptr null }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, align 8
+@"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA$out" = weak_odr constant [1 x ptr] [ptr @_llgo_int], align 8
+@"_llgo_closure$TWlEC03isGYe2Nyy2HYnOBsOYR1lIx43oIUpIyqvm4s$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@46 = private unnamed_addr constant [6 x i8] c"ReadAt", align 1
+@"_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1032068774, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 68 }, ptr @"*_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM$fields", i64 2, i64 2 } }, align 8
+@47 = private unnamed_addr constant [68 x i8] c"struct { $f func([]byte, int64) (int, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -2019735241, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 68 }, ptr null }, ptr @"_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM" }, align 8
+@"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 475784095, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 32 }, ptr @"*_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4$in", i64 2, i64 2 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4$out", i64 2, i64 2 } }, align 8
+@48 = private unnamed_addr constant [32 x i8] c"func([]byte, int64) (int, error)", align 1
+@"*_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -943934209, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 32 }, ptr null }, ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4" }, align 8
+@"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4$in" = weak_odr constant [2 x ptr] [ptr @"[]_llgo_uint8", ptr @_llgo_int64], align 8
+@"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int, ptr @_llgo_error], align 8
+@"_llgo_closure$b3e23I5Oi1_T23Th9-AtFYSFNA7elBno1OxDNdDIVYM$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@49 = private unnamed_addr constant [8 x i8] c"ReadByte", align 1
+@"_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -1282438793, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @50, i64 56 }, ptr @"*_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw$fields", i64 2, i64 2 } }, align 8
+@50 = private unnamed_addr constant [56 x i8] c"struct { $f func() (byte, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 891268800, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @50, i64 56 }, ptr null }, ptr @"_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw" }, align 8
+@"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1499372428, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @51, i64 20 }, ptr @"*_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ$out", i64 2, i64 2 } }, align 8
+@51 = private unnamed_addr constant [20 x i8] c"func() (byte, error)", align 1
+@"*_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1164205677, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @51, i64 20 }, ptr null }, ptr @"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ" }, align 8
+@"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ$out" = weak_odr constant [2 x ptr] [ptr @_llgo_uint8, ptr @_llgo_error], align 8
+@"_llgo_closure$2AMH4DH8x-KAY8vjo8bHykPZrBAIWS9zFeyQ9C0lezw$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@52 = private unnamed_addr constant [8 x i8] c"ReadRune", align 1
+@"_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -546997648, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @53, i64 61 }, ptr @"*_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0$fields", i64 2, i64 2 } }, align 8
+@53 = private unnamed_addr constant [61 x i8] c"struct { $f func() (rune, int, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 778048496, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @53, i64 61 }, ptr null }, ptr @"_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0" }, align 8
+@"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 828863408, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @54, i64 25 }, ptr @"*_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU$out", i64 3, i64 3 } }, align 8
+@54 = private unnamed_addr constant [25 x i8] c"func() (rune, int, error)", align 1
+@"*_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -2033532803, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @54, i64 25 }, ptr null }, ptr @"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU" }, align 8
+@_llgo_rune = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 4, i64 0, i32 1641231293, i8 12, i8 4, i8 4, i8 37, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal32", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @55, i64 4 }, ptr @"*_llgo_rune" }, align 8
+@55 = private unnamed_addr constant [4 x i8] c"rune", align 1
+@"*_llgo_rune" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1105732486, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @55, i64 4 }, ptr null }, ptr @_llgo_rune }, align 8
+@"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU$out" = weak_odr constant [3 x ptr] [ptr @_llgo_rune, ptr @_llgo_int, ptr @_llgo_error], align 8
+@"_llgo_closure$z7_kQzj8KlPPWikNdv5z-wVnSaMRnO1iErygkC5L6E0$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@56 = private unnamed_addr constant [4 x i8] c"Seek", align 1
+@"_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -793175660, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 67 }, ptr @"*_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ$fields", i64 2, i64 2 } }, align 8
+@57 = private unnamed_addr constant [67 x i8] c"struct { $f func(int64, int) (int64, error); $data unsafe.Pointer }", align 1
+@"*_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1974881180, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 67 }, ptr null }, ptr @"_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ" }, align 8
+@"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -367037366, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 31 }, ptr @"*_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms$in", i64 2, i64 2 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms$out", i64 2, i64 2 } }, align 8
+@58 = private unnamed_addr constant [31 x i8] c"func(int64, int) (int64, error)", align 1
+@"*_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1356075299, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 31 }, ptr null }, ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms" }, align 8
+@"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms$in" = weak_odr constant [2 x ptr] [ptr @_llgo_int64, ptr @_llgo_int], align 8
+@"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int64, ptr @_llgo_error], align 8
+@"_llgo_closure$keG4CSsB4QMOiNsGIT17jFvsgalcX_SV0vBVVXrcHHQ$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@59 = private unnamed_addr constant [4 x i8] c"Size", align 1
+@"_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 680182705, i8 32, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 48 }, ptr @"*_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc$fields", i64 2, i64 2 } }, align 8
+@60 = private unnamed_addr constant [48 x i8] c"struct { $f func() int64; $data unsafe.Pointer }", align 1
+@"*_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1007375094, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 48 }, ptr null }, ptr @"_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc" }, align 8
+@"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.FuncType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1236366245, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 12 }, ptr @"*_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug" }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug$out", i64 1, i64 1 } }, align 8
+@61 = private unnamed_addr constant [12 x i8] c"func() int64", align 1
+@"*_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 137110153, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 12 }, ptr null }, ptr @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug" }, align 8
+@"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug$out" = weak_odr constant [1 x ptr] [ptr @_llgo_int64], align 8
+@"_llgo_closure$-chAexK6HnZysIkPe8lgHBQZJvfsSnMfdMq0JVW4AFc$fields" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 2 }, ptr @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_Pointer, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@62 = private unnamed_addr constant [10 x i8] c"UnreadByte", align 1
+@63 = private unnamed_addr constant [10 x i8] c"UnreadRune", align 1
+@"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -2028598289, i8 0, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 39 }, ptr @"*_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw$imethods", i64 1, i64 1 } }, align 8
+@64 = private unnamed_addr constant [39 x i8] c"interface { Read([]byte) (int, error) }", align 1
+@"*_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1109399972, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 39 }, ptr null }, ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw" }, align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [1 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 881334858, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @65, i64 52 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 1, i16 1, i32 24 }, [1 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 5 }, ptr @"_llgo_closure$vK4RtX_aj54SK2qRpmq5G1J_JK9BvV_9Ps38HU_Uq6I", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error", ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error" }] }, align 8
+@65 = private unnamed_addr constant [52 x i8] c"github.com/goplus/llgo/cl/_testgo/reader.errorString", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 -690024693, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @65, i64 52 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ$fields", i64 1, i64 1 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@"github.com/goplus/llgo/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ$fields" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @40, i64 1 }, ptr @_llgo_string, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 -1583200459, i8 0, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @66, i64 28 }, ptr @"*_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU$imethods", i64 1, i64 1 } }, align 8
+@66 = private unnamed_addr constant [28 x i8] c"interface { Error() string }", align 1
+@"*_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 722800013, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @66, i64 28 }, ptr null }, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU" }, align 8
+@67 = private unnamed_addr constant [122 x i8] c"type assertion github.com/goplus/llgo/cl/_testgo/reader.Reader -> github.com/goplus/llgo/cl/_testgo/reader.WriterTo failed", align 1
+@68 = private unnamed_addr constant [37 x i8] c"stringsReader.ReadAt: negative offset", align 1
+@69 = private unnamed_addr constant [34 x i8] c"stringsReader.Seek: invalid whence", align 1
+@70 = private unnamed_addr constant [37 x i8] c"stringsReader.Seek: negative position", align 1
+@71 = private unnamed_addr constant [48 x i8] c"stringsReader.UnreadByte: at beginning of string", align 1
+@72 = private unnamed_addr constant [49 x i8] c"strings.Reader.UnreadRune: at beginning of string", align 1
+@73 = private unnamed_addr constant [62 x i8] c"strings.Reader.UnreadRune: previous operation was not ReadRune", align 1
+@74 = private unnamed_addr constant [48 x i8] c"stringsReader.WriteTo: invalid WriteString count", align 1
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.NopCloser"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", align 8
-  %3 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr %2, ptr %1)
-  br i1 %3, label %_llgo_3, label %_llgo_4
+  %2 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", ptr %1)
+  br i1 %2, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
-  %4 = alloca %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", align 8
-  call void @llvm.memset(ptr %4, i8 0, i64 16, i1 false)
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", ptr %4, i32 0, i32 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, ptr %5, align 8
-  %6 = load %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", ptr %4, align 8
-  %7 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", align 8
-  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" %6, ptr %8, align 8
-  %9 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %10 = load ptr, ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84", align 8
-  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %10, ptr %7)
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %11, 0
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %12, ptr %8, 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13
+  %3 = alloca %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", align 8
+  call void @llvm.memset(ptr %3, i8 0, i64 16, i1 false)
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", ptr %3, i32 0, i32 0
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, ptr %4, align 8
+  %5 = load %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", ptr %3, align 8
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" %5, ptr %6, align 8
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo")
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %7, 0
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, ptr %6, 1
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9
 
 _llgo_2:                                          ; preds = %_llgo_5
-  %14 = alloca %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", align 8
-  call void @llvm.memset(ptr %14, i8 0, i64 16, i1 false)
-  %15 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", ptr %14, i32 0, i32 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, ptr %15, align 8
-  %16 = load %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", ptr %14, align 8
-  %17 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser", align 8
-  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser" %16, ptr %18, align 8
-  %19 = load ptr, ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84", align 8
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %19, ptr %17)
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %20, 0
-  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %18, 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22
+  %10 = alloca %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", align 8
+  call void @llvm.memset(ptr %10, i8 0, i64 16, i1 false)
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", ptr %10, i32 0, i32 0
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, ptr %11, align 8
+  %12 = load %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser", ptr %10, align 8
+  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/cl/_testgo/reader.nopCloser" %12, ptr %13, align 8
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser")
+  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %14, 0
+  %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, ptr %13, 1
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %16
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
-  %24 = load ptr, ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs", align 8
-  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %24, ptr %1)
-  %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %25, 0
-  %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %26, ptr %23, 1
-  %28 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %27, 0
-  %29 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %28, i1 true, 1
+  %17 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs", ptr %1)
+  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %18, 0
+  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %19, ptr %17, 1
+  %21 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20, 0
+  %22 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %21, i1 true, 1
   br label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
-  %30 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %29, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
-  %31 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %30, 0
-  %32 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %30, 1
-  br i1 %32, label %_llgo_1, label %_llgo_2
+  %23 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %22, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %24 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %23, 0
+  %25 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %23, 1
+  br i1 %25, label %_llgo_1, label %_llgo_2
 }
 
 define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/reader.ReadAll"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
@@ -237,61 +360,59 @@ _llgo_6:                                          ; preds = %_llgo_3
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/reader.WriteString"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
 _llgo_0:
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter", align 8
-  %4 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr %3, ptr %2)
-  br i1 %4, label %_llgo_3, label %_llgo_4
+  %3 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter", ptr %2)
+  br i1 %3, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %40)
-  %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %40, 0
-  %7 = getelementptr ptr, ptr %6, i64 3
-  %8 = load ptr, ptr %7, align 8
-  %9 = insertvalue { ptr, ptr } undef, ptr %8, 0
-  %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
-  %11 = extractvalue { ptr, ptr } %10, 1
-  %12 = extractvalue { ptr, ptr } %10, 0
-  %13 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %11, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
-  %14 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 0
-  %15 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 1
-  %16 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %14, 0
-  %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %38)
+  %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %38, 0
+  %6 = getelementptr ptr, ptr %5, i64 3
+  %7 = load ptr, ptr %6, align 8
+  %8 = insertvalue { ptr, ptr } undef, ptr %7, 0
+  %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
+  %10 = extractvalue { ptr, ptr } %9, 1
+  %11 = extractvalue { ptr, ptr } %9, 0
+  %12 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %13 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12, 0
+  %14 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12, 1
+  %15 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %13, 0
+  %16 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %15, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %14, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16
 
 _llgo_2:                                          ; preds = %_llgo_5
-  %18 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
-  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %20 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %21 = getelementptr ptr, ptr %20, i64 3
-  %22 = load ptr, ptr %21, align 8
-  %23 = insertvalue { ptr, ptr } undef, ptr %22, 0
-  %24 = insertvalue { ptr, ptr } %23, ptr %19, 1
-  %25 = extractvalue { ptr, ptr } %24, 1
-  %26 = extractvalue { ptr, ptr } %24, 0
-  %27 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %26(ptr %25, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
-  %28 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %27, 0
-  %29 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %27, 1
-  %30 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %28, 0
-  %31 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %30, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %31
+  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %20 = getelementptr ptr, ptr %19, i64 3
+  %21 = load ptr, ptr %20, align 8
+  %22 = insertvalue { ptr, ptr } undef, ptr %21, 0
+  %23 = insertvalue { ptr, ptr } %22, ptr %18, 1
+  %24 = extractvalue { ptr, ptr } %23, 1
+  %25 = extractvalue { ptr, ptr } %23, 0
+  %26 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %25(ptr %24, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17)
+  %27 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %26, 0
+  %28 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %26, 1
+  %29 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %27, 0
+  %30 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %29, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %28, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %30
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %32 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
-  %33 = load ptr, ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU", align 8
-  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %33, ptr %2)
-  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %34, 0
-  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %35, ptr %32, 1
-  %37 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %36, 0
-  %38 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %37, i1 true, 1
+  %31 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU", ptr %2)
+  %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %32, 0
+  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %33, ptr %31, 1
+  %35 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %34, 0
+  %36 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %35, i1 true, 1
   br label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
-  %39 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %38, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
-  %40 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %39, 0
-  %41 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %39, 1
-  br i1 %41, label %_llgo_1, label %_llgo_2
+  %37 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %36, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %38 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %37, 0
+  %39 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %37, 1
+  br i1 %39, label %_llgo_1, label %_llgo_2
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error"(ptr %0) {
@@ -309,10 +430,9 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testgo/reader.init$guard", align 1
   call void @"unicode/utf8.init"()
-  call void @"github.com/goplus/llgo/cl/_testgo/reader.init$after"()
-  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 3 })
+  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @36, i64 3 })
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, ptr @"github.com/goplus/llgo/cl/_testgo/reader.EOF", align 8
-  %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 11 })
+  %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @37, i64 11 })
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %2, ptr @"github.com/goplus/llgo/cl/_testgo/reader.ErrShortWrite", align 8
   br label %_llgo_2
 
@@ -324,20 +444,17 @@ define void @"github.com/goplus/llgo/cl/_testgo/reader.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 11 }, ptr %1, align 8
-  %2 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", align 8
-  %3 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", align 8
-  %4 = load ptr, ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw", align 8
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %4, ptr %3)
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %5, 0
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, ptr %0, 1
-  %8 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/reader.ReadAll"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %7)
-  %9 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, 0
-  %10 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, 1
-  %11 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %11)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @38, i64 11 }, ptr %1, align 8
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader")
+  %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %2, 0
+  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3, ptr %0, 1
+  %5 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/reader.ReadAll"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %4)
+  %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -347,13 +464,10 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.errorString", ptr %1, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, ptr %2, align 8
-  %3 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString", align 8
-  %4 = load ptr, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString", align 8
-  %5 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
-  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %5, ptr %4)
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %6, 0
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, ptr %1, 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString")
+  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %3, 0
+  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, ptr %1, 1
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Close"(%"github.com/goplus/llgo/cl/_testgo/reader.nopCloser" %0) {
@@ -447,38 +561,34 @@ _llgo_0:
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", ptr %2, i32 0, i32 0
   %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %4)
-  %6 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", align 8
-  %7 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr %6, ptr %5)
-  br i1 %7, label %_llgo_1, label %_llgo_2
+  %6 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", ptr %5)
+  br i1 %6, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, 1
-  %9 = load ptr, ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs", align 8
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr %9, ptr %5)
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %10, 0
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %11, ptr %8, 1
-  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %12)
-  %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %12, 0
-  %15 = getelementptr ptr, ptr %14, i64 3
-  %16 = load ptr, ptr %15, align 8
-  %17 = insertvalue { ptr, ptr } undef, ptr %16, 0
-  %18 = insertvalue { ptr, ptr } %17, ptr %13, 1
-  %19 = extractvalue { ptr, ptr } %18, 1
-  %20 = extractvalue { ptr, ptr } %18, 0
-  %21 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %20(ptr %19, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
-  %22 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %21, 0
-  %23 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %21, 1
-  %24 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %22, 0
-  %25 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %24, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %23, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %25
+  %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, 1
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs", ptr %5)
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %8, 0
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %7, 1
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %13 = getelementptr ptr, ptr %12, i64 3
+  %14 = load ptr, ptr %13, align 8
+  %15 = insertvalue { ptr, ptr } undef, ptr %14, 0
+  %16 = insertvalue { ptr, ptr } %15, ptr %11, 1
+  %17 = extractvalue { ptr, ptr } %16, 1
+  %18 = extractvalue { ptr, ptr } %16, 0
+  %19 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18(ptr %17, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  %20 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19, 0
+  %21 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19, 1
+  %22 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %20, 0
+  %23 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %22, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %23
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %26 = load ptr, ptr @_llgo_string, align 8
-  %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 122 }, ptr %27, align 8
-  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %26, 0
-  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %28, ptr %27, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %29)
+  %24 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @67, i64 122 }, ptr %24, align 8
+  %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %24, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %25)
   unreachable
 }
 
@@ -586,7 +696,7 @@ _llgo_0:
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @31, i64 37 })
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @68, i64 37 })
   %5 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } { i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, 1
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5
 
@@ -772,12 +882,12 @@ _llgo_6:                                          ; preds = %_llgo_4
   br i1 %15, label %_llgo_5, label %_llgo_7
 
 _llgo_7:                                          ; preds = %_llgo_6
-  %16 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 34 })
+  %16 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @69, i64 34 })
   %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } { i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %16, 1
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17
 
 _llgo_8:                                          ; preds = %_llgo_1
-  %18 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 37 })
+  %18 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @70, i64 37 })
   %19 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } { i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %18, 1
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19
 
@@ -805,7 +915,7 @@ _llgo_0:
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @34, i64 48 })
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @71, i64 48 })
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -827,7 +937,7 @@ _llgo_0:
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 49 })
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @72, i64 49 })
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -837,7 +947,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   br i1 %7, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %8 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @36, i64 62 })
+  %8 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.newError"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @73, i64 62 })
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8
 
 _llgo_4:                                          ; preds = %_llgo_2
@@ -880,871 +990,96 @@ _llgo_2:                                          ; preds = %_llgo_0
   br i1 %19, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %20 = load ptr, ptr @_llgo_string, align 8
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @37, i64 48 }, ptr %21, align 8
-  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %20, 0
-  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, ptr %21, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %23)
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @74, i64 48 }, ptr %20, align 8
+  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %20, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)
   unreachable
 
 _llgo_4:                                          ; preds = %_llgo_2
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
-  %25 = load i64, ptr %24, align 4
-  %26 = add i64 %25, %16
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
-  store i64 %26, ptr %27, align 4
-  %28 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %14, 1
-  %29 = icmp ne i64 %16, %28
-  br i1 %29, label %_llgo_7, label %_llgo_6
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
+  %23 = load i64, ptr %22, align 4
+  %24 = add i64 %23, %16
+  %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
+  store i64 %24, ptr %25, align 4
+  %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %14, 1
+  %27 = icmp ne i64 %16, %26
+  br i1 %27, label %_llgo_7, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_7
-  %30 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr @"github.com/goplus/llgo/cl/_testgo/reader.ErrShortWrite", align 8
+  %28 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr @"github.com/goplus/llgo/cl/_testgo/reader.ErrShortWrite", align 8
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_7, %_llgo_4
-  %31 = phi %"github.com/goplus/llgo/runtime/internal/runtime.iface" [ %17, %_llgo_4 ], [ %17, %_llgo_7 ], [ %30, %_llgo_5 ]
-  %32 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %16, 0
-  %33 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %32, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %31, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %33
+  %29 = phi %"github.com/goplus/llgo/runtime/internal/runtime.iface" [ %17, %_llgo_4 ], [ %17, %_llgo_7 ], [ %28, %_llgo_5 ]
+  %30 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %16, 0
+  %31 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %30, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %31
 
 _llgo_7:                                          ; preds = %_llgo_4
-  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %17)
-  %35 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %17, 1
-  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %34, 0
-  %37 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %36, ptr %35, 1
-  %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
-  %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %38, 0
-  %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %39, ptr null, 1
-  %41 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %37, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %40)
-  br i1 %41, label %_llgo_5, label %_llgo_6
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %17)
+  %33 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %17, 1
+  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %32, 0
+  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %34, ptr %33, 1
+  %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
+  %37 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %36, 0
+  %38 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %37, ptr null, 1
+  %39 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %35, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %38)
+  br i1 %39, label %_llgo_5, label %_llgo_6
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
-define void @"github.com/goplus/llgo/cl/_testgo/reader.init$after"() {
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)
+
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 8 })
-  %1 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", align 8
-  %2 = icmp eq ptr %1, null
-  br i1 %2, label %_llgo_1, label %_llgo_2
-
-_llgo_1:                                          ; preds = %_llgo_0
-  store ptr %0, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", align 8
-  br label %_llgo_2
-
-_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 6 })
-  %4 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer", align 8
-  %5 = icmp eq ptr %4, null
-  br i1 %5, label %_llgo_3, label %_llgo_4
-
-_llgo_3:                                          ; preds = %_llgo_2
-  store ptr %3, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer", align 8
-  br label %_llgo_4
-
-_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
-  %6 = load ptr, ptr @_llgo_uint8, align 8
-  %7 = icmp eq ptr %6, null
-  br i1 %7, label %_llgo_5, label %_llgo_6
-
-_llgo_5:                                          ; preds = %_llgo_4
-  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 40)
-  store ptr %8, ptr @_llgo_uint8, align 8
-  br label %_llgo_6
-
-_llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %9 = load ptr, ptr @_llgo_uint8, align 8
-  %10 = load ptr, ptr @"[]_llgo_uint8", align 8
-  %11 = icmp eq ptr %10, null
-  br i1 %11, label %_llgo_7, label %_llgo_8
-
-_llgo_7:                                          ; preds = %_llgo_6
-  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 40)
-  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceOf"(ptr %12)
-  store ptr %13, ptr @"[]_llgo_uint8", align 8
-  br label %_llgo_8
-
-_llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
-  %14 = load ptr, ptr @"[]_llgo_uint8", align 8
-  %15 = load ptr, ptr @_llgo_int, align 8
-  %16 = icmp eq ptr %15, null
-  br i1 %16, label %_llgo_9, label %_llgo_10
-
-_llgo_9:                                          ; preds = %_llgo_8
-  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  store ptr %17, ptr @_llgo_int, align 8
-  br label %_llgo_10
-
-_llgo_10:                                         ; preds = %_llgo_9, %_llgo_8
-  %18 = load ptr, ptr @_llgo_int, align 8
-  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %20 = load ptr, ptr @_llgo_error, align 8
-  %21 = icmp eq ptr %20, null
-  br i1 %21, label %_llgo_11, label %_llgo_12
-
-_llgo_11:                                         ; preds = %_llgo_10
-  store ptr %19, ptr @_llgo_error, align 8
-  br label %_llgo_12
-
-_llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
-  %22 = load ptr, ptr @_llgo_string, align 8
-  %23 = icmp eq ptr %22, null
-  br i1 %23, label %_llgo_13, label %_llgo_14
-
-_llgo_13:                                         ; preds = %_llgo_12
-  %24 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  store ptr %24, ptr @_llgo_string, align 8
-  br label %_llgo_14
-
-_llgo_14:                                         ; preds = %_llgo_13, %_llgo_12
-  %25 = load ptr, ptr @_llgo_string, align 8
-  %26 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
-  %27 = icmp eq ptr %26, null
-  br i1 %27, label %_llgo_15, label %_llgo_16
-
-_llgo_15:                                         ; preds = %_llgo_14
-  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
-  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %28, 0
-  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %29, i64 0, 1
-  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30, i64 0, 2
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %34 = getelementptr ptr, ptr %33, i64 0
-  store ptr %32, ptr %34, align 8
-  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %33, 0
-  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, i64 1, 1
-  %37 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %36, i64 1, 2
-  %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %37, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %38)
-  store ptr %38, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
-  br label %_llgo_16
-
-_llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
-  %39 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
-  br i1 %21, label %_llgo_17, label %_llgo_18
-
-_llgo_17:                                         ; preds = %_llgo_16
-  %40 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr undef }, ptr %39, 1
-  %41 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %42 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %41, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %40, ptr %42, align 8
-  %43 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %41, 0
-  %44 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %43, i64 1, 1
-  %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %44, i64 1, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr %19, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %45)
-  br label %_llgo_18
-
-_llgo_18:                                         ; preds = %_llgo_17, %_llgo_16
-  %46 = load ptr, ptr @_llgo_error, align 8
-  %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %48 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  %49 = icmp eq ptr %48, null
-  br i1 %49, label %_llgo_19, label %_llgo_20
-
-_llgo_19:                                         ; preds = %_llgo_18
-  %50 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 40)
-  %51 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceOf"(ptr %50)
-  %52 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %53 = getelementptr ptr, ptr %52, i64 0
-  store ptr %51, ptr %53, align 8
-  %54 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %52, 0
-  %55 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %54, i64 1, 1
-  %56 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %55, i64 1, 2
-  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %58 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %59 = getelementptr ptr, ptr %58, i64 0
-  store ptr %57, ptr %59, align 8
-  %60 = getelementptr ptr, ptr %58, i64 1
-  store ptr %47, ptr %60, align 8
-  %61 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %58, 0
-  %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %61, i64 2, 1
-  %63 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %62, i64 2, 2
-  %64 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %56, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %63, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %64)
-  store ptr %64, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  br label %_llgo_20
-
-_llgo_20:                                         ; preds = %_llgo_19, %_llgo_18
-  %65 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  br i1 %5, label %_llgo_21, label %_llgo_22
-
-_llgo_21:                                         ; preds = %_llgo_20
-  %66 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 5 }, ptr undef }, ptr %65, 1
-  %67 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %68 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %67, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %66, ptr %68, align 8
-  %69 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %67, 0
-  %70 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %69, i64 1, 1
-  %71 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %70, i64 1, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %71)
-  br label %_llgo_22
-
-_llgo_22:                                         ; preds = %_llgo_21, %_llgo_20
-  %72 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer", align 8
-  %73 = load ptr, ptr @_llgo_int64, align 8
-  %74 = icmp eq ptr %73, null
-  br i1 %74, label %_llgo_23, label %_llgo_24
-
-_llgo_23:                                         ; preds = %_llgo_22
-  %75 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  store ptr %75, ptr @_llgo_int64, align 8
-  br label %_llgo_24
-
-_llgo_24:                                         ; preds = %_llgo_23, %_llgo_22
-  %76 = load ptr, ptr @_llgo_int64, align 8
-  %77 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 6 })
-  %78 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %79 = load ptr, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", align 8
-  %80 = icmp eq ptr %79, null
-  br i1 %80, label %_llgo_25, label %_llgo_26
-
-_llgo_25:                                         ; preds = %_llgo_24
-  %81 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %82 = getelementptr ptr, ptr %81, i64 0
-  store ptr %77, ptr %82, align 8
-  %83 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %81, 0
-  %84 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %83, i64 1, 1
-  %85 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %84, i64 1, 2
-  %86 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  %87 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %88 = getelementptr ptr, ptr %87, i64 0
-  store ptr %86, ptr %88, align 8
-  %89 = getelementptr ptr, ptr %87, i64 1
-  store ptr %78, ptr %89, align 8
-  %90 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %87, 0
-  %91 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %90, i64 2, 1
-  %92 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %91, i64 2, 2
-  %93 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %85, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %92, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %93)
-  store ptr %93, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", align 8
-  br label %_llgo_26
-
-_llgo_26:                                         ; preds = %_llgo_25, %_llgo_24
-  %94 = load ptr, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", align 8
-  br i1 %2, label %_llgo_27, label %_llgo_28
-
-_llgo_27:                                         ; preds = %_llgo_26
-  %95 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 }, ptr undef }, ptr %94, 1
-  %96 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %97 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %96, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %95, ptr %97, align 8
-  %98 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %96, 0
-  %99 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %98, i64 1, 1
-  %100 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %99, i64 1, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %100)
-  br label %_llgo_28
-
-_llgo_28:                                         ; preds = %_llgo_27, %_llgo_26
-  %101 = load ptr, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", align 8
-  %102 = load ptr, ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs", align 8
-  %103 = icmp eq ptr %102, null
-  br i1 %103, label %_llgo_29, label %_llgo_30
-
-_llgo_29:                                         ; preds = %_llgo_28
-  %104 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 }, ptr undef }, ptr %101, 1
-  %105 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %106 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %105, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %104, ptr %106, align 8
-  %107 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %105, 0
-  %108 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %107, i64 1, 1
-  %109 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %108, i64 1, 2
-  %110 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %109)
-  store ptr %110, ptr @"_llgo_iface$p5Bo_emI1h8acs1rFbUxZTrpeDbIQ34gFcsbwK9YIgs", align 8
-  br label %_llgo_30
-
-_llgo_30:                                         ; preds = %_llgo_29, %_llgo_28
-  %111 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 17 }, i64 25, i64 16, i64 3, i64 3)
-  store ptr %111, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", align 8
-  %112 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 6 })
-  %113 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", align 8
-  %114 = icmp eq ptr %113, null
-  br i1 %114, label %_llgo_31, label %_llgo_32
-
-_llgo_31:                                         ; preds = %_llgo_30
-  store ptr %112, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", align 8
-  br label %_llgo_32
-
-_llgo_32:                                         ; preds = %_llgo_31, %_llgo_30
-  %115 = load ptr, ptr @"[]_llgo_uint8", align 8
-  %116 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  br i1 %114, label %_llgo_33, label %_llgo_34
-
-_llgo_33:                                         ; preds = %_llgo_32
-  %117 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef }, ptr %116, 1
-  %118 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %119 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %118, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %117, ptr %119, align 8
-  %120 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %118, 0
-  %121 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %120, i64 1, 1
-  %122 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %121, i64 1, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr %112, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %122)
-  br label %_llgo_34
-
-_llgo_34:                                         ; preds = %_llgo_33, %_llgo_32
-  %123 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", align 8
-  %124 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 6 })
-  %125 = call %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 6 }, ptr %124, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 true)
-  %126 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 56)
-  %127 = getelementptr %"github.com/goplus/llgo/runtime/abi.StructField", ptr %126, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.StructField" %125, ptr %127, align 8
-  %128 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %126, 0
-  %129 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %128, i64 1, 1
-  %130 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %129, i64 1, 2
-  %131 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %130)
-  store ptr %131, ptr @"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8", align 8
-  %132 = load ptr, ptr @"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8", align 8
-  %133 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %134 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %135 = icmp eq ptr %134, null
-  br i1 %135, label %_llgo_35, label %_llgo_36
-
-_llgo_35:                                         ; preds = %_llgo_34
-  %136 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
-  %137 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %136, 0
-  %138 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %137, i64 0, 1
-  %139 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %138, i64 0, 2
-  %140 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %141 = getelementptr ptr, ptr %140, i64 0
-  store ptr %133, ptr %141, align 8
-  %142 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %140, 0
-  %143 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %142, i64 1, 1
-  %144 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %143, i64 1, 2
-  %145 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %139, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %144, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %145)
-  store ptr %145, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  br label %_llgo_36
-
-_llgo_36:                                         ; preds = %_llgo_35, %_llgo_34
-  %146 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %147 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 5 }, ptr undef, ptr undef, ptr undef }, ptr %146, 1
-  %148 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %147, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", 2
-  %149 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %148, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", 3
-  %150 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 5 }, ptr undef, ptr undef, ptr undef }, ptr %146, 1
-  %151 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %150, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", 2
-  %152 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %151, ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Close", 3
-  %153 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  %154 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %153, 1
-  %155 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %154, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", 2
-  %156 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %155, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", 3
-  %157 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %153, 1
-  %158 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %157, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", 2
-  %159 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %158, ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Read", 3
-  %160 = load ptr, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", align 8
-  %161 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 }, ptr undef, ptr undef, ptr undef }, ptr %160, 1
-  %162 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %161, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", 2
-  %163 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %162, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", 3
-  %164 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 }, ptr undef, ptr undef, ptr undef }, ptr %160, 1
-  %165 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %164, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", 2
-  %166 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %165, ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo", 3
-  %167 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 120)
-  %168 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %167, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Method" %152, ptr %168, align 8
-  %169 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %167, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Method" %159, ptr %169, align 8
-  %170 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %167, i64 2
-  store %"github.com/goplus/llgo/runtime/abi.Method" %166, ptr %170, align 8
-  %171 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %167, 0
-  %172 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %171, i64 3, 1
-  %173 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %172, i64 3, 2
-  %174 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 120)
-  %175 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %174, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Method" %149, ptr %175, align 8
-  %176 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %174, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Method" %156, ptr %176, align 8
-  %177 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %174, i64 2
-  store %"github.com/goplus/llgo/runtime/abi.Method" %163, ptr %177, align 8
-  %178 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %174, 0
-  %179 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %178, i64 3, 1
-  %180 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %179, i64 3, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr %111, ptr %132, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %173, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %180)
-  %181 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %182 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  %183 = load ptr, ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84", align 8
-  %184 = icmp eq ptr %183, null
-  br i1 %184, label %_llgo_37, label %_llgo_38
-
-_llgo_37:                                         ; preds = %_llgo_36
-  %185 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 5 }, ptr undef }, ptr %181, 1
-  %186 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef }, ptr %182, 1
-  %187 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
-  %188 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %187, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %185, ptr %188, align 8
-  %189 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %187, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %186, ptr %189, align 8
-  %190 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %187, 0
-  %191 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %190, i64 2, 1
-  %192 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %191, i64 2, 2
-  %193 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %192)
-  store ptr %193, ptr @"_llgo_iface$2bmbYDBStAIdmbXPPn7qIaCcpVcj2I5k6AqgqwAfh84", align 8
-  br label %_llgo_38
-
-_llgo_38:                                         ; preds = %_llgo_37, %_llgo_36
-  %194 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 9 }, i64 25, i64 16, i64 2, i64 2)
-  store ptr %194, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser", align 8
-  %195 = load ptr, ptr @"_llgo_struct$aF5tOq8uFNwjAKwq7XzhGO-4YESPiFwZOQDpqkTBqL8", align 8
-  %196 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %197 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 5 }, ptr undef, ptr undef, ptr undef }, ptr %196, 1
-  %198 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %197, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", 2
-  %199 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %198, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", 3
-  %200 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 5 }, ptr undef, ptr undef, ptr undef }, ptr %196, 1
-  %201 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %200, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", 2
-  %202 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %201, ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Close", 3
-  %203 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  %204 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %203, 1
-  %205 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %204, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", 2
-  %206 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %205, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", 3
-  %207 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %203, 1
-  %208 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %207, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", 2
-  %209 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %208, ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Read", 3
-  %210 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 80)
-  %211 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %210, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Method" %202, ptr %211, align 8
-  %212 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %210, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Method" %209, ptr %212, align 8
-  %213 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %210, 0
-  %214 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %213, i64 2, 1
-  %215 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %214, i64 2, 2
-  %216 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 80)
-  %217 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %216, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Method" %199, ptr %217, align 8
-  %218 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %216, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Method" %206, ptr %218, align 8
-  %219 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %216, 0
-  %220 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %219, i64 2, 1
-  %221 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %220, i64 2, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr %194, ptr %195, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %215, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %221)
-  %222 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 12 })
-  %223 = load ptr, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter", align 8
-  %224 = icmp eq ptr %223, null
-  br i1 %224, label %_llgo_39, label %_llgo_40
-
-_llgo_39:                                         ; preds = %_llgo_38
-  store ptr %222, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter", align 8
-  br label %_llgo_40
-
-_llgo_40:                                         ; preds = %_llgo_39, %_llgo_38
-  %225 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %226 = load ptr, ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw", align 8
-  %227 = icmp eq ptr %226, null
-  br i1 %227, label %_llgo_41, label %_llgo_42
-
-_llgo_41:                                         ; preds = %_llgo_40
-  %228 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  %229 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %230 = getelementptr ptr, ptr %229, i64 0
-  store ptr %228, ptr %230, align 8
-  %231 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %229, 0
-  %232 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %231, i64 1, 1
-  %233 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %232, i64 1, 2
-  %234 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %235 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %236 = getelementptr ptr, ptr %235, i64 0
-  store ptr %234, ptr %236, align 8
-  %237 = getelementptr ptr, ptr %235, i64 1
-  store ptr %225, ptr %237, align 8
-  %238 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %235, 0
-  %239 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %238, i64 2, 1
-  %240 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %239, i64 2, 2
-  %241 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %233, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %240, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %241)
-  store ptr %241, ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw", align 8
-  br label %_llgo_42
-
-_llgo_42:                                         ; preds = %_llgo_41, %_llgo_40
-  %242 = load ptr, ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw", align 8
-  br i1 %224, label %_llgo_43, label %_llgo_44
-
-_llgo_43:                                         ; preds = %_llgo_42
-  %243 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 11 }, ptr undef }, ptr %242, 1
-  %244 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %245 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %244, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %243, ptr %245, align 8
-  %246 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %244, 0
-  %247 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %246, i64 1, 1
-  %248 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %247, i64 1, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr %222, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %248)
-  br label %_llgo_44
-
-_llgo_44:                                         ; preds = %_llgo_43, %_llgo_42
-  %249 = load ptr, ptr @"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw", align 8
-  %250 = load ptr, ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU", align 8
-  %251 = icmp eq ptr %250, null
-  br i1 %251, label %_llgo_45, label %_llgo_46
-
-_llgo_45:                                         ; preds = %_llgo_44
-  %252 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 11 }, ptr undef }, ptr %249, 1
-  %253 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %254 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %253, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %252, ptr %254, align 8
-  %255 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %253, 0
-  %256 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %255, i64 1, 1
-  %257 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %256, i64 1, 2
-  %258 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %257)
-  store ptr %258, ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU", align 8
-  br label %_llgo_46
-
-_llgo_46:                                         ; preds = %_llgo_45, %_llgo_44
-  %259 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 12 }, i64 25, i64 32, i64 0, i64 10)
-  store ptr %259, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", align 8
-  %260 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  %261 = call %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 1 }, ptr %260, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false)
-  %262 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  %263 = call %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 1 }, ptr %262, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false)
-  %264 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %265 = call %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @20, i64 8 }, ptr %264, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false)
-  %266 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 168)
-  %267 = getelementptr %"github.com/goplus/llgo/runtime/abi.StructField", ptr %266, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.StructField" %261, ptr %267, align 8
-  %268 = getelementptr %"github.com/goplus/llgo/runtime/abi.StructField", ptr %266, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.StructField" %263, ptr %268, align 8
-  %269 = getelementptr %"github.com/goplus/llgo/runtime/abi.StructField", ptr %266, i64 2
-  store %"github.com/goplus/llgo/runtime/abi.StructField" %265, ptr %269, align 8
-  %270 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %266, 0
-  %271 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %270, i64 3, 1
-  %272 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %271, i64 3, 2
-  %273 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %272)
-  store ptr %273, ptr @"github.com/goplus/llgo/cl/_testgo/reader.struct$Mdt84yjYYwxF9D2i4cRmpEPiWaO6tsjtrbGUjyESypk", align 8
-  %274 = load ptr, ptr @"github.com/goplus/llgo/cl/_testgo/reader.struct$Mdt84yjYYwxF9D2i4cRmpEPiWaO6tsjtrbGUjyESypk", align 8
-  %275 = load ptr, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", align 8
-  %276 = icmp eq ptr %275, null
-  br i1 %276, label %_llgo_47, label %_llgo_48
-
-_llgo_47:                                         ; preds = %_llgo_46
-  %277 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
-  %278 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %277, 0
-  %279 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %278, i64 0, 1
-  %280 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %279, i64 0, 2
-  %281 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %282 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %283 = getelementptr ptr, ptr %282, i64 0
-  store ptr %281, ptr %283, align 8
-  %284 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %282, 0
-  %285 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %284, i64 1, 1
-  %286 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %285, i64 1, 2
-  %287 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %280, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %286, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %287)
-  store ptr %287, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", align 8
-  br label %_llgo_48
-
-_llgo_48:                                         ; preds = %_llgo_47, %_llgo_46
-  %288 = load ptr, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", align 8
-  %289 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 3 }, ptr undef, ptr undef, ptr undef }, ptr %288, 1
-  %290 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %289, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len", 2
-  %291 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %290, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len", 3
-  %292 = load ptr, ptr @"[]_llgo_uint8", align 8
-  %293 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  %294 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %293, 1
-  %295 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %294, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read", 2
-  %296 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %295, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read", 3
-  %297 = load ptr, ptr @"[]_llgo_uint8", align 8
-  %298 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %299 = load ptr, ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4", align 8
-  %300 = icmp eq ptr %299, null
-  br i1 %300, label %_llgo_49, label %_llgo_50
-
-_llgo_49:                                         ; preds = %_llgo_48
-  %301 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 40)
-  %302 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceOf"(ptr %301)
-  %303 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  %304 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %305 = getelementptr ptr, ptr %304, i64 0
-  store ptr %302, ptr %305, align 8
-  %306 = getelementptr ptr, ptr %304, i64 1
-  store ptr %303, ptr %306, align 8
-  %307 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %304, 0
-  %308 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %307, i64 2, 1
-  %309 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %308, i64 2, 2
-  %310 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %311 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %312 = getelementptr ptr, ptr %311, i64 0
-  store ptr %310, ptr %312, align 8
-  %313 = getelementptr ptr, ptr %311, i64 1
-  store ptr %298, ptr %313, align 8
-  %314 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %311, 0
-  %315 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %314, i64 2, 1
-  %316 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %315, i64 2, 2
-  %317 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %309, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %316, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %317)
-  store ptr %317, ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4", align 8
-  br label %_llgo_50
-
-_llgo_50:                                         ; preds = %_llgo_49, %_llgo_48
-  %318 = load ptr, ptr @"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4", align 8
-  %319 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 6 }, ptr undef, ptr undef, ptr undef }, ptr %318, 1
-  %320 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %319, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt", 2
-  %321 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %320, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt", 3
-  %322 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %323 = load ptr, ptr @"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ", align 8
-  %324 = icmp eq ptr %323, null
-  br i1 %324, label %_llgo_51, label %_llgo_52
-
-_llgo_51:                                         ; preds = %_llgo_50
-  %325 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
-  %326 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %325, 0
-  %327 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %326, i64 0, 1
-  %328 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %327, i64 0, 2
-  %329 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 40)
-  %330 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %331 = getelementptr ptr, ptr %330, i64 0
-  store ptr %329, ptr %331, align 8
-  %332 = getelementptr ptr, ptr %330, i64 1
-  store ptr %322, ptr %332, align 8
-  %333 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %330, 0
-  %334 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %333, i64 2, 1
-  %335 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %334, i64 2, 2
-  %336 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %328, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %335, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %336)
-  store ptr %336, ptr @"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ", align 8
-  br label %_llgo_52
-
-_llgo_52:                                         ; preds = %_llgo_51, %_llgo_50
-  %337 = load ptr, ptr @"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ", align 8
-  %338 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 8 }, ptr undef, ptr undef, ptr undef }, ptr %337, 1
-  %339 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %338, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte", 2
-  %340 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %339, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte", 3
-  %341 = load ptr, ptr @_llgo_rune, align 8
-  %342 = icmp eq ptr %341, null
-  br i1 %342, label %_llgo_53, label %_llgo_54
-
-_llgo_53:                                         ; preds = %_llgo_52
-  %343 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 37)
-  store ptr %343, ptr @_llgo_rune, align 8
-  br label %_llgo_54
-
-_llgo_54:                                         ; preds = %_llgo_53, %_llgo_52
-  %344 = load ptr, ptr @_llgo_rune, align 8
-  %345 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %346 = load ptr, ptr @"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU", align 8
-  %347 = icmp eq ptr %346, null
-  br i1 %347, label %_llgo_55, label %_llgo_56
-
-_llgo_55:                                         ; preds = %_llgo_54
-  %348 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
-  %349 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %348, 0
-  %350 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %349, i64 0, 1
-  %351 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %350, i64 0, 2
-  %352 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 37)
-  %353 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %354 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %355 = getelementptr ptr, ptr %354, i64 0
-  store ptr %352, ptr %355, align 8
-  %356 = getelementptr ptr, ptr %354, i64 1
-  store ptr %353, ptr %356, align 8
-  %357 = getelementptr ptr, ptr %354, i64 2
-  store ptr %345, ptr %357, align 8
-  %358 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %354, 0
-  %359 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %358, i64 3, 1
-  %360 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %359, i64 3, 2
-  %361 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %351, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %360, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %361)
-  store ptr %361, ptr @"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU", align 8
-  br label %_llgo_56
-
-_llgo_56:                                         ; preds = %_llgo_55, %_llgo_54
-  %362 = load ptr, ptr @"_llgo_func$CB0CO6hV_feSzhi4pz1P4omza2fKNK930wvOR1T33fU", align 8
-  %363 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 8 }, ptr undef, ptr undef, ptr undef }, ptr %362, 1
-  %364 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %363, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune", 2
-  %365 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %364, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune", 3
-  %366 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 })
-  %367 = load ptr, ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms", align 8
-  %368 = icmp eq ptr %367, null
-  br i1 %368, label %_llgo_57, label %_llgo_58
-
-_llgo_57:                                         ; preds = %_llgo_56
-  %369 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  %370 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 34)
-  %371 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %372 = getelementptr ptr, ptr %371, i64 0
-  store ptr %369, ptr %372, align 8
-  %373 = getelementptr ptr, ptr %371, i64 1
-  store ptr %370, ptr %373, align 8
-  %374 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %371, 0
-  %375 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %374, i64 2, 1
-  %376 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %375, i64 2, 2
-  %377 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  %378 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %379 = getelementptr ptr, ptr %378, i64 0
-  store ptr %377, ptr %379, align 8
-  %380 = getelementptr ptr, ptr %378, i64 1
-  store ptr %366, ptr %380, align 8
-  %381 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %378, 0
-  %382 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %381, i64 2, 1
-  %383 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %382, i64 2, 2
-  %384 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %376, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %383, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %384)
-  store ptr %384, ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms", align 8
-  br label %_llgo_58
-
-_llgo_58:                                         ; preds = %_llgo_57, %_llgo_56
-  %385 = load ptr, ptr @"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms", align 8
-  %386 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %385, 1
-  %387 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %386, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek", 2
-  %388 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %387, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek", 3
-  %389 = load ptr, ptr @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug", align 8
-  %390 = icmp eq ptr %389, null
-  br i1 %390, label %_llgo_59, label %_llgo_60
-
-_llgo_59:                                         ; preds = %_llgo_58
-  %391 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 0)
-  %392 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %391, 0
-  %393 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %392, i64 0, 1
-  %394 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %393, i64 0, 2
-  %395 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 38)
-  %396 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %397 = getelementptr ptr, ptr %396, i64 0
-  store ptr %395, ptr %397, align 8
-  %398 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %396, 0
-  %399 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %398, i64 1, 1
-  %400 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %399, i64 1, 2
-  %401 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %394, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %400, i1 false)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %401)
-  store ptr %401, ptr @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug", align 8
-  br label %_llgo_60
-
-_llgo_60:                                         ; preds = %_llgo_59, %_llgo_58
-  %402 = load ptr, ptr @"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug", align 8
-  %403 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 4 }, ptr undef, ptr undef, ptr undef }, ptr %402, 1
-  %404 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %403, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size", 2
-  %405 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %404, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size", 3
-  %406 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %407 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 10 }, ptr undef, ptr undef, ptr undef }, ptr %406, 1
-  %408 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %407, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte", 2
-  %409 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %408, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte", 3
-  %410 = load ptr, ptr @"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", align 8
-  %411 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 10 }, ptr undef, ptr undef, ptr undef }, ptr %410, 1
-  %412 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %411, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune", 2
-  %413 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %412, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune", 3
-  %414 = load ptr, ptr @"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", align 8
-  %415 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 }, ptr undef, ptr undef, ptr undef }, ptr %414, 1
-  %416 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %415, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo", 2
-  %417 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %416, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo", 3
-  %418 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 400)
-  %419 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Method" %291, ptr %419, align 8
-  %420 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 1
-  store %"github.com/goplus/llgo/runtime/abi.Method" %296, ptr %420, align 8
-  %421 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 2
-  store %"github.com/goplus/llgo/runtime/abi.Method" %321, ptr %421, align 8
-  %422 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 3
-  store %"github.com/goplus/llgo/runtime/abi.Method" %340, ptr %422, align 8
-  %423 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 4
-  store %"github.com/goplus/llgo/runtime/abi.Method" %365, ptr %423, align 8
-  %424 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 5
-  store %"github.com/goplus/llgo/runtime/abi.Method" %388, ptr %424, align 8
-  %425 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 6
-  store %"github.com/goplus/llgo/runtime/abi.Method" %405, ptr %425, align 8
-  %426 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 7
-  store %"github.com/goplus/llgo/runtime/abi.Method" %409, ptr %426, align 8
-  %427 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 8
-  store %"github.com/goplus/llgo/runtime/abi.Method" %413, ptr %427, align 8
-  %428 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %418, i64 9
-  store %"github.com/goplus/llgo/runtime/abi.Method" %417, ptr %428, align 8
-  %429 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %418, 0
-  %430 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %429, i64 10, 1
-  %431 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %430, i64 10, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr %259, ptr %274, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %431)
-  %432 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 12 }, i64 25, i64 32, i64 0, i64 10)
-  %433 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %432)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %433)
-  store ptr %433, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", align 8
-  %434 = load ptr, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", align 8
-  %435 = load ptr, ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw", align 8
-  %436 = icmp eq ptr %435, null
-  br i1 %436, label %_llgo_61, label %_llgo_62
-
-_llgo_61:                                         ; preds = %_llgo_60
-  %437 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr undef }, ptr %434, 1
-  %438 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %439 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %438, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %437, ptr %439, align 8
-  %440 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %438, 0
-  %441 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %440, i64 1, 1
-  %442 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %441, i64 1, 2
-  %443 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %442)
-  store ptr %443, ptr @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw", align 8
-  br label %_llgo_62
-
-_llgo_62:                                         ; preds = %_llgo_61, %_llgo_60
-  %444 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 11 }, i64 25, i64 16, i64 0, i64 1)
-  store ptr %444, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString", align 8
-  %445 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64 24)
-  %446 = call %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 1 }, ptr %445, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false)
-  %447 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 56)
-  %448 = getelementptr %"github.com/goplus/llgo/runtime/abi.StructField", ptr %447, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.StructField" %446, ptr %448, align 8
-  %449 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %447, 0
-  %450 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %449, i64 1, 1
-  %451 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %450, i64 1, 2
-  %452 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %451)
-  store ptr %452, ptr @"github.com/goplus/llgo/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ", align 8
-  %453 = load ptr, ptr @"github.com/goplus/llgo/cl/_testgo/reader.struct$QTufDJA9wEDzuzgkA-ZSrLqW-B6lWN8O25mTSglAoLQ", align 8
-  %454 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
-  %455 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr undef, ptr undef, ptr undef }, ptr %454, 1
-  %456 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %455, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error", 2
-  %457 = insertvalue %"github.com/goplus/llgo/runtime/abi.Method" %456, ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error", 3
-  %458 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 40)
-  %459 = getelementptr %"github.com/goplus/llgo/runtime/abi.Method", ptr %458, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Method" %457, ptr %459, align 8
-  %460 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %458, 0
-  %461 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %460, i64 1, 1
-  %462 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %461, i64 1, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr %444, ptr %453, { ptr, i64, i64 } zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %462)
-  %463 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 11 }, i64 25, i64 16, i64 0, i64 1)
-  %464 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr %463)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr %464)
-  store ptr %464, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString", align 8
-  %465 = load ptr, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", align 8
-  %466 = load ptr, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
-  %467 = icmp eq ptr %466, null
-  br i1 %467, label %_llgo_63, label %_llgo_64
-
-_llgo_63:                                         ; preds = %_llgo_62
-  %468 = insertvalue %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr undef }, ptr %465, 1
-  %469 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %470 = getelementptr %"github.com/goplus/llgo/runtime/abi.Imethod", ptr %469, i64 0
-  store %"github.com/goplus/llgo/runtime/abi.Imethod" %468, ptr %470, align 8
-  %471 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %469, 0
-  %472 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %471, i64 1, 1
-  %473 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %472, i64 1, 2
-  %474 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %473)
-  store ptr %474, ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", align 8
-  br label %_llgo_64
-
-_llgo_64:                                         ; preds = %_llgo_63, %_llgo_62
-  ret void
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %1, ptr %2)
+  ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamedInterface"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Basic"(i64)
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
+  ret i1 %3
+}
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceOf"(ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Func"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1)
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %1, ptr %2)
+  ret i1 %3
+}
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.SetDirectIface"(ptr)
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %1, ptr %2)
+  ret i1 %3
+}
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamedInterface"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
+  ret i1 %3
+}
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, ptr)
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Interface"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewNamed"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String", i64, i64, i64, i64)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.Struct"(%"github.com/goplus/llgo/runtime/internal/runtime.String", i64, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
-
-declare %"github.com/goplus/llgo/runtime/abi.StructField" @"github.com/goplus/llgo/runtime/internal/runtime.StructField"(%"github.com/goplus/llgo/runtime/internal/runtime.String", ptr, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String", i1)
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.InitNamed"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
@@ -1760,7 +1095,13 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/go
 
 declare void @"unicode/utf8.init"()
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.PointerTo"(ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr, ptr)
+
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr %1, ptr %2)
+  ret i1 %3
+}
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 

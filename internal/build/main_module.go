@@ -41,7 +41,7 @@ import (
 // The module contains argc/argv globals and, for executable build modes,
 // the entry function that wires initialization and main. For C archive or
 // shared library modes, only the globals are emitted.
-func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit bool) Package {
+func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit, needAbiInit bool) Package {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.ID+".main")
 
@@ -82,10 +82,15 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
+	var abiInit llssa.Function
+	if needAbiInit {
+		abiInit = mainPkg.InitAbiTypes("init$abitypes")
+	}
+
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
 	mainMain := declareNoArgFunc(mainPkg, pkg.PkgPath+".main")
 
-	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, mainInit, mainMain, pyInit, rtInit)
+	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, mainInit, mainMain, pyInit, rtInit, abiInit)
 
 	if needStart(ctx) {
 		defineStart(mainPkg, entryFn, argvValueType)
@@ -101,7 +106,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 // The entry stores argc/argv, optionally disables stdio buffering, runs
 // initialization hooks (Python, runtime, package init), and finally calls
 // main.main before returning 0.
-func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit llssa.Function) llssa.Function {
+func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit, abiInit llssa.Function) llssa.Function {
 	prog := pkg.Prog
 	entryName := "main"
 	if !needStart(ctx) && isWasmTarget(ctx.buildConf.Goos) {
@@ -125,6 +130,9 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	}
 	if rtInit != nil {
 		b.Call(rtInit.Expr)
+	}
+	if abiInit != nil {
+		b.Call(abiInit.Expr)
 	}
 	b.Call(runtimeStub.Expr)
 	b.Call(mainInit.Expr)

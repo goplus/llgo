@@ -242,7 +242,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	verbose := conf.Verbose
 	patterns := args
-	tags := "llgo,math_big_pure_go"
+	tags := "llgo,math_big_pure_go,purego"
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
 	}
@@ -822,6 +822,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
 	needRuntime := false
 	needPyInit := false
+	needAbiInit := false
 	allPkgs := []*packages.Package{pkg}
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
@@ -855,6 +856,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 				needRuntime = needRuntime || need1
 				needPyInit = needPyInit || need2
 			}
+			if aPkg.LPkg.NeedAbiInit {
+				needAbiInit = true
+			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			objFiles = append(objFiles, aPkg.LLFiles...)
@@ -868,7 +872,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	}
 
 	// Generate main module file (needed for global variables even in library modes)
-	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit)
+	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
