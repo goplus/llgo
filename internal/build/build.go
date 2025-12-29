@@ -276,6 +276,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	target := &llssa.Target{
 		GOOS:   conf.Goos,
 		GOARCH: conf.Goarch,
+		Target: conf.Target,
 	}
 
 	prog := llssa.NewProgram(target)
