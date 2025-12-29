@@ -2,7 +2,7 @@
 source_filename = "github.com/goplus/llgo/cl/_testpy/matrix"
 
 @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard" = global i1 false, align 1
-@__llgo_py.numpy.add = linkonce global ptr null, align 8
+@"__llgo_py.numpy$add" = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [8 x i8] c"a = %s\0A\00", align 1
 @1 = private unnamed_addr constant [8 x i8] c"a = %s\0A\00", align 1
 @2 = private unnamed_addr constant [10 x i8] c"a+b = %s\0A\00", align 1
@@ -17,8 +17,7 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard", align 1
   call void @"github.com/goplus/lib/py/numpy.init"()
-  %1 = load ptr, ptr @__llgo_py.numpy, align 8
-  call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @3, ptr @__llgo_py.numpy.add, ptr null)
+  call void @"github.com/goplus/llgo/cl/_testpy/matrix.init$python"()
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -77,7 +76,7 @@ _llgo_0:
   %47 = call i32 @PyList_SetItem(ptr %46, i64 0, ptr %25)
   %48 = call i32 @PyList_SetItem(ptr %46, i64 1, ptr %32)
   %49 = call i32 @PyList_SetItem(ptr %46, i64 2, ptr %39)
-  %50 = load ptr, ptr @__llgo_py.numpy.add, align 8
+  %50 = load ptr, ptr @"__llgo_py.numpy$add", align 8
   %51 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %50, ptr %21, ptr %46, ptr null)
   %52 = call ptr @PyObject_Str(ptr %21)
   %53 = call ptr @PyUnicode_AsUTF8(ptr %52)
@@ -107,4 +106,20 @@ declare ptr @PyUnicode_AsUTF8(ptr)
 
 declare i32 @printf(ptr, ...)
 
-declare void @llgoLoadPyModSyms(ptr, ...)
+define void @"github.com/goplus/llgo/cl/_testpy/matrix.init$python"() {
+_llgo_0:
+  %0 = load ptr, ptr @__llgo_py.numpy, align 8
+  %1 = load ptr, ptr @"__llgo_py.numpy$add", align 8
+  %2 = icmp eq ptr %1, null
+  br i1 %2, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %3 = call ptr @PyObject_GetAttrString(ptr %0, ptr @3)
+  store ptr %3, ptr @"__llgo_py.numpy$add", align 8
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
+
+declare ptr @PyObject_GetAttrString(ptr, ptr)
