@@ -2110,6 +2110,146 @@ func StructOf(fields []StructField) Type {
 	return addToCache(toType(&typ.Type))
 }
 
+func eqFields(s1, s2 []abi.StructField) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		f1, f2 := s1[i], s2[i]
+		if f1.Name_ != f2.Name_ || f1.Embedded_ != f2.Embedded_ || f1.Typ != f2.Typ {
+			return false
+		}
+	}
+	return true
+}
+
+func findClosure(fields []abi.StructField) *abi.Type {
+	for _, typ := range runtime.TypeList() {
+		if typ.Kind() == abi.Struct && typ.Size() == pointerSize {
+			if st := typ.StructType(); st.IsClosure() && eqFields(st.Fields, fields) {
+				return typ
+			}
+		}
+	}
+	return nil
+}
+
+const (
+	pointerSize  = unsafe.Sizeof(uintptr(0))
+	pointerAlign = uint8(unsafe.Alignof(uintptr(0)))
+)
+
+var closureLookupCache struct {
+	sync.Mutex // Guards stores (but not loads) on m.
+
+	// m is a map[uint32][]*rtype keyed by the hash calculated in FuncOf.
+	// Elements of m are append-only and thus safe for concurrent reading.
+	m sync.Map
+}
+
+// Struct returns a struct type.
+func closureOf(ftyp *abi.FuncType) *abi.Type {
+	fields := []abi.StructField{
+		abi.StructField{
+			Name_: "$f",
+			Typ:   &ftyp.Type,
+		}, abi.StructField{
+			Name_:  "$data",
+			Typ:    unsafePointerType,
+			Offset: pointerSize,
+		},
+	}
+	size := 2 * pointerSize
+
+	repr := make([]byte, 0, 64)
+	hash := fnv1(0, []byte("struct {")...)
+	repr = append(repr, "struct {"...)
+	for i, f := range fields {
+		if i > 0 {
+			repr = append(repr, ';')
+		}
+		ft := f.Typ
+		repr = append(repr, ' ')
+		repr = append(repr, f.Name_...)
+		repr = append(repr, ' ')
+		repr = append(repr, ft.String()...)
+		hash = fnv1(hash, []byte(f.Name_)...)
+		hash = fnv1(hash, byte(ft.Hash>>24), byte(ft.Hash>>16), byte(ft.Hash>>8), byte(ft.Hash))
+	}
+	repr = append(repr, ' ')
+	repr = append(repr, '}')
+	hash = fnv1(hash, '}')
+	str := string(repr)
+
+	st := &abi.StructType{
+		Type: abi.Type{
+			Size_:       size,
+			Kind_:       uint8(abi.Struct),
+			Str_:        str,
+			TFlag:       abi.TFlagClosure,
+			PtrBytes:    2 * pointerSize,
+			Align_:      pointerAlign,
+			FieldAlign_: pointerAlign,
+			Hash:        hash,
+		},
+		PkgPath_: "",
+		Fields:   fields,
+	}
+
+	closureLookupCache.Lock()
+	defer closureLookupCache.Unlock()
+
+	// Look in cache.
+	if ts, ok := closureLookupCache.m.Load(hash); ok {
+		for _, t := range ts.([]*abi.Type) {
+			if haveIdenticalUnderlyingType(&st.Type, t, true) {
+				return t
+			}
+		}
+	}
+
+	addToCache := func(tt *abi.Type) *abi.Type {
+		var rts []*abi.Type
+		if rti, ok := closureLookupCache.m.Load(hash); ok {
+			rts = rti.([]*abi.Type)
+		}
+		closureLookupCache.m.Store(hash, append(rts, tt))
+		return tt
+	}
+
+	// if tt := findClosure(fields); tt != nil {
+	// 	return addToCache(tt)
+	// }
+	for _, tt := range typesByString(str) {
+		if haveIdenticalUnderlyingType(&st.Type, tt, true) {
+			return addToCache(tt)
+		}
+	}
+	return addToCache(&st.Type)
+}
+
+func structStr(fields []abi.StructField) string {
+	repr := make([]byte, 0, 64)
+	repr = append(repr, "struct {"...)
+	for i, st := range fields {
+		if i > 0 {
+			repr = append(repr, ';')
+		}
+		repr = append(repr, ' ')
+		if !st.Embedded_ {
+			repr = append(repr, st.Name_...)
+			repr = append(repr, ' ')
+		}
+		repr = append(repr, st.Typ.String()...)
+	}
+	if len(fields) > 0 {
+		repr = append(repr, ' ')
+	}
+	repr = append(repr, '}')
+	return string(repr)
+}
+
 // Note: this type must agree with runtime.bitvector.
 type bitVector struct {
 	n    uint32 // number of bits

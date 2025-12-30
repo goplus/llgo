@@ -299,8 +299,12 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		}
 	case *types.Struct:
 		name, _ = b.Pkg.abi.TypeName(t)
+		pkgPath := pkg.Path()
+		if abi.IsClosure(t) {
+			pkgPath = ""
+		}
 		fields = []llvm.Value{
-			b.Str(pkg.Path()).impl,
+			b.Str(pkgPath).impl,
 			b.abiStructFields(t, name+"$fields"),
 		}
 	case *types.Interface:

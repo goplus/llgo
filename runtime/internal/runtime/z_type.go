@@ -39,6 +39,44 @@ func StructField(name string, typ *Type, off uintptr, tag string, embedded bool)
 }
 
 // Struct returns a struct type.
+func Closure(ftyp *abi.FuncType, env *abi.Type) *Type {
+	fields := []abi.StructField{
+		abi.StructField{
+			Name_: "$f",
+			Typ:   &ftyp.Type,
+		}, abi.StructField{
+			Name_: "$data",
+			Typ:   env,
+		},
+	}
+	size := 2 * pointerSize
+	if t := rtypeList.findStruct("", size, fields); t != nil {
+		return t
+	}
+	ret := &abi.StructType{
+		Type: Type{
+			Size_:       size,
+			Kind_:       uint8(abi.Struct),
+			Str_:        structStr(fields),
+			TFlag:       abi.TFlagClosure,
+			PtrBytes:    2 * pointerSize,
+			Align_:      pointerAlign,
+			FieldAlign_: pointerAlign,
+		},
+		PkgPath_: "",
+		Fields:   fields,
+	}
+	var hash uint32 = 9059
+	for _, f := range fields {
+		hash += hashString(f.Name_)
+		hash += f.Typ.Hash
+	}
+	ret.Hash = hash
+	rtypeList.addType(&ret.Type)
+	return &ret.Type
+}
+
+// Struct returns a struct type.
 func Struct(pkgPath string, size uintptr, fields ...abi.StructField) *Type {
 	if t := rtypeList.findStruct(pkgPath, size, fields); t != nil {
 		return t

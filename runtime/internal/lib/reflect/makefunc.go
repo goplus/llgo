@@ -28,7 +28,6 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/ffi"
-	"github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 type funcData struct {
@@ -96,13 +95,14 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	if err != nil {
 		panic("libffi error: " + err.Error())
 	}
-	styp := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
-		Name_: "$f",
-		Typ:   &ftyp.Type,
-	}, abi.StructField{
-		Name_: "$data",
-		Typ:   unsafePointerType,
-	})
+	// styp := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
+	// 	Name_: "$f",
+	// 	Typ:   &ftyp.Type,
+	// }, abi.StructField{
+	// 	Name_: "$data",
+	// 	Typ:   unsafePointerType,
+	// })
+	styp := closureOf(ftyp)
 	fv := &struct {
 		fn  unsafe.Pointer
 		env unsafe.Pointer
@@ -223,13 +223,14 @@ func makeMethodValue(op string, v Value) Value {
 
 	// v.Type returns the actual type of the method value.
 	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
-	typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
-		Name_: "$f",
-		Typ:   &ftyp.Type,
-	}, abi.StructField{
-		Name_: "$data",
-		Typ:   unsafePointerType,
-	})
+	// typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
+	// 	Name_: "$f",
+	// 	Typ:   &ftyp.Type,
+	// }, abi.StructField{
+	// 	Name_: "$data",
+	// 	Typ:   unsafePointerType,
+	// })
+	typ := closureOf(ftyp)
 	typ.TFlag |= abi.TFlagClosure
 	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
 	fv := &struct {
