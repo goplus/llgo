@@ -106,5 +106,12 @@ func getJSLibCompileConfigByName(baseDir, jslibName, target string) (outputDir s
 		return
 	}
 
+	// Generate headers for mquickjs (mquickjs_atom.h and mqjs_stdlib.h)
+	if jslibName == "mquickjs" {
+		if err = mquickjs.GenerateHeaders(jslibDir); err != nil {
+			return
+		}
+	}
+
 	return jslibDir, compileConfig, nil
 }
