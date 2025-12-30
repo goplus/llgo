@@ -21,6 +21,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -41,18 +42,25 @@ var compilerHash string
 // init precomputes the compilerHash for development builds so cache entries can
 // observe compiler updates without hashing the full executable contents.
 func init() {
+	if err := ensureCompilerHash(); err != nil {
+		panic(err)
+	}
+}
+
+func ensureCompilerHash() error {
 	if Version() != devel || compilerHash != "" {
-		return
+		return nil
 	}
-	exe, err := os.Executable()
+	exe, err := executablePath()
 	if err != nil {
-		panic(fmt.Errorf("llgo: determine executable path: %w", err))
+		return fmt.Errorf("llgo: determine executable path: %w", err)
 	}
-	hash, err := compilerHashFromPath(exe)
+	hash, err := compilerHashFromPathFunc(exe)
 	if err != nil {
-		panic(fmt.Errorf("llgo: compute compiler hash: %w", err))
+		return fmt.Errorf("llgo: compute compiler hash: %w", err)
 	}
 	compilerHash = hash
+	return nil
 }
 
 // Version returns the version of the running LLGo binary.
@@ -60,7 +68,7 @@ func Version() string {
 	if buildVersion != "" {
 		return buildVersion
 	}
-	info, ok := debug.ReadBuildInfo()
+	info, ok := readBuildInfo()
 	if ok && info.Main.Version != "" && !strings.HasSuffix(info.Main.Version, "+dirty") {
 		return info.Main.Version
 	}
@@ -99,11 +107,18 @@ func hashMetadata(modTimeNano int64, size int64) (string, error) {
 		return "", fmt.Errorf("llgo: invalid executable size: %d", size)
 	}
 	h := sha256.New()
-	if err := binary.Write(h, binary.LittleEndian, uint64(modTimeNano)); err != nil {
+	if err := writeUint64LE(h, uint64(modTimeNano)); err != nil {
 		return "", fmt.Errorf("llgo: hash metadata timestamp: %w", err)
 	}
-	if err := binary.Write(h, binary.LittleEndian, uint64(size)); err != nil {
+	if err := writeUint64LE(h, uint64(size)); err != nil {
 		return "", fmt.Errorf("llgo: hash metadata size: %w", err)
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
+
+var (
+	writeUint64LE            = func(w io.Writer, v uint64) error { return binary.Write(w, binary.LittleEndian, v) }
+	executablePath           = os.Executable
+	compilerHashFromPathFunc = compilerHashFromPath
+	readBuildInfo            = debug.ReadBuildInfo
+)
