@@ -540,6 +540,10 @@ func initTypes(typs *[]*abi.Type) {
 	rtypeList.types = *typs
 }
 
+func TypeList() []*abi.Type {
+	return rtypeList.types
+}
+
 // hashString computes the Fowler–Noll–Vo hash of s.
 func hashString(s string) uint32 {
 	var h uint32
