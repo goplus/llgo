@@ -34,8 +34,12 @@ const (
 // set by the linker.
 var buildVersion string
 
+// compilerHash caches the LLGo compiler fingerprint. Release builds may set it
+// at link time, while development builds compute it from the running binary.
 var compilerHash string
 
+// init precomputes the compilerHash for development builds so cache entries can
+// observe compiler updates without hashing the full executable contents.
 func init() {
 	if Version() != devel || compilerHash != "" {
 		return
@@ -46,7 +50,7 @@ func init() {
 	}
 	hash, err := compilerHashFromPath(exe)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("llgo: compute compiler hash: %w", err))
 	}
 	compilerHash = hash
 }
@@ -75,6 +79,10 @@ func CompilerHash() string {
 	return compilerHash
 }
 
+// compilerHashFromPath generates a metadata-based fingerprint for the provided
+// compiler binary. The hash uses the file's modification time and size rather
+// than its full contents to provide fast cache invalidation in development
+// workflows.
 func compilerHashFromPath(path string) (string, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -83,13 +91,19 @@ func compilerHashFromPath(path string) (string, error) {
 	return hashMetadata(info.ModTime().UTC().UnixNano(), info.Size())
 }
 
+// hashMetadata encodes the file's modification timestamp and size as
+// little-endian uint64 values and returns their SHA-256 digest. A negative size
+// is rejected because it does not represent a valid file.
 func hashMetadata(modTimeNano int64, size int64) (string, error) {
 	if size < 0 {
 		return "", fmt.Errorf("llgo: invalid executable size: %d", size)
 	}
-	var buf [16]byte
-	binary.LittleEndian.PutUint64(buf[:8], uint64(modTimeNano))
-	binary.LittleEndian.PutUint64(buf[8:], uint64(size))
-	sum := sha256.Sum256(buf[:])
-	return hex.EncodeToString(sum[:]), nil
+	h := sha256.New()
+	if err := binary.Write(h, binary.LittleEndian, uint64(modTimeNano)); err != nil {
+		return "", fmt.Errorf("llgo: hash metadata timestamp: %w", err)
+	}
+	if err := binary.Write(h, binary.LittleEndian, uint64(size)); err != nil {
+		return "", fmt.Errorf("llgo: hash metadata size: %w", err)
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
