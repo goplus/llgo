@@ -108,10 +108,12 @@ func GenerateHeaders(baseDir string) error {
 
 // mquickjs compile flags for embedded targets
 var _mquickjsCCFlags = []string{
-	"-fdata-sections",
+	"-fno-jump-tables", // Required for ESP32 IRAM/Flash architecture
 	"-ffunction-sections",
+	"-fdata-sections",
 	"-fno-math-errno",
 	"-fno-trapping-math",
+	"-std=gnu17",
 }
 
 var _mquickjsLDFlags = []string{
