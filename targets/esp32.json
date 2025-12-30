@@ -14,6 +14,7 @@
 	"default-stack-size": 2048,
 	"rtlib": "compiler-rt",
 	"libc": "newlib-esp32",
+	"jslib": "mquickjs",
 	"linkerscript": "targets/esp32.memory.elf.ld",
 	"extra-files": [],
 	"binary-format": "esp32",
