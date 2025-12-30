@@ -17,6 +17,11 @@
 package env
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"os"
 	"runtime/debug"
 	"strings"
 )
@@ -28,6 +33,23 @@ const (
 // buildVersion is the LLGo tree's version string at build time. It should be
 // set by the linker.
 var buildVersion string
+
+var compilerHash string
+
+func init() {
+	if Version() != devel || compilerHash != "" {
+		return
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		panic(fmt.Errorf("llgo: determine executable path: %w", err))
+	}
+	hash, err := compilerHashFromPath(exe)
+	if err != nil {
+		panic(err)
+	}
+	compilerHash = hash
+}
 
 // Version returns the version of the running LLGo binary.
 func Version() string {
@@ -43,4 +65,31 @@ func Version() string {
 
 func Devel() bool {
 	return Version() == devel
+}
+
+// CompilerHash returns a fingerprint of the compiler binary. For release
+// builds it returns an empty string. For development builds it hashes the
+// executable's metadata (modification time + file size) so cache entries are
+// invalidated automatically when the compiler changes.
+func CompilerHash() string {
+	return compilerHash
+}
+
+func compilerHashFromPath(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("llgo: stat executable: %w", err)
+	}
+	return hashMetadata(info.ModTime().UTC().UnixNano(), info.Size())
+}
+
+func hashMetadata(modTimeNano int64, size int64) (string, error) {
+	if size < 0 {
+		return "", fmt.Errorf("llgo: invalid executable size: %d", size)
+	}
+	var buf [16]byte
+	binary.LittleEndian.PutUint64(buf[:8], uint64(modTimeNano))
+	binary.LittleEndian.PutUint64(buf[8:], uint64(size))
+	sum := sha256.Sum256(buf[:])
+	return hex.EncodeToString(sum[:]), nil
 }
