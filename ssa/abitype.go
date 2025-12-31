@@ -560,10 +560,11 @@ func (p Package) InitAbiTypes(fname string) Function {
 	if len(p.Prog.abiSymbol) == 0 {
 		return nil
 	}
+	prog := p.Prog
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
-	fn := p.rtFunc("initTypes")
-	b.Call(fn, p.getAbiTypes(fname))
+	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
+	b.Store(g.Expr, b.Load(p.getAbiTypes(fname)))
 	b.Return()
 	return initFn
 }

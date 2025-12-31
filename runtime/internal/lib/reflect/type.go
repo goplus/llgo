@@ -29,7 +29,7 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 	clite "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/lib/sync"
-	"github.com/goplus/llgo/runtime/internal/runtime"
+	_ "github.com/goplus/llgo/runtime/internal/runtime"
 	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
 
@@ -2110,31 +2110,6 @@ func StructOf(fields []StructField) Type {
 	return addToCache(toType(&typ.Type))
 }
 
-func eqFields(s1, s2 []abi.StructField) bool {
-	n := len(s1)
-	if n != len(s2) {
-		return false
-	}
-	for i := 0; i < n; i++ {
-		f1, f2 := s1[i], s2[i]
-		if f1.Name_ != f2.Name_ || f1.Embedded_ != f2.Embedded_ || f1.Typ != f2.Typ {
-			return false
-		}
-	}
-	return true
-}
-
-func findClosure(fields []abi.StructField) *abi.Type {
-	for _, typ := range runtime.TypeList() {
-		if typ.Kind() == abi.Struct && typ.Size() == pointerSize {
-			if st := typ.StructType(); st.IsClosure() && eqFields(st.Fields, fields) {
-				return typ
-			}
-		}
-	}
-	return nil
-}
-
 const (
 	pointerSize  = unsafe.Sizeof(uintptr(0))
 	pointerAlign = uint8(unsafe.Alignof(uintptr(0)))
@@ -2218,9 +2193,6 @@ func closureOf(ftyp *abi.FuncType) *abi.Type {
 		return tt
 	}
 
-	// if tt := findClosure(fields); tt != nil {
-	// 	return addToCache(tt)
-	// }
 	for _, tt := range typesByString(str) {
 		if haveIdenticalUnderlyingType(&st.Type, tt, true) {
 			return addToCache(tt)
@@ -2372,11 +2344,140 @@ func runtimeStructField(field StructField) (structField, string) {
 	return f, field.PkgPath
 }
 
+//go:linkname typelist github.com/goplus/llgo/runtime/internal/runtime.typelist
+var typelist []*abi.Type
+
 func typesByString(s string) (typs []*abi.Type) {
-	for _, t := range runtime.TypeList() {
+	for _, t := range typelist {
 		if t.String() == s {
 			typs = append(typs, t)
 		}
 	}
 	return
+}
+
+func findNamed(pkgPath string, name string) *abi.Type {
+	for _, typ := range typelist {
+		if typ.TFlag&(abi.TFlagNamed|abi.TFlagUncommon) != 0 &&
+			typ.Str_ == name && typ.Uncommon().PkgPath_ == pkgPath {
+			return typ
+		}
+	}
+	return nil
+}
+
+func findElem(kind abi.Kind, elem *abi.Type, extra uintptr) *abi.Type {
+	for _, typ := range typelist {
+		if typ.Kind() == kind && typ.Elem() == elem {
+			switch kind {
+			case abi.Chan:
+				if uintptr(typ.ChanDir()) == extra {
+					return typ
+				}
+			case abi.Array:
+				if uintptr(typ.Len()) == extra {
+					return typ
+				}
+			default:
+				return typ
+			}
+		}
+	}
+	return nil
+}
+
+func findMap(key, elem *abi.Type) *abi.Type {
+	for _, typ := range typelist {
+		if typ.Kind() == abi.Map {
+			if mt := typ.MapType(); mt.Key == key && mt.Elem == elem {
+				return typ
+			}
+		}
+	}
+	return nil
+}
+
+func eqFields(s1, s2 []abi.StructField) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		f1, f2 := s1[i], s2[i]
+		if f1.Name_ != f2.Name_ || f1.Embedded_ != f2.Embedded_ || f1.Typ != f2.Typ {
+			return false
+		}
+	}
+	return true
+}
+
+func findStruct(pkgPath string, size uintptr, fields []abi.StructField) *abi.Type {
+	for _, typ := range typelist {
+		if typ.Kind() == abi.Struct && typ.Size() == size {
+			if st := typ.StructType(); (st.PkgPath_ == pkgPath) && eqFields(st.Fields, fields) {
+				return typ
+			}
+		}
+	}
+	return nil
+}
+
+func eqImethods(s1, s2 []abi.Imethod) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		f1, f2 := s1[i], s2[i]
+		if f1.Name_ != f2.Name_ || f1.Typ_ != f2.Typ_ {
+			return false
+		}
+	}
+	return true
+}
+
+func findInterface(pkgPath string, methods []abi.Imethod) *abi.InterfaceType {
+	for _, typ := range typelist {
+		if typ.Kind() == abi.Interface {
+			if it := typ.InterfaceType(); (it.PkgPath_ == pkgPath) && eqImethods(it.Methods, methods) {
+				return it
+			}
+		}
+	}
+	return nil
+}
+
+func eqTypes(s1, s2 []*abi.Type) bool {
+	n := len(s1)
+	if n != len(s2) {
+		return false
+	}
+	for i := 0; i < n; i++ {
+		if s1[i] != s2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func findFunc(in, out []*abi.Type, variadic bool) *abi.FuncType {
+	for _, typ := range typelist {
+		if typ.Kind() == abi.Func {
+			if ft := typ.FuncType(); ft.Variadic() == variadic && eqTypes(ft.In, in) && eqTypes(ft.Out, out) {
+				return ft
+			}
+		}
+	}
+	return nil
+}
+
+func findClosure(fields []abi.StructField) *abi.Type {
+	for _, typ := range typelist {
+		if typ.Kind() == abi.Struct && typ.Size() == pointerSize {
+			if st := typ.StructType(); st.IsClosure() && eqFields(st.Fields, fields) {
+				return typ
+			}
+		}
+	}
+	return nil
 }
