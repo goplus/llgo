@@ -162,6 +162,16 @@ func TestSignature(t *testing.T) {
 	)
 }
 
+type T int
+
+func TestNamed(t *testing.T) {
+	b := newBuilder("main")
+	pkg := types.NewPackage("github.com/goplus/ssa/abi", "abi_test")
+	obj := types.NewTypeName(0, pkg, "T", nil)
+	typ := types.NewNamed(obj, types.Typ[types.Int], nil)
+	testType(t, b, typ, reflect.TypeOf(T(0)))
+}
+
 func TestScope(t *testing.T) {
 	b := newBuilder("main")
 	pkg := types.NewPackage("github.com/goplus/ssa/abi", "abi_test")

@@ -383,23 +383,4 @@ func scopeIndices(obj types.Object) string {
 	return ""
 }
 
-func isFuncScope(s *types.Scope) bool {
-	return s != nil && s.Parent() == nil //&& s.Parent() == s.Parent().Parent()
-}
-
-func funcForScope(s *types.Scope) *types.Func {
-	if len(s.Names()) == 0 {
-		return nil
-	}
-	pkgScope := s.Parent()
-	if pkgScope == nil {
-		return nil
-	}
-	fn, ok := pkgScope.Lookup(s.Names()[0]).(*types.Func)
-	if !ok {
-		return nil
-	}
-	return fn
-}
-
 // -----------------------------------------------------------------------------

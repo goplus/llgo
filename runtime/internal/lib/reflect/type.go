@@ -104,6 +104,18 @@ const (
 	BothDir = RecvDir | SendDir             // chan
 )
 
+func (d ChanDir) String() string {
+	switch d {
+	case SendDir:
+		return "chan<-"
+	case RecvDir:
+		return "<-chan"
+	case BothDir:
+		return "chan"
+	}
+	return "ChanDir" + strconv.Itoa(int(d))
+}
+
 // arrayType represents a fixed array type.
 type arrayType = abi.ArrayType
 
