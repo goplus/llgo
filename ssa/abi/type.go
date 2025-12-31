@@ -58,10 +58,9 @@ func (b *Builder) Str(t types.Type) string {
 		return s + " " + b.realStr(t.Elem())
 	case *types.Named:
 		obj := t.Obj()
-		pkg := PathOf(obj.Pkg())
 		name := NamedName(t)
-		if pkg != "" {
-			return pkg + "." + name
+		if pkg := obj.Pkg(); pkg != nil {
+			return pkg.Name() + "." + name
 		}
 		return name
 	}
