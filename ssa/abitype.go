@@ -203,8 +203,8 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 				name = abi.FullName(f.Pkg(), name)
 			}
 			values = append(values, b.Str(name).impl)
-			ftyp := prog.Type(f.Type(), InGo)
-			values = append(values, b.abiType(ftyp.raw.Type).impl)
+			ftyp := funcType(prog, f.Type())
+			values = append(values, b.abiType(ftyp).impl)
 			fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 		}
 		atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
@@ -443,13 +443,19 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		}
 		var values []llvm.Value
 		values = append(values, name)
-		ftyp := prog.Type(m.Type(), InGo)
-		values = append(values, b.abiType(ftyp.raw.Type).impl)
+		ftyp := funcType(prog, m.Type())
+		values = append(values, b.abiType(ftyp).impl)
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 	}
 	return llvm.ConstArray(ft.ll, fields)
+}
+
+// closure func type
+func funcType(prog Program, typ types.Type) types.Type {
+	ftyp := prog.Type(typ, InGo)
+	return ftyp.raw.Type.(*types.Struct).Field(0).Type()
 }
 
 func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
