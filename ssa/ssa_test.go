@@ -1242,7 +1242,8 @@ func TestAbiTables(t *testing.T) {
 	s := fn.impl.String()
 	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.initTypes"(ptr @"foo/bar.init$abitables$slice")
+  %0 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr @"foo/bar.init$abitables$slice", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, ptr @"github.com/goplus/llgo/runtime/internal/runtime.typelist", align 8
   ret void
 }`) {
 		t.Fatal("error abi tables", s)

@@ -162,6 +162,37 @@ func TestSignature(t *testing.T) {
 	)
 }
 
+type T int
+
+func TestNamed(t *testing.T) {
+	b := newBuilder("main")
+	pkg := types.NewPackage("github.com/goplus/ssa/abi", "abi_test")
+	obj := types.NewTypeName(0, pkg, "T", nil)
+	typ := types.NewNamed(obj, types.Typ[types.Int], nil)
+	testType(t, b, typ, reflect.TypeOf(T(0)))
+}
+
+func TestScope(t *testing.T) {
+	b := newBuilder("main")
+	pkg := types.NewPackage("github.com/goplus/ssa/abi", "abi_test")
+	obj := types.NewTypeName(0, pkg, "T", nil)
+	typ := types.NewNamed(obj, types.Typ[types.Int], nil)
+	pkg.Scope().Insert(obj)
+	types.NewScope(pkg.Scope(), 0, 0, "")
+	scope := types.NewScope(pkg.Scope(), 0, 0, "")
+	obj2 := types.NewTypeName(0, pkg, "T", nil)
+	typ2 := types.NewNamed(obj2, types.Typ[types.Int], nil)
+	scope.Insert(obj2)
+	ret, pub := b.TypeName(typ)
+	if ret != "_llgo_github.com/goplus/ssa/abi.T" && pub != true {
+		t.Fatalf("error typeName: %v %v", ret, pub)
+	}
+	ret, pub = b.TypeName(typ2)
+	if ret != "_llgo_github.com/goplus/ssa/abi.T.1" && pub != false {
+		t.Fatalf("error typeName: %v %v", ret, pub)
+	}
+}
+
 func newBuilder(pkg string) *abi.Builder {
 	return abi.New(pkg, unsafe.Sizeof(0), types.SizesFor("gc", runtime.GOARCH))
 }

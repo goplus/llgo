@@ -203,8 +203,8 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 				name = abi.FullName(f.Pkg(), name)
 			}
 			values = append(values, b.Str(name).impl)
-			ftyp := prog.Type(f.Type(), InGo)
-			values = append(values, b.abiType(ftyp.raw.Type).impl)
+			ftyp := funcType(prog, f.Type())
+			values = append(values, b.abiType(ftyp).impl)
 			fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 		}
 		atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))
@@ -299,8 +299,18 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		}
 	case *types.Struct:
 		name, _ = b.Pkg.abi.TypeName(t)
+		var pkgPath string
+		n := t.NumFields()
+		for i := 0; i < n; i++ {
+			if f := t.Field(i); !f.Exported() {
+				if pkg := f.Pkg(); pkg != nil {
+					pkgPath = pkg.Path()
+					break
+				}
+			}
+		}
 		fields = []llvm.Value{
-			b.Str(pkg.Path()).impl,
+			b.Str(pkgPath).impl,
 			b.abiStructFields(t, name+"$fields"),
 		}
 	case *types.Interface:
@@ -433,13 +443,19 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		}
 		var values []llvm.Value
 		values = append(values, name)
-		ftyp := prog.Type(m.Type(), InGo)
-		values = append(values, b.abiType(ftyp.raw.Type).impl)
+		ftyp := funcType(prog, m.Type())
+		values = append(values, b.abiType(ftyp).impl)
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 	}
 	return llvm.ConstArray(ft.ll, fields)
+}
+
+// closure func type
+func funcType(prog Program, typ types.Type) types.Type {
+	ftyp := prog.Type(typ, InGo)
+	return ftyp.raw.Type.(*types.Struct).Field(0).Type()
 }
 
 func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
@@ -556,10 +572,11 @@ func (p Package) InitAbiTypes(fname string) Function {
 	if len(p.Prog.abiSymbol) == 0 {
 		return nil
 	}
+	prog := p.Prog
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
-	fn := p.rtFunc("initTypes")
-	b.Call(fn, p.getAbiTypes(fname))
+	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
+	b.Store(g.Expr, b.Load(p.getAbiTypes(fname)))
 	b.Return()
 	return initFn
 }

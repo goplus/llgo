@@ -23,6 +23,7 @@ import (
 	"go/types"
 	"hash"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/goplus/llgo/internal/env"
@@ -172,7 +173,8 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 	case *types.Named:
 		o := t.Obj()
 		pkg := o.Pkg()
-		return "_llgo_" + FullName(pkg, NamedName(t)), (pkg == nil || o.Exported())
+		ids := scopeIndices(o)
+		return "_llgo_" + FullName(pkg, NamedName(t)+ids), (pkg == nil || o.Exported() && ids == "")
 	case *types.Interface:
 		if t.Empty() {
 			return "_llgo_any", true
@@ -356,6 +358,29 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 	}
 	ret = h.Sum(b.buf[:0])
 	return
+}
+
+func scopeIndex(scope, root *types.Scope, id string) string {
+	parent := scope.Parent()
+	n := parent.NumChildren()
+	for i := 0; i < n; i++ {
+		if parent.Child(i) == scope {
+			id += "." + strconv.Itoa(i)
+			break
+		}
+	}
+	if parent == root {
+		return id
+	}
+	return scopeIndex(parent, root, id)
+}
+
+func scopeIndices(obj types.Object) string {
+	pkg := obj.Pkg()
+	if obj.Parent() != pkg.Scope() {
+		return scopeIndex(obj.Parent(), pkg.Scope(), "")
+	}
+	return ""
 }
 
 // -----------------------------------------------------------------------------
