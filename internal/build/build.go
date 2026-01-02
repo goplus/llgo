@@ -564,6 +564,7 @@ func (c *context) linker() *clang.Cmd {
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
 	if ctx.buildConf.Goarch == "wasm" || strings.Contains(ctx.crossCompile.LLVMTarget, "wasm") {
+		// wasm 工具链期望直接链接 wasm 对象文件；用本机 ar 重新打包会触发 wasm-ld 报错
 		return nil
 	}
 	if len(aPkg.LLFiles) == 0 {
