@@ -34,7 +34,7 @@ func Version() string {
 	if buildVersion != "" {
 		return buildVersion
 	}
-	info, ok := debug.ReadBuildInfo()
+	info, ok := readBuildInfo()
 	if ok && info.Main.Version != "" && !strings.HasSuffix(info.Main.Version, "+dirty") {
 		return info.Main.Version
 	}
@@ -44,3 +44,7 @@ func Version() string {
 func Devel() bool {
 	return Version() == devel
 }
+
+var (
+	readBuildInfo = debug.ReadBuildInfo
+)

@@ -73,6 +73,7 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 	m.env.Goarch = c.buildConf.Goarch
 	m.env.LlvmTriple = c.crossCompile.LLVMTarget
 	m.env.LlgoVersion = env.Version()
+	m.env.LlgoCompilerHash = c.buildConf.CompilerHash
 	m.env.GoVersion = runtime.Version()
 	m.env.LlvmVersion = c.getLLVMVersion()
 

@@ -3,6 +3,7 @@ package flags
 import (
 	"flag"
 
+	"github.com/goplus/llgo/cmd/internal/compilerhash"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/buildenv"
 )
@@ -170,6 +171,7 @@ func AddCmpTestFlags(fs *flag.FlagSet) {
 }
 
 func UpdateConfig(conf *build.Config) error {
+	conf.CompilerHash = compilerhash.Value()
 	conf.Tags = Tags
 	conf.Verbose = Verbose
 	conf.Target = Target
