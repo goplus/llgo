@@ -560,21 +560,10 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
-// normalizeToArchive creates an archive from object files and updates LLFiles to use it.
+// normalizeToArchive creates an archive from object files and sets ArchiveFile.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
-	if len(aPkg.LLFiles) == 0 {
-		return nil
-	}
-
-	var objFiles []string
-	for _, f := range aPkg.LLFiles {
-		switch filepath.Ext(f) {
-		case ".o", ".ll":
-			objFiles = append(objFiles, f)
-		}
-	}
-	if len(objFiles) == 0 {
+	if len(aPkg.ObjFiles) == 0 {
 		return nil
 	}
 
@@ -585,12 +574,13 @@ func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
 	archiveFile.Close()
 	archivePath := archiveFile.Name()
 
-	if err := ctx.createArchiveFile(archivePath, objFiles, verbose); err != nil {
+	if err := ctx.createArchiveFile(archivePath, aPkg.ObjFiles, verbose); err != nil {
 		os.Remove(archivePath)
 		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
 	}
 
-	aPkg.LLFiles = []string{archivePath}
+	aPkg.ObjFiles = nil
+	aPkg.ArchiveFile = archivePath
 	return nil
 }
 
@@ -889,7 +879,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				rtObjFiles = append(rtObjFiles, aPkg.LLFiles...)
+				if aPkg.ArchiveFile != "" {
+					rtObjFiles = append(rtObjFiles, aPkg.ArchiveFile)
+				} else {
+					rtObjFiles = append(rtObjFiles, aPkg.ObjFiles...)
+				}
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -902,7 +896,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			objFiles = append(objFiles, aPkg.LLFiles...)
+			if aPkg.ArchiveFile != "" {
+				objFiles = append(objFiles, aPkg.ArchiveFile)
+			} else {
+				objFiles = append(objFiles, aPkg.ObjFiles...)
+			}
 		}
 	})
 
@@ -1133,16 +1131,16 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
-	aPkg.LLFiles = append(aPkg.LLFiles, cgoLLFiles...)
-	aPkg.LLFiles = append(aPkg.LLFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, verbose)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
-		aPkg.LLFiles = append(aPkg.LLFiles, altLLFiles...)
-		aPkg.LLFiles = append(aPkg.LLFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
@@ -1150,7 +1148,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
-		aPkg.LLFiles = append(aPkg.LLFiles, exportFile)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, exportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
@@ -1253,7 +1251,8 @@ type aPackage struct {
 	NeedPyInit bool
 
 	LinkArgs    []string
-	LLFiles     []string
+	ObjFiles    []string // object files: .o or .ll (output of compiler, input to archiver)
+	ArchiveFile string   // archive file: .a (output of archiver, used for linking)
 	rewriteVars map[string]string
 
 	// Cache related fields
@@ -1291,7 +1290,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 				NeedRt:      false,
 				NeedPyInit:  false,
 				LinkArgs:    nil,
-				LLFiles:     nil,
+				ObjFiles:    nil,
 				rewriteVars: rewrites,
 			}
 			ctx.pkgs[p] = aPkg

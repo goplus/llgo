@@ -341,7 +341,7 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	}
 
 	// Use the .a archive directly for linking (no extraction needed)
-	pkg.LLFiles = []string{paths.Archive}
+	pkg.ArchiveFile = paths.Archive
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
 	pkg.NeedPyInit = meta.NeedPyInit
@@ -438,39 +438,18 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
-	var archiveSource string
-	for _, f := range pkg.LLFiles {
-		if filepath.Ext(f) == ".a" {
-			archiveSource = f
-			break
+	// If ArchiveFile is already set (from normalizeToArchive), copy it to cache
+	if pkg.ArchiveFile != "" {
+		if err := copyFileAtomic(pkg.ArchiveFile, paths.Archive); err != nil {
+			return err
 		}
-	}
-
-	if archiveSource != "" {
-		if err := copyFileAtomic(archiveSource, paths.Archive); err != nil {
+	} else if len(pkg.ObjFiles) > 0 {
+		// Otherwise, create archive from object files
+		if err := c.createArchiveFile(paths.Archive, pkg.ObjFiles); err != nil {
 			return err
 		}
 	} else {
-		var objectFiles []string
-		seenPath := make(map[string]bool)
-		for _, f := range pkg.LLFiles {
-			if seenPath[f] {
-				continue
-			}
-			seenPath[f] = true
-			switch filepath.Ext(f) {
-			case ".o", ".ll":
-				objectFiles = append(objectFiles, f)
-			}
-		}
-
-		if len(objectFiles) == 0 {
-			return nil
-		}
-
-		if err := c.createArchiveFile(paths.Archive, objectFiles); err != nil {
-			return err
-		}
+		return nil
 	}
 
 	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).
