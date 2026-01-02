@@ -24,7 +24,6 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -1183,7 +1182,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			return "", err
 		}
 		// Copy instead of rename so we can still compile to .o
-		if err := copyFile(f.Name(), llFile); err != nil {
+		if err := copyFileAtomic(f.Name(), llFile); err != nil {
 			return "", err
 		}
 	}
@@ -1548,26 +1547,6 @@ func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
 }
 
 type none struct{}
-
-// copyFile copies src to dst.
-func copyFile(src, dst string) error {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-	return out.Close()
-}
 
 func check(err error) {
 	if err != nil {
