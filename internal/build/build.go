@@ -563,10 +563,6 @@ func (c *context) linker() *clang.Cmd {
 // normalizeToArchive creates an archive from object files and updates LLFiles to use it.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
-	if ctx.buildConf.Goarch == "wasm" || strings.Contains(ctx.crossCompile.LLVMTarget, "wasm") {
-		// wasm toolchain expects raw wasm object files; repacking with native ar breaks wasm-ld
-		return nil
-	}
 	if len(aPkg.LLFiles) == 0 {
 		return nil
 	}
@@ -1012,7 +1008,10 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 }
 
 // archiver returns the archiving tool to use for the current context.
+// For wasm targets, it prefers llvm-ar because wasm-ld requires archives
+// created with llvm-ar (system ar cannot create valid wasm archive indexes).
 func (c *context) archiver() string {
+	// First check toolchain directory (for cross-compilation)
 	if c.crossCompile.CC != "" {
 		clangDir := filepath.Dir(c.crossCompile.CC)
 		if clangDir != "" {
@@ -1022,8 +1021,15 @@ func (c *context) archiver() string {
 			}
 		}
 	}
+	// Allow user override
 	if ar := os.Getenv("LLGO_AR"); ar != "" {
 		return ar
+	}
+	// For wasm targets, prefer llvm-ar from PATH (system ar cannot create valid wasm archives)
+	if c.buildConf.Goarch == "wasm" || strings.Contains(c.crossCompile.LLVMTarget, "wasm") {
+		if llvmAr, err := exec.LookPath("llvm-ar"); err == nil {
+			return llvmAr
+		}
 	}
 	return "ar"
 }
@@ -1049,9 +1055,10 @@ func (c *context) createArchiveFile(archivePath string, objFiles []string, verbo
 	_ = os.Remove(tmpName)
 
 	args := append([]string{"rcs", tmpName}, objFiles...)
-	cmd := exec.Command(c.archiver(), args...)
+	arCmd := c.archiver()
+	cmd := exec.Command(arCmd, args...)
 	if len(verbose) > 0 && verbose[0] {
-		fmt.Fprintf(os.Stderr, "ar %s\n", strings.Join(args, " "))
+		fmt.Fprintf(os.Stderr, "%s %s\n", filepath.Base(arCmd), strings.Join(args, " "))
 	}
 	if output, err := cmd.CombinedOutput(); err != nil {
 		os.Remove(tmpName)
