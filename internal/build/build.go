@@ -24,6 +24,7 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -1175,14 +1176,18 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
+	// If GenLL is enabled, keep a copy of the .ll file for debugging
 	if ctx.buildConf.GenLL {
-		exportFile += ".ll"
-		err = os.Chmod(f.Name(), 0644)
-		if err != nil {
-			return exportFile, err
+		llFile := exportFile + ".ll"
+		if err := os.Chmod(f.Name(), 0644); err != nil {
+			return "", err
 		}
-		return exportFile, os.Rename(f.Name(), exportFile)
+		// Copy instead of rename so we can still compile to .o
+		if err := copyFile(f.Name(), llFile); err != nil {
+			return "", err
+		}
 	}
+	// Always compile .ll to .o for linking
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err
@@ -1543,6 +1548,26 @@ func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
 }
 
 type none struct{}
+
+// copyFile copies src to dst.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Close()
+}
 
 func check(err error) {
 	if err != nil {
