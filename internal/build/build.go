@@ -560,6 +560,48 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
+// normalizeToArchive creates an archive from object files and updates LLFiles to use it.
+// This ensures the link step always consumes .a archives regardless of cache state.
+func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
+	// Skip if no object files to archive
+	if len(aPkg.LLFiles) == 0 {
+		return nil
+	}
+
+	// Collect object files
+	var objFiles []string
+	for _, f := range aPkg.LLFiles {
+		ext := filepath.Ext(f)
+		if ext == ".o" || ext == ".ll" {
+			objFiles = append(objFiles, f)
+		}
+	}
+
+	// Nothing to archive
+	if len(objFiles) == 0 {
+		return nil
+	}
+
+	// Create temporary archive
+	archiveFile, err := os.CreateTemp("", "pkg-*.a")
+	if err != nil {
+		return fmt.Errorf("create temp archive: %w", err)
+	}
+	archiveFile.Close()
+	archivePath := archiveFile.Name()
+
+	// Create archive from object files
+	if err := createArchiveFile(archivePath, objFiles, verbose); err != nil {
+		os.Remove(archivePath)
+		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
+	}
+
+	// Replace LLFiles with the archive
+	aPkg.LLFiles = []string{archivePath}
+
+	return nil
+}
+
 func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
 	built := ctx.built
 
@@ -600,6 +642,10 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					if kind == cl.PkgLinkExtern {
 						appendExternalLinkArgs(ctx, aPkg, param)
 					}
+					// Normalize to archive for consistent linking
+					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+						return err
+					}
 					if err := ctx.saveToCache(aPkg); err != nil && verbose {
 						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
 					}
@@ -622,6 +668,10 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			needRuntime = needRuntime || aPkg.NeedRt
 			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
+				// Normalize to archive for consistent linking
+				if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+					return err
+				}
 				if err := ctx.saveToCache(aPkg); err != nil && verbose {
 					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
 				}
