@@ -38,21 +38,10 @@ _llgo_compute_bin_path() {
 _llgo_ensure_llgo_cli() {
 	_llgo_compute_bin_path
 
-	local needs_install=0
-	if [ ! -x "${LLGO_BIN}" ]; then
-		needs_install=1
-	else
-		if find "${LLGO_ROOT}/cmd/llgo" -type f -newer "${LLGO_BIN}" -print -quit | grep -q .; then
-			needs_install=1
-		fi
-	fi
-
-	if [ "${needs_install}" -eq 1 ]; then
-		(
-			cd "${LLGO_ROOT}"
-			go install -tags=dev ./cmd/llgo
-		)
-	fi
+	(
+		cd "${LLGO_ROOT}"
+		go install -tags=dev ./cmd/llgo
+	)
 }
 
 _llgo_require_repo_context
