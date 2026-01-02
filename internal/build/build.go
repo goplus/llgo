@@ -800,51 +800,52 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		}
 
 		// Generate output file name
-		objFile, err := os.CreateTemp("", "extra-*"+filepath.Base(extraFile))
+		tmpFile, err := os.CreateTemp("", "extra-*"+filepath.Base(extraFile))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create temp file for %s: %w", extraFile, err)
 		}
-		objFile.Close()
+		tmpFile.Close()
+		baseName := tmpFile.Name()
 
-		var outputFile string
 		ext := filepath.Ext(srcFile)
 
-		if ctx.buildConf.GenLL {
-			outputFile = objFile.Name() + ".ll"
-		} else {
-			outputFile = objFile.Name() + ".o"
-		}
-
-		// Prepare compilation arguments
-		var args []string
+		// Prepare base compilation arguments
+		var baseArgs []string
 
 		// Handle different file types
 		switch ext {
 		case ".c":
-			args = append(args, "-x", "c")
+			baseArgs = append(baseArgs, "-x", "c")
 		case ".S", ".s":
-			args = append(args, "-x", "assembler-with-cpp")
+			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// Add output flags
+		// If GenLL is enabled, first emit .ll for debugging
 		if ctx.buildConf.GenLL {
-			args = append(args, "-emit-llvm", "-S", "-o", outputFile, "-c", srcFile)
-		} else {
-			args = append(args, "-o", outputFile, "-c", srcFile)
+			llFile := baseName + ".ll"
+			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(llArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
+			}
 		}
 
+		// Always compile to .o for linking
+		objFile := baseName + ".o"
+		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
 		if verbose {
-			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(args, " "))
+			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
-
-		// Compile the file
 		cmd := ctx.compiler()
-		if err := cmd.Compile(args...); err != nil {
+		if err := cmd.Compile(objArgs...); err != nil {
 			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
 		}
 
-		objFiles = append(objFiles, outputFile)
-		os.Remove(objFile.Name()) // Remove the temp file we created for naming
+		objFiles = append(objFiles, objFile)
+		os.Remove(baseName) // Remove the temp file we created for naming
 	}
 
 	return objFiles, nil
@@ -1514,27 +1515,36 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 }
 
 func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
-	llFile := expFile + filepath.Base(cFile)
+	baseName := expFile + filepath.Base(cFile)
 	ext := filepath.Ext(cFile)
 
 	// default clang++ will use c++ to compile c file,will cause symbol be mangled
 	if ext == ".c" {
 		args = append(args, "-x", "c")
 	}
+
+	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
 	if ctx.buildConf.GenLL {
-		llFile += ".ll"
-		args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-	} else {
-		llFile += ".o"
-		args = append(args, "-o", llFile, "-c", cFile)
+		llFile := baseName + ".ll"
+		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
+		if verbose {
+			fmt.Fprintln(os.Stderr, "clang", llArgs)
+		}
+		cmd := ctx.compiler()
+		err := cmd.Compile(llArgs...)
+		check(err)
 	}
+
+	// Always compile to .o for linking
+	objFile := baseName + ".o"
+	objArgs := append(args, "-o", objFile, "-c", cFile)
 	if verbose {
-		fmt.Fprintln(os.Stderr, "clang", args)
+		fmt.Fprintln(os.Stderr, "clang", objArgs)
 	}
 	cmd := ctx.compiler()
-	err := cmd.Compile(args...)
+	err := cmd.Compile(objArgs...)
 	check(err)
-	procFile(llFile)
+	procFile(objFile)
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
