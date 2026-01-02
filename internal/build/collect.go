@@ -462,7 +462,7 @@ func (c *context) saveToCache(pkg *aPackage) error {
 			return nil
 		}
 
-		if err := createArchiveFile(paths.Archive, objectFiles); err != nil {
+		if err := c.createArchiveFile(paths.Archive, objectFiles); err != nil {
 			return err
 		}
 	}

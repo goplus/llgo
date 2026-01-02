@@ -591,7 +591,7 @@ func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
 	archivePath := archiveFile.Name()
 
 	// Create archive from object files
-	if err := createArchiveFile(archivePath, objFiles, verbose); err != nil {
+	if err := ctx.createArchiveFile(archivePath, objFiles, verbose); err != nil {
 		os.Remove(archivePath)
 		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
 	}
@@ -971,7 +971,7 @@ func isRuntimePkg(pkgPath string) bool {
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return createArchiveFile(app, objFiles, verbose)
+		return ctx.createArchiveFile(app, objFiles, verbose)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -1017,9 +1017,26 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	return cmd.Link(buildArgs...)
 }
 
+// archiver returns the archiver command to use (preferring llvm-ar next to the compiler).
+func (c *context) archiver() string {
+	if c != nil && c.crossCompile.CC != "" {
+		clangDir := filepath.Dir(c.crossCompile.CC)
+		if clangDir != "" {
+			llvmAr := filepath.Join(clangDir, "llvm-ar")
+			if _, err := os.Stat(llvmAr); err == nil {
+				return llvmAr
+			}
+		}
+	}
+	if ar := os.Getenv("LLGO_AR"); ar != "" {
+		return ar
+	}
+	return "ar"
+}
+
 // createArchiveFile builds an archive at archivePath atomically to avoid races when
 // multiple builds target the same output concurrently.
-func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
+func (c *context) createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
 	if len(objFiles) == 0 {
 		return fmt.Errorf("no object files provided for archive %s", archivePath)
 	}
@@ -1038,7 +1055,7 @@ func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) e
 	_ = os.Remove(tmpName)
 
 	args := append([]string{"rcs", tmpName}, objFiles...)
-	cmd := exec.Command("ar", args...)
+	cmd := exec.Command(c.archiver(), args...)
 	if len(verbose) > 0 && verbose[0] {
 		fmt.Fprintf(os.Stderr, "ar %s\n", strings.Join(args, " "))
 	}
