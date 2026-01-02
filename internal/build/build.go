@@ -560,6 +560,43 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
+// normalizeToArchive creates an archive from object files and updates LLFiles to use it.
+// This ensures the link step always consumes .a archives regardless of cache state.
+func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
+	if ctx.buildConf.Goarch == "wasm" || strings.Contains(ctx.crossCompile.LLVMTarget, "wasm") {
+		return nil
+	}
+	if len(aPkg.LLFiles) == 0 {
+		return nil
+	}
+
+	var objFiles []string
+	for _, f := range aPkg.LLFiles {
+		switch filepath.Ext(f) {
+		case ".o", ".ll":
+			objFiles = append(objFiles, f)
+		}
+	}
+	if len(objFiles) == 0 {
+		return nil
+	}
+
+	archiveFile, err := os.CreateTemp("", "pkg-*.a")
+	if err != nil {
+		return fmt.Errorf("create temp archive: %w", err)
+	}
+	archiveFile.Close()
+	archivePath := archiveFile.Name()
+
+	if err := ctx.createArchiveFile(archivePath, objFiles, verbose); err != nil {
+		os.Remove(archivePath)
+		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
+	}
+
+	aPkg.LLFiles = []string{archivePath}
+	return nil
+}
+
 func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
 	built := ctx.built
 
@@ -597,6 +634,9 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return err
 				}
 				if !aPkg.CacheHit {
+					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+						return err
+					}
 					if kind == cl.PkgLinkExtern {
 						appendExternalLinkArgs(ctx, aPkg, param)
 					}
@@ -622,6 +662,9 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			needRuntime = needRuntime || aPkg.NeedRt
 			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
+				if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+					return err
+				}
 				if err := ctx.saveToCache(aPkg); err != nil && verbose {
 					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
 				}
@@ -921,7 +964,7 @@ func isRuntimePkg(pkgPath string) bool {
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return createArchiveFile(app, objFiles, verbose)
+		return ctx.createArchiveFile(app, objFiles, verbose)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -967,9 +1010,26 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	return cmd.Link(buildArgs...)
 }
 
+// archiver returns the archiving tool to use for the current context.
+func (c *context) archiver() string {
+	if c != nil && c.crossCompile.CC != "" {
+		clangDir := filepath.Dir(c.crossCompile.CC)
+		if clangDir != "" {
+			llvmAr := filepath.Join(clangDir, "llvm-ar")
+			if _, err := os.Stat(llvmAr); err == nil {
+				return llvmAr
+			}
+		}
+	}
+	if ar := os.Getenv("LLGO_AR"); ar != "" {
+		return ar
+	}
+	return "ar"
+}
+
 // createArchiveFile builds an archive at archivePath atomically to avoid races when
 // multiple builds target the same output concurrently.
-func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
+func (c *context) createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
 	if len(objFiles) == 0 {
 		return fmt.Errorf("no object files provided for archive %s", archivePath)
 	}
@@ -988,7 +1048,7 @@ func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) e
 	_ = os.Remove(tmpName)
 
 	args := append([]string{"rcs", tmpName}, objFiles...)
-	cmd := exec.Command("ar", args...)
+	cmd := exec.Command(c.archiver(), args...)
 	if len(verbose) > 0 && verbose[0] {
 		fmt.Fprintf(os.Stderr, "ar %s\n", strings.Join(args, " "))
 	}
