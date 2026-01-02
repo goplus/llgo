@@ -560,7 +560,7 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
-// normalizeToArchive creates an archive from object files and updates LLFiles to use it.
+// normalizeToArchive creates an archive from object files and records it for linking.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
 	// Skip if no object files to archive
@@ -596,8 +596,8 @@ func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
 		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
 	}
 
-	// Replace LLFiles with the archive
-	aPkg.LLFiles = []string{archivePath}
+	// Record archive for later linking/caching
+	aPkg.ArchiveFile = archivePath
 
 	return nil
 }
@@ -899,7 +899,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				rtObjFiles = append(rtObjFiles, aPkg.LLFiles...)
+				rtObjFiles = appendLinkInputs(rtObjFiles, aPkg)
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -912,7 +912,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			objFiles = append(objFiles, aPkg.LLFiles...)
+			objFiles = appendLinkInputs(objFiles, aPkg)
 		}
 	})
 
@@ -1236,6 +1236,7 @@ type aPackage struct {
 
 	LinkArgs    []string
 	LLFiles     []string
+	ArchiveFile string
 	rewriteVars map[string]string
 
 	// Cache related fields
@@ -1245,6 +1246,16 @@ type aPackage struct {
 }
 
 type Package = *aPackage
+
+func appendLinkInputs(dst []string, pkg *aPackage) []string {
+	if pkg == nil {
+		return dst
+	}
+	if pkg.ArchiveFile != "" {
+		return append(dst, pkg.ArchiveFile)
+	}
+	return append(dst, pkg.LLFiles...)
+}
 
 func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*aPackage, error) {
 	prog := ctx.progSSA
