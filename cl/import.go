@@ -418,9 +418,9 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 		recv = parent.Signature.Recv()
 	} else {
 		recv = fn.Signature.Recv()
-		// check $bound and $thunk
-		if recv == nil && (strings.HasSuffix(fn.Name(), "$bound") || strings.HasSuffix(fn.Name(), "$thunk")) && len(fn.FreeVars) == 0 {
-			// For thunks and bound methods, extract receiver from first parameter
+		// check $thunk and $bound
+		if recv == nil && strings.HasSuffix(fn.Name(), "$thunk") {
+			// For thunks, extract receiver from first parameter
 			if params := fn.Signature.Params(); params.Len() > 0 {
 				recv = params.At(0)
 			}
