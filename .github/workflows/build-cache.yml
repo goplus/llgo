@@ -62,5 +62,9 @@ jobs:
           go install -tags=dev ./cmd/llgo
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
+      - name: Install esptool.py (for ESP32-C3 tests on Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: pip3 install --break-system-packages esptool==5.1.0
+
       - name: Run build cache tests
         run: bash test/buildcache/test.sh

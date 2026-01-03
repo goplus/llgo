@@ -105,18 +105,19 @@ run_test() {
 
 # Test suite runner
 run_test_suite() {
-    local mode="$1"  # "native" or "wasm"
+    local mode="$1"  # "native", "wasm", or "esp32c3"
     local build_cmd="$2"
     local output_file="$3"
     local run_cmd="$4"  # optional, for wasm
 
     echo ""
     echo "=========================================="
-    if [ "$mode" = "native" ]; then
-        echo "Native Build Cache Tests"
-    else
-        echo "WASM Build Cache Tests"
-    fi
+    case "$mode" in
+        native)  echo "Native Build Cache Tests" ;;
+        wasm)    echo "WASM Build Cache Tests" ;;
+        esp32c3) echo "ESP32-C3 Build Cache Tests" ;;
+        *)       echo "$mode Build Cache Tests" ;;
+    esac
     echo "=========================================="
 
     # ===========================================================
@@ -317,6 +318,17 @@ else
     echo ""
     echo -e "${BLUE}Skipping WASM tests (iwasm not available)${NC}"
 fi
+
+# ===========================================================
+# ESP32-C3 Embedded Build Cache Tests
+# ===========================================================
+
+# ESP32-C3 tests use the same buildcache project, just with different target
+echo ""
+echo -e "${BLUE}Running ESP32-C3 tests...${NC}"
+run_test_suite "esp32c3" \
+    "llgo build -target=esp32c3 -o $BUILD_TEMP_DIR/buildcache.elf -v ." \
+    "$BUILD_TEMP_DIR/buildcache.elf"
 
 # ===========================================================
 # Summary
