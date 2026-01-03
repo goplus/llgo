@@ -419,7 +419,7 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 	objFile.WriteString("fake object file")
 	objFile.Close()
 
-	pkg.LLFiles = []string{objFile.Name()}
+	pkg.ObjFiles = []string{objFile.Name()}
 
 	// First save to cache
 	ctx.buildConf.ForceRebuild = false
@@ -437,8 +437,9 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 	// Now enable ForceRebuild and try to load
 	ctx.buildConf.ForceRebuild = true
 
-	// Clear LLFiles to verify it's not loaded from cache
-	pkg.LLFiles = nil
+	// Clear ObjFiles to verify it's not loaded from cache
+	pkg.ObjFiles = nil
+	pkg.ArchiveFile = ""
 	pkg.CacheHit = false
 
 	if ctx.tryLoadFromCache(pkg) {
@@ -449,8 +450,8 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 		t.Error("CacheHit should remain false when ForceRebuild is enabled")
 	}
 
-	if len(pkg.LLFiles) > 0 {
-		t.Error("LLFiles should not be populated when ForceRebuild is enabled")
+	if pkg.ArchiveFile != "" {
+		t.Error("ArchiveFile should not be populated when ForceRebuild is enabled")
 	}
 }
 
@@ -531,7 +532,7 @@ func TestSaveToCache_Success(t *testing.T) {
 			m.pkg.PkgPath = "example.com/lib"
 			return m.Build()
 		}(),
-		LLFiles: []string{objFile.Name()},
+		ObjFiles: []string{objFile.Name()},
 	}
 
 	if err := ctx.saveToCache(pkg); err != nil {

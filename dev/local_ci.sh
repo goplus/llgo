@@ -208,4 +208,7 @@ for item in "${hello_logs[@]}"; do
 	fi
 done
 
+log_section "Build Cache"
+(cd "$workdir/test/buildcache" && bash test.sh)
+
 log_section "Done"

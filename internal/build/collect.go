@@ -18,6 +18,7 @@ package build
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -340,7 +341,7 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	}
 
 	// Use the .a archive directly for linking (no extraction needed)
-	pkg.LLFiles = []string{paths.Archive}
+	pkg.ArchiveFile = paths.Archive
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
 	pkg.NeedPyInit = meta.NeedPyInit
@@ -437,26 +438,18 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
-	// Collect object files to cache
-	// Deduplicate by full path first
-	var objectFiles []string
-	seenPath := make(map[string]bool)
-	for _, f := range pkg.LLFiles {
-		if filepath.Ext(f) == ".o" || filepath.Ext(f) == ".ll" {
-			if !seenPath[f] {
-				seenPath[f] = true
-				objectFiles = append(objectFiles, f)
-			}
+	// If ArchiveFile is already set (from normalizeToArchive), copy it to cache
+	if pkg.ArchiveFile != "" {
+		if err := copyFileAtomic(pkg.ArchiveFile, paths.Archive); err != nil {
+			return err
 		}
-	}
-
-	if len(objectFiles) == 0 {
+	} else if len(pkg.ObjFiles) > 0 {
+		// Otherwise, create archive from object files
+		if err := c.createArchiveFile(paths.Archive, pkg.ObjFiles); err != nil {
+			return err
+		}
+	} else {
 		return nil
-	}
-
-	// Create .a archive from object files (atomic write to avoid races)
-	if err := createArchiveFile(paths.Archive, objectFiles); err != nil {
-		return err
 	}
 
 	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).
@@ -491,5 +484,46 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
+	return nil
+}
+
+// copyFileAtomic copies src to dst using a temp file for atomicity.
+func copyFileAtomic(src, dst string) error {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	tmp, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	cleanup := true
+	defer func() {
+		if cleanup {
+			tmp.Close()
+			os.Remove(tmpName)
+		}
+	}()
+
+	if _, err := io.Copy(tmp, in); err != nil {
+		return err
+	}
+
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+
+	if err := os.Rename(tmpName, dst); err != nil {
+		return err
+	}
+
+	cleanup = false
 	return nil
 }

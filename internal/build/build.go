@@ -560,6 +560,30 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
+// normalizeToArchive creates an archive from object files and sets ArchiveFile.
+// This ensures the link step always consumes .a archives regardless of cache state.
+func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
+	if len(aPkg.ObjFiles) == 0 {
+		return nil
+	}
+
+	archiveFile, err := os.CreateTemp("", "pkg-*.a")
+	if err != nil {
+		return fmt.Errorf("create temp archive: %w", err)
+	}
+	archiveFile.Close()
+	archivePath := archiveFile.Name()
+
+	if err := ctx.createArchiveFile(archivePath, aPkg.ObjFiles, verbose); err != nil {
+		os.Remove(archivePath)
+		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
+	}
+
+	aPkg.ObjFiles = nil
+	aPkg.ArchiveFile = archivePath
+	return nil
+}
+
 func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
 	built := ctx.built
 
@@ -593,10 +617,20 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return err
 				}
 				ctx.tryLoadFromCache(aPkg)
+				if verbose {
+					if aPkg.CacheHit {
+						fmt.Fprintf(os.Stderr, "CACHE HIT: %s\n", pkg.PkgPath)
+					} else {
+						fmt.Fprintf(os.Stderr, "CACHE MISS: %s\n", pkg.PkgPath)
+					}
+				}
 				if err := buildPkg(ctx, aPkg, verbose); err != nil {
 					return err
 				}
 				if !aPkg.CacheHit {
+					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+						return err
+					}
 					if kind == cl.PkgLinkExtern {
 						appendExternalLinkArgs(ctx, aPkg, param)
 					}
@@ -615,6 +649,13 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 				return err
 			}
 			ctx.tryLoadFromCache(aPkg)
+			if verbose {
+				if aPkg.CacheHit {
+					fmt.Fprintf(os.Stderr, "CACHE HIT: %s\n", pkg.PkgPath)
+				} else {
+					fmt.Fprintf(os.Stderr, "CACHE MISS: %s\n", pkg.PkgPath)
+				}
+			}
 			if err := buildPkg(ctx, aPkg, verbose); err != nil {
 				return err
 			}
@@ -622,6 +663,9 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			needRuntime = needRuntime || aPkg.NeedRt
 			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
+				if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+					return err
+				}
 				if err := ctx.saveToCache(aPkg); err != nil && verbose {
 					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
 				}
@@ -770,51 +814,52 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		}
 
 		// Generate output file name
-		objFile, err := os.CreateTemp("", "extra-*"+filepath.Base(extraFile))
+		tmpFile, err := os.CreateTemp("", "extra-*"+filepath.Base(extraFile))
 		if err != nil {
 			return nil, fmt.Errorf("failed to create temp file for %s: %w", extraFile, err)
 		}
-		objFile.Close()
+		tmpFile.Close()
+		baseName := tmpFile.Name()
 
-		var outputFile string
 		ext := filepath.Ext(srcFile)
 
-		if ctx.buildConf.GenLL {
-			outputFile = objFile.Name() + ".ll"
-		} else {
-			outputFile = objFile.Name() + ".o"
-		}
-
-		// Prepare compilation arguments
-		var args []string
+		// Prepare base compilation arguments
+		var baseArgs []string
 
 		// Handle different file types
 		switch ext {
 		case ".c":
-			args = append(args, "-x", "c")
+			baseArgs = append(baseArgs, "-x", "c")
 		case ".S", ".s":
-			args = append(args, "-x", "assembler-with-cpp")
+			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// Add output flags
+		// If GenLL is enabled, first emit .ll for debugging
 		if ctx.buildConf.GenLL {
-			args = append(args, "-emit-llvm", "-S", "-o", outputFile, "-c", srcFile)
-		} else {
-			args = append(args, "-o", outputFile, "-c", srcFile)
+			llFile := baseName + ".ll"
+			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(llArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
+			}
 		}
 
+		// Always compile to .o for linking
+		objFile := baseName + ".o"
+		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
 		if verbose {
-			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(args, " "))
+			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
-
-		// Compile the file
 		cmd := ctx.compiler()
-		if err := cmd.Compile(args...); err != nil {
+		if err := cmd.Compile(objArgs...); err != nil {
 			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
 		}
 
-		objFiles = append(objFiles, outputFile)
-		os.Remove(objFile.Name()) // Remove the temp file we created for naming
+		objFiles = append(objFiles, objFile)
+		os.Remove(baseName) // Remove the temp file we created for naming
 	}
 
 	return objFiles, nil
@@ -828,9 +873,10 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
 	}
-	var objFiles []string
+	// linkInputs contains .a archives from all packages and .o files from main module
+	var linkInputs []string
 	var linkArgs []string
-	var rtObjFiles []string
+	var rtLinkInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
@@ -849,7 +895,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				rtObjFiles = append(rtObjFiles, aPkg.LLFiles...)
+				if aPkg.ArchiveFile != "" {
+					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
+				}
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -862,30 +910,33 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			objFiles = append(objFiles, aPkg.LLFiles...)
+			if aPkg.ArchiveFile != "" {
+				linkInputs = append(linkInputs, aPkg.ArchiveFile)
+			}
 		}
 	})
 
 	// Only link runtime objects when needed (or for host builds where runtime is always required).
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
 		linkArgs = append(linkArgs, rtLinkArgs...)
-		objFiles = append(objFiles, rtObjFiles...)
+		linkInputs = append(linkInputs, rtLinkInputs...)
 	}
 
 	// Generate main module file (needed for global variables even in library modes)
+	// This is compiled directly to .o and added to linkInputs (not cached)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
-	objFiles = append(objFiles, entryObjFile)
+	linkInputs = append(linkInputs, entryObjFile)
 
 	// Compile extra files from target configuration
 	extraObjFiles, err := compileExtraFiles(ctx, verbose)
 	if err != nil {
 		return err
 	}
-	objFiles = append(objFiles, extraObjFiles...)
+	linkInputs = append(linkInputs, extraObjFiles...)
 
 	if IsFullRpathEnabled() {
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
@@ -904,7 +955,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		}
 	}
 
-	err = linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
+	err = linkObjFiles(ctx, outputPath, linkInputs, linkArgs, verbose)
 	if err != nil {
 		return err
 	}
@@ -921,7 +972,7 @@ func isRuntimePkg(pkgPath string) bool {
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return createArchiveFile(app, objFiles, verbose)
+		return ctx.createArchiveFile(app, objFiles, verbose)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -967,9 +1018,36 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	return cmd.Link(buildArgs...)
 }
 
+// archiver returns the archiving tool to use for the current context.
+// For wasm targets, it prefers llvm-ar because wasm-ld requires archives
+// created with llvm-ar (system ar cannot create valid wasm archive indexes).
+func (c *context) archiver() string {
+	// First check toolchain directory (for cross-compilation)
+	if c.crossCompile.CC != "" {
+		clangDir := filepath.Dir(c.crossCompile.CC)
+		if clangDir != "" {
+			llvmAr := filepath.Join(clangDir, "llvm-ar")
+			if _, err := os.Stat(llvmAr); err == nil {
+				return llvmAr
+			}
+		}
+	}
+	// Allow user override
+	if ar := os.Getenv("LLGO_AR"); ar != "" {
+		return ar
+	}
+	// For wasm targets, prefer llvm-ar from PATH (system ar cannot create valid wasm archives)
+	if c.buildConf.Goarch == "wasm" || strings.Contains(c.crossCompile.LLVMTarget, "wasm") {
+		if llvmAr, err := exec.LookPath("llvm-ar"); err == nil {
+			return llvmAr
+		}
+	}
+	return "ar"
+}
+
 // createArchiveFile builds an archive at archivePath atomically to avoid races when
 // multiple builds target the same output concurrently.
-func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
+func (c *context) createArchiveFile(archivePath string, objFiles []string, verbose ...bool) error {
 	if len(objFiles) == 0 {
 		return fmt.Errorf("no object files provided for archive %s", archivePath)
 	}
@@ -988,9 +1066,10 @@ func createArchiveFile(archivePath string, objFiles []string, verbose ...bool) e
 	_ = os.Remove(tmpName)
 
 	args := append([]string{"rcs", tmpName}, objFiles...)
-	cmd := exec.Command("ar", args...)
+	arCmd := c.archiver()
+	cmd := exec.Command(arCmd, args...)
 	if len(verbose) > 0 && verbose[0] {
-		fmt.Fprintf(os.Stderr, "ar %s\n", strings.Join(args, " "))
+		fmt.Fprintf(os.Stderr, "%s %s\n", filepath.Base(arCmd), strings.Join(args, " "))
 	}
 	if output, err := cmd.CombinedOutput(); err != nil {
 		os.Remove(tmpName)
@@ -1065,16 +1144,16 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
-	aPkg.LLFiles = append(aPkg.LLFiles, cgoLLFiles...)
-	aPkg.LLFiles = append(aPkg.LLFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, verbose)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
-		aPkg.LLFiles = append(aPkg.LLFiles, altLLFiles...)
-		aPkg.LLFiles = append(aPkg.LLFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
@@ -1082,7 +1161,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
-		aPkg.LLFiles = append(aPkg.LLFiles, exportFile)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, exportFile)
 		if debugBuild || verbose {
 			fmt.Fprintf(os.Stderr, "==> Export %s: %s\n", aPkg.PkgPath, pkg.ExportFile)
 		}
@@ -1109,14 +1188,18 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
+	// If GenLL is enabled, keep a copy of the .ll file for debugging
 	if ctx.buildConf.GenLL {
-		exportFile += ".ll"
-		err = os.Chmod(f.Name(), 0644)
-		if err != nil {
-			return exportFile, err
+		llFile := exportFile + ".ll"
+		if err := os.Chmod(f.Name(), 0644); err != nil {
+			return "", err
 		}
-		return exportFile, os.Rename(f.Name(), exportFile)
+		// Copy instead of rename so we can still compile to .o
+		if err := copyFileAtomic(f.Name(), llFile); err != nil {
+			return "", err
+		}
 	}
+	// Always compile .ll to .o for linking
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err
@@ -1185,7 +1268,8 @@ type aPackage struct {
 	NeedPyInit bool
 
 	LinkArgs    []string
-	LLFiles     []string
+	ObjFiles    []string // object files: .o or .ll (output of compiler, input to archiver)
+	ArchiveFile string   // archive file: .a (output of archiver, used for linking)
 	rewriteVars map[string]string
 
 	// Cache related fields
@@ -1223,7 +1307,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 				NeedRt:      false,
 				NeedPyInit:  false,
 				LinkArgs:    nil,
-				LLFiles:     nil,
+				ObjFiles:    nil,
 				rewriteVars: rewrites,
 			}
 			ctx.pkgs[p] = aPkg
@@ -1443,27 +1527,36 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 }
 
 func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
-	llFile := expFile + filepath.Base(cFile)
+	baseName := expFile + filepath.Base(cFile)
 	ext := filepath.Ext(cFile)
 
 	// default clang++ will use c++ to compile c file,will cause symbol be mangled
 	if ext == ".c" {
 		args = append(args, "-x", "c")
 	}
+
+	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
 	if ctx.buildConf.GenLL {
-		llFile += ".ll"
-		args = append(args, "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-	} else {
-		llFile += ".o"
-		args = append(args, "-o", llFile, "-c", cFile)
+		llFile := baseName + ".ll"
+		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
+		if verbose {
+			fmt.Fprintln(os.Stderr, "clang", llArgs)
+		}
+		cmd := ctx.compiler()
+		err := cmd.Compile(llArgs...)
+		check(err)
 	}
+
+	// Always compile to .o for linking
+	objFile := baseName + ".o"
+	objArgs := append(args, "-o", objFile, "-c", cFile)
 	if verbose {
-		fmt.Fprintln(os.Stderr, "clang", args)
+		fmt.Fprintln(os.Stderr, "clang", objArgs)
 	}
 	cmd := ctx.compiler()
-	err := cmd.Compile(args...)
+	err := cmd.Compile(objArgs...)
 	check(err)
-	procFile(llFile)
+	procFile(objFile)
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
