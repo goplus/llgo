@@ -115,7 +115,7 @@ _llgo_0:
   %14 = extractvalue { ptr, ptr } %13, 1
   %15 = extractvalue { ptr, ptr } %13, 0
   %16 = call i64 %15(ptr %14, i64 7)
-  %17 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.Add$thunk"(ptr %9, i64 8)
+  %17 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add$thunk"(ptr %9, i64 8)
   %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S")
   %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %18, 0
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %19, ptr %9, 1
@@ -199,7 +199,7 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.Add$thunk"(ptr %0, i64 %1) {
+define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add$thunk"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add"(ptr %0, i64 %1)
   ret i64 %2
