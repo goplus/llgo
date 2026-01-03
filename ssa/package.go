@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
@@ -733,6 +734,11 @@ func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind 
 	prog := b.Prog
 	switch origKind {
 	case vkFuncDecl:
+		// Method thunk functions ($thunk) already have the receiver as their first parameter,
+		// so they don't need closure stub wrapping.
+		if strings.HasSuffix(fn.Name(), "$thunk") {
+			return fn, prog.Nil(prog.VoidPtr())
+		}
 		wrap := p.closureWrapDecl(fn, sig)
 		return wrap.Expr, prog.Nil(prog.VoidPtr())
 	case vkFuncPtr:
