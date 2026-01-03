@@ -617,6 +617,13 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return err
 				}
 				ctx.tryLoadFromCache(aPkg)
+				if verbose {
+					if aPkg.CacheHit {
+						fmt.Fprintf(os.Stderr, "CACHE HIT: %s\n", pkg.PkgPath)
+					} else {
+						fmt.Fprintf(os.Stderr, "CACHE MISS: %s\n", pkg.PkgPath)
+					}
+				}
 				if err := buildPkg(ctx, aPkg, verbose); err != nil {
 					return err
 				}
@@ -642,6 +649,13 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 				return err
 			}
 			ctx.tryLoadFromCache(aPkg)
+			if verbose {
+				if aPkg.CacheHit {
+					fmt.Fprintf(os.Stderr, "CACHE HIT: %s\n", pkg.PkgPath)
+				} else {
+					fmt.Fprintf(os.Stderr, "CACHE MISS: %s\n", pkg.PkgPath)
+				}
+			}
 			if err := buildPkg(ctx, aPkg, verbose); err != nil {
 				return err
 			}
