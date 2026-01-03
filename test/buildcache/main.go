@@ -1,3 +1,5 @@
+//go:build llgo
+
 // Package main tests build cache functionality.
 package main
 

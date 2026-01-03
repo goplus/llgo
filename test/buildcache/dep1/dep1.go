@@ -1,3 +1,5 @@
+//go:build llgo
+
 // Package dep1 provides utility functions for cache testing.
 package dep1
 

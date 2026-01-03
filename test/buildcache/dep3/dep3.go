@@ -1,3 +1,5 @@
+//go:build llgo
+
 // Package dep3 provides utility functions that depend on dep1.
 package dep3
 
