@@ -879,7 +879,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	var rtLinkInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
-	var visitErr error                  // Capture errors from Visit callback
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
 		// Skip if already linked this package (by ID)
 		if linkedPkgs[p.ID] {
@@ -916,11 +915,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 		}
 	})
-
-	// Check for errors during Visit
-	if visitErr != nil {
-		return visitErr
-	}
 
 	// Only link runtime objects when needed (or for host builds where runtime is always required).
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
