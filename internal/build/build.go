@@ -896,11 +896,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				if aPkg.ArchiveFile == "" {
-					visitErr = fmt.Errorf("runtime package %s missing archive file", p.PkgPath)
-					return
+				if aPkg.ArchiveFile != "" {
+					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
 				}
-				rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -913,11 +911,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			if aPkg.ArchiveFile == "" {
-				visitErr = fmt.Errorf("package %s missing archive file", p.PkgPath)
-				return
+			if aPkg.ArchiveFile != "" {
+				linkInputs = append(linkInputs, aPkg.ArchiveFile)
 			}
-			linkInputs = append(linkInputs, aPkg.ArchiveFile)
 		}
 	})
 
