@@ -873,11 +873,13 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
 	}
-	var objFiles []string
+	// linkInputs contains .a archives from all packages and .o files from main module
+	var linkInputs []string
 	var linkArgs []string
-	var rtObjFiles []string
+	var rtLinkInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
+	var visitErr error                  // Capture errors from Visit callback
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
 		// Skip if already linked this package (by ID)
 		if linkedPkgs[p.ID] {
@@ -894,11 +896,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				if aPkg.ArchiveFile != "" {
-					rtObjFiles = append(rtObjFiles, aPkg.ArchiveFile)
-				} else {
-					rtObjFiles = append(rtObjFiles, aPkg.ObjFiles...)
+				if aPkg.ArchiveFile == "" {
+					visitErr = fmt.Errorf("runtime package %s missing archive file", p.PkgPath)
+					return
 				}
+				rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -911,34 +913,40 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			if aPkg.ArchiveFile != "" {
-				objFiles = append(objFiles, aPkg.ArchiveFile)
-			} else {
-				objFiles = append(objFiles, aPkg.ObjFiles...)
+			if aPkg.ArchiveFile == "" {
+				visitErr = fmt.Errorf("package %s missing archive file", p.PkgPath)
+				return
 			}
+			linkInputs = append(linkInputs, aPkg.ArchiveFile)
 		}
 	})
+
+	// Check for errors during Visit
+	if visitErr != nil {
+		return visitErr
+	}
 
 	// Only link runtime objects when needed (or for host builds where runtime is always required).
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
 		linkArgs = append(linkArgs, rtLinkArgs...)
-		objFiles = append(objFiles, rtObjFiles...)
+		linkInputs = append(linkInputs, rtLinkInputs...)
 	}
 
 	// Generate main module file (needed for global variables even in library modes)
+	// This is compiled directly to .o and added to linkInputs (not cached)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
-	objFiles = append(objFiles, entryObjFile)
+	linkInputs = append(linkInputs, entryObjFile)
 
 	// Compile extra files from target configuration
 	extraObjFiles, err := compileExtraFiles(ctx, verbose)
 	if err != nil {
 		return err
 	}
-	objFiles = append(objFiles, extraObjFiles...)
+	linkInputs = append(linkInputs, extraObjFiles...)
 
 	if IsFullRpathEnabled() {
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
@@ -957,7 +965,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		}
 	}
 
-	err = linkObjFiles(ctx, outputPath, objFiles, linkArgs, verbose)
+	err = linkObjFiles(ctx, outputPath, linkInputs, linkArgs, verbose)
 	if err != nil {
 		return err
 	}
