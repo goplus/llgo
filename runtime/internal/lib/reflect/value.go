@@ -1125,7 +1125,7 @@ func (v Value) Pointer() uintptr {
 		p := v.pointer()
 		// Non-nil func value points at data block.
 		// First word of data block is actual code.
-		if p != nil {
+		if p != nil && v.typ_.IsClosure() {
 			p = *(*unsafe.Pointer)(p)
 		}
 		return uintptr(p)
@@ -1732,7 +1732,7 @@ func (v Value) UnsafePointer() unsafe.Pointer {
 		p := v.pointer()
 		// Non-nil func value points at data block.
 		// First word of data block is actual code.
-		if p != nil {
+		if p != nil && v.typ_.IsClosure() {
 			p = *(*unsafe.Pointer)(p)
 		}
 		return p
