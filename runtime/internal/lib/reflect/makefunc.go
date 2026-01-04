@@ -222,21 +222,13 @@ func makeMethodValue(op string, v Value) Value {
 	rcvr := Value{v.typ(), v.ptr, fl}
 
 	// v.Type returns the actual type of the method value.
-	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
-	// typ := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
-	// 	Name_: "$f",
-	// 	Typ:   &ftyp.Type,
-	// }, abi.StructField{
-	// 	Name_: "$data",
-	// 	Typ:   unsafePointerType,
-	// })
-	typ := closureOf(ftyp)
-	typ.TFlag |= abi.TFlagClosure
 	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
 	fv := &struct {
 		fn  unsafe.Pointer
 		env unsafe.Pointer
 	}{fn, v.ptr}
+	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
+	typ := closureOf(ftyp)
 	// Cause panic if method is not appropriate.
 	// The panic would still happen during the call if we omit this,
 	// but we want Interface() and other operations to fail early.
