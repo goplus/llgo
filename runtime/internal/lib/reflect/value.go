@@ -2171,7 +2171,7 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
 		abi.Float32, abi.Float64:
-		if v.flag&flagAddr != 0 {
+		if v.flag&flagIndir != 0 {
 			return v.ptr
 		} else {
 			return unsafe.Pointer(&v.ptr)
@@ -2302,6 +2302,9 @@ func (v Value) call(op string, in []Value) (out []Value) {
 				rcvrtype *abi.Type
 			)
 			rcvrtype, ft, fn = methodReceiver(op, v, int(v.flag)>>flagMethodShift)
+			if rcvrtype.Kind() != abi.Pointer {
+				rcvrtype = toRType(rcvrtype).ptrTo()
+			}
 			tin = append([]*abi.Type{rcvrtype}, ft.In...)
 			tout = ft.Out
 			ioff = 1
