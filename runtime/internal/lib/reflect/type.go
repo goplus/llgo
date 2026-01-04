@@ -1240,6 +1240,8 @@ func FuncOf(in, out []Type, variadic bool) Type {
 
 	// Make a func type.
 	var ifunc any = (func())(nil)
+	// Closures are always struct{fn *funcType, data unsafe.Pointer}
+	// This is guaranteed by closureOf() construction
 	closureType := *(**abi.StructType)(unsafe.Pointer(&ifunc))
 	prototype := closureType.Fields[0].Typ.FuncType()
 	ft := &funcType{}
