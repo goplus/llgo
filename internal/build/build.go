@@ -1366,7 +1366,48 @@ func toTypeList(args *types.TypeList) []types.Type {
 	return result
 }
 
+// fixUntypedShiftTypes fixes a bug in go/types where non-constant shift expressions
+// with untyped constant left operands have type "untyped int" instead of "int".
+//
+// According to the Go spec: "If the left operand of a non-constant shift expression
+// is an untyped constant, it is first implicitly converted to the type it would assume
+// if the shift expression were replaced by its left operand alone."
+//
+// This causes go/ssa sanity check to fail when the type remains untyped.
+// See: https://github.com/golang/go/issues/77067
+func fixUntypedShiftTypes(p *packages.Package) {
+	// First pass: identify expressions needing fixes
+	// (avoid modifying map during iteration)
+	var toFix []ast.Expr
+	for expr, tv := range p.TypesInfo.Types {
+		switch e := expr.(type) {
+		case *ast.BinaryExpr:
+			if e.Op != token.SHL && e.Op != token.SHR {
+				break
+			}
+			basic, ok := tv.Type.(*types.Basic)
+			if !ok || basic.Info()&types.IsUntyped == 0 {
+				break
+			}
+			toFix = append(toFix, expr)
+		}
+	}
+
+	// Second pass: apply fixes
+	for _, expr := range toFix {
+		tv := p.TypesInfo.Types[expr]
+		p.TypesInfo.Types[expr] = types.TypeAndValue{
+			Type:  types.Default(tv.Type),
+			Value: tv.Value,
+		}
+	}
+}
+
 func applyPatches(ctx *context, p *packages.Package, verbose bool) {
+	// Fix untyped shift types before SSA build
+	// See: https://github.com/golang/go/issues/77067
+	fixUntypedShiftTypes(p)
+
 	// fix instance patch
 	for id, inst := range p.TypesInfo.Instances {
 		if obj := p.TypesInfo.Uses[id]; obj != nil && obj.Pkg() != nil && obj.Pkg() != p.Types {
