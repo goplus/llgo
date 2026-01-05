@@ -141,6 +141,7 @@ type aProgram struct {
 	rtSliceTy  llvm.Type
 	rtMapTy    llvm.Type
 	rtChanTy   llvm.Type
+	tokenType  llvm.Type
 
 	anyTy     Type
 	voidTy    Type
@@ -162,8 +163,9 @@ type aProgram struct {
 	i32Ty     Type
 	u32Ty     Type
 	i64Ty     Type
-	u64Ty     Type
-	u16Ty     Type
+	u64Ty   Type
+	u16Ty   Type
+	tokenTy Type
 
 	pyObjPtr  Type
 	pyObjPPtr Type
@@ -207,6 +209,17 @@ type aProgram struct {
 	longjmpTy   *types.Signature
 	sigsetjmpTy *types.Signature
 	sigljmpTy   *types.Signature
+
+	// Coroutine intrinsic signatures
+	coroIdTy      *types.Signature
+	coroBeginTy   *types.Signature
+	coroSuspendTy *types.Signature
+	coroEndTy     *types.Signature
+	coroResumeTy  *types.Signature
+	coroDestroyTy *types.Signature
+	coroSizeTy    *types.Signature
+	coroAllocTy   *types.Signature
+	coroFreeTy    *types.Signature
 
 	printfTy *types.Signature
 
@@ -428,7 +441,8 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		mod: mod, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
-		export: make(map[string]string),
+		export:  make(map[string]string),
+		coroFns: make(map[string]Expr),
 	}
 	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
@@ -659,6 +673,22 @@ func (p Program) Uint64() Type {
 	return p.u64Ty
 }
 
+// Token returns the LLVM token type.
+// Token is used for coroutine intrinsics.
+// Note: Go type system has no equivalent, so we use types.Invalid as placeholder.
+func (p Program) Token() Type {
+	if p.tokenTy == nil {
+		p.tokenTy = &aType{p.tyToken(), rawType{types.Typ[types.Invalid]}, vkInvalid}
+	}
+	return p.tokenTy
+}
+
+// TokenNone returns a 'token none' value (undefined token).
+func (p Program) TokenNone() Expr {
+	impl := llvm.ConstNull(p.Token().ll)
+	return Expr{impl: impl, Type: p.Token()}
+}
+
 // -----------------------------------------------------------------------------
 
 // A Package is a single analyzed Go package containing Members for
@@ -688,6 +718,7 @@ type aPackage struct {
 	fnlink func(string) string
 
 	iRoutine int
+	coroFns  map[string]Expr // cache of $coro versions: funcName -> funcName$coro
 
 	NeedRuntime bool
 	NeedPyInit  bool

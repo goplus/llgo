@@ -139,6 +139,11 @@ type context struct {
 	cgoRet     llssa.Expr
 	cgoSymbols []string
 	rewrites   map[string]string
+
+	// LLVM Coroutine mode fields
+	inCoroFunc bool                      // true when compiling a $coro version of a function
+	coroFuncs  map[string]llssa.Function // maps function name to its $coro version
+	coroState  *llssa.CoroState          // current coroutine state (for prologue/epilogue)
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -350,6 +355,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		p.inits = append(p.inits, func() {
 			p.fn = fn
 			p.state = state // restore pkgState when compiling funcBody
+			p.inCoroFunc = false
 			defer func() {
 				p.fn = nil
 			}()
@@ -402,11 +408,221 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			b.EndBuild()
 		})
+
+		// Note: Coro versions are only generated on-demand for `go` statements
+		// via coroRoutine() in goroutine.go, not for all functions.
+
 		for _, af := range f.AnonFuncs {
 			p.compileFuncDecl(pkg, af)
 		}
 	}
 	return fn, nil, goFunc
+}
+
+// compileCoroFuncDecl generates the $coro version of a function for LLVM coroutine mode.
+// The coro version has the same logic but:
+// - Uses presplitcoroutine attribute
+// - Has coro prologue (coro.id, coro.begin)
+// - Has coro epilogue (coro.free, coro.end)
+// - Returns ptr (coroutine handle) instead of original return type
+func (p *context) compileCoroFuncDecl(pkg llssa.Package, f *ssa.Function, origFn llssa.Function, name string, sig *types.Signature, hasCtx bool, state pkgState, dbgEnabled, dbgSymsEnabled bool) {
+	coroName := llssa.CoroName(name)
+
+	// Create coro function using NewCoroFunc (adds presplitcoroutine attribute)
+	coroFnWrapper := pkg.NewCoroFunc(name, sig, llssa.InGo)
+	coroFn := coroFnWrapper.Fn
+
+	// Store in coroFuncs map for call redirection
+	p.coroFuncs[name] = coroFn
+
+	nblk := len(f.Blocks)
+	// Create nblk + 1 blocks: block 0 for coro entry, blocks 1..nblk for original body
+	coroFn.MakeBlocks(nblk + 1)
+	if f.Recover != nil {
+		// Recover block index is shifted by 1 in coro version
+		coroFn.SetRecover(coroFn.Block(f.Recover.Index + 1))
+	}
+
+	// Add compilation closure for coro version
+	p.inits = append(p.inits, func() {
+		p.fn = coroFn
+		p.state = state
+		p.inCoroFunc = true // Mark that we're compiling coro version
+		defer func() {
+			p.fn = nil
+			p.inCoroFunc = false
+			p.coroState = nil
+		}()
+		p.phis = nil
+		if dbgSymsEnabled {
+			p.paramDIVars = make(map[*types.Var]llssa.DIVar)
+		} else {
+			p.paramDIVars = nil
+		}
+		if debugInstr {
+			log.Println("==> CoroFuncBody", coroName)
+		}
+		b := coroFn.NewBuilder()
+
+		// Block 0 is coro entry, body starts at block 1
+		bodyStartBlk := coroFn.Block(1)
+
+		// Set builder to block 0 (coro entry) and generate prologue
+		b.SetBlock(coroFn.Block(0))
+		p.coroState = b.CoroFuncPrologue(bodyStartBlk)
+
+		p.bvals = make(map[ssa.Value]llssa.Expr)
+		off := make([]int, len(f.Blocks))
+		for i, block := range f.Blocks {
+			off[i] = p.compileCoroPhis(b, block)
+		}
+
+		p.blkInfos = blocks.Infos(f.Blocks)
+		i := 0
+		for {
+			block := f.Blocks[i]
+			p.compileCoroBlock(b, block, off[i])
+			if i = p.blkInfos[i].Next; i < 0 {
+				break
+			}
+		}
+		for _, phi := range p.phis {
+			phi()
+		}
+
+		// Generate coro epilogue
+		b.CoroFuncEpilogue(p.coroState)
+
+		b.EndBuild()
+	})
+}
+
+// compileCoroPhis compiles phi nodes for a block in coro version.
+// Block indices are shifted by 1 (block 0 is coro entry).
+func (p *context) compileCoroPhis(b llssa.Builder, block *ssa.BasicBlock) int {
+	fn := p.fn
+	// In coro version, original block index N maps to block N+1
+	blk := fn.Block(block.Index + 1)
+	b.SetBlockEx(blk, llssa.AtEnd, false)
+	if ninstr := len(block.Instrs); ninstr > 0 {
+		if isPhi(block.Instrs[0]) {
+			n := 1
+			for n < ninstr && isPhi(block.Instrs[n]) {
+				n++
+			}
+			rets := make([]llssa.Expr, n)
+			for i := 0; i < n; i++ {
+				iv := block.Instrs[i].(*ssa.Phi)
+				rets[i] = p.compileCoroPhi(b, iv)
+			}
+			for i := 0; i < n; i++ {
+				iv := block.Instrs[i].(*ssa.Phi)
+				p.bvals[iv] = rets[i]
+			}
+			return n
+		}
+	}
+	return 0
+}
+
+// compileCoroPhi compiles a phi node in coro version.
+// Block indices are shifted by 1.
+func (p *context) compileCoroPhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
+	phi := b.Phi(p.type_(v.Type(), llssa.InGo))
+	ret = phi.Expr
+	p.phis = append(p.phis, func() {
+		preds := v.Block().Preds
+		bblks := make([]llssa.BasicBlock, len(preds))
+		for i, pred := range preds {
+			// In coro version, original block index N maps to block N+1
+			bblks[i] = p.fn.Block(pred.Index + 1)
+		}
+		edges := v.Edges
+		phi.AddIncoming(b, bblks, func(i int, blk llssa.BasicBlock) llssa.Expr {
+			b.SetBlockEx(blk, llssa.BeforeLast, false)
+			return p.compileValue(b, edges[i])
+		})
+	})
+	return
+}
+
+// compileCoroBlock compiles a block in coro version.
+// Block indices are shifted by 1, and Return statements are transformed.
+func (p *context) compileCoroBlock(b llssa.Builder, block *ssa.BasicBlock, n int) llssa.BasicBlock {
+	var fn = p.fn
+	var instrs = block.Instrs[n:]
+	// In coro version, original block index N maps to block N+1
+	var ret = fn.Block(block.Index + 1)
+	b.SetBlock(ret)
+
+	last := len(instrs) - 1
+	for i, instr := range instrs {
+		if debugInstr {
+			log.Printf("==> compileCoroInstr %T: %v\n", instr, instr)
+		}
+
+		// Skip terminators - we handle them separately with adjusted block indices
+		if i == last {
+			switch instr.(type) {
+			case *ssa.Return, *ssa.Jump, *ssa.If, *ssa.Panic:
+				continue // Don't compile, handle below
+			}
+		}
+
+		// For other instructions, compile normally
+		p.compileInstr(b, instr)
+	}
+
+	// Handle flow control with adjusted block indices
+	if last >= 0 {
+		switch term := instrs[last].(type) {
+		case *ssa.Return:
+			// In coro version, return should do final suspend and return handle
+			p.compileCoroReturn(b, term)
+		case *ssa.Jump:
+			// Jump to target block (index + 1 in coro version)
+			// term.Block().Succs[0] is the target block of the jump
+			targetBlk := fn.Block(term.Block().Succs[0].Index + 1)
+			b.Jump(targetBlk)
+		case *ssa.If:
+			// Branch to then/else blocks (index + 1 in coro version)
+			cond := p.compileValue(b, term.Cond)
+			succs := term.Block().Succs
+			thenBlk := fn.Block(succs[0].Index + 1)
+			elseBlk := fn.Block(succs[1].Index + 1)
+			b.If(cond, thenBlk, elseBlk)
+		case *ssa.Panic:
+			// Panic in coro version
+			val := p.compileValue(b, term.X)
+			b.Panic(val)
+		}
+	}
+
+	return ret
+}
+
+// compileCoroReturn compiles a Return instruction in coro version.
+// Instead of returning the original value, it does final suspend and returns the handle.
+func (p *context) compileCoroReturn(b llssa.Builder, ret *ssa.Return) {
+	state := p.coroState
+	prog := p.prog
+
+	// Do final suspend (final = true)
+	trueVal := prog.BoolVal(true)
+	result := b.CoroSuspend(llssa.Expr{}, trueVal)
+
+	// Create a suspend block (for final suspend, should not resume)
+	suspendBlk := p.fn.MakeBlock()
+
+	// Use switch to handle suspend result:
+	// - 0: resume (shouldn't happen for final suspend, but required for LLVM)
+	// - 1: cleanup
+	// - default: suspend point (for -1/255)
+	b.CoroSuspendSwitch(result, suspendBlk, state.CleanupBlk)
+
+	// Suspend block - for final suspend, just go to cleanup
+	b.SetBlock(suspendBlk)
+	b.Jump(state.CleanupBlk)
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
@@ -1133,6 +1349,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 		},
 		cgoSymbols: make([]string, 0, 128),
 		rewrites:   rewrites,
+		coroFuncs:  make(map[string]llssa.Function),
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")

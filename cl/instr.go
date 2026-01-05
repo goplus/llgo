@@ -427,6 +427,11 @@ var llgoInstrs = map[string]int{
 
 	"asm":       llgoAsm,
 	"stackSave": llgoStackSave,
+
+	// LLVM Coroutine instructions
+	"coroResume":  llgoCoroResume,
+	"coroDestroy": llgoCoroDestroy,
+	"coroSize":    llgoCoroSize,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -544,6 +549,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = b.Do(act, aFn.Expr, args...)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
+			// Note: In coro context, we still call the original function (not $coro version)
+			// because we need the actual return value. The $coro version returns ptr (handle).
+			// Only "go" statements call the $coro version directly.
 			ret = b.Do(act, aFn.Expr, args...)
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
@@ -612,6 +620,14 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.funcAddr(b, args)
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
+		case llgoCoroResume: // func coroResume(handle)
+			handle := p.compileValue(b, args[0])
+			b.CoroResume(handle)
+		case llgoCoroDestroy: // func coroDestroy(handle)
+			handle := p.compileValue(b, args[0])
+			b.CoroDestroy(handle)
+		case llgoCoroSize: // func coroSize() int64
+			ret = b.CoroSize()
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)

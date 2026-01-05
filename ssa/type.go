@@ -323,6 +323,13 @@ func (p Program) tyInt64() llvm.Type {
 	return p.int64Type
 }
 
+func (p Program) tyToken() llvm.Type {
+	if p.tokenType.IsNil() {
+		p.tokenType = p.ctx.TokenType()
+	}
+	return p.tokenType
+}
+
 /*
 func (p Program) toTuple(typ *types.Tuple) Type {
 	return &aType{p.toLLVMTuple(typ), rawType{typ}, vkTuple}
