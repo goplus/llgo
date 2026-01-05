@@ -1,48 +1,37 @@
-; ModuleID = 'github.com/goplus/llgo/cl/_testrt/corosuspend'
-source_filename = "github.com/goplus/llgo/cl/_testrt/corosuspend"
+; ModuleID = 'github.com/goplus/llgo/cl/_testrt/corotaint'
+source_filename = "github.com/goplus/llgo/cl/_testrt/corotaint"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
-@"github.com/goplus/llgo/cl/_testrt/corosuspend.coroHandle" = global ptr null, align 8
-@"github.com/goplus/llgo/cl/_testrt/corosuspend.init$guard" = global i1 false, align 1
-@0 = private unnamed_addr constant [14 x i8] c"main: after go", align 1
-@1 = private unnamed_addr constant [10 x i8] c"main: done", align 1
-@2 = private unnamed_addr constant [13 x i8] c"worker: start", align 1
-@3 = private unnamed_addr constant [15 x i8] c"worker: resumed", align 1
+@"github.com/goplus/llgo/cl/_testrt/corotaint.init$guard" = global i1 false, align 1
+@0 = private unnamed_addr constant [13 x i8] c"caller: start", align 1
+@1 = private unnamed_addr constant [12 x i8] c"caller: done", align 1
+@2 = private unnamed_addr constant [14 x i8] c"main: after go", align 1
+@3 = private unnamed_addr constant [10 x i8] c"main: done", align 1
+@4 = private unnamed_addr constant [13 x i8] c"worker: start", align 1
+@5 = private unnamed_addr constant [15 x i8] c"worker: resumed", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/corosuspend.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/corotaint.caller"() {
 _llgo_0:
-  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/corosuspend.init$guard", align 1
-  br i1 %0, label %_llgo_2, label %_llgo_1
-
-_llgo_1:                                          ; preds = %_llgo_0
-  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/corosuspend.init$guard", align 1
-  br label %_llgo_2
-
-_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  ret void
-}
-
-define void @"github.com/goplus/llgo/cl/_testrt/corosuspend.main"() {
-_llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/cl/_testrt/corosuspend.worker$coro"()
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr %0)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 14 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 13 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 10 })
+  call void @"github.com/goplus/llgo/cl/_testrt/corotaint.worker"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 12 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 ; Function Attrs: presplitcoroutine
-define ptr @"github.com/goplus/llgo/cl/_testrt/corosuspend.main$coro"() #0 {
+define ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.caller$coro"() #0 {
 _llgo_0:
   %0 = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
   %1 = call i1 @llvm.coro.alloc(token %0)
   br i1 %1, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %2 = call ptr @"github.com/goplus/llgo/cl/_testrt/corosuspend.worker$coro"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 13 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %2 = call ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.worker$coro"()
   br label %_llgo_7
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -93,9 +82,7 @@ _llgo_10:                                         ; preds = %_llgo_9
   ]
 
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 14 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 10 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 12 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_4
 
@@ -112,24 +99,126 @@ _llgo_15:                                         ; preds = %_llgo_4
   ret ptr %6
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/corosuspend.worker"() {
+define void @"github.com/goplus/llgo/cl/_testrt/corotaint.init"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 13 })
+  %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.init$guard", align 1
+  br i1 %0, label %_llgo_2, label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.init$guard", align 1
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
+
+define void @"github.com/goplus/llgo/cl/_testrt/corotaint.main"() {
+_llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.caller$coro"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 14 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 15 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 10 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 ; Function Attrs: presplitcoroutine
-define ptr @"github.com/goplus/llgo/cl/_testrt/corosuspend.worker$coro"() #0 {
+define ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.main$coro"() #0 {
 _llgo_0:
   %0 = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
   %1 = call i1 @llvm.coro.alloc(token %0)
   br i1 %1, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 13 })
+  %2 = call ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.caller$coro"()
+  br label %_llgo_7
+
+_llgo_2:                                          ; preds = %_llgo_0
+  %3 = call i64 @llvm.coro.size.i64()
+  %4 = call ptr @malloc(i64 %3)
+  br label %_llgo_3
+
+_llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
+  %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
+  %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  br label %_llgo_1
+
+_llgo_4:                                          ; preds = %_llgo_11
+  %7 = call i8 @llvm.coro.suspend(token none, i1 true)
+  switch i8 %7, label %_llgo_15 [
+    i8 0, label %_llgo_14
+    i8 1, label %_llgo_5
+  ]
+
+_llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
+  %8 = call ptr @llvm.coro.free(token %0, ptr %6)
+  call void @free(ptr %8)
+  br label %_llgo_6
+
+_llgo_6:                                          ; preds = %_llgo_5
+  %9 = call i1 @llvm.coro.end(ptr %6, i1 false, token none)
+  ret ptr %6
+
+_llgo_7:                                          ; preds = %_llgo_12, %_llgo_1
+  %10 = load ptr, ptr %2, align 8
+  %11 = icmp eq ptr %10, null
+  br i1 %11, label %_llgo_11, label %_llgo_8
+
+_llgo_8:                                          ; preds = %_llgo_7
+  call void @llvm.coro.resume(ptr %2)
+  br label %_llgo_9
+
+_llgo_9:                                          ; preds = %_llgo_8
+  %12 = load ptr, ptr %2, align 8
+  %13 = icmp eq ptr %12, null
+  br i1 %13, label %_llgo_11, label %_llgo_10
+
+_llgo_10:                                         ; preds = %_llgo_9
+  %14 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %14, label %_llgo_13 [
+    i8 0, label %_llgo_12
+    i8 1, label %_llgo_5
+  ]
+
+_llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 14 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 10 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  br label %_llgo_4
+
+_llgo_12:                                         ; preds = %_llgo_10
+  br label %_llgo_7
+
+_llgo_13:                                         ; preds = %_llgo_10
+  ret ptr %6
+
+_llgo_14:                                         ; preds = %_llgo_4
+  br label %_llgo_5
+
+_llgo_15:                                         ; preds = %_llgo_4
+  ret ptr %6
+}
+
+define void @"github.com/goplus/llgo/cl/_testrt/corotaint.worker"() {
+_llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 13 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 15 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  ret void
+}
+
+; Function Attrs: presplitcoroutine
+define ptr @"github.com/goplus/llgo/cl/_testrt/corotaint.worker$coro"() #0 {
+_llgo_0:
+  %0 = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
+  %1 = call i1 @llvm.coro.alloc(token %0)
+  br i1 %1, label %_llgo_2, label %_llgo_3
+
+_llgo_1:                                          ; preds = %_llgo_3
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 13 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %2 = call i8 @llvm.coro.suspend(token none, i1 false)
   switch i8 %2, label %_llgo_8 [
@@ -164,7 +253,7 @@ _llgo_6:                                          ; preds = %_llgo_5
   ret ptr %6
 
 _llgo_7:                                          ; preds = %_llgo_1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 15 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 15 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_4
 
@@ -177,8 +266,6 @@ _llgo_9:                                          ; preds = %_llgo_4
 _llgo_10:                                         ; preds = %_llgo_4
   ret ptr %6
 }
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
@@ -210,6 +297,8 @@ declare void @free(ptr)
 
 ; Function Attrs: nounwind
 declare i1 @llvm.coro.end(ptr, i1, token) #2
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr)
 
 attributes #0 = { presplitcoroutine }
 attributes #1 = { nocallback nofree nosync nounwind willreturn memory(argmem: read) }

@@ -550,10 +550,37 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = b.Do(act, aFn.Expr, args...)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
-			// Note: In coro context, we still call the original function (not $coro version)
-			// because we need the actual return value. The $coro version returns ptr (handle).
-			// Only "go" statements call the $coro version directly.
-			ret = b.Do(act, aFn.Expr, args...)
+			// Check if we're in a $coro function and the callee has suspend points
+			if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
+				// Check if callee has suspend points (taint analysis)
+				if p.coroAnalysis().HasSuspendPoint(cv) {
+					// For void functions, we can call $coro and await
+					sig := cv.Signature
+					if sig.Results().Len() == 0 {
+						// Get or create the $coro version
+						coroFn := p.getOrCreateCoroFunc(cv)
+						if coroFn == nil {
+							// Fallback to sync version
+							ret = b.Do(act, aFn.Expr, args...)
+						} else {
+							// Call $coro version synchronously (always use Call, not Go)
+							// and await with suspend for cooperative scheduling
+							handle := b.Do(llssa.Call, coroFn.Expr, args...)
+							b.CoroAwaitWithSuspend(handle, p.coroState)
+						}
+					} else {
+						// Functions with return values: call sync version for now
+						// TODO: Store return value in callee frame, await, then read
+						ret = b.Do(act, aFn.Expr, args...)
+					}
+				} else {
+					// No suspend points, call sync version directly
+					ret = b.Do(act, aFn.Expr, args...)
+				}
+			} else {
+				// Not in coro context or coro mode disabled, call sync version
+				ret = b.Do(act, aFn.Expr, args...)
+			}
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
 			ret = b.Do(act, pyFn.Expr, args...)

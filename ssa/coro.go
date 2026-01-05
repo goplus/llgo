@@ -680,4 +680,117 @@ func (b Builder) CoroSuspendWithCleanup(state *CoroState) {
 	b.SetBlock(resumeBlk)
 }
 
+// CoroAwait implements inline await for a coroutine.
+// It resumes the coroutine until completion, blocking the caller.
+// This is used when a coroutine function synchronously calls another
+// function that has suspend points.
+//
+// The pattern is:
+//
+//	loop:
+//	  resume_fn = load handle[0]
+//	  if resume_fn == null: goto done  // coroutine finished
+//	  call llvm.coro.resume(handle)
+//	  goto loop
+//	done:
+//	  ; continue execution
+//
+// Note: This is for void functions. Functions with return values
+// require additional frame access to retrieve the return value.
+func (b Builder) CoroAwait(handle Expr) {
+	prog := b.Prog
+	fn := b.Func
+
+	// Create basic blocks
+	loopBlk := fn.MakeBlock()
+	resumeBlk := fn.MakeBlock()
+	doneBlk := fn.MakeBlock()
+
+	// Jump to loop
+	b.Jump(loopBlk)
+
+	// Loop block: check if coroutine is done
+	b.SetBlock(loopBlk)
+	// Load resume_fn from handle (first field of coroutine frame)
+	resumeFnPtr := handle // handle is already ptr to frame
+	resumeFn := b.Load(Expr{resumeFnPtr.impl, prog.Pointer(prog.VoidPtr())})
+	null := prog.Nil(prog.VoidPtr())
+	isDone := b.BinOp(token.EQL, resumeFn, null)
+	b.If(isDone, doneBlk, resumeBlk)
+
+	// Resume block: resume the coroutine and loop back
+	b.SetBlock(resumeBlk)
+	b.CoroResume(handle)
+	b.Jump(loopBlk)
+
+	// Done block: coroutine finished, continue execution
+	b.SetBlock(doneBlk)
+}
+
+// CoroAwaitWithSuspend implements await with suspension support.
+// Unlike CoroAwait which busy-loops, this suspends the caller when
+// the callee suspends, allowing cooperative scheduling.
+//
+// The pattern is:
+//
+//	loop:
+//	  resume_fn = load handle[0]
+//	  if resume_fn == null: goto done  // callee finished
+//	  call llvm.coro.resume(handle)
+//	  resume_fn = load handle[0]       // check again after resume
+//	  if resume_fn == null: goto done  // callee finished
+//	  ; callee suspended, we should suspend too
+//	  call runtime.CoroReschedule(callee_handle)  // put callee back in queue
+//	  suspend                                      // suspend ourselves
+//	  goto loop
+//	done:
+//	  ; continue execution
+//
+// This requires the caller to be in a coroutine context with valid CoroState.
+func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
+	prog := b.Prog
+	fn := b.Func
+
+	// Create basic blocks
+	loopBlk := fn.MakeBlock()
+	resumeBlk := fn.MakeBlock()
+	checkBlk := fn.MakeBlock()
+	suspendBlk := fn.MakeBlock()
+	doneBlk := fn.MakeBlock()
+
+	// Jump to loop
+	b.Jump(loopBlk)
+
+	// Loop block: check if coroutine is done
+	b.SetBlock(loopBlk)
+	resumeFnPtr := handle
+	resumeFn := b.Load(Expr{resumeFnPtr.impl, prog.Pointer(prog.VoidPtr())})
+	null := prog.Nil(prog.VoidPtr())
+	isDone := b.BinOp(token.EQL, resumeFn, null)
+	b.If(isDone, doneBlk, resumeBlk)
+
+	// Resume block: resume the callee coroutine
+	b.SetBlock(resumeBlk)
+	b.CoroResume(handle)
+	b.Jump(checkBlk)
+
+	// Check block: see if callee finished or suspended
+	b.SetBlock(checkBlk)
+	resumeFn2 := b.Load(Expr{resumeFnPtr.impl, prog.Pointer(prog.VoidPtr())})
+	isDone2 := b.BinOp(token.EQL, resumeFn2, null)
+	b.If(isDone2, doneBlk, suspendBlk)
+
+	// Suspend block: callee is still suspended, we should suspend too
+	b.SetBlock(suspendBlk)
+	// Put the callee handle back in the queue
+	// Note: This would need runtime support (CoroReschedule)
+	// For now, we just suspend ourselves
+	b.CoroSuspendWithCleanup(state)
+	// After being resumed, check the callee again
+	b.Jump(loopBlk)
+
+	// Done block: callee finished, continue execution
+	b.SetBlock(doneBlk)
+}
+
 // -----------------------------------------------------------------------------

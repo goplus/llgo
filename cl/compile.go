@@ -141,9 +141,10 @@ type context struct {
 	rewrites   map[string]string
 
 	// LLVM Coroutine mode fields
-	inCoroFunc bool                      // true when compiling a $coro version of a function
-	coroFuncs  map[string]llssa.Function // maps function name to its $coro version
-	coroState  *llssa.CoroState          // current coroutine state (for prologue/epilogue)
+	inCoroFunc        bool                      // true when compiling a $coro version of a function
+	coroFuncs         map[string]llssa.Function // maps function name to its $coro version
+	coroState         *llssa.CoroState          // current coroutine state (for prologue/epilogue)
+	coroAnalysisCache *CoroAnalysis             // cached suspend point analysis
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -610,6 +611,22 @@ func (p *context) compileCoroBlock(b llssa.Builder, block *ssa.BasicBlock, n int
 func (p *context) compileCoroReturn(b llssa.Builder, ret *ssa.Return) {
 	// Jump to the single exit block (which has the final suspend)
 	b.Jump(p.coroState.ExitBlk)
+}
+
+// getOrCreateCoroFunc returns the $coro version of a function.
+// It looks up in the coroFuncs cache first, and if not found,
+// returns a nil function (the caller should fall back to sync version).
+// Note: This is for use during call compilation when we need to redirect
+// to the $coro version. The $coro version must have been created during
+// the function's own compilation phase.
+func (p *context) getOrCreateCoroFunc(f *ssa.Function) llssa.Function {
+	_, name, _ := p.funcName(f)
+	if coroFn, ok := p.coroFuncs[name]; ok {
+		return coroFn
+	}
+	// $coro version not created yet or function doesn't need one
+	// Return nil function, caller should fall back to sync version
+	return nil
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
