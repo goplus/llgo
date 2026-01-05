@@ -92,17 +92,20 @@ func coroQueueEmpty(q *coroQueue) bool {
 
 // CoroSpawn adds a new coroutine to the run queue.
 // This is called when a goroutine is created in coroutine mode.
-//
-// For MVP: The coroutine wrapper runs the function synchronously before
-// returning the handle. By the time CoroSpawn is called, the coroutine
-// has already done final suspend. The frame memory was already freed in
-// the cleanup path, so we just ignore the handle.
-//
-// TODO: For full implementation, add handle to run queue for scheduling.
+// The coroutine has already started and may be suspended at a yield point.
+// If the coroutine is already done (resume_fn == null), it's not queued.
 func CoroSpawn(handle CoroHandle) {
-	// MVP: function already ran synchronously, nothing to do.
-	// The coroutine frame is already cleaned up.
-	_ = handle
+	if handle == nil {
+		return
+	}
+	// Check if the coroutine is already done (resume_fn == null)
+	// The first field of the coroutine frame is the resume function pointer
+	resumeFn := *(*unsafe.Pointer)(handle)
+	if resumeFn == nil {
+		// Coroutine already completed at final suspend, don't queue
+		return
+	}
+	coroQueuePush(&coroRunQueue, handle)
 }
 
 // CoroYield yields the current coroutine and schedules the next one.
@@ -174,5 +177,12 @@ func coroDestroy(handle CoroHandle)
 //
 //go:linkname coroSize llgo.coroSize
 func coroSize() int64
+
+// coroSuspend suspends the current coroutine.
+// This is a yield point - the coroutine can be resumed later.
+// In non-coroutine context (normal function), this is a no-op.
+//
+//go:linkname coroSuspend llgo.coroSuspend
+func coroSuspend()
 
 // -----------------------------------------------------------------------------

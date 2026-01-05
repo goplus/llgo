@@ -523,6 +523,7 @@ const (
 	llgoCoroResume  = llgoCoroBase + 0
 	llgoCoroDestroy = llgoCoroBase + 1
 	llgoCoroSize    = llgoCoroBase + 2
+	llgoCoroSuspend = llgoCoroBase + 3
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )

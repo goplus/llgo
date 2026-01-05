@@ -409,8 +409,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			b.EndBuild()
 		})
 
-		// Note: Coro versions are only generated on-demand for `go` statements
-		// via coroRoutine() in goroutine.go, not for all functions.
+		// Generate $coro version for LLVM coroutine mode (dual-symbol mode)
+		// Skip for: init functions, closures (have free vars)
+		if llssa.IsLLVMCoroMode() && !hasCtx && !isInit {
+			p.compileCoroFuncDecl(pkg, f, fn, name, sig, hasCtx, state, dbgEnabled, dbgSymsEnabled)
+		}
 
 		for _, af := range f.AnonFuncs {
 			p.compileFuncDecl(pkg, af)
@@ -602,27 +605,11 @@ func (p *context) compileCoroBlock(b llssa.Builder, block *ssa.BasicBlock, n int
 }
 
 // compileCoroReturn compiles a Return instruction in coro version.
-// Instead of returning the original value, it does final suspend and returns the handle.
+// Instead of returning the original value, it jumps to the single exit block
+// where the final suspend is performed.
 func (p *context) compileCoroReturn(b llssa.Builder, ret *ssa.Return) {
-	state := p.coroState
-	prog := p.prog
-
-	// Do final suspend (final = true)
-	trueVal := prog.BoolVal(true)
-	result := b.CoroSuspend(llssa.Expr{}, trueVal)
-
-	// Create a suspend block (for final suspend, should not resume)
-	suspendBlk := p.fn.MakeBlock()
-
-	// Use switch to handle suspend result:
-	// - 0: resume (shouldn't happen for final suspend, but required for LLVM)
-	// - 1: cleanup
-	// - default: suspend point (for -1/255)
-	b.CoroSuspendSwitch(result, suspendBlk, state.CleanupBlk)
-
-	// Suspend block - for final suspend, just go to cleanup
-	b.SetBlock(suspendBlk)
-	b.Jump(state.CleanupBlk)
+	// Jump to the single exit block (which has the final suspend)
+	b.Jump(p.coroState.ExitBlk)
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {

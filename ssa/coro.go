@@ -87,6 +87,7 @@ func (p Package) NewCoroFunc(name string, sig *types.Signature, bg Background) *
 
 // makeCoroSignature creates a coroutine signature from an original signature.
 // Parameters are unchanged; return type becomes unsafe.Pointer (coroutine handle).
+// Note: Type parameters are not copied - each generic instantiation gets its own $coro.
 func makeCoroSignature(orig *types.Signature, prog Program) *types.Signature {
 	params := orig.Params()
 
@@ -94,25 +95,10 @@ func makeCoroSignature(orig *types.Signature, prog Program) *types.Signature {
 	ptrType := prog.VoidPtr().raw.Type
 	results := types.NewTuple(types.NewParam(0, nil, "", ptrType))
 
-	// Convert TypeParamList to []*TypeParam
-	var recvTypeParams, typeParams []*types.TypeParam
-	if rtp := orig.RecvTypeParams(); rtp != nil {
-		recvTypeParams = make([]*types.TypeParam, rtp.Len())
-		for i := 0; i < rtp.Len(); i++ {
-			recvTypeParams[i] = rtp.At(i)
-		}
-	}
-	if tp := orig.TypeParams(); tp != nil {
-		typeParams = make([]*types.TypeParam, tp.Len())
-		for i := 0; i < tp.Len(); i++ {
-			typeParams[i] = tp.At(i)
-		}
-	}
-
 	return types.NewSignatureType(
 		orig.Recv(),
-		recvTypeParams,
-		typeParams,
+		nil, // No receiver type params - already instantiated
+		nil, // No type params - already instantiated
 		params,
 		results,
 		orig.Variadic(),
@@ -553,6 +539,7 @@ func (b Builder) coroSuspendYield() {
 type CoroState struct {
 	CoroId     Expr       // The coro.id token
 	CoroHandle Expr       // The coro.begin handle
+	ExitBlk    BasicBlock // The exit block (single final suspend point)
 	CleanupBlk BasicBlock // The cleanup block
 	EndBlk     BasicBlock // The end block
 }
@@ -568,6 +555,7 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock) *CoroState {
 	// Create basic blocks for coroutine structure
 	allocBlk := fn.MakeBlock()
 	beginBlk := fn.MakeBlock()
+	exitBlk := fn.MakeBlock()    // Single final suspend point
 	cleanupBlk := fn.MakeBlock()
 	endBlk := fn.MakeBlock()
 
@@ -610,15 +598,31 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock) *CoroState {
 	return &CoroState{
 		CoroId:     coroId,
 		CoroHandle: coroHandle,
+		ExitBlk:    exitBlk,
 		CleanupBlk: cleanupBlk,
 		EndBlk:     endBlk,
 	}
 }
 
-// CoroFuncEpilogue generates the coroutine epilogue (cleanup and end blocks).
+// CoroFuncEpilogue generates the coroutine epilogue (exit, cleanup and end blocks).
 // This should be called after the function body is generated.
+// All return statements in the function body should jump to ExitBlk.
 func (b Builder) CoroFuncEpilogue(state *CoroState) {
 	prog := b.Prog
+	fn := b.Func
+
+	// Generate exit block - single final suspend point
+	b.SetBlock(state.ExitBlk)
+	trueVal := prog.BoolVal(true)
+	result := b.CoroSuspend(Expr{}, trueVal)
+
+	// Create suspend block (for final suspend, just go to cleanup)
+	suspendBlk := fn.MakeBlock()
+	b.CoroSuspendSwitch(result, suspendBlk, state.CleanupBlk, state.CoroHandle)
+
+	// Suspend block - for final suspend, go to cleanup
+	b.SetBlock(suspendBlk)
+	b.Jump(state.CleanupBlk)
 
 	// Generate cleanup block - use C free for coroutine frame
 	b.SetBlock(state.CleanupBlk)
@@ -638,11 +642,21 @@ func (b Builder) CoroFuncEpilogue(state *CoroState) {
 // The switch handles:
 // - 0: resume (jump to resumeBlk)
 // - 1: cleanup (jump to cleanupBlk)
-// - default: suspend point (jump to cleanupBlk for final suspend)
-func (b Builder) CoroSuspendSwitch(result Expr, resumeBlk, cleanupBlk BasicBlock) {
-	sw := b.impl.CreateSwitch(result.impl, cleanupBlk.first, 2)
+// - default: suspend point (return handle to caller)
+//
+// The default case is taken when suspend returns -1 (suspended).
+// This is the return point where the ramp function returns the handle.
+func (b Builder) CoroSuspendSwitch(result Expr, resumeBlk, cleanupBlk BasicBlock, coroHandle Expr) {
+	// Create a suspend block that returns the handle
+	suspendBlk := b.Func.MakeBlock()
+
+	sw := b.impl.CreateSwitch(result.impl, suspendBlk.first, 2)
 	sw.AddCase(llvm.ConstInt(b.Prog.tyInt8(), 0, false), resumeBlk.first)
 	sw.AddCase(llvm.ConstInt(b.Prog.tyInt8(), 1, false), cleanupBlk.first)
+
+	// The suspend block returns the coroutine handle
+	b.SetBlock(suspendBlk)
+	b.Return(coroHandle)
 }
 
 // CoroSuspendWithCleanup performs a suspend point with proper cleanup handling.
@@ -660,7 +674,7 @@ func (b Builder) CoroSuspendWithCleanup(state *CoroState) {
 	resumeBlk := b.Func.MakeBlock()
 
 	// Use switch to handle suspend result
-	b.CoroSuspendSwitch(result, resumeBlk, state.CleanupBlk)
+	b.CoroSuspendSwitch(result, resumeBlk, state.CleanupBlk, state.CoroHandle)
 
 	// Resume block - continue with normal execution
 	b.SetBlock(resumeBlk)

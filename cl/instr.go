@@ -432,6 +432,7 @@ var llgoInstrs = map[string]int{
 	"coroResume":  llgoCoroResume,
 	"coroDestroy": llgoCoroDestroy,
 	"coroSize":    llgoCoroSize,
+	"coroSuspend": llgoCoroSuspend,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -628,6 +629,11 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			b.CoroDestroy(handle)
 		case llgoCoroSize: // func coroSize() int64
 			ret = b.CoroSize()
+		case llgoCoroSuspend: // func coroSuspend()
+			// Only generate suspend in $coro functions
+			if p.inCoroFunc && p.coroState != nil {
+				b.CoroSuspendWithCleanup(p.coroState)
+			}
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
