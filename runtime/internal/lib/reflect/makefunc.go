@@ -223,10 +223,19 @@ func makeMethodValue(op string, v Value) Value {
 
 	// v.Type returns the actual type of the method value.
 	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
+	ptr := v.ptr
+	switch v.typ_.Kind() {
+	case abi.Interface:
+		ptr = (*emptyInterface)(ptr).word
+	case abi.Pointer:
+		if v.flag&flagIndir != 0 {
+			ptr = *(*unsafe.Pointer)(ptr)
+		}
+	}
 	fv := &struct {
 		fn  unsafe.Pointer
 		env unsafe.Pointer
-	}{fn, v.ptr}
+	}{fn, ptr}
 	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
 	typ := closureOf(ftyp)
 	// Cause panic if method is not appropriate.
