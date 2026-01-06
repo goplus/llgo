@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
+	"github.com/goplus/llgo/cl/pullmodel"
 	"github.com/goplus/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
 
@@ -1271,6 +1272,14 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			if member.TypeParams() != nil || member.TypeArgs() != nil {
 				// TODO(xsw): don't compile generic functions
 				// Do not try to build generic (non-instantiated) functions.
+				continue
+			}
+			// Pull model async/await transformation
+			if pullmodel.ShouldTransform(member) {
+				if err := pullmodel.GenerateStateMachine(ctx.prog, ret, pkg, member); err != nil {
+					log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", member.Name(), err)
+					ctx.compileFuncDecl(ret, member)
+				}
 				continue
 			}
 			ctx.compileFuncDecl(ret, member)
