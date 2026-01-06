@@ -451,8 +451,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// We need to check the ready field
 		pollResultType := g.prog.Type(g.createPollType(resultType), llssa.InGo)
 
-		// Allocate pollResult on stack to get address
-		pollResultPtr := b.AllocU(pollResultType)
+		// Allocate pollResult on stack (not heap) to get address
+		pollResultPtr := b.AllocaT(pollResultType)
 		b.Store(pollResultPtr, pollResult)
 
 		// Extract ready field (field 0)

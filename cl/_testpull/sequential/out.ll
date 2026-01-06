@@ -59,7 +59,7 @@ _llgo_5:                                          ; preds = %_llgo_1
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_1
   %10 = load ptr, ptr %4, align 8
   %11 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %10, ptr %1)
-  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  %12 = alloca { i1, i64 }, align 8
   store %"github.com/goplus/llgo/async.Poll[int]" %11, ptr %12, align 4
   %13 = getelementptr inbounds { i1, i64 }, ptr %12, i32 0, i32 0
   %14 = load i1, ptr %13, align 1
@@ -83,7 +83,7 @@ _llgo_9:                                          ; preds = %_llgo_2
 _llgo_10:                                         ; preds = %_llgo_9, %_llgo_2
   %19 = load ptr, ptr %7, align 8
   %20 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %19, ptr %1)
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  %21 = alloca { i1, i64 }, align 8
   store %"github.com/goplus/llgo/async.Poll[int]" %20, ptr %21, align 4
   %22 = getelementptr inbounds { i1, i64 }, ptr %21, i32 0, i32 0
   %23 = load i1, ptr %22, align 1
@@ -101,8 +101,6 @@ _llgo_12:                                         ; preds = %_llgo_10
 }
 
 declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/sequential.StepA"() {
 _llgo_0:
@@ -171,6 +169,8 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/async.init"()
 
