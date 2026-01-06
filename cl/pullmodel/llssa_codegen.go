@@ -327,19 +327,21 @@ func (g *LLSSACodeGen) generateStateBlock(
 	state *State,
 	stateIdx int,
 ) {
-	origResults := g.sm.Original.Signature.Results()
 	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 
 	if state.IsTerminal {
-		// Terminal state: return Ready(result)
-		// For now, return nil/zero - full implementation would compute actual result
-		if origResults.Len() > 0 {
-			resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
-			nilResult := g.prog.Nil(resultType)
-			b.Return(nilResult)
-		} else {
-			b.Return()
+		// Terminal state: return Ready(result) = Poll[T]{ready: true, value: result}
+		// For now, return a zero Poll[T] (ready=false, value=zero)
+		// Full implementation would compute actual result value
+		resultType := g.sm.ResultType
+		if resultType == nil {
+			resultType = types.NewStruct(nil, nil) // Void
 		}
+		pollType := g.createPollType(resultType)
+		pollLLType := g.prog.Type(pollType, llssa.InGo)
+		// For a Ready result, ready should be true, but we use zero for now
+		zeroResult := g.prog.Zero(pollLLType)
+		b.Return(zeroResult)
 		return
 	}
 
@@ -424,13 +426,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 				if stateIdx+1 < len(g.sm.States) {
 					b.Jump(poll.Block(stateIdx + 2))
 				} else {
-					if origResults.Len() > 0 {
-						resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
-						nilResult := g.prog.Nil(resultType)
-						b.Return(nilResult)
-					} else {
-						b.Return()
-					}
+					// Return zero Poll[T] for fallback
+					b.Return(g.createZeroPoll())
 				}
 				return
 			}
@@ -508,13 +505,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 			b.Jump(poll.Block(stateIdx + 2)) // +1 for 0-indexed, +1 because block 0 is entry
 		} else {
 			// No more states - this shouldn't happen for suspend states
-			if origResults.Len() > 0 {
-				resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
-				nilResult := g.prog.Nil(resultType)
-				b.Return(nilResult)
-			} else {
-				b.Return()
-			}
+			b.Return(g.createZeroPoll())
 		}
 		return
 	}
@@ -527,13 +518,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 	if stateIdx+1 < len(g.sm.States) {
 		b.Jump(poll.Block(stateIdx + 2))
 	} else {
-		if origResults.Len() > 0 {
-			resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
-			nilResult := g.prog.Nil(resultType)
-			b.Return(nilResult)
-		} else {
-			b.Return()
-		}
+		// Return zero Poll[T] for fallback
+		b.Return(g.createZeroPoll())
 	}
 }
 
@@ -621,4 +607,15 @@ func (g *LLSSACodeGen) createPollType(resultType types.Type) types.Type {
 		types.NewField(0, nil, "value", resultType, false),
 	}
 	return types.NewStruct(fields, nil)
+}
+
+// createZeroPoll returns a zero value of Poll[T] for the state machine's result type.
+func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
+	resultType := g.sm.ResultType
+	if resultType == nil {
+		resultType = types.NewStruct(nil, nil) // Void
+	}
+	pollType := g.createPollType(resultType)
+	pollLLType := g.prog.Type(pollType, llssa.InGo)
+	return g.prog.Zero(pollLLType)
 }
