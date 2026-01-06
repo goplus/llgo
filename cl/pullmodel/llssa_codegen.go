@@ -359,30 +359,51 @@ func (g *LLSSACodeGen) generateStateBlock(
 			pollClosure := b.Imethod(subFut, pollMethod)
 			pollResult = b.Call(pollClosure, ctx)
 		} else {
-			// Concrete type: method call implementation
-			// TODO: Implement concrete type method call
-			// Need to find the correct API to get method function from program
-			// Options to explore:
-			// 1. Use g.pkg to get the method function
-			// 2. Use SSA program's method lookup
-			// 3. Generate method call directly in LLVM IR
+			// Concrete type: lookup method using method set
+			mset := types.NewMethodSet(subFutType)
 
-			// For now, just transition to next state (optimistic execution)
-			nextState := uint64(stateIdx + 1)
-			stateFieldPtr := b.FieldAddr(statePtr, 0)
-			b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
-			if stateIdx+1 < len(g.sm.States) {
-				b.Jump(poll.Block(stateIdx + 2))
-			} else {
-				if origResults.Len() > 0 {
-					resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
-					nilResult := g.prog.Nil(resultType)
-					b.Return(nilResult)
-				} else {
-					b.Return()
+			// Find Poll method
+			var pollSel *types.Selection
+			for i := 0; i < mset.Len(); i++ {
+				sel := mset.At(i)
+				if sel.Obj().Name() == "Poll" {
+					pollSel = sel
+					break
 				}
 			}
-			return
+
+			if pollSel == nil {
+				// Method not found - just transition optimistically
+				nextState := uint64(stateIdx + 1)
+				stateFieldPtr := b.FieldAddr(statePtr, 0)
+				b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
+				if stateIdx+1 < len(g.sm.States) {
+					b.Jump(poll.Block(stateIdx + 2))
+				} else {
+					if origResults.Len() > 0 {
+						resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
+						nilResult := g.prog.Nil(resultType)
+						b.Return(nilResult)
+					} else {
+						b.Return()
+					}
+				}
+				return
+			}
+
+			// Get method function object
+			pollMethodObj := pollSel.Obj().(*types.Func)
+
+			// Build full method name: package.(*Type).Method
+			methodPkg := pollMethodObj.Pkg()
+			methodName := llssa.FullName(methodPkg, "("+subFutType.String()+").Poll")
+
+			// Create function reference
+			methodSig := pollMethodObj.Type().(*types.Signature)
+			methodFunc := g.pkg.NewFunc(methodName, methodSig, llssa.InGo)
+
+			// Call the method: methodFunc(subFut, ctx)
+			pollResult = b.Call(methodFunc.Expr, subFut, ctx)
 		}
 
 		// Poll[T] is struct { ready bool; value T }

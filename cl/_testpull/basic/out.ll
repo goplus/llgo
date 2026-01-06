@@ -2,6 +2,7 @@
 source_filename = "github.com/goplus/llgo/cl/_testpull/basic"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 
 @"github.com/goplus/llgo/cl/_testpull/basic.init$guard" = global i1 false, align 1
@@ -33,8 +34,13 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   %4 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 1
   %5 = load ptr, ptr %4, align 8
-  %6 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %6, align 1
+  %6 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %5, ptr %1)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/async.Poll[int]" %6, ptr %7, align 4
+  %8 = getelementptr inbounds { i1, i64 }, ptr %7, i32 0, i32 0
+  %9 = load i1, ptr %8, align 1
+  %10 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %10, align 1
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -43,6 +49,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 }
+
+declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/basic.Step"() {
 _llgo_0:
