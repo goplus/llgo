@@ -61,6 +61,11 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 		t.Error("Generated IR should contain nil check for sub-future")
 	}
 
+	// Check for value extraction (field 1 of Poll[T] which is { i1, i64 })
+	if !strings.Contains(ir, "i32 0, i32 1") {
+		t.Error("Generated IR should contain value field extraction")
+	}
+
 	t.Log("Generated IR validation passed!")
 }
 
