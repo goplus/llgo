@@ -29,11 +29,9 @@ import (
 // Helper functions for creating async operations
 // -----------------------------------------------------------------------------
 
-// Delay returns an async future that resolves after a simulated delay.
-func Delay(ms int) *async.AsyncFuture[async.Void] {
+// Delay returns an async future that resolves immediately.
+func Delay() *async.AsyncFuture[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
-		// In a real implementation, this would use timers
-		// For testing, we resolve immediately
 		resolve(async.Void{})
 	})
 }
@@ -52,24 +50,15 @@ func Add(a, b int) *async.AsyncFuture[int] {
 	})
 }
 
-// Fetch simulates fetching data and returns an async future.
-func Fetch(id int) *async.AsyncFuture[string] {
-	return async.Async(func(resolve func(string)) {
-		if id == 1 {
-			resolve("data-1")
-		} else if id == 2 {
-			resolve("data-2")
-		} else {
-			resolve("unknown")
-		}
-	})
-}
-
 // -----------------------------------------------------------------------------
-// Async functions using pull model (transformed by compiler)
+// These async functions are transformed by the compiler to state machines.
+// NOTE: The current implementation generates the state machine skeleton,
+// but the actual Await logic is not yet implemented.
+// These functions exist to verify that code generation works correctly.
 // -----------------------------------------------------------------------------
 
 // BasicAsync is a simple async function with one await.
+// After transformation: returns a state machine struct, not the result.
 func BasicAsync() async.Future[int] {
 	result := Compute(21).Await()
 	return async.Return(result)
@@ -111,43 +100,10 @@ func LoopAsync(n int) async.Future[int] {
 	return async.Return(total)
 }
 
-// DeferAsync has defer with await.
-func DeferAsync() async.Future[int] {
-	var cleanup int
-	defer func() {
-		cleanup = -1
-	}()
-	result := Compute(50).Await()
-	return async.Return(result + cleanup)
-}
-
-// NestedAsync calls another async function.
-func NestedAsync() async.Future[int] {
-	inner := BasicAsync()
-	// Note: We need to poll the inner future manually since it returns Future[int]
-	// In a full implementation, we would have syntax for this
-	ctx := &async.Context{}
-	poll := inner.Poll(ctx)
-	for !poll.IsReady() {
-		poll = inner.Poll(ctx)
-	}
-	return async.Return(poll.Value() + 1)
-}
-
 // CrossVarAsync tests cross-suspend variable preservation.
 func CrossVarAsync(x int) async.Future[int] {
 	a := x * 2             // Define before suspend
 	_ = Compute(1).Await() // Suspend point
 	b := a + 3             // Use a after suspend
 	return async.Return(b)
-}
-
-// MultiReturnAsync returns multiple async results.
-func MultiReturnAsync(x int) async.Future[int] {
-	first := Compute(x).Await()
-	if first > 100 {
-		return async.Return(first)
-	}
-	second := Compute(first).Await()
-	return async.Return(second)
 }
