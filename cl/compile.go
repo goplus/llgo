@@ -1276,12 +1276,12 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			}
 			// Pull model async/await transformation
 			if pullmodel.ShouldTransform(member) {
-				// TODO: Create callback for compiling SSA values when full integration is ready
-				// Currently passing nil - sub-futures must be pre-initialized by constructor
-				// compileValue := func(b llssa.Builder, v ssa.Value) llssa.Expr {
-				//     return ctx.compileInstrOrValue(b, v.(instrOrValue), false)
-				// }
-				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, nil); err != nil {
+				// Create callback for compiling SSA values (sub-future initializers)
+				// Using asValue=false since we're compiling instructions, not looking up cached values
+				compileValue := func(b llssa.Builder, v ssa.Value) llssa.Expr {
+					return ctx.compileInstrOrValue(b, v.(instrOrValue), false)
+				}
+				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue); err != nil {
 					log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", member.Name(), err)
 					ctx.compileFuncDecl(ret, member)
 				}
