@@ -2732,6 +2732,9 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 			panic("reflect: " + op + " of unexported method")
 		}
 		ifn := m.Ifn_
+		if v.Kind() != Pointer && v.flag&flagIndir == 0 {
+			ifn = m.Tfn_
+		}
 		fn = unsafe.Pointer(ifn)
 		t = (*funcType)(unsafe.Pointer(m.Mtyp_))
 	}
