@@ -21,6 +21,7 @@ package pullmodel
 
 import (
 	"go/types"
+	"sort"
 	"strings"
 
 	"golang.org/x/tools/go/ssa"
@@ -291,6 +292,17 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 	for v := range crossVars {
 		result = append(result, v)
 	}
+
+	// Sort for deterministic ordering
+	sort.Slice(result, func(i, j int) bool {
+		// Sort by name first
+		ni, nj := result[i].Name(), result[j].Name()
+		if ni != nj {
+			return ni < nj
+		}
+		// If names are the same, sort by type string
+		return result[i].Type().String() < result[j].Type().String()
+	})
 
 	return result
 }
