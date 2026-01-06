@@ -30,8 +30,8 @@ import (
 
 // IntegrationContext provides the context needed for compiler integration.
 type IntegrationContext struct {
-	LLProg *llssa.Program
-	LLPkg  llssa.Package
+	LLProg llssa.Program // Already a pointer type (*aProgram)
+	LLPkg  llssa.Package // Already a pointer type (*aPackage)
 	SSAPkg *ssa.Package
 }
 
