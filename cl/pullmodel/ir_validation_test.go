@@ -56,9 +56,10 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 		t.Error("Generated IR should have Poll method with receiver and ctx parameters")
 	}
 
-	// Check for nil check (sub-future initialization guard)
-	if !strings.Contains(ir, "icmp eq ptr") && !strings.Contains(ir, ", null") {
-		t.Error("Generated IR should contain nil check for sub-future")
+	// Check for init flag check (value embedding uses bool flag instead of nil check)
+	// The init flag is a bool field, checked with load and branch
+	if !strings.Contains(ir, "load i1,") {
+		t.Error("Generated IR should contain init flag load for sub-future (value embedding)")
 	}
 
 	// Check for value extraction (field 1 of Poll[T] which is { i1, i64 })

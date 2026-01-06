@@ -20,7 +20,6 @@ package pullmodel
 
 import (
 	"fmt"
-	"go/token"
 	"go/types"
 	"log"
 
@@ -215,12 +214,24 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 		tags = append(tags, "")
 	}
 
-	// Fields for sub-futures
-	// NOTE: Currently using pointer types for lazy initialization via nil check.
-	// Future optimization: value embedding with initialized flags (see design doc 5.2)
+	// Fields for sub-futures with value embedding (design doc 5.2)
+	// Each sub-future has:
+	// 1. An initialized flag (bool) to replace nil check
+	// 2. The value-embedded future type (not pointer)
 	for i, futType := range g.sm.SubFutures {
+		// Add initialized flag
+		initName := fmt.Sprintf("sub%d_init", i)
+		fields = append(fields, types.NewField(0, nil, initName, types.Typ[types.Bool], false))
+		tags = append(tags, "")
+
+		// Add value-embedded sub-future
 		name := fmt.Sprintf("sub%d", i)
-		fields = append(fields, types.NewField(0, nil, name, futType, false))
+		// If futType is a pointer (*AsyncFuture[T]), use the underlying type (AsyncFuture[T])
+		embedType := futType
+		if ptr, ok := futType.(*types.Pointer); ok {
+			embedType = ptr.Elem()
+		}
+		fields = append(fields, types.NewField(0, nil, name, embedType, false))
 		tags = append(tags, "")
 	}
 
@@ -351,42 +362,42 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// This state has a suspend point - we need to poll the sub-future
 		sp := state.SuspendPoint
 
-		// Get sub-future field
+		// Get sub-future field (value embedded) and init flag field
 		subFutFieldIdx := g.getSubFutureFieldIndex(stateIdx)
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
-		subFut := b.Load(subFutFieldPtr)
+		// Note: subFutFieldPtr is now the address of the embedded value, not a loaded pointer
 
-		// Check if subFut is nil and initialize if needed
-		llSubFutType := g.prog.Type(sp.SubFuture.Type(), llssa.InGo)
-		nilVal := g.prog.Nil(llSubFutType)
-		isNil := b.BinOp(token.EQL, subFut, nilVal)
+		// Check init flag instead of nil check (value embedding optimization)
+		initFlagIdx := g.getSubFutureInitFlagIndex(stateIdx)
+		initFlagPtr := b.FieldAddr(statePtr, initFlagIdx)
+		isInit := b.Load(initFlagPtr)
 
 		// Create blocks for init/poll branching
 		initBlocks := poll.MakeBlocks(2)
 		initBlock := initBlocks[0]
 		pollBlock := initBlocks[1]
 
-		// Branch: if nil, initialize; otherwise, poll
-		b.If(isNil, initBlock, pollBlock)
+		// Branch: if not initialized, initialize; otherwise, poll
+		b.If(isInit, pollBlock, initBlock) // isInit=true -> skip init, go to poll
 
-		// Init path: create the sub-future
+		// Init path: create the sub-future and copy to embedded field
 		b.SetBlock(initBlock)
 
 		// Compile the sub-future expression using the callback
 		if g.compileValue != nil {
-			// Compile sp.SubFuture (e.g., Step() call) to get the future value
-			newSubFut := g.compileValue(b, sp.SubFuture)
-			b.Store(subFutFieldPtr, newSubFut)
-		} else {
-			// No callback available - skip initialization (sub-future must be pre-initialized)
-			// This is a fallback for testing without full compiler integration
+			// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
+			newSubFutPtr := g.compileValue(b, sp.SubFuture)
+			// Dereference pointer to get value, then store to embedded field
+			newSubFutVal := b.Load(newSubFutPtr)
+			b.Store(subFutFieldPtr, newSubFutVal)
+			// Set init flag to true
+			b.Store(initFlagPtr, g.prog.Val(true))
 		}
 		b.Jump(pollBlock)
 
-		// Poll path: continue with existing subFut
+		// Poll path: sub-future is already initialized
 		b.SetBlock(pollBlock)
-		// Reload subFut after potential initialization
-		subFut = b.Load(subFutFieldPtr)
+		// subFutFieldPtr IS the receiver (pointer to embedded value)
 
 		// Get result type from suspend point
 		resultType := sp.Result.Type()
@@ -403,8 +414,9 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		var pollResult llssa.Expr
 		if isInterface {
-			// Interface: use Imethod
-			pollClosure := b.Imethod(subFut, pollMethod)
+			// Interface: use Imethod - need to load the interface value first
+			subFutIface := b.Load(subFutFieldPtr)
+			pollClosure := b.Imethod(subFutIface, pollMethod)
 			pollResult = b.Call(pollClosure, ctx)
 		} else {
 			// Concrete type: lookup method using method set
@@ -445,8 +457,9 @@ func (g *LLSSACodeGen) generateStateBlock(
 			methodSig := pollMethodObj.Type().(*types.Signature)
 			methodFunc := g.pkg.NewFunc(methodName, methodSig, llssa.InGo)
 
-			// Call the method: methodFunc(subFut, ctx)
-			pollResult = b.Call(methodFunc.Expr, subFut, ctx)
+			// Call the method: methodFunc(subFutFieldPtr, ctx)
+			// subFutFieldPtr is the pointer to embedded value, acting as receiver
+			pollResult = b.Call(methodFunc.Expr, subFutFieldPtr, ctx)
 		}
 
 		// Poll[T] is struct { ready bool; value T }
@@ -525,10 +538,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 	}
 }
 
-// getSubFutureFieldIndex returns the field index for the sub-future at given state.
+// getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
+// With value embedding, each sub-future has 2 fields: init_flag (bool) + value.
 func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
-	// Fields are: state(0), params..., crossVars..., subFutures...
-	// Count how many sub-futures come before this state
+	// Fields are: state(0), params..., crossVars..., (init_flag, sub_future) pairs...
 	baseIdx := 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars)
 
 	subFutIdx := 0
@@ -537,7 +550,22 @@ func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
 			subFutIdx++
 		}
 	}
-	return baseIdx + subFutIdx
+	// Each sub-future occupies 2 fields: init_flag at 2*i, value at 2*i+1
+	return baseIdx + subFutIdx*2 + 1 // +1 to skip init flag
+}
+
+// getSubFutureInitFlagIndex returns the field index for the init flag of sub-future at given state.
+func (g *LLSSACodeGen) getSubFutureInitFlagIndex(stateIdx int) int {
+	baseIdx := 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars)
+
+	subFutIdx := 0
+	for i := 0; i < stateIdx; i++ {
+		if g.sm.States[i].SuspendPoint != nil {
+			subFutIdx++
+		}
+	}
+	// Each sub-future occupies 2 fields: init_flag at 2*i, value at 2*i+1
+	return baseIdx + subFutIdx*2 // init flag is first
 }
 
 // getCrossVarFieldIndex returns the field index for a cross-suspend variable.
