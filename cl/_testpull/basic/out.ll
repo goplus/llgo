@@ -39,15 +39,21 @@ _llgo_1:                                          ; preds = %_llgo_0
   store %"github.com/goplus/llgo/async.Poll[int]" %6, ptr %7, align 4
   %8 = getelementptr inbounds { i1, i64 }, ptr %7, i32 0, i32 0
   %9 = load i1, ptr %8, align 1
-  %10 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %10, align 1
-  br label %_llgo_2
+  br i1 %9, label %_llgo_4, label %_llgo_5
 
-_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+_llgo_2:                                          ; preds = %_llgo_4, %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 
 _llgo_3:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
+
+_llgo_4:                                          ; preds = %_llgo_1
+  %10 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %10, align 1
+  br label %_llgo_2
+
+_llgo_5:                                          ; preds = %_llgo_1
+  ret %"github.com/goplus/llgo/async.Poll[int]" %6
 }
 
 declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)

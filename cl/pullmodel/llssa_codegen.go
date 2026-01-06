@@ -418,16 +418,25 @@ func (g *LLSSACodeGen) generateStateBlock(
 		readyFieldPtr := b.FieldAddr(pollResultPtr, 0)
 		ready := b.Load(readyFieldPtr)
 
-		// Create blocks for branching
-		// We need to insert new blocks, but for now use a simplified approach:
-		// If ready, continue to next state; if not ready, return Pending
+		// Create blocks for ready/pending branching
+		branchBlocks := poll.MakeBlocks(2)
+		readyBlock := branchBlocks[0]
+		pendingBlock := branchBlocks[1]
 
-		// For MVP: just check ready and branch
-		// TODO: Proper block management with ready/pending paths
+		// Branch based on ready
+		b.If(ready, readyBlock, pendingBlock)
 
-		// For now, optimistically assume ready and continue
-		// This is the same as before but with actual Poll call
-		_ = ready // Will be used in full implementation
+		// Pending path: return the poll result (which is Pending)
+		b.SetBlock(pendingBlock)
+		// Return the original result (which is an interface)
+		b.Return(pollResult)
+
+		// Ready path: extract value, update state, continue
+		b.SetBlock(readyBlock)
+
+		// Extract value field (field 1) - TODO: store to result variable if needed
+		// valueFieldPtr := b.FieldAddr(pollResultPtr, 1)
+		// value := b.Load(valueFieldPtr)
 
 		// Update state to next
 		nextState := uint64(stateIdx + 1)
@@ -438,7 +447,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 		if stateIdx+1 < len(g.sm.States) {
 			b.Jump(poll.Block(stateIdx + 2)) // +1 for 0-indexed, +1 because block 0 is entry
 		} else {
-			// No more states
+			// No more states - this shouldn't happen for suspend states
 			if origResults.Len() > 0 {
 				resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
 				nilResult := g.prog.Nil(resultType)
