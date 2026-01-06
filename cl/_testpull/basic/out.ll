@@ -57,8 +57,10 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_1
   br i1 %11, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  %12 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %12, align 1
+  %12 = getelementptr inbounds { i1, i64 }, ptr %9, i32 0, i32 1
+  %13 = load i64, ptr %12, align 4
+  %14 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %14, align 1
   br label %_llgo_2
 
 _llgo_7:                                          ; preds = %_llgo_5

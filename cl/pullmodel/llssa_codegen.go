@@ -458,9 +458,17 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Ready path: extract value, update state, continue
 		b.SetBlock(readyBlock)
 
-		// Extract value field (field 1) - TODO: store to result variable if needed
-		// valueFieldPtr := b.FieldAddr(pollResultPtr, 1)
-		// value := b.Load(valueFieldPtr)
+		// Extract value field (field 1) from Poll result
+		valueFieldPtr := b.FieldAddr(pollResultPtr, 1)
+		value := b.Load(valueFieldPtr)
+
+		// Find the cross-var index for sp.Result and store the value
+		// CrossVars are stored starting at field 1 (after state field)
+		resultVarIdx := g.getCrossVarFieldIndex(sp.Result)
+		if resultVarIdx >= 0 {
+			resultFieldPtr := b.FieldAddr(statePtr, resultVarIdx)
+			b.Store(resultFieldPtr, value)
+		}
 
 		// Update state to next
 		nextState := uint64(stateIdx + 1)
@@ -514,6 +522,20 @@ func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
 		}
 	}
 	return baseIdx + subFutIdx
+}
+
+// getCrossVarFieldIndex returns the field index for a cross-suspend variable.
+// Returns -1 if the variable is not a cross-var.
+func (g *LLSSACodeGen) getCrossVarFieldIndex(v ssa.Value) int {
+	// Fields are: state(0), params..., crossVars..., subFutures...
+	baseIdx := 1 + len(g.sm.Original.Params)
+
+	for i, crossVar := range g.sm.CrossVars {
+		if crossVar == v {
+			return baseIdx + i
+		}
+	}
+	return -1 // Not found
 }
 
 // GenerateStateMachine is the main entry point called from compile.go.
