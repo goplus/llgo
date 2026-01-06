@@ -110,27 +110,107 @@ func (g *LLSSACodeGen) generateStateType() (llssa.Type, error) {
 }
 
 // generateConstructor generates the constructor function that initializes the state machine.
+// The constructor takes the original function's parameters and returns an initialized state struct.
 func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 	fn := g.sm.Original
 
-	// Create function signature: func(params...) StateStruct
-	// For now, we'll create a simplified version
-	// TODO: Handle proper signature conversion
+	// Build Go types.Signature for the constructor
+	// Params: same as original function
+	// Result: state struct type (as value, not pointer)
+	origSig := fn.Signature
+	paramTuple := origSig.Params()
 
-	log.Printf("[Pull Model] Constructor generation placeholder for %s", fn.Name())
-	log.Printf("  - Would create function with %d parameters", len(fn.Params))
-	log.Printf("  - Would return state struct of type: %v", stateType)
+	// Create result tuple with state struct type
+	stateGoType := g.buildStateGoType()
+	resultVar := types.NewVar(0, nil, "", stateGoType)
+	resultTuple := types.NewTuple(resultVar)
 
-	// TODO: Implement actual constructor generation
-	// This requires:
-	// 1. Creating llssa.Function with pkg.NewFuncEx()
-	// 2. Creating basic blocks with fn.MakeBlocks()
-	// 3. Using Builder to emit instructions
-	// 4. Allocating state struct
-	// 5. Initializing fields
-	// 6. Returning state struct
+	// Create constructor signature
+	ctorSig := types.NewSignatureType(nil, nil, nil, paramTuple, resultTuple, false)
 
+	// Create the constructor function
+	ctorName := fn.Name()
+	ctor := g.pkg.NewFunc(ctorName, ctorSig, llssa.InGo)
+
+	// Create single basic block
+	ctor.MakeBlocks(1)
+
+	// Get builder and set to first block
+	b := ctor.NewBuilder()
+	b.SetBlock(ctor.Block(0))
+
+	// Allocate state struct on stack
+	statePtr := b.Alloc(stateType, false)
+
+	// Initialize state field (index 0) to 0
+	stateFieldPtr := b.FieldAddr(statePtr, 0)
+	zero := g.prog.Val(int8(0))
+	b.Store(stateFieldPtr, zero)
+
+	// Copy parameters to state struct fields
+	fieldIdx := 1 // Start after state field
+	for i := range fn.Params {
+		paramVal := ctor.Param(i)
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		b.Store(fieldPtr, paramVal)
+		fieldIdx++
+	}
+
+	// Initialize cross-var fields to zero values (they'll be set during execution)
+	for _, v := range g.sm.CrossVars {
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		zeroVal := g.prog.Zero(g.prog.Type(v.Type(), llssa.InGo))
+		b.Store(fieldPtr, zeroVal)
+		fieldIdx++
+	}
+
+	// Initialize sub-future fields to nil
+	for _, futType := range g.sm.SubFutures {
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		nilVal := g.prog.Nil(g.prog.Type(futType, llssa.InGo))
+		b.Store(fieldPtr, nilVal)
+		fieldIdx++
+	}
+
+	// Load and return the state struct
+	stateVal := b.Load(statePtr)
+	b.Return(stateVal)
+
+	log.Printf("[Pull Model] Generated constructor for %s with %d params", fn.Name(), len(fn.Params))
 	return nil
+}
+
+// buildStateGoType builds the Go types.Struct for the state machine.
+func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
+	var fields []*types.Var
+	var tags []string
+
+	// Field 0: state (int8)
+	fields = append(fields, types.NewField(0, nil, "state", types.Typ[types.Int8], false))
+	tags = append(tags, "")
+
+	// Fields for parameters
+	for i, param := range g.sm.Original.Params {
+		name := fmt.Sprintf("param%d", i)
+		fields = append(fields, types.NewField(0, nil, name, param.Type(), false))
+		tags = append(tags, "")
+	}
+
+	// Fields for cross-suspend variables
+	for i, v := range g.sm.CrossVars {
+		name := fmt.Sprintf("var%d", i)
+		fields = append(fields, types.NewField(0, nil, name, v.Type(), false))
+		tags = append(tags, "")
+	}
+
+	// Fields for sub-futures
+	for i, futType := range g.sm.SubFutures {
+		name := fmt.Sprintf("sub%d", i)
+		fields = append(fields, types.NewField(0, nil, name, futType, false))
+		tags = append(tags, "")
+	}
+
+	return types.NewStruct(fields, tags)
 }
 
 // generatePollMethod generates the Poll method for the state machine.
