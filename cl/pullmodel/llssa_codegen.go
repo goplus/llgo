@@ -214,24 +214,141 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 }
 
 // generatePollMethod generates the Poll method for the state machine.
+// The Poll method implements the state machine logic with a switch dispatcher.
 func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	fn := g.sm.Original
 
-	log.Printf("[Pull Model] Poll method generation placeholder for %s", fn.Name())
-	log.Printf("  - Would create method with receiver: *%s_State", fn.Name())
-	log.Printf("  - Would implement switch/case for %d states", len(g.sm.States))
+	// Build method signature: func (s *StateStruct) Poll() Poll[T]
+	// For simplicity, we'll return the result type directly for now
+	stateGoType := g.buildStateGoType()
+	statePtrType := types.NewPointer(stateGoType)
+	recvVar := types.NewVar(0, nil, "s", statePtrType)
 
-	// TODO: Implement actual Poll method generation
-	// This requires:
-	// 1. Creating method signature: func (s *State) Poll(ctx *Context) Poll[T]
-	// 2. Creating basic blocks (entry + per-state + exit)
-	// 3. Implementing switch dispatcher
-	// 4. For each state:
-	//    - If suspend point: poll sub-future
-	//    - If terminal: return Ready(result)
-	//    - Otherwise: execute and transition
+	// Result type is the same as original function's result
+	origResults := fn.Signature.Results()
 
+	// Create Poll method signature
+	pollSig := types.NewSignatureType(recvVar, nil, nil, nil, origResults, false)
+
+	// Create the Poll method
+	pollName := fn.Name() + "$Poll"
+	poll := g.pkg.NewFunc(pollName, pollSig, llssa.InGo)
+
+	// Create basic blocks:
+	// - Block 0: entry (switch dispatcher)
+	// - Blocks 1..n: state blocks
+	// - Block n+1: default/unreachable
+	numStates := len(g.sm.States)
+	numBlocks := 2 + numStates // entry + states + default
+	poll.MakeBlocks(numBlocks)
+
+	// Get builder
+	b := poll.NewBuilder()
+
+	// Entry block: switch on state field
+	b.SetBlock(poll.Block(0))
+
+	// Get receiver (first param for method)
+	statePtr := poll.Param(0)
+
+	// Load state field
+	stateFieldPtr := b.FieldAddr(statePtr, 0)
+	stateVal := b.Load(stateFieldPtr)
+
+	// Default block (unreachable - should never happen)
+	defaultBlock := poll.Block(numBlocks - 1)
+
+	// Create switch statement
+	sw := b.Switch(stateVal, defaultBlock)
+
+	// Add case for each state
+	for i := 0; i < numStates; i++ {
+		caseVal := g.prog.Val(int8(i))
+		stateBlock := poll.Block(i + 1)
+		sw.Case(caseVal, stateBlock)
+	}
+	sw.End(b)
+
+	// Generate code for each state block
+	for i, state := range g.sm.States {
+		b.SetBlock(poll.Block(i + 1))
+		g.generateStateBlock(b, poll, statePtr, state, i)
+	}
+
+	// Default block: unreachable (should never reach here)
+	b.SetBlock(defaultBlock)
+	// For now, just return a zero value
+	if origResults.Len() > 0 {
+		zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
+		b.Return(zeroResult)
+	} else {
+		b.Return()
+	}
+
+	log.Printf("[Pull Model] Generated Poll method for %s with %d states", fn.Name(), numStates)
 	return nil
+}
+
+// generateStateBlock generates code for a single state in the Poll method.
+func (g *LLSSACodeGen) generateStateBlock(
+	b llssa.Builder,
+	poll llssa.Function,
+	statePtr llssa.Expr,
+	state *State,
+	stateIdx int,
+) {
+	// For now, just return a placeholder result
+	// Full implementation would:
+	// 1. Execute instructions for this state
+	// 2. Check if there's a suspend point
+	// 3. If suspend: poll sub-future, return Pending or continue
+	// 4. If terminal: return Ready(result)
+	// 5. Otherwise: update state and jump to next state
+
+	origResults := g.sm.Original.Signature.Results()
+
+	if state.IsTerminal {
+		// Terminal state: return result
+		if origResults.Len() > 0 {
+			// Return zero value for now (actual implementation would compute result)
+			zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
+			b.Return(zeroResult)
+		} else {
+			b.Return()
+		}
+	} else if state.SuspendPoint != nil {
+		// Suspend point: for now, just move to next state and return zero
+		// Full implementation would poll sub-future here
+		nextState := int8(stateIdx + 1)
+		stateFieldPtr := b.FieldAddr(statePtr, 0)
+		b.Store(stateFieldPtr, g.prog.Val(nextState))
+
+		// Return placeholder (would be Pending in full implementation)
+		if origResults.Len() > 0 {
+			zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
+			b.Return(zeroResult)
+		} else {
+			b.Return()
+		}
+	} else {
+		// Intermediate state: execute and transition
+		nextState := int8(stateIdx + 1)
+		stateFieldPtr := b.FieldAddr(statePtr, 0)
+		b.Store(stateFieldPtr, g.prog.Val(nextState))
+
+		// Jump to next state block
+		if stateIdx+1 < len(g.sm.States) {
+			b.Jump(poll.Block(stateIdx + 2))
+		} else {
+			// No more states, return zero
+			if origResults.Len() > 0 {
+				zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
+				b.Return(zeroResult)
+			} else {
+				b.Return()
+			}
+		}
+	}
 }
 
 // GenerateStateMachine is the main entry point called from compile.go.
