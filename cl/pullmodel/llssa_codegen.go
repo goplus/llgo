@@ -228,8 +228,14 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	// Result type is the same as original function's result
 	origResults := fn.Signature.Results()
 
-	// Create Poll method signature
-	pollSig := types.NewSignatureType(recvVar, nil, nil, nil, origResults, false)
+	// Add ctx *async.Context parameter
+	// TODO: Import async package and get Context type properly
+	ctxType := types.NewPointer(types.NewStruct(nil, nil)) // Placeholder for *async.Context
+	ctxParam := types.NewVar(0, nil, "ctx", ctxType)
+	params := types.NewTuple(ctxParam)
+
+	// Create Poll method signature: func (s *State) Poll(ctx *Context) Result
+	pollSig := types.NewSignatureType(recvVar, nil, nil, params, origResults, false)
 
 	// Create the Poll method
 	pollName := fn.Name() + "$Poll"
@@ -272,9 +278,10 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	sw.End(b)
 
 	// Generate code for each state block
+	ctx := poll.Param(1) // Get ctx parameter
 	for i, state := range g.sm.States {
 		b.SetBlock(poll.Block(i + 1))
-		g.generateStateBlock(b, poll, statePtr, state, i)
+		g.generateStateBlock(b, poll, statePtr, ctx, state, i)
 	}
 
 	// Default block: unreachable (should never reach here)
@@ -301,6 +308,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 	b llssa.Builder,
 	poll llssa.Function,
 	statePtr llssa.Expr,
+	ctx llssa.Expr,
 	state *State,
 	stateIdx int,
 ) {
@@ -322,33 +330,29 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 	if state.SuspendPoint != nil {
 		// This state has a suspend point - we need to poll the sub-future
-		// TODO: Actually poll the sub-future once we have proper interface call support
-		_ = state.SuspendPoint // Mark as used (will be needed for full implementation)
+		sp := state.SuspendPoint
 
-		// Find the sub-future field index (for future use)
+		// Get sub-future field
 		subFutFieldIdx := g.getSubFutureFieldIndex(stateIdx)
-
-		// Get sub-future from state struct (load but don't use yet)
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
-		_ = b.Load(subFutFieldPtr) // Will be used when we implement actual poll call
+		subFut := b.Load(subFutFieldPtr)
 
-		// Check if sub-future is nil (not initialized yet)
-		// For now, we assume sub-future is already stored - full implementation would
-		// call the future-producing function and store it first
+		// TODO: For now, we assume the sub-future is already initialized
+		// Full implementation would:
+		// 1. Check if subFut is nil
+		// 2. If nil, call the future-producing function (sp.SubFuture)
+		// 3. Store the result in subFutFieldPtr
 
-		// We need to call subFut.Poll(ctx)
-		// Since we don't have ctx parameter in our simplified signature,
-		// we'll pass nil for now
-		// Full implementation would add ctx parameter to Poll method
+		// TODO: Call subFut.Poll(ctx)
+		// This requires interface method call which is complex
+		// For MVP, we'll use a simplified approach:
+		// - Assume sub-future resolves immediately (optimistic)
+		// - Just transition to next state
 
-		// For this implementation, we check if sub-future is ready by:
-		// 1. If subFut is nil, call the future-producing function and store it
-		// 2. Otherwise, call subFut.Poll() and check result
-
-		// Since sub-future is stored as interface/pointer, we need to do interface call
-		// This is complex, so for MVP we do a simplified approach:
-		// - First poll: transition to next state immediately (optimistic)
-		// - This works for synchronous AsyncFuture that resolves immediately
+		// Mark variables as used
+		_ = sp
+		_ = subFut
+		_ = ctx
 
 		// Update state to next
 		nextState := uint64(stateIdx + 1)

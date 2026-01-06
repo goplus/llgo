@@ -64,9 +64,9 @@ type Executor struct {
 	running bool
 }
 
-// New creates a new libuv Executor using the default loop.
+// New creates a new libuv Executor with a new loop.
 func New() *Executor {
-	return NewWithLoop(libuv.DefaultLoop())
+	return NewWithLoop(libuv.LoopNew())
 }
 
 // NewWithLoop creates a new libuv Executor with a specific loop.
@@ -111,16 +111,21 @@ func (e *Executor) Run() {
 	e.running = true
 	defer func() { e.running = false }()
 
-	// Initialize idle handle for task polling
-	libuv.InitIdle(e.loop, &e.idle)
-	e.idle.Start(func(h *libuv.Idle) {
-		e.pollPending()
-		if len(e.tasks) == 0 && len(e.pending) == 0 {
-			e.idle.Stop()
-		}
-	})
+	// First, poll all pending tasks to kick off async operations
+	// This registers timers etc. with the loop
+	e.pollPending()
 
-	e.loop.Run(libuv.RUN_DEFAULT)
+	// Run the loop - this will process timer callbacks
+	// Each timer callback will wake tasks via SpawnTask
+	// But since we can't use Idle callbacks, we need a different approach:
+	// Run once, then check if any new tasks were woken
+	for len(e.tasks) > 0 {
+		// Run loop once to process pending events
+		e.loop.Run(libuv.RUN_ONCE)
+
+		// Poll any newly woken tasks
+		e.pollPending()
+	}
 }
 
 // pollPending polls all pending tasks.
