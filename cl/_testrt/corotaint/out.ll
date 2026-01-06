@@ -56,7 +56,7 @@ _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4,
   call void @free(ptr %8)
   br label %_llgo_6
 
-_llgo_6:                                          ; preds = %_llgo_5
+_llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
   %9 = call i1 @llvm.coro.end(ptr %6, i1 false, token none)
   ret ptr %6
 
@@ -94,7 +94,7 @@ _llgo_14:                                         ; preds = %_llgo_4
   br label %_llgo_5
 
 _llgo_15:                                         ; preds = %_llgo_4
-  ret ptr %6
+  br label %_llgo_6
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/corotaint.init"() {
@@ -154,7 +154,7 @@ _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4,
   call void @free(ptr %8)
   br label %_llgo_6
 
-_llgo_6:                                          ; preds = %_llgo_5
+_llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
   %9 = call i1 @llvm.coro.end(ptr %6, i1 false, token none)
   ret ptr %6
 
@@ -194,7 +194,7 @@ _llgo_14:                                         ; preds = %_llgo_4
   br label %_llgo_5
 
 _llgo_15:                                         ; preds = %_llgo_4
-  ret ptr %6
+  br label %_llgo_6
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/corotaint.worker"() {
@@ -244,7 +244,7 @@ _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, 
   call void @free(ptr %8)
   br label %_llgo_6
 
-_llgo_6:                                          ; preds = %_llgo_5
+_llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
   %9 = call i1 @llvm.coro.end(ptr %6, i1 false, token none)
   ret ptr %6
 
@@ -260,7 +260,7 @@ _llgo_9:                                          ; preds = %_llgo_4
   br label %_llgo_5
 
 _llgo_10:                                         ; preds = %_llgo_4
-  ret ptr %6
+  br label %_llgo_6
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
