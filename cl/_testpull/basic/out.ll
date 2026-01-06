@@ -45,28 +45,29 @@ _llgo_3:                                          ; preds = %_llgo_0
   ret { i1, i64 } zeroinitializer
 
 _llgo_4:                                          ; preds = %_llgo_1
+  %9 = call ptr @"github.com/goplus/llgo/cl/_testpull/basic.Step"()
+  %10 = load %"github.com/goplus/llgo/async.AsyncFuture[int]", ptr %9, align 8
+  store %"github.com/goplus/llgo/async.AsyncFuture[int]" %10, ptr %4, align 8
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_1
-  %9 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
-  %10 = alloca { i1, i64 }, align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %9, ptr %10, align 4
-  %11 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 0
-  %12 = load i1, ptr %11, align 1
-  br i1 %12, label %_llgo_6, label %_llgo_7
+  %11 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
+  %12 = alloca { i1, i64 }, align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %11, ptr %12, align 4
+  %13 = getelementptr inbounds { i1, i64 }, ptr %12, i32 0, i32 0
+  %14 = load i1, ptr %13, align 1
+  br i1 %14, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  %13 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 1
-  %14 = load i64, ptr %13, align 4
-  %15 = getelementptr inbounds { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %15, align 1
+  %15 = getelementptr inbounds { i1, i64 }, ptr %12, i32 0, i32 1
+  %16 = load i64, ptr %15, align 4
+  %17 = getelementptr inbounds { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %17, align 1
   br label %_llgo_2
 
 _llgo_7:                                          ; preds = %_llgo_5
   ret { i1, i64 } zeroinitializer
 }
-
-declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/basic.Step"() {
 _llgo_0:
@@ -81,6 +82,8 @@ _llgo_0:
   call void %2(ptr %1, i64 42)
   ret void
 }
+
+declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)
 
 define void @"github.com/goplus/llgo/cl/_testpull/basic.init"() {
 _llgo_0:

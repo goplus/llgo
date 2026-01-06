@@ -707,7 +707,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
-		log.Panicln("unreachable:", iv)
+		// On-demand compilation: compile the value and cache it
+		ret = p.compileInstrOrValue(b, iv, false)
+		p.bvals[iv] = ret
+		return ret
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -1276,10 +1279,13 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			}
 			// Pull model async/await transformation
 			if pullmodel.ShouldTransform(member) {
+				// Initialize bvals for on-demand SSA value compilation
+				ctx.bvals = make(map[ssa.Value]llssa.Expr)
+
 				// Create callback for compiling SSA values (sub-future initializers)
-				// Using asValue=false since we're compiling instructions, not looking up cached values
+				// compileValue recursively compiles dependencies on-demand via compileInstrOrValue
 				compileValue := func(b llssa.Builder, v ssa.Value) llssa.Expr {
-					return ctx.compileInstrOrValue(b, v.(instrOrValue), false)
+					return ctx.compileValue(b, v)
 				}
 				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue); err != nil {
 					log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", member.Name(), err)

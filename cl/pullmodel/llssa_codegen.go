@@ -34,11 +34,13 @@ type CompileValueFunc func(b llssa.Builder, v ssa.Value) llssa.Expr
 
 // LLSSACodeGen generates LLVM IR code for state machines using llssa API.
 type LLSSACodeGen struct {
-	prog         llssa.Program
-	pkg          llssa.Package
-	ssaPkg       *ssa.Package
-	sm           *StateMachine
-	compileValue CompileValueFunc // callback to compile SSA values
+	prog           llssa.Program
+	pkg            llssa.Package
+	ssaPkg         *ssa.Package
+	sm             *StateMachine
+	compileValue   CompileValueFunc // callback to compile SSA values
+	pollStructType types.Type       // cached Poll[T] struct type for consistency
+	pollLLType     llssa.Type       // cached LLVM type for Poll[T]
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -253,8 +255,10 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	}
 
 	// Create Poll[T] struct type: struct { ready bool; value T }
-	pollStructType := g.createPollType(resultType)
-	pollResults := types.NewTuple(types.NewVar(0, nil, "", pollStructType))
+	// Cache it for consistent use across all return statements
+	g.pollStructType = g.createPollType(resultType)
+	g.pollLLType = g.prog.Type(g.pollStructType, llssa.InGo)
+	pollResults := types.NewTuple(types.NewVar(0, nil, "", g.pollStructType))
 
 	// Add ctx *async.Context parameter
 	// TODO: Import async package and get Context type properly
@@ -315,8 +319,7 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	// Default block: unreachable (should never reach here)
 	b.SetBlock(defaultBlock)
 	// Return a zero Poll[T] value (unreachable in normal execution)
-	pollLLType := g.prog.Type(pollStructType, llssa.InGo)
-	zeroResult := g.prog.Zero(pollLLType)
+	zeroResult := g.prog.Nil(g.pollLLType)
 	b.Return(zeroResult)
 
 	log.Printf("[Pull Model] Generated Poll method for %s with %d states", fn.Name(), numStates)
@@ -340,16 +343,9 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 	if state.IsTerminal {
 		// Terminal state: return Ready(result) = Poll[T]{ready: true, value: result}
-		// For now, return a zero Poll[T] (ready=false, value=zero)
+		// For now, return a zero Poll[T] (ready=false, value=zero) using cached type
 		// Full implementation would compute actual result value
-		resultType := g.sm.ResultType
-		if resultType == nil {
-			resultType = types.NewStruct(nil, nil) // Void
-		}
-		pollType := g.createPollType(resultType)
-		pollLLType := g.prog.Type(pollType, llssa.InGo)
-		// For a Ready result, ready should be true, but we use zero for now
-		zeroResult := g.prog.Zero(pollLLType)
+		zeroResult := g.prog.Nil(g.pollLLType)
 		b.Return(zeroResult)
 		return
 	}
@@ -481,15 +477,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		// Pending path: return Pending[T] for OUR result type (not sub-future's)
 		b.SetBlock(pendingBlock)
-		// Create a Pending result: Poll[T]{ready: false, value: zero}
-		// We need to use the state machine's result type, not the sub-future's
-		ourResultType := g.sm.ResultType
-		if ourResultType == nil {
-			ourResultType = types.NewStruct(nil, nil) // Void
-		}
-		ourPollType := g.createPollType(ourResultType)
-		ourPollLLType := g.prog.Type(ourPollType, llssa.InGo)
-		pendingResult := g.prog.Zero(ourPollLLType) // ready=false, value=zero
+		// Create a Pending result: Poll[T]{ready: false, value: zero} using cached type
+		pendingResult := g.prog.Nil(g.pollLLType) // ready=false, value=zero
 		b.Return(pendingResult)
 
 		// Ready path: extract value, update state, continue
@@ -612,9 +601,42 @@ func (g *LLSSACodeGen) getAsyncContextType() *types.Pointer {
 	return types.NewPointer(types.NewStruct(nil, nil))
 }
 
-// createPollType creates the Poll[T] struct type.
-// Poll[T] is: struct { ready bool; value T }
+// createPollType creates the Poll[T] type from the async package.
+// This uses the actual async.Poll[T] generic type instantiated with resultType.
 func (g *LLSSACodeGen) createPollType(resultType types.Type) types.Type {
+	// Find the async package in imports
+	fn := g.sm.Original
+	pkg := fn.Pkg
+
+	// Look for async package in imports
+	for _, imp := range pkg.Pkg.Imports() {
+		if imp.Path() == FuturePkgPath {
+			// Found async package, look for Poll type
+			pollObj := imp.Scope().Lookup("Poll")
+			if pollObj == nil {
+				break
+			}
+
+			// Get the named type
+			pollNamed, ok := pollObj.Type().(*types.Named)
+			if !ok {
+				break
+			}
+
+			// Instantiate Poll[T] with our resultType
+			// types.Instantiate creates Poll[resultType]
+			instantiated, err := types.Instantiate(nil, pollNamed, []types.Type{resultType}, false)
+			if err != nil {
+				log.Printf("[Pull Model] Failed to instantiate Poll[T]: %v", err)
+				break
+			}
+
+			return instantiated
+		}
+	}
+
+	// Fallback: create anonymous struct if async package not found
+	log.Printf("[Pull Model] Warning: async package not found, using fallback Poll type")
 	fields := []*types.Var{
 		types.NewField(0, nil, "ready", types.Typ[types.Bool], false),
 		types.NewField(0, nil, "value", resultType, false),
@@ -622,13 +644,9 @@ func (g *LLSSACodeGen) createPollType(resultType types.Type) types.Type {
 	return types.NewStruct(fields, nil)
 }
 
-// createZeroPoll returns a zero value of Poll[T] for the state machine's result type.
+// createZeroPoll returns a zero value of Poll[T] using the cached type.
+// Uses Nil (ConstNull) instead of Zero to preserve named type identity,
+// avoiding anonymous struct literals like { i1, {} } for Poll[Void].
 func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
-	resultType := g.sm.ResultType
-	if resultType == nil {
-		resultType = types.NewStruct(nil, nil) // Void
-	}
-	pollType := g.createPollType(resultType)
-	pollLLType := g.prog.Type(pollType, llssa.InGo)
-	return g.prog.Zero(pollLLType)
+	return g.prog.Nil(g.pollLLType)
 }
