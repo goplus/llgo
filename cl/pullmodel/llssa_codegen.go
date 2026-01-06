@@ -230,14 +230,22 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	fn := g.sm.Original
 
-	// Build method signature: func (s *StateStruct) Poll() Poll[T]
-	// For simplicity, we'll return the result type directly for now
+	// Build method signature: func (s *StateStruct) Poll(ctx *Context) Poll[T]
 	stateGoType := g.buildStateGoType()
 	statePtrType := types.NewPointer(stateGoType)
 	recvVar := types.NewVar(0, nil, "s", statePtrType)
 
-	// Result type is the same as original function's result
-	origResults := fn.Signature.Results()
+	// Get the result type T from Future[T]
+	// The original function returns Future[T], we need Poll[T] which is struct{ready bool; value T}
+	resultType := g.sm.ResultType // This should be T, the type parameter
+	if resultType == nil {
+		// Fallback: use empty struct for Void
+		resultType = types.NewStruct(nil, nil)
+	}
+
+	// Create Poll[T] struct type: struct { ready bool; value T }
+	pollStructType := g.createPollType(resultType)
+	pollResults := types.NewTuple(types.NewVar(0, nil, "", pollStructType))
 
 	// Add ctx *async.Context parameter
 	// TODO: Import async package and get Context type properly
@@ -245,8 +253,8 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	ctxParam := types.NewVar(0, nil, "ctx", ctxType)
 	params := types.NewTuple(ctxParam)
 
-	// Create Poll method signature: func (s *State) Poll(ctx *Context) Result
-	pollSig := types.NewSignatureType(recvVar, nil, nil, params, origResults, false)
+	// Create Poll method signature: func (s *State) Poll(ctx *Context) Poll[T]
+	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
 
 	// Create the Poll method
 	pollName := fn.Name() + "$Poll"
@@ -297,14 +305,10 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 
 	// Default block: unreachable (should never reach here)
 	b.SetBlock(defaultBlock)
-	// For now, just return a nil value (using Nil instead of Zero to fix type mismatch)
-	if origResults.Len() > 0 {
-		resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
-		nilResult := g.prog.Nil(resultType)
-		b.Return(nilResult)
-	} else {
-		b.Return()
-	}
+	// Return a zero Poll[T] value (unreachable in normal execution)
+	pollLLType := g.prog.Type(pollStructType, llssa.InGo)
+	zeroResult := g.prog.Zero(pollLLType)
+	b.Return(zeroResult)
 
 	log.Printf("[Pull Model] Generated Poll method for %s with %d states", fn.Name(), numStates)
 	return nil

@@ -22,7 +22,7 @@ _llgo_0:
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"Simple$Poll"(ptr %0, ptr %1) {
+define { i1, i64 } @"Simple$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -41,7 +41,7 @@ _llgo_2:                                          ; preds = %_llgo_6, %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 
 _llgo_3:                                          ; preds = %_llgo_0
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
+  ret { i1, i64 } zeroinitializer
 
 _llgo_4:                                          ; preds = %_llgo_1
   br label %_llgo_5
