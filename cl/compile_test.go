@@ -58,6 +58,10 @@ func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "./_testdata")
 }
 
+func TestFromTestpull(t *testing.T) {
+	cltest.FromDir(t, "", "./_testpull")
+}
+
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
 	_, err := build.Do([]string{"math"}, conf)

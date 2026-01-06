@@ -50,11 +50,3 @@ func Simple() async.Future[int] {
 
 	cltest.TestCompileEx(t, src, "test.go", expected, false)
 }
-
-// TestFromTestpull runs all tests in _testpull directory
-func TestFromTestpull(t *testing.T) {
-	t.Skip("Pull model integration not yet complete - Phase 3 in progress")
-
-	// This will be enabled once integration is complete
-	cltest.FromDir(t, "", "./_testpull")
-}

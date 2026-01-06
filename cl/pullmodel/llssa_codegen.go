@@ -144,7 +144,8 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 
 	// Initialize state field (index 0) to 0
 	stateFieldPtr := b.FieldAddr(statePtr, 0)
-	zero := g.prog.Val(int8(0))
+	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
+	zero := g.prog.IntVal(0, int8Type)
 	b.Store(stateFieldPtr, zero)
 
 	// Copy parameters to state struct fields
@@ -262,8 +263,9 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	sw := b.Switch(stateVal, defaultBlock)
 
 	// Add case for each state
+	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 	for i := 0; i < numStates; i++ {
-		caseVal := g.prog.Val(int8(i))
+		caseVal := g.prog.IntVal(uint64(i), int8Type)
 		stateBlock := poll.Block(i + 1)
 		sw.Case(caseVal, stateBlock)
 	}
@@ -277,10 +279,11 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 
 	// Default block: unreachable (should never reach here)
 	b.SetBlock(defaultBlock)
-	// For now, just return a zero value
+	// For now, just return a nil value (using Nil instead of Zero to fix type mismatch)
 	if origResults.Len() > 0 {
-		zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
-		b.Return(zeroResult)
+		resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
+		nilResult := g.prog.Nil(resultType)
+		b.Return(nilResult)
 	} else {
 		b.Return()
 	}
@@ -310,40 +313,45 @@ func (g *LLSSACodeGen) generateStateBlock(
 	if state.IsTerminal {
 		// Terminal state: return result
 		if origResults.Len() > 0 {
-			// Return zero value for now (actual implementation would compute result)
-			zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
-			b.Return(zeroResult)
+			// Return nil value for now (actual implementation would compute result)
+			resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
+			nilResult := g.prog.Nil(resultType)
+			b.Return(nilResult)
 		} else {
 			b.Return()
 		}
 	} else if state.SuspendPoint != nil {
 		// Suspend point: for now, just move to next state and return zero
 		// Full implementation would poll sub-future here
-		nextState := int8(stateIdx + 1)
+		nextState := uint64(stateIdx + 1)
+		int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 		stateFieldPtr := b.FieldAddr(statePtr, 0)
-		b.Store(stateFieldPtr, g.prog.Val(nextState))
+		b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
 
 		// Return placeholder (would be Pending in full implementation)
 		if origResults.Len() > 0 {
-			zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
-			b.Return(zeroResult)
+			resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
+			nilResult := g.prog.Nil(resultType)
+			b.Return(nilResult)
 		} else {
 			b.Return()
 		}
 	} else {
 		// Intermediate state: execute and transition
-		nextState := int8(stateIdx + 1)
+		nextState := uint64(stateIdx + 1)
+		int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 		stateFieldPtr := b.FieldAddr(statePtr, 0)
-		b.Store(stateFieldPtr, g.prog.Val(nextState))
+		b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
 
 		// Jump to next state block
 		if stateIdx+1 < len(g.sm.States) {
 			b.Jump(poll.Block(stateIdx + 2))
 		} else {
-			// No more states, return zero
+			// No more states, return nil
 			if origResults.Len() > 0 {
-				zeroResult := g.prog.Zero(g.prog.Type(origResults.At(0).Type(), llssa.InGo))
-				b.Return(zeroResult)
+				resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
+				nilResult := g.prog.Nil(resultType)
+				b.Return(nilResult)
 			} else {
 				b.Return()
 			}

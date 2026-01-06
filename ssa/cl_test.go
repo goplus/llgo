@@ -65,6 +65,10 @@ func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "../cl/_testdata")
 }
 
+func TestFromTestpull(t *testing.T) {
+	cltest.FromDir(t, "", "../cl/_testpull")
+}
+
 func TestMakeInterface(t *testing.T) {
 	prog := ssa.NewProgram(nil)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
