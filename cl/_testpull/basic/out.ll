@@ -63,7 +63,7 @@ _llgo_6:                                          ; preds = %_llgo_5
   br label %_llgo_2
 
 _llgo_7:                                          ; preds = %_llgo_5
-  ret %"github.com/goplus/llgo/async.Poll[int]" %8
+  ret { i1, i64 } zeroinitializer
 }
 
 declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)

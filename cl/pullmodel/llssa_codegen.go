@@ -470,10 +470,18 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Branch based on ready
 		b.If(ready, readyBlock, pendingBlock)
 
-		// Pending path: return the poll result (which is Pending)
+		// Pending path: return Pending[T] for OUR result type (not sub-future's)
 		b.SetBlock(pendingBlock)
-		// Return the original result (which is an interface)
-		b.Return(pollResult)
+		// Create a Pending result: Poll[T]{ready: false, value: zero}
+		// We need to use the state machine's result type, not the sub-future's
+		ourResultType := g.sm.ResultType
+		if ourResultType == nil {
+			ourResultType = types.NewStruct(nil, nil) // Void
+		}
+		ourPollType := g.createPollType(ourResultType)
+		ourPollLLType := g.prog.Type(ourPollType, llssa.InGo)
+		pendingResult := g.prog.Zero(ourPollLLType) // ready=false, value=zero
+		b.Return(pendingResult)
 
 		// Ready path: extract value, update state, continue
 		b.SetBlock(readyBlock)
