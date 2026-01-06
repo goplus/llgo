@@ -20,6 +20,7 @@ package pullmodel
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"log"
 
@@ -337,8 +338,31 @@ func (g *LLSSACodeGen) generateStateBlock(
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
 		subFut := b.Load(subFutFieldPtr)
 
-		// TODO: Check if subFut is nil and initialize if needed
-		// For now, assume it's already initialized
+		// Check if subFut is nil and initialize if needed
+		llSubFutType := g.prog.Type(sp.SubFuture.Type(), llssa.InGo)
+		nilVal := g.prog.Nil(llSubFutType)
+		isNil := b.BinOp(token.EQL, subFut, nilVal)
+
+		// Create blocks for init/poll branching
+		initBlocks := poll.MakeBlocks(2)
+		initBlock := initBlocks[0]
+		pollBlock := initBlocks[1]
+
+		// Branch: if nil, initialize; otherwise, poll
+		b.If(isNil, initBlock, pollBlock)
+
+		// Init path: create the sub-future
+		b.SetBlock(initBlock)
+		// TODO: Actually compile sp.SubFuture expression to get the future
+		// For now, we store nil and continue (the future should already be created)
+		// This would need integration with main compiler to properly emit the expression
+		b.Store(subFutFieldPtr, subFut) // No-op for now
+		b.Jump(pollBlock)
+
+		// Poll path: continue with existing subFut
+		b.SetBlock(pollBlock)
+		// Reload subFut after potential initialization
+		subFut = b.Load(subFutFieldPtr)
 
 		// Get result type from suspend point
 		resultType := sp.Result.Type()
@@ -348,10 +372,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		// For concrete types (not interfaces), we need to get the method value
 		// instead of using Imethod
-		subFutType := sp.SubFuture.Type()
+		goSubFutType := sp.SubFuture.Type() // go/types.Type
 
 		// Check if it's an interface or concrete type
-		_, isInterface := subFutType.Underlying().(*types.Interface)
+		_, isInterface := goSubFutType.Underlying().(*types.Interface)
 
 		var pollResult llssa.Expr
 		if isInterface {
@@ -360,7 +384,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 			pollResult = b.Call(pollClosure, ctx)
 		} else {
 			// Concrete type: lookup method using method set
-			mset := types.NewMethodSet(subFutType)
+			mset := types.NewMethodSet(goSubFutType)
 
 			// Find Poll method
 			var pollSel *types.Selection
@@ -396,7 +420,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 			// Build full method name: package.(*Type).Method
 			methodPkg := pollMethodObj.Pkg()
-			methodName := llssa.FullName(methodPkg, "("+subFutType.String()+").Poll")
+			methodName := llssa.FullName(methodPkg, "("+goSubFutType.String()+").Poll")
 
 			// Create function reference
 			methodSig := pollMethodObj.Type().(*types.Signature)

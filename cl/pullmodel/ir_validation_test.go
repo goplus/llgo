@@ -56,6 +56,11 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 		t.Error("Generated IR should have Poll method with receiver and ctx parameters")
 	}
 
+	// Check for nil check (sub-future initialization guard)
+	if !strings.Contains(ir, "icmp eq ptr") && !strings.Contains(ir, ", null") {
+		t.Error("Generated IR should contain nil check for sub-future")
+	}
+
 	t.Log("Generated IR validation passed!")
 }
 
