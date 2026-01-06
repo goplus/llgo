@@ -337,22 +337,76 @@ func (g *LLSSACodeGen) generateStateBlock(
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
 		subFut := b.Load(subFutFieldPtr)
 
-		// TODO: For now, we assume the sub-future is already initialized
-		// Full implementation would:
-		// 1. Check if subFut is nil
-		// 2. If nil, call the future-producing function (sp.SubFuture)
-		// 3. Store the result in subFutFieldPtr
+		// TODO: Check if subFut is nil and initialize if needed
+		// For now, assume it's already initialized
 
-		// TODO: Call subFut.Poll(ctx)
-		// This requires interface method call which is complex
-		// For MVP, we'll use a simplified approach:
-		// - Assume sub-future resolves immediately (optimistic)
-		// - Just transition to next state
+		// Get result type from suspend point
+		resultType := sp.Result.Type()
 
-		// Mark variables as used
-		_ = sp
-		_ = subFut
-		_ = ctx
+		// Create Poll method signature
+		pollMethod := g.createPollMethod(resultType)
+
+		// For concrete types (not interfaces), we need to get the method value
+		// instead of using Imethod
+		subFutType := sp.SubFuture.Type()
+
+		// Check if it's an interface or concrete type
+		_, isInterface := subFutType.Underlying().(*types.Interface)
+
+		var pollResult llssa.Expr
+		if isInterface {
+			// Interface: use Imethod
+			pollClosure := b.Imethod(subFut, pollMethod)
+			pollResult = b.Call(pollClosure, ctx)
+		} else {
+			// Concrete type: method call implementation
+			// TODO: Implement concrete type method call
+			// Need to find the correct API to get method function from program
+			// Options to explore:
+			// 1. Use g.pkg to get the method function
+			// 2. Use SSA program's method lookup
+			// 3. Generate method call directly in LLVM IR
+
+			// For now, just transition to next state (optimistic execution)
+			nextState := uint64(stateIdx + 1)
+			stateFieldPtr := b.FieldAddr(statePtr, 0)
+			b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
+			if stateIdx+1 < len(g.sm.States) {
+				b.Jump(poll.Block(stateIdx + 2))
+			} else {
+				if origResults.Len() > 0 {
+					resultType := g.prog.Type(origResults.At(0).Type(), llssa.InGo)
+					nilResult := g.prog.Nil(resultType)
+					b.Return(nilResult)
+				} else {
+					b.Return()
+				}
+			}
+			return
+		}
+
+		// Poll[T] is struct { ready bool; value T }
+		// We need to check the ready field
+		pollResultType := g.prog.Type(g.createPollType(resultType), llssa.InGo)
+
+		// Allocate pollResult on stack to get address
+		pollResultPtr := b.AllocU(pollResultType)
+		b.Store(pollResultPtr, pollResult)
+
+		// Extract ready field (field 0)
+		readyFieldPtr := b.FieldAddr(pollResultPtr, 0)
+		ready := b.Load(readyFieldPtr)
+
+		// Create blocks for branching
+		// We need to insert new blocks, but for now use a simplified approach:
+		// If ready, continue to next state; if not ready, return Pending
+
+		// For MVP: just check ready and branch
+		// TODO: Proper block management with ready/pending paths
+
+		// For now, optimistically assume ready and continue
+		// This is the same as before but with actual Poll call
+		_ = ready // Will be used in full implementation
 
 		// Update state to next
 		nextState := uint64(stateIdx + 1)
@@ -440,9 +494,12 @@ func (g *LLSSACodeGen) getAsyncContextType() *types.Pointer {
 	return types.NewPointer(types.NewStruct(nil, nil))
 }
 
-// getAsyncPollType returns the async.Poll[T] type for the given result type.
-func (g *LLSSACodeGen) getAsyncPollType(resultType types.Type) types.Type {
-	// TODO: Instantiate Poll[T] with the result type
-	// For now, return a placeholder struct
-	return types.NewStruct(nil, nil)
+// createPollType creates the Poll[T] struct type.
+// Poll[T] is: struct { ready bool; value T }
+func (g *LLSSACodeGen) createPollType(resultType types.Type) types.Type {
+	fields := []*types.Var{
+		types.NewField(0, nil, "ready", types.Typ[types.Bool], false),
+		types.NewField(0, nil, "value", resultType, false),
+	}
+	return types.NewStruct(fields, nil)
 }
