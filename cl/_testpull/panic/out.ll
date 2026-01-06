@@ -47,7 +47,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @PanicInDefer() {
+define { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @PanicInDefer() {
 _llgo_0:
   %0 = alloca { i8, ptr, ptr }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 24, i1 false)
@@ -66,7 +66,7 @@ declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 define { i1, i64 } @"PanicInDefer$Poll"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
   switch i8 %3, label %_llgo_4 [
     i8 0, label %_llgo_1
@@ -75,10 +75,12 @@ _llgo_0:
   ]
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 3
-  %5 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 2
-  %6 = load i1, ptr %5, align 1
-  br i1 %6, label %_llgo_6, label %_llgo_5
+  %4 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 2
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/async.AsyncFuture[int]", ptr %4, i32 0, i32 0
+  %6 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 0
+  %7 = load ptr, ptr %6, align 8
+  %8 = icmp eq ptr %7, null
+  br i1 %8, label %_llgo_5, label %_llgo_6
 
 _llgo_2:                                          ; preds = %_llgo_7, %_llgo_0
   ret { i1, i64 } zeroinitializer
@@ -93,18 +95,18 @@ _llgo_5:                                          ; preds = %_llgo_1
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_1
-  %7 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
-  %8 = alloca { i1, i64 }, align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %7, ptr %8, align 4
-  %9 = getelementptr inbounds { i1, i64 }, ptr %8, i32 0, i32 0
-  %10 = load i1, ptr %9, align 1
-  br i1 %10, label %_llgo_7, label %_llgo_8
+  %9 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
+  %10 = alloca { i1, i64 }, align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %9, ptr %10, align 4
+  %11 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 0
+  %12 = load i1, ptr %11, align 1
+  br i1 %12, label %_llgo_7, label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_6
-  %11 = getelementptr inbounds { i1, i64 }, ptr %8, i32 0, i32 1
-  %12 = load i64, ptr %11, align 4
-  %13 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %13, align 1
+  %13 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 1
+  %14 = load i64, ptr %13, align 4
+  %15 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %15, align 1
   br label %_llgo_2
 
 _llgo_8:                                          ; preds = %_llgo_6
@@ -113,7 +115,7 @@ _llgo_8:                                          ; preds = %_llgo_6
 
 declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)
 
-define { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @RecoverInDefer() {
+define { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @RecoverInDefer() {
 _llgo_0:
   %0 = alloca { i8, ptr, ptr }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 24, i1 false)
@@ -129,7 +131,7 @@ _llgo_0:
 
 define { i1, i64 } @"RecoverInDefer$Poll"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
   switch i8 %3, label %_llgo_4 [
     i8 0, label %_llgo_1
@@ -138,10 +140,12 @@ _llgo_0:
   ]
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 3
-  %5 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 2
-  %6 = load i1, ptr %5, align 1
-  br i1 %6, label %_llgo_6, label %_llgo_5
+  %4 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 2
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/async.AsyncFuture[int]", ptr %4, i32 0, i32 0
+  %6 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 0
+  %7 = load ptr, ptr %6, align 8
+  %8 = icmp eq ptr %7, null
+  br i1 %8, label %_llgo_5, label %_llgo_6
 
 _llgo_2:                                          ; preds = %_llgo_7, %_llgo_0
   ret { i1, i64 } zeroinitializer
@@ -156,25 +160,25 @@ _llgo_5:                                          ; preds = %_llgo_1
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_1
-  %7 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
-  %8 = alloca { i1, i64 }, align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %7, ptr %8, align 4
-  %9 = getelementptr inbounds { i1, i64 }, ptr %8, i32 0, i32 0
-  %10 = load i1, ptr %9, align 1
-  br i1 %10, label %_llgo_7, label %_llgo_8
+  %9 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
+  %10 = alloca { i1, i64 }, align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %9, ptr %10, align 4
+  %11 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 0
+  %12 = load i1, ptr %11, align 1
+  br i1 %12, label %_llgo_7, label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_6
-  %11 = getelementptr inbounds { i1, i64 }, ptr %8, i32 0, i32 1
-  %12 = load i64, ptr %11, align 4
-  %13 = getelementptr inbounds { i8, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %13, align 1
+  %13 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 1
+  %14 = load i64, ptr %13, align 4
+  %15 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %15, align 1
   br label %_llgo_2
 
 _llgo_8:                                          ; preds = %_llgo_6
   ret { i1, i64 } zeroinitializer
 }
 
-define { i8, i1, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @WithPanic(i1 %0) {
+define { i8, i1, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @WithPanic(i1 %0) {
 _llgo_0:
   %1 = alloca { i8, i1, ptr, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 24, i1 false)
@@ -192,7 +196,7 @@ _llgo_0:
 
 define { i1, i64 } @"WithPanic$Poll"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = getelementptr inbounds { i8, i1, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds { i8, i1, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
   switch i8 %3, label %_llgo_4 [
     i8 0, label %_llgo_1
@@ -201,10 +205,12 @@ _llgo_0:
   ]
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = getelementptr inbounds { i8, i1, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 4
-  %5 = getelementptr inbounds { i8, i1, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 3
-  %6 = load i1, ptr %5, align 1
-  br i1 %6, label %_llgo_6, label %_llgo_5
+  %4 = getelementptr inbounds { i8, i1, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 3
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/async.AsyncFuture[int]", ptr %4, i32 0, i32 0
+  %6 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 0
+  %7 = load ptr, ptr %6, align 8
+  %8 = icmp eq ptr %7, null
+  br i1 %8, label %_llgo_5, label %_llgo_6
 
 _llgo_2:                                          ; preds = %_llgo_7, %_llgo_0
   ret { i1, i64 } zeroinitializer
@@ -219,18 +225,18 @@ _llgo_5:                                          ; preds = %_llgo_1
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_1
-  %7 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
-  %8 = alloca { i1, i64 }, align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %7, ptr %8, align 4
-  %9 = getelementptr inbounds { i1, i64 }, ptr %8, i32 0, i32 0
-  %10 = load i1, ptr %9, align 1
-  br i1 %10, label %_llgo_7, label %_llgo_8
+  %9 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
+  %10 = alloca { i1, i64 }, align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %9, ptr %10, align 4
+  %11 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 0
+  %12 = load i1, ptr %11, align 1
+  br i1 %12, label %_llgo_7, label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_6
-  %11 = getelementptr inbounds { i1, i64 }, ptr %8, i32 0, i32 1
-  %12 = load i64, ptr %11, align 4
-  %13 = getelementptr inbounds { i8, i1, ptr, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %13, align 1
+  %13 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 1
+  %14 = load i64, ptr %13, align 4
+  %15 = getelementptr inbounds { i8, i1, ptr, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %15, align 1
   br label %_llgo_2
 
 _llgo_8:                                          ; preds = %_llgo_6

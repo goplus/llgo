@@ -53,3 +53,5 @@ go.work*
 *.uf2
 *.img
 *.zip
+_demo/c/fcntl/testfile.txt
+result.md
