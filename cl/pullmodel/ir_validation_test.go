@@ -124,8 +124,6 @@ func TestLLGen_Basic(t *testing.T) {
 
 // TestGeneratedIR_Complex verifies complex async patterns generate correct IR
 func TestGeneratedIR_Complex(t *testing.T) {
-	t.Skip("Complex IR test pending type fixes for terminal state returns")
-
 	wd, _ := os.Getwd()
 	testDir := filepath.Join(wd, "..", "_testpull", "complex")
 	outLL := filepath.Join(testDir, "out.ll")

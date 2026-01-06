@@ -1,7 +1,6 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpull/basic'
 source_filename = "github.com/goplus/llgo/cl/_testpull/basic"
 
-%"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 
@@ -38,7 +37,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   br i1 %6, label %_llgo_4, label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_6, %_llgo_0
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
+  ret { i1, i64 } zeroinitializer
 
 _llgo_3:                                          ; preds = %_llgo_0
   ret { i1, i64 } zeroinitializer
