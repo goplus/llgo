@@ -216,6 +216,8 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	}
 
 	// Fields for sub-futures
+	// NOTE: Currently using pointer types for lazy initialization via nil check.
+	// Future optimization: value embedding with initialized flags (see design doc 5.2)
 	for i, futType := range g.sm.SubFutures {
 		name := fmt.Sprintf("sub%d", i)
 		fields = append(fields, types.NewField(0, nil, name, futType, false))
