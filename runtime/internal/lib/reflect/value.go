@@ -2398,10 +2398,11 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		return []Value{NewAt(toType(tout[0]), ret).Elem()}
 	default:
 		out = make([]Value, n)
+		alignment := uintptr(sig.RType.Alignment)
 		var off uintptr
 		for i, tout := range tout {
 			out[i] = NewAt(toType(tout), add(ret, off, "")).Elem()
-			off += tout.Size()
+			off += (tout.Size_ + alignment - 1) &^ (alignment - 1)
 		}
 	}
 	return
