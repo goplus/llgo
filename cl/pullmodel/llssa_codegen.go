@@ -29,12 +29,16 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 )
 
+// CompileValueFunc is a callback to compile SSA values using the main compiler.
+type CompileValueFunc func(b llssa.Builder, v ssa.Value) llssa.Expr
+
 // LLSSACodeGen generates LLVM IR code for state machines using llssa API.
 type LLSSACodeGen struct {
-	prog   llssa.Program
-	pkg    llssa.Package
-	ssaPkg *ssa.Package
-	sm     *StateMachine
+	prog         llssa.Program
+	pkg          llssa.Package
+	ssaPkg       *ssa.Package
+	sm           *StateMachine
+	compileValue CompileValueFunc // callback to compile SSA values
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -50,6 +54,12 @@ func NewLLSSACodeGen(
 		ssaPkg: ssaPkg,
 		sm:     sm,
 	}
+}
+
+// SetCompileValue sets the callback function for compiling SSA values.
+// This must be called before Generate() if sub-future initialization is needed.
+func (g *LLSSACodeGen) SetCompileValue(fn CompileValueFunc) {
+	g.compileValue = fn
 }
 
 // Generate generates the complete state machine code.
@@ -353,10 +363,16 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		// Init path: create the sub-future
 		b.SetBlock(initBlock)
-		// TODO: Actually compile sp.SubFuture expression to get the future
-		// For now, we store nil and continue (the future should already be created)
-		// This would need integration with main compiler to properly emit the expression
-		b.Store(subFutFieldPtr, subFut) // No-op for now
+
+		// Compile the sub-future expression using the callback
+		if g.compileValue != nil {
+			// Compile sp.SubFuture (e.g., Step() call) to get the future value
+			newSubFut := g.compileValue(b, sp.SubFuture)
+			b.Store(subFutFieldPtr, newSubFut)
+		} else {
+			// No callback available - skip initialization (sub-future must be pre-initialized)
+			// This is a fallback for testing without full compiler integration
+		}
 		b.Jump(pollBlock)
 
 		// Poll path: continue with existing subFut
@@ -546,6 +562,18 @@ func GenerateStateMachine(
 	ssaPkg *ssa.Package,
 	fn *ssa.Function,
 ) error {
+	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil)
+}
+
+// GenerateStateMachineWithCallback is like GenerateStateMachine but accepts
+// a callback function for compiling SSA values (used for sub-future initialization).
+func GenerateStateMachineWithCallback(
+	prog llssa.Program,
+	pkg llssa.Package,
+	ssaPkg *ssa.Package,
+	fn *ssa.Function,
+	compileValue CompileValueFunc,
+) error {
 	// Step 1: Analyze SSA and create state machine
 	sm := Transform(fn)
 	if sm == nil {
@@ -554,6 +582,9 @@ func GenerateStateMachine(
 
 	// Step 2: Generate llssa code
 	codegen := NewLLSSACodeGen(prog, pkg, ssaPkg, sm)
+	if compileValue != nil {
+		codegen.SetCompileValue(compileValue)
+	}
 	if err := codegen.Generate(); err != nil {
 		return fmt.Errorf("failed to generate code for %s: %w", fn.Name(), err)
 	}

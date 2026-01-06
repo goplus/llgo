@@ -44,7 +44,6 @@ _llgo_3:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 
 _llgo_4:                                          ; preds = %_llgo_1
-  store ptr %5, ptr %4, align 8
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_1
