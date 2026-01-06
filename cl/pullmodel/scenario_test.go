@@ -228,3 +228,56 @@ func TestScenario_EdgeCases(t *testing.T) {
 		})
 	}
 }
+
+// TestScenario_Complex tests complex async patterns
+func TestScenario_Complex(t *testing.T) {
+	ssaPkg := buildSSAFromFile(t, "../_testpull/complex/in.go")
+
+	tests := []struct {
+		name           string
+		expectSuspend  int
+		expectCrossVar int // Minimum expected cross-suspend variables
+	}{
+		{"ChainedAwaits", 4, 0},         // 4 awaits (may not need cross vars due to SSA optimization)
+		{"ConditionalChain", 3, 1},      // Await in both branches + after
+		{"LoopWithAccumulator", 1, 2},   // Loop with accumulator
+		{"NestedConditions", 4, 1},      // Await in nested if
+		{"SwitchWithFallthrough", 4, 1}, // Switch with 4 cases
+		{"MultipleReturnPaths", 3, 1},   // Early returns with await
+		{"LoopBreakContinue", 1, 1},     // Loop with break/continue (1 cross var for sum)
+		{"DeferWithAwait", 2, 1},        // Defer + await
+		{"ClosureCapture", 2, 0},        // Closure may inline variables
+		{"TwoLoops", 2, 2},              // Two separate loops
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := ssaPkg.Func(tc.name)
+			if fn == nil {
+				t.Fatalf("Function %s not found", tc.name)
+			}
+
+			if !IsAsyncFunc(fn) {
+				t.Errorf("%s should be async", tc.name)
+			}
+
+			points := FindSuspendPoints(fn)
+			if len(points) != tc.expectSuspend {
+				t.Errorf("%s: found %d suspend points, want %d", tc.name, len(points), tc.expectSuspend)
+			}
+
+			sm := Transform(fn)
+			if sm == nil {
+				t.Fatalf("%s: Transform returned nil", tc.name)
+			}
+
+			if len(sm.CrossVars) < tc.expectCrossVar {
+				t.Errorf("%s: found %d cross vars, want at least %d",
+					tc.name, len(sm.CrossVars), tc.expectCrossVar)
+			}
+
+			t.Logf("%s: States=%d, CrossVars=%d, SubFutures=%d",
+				tc.name, len(sm.States), len(sm.CrossVars), len(sm.SubFutures))
+		})
+	}
+}

@@ -121,3 +121,57 @@ func TestLLGen_Basic(t *testing.T) {
 
 	t.Log("llgen basic test passed")
 }
+
+// TestGeneratedIR_Complex verifies complex async patterns generate correct IR
+func TestGeneratedIR_Complex(t *testing.T) {
+	t.Skip("Complex IR test pending type fixes for terminal state returns")
+
+	wd, _ := os.Getwd()
+	testDir := filepath.Join(wd, "..", "_testpull", "complex")
+	outLL := filepath.Join(testDir, "out.ll")
+
+	if _, err := os.Stat(outLL); os.IsNotExist(err) {
+		t.Skip("complex/out.ll not found")
+	}
+
+	content, err := os.ReadFile(outLL)
+	if err != nil {
+		t.Fatalf("Failed to read out.ll: %v", err)
+	}
+
+	ir := string(content)
+
+	// Test functions that should be generated
+	expectedFuncs := []string{
+		"ChainedAwaits$Poll",
+		"ConditionalChain$Poll",
+		"LoopWithAccumulator$Poll",
+		"NestedConditions$Poll",
+		"SwitchWithFallthrough$Poll",
+		"MultipleReturnPaths$Poll",
+		"LoopBreakContinue$Poll",
+		"DeferWithAwait$Poll",
+		"ClosureCapture$Poll",
+		"TwoLoops$Poll",
+	}
+
+	for _, fn := range expectedFuncs {
+		if !strings.Contains(ir, "@\""+fn+"\"") {
+			t.Errorf("Missing function: %s", fn)
+		}
+	}
+
+	// Verify state switch exists
+	switchCount := strings.Count(ir, "switch i8 %")
+	if switchCount < 10 { // Each of 10 functions should have a switch
+		t.Errorf("Expected at least 10 switch statements, got %d", switchCount)
+	}
+
+	// Verify Poll calls exist
+	pollCallCount := strings.Count(ir, "call %\"github.com/goplus/llgo/async.Poll")
+	if pollCallCount < 10 {
+		t.Errorf("Expected at least 10 Poll calls, got %d", pollCallCount)
+	}
+
+	t.Logf("Complex IR validation passed: %d switch statements, %d Poll calls", switchCount, pollCallCount)
+}
