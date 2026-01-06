@@ -554,24 +554,30 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
 				// Check if callee has suspend points (taint analysis)
 				if p.coroAnalysis().HasSuspendPoint(cv) {
-					// For void functions, we can call $coro and await
-					sig := cv.Signature
-					if sig.Results().Len() == 0 {
-						// Get or create the $coro version
-						coroFn := p.getOrCreateCoroFunc(cv)
-						if coroFn == nil {
-							// Fallback to sync version
-							ret = b.Do(act, aFn.Expr, args...)
-						} else {
-							// Call $coro version synchronously (always use Call, not Go)
-							// and await with suspend for cooperative scheduling
-							handle := b.Do(llssa.Call, coroFn.Expr, args...)
-							b.CoroAwaitWithSuspend(handle, p.coroState)
-						}
-					} else {
-						// Functions with return values: call sync version for now
-						// TODO: Store return value in callee frame, await, then read
+					// Get or create the $coro version
+					coroFn := p.getOrCreateCoroFunc(cv)
+					if coroFn == nil {
+						// Fallback to sync version
 						ret = b.Do(act, aFn.Expr, args...)
+					} else {
+						// Call $coro version and await with suspend
+						handle := b.Do(llssa.Call, coroFn.Expr, args...)
+						b.CoroAwaitWithSuspend(handle, p.coroState)
+
+						// Read return values from promise if any
+						sig := cv.Signature
+						results := sig.Results()
+						if results != nil && results.Len() > 0 {
+							if results.Len() == 1 {
+								// Single return value: promise stores direct type (e.g., i64)
+								promiseType := p.type_(results.At(0).Type(), llssa.InGo)
+								ret = b.CoroLoadResult(handle, promiseType, 8)
+							} else {
+								// Multiple return values: promise stores struct {field0, field1, ...}
+								promiseType := p.type_(results, llssa.InGo)
+								ret = b.CoroLoadResult(handle, promiseType, 8)
+							}
+						}
 					}
 				} else {
 					// No suspend points, call sync version directly

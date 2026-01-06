@@ -473,7 +473,21 @@ func (p *context) compileCoroFuncDecl(pkg llssa.Package, f *ssa.Function, origFn
 
 		// Set builder to block 0 (coro entry) and generate prologue
 		b.SetBlock(coroFn.Block(0))
-		p.coroState = b.CoroFuncPrologue(bodyStartBlk)
+
+		// Get return type for promise (if function has return values)
+		// For single return value, use direct type (e.g., i64)
+		// For multiple return values, use tuple/struct
+		var retType llssa.Type
+		if results := sig.Results(); results != nil && results.Len() > 0 {
+			if results.Len() == 1 {
+				// Single return value: use direct type
+				retType = p.type_(results.At(0).Type(), llssa.InGo)
+			} else {
+				// Multiple return values: use tuple
+				retType = p.type_(results, llssa.InGo)
+			}
+		}
+		p.coroState = b.CoroFuncPrologue(bodyStartBlk, retType)
 
 		p.bvals = make(map[ssa.Value]llssa.Expr)
 		off := make([]int, len(f.Blocks))
@@ -606,9 +620,18 @@ func (p *context) compileCoroBlock(b llssa.Builder, block *ssa.BasicBlock, n int
 }
 
 // compileCoroReturn compiles a Return instruction in coro version.
-// Instead of returning the original value, it jumps to the single exit block
-// where the final suspend is performed.
+// Instead of returning the original value, it stores the return value
+// to the promise and jumps to the single exit block.
 func (p *context) compileCoroReturn(b llssa.Builder, ret *ssa.Return) {
+	// Store return values to promise if any
+	numResults := len(ret.Results)
+	if numResults > 0 && p.coroState.PromiseType != nil {
+		// Compile all return values and store them to promise
+		for i, r := range ret.Results {
+			val := p.compileValue(b, r)
+			b.CoroStoreResult(p.coroState, i, numResults, val)
+		}
+	}
 	// Jump to the single exit block (which has the final suspend)
 	b.Jump(p.coroState.ExitBlk)
 }

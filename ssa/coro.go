@@ -304,6 +304,9 @@ func (p Package) getCoroIntrinsic(name string) llvm.Value {
 	case "llvm.coro.done":
 		// declare i1 @llvm.coro.done(ptr)
 		fnTy = llvm.FunctionType(i1Ty, []llvm.Type{ptrTy}, false)
+	case "llvm.coro.promise":
+		// declare ptr @llvm.coro.promise(ptr <handle>, i32 <alignment>, i1 <from>)
+		fnTy = llvm.FunctionType(ptrTy, []llvm.Type{ptrTy, i32Ty, i1Ty}, false)
 	default:
 		panic("unknown coro intrinsic: " + name)
 	}
@@ -371,6 +374,20 @@ func (b Builder) CoroDone(handle Expr) Expr {
 	fn := b.Pkg.getCoroIntrinsic("llvm.coro.done")
 	ret := llvm.CreateCall(b.impl, fn.GlobalValueType(), fn, []llvm.Value{handle.impl})
 	return Expr{ret, b.Prog.Bool()}
+}
+
+// CoroPromise calls llvm.coro.promise intrinsic
+// Given a coroutine handle, returns a pointer to the promise.
+// Given a promise pointer (from=true), returns the coroutine handle.
+// alignment: the alignment of the promise in bytes
+// from: if false, handle -> promise; if true, promise -> handle
+func (b Builder) CoroPromise(handleOrPromise Expr, alignment int, from bool) Expr {
+	fn := b.Pkg.getCoroIntrinsic("llvm.coro.promise")
+	alignVal := b.Prog.IntVal(uint64(alignment), b.Prog.Int32())
+	fromVal := b.Prog.BoolVal(from)
+	ret := llvm.CreateCall(b.impl, fn.GlobalValueType(), fn,
+		[]llvm.Value{handleOrPromise.impl, alignVal.impl, fromVal.impl})
+	return Expr{ret, b.Prog.VoidPtr()}
 }
 
 // CoroSize calls llvm.coro.size.i64 intrinsic
@@ -553,13 +570,20 @@ type CoroState struct {
 	ExitBlk    BasicBlock // The exit block (single final suspend point)
 	CleanupBlk BasicBlock // The cleanup block
 	EndBlk     BasicBlock // The end block
+	// Promise support for return values
+	Promise      Expr // The promise alloca (for return value storage)
+	PromiseType  Type // The type of the promise (return type)
+	PromiseAlign int  // Alignment of the promise
 }
 
 // CoroFuncPrologue generates the coroutine prologue at function entry.
 // It creates the coro.id, allocates frame if needed, and calls coro.begin.
 // After coro.begin, it jumps to bodyStartBlk where the function body begins.
 // Returns the CoroState that must be used for epilogue.
-func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock) *CoroState {
+//
+// If retType is non-nil, a promise is allocated to store the return value.
+// The promise can be accessed via CoroState.Promise after this call.
+func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroState {
 	prog := b.Prog
 	fn := b.Func
 
@@ -570,10 +594,25 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock) *CoroState {
 	cleanupBlk := fn.MakeBlock()
 	endBlk := fn.MakeBlock()
 
-	// Entry block: call coro.id
+	// Allocate promise if we have a return type
+	var promise Expr
+	var promiseAlign int
 	zero := prog.IntVal(0, prog.Int32())
 	null := prog.Nil(prog.VoidPtr())
-	coroId := b.CoroId(zero, null, null, null)
+
+	if retType == nil {
+		// No return value, use null promise
+		promise = null
+		promiseAlign = 0
+	} else {
+		// Allocate promise for return value
+		// Promise must be allocated before coro.id is called
+		promise = b.AllocaT(retType)
+		promiseAlign = 8 // Default alignment, should be computed from retType
+	}
+
+	// Entry block: call coro.id with promise
+	coroId := b.CoroId(zero, promise, null, null)
 
 	// Check if allocation is needed
 	needAlloc := b.CoroAlloc(coroId)
@@ -607,12 +646,48 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock) *CoroState {
 	b.Jump(bodyStartBlk)
 
 	return &CoroState{
-		CoroId:     coroId,
-		CoroHandle: coroHandle,
-		ExitBlk:    exitBlk,
-		CleanupBlk: cleanupBlk,
-		EndBlk:     endBlk,
+		CoroId:       coroId,
+		CoroHandle:   coroHandle,
+		ExitBlk:      exitBlk,
+		CleanupBlk:   cleanupBlk,
+		EndBlk:       endBlk,
+		Promise:      promise,
+		PromiseType:  retType,
+		PromiseAlign: promiseAlign,
 	}
+}
+
+// CoroStoreResult stores a return value to the promise at the given field index.
+// This should be called before jumping to ExitBlk in a return statement.
+// Directly stores to the promise alloca - LLVM CoroSplit will relocate it to the frame.
+//
+// For single return value (fieldIndex=0, numResults=1): stores directly to promise
+// For multiple return values: stores to the struct field at fieldIndex
+func (b Builder) CoroStoreResult(state *CoroState, fieldIndex int, numResults int, result Expr) {
+	if state.PromiseType == nil {
+		return // No return value
+	}
+	if numResults == 1 {
+		// Single return value: promise is direct type (e.g., i64), store directly
+		b.Store(state.Promise, result)
+	} else {
+		// Multiple return values: promise is struct, use FieldAddr
+		fieldPtr := b.FieldAddr(state.Promise, fieldIndex)
+		b.Store(fieldPtr, result)
+	}
+}
+
+// CoroLoadResult loads the return value from a completed coroutine's promise.
+// This should be called after CoroAwaitWithSuspend when the coroutine is done.
+// handle: the coroutine handle
+// retType: the return type (to properly type the result)
+// alignment: the promise alignment (typically 8)
+func (b Builder) CoroLoadResult(handle Expr, retType Type, alignment int) Expr {
+	// Get promise pointer from handle
+	promisePtr := b.CoroPromise(handle, alignment, false)
+	// Cast to proper pointer type and load
+	typedPtr := Expr{promisePtr.impl, b.Prog.Pointer(retType)}
+	return b.Load(typedPtr)
 }
 
 // CoroFuncEpilogue generates the coroutine epilogue (exit, cleanup and end blocks).
@@ -627,13 +702,32 @@ func (b Builder) CoroFuncEpilogue(state *CoroState) {
 	trueVal := prog.BoolVal(true)
 	result := b.CoroSuspend(Expr{}, trueVal)
 
-	// Create suspend block (for final suspend, just go to cleanup)
-	suspendBlk := fn.MakeBlock()
-	b.CoroSuspendSwitch(result, suspendBlk, state.CleanupBlk, state.CoroHandle)
+	// For final suspend, we use a custom switch instead of CoroSuspendSwitch.
+	// The key difference is the default (-1) path:
+	// - Non-final suspend: default returns handle (so caller can resume later)
+	// - Final suspend: default calls coro.end then returns handle
+	//
+	// The coro.end call is critical because without it, CoroSplit generates
+	// 'unreachable' for this path in the resume function. LLVM then optimizes
+	// the unreachable into a fall-through to cleanup, causing the frame to be
+	// freed before the caller can read the return value.
+	// With coro.end, CoroSplit generates a proper return in the resume function.
+	resumeBlk := fn.MakeBlock()  // case 0: final suspend resumed (go to cleanup)
+	suspendBlk := fn.MakeBlock() // default (-1): suspended
 
-	// Suspend block - for final suspend, go to cleanup
-	b.SetBlock(suspendBlk)
+	sw := b.impl.CreateSwitch(result.impl, suspendBlk.first, 2)
+	sw.AddCase(llvm.ConstInt(prog.tyInt8(), 0, false), resumeBlk.first)
+	sw.AddCase(llvm.ConstInt(prog.tyInt8(), 1, false), state.CleanupBlk.first)
+
+	// Resume block (case 0) - final suspend shouldn't be resumed, go to cleanup
+	b.SetBlock(resumeBlk)
 	b.Jump(state.CleanupBlk)
+
+	// Suspend block (default, -1) - jump to end block
+	// The frame is NOT freed here - caller may still need to read return value.
+	// By going through coro.end, CoroSplit generates proper 'ret void' instead of 'unreachable'.
+	b.SetBlock(suspendBlk)
+	b.Jump(state.EndBlk)
 
 	// Generate cleanup block - use C free for coroutine frame
 	b.SetBlock(state.CleanupBlk)
@@ -641,7 +735,7 @@ func (b Builder) CoroFuncEpilogue(state *CoroState) {
 	b.free(memToFree)
 	b.Jump(state.EndBlk)
 
-	// Generate end block
+	// Generate end block - single coro.end for all exit paths
 	b.SetBlock(state.EndBlk)
 	falseVal := prog.BoolVal(false)
 	b.CoroEnd(state.CoroHandle, falseVal)
