@@ -31,11 +31,13 @@ _llgo_0:
   ]
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %3 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %3, align 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
+  %3 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 1
+  %4 = load ptr, ptr %3, align 8
+  %5 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %5, align 1
+  br label %_llgo_2
 
-_llgo_2:                                          ; preds = %_llgo_0
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 
 _llgo_3:                                          ; preds = %_llgo_0
