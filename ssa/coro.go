@@ -301,6 +301,9 @@ func (p Package) getCoroIntrinsic(name string) llvm.Value {
 	case "llvm.coro.free":
 		// declare ptr @llvm.coro.free(token, ptr)
 		fnTy = llvm.FunctionType(ptrTy, []llvm.Type{tokenTy, ptrTy}, false)
+	case "llvm.coro.done":
+		// declare i1 @llvm.coro.done(ptr)
+		fnTy = llvm.FunctionType(i1Ty, []llvm.Type{ptrTy}, false)
 	default:
 		panic("unknown coro intrinsic: " + name)
 	}
@@ -360,6 +363,14 @@ func (b Builder) CoroResume(handle Expr) {
 func (b Builder) CoroDestroy(handle Expr) {
 	fn := b.Pkg.getCoroIntrinsic("llvm.coro.destroy")
 	llvm.CreateCall(b.impl, fn.GlobalValueType(), fn, []llvm.Value{handle.impl})
+}
+
+// CoroDone calls llvm.coro.done intrinsic
+// Returns true if the coroutine is at its final suspend point
+func (b Builder) CoroDone(handle Expr) Expr {
+	fn := b.Pkg.getCoroIntrinsic("llvm.coro.done")
+	ret := llvm.CreateCall(b.impl, fn.GlobalValueType(), fn, []llvm.Value{handle.impl})
+	return Expr{ret, b.Prog.Bool()}
 }
 
 // CoroSize calls llvm.coro.size.i64 intrinsic
@@ -748,7 +759,6 @@ func (b Builder) CoroAwait(handle Expr) {
 //
 // This requires the caller to be in a coroutine context with valid CoroState.
 func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
-	prog := b.Prog
 	fn := b.Func
 
 	// Create basic blocks
@@ -761,12 +771,9 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 	// Jump to loop
 	b.Jump(loopBlk)
 
-	// Loop block: check if coroutine is done
+	// Loop block: check if coroutine is done using llvm.coro.done
 	b.SetBlock(loopBlk)
-	resumeFnPtr := handle
-	resumeFn := b.Load(Expr{resumeFnPtr.impl, prog.Pointer(prog.VoidPtr())})
-	null := prog.Nil(prog.VoidPtr())
-	isDone := b.BinOp(token.EQL, resumeFn, null)
+	isDone := b.CoroDone(handle)
 	b.If(isDone, doneBlk, resumeBlk)
 
 	// Resume block: resume the callee coroutine
@@ -776,8 +783,7 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 
 	// Check block: see if callee finished or suspended
 	b.SetBlock(checkBlk)
-	resumeFn2 := b.Load(Expr{resumeFnPtr.impl, prog.Pointer(prog.VoidPtr())})
-	isDone2 := b.BinOp(token.EQL, resumeFn2, null)
+	isDone2 := b.CoroDone(handle)
 	b.If(isDone2, doneBlk, suspendBlk)
 
 	// Suspend block: callee is still suspended, we should suspend too

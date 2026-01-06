@@ -67,22 +67,20 @@ _llgo_6:                                          ; preds = %_llgo_5
   ret ptr %6
 
 _llgo_7:                                          ; preds = %_llgo_12, %_llgo_1
-  %10 = load ptr, ptr %2, align 8
-  %11 = icmp eq ptr %10, null
-  br i1 %11, label %_llgo_11, label %_llgo_8
+  %10 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %10, label %_llgo_11, label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7
   call void @llvm.coro.resume(ptr %2)
   br label %_llgo_9
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %12 = load ptr, ptr %2, align 8
-  %13 = icmp eq ptr %12, null
-  br i1 %13, label %_llgo_11, label %_llgo_10
+  %11 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %11, label %_llgo_11, label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %14 = call i8 @llvm.coro.suspend(token none, i1 false)
-  switch i8 %14, label %_llgo_13 [
+  %12 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %12, label %_llgo_13 [
     i8 0, label %_llgo_12
     i8 1, label %_llgo_5
   ]
@@ -168,22 +166,20 @@ _llgo_6:                                          ; preds = %_llgo_5
   ret ptr %6
 
 _llgo_7:                                          ; preds = %_llgo_12, %_llgo_1
-  %10 = load ptr, ptr %2, align 8
-  %11 = icmp eq ptr %10, null
-  br i1 %11, label %_llgo_11, label %_llgo_8
+  %10 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %10, label %_llgo_11, label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7
   call void @llvm.coro.resume(ptr %2)
   br label %_llgo_9
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %12 = load ptr, ptr %2, align 8
-  %13 = icmp eq ptr %12, null
-  br i1 %13, label %_llgo_11, label %_llgo_10
+  %11 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %11, label %_llgo_11, label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %14 = call i8 @llvm.coro.suspend(token none, i1 false)
-  switch i8 %14, label %_llgo_13 [
+  %12 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %12, label %_llgo_13 [
     i8 0, label %_llgo_12
     i8 1, label %_llgo_5
   ]
@@ -256,22 +252,20 @@ _llgo_6:                                          ; preds = %_llgo_5
   ret ptr %6
 
 _llgo_7:                                          ; preds = %_llgo_12, %_llgo_1
-  %10 = load ptr, ptr %2, align 8
-  %11 = icmp eq ptr %10, null
-  br i1 %11, label %_llgo_11, label %_llgo_8
+  %10 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %10, label %_llgo_11, label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7
   call void @llvm.coro.resume(ptr %2)
   br label %_llgo_9
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %12 = load ptr, ptr %2, align 8
-  %13 = icmp eq ptr %12, null
-  br i1 %13, label %_llgo_11, label %_llgo_10
+  %11 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %11, label %_llgo_11, label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %14 = call i8 @llvm.coro.suspend(token none, i1 false)
-  switch i8 %14, label %_llgo_13 [
+  %12 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %12, label %_llgo_13 [
     i8 0, label %_llgo_12
     i8 1, label %_llgo_5
   ]
@@ -344,22 +338,20 @@ _llgo_6:                                          ; preds = %_llgo_5
   ret ptr %6
 
 _llgo_7:                                          ; preds = %_llgo_12, %_llgo_1
-  %10 = load ptr, ptr %2, align 8
-  %11 = icmp eq ptr %10, null
-  br i1 %11, label %_llgo_11, label %_llgo_8
+  %10 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %10, label %_llgo_11, label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7
   call void @llvm.coro.resume(ptr %2)
   br label %_llgo_9
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %12 = load ptr, ptr %2, align 8
-  %13 = icmp eq ptr %12, null
-  br i1 %13, label %_llgo_11, label %_llgo_10
+  %11 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %11, label %_llgo_11, label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %14 = call i8 @llvm.coro.suspend(token none, i1 false)
-  switch i8 %14, label %_llgo_13 [
+  %12 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %12, label %_llgo_13 [
     i8 0, label %_llgo_12
     i8 1, label %_llgo_5
   ]
@@ -497,22 +489,20 @@ _llgo_6:                                          ; preds = %_llgo_5
   ret ptr %6
 
 _llgo_7:                                          ; preds = %_llgo_12, %_llgo_1
-  %10 = load ptr, ptr %2, align 8
-  %11 = icmp eq ptr %10, null
-  br i1 %11, label %_llgo_11, label %_llgo_8
+  %10 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %10, label %_llgo_11, label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7
   call void @llvm.coro.resume(ptr %2)
   br label %_llgo_9
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %12 = load ptr, ptr %2, align 8
-  %13 = icmp eq ptr %12, null
-  br i1 %13, label %_llgo_11, label %_llgo_10
+  %11 = call i1 @llvm.coro.done(ptr %2)
+  br i1 %11, label %_llgo_11, label %_llgo_10
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %14 = call i8 @llvm.coro.suspend(token none, i1 false)
-  switch i8 %14, label %_llgo_13 [
+  %12 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %12, label %_llgo_13 [
     i8 0, label %_llgo_12
     i8 1, label %_llgo_5
   ]
@@ -555,13 +545,16 @@ declare ptr @malloc(i64)
 ; Function Attrs: nounwind
 declare ptr @llvm.coro.begin(token, ptr writeonly) #2
 
+; Function Attrs: nounwind memory(argmem: readwrite)
+declare i1 @llvm.coro.done(ptr nocapture readonly) #4
+
 declare void @llvm.coro.resume(ptr)
 
 ; Function Attrs: nounwind
 declare i8 @llvm.coro.suspend(token, i1) #2
 
 ; Function Attrs: nounwind memory(argmem: read)
-declare ptr @llvm.coro.free(token, ptr nocapture readonly) #4
+declare ptr @llvm.coro.free(token, ptr nocapture readonly) #5
 
 declare void @free(ptr)
 
@@ -574,4 +567,5 @@ attributes #0 = { presplitcoroutine }
 attributes #1 = { nocallback nofree nosync nounwind willreturn memory(argmem: read) }
 attributes #2 = { nounwind }
 attributes #3 = { nounwind memory(none) }
-attributes #4 = { nounwind memory(argmem: read) }
+attributes #4 = { nounwind memory(argmem: readwrite) }
+attributes #5 = { nounwind memory(argmem: read) }
