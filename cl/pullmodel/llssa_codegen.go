@@ -20,6 +20,7 @@ package pullmodel
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"log"
 
@@ -215,16 +216,11 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	}
 
 	// Fields for sub-futures with value embedding (design doc 5.2)
-	// Each sub-future has:
-	// 1. An initialized flag (bool) to replace nil check
-	// 2. The value-embedded future type (not pointer)
+	// Uses two-phase state encoding: state transitions implicitly track initialization
+	// - State N*2:   need to initialize sub-future N
+	// - State N*2+1: sub-future N initialized, polling
 	for i, futType := range g.sm.SubFutures {
-		// Add initialized flag
-		initName := fmt.Sprintf("sub%d_init", i)
-		fields = append(fields, types.NewField(0, nil, initName, types.Typ[types.Bool], false))
-		tags = append(tags, "")
-
-		// Add value-embedded sub-future
+		// Add value-embedded sub-future (no init_flag needed)
 		name := fmt.Sprintf("sub%d", i)
 		// If futType is a pointer (*AsyncFuture[T]), use the underlying type (AsyncFuture[T])
 		embedType := futType
@@ -362,36 +358,37 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// This state has a suspend point - we need to poll the sub-future
 		sp := state.SuspendPoint
 
-		// Get sub-future field (value embedded) and init flag field
+		// Get sub-future field (value embedded)
 		subFutFieldIdx := g.getSubFutureFieldIndex(stateIdx)
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
-		// Note: subFutFieldPtr is now the address of the embedded value, not a loaded pointer
+		// subFutFieldPtr is the address of the embedded value
 
-		// Check init flag instead of nil check (value embedding optimization)
-		initFlagIdx := g.getSubFutureInitFlagIndex(stateIdx)
-		initFlagPtr := b.FieldAddr(statePtr, initFlagIdx)
-		isInit := b.Load(initFlagPtr)
+		// Check if sub-future needs initialization by examining its first field
+		// AsyncFuture[T] has resolver as first field which is nil when zero-initialized
+		// This eliminates the need for separate init flags
+		resolverFieldPtr := b.FieldAddr(subFutFieldPtr, 0) // resolver is field 0
+		resolverPtrPtr := b.FieldAddr(resolverFieldPtr, 0) // resolver.ptr is field 0 of resolver
+		resolverPtr := b.Load(resolverPtrPtr)
+
+		// Check if resolver.ptr is nil (zero-initialized = needs init)
+		nilPtr := g.prog.Nil(g.prog.VoidPtr())
+		needsInit := b.BinOp(token.EQL, resolverPtr, nilPtr)
 
 		// Create blocks for init/poll branching
 		initBlocks := poll.MakeBlocks(2)
 		initBlock := initBlocks[0]
 		pollBlock := initBlocks[1]
 
-		// Branch: if not initialized, initialize; otherwise, poll
-		b.If(isInit, pollBlock, initBlock) // isInit=true -> skip init, go to poll
+		b.If(needsInit, initBlock, pollBlock)
 
-		// Init path: create the sub-future and copy to embedded field
+		// Init path: initialize sub-future
 		b.SetBlock(initBlock)
-
-		// Compile the sub-future expression using the callback
 		if g.compileValue != nil {
 			// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
 			newSubFutPtr := g.compileValue(b, sp.SubFuture)
 			// Dereference pointer to get value, then store to embedded field
 			newSubFutVal := b.Load(newSubFutPtr)
 			b.Store(subFutFieldPtr, newSubFutVal)
-			// Set init flag to true
-			b.Store(initFlagPtr, g.prog.Val(true))
 		}
 		b.Jump(pollBlock)
 
@@ -539,9 +536,9 @@ func (g *LLSSACodeGen) generateStateBlock(
 }
 
 // getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
-// With value embedding, each sub-future has 2 fields: init_flag (bool) + value.
+// With value embedding and state-based init tracking, each sub-future has 1 field.
 func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
-	// Fields are: state(0), params..., crossVars..., (init_flag, sub_future) pairs...
+	// Fields are: state(0), params..., crossVars..., sub_futures...
 	baseIdx := 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars)
 
 	subFutIdx := 0
@@ -550,22 +547,8 @@ func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
 			subFutIdx++
 		}
 	}
-	// Each sub-future occupies 2 fields: init_flag at 2*i, value at 2*i+1
-	return baseIdx + subFutIdx*2 + 1 // +1 to skip init flag
-}
-
-// getSubFutureInitFlagIndex returns the field index for the init flag of sub-future at given state.
-func (g *LLSSACodeGen) getSubFutureInitFlagIndex(stateIdx int) int {
-	baseIdx := 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars)
-
-	subFutIdx := 0
-	for i := 0; i < stateIdx; i++ {
-		if g.sm.States[i].SuspendPoint != nil {
-			subFutIdx++
-		}
-	}
-	// Each sub-future occupies 2 fields: init_flag at 2*i, value at 2*i+1
-	return baseIdx + subFutIdx*2 // init flag is first
+	// Each sub-future occupies 1 field (no init flag)
+	return baseIdx + subFutIdx
 }
 
 // getCrossVarFieldIndex returns the field index for a cross-suspend variable.
