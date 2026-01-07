@@ -879,19 +879,67 @@ func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.
 		return
 	}
 
-	// TODO: Implement defer list push
-	// For now, log a warning that defer is not fully implemented
-	log.Printf("[Pull Model] WARNING: defer in async function '%s' - full implementation pending", g.sm.Original.Name())
+	log.Printf("[Pull Model] Generating PushDefer call for %s", g.sm.Original.Name())
 
-	// Get defer head field pointer
-	deferHeadIdx := g.getDeferHeadFieldIndex()
-	if deferHeadIdx < 0 {
+	// Get DeferState field base index
+	deferStateIdx := g.getDeferFieldBaseIndex()
+	if deferStateIdx < 0 {
+		log.Printf("[Pull Model] WARNING: Cannot find defer fields")
 		return
 	}
 
-	// TODO: Generate call to DeferState.PushDefer
-	// For now, we simply skip defer compilation to avoid generating unreachable blocks
-	// The defer will not execute, but at least the code will compile
+	// Get pointer to DeferState embedded in state struct
+	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
+
+	// Get the deferred function
+	// deferInstr.Call contains the function and arguments
+	deferredFunc := deferInstr.Call.Value
+
+	// For now, only support simple function calls without arguments
+	// TODO: Handle defer with arguments and closures
+	if len(deferInstr.Call.Args) > 0 {
+		log.Printf("[Pull Model] WARNING: defer with arguments not yet supported, skipping")
+		return
+	}
+
+	// Get function pointer as unsafe.Pointer
+	// Function values are already pointers in LLVM
+	funcPtr := g.compileValue(b, deferredFunc)
+
+	// arg is nil for simple defer func()
+	unsafePtrType := g.prog.Type(types.Typ[types.UnsafePointer], llssa.InGo)
+	nilPtr := g.prog.Nil(unsafePtrType)
+
+	// Create function reference for async.(*DeferState).PushDefer
+	// Method signature: func (*DeferState) PushDefer(fn, arg unsafe.Pointer)
+	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	pushDeferSig := types.NewSignatureType(
+		types.NewVar(0, nil, "", deferStatePtrType), // receiver
+		nil,
+		nil,
+		types.NewTuple(
+			types.NewVar(0, nil, "fn", types.Typ[types.UnsafePointer]),
+			types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer]),
+		),
+		nil,
+		false,
+	)
+
+	// Generate method name
+	methodName := llssa.FuncName(
+		types.NewPackage("github.com/goplus/llgo/async", "async"),
+		"PushDefer",
+		pushDeferSig.Recv(),
+		false,
+	)
+
+	// Create function reference
+	pushDeferFunc := g.pkg.NewFunc(methodName, pushDeferSig, llssa.InGo)
+
+	// Call: deferStatePtr.PushDefer(funcPtr, nil)
+	b.Call(pushDeferFunc.Expr, deferStatePtr, funcPtr, nilPtr)
+
+	log.Printf("[Pull Model] Generated PushDefer call successfully")
 }
 
 // compilePanicForPullModel handles panic instructions in pull model.
