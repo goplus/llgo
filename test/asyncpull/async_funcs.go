@@ -2,23 +2,9 @@
 // +build llgo
 
 /*
- * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Comprehensive async function definitions covering all cl/_testpull patterns.
+ * These functions test the pull-model state machine generation.
  */
-
-// Package asyncpull contains integration tests for the pull-based async/await model.
-// These tests only run with llgo because they use the async transformation.
 package asyncpull
 
 import (
@@ -51,36 +37,40 @@ func Add(a, b int) *async.AsyncFuture[int] {
 }
 
 // -----------------------------------------------------------------------------
-// These async functions are transformed by the compiler to state machines.
-// NOTE: The current implementation generates the state machine skeleton,
-// but the actual Await logic is not yet implemented.
-// These functions exist to verify that code generation works correctly.
+// Basic Patterns (from _testpull/basic)
 // -----------------------------------------------------------------------------
 
-// BasicAsync is a simple async function with one await.
-// After transformation: returns a state machine struct, not the result.
-func BasicAsync() async.Future[int] {
-	result := Compute(21).Await()
-	return async.Return(result)
+// SimpleAsync is the most basic async function.
+func SimpleAsync() async.Future[int] {
+	val := Compute(21).Await()
+	return async.Return(val)
 }
 
-// SequentialAsync chains multiple awaits.
-func SequentialAsync(x int) async.Future[int] {
-	a := Compute(x).Await() // x * 2
-	b := Compute(a).Await() // a * 2 = x * 4
+// -----------------------------------------------------------------------------
+// Sequential Patterns (from _testpull/sequential)
+// -----------------------------------------------------------------------------
+
+// TwoAwaits chains two await calls.
+func TwoAwaits(x int) async.Future[int] {
+	a := Compute(x).Await()
+	b := Compute(a).Await()
 	return async.Return(b)
 }
 
-// AddAsync adds two async results.
-func AddAsync(x, y int) async.Future[int] {
+// ThreeAwaits chains three await calls.
+func ThreeAwaits(x int) async.Future[int] {
 	a := Compute(x).Await()
-	b := Compute(y).Await()
-	sum := Add(a, b).Await()
-	return async.Return(sum)
+	b := Compute(a).Await()
+	c := Compute(b).Await()
+	return async.Return(c)
 }
 
-// ConditionalAsync has await in conditional branches.
-func ConditionalAsync(cond bool) async.Future[int] {
+// -----------------------------------------------------------------------------
+// Conditional Patterns (from _testpull/conditional)
+// -----------------------------------------------------------------------------
+
+// AwaitInBranches has await in both if/else branches.
+func AwaitInBranches(cond bool) async.Future[int] {
 	var result int
 	if cond {
 		result = Compute(10).Await()
@@ -90,8 +80,21 @@ func ConditionalAsync(cond bool) async.Future[int] {
 	return async.Return(result)
 }
 
-// LoopAsync has await inside a loop.
-func LoopAsync(n int) async.Future[int] {
+// AwaitBeforeCondition has await before if statement.
+func AwaitBeforeCondition(x int) async.Future[int] {
+	val := Compute(x).Await()
+	if val > 100 {
+		return async.Return(100)
+	}
+	return async.Return(val)
+}
+
+// -----------------------------------------------------------------------------
+// Loop Patterns (from _testpull/loop, controlflow)
+// -----------------------------------------------------------------------------
+
+// AwaitInLoop has await inside a for loop.
+func AwaitInLoop(n int) async.Future[int] {
 	total := 0
 	for i := 0; i < n; i++ {
 		v := Compute(i).Await()
@@ -100,10 +103,188 @@ func LoopAsync(n int) async.Future[int] {
 	return async.Return(total)
 }
 
-// CrossVarAsync tests cross-suspend variable preservation.
-func CrossVarAsync(x int) async.Future[int] {
-	a := x * 2             // Define before suspend
-	_ = Compute(1).Await() // Suspend point
-	b := a + 3             // Use a after suspend
-	return async.Return(b)
+// LoopWithBreak has await with break condition.
+func LoopWithBreak(n int) async.Future[int] {
+	for i := 0; i < n; i++ {
+		val := Compute(i).Await()
+		if val > 10 {
+			return async.Return(val)
+		}
+	}
+	return async.Return(-1)
+}
+
+// LoopWithContinue uses continue inside loop with await.
+func LoopWithContinue(n int) async.Future[int] {
+	sum := 0
+	for i := 0; i < n; i++ {
+		if i%2 == 0 {
+			continue
+		}
+		val := Compute(i).Await()
+		sum += val
+	}
+	return async.Return(sum)
+}
+
+// -----------------------------------------------------------------------------
+// Cross-Variable Patterns (from _testpull/crossvar)
+// -----------------------------------------------------------------------------
+
+// ModifyBetweenAwaits tests variable modification across suspend points.
+func ModifyBetweenAwaits(x int) async.Future[int] {
+	sum := Compute(x).Await()
+	sum *= 2 // Modify after first await
+	sum += Compute(sum).Await()
+	return async.Return(sum)
+}
+
+// IncrementInLoop tests loop variable across multiple awaits.
+func IncrementInLoop(n int) async.Future[int] {
+	acc := 0
+	for i := 0; i < n; i++ {
+		val := Compute(i).Await()
+		acc += val
+		acc++ // Modify acc after await
+	}
+	return async.Return(acc)
+}
+
+// SwapVariables tests multiple variables modified between awaits.
+func SwapVariables(a, b int) async.Future[int] {
+	va := Compute(a).Await()
+	vb := Compute(b).Await()
+	va, vb = vb, va // Swap
+	return async.Return(va + vb)
+}
+
+// -----------------------------------------------------------------------------
+// Multiple Return Patterns (from _testpull/multiret)
+// -----------------------------------------------------------------------------
+
+// EarlyReturn tests return before any await.
+func EarlyReturn(x int) async.Future[int] {
+	if x < 0 {
+		return async.Return(-1)
+	}
+	val := Compute(x).Await()
+	return async.Return(val)
+}
+
+// MultipleReturns tests multiple return statements.
+func MultipleReturns(x int) async.Future[int] {
+	if x < 0 {
+		return async.Return(-1)
+	}
+	val := Compute(x).Await()
+	if val > 100 {
+		return async.Return(100)
+	}
+	return async.Return(val)
+}
+
+// -----------------------------------------------------------------------------
+// Tuple Return Patterns (from _testpull/types)
+// -----------------------------------------------------------------------------
+
+// DivmodAsync returns quotient and remainder.
+func DivmodAsync(a, b int) async.FutureT2[int, int] {
+	q := Compute(a / b).Await()
+	r := Compute(a % b).Await()
+	return async.Return(async.MakeTuple2(q, r))
+}
+
+// GetMinMaxAsync returns min and max.
+func GetMinMaxAsync(a, b int) async.Future[async.Tuple2[int, int]] {
+	va := Compute(a).Await()
+	vb := Compute(b).Await()
+	if va < vb {
+		return async.Return(async.Tuple2[int, int]{va, vb})
+	}
+	return async.Return(async.Tuple2[int, int]{vb, va})
+}
+
+// -----------------------------------------------------------------------------
+// Result Return Patterns (from _testpull/types)
+// -----------------------------------------------------------------------------
+
+// SafeDivideAsync returns Result with error handling.
+func SafeDivideAsync(a, b int) async.FutureR[int] {
+	if b == 0 {
+		return async.Return(async.Err[int](nil))
+	}
+	val := Compute(a / b).Await()
+	return async.Return(async.Ok(val))
+}
+
+// LookupAndDoubleAsync looks up and doubles a value.
+func LookupAndDoubleAsync(m map[string]int, key string) async.FutureR[int] {
+	v, ok := m[key]
+	if !ok {
+		return async.Return(async.Err[int](nil))
+	}
+	doubled := Compute(v * 2).Await()
+	return async.Return(async.Ok(doubled))
+}
+
+// -----------------------------------------------------------------------------
+// Non-Primitive Type Patterns (from _testpull/types)
+// -----------------------------------------------------------------------------
+
+// StringParamAsync tests string parameter across await.
+func StringParamAsync(s string) async.Future[int] {
+	length := Compute(len(s)).Await()
+	return async.Return(length)
+}
+
+// SliceParamAsync tests slice parameter across await.
+func SliceParamAsync(arr []int) async.Future[int] {
+	sum := 0
+	for _, v := range arr {
+		val := Compute(v).Await()
+		sum += val
+	}
+	return async.Return(sum)
+}
+
+// PointerParamAsync tests pointer parameter.
+func PointerParamAsync(p *int) async.Future[int] {
+	if p == nil {
+		return async.Return(-1)
+	}
+	val := Compute(*p).Await()
+	return async.Return(val)
+}
+
+// Point is a test struct.
+type Point struct {
+	X, Y int
+}
+
+// StructFieldAsync tests struct field access across await.
+func StructFieldAsync(pt Point) async.Future[int] {
+	px := Compute(pt.X).Await()
+	py := Compute(pt.Y).Await()
+	return async.Return(px + py)
+}
+
+// -----------------------------------------------------------------------------
+// Nested/Deep Patterns (from _testpull/nested)
+// -----------------------------------------------------------------------------
+
+// DeepNestingAsync tests deeply nested await calls.
+func DeepNestingAsync(x int) async.Future[int] {
+	if x > 0 {
+		a := Compute(x).Await()
+		if a > 10 {
+			b := Compute(a).Await()
+			if b > 100 {
+				c := Compute(b).Await()
+				return async.Return(c)
+			}
+			return async.Return(b)
+		}
+		return async.Return(a)
+	}
+	return async.Return(0)
 }
