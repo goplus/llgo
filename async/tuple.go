@@ -125,3 +125,31 @@ func MakeTuple3[T1, T2, T3 any](v1 T1, v2 T2, v3 T3) Tuple3[T1, T2, T3] {
 func MakeTuple4[T1, T2, T3, T4 any](v1 T1, v2 T2, v3 T3, v4 T4) Tuple4[T1, T2, T3, T4] {
 	return Tuple4[T1, T2, T3, T4]{V1: v1, V2: v2, V3: v3, V4: v4}
 }
+
+// -----------------------------------------------------------------------------
+// Convenience Type Aliases - to reduce verbosity
+// -----------------------------------------------------------------------------
+
+// FutureR is a Future that returns a Result[T].
+// Shorthand for Future[Result[T]].
+//
+// Example:
+//
+//	func ReadFile(path string) FutureR[[]byte] { ... }
+type FutureR[T any] = Future[Result[T]]
+
+// FutureT2 is a Future that returns a Tuple2[T1, T2].
+// Shorthand for Future[Tuple2[T1, T2]].
+//
+// Example:
+//
+//	func Divmod(a, b int) FutureT2[int, int] { ... }
+type FutureT2[T1, T2 any] = Future[Tuple2[T1, T2]]
+
+// FutureT3 is a Future that returns a Tuple3[T1, T2, T3].
+// Shorthand for Future[Tuple3[T1, T2, T3]].
+type FutureT3[T1, T2, T3 any] = Future[Tuple3[T1, T2, T3]]
+
+// FutureT4 is a Future that returns a Tuple4[T1, T2, T3, T4].
+// Shorthand for Future[Tuple4[T1, T2, T3, T4]].
+type FutureT4[T1, T2, T3, T4 any] = Future[Tuple4[T1, T2, T3, T4]]
