@@ -699,6 +699,10 @@ func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
 //
 // This allows callers to use the original function name while actually
 // getting a state machine that implements the Future interface.
+//
+// Generates TWO functions:
+// 1. MyAsync$Concrete - returns *State directly (for .Await() optimization)
+// 2. MyAsync - returns Future[T] interface (for compatibility)
 func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) error {
 	fn := g.sm.Original
 
@@ -710,15 +714,27 @@ func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) err
 
 	// Create new signature with concrete state pointer return type
 	newResults := types.NewTuple(types.NewVar(0, nil, "", statePtrType))
-	newSig := types.NewSignatureType(nil, nil, nil, origSig.Params(), newResults, origSig.Variadic())
+	concreteSig := types.NewSignatureType(nil, nil, nil, origSig.Params(), newResults, origSig.Variadic())
 
-	// Use full package path name (standard Go/LLGO naming convention)
-	// This allows other packages to call this function by its qualified name
+	// 1. Generate $Concrete version (returns *State)
+	concreteName := llssa.FuncName(fn.Pkg.Pkg, fn.Name()+"$Concrete", nil, false)
+	concreteWrapper := g.pkg.NewFunc(concreteName, concreteSig, llssa.InGo)
+	g.generateConcreteWrapperBody(concreteWrapper, stateType, fn)
+	log.Printf("[Pull Model] Generated $Concrete wrapper for %s", fn.Name())
+
+	// 2. Generate original name version (returns Future[T] interface)
+	// Keep original signature so it matches what callers expect
 	fullName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
+	ifaceWrapper := g.pkg.NewFunc(fullName, origSig, llssa.InGo)
+	g.generateInterfaceWrapperBody(ifaceWrapper, concreteWrapper, fn)
+	log.Printf("[Pull Model] Generated interface wrapper for %s", fn.Name())
 
-	// Create the wrapper function with concrete return type
-	wrapper := g.pkg.NewFunc(fullName, newSig, llssa.InGo)
+	return nil
+}
 
+// generateConcreteWrapperBody generates the body for $Concrete function
+// that returns *State directly
+func (g *LLSSACodeGen) generateConcreteWrapperBody(wrapper llssa.Function, stateType llssa.Type, fn *ssa.Function) {
 	// Create entry block
 	b := wrapper.MakeBody(1)
 	b.SetBlock(wrapper.Block(0))
@@ -759,7 +775,30 @@ func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) err
 
 	// Return state pointer directly (no interface boxing!)
 	b.Return(statePtr)
+}
 
-	log.Printf("[Pull Model] Generated wrapper for original function %s", fn.Name())
-	return nil
+// generateInterfaceWrapperBody generates the body for original-named function
+// that calls $Concrete and converts to interface
+func (g *LLSSACodeGen) generateInterfaceWrapperBody(wrapper llssa.Function, concreteWrapper llssa.Function, fn *ssa.Function) {
+	// Create entry block
+	b := wrapper.MakeBody(1)
+	b.SetBlock(wrapper.Block(0))
+
+	// Gather parameters
+	args := make([]llssa.Expr, len(fn.Params))
+	for i := range fn.Params {
+		args[i] = wrapper.Param(i)
+	}
+
+	// Call $Concrete version
+	concreteResult := b.Call(concreteWrapper.Expr, args...)
+
+	// Convert *State to interface Future[T]
+	// The *State type implements Future[T], so this is an implicit interface conversion
+	origRetType := fn.Signature.Results().At(0).Type()
+	ifaceType := g.prog.Type(origRetType, llssa.InGo)
+	ifaceVal := b.MakeInterface(ifaceType, concreteResult)
+
+	// Return interface
+	b.Return(ifaceVal)
 }
