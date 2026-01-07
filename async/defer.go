@@ -98,12 +98,17 @@ func callDeferredFunc(fn, arg unsafe.Pointer) {
 		return
 	}
 	// For simple func() type defers:
+	// fn is already a function pointer (unsafe.Pointer)
+	// We need to convert it to *func() and call it
 	if arg == nil {
 		// Call fn as func()
-		(*(*func())(unsafe.Pointer(&fn)))()
+		// fn is the function pointer itself
+		fnPtr := *(*func())(unsafe.Pointer(&fn))
+		fnPtr()
 	} else {
 		// Call fn with arg as receiver/closure
 		// This needs type-specific handling in generated code
-		(*(*func())(unsafe.Pointer(&fn)))()
+		fnPtr := *(*func())(unsafe.Pointer(&fn))
+		fnPtr()
 	}
 }
