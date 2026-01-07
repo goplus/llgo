@@ -866,6 +866,14 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := p.type_(v.Type(), llssa.InGo)
 		x := p.compileValue(b, v.X)
 		ret = b.SliceToArrayPointer(x, t)
+	case *ssa.Phi:
+		// Phi nodes require special handling via compilePhi.
+		// This case is needed for on-demand compilation (asValue=true path) used by
+		// pull model async/await transformation. In normal compilation, Phi nodes
+		// are pre-processed in compileBlock before other instructions, so this case
+		// is not reached. However, when pullmodel.compileValue callback compiles
+		// SSA values on-demand, dependencies may include Phi nodes from loops/branches.
+		ret = p.compilePhi(b, v)
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
@@ -1003,6 +1011,17 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	}
 	switch v := v.(type) {
 	case *ssa.Parameter:
+		// Check bvals cache first for pull model async/await transformation.
+		// When generating state machine Poll methods, the original async function's
+		// parameters are stored in the state struct. The pullmodel package registers
+		// these loaded values via the registerValue callback. This allows expressions
+		// like Step(-x) to correctly resolve 'x' to the loaded state struct field
+		// value, rather than trying to access the Poll method's parameters.
+		// See pullmodel.generatePollMethod for where these mappings are registered.
+		if cached, ok := p.bvals[v]; ok {
+			return cached
+		}
+		// Fall back to normal parameter handling for non-pull-model compilation
 		fn := v.Parent()
 		for idx, param := range fn.Params {
 			if param == v {
@@ -1279,15 +1298,30 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 			}
 			// Pull model async/await transformation
 			if pullmodel.ShouldTransform(member) {
-				// Initialize bvals for on-demand SSA value compilation
+				// Initialize bvals for on-demand SSA value compilation.
+				// The bvals map serves as a cache for compiled values and also stores
+				// pre-registered mappings from original SSA values to LLVM expressions.
 				ctx.bvals = make(map[ssa.Value]llssa.Expr)
 
-				// Create callback for compiling SSA values (sub-future initializers)
-				// compileValue recursively compiles dependencies on-demand via compileInstrOrValue
+				// Callback 1: compileValue - compiles SSA values on-demand.
+				// Used by pullmodel to compile sub-future initializers (e.g., Step(-x)).
+				// This allows reusing the full cl package compilation logic for
+				// expressions, including handling of operators, calls, and type conversions.
 				compileValue := func(b llssa.Builder, v ssa.Value) llssa.Expr {
 					return ctx.compileValue(b, v)
 				}
-				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue); err != nil {
+
+				// Callback 2: registerValue - registers pre-computed value mappings.
+				// In Poll methods, original function parameters and cross-suspend variables
+				// are stored in the state struct. The pullmodel package calls this callback
+				// to register mappings from SSA values (e.g., *ssa.Parameter "x") to their
+				// loaded LLVM values from state struct fields. This allows compileValue
+				// to resolve these values correctly when compiling expressions.
+				registerValue := func(v ssa.Value, expr llssa.Expr) {
+					ctx.bvals[v] = expr
+				}
+
+				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue, registerValue); err != nil {
 					log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", member.Name(), err)
 					ctx.compileFuncDecl(ret, member)
 				}

@@ -29,7 +29,7 @@ _llgo_0:
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
-define { i1, i64 } @"DeepNesting$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"DeepNesting$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -47,34 +47,76 @@ _llgo_1:                                          ; preds = %_llgo_0
   br i1 %8, label %_llgo_4, label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_6, %_llgo_0
-  ret { i1, i64 } zeroinitializer
+  ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 _llgo_3:                                          ; preds = %_llgo_0
-  ret { i1, i64 } zeroinitializer
+  ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 _llgo_4:                                          ; preds = %_llgo_1
+  %9 = call ptr @"github.com/goplus/llgo/cl/_testpull/nested.Outer"(i64 1)
+  %10 = load %"github.com/goplus/llgo/async.AsyncFuture[int]", ptr %9, align 8
+  store %"github.com/goplus/llgo/async.AsyncFuture[int]" %10, ptr %4, align 8
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_1
-  %9 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
-  %10 = alloca { i1, i64 }, align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %9, ptr %10, align 4
-  %11 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 0
-  %12 = load i1, ptr %11, align 1
-  br i1 %12, label %_llgo_6, label %_llgo_7
+  %11 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr %4, ptr %1)
+  %12 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %11, ptr %12, align 4
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %12, i32 0, i32 0
+  %14 = load i1, ptr %13, align 1
+  br i1 %14, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  %13 = getelementptr inbounds { i1, i64 }, ptr %10, i32 0, i32 1
-  %14 = load i64, ptr %13, align 4
-  %15 = getelementptr inbounds { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
-  store i8 1, ptr %15, align 1
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %12, i32 0, i32 1
+  %16 = load i64, ptr %15, align 4
+  %17 = getelementptr inbounds { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
+  store i8 1, ptr %17, align 1
   br label %_llgo_2
 
 _llgo_7:                                          ; preds = %_llgo_5
-  ret { i1, i64 } zeroinitializer
+  ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
+}
+
+define ptr @"github.com/goplus/llgo/cl/_testpull/nested.Outer"(i64 %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  store i64 %0, ptr %1, align 4
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
+  store ptr %1, ptr %3, align 8
+  %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testpull/nested.Outer$1", ptr undef }, ptr %2, 1
+  %5 = call ptr @"github.com/goplus/llgo/async.Async[int]"({ ptr, ptr } %4)
+  ret ptr %5
+}
+
+define void @"github.com/goplus/llgo/cl/_testpull/nested.Outer$1"(ptr %0, { ptr, ptr } %1) {
+_llgo_0:
+  %2 = load { ptr }, ptr %0, align 8
+  %3 = extractvalue { ptr } %2, 0
+  %4 = load i64, ptr %3, align 4
+  %5 = call ptr @"github.com/goplus/llgo/cl/_testpull/nested.Middle"(i64 %4)
+  %6 = call i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %5)
+  %7 = call ptr @"github.com/goplus/llgo/cl/_testpull/nested.Middle"(i64 %6)
+  %8 = call i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %7)
+  %9 = extractvalue { ptr, ptr } %1, 1
+  %10 = extractvalue { ptr, ptr } %1, 0
+  call void %10(ptr %9, i64 %8)
+  ret void
 }
 
 declare %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*github.com/goplus/llgo/async.AsyncFuture[int]).Poll"(ptr, ptr)
+
+define ptr @"github.com/goplus/llgo/cl/_testpull/nested.DeepNesting"() {
+_llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %1 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
+  store i8 0, ptr %1, align 1
+  %2 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 1
+  store ptr null, ptr %2, align 8
+  ret ptr %0
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/nested.Inner"(i64 %0) {
 _llgo_0:
@@ -127,33 +169,6 @@ _llgo_0:
   ret void
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testpull/nested.Outer"(i64 %0) {
-_llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  store i64 %0, ptr %1, align 4
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
-  store ptr %1, ptr %3, align 8
-  %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testpull/nested.Outer$1", ptr undef }, ptr %2, 1
-  %5 = call ptr @"github.com/goplus/llgo/async.Async[int]"({ ptr, ptr } %4)
-  ret ptr %5
-}
-
-define void @"github.com/goplus/llgo/cl/_testpull/nested.Outer$1"(ptr %0, { ptr, ptr } %1) {
-_llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = load i64, ptr %3, align 4
-  %5 = call ptr @"github.com/goplus/llgo/cl/_testpull/nested.Middle"(i64 %4)
-  %6 = call i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %5)
-  %7 = call ptr @"github.com/goplus/llgo/cl/_testpull/nested.Middle"(i64 %6)
-  %8 = call i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %7)
-  %9 = extractvalue { ptr, ptr } %1, 1
-  %10 = extractvalue { ptr, ptr } %1, 0
-  call void %10(ptr %9, i64 %8)
-  ret void
-}
-
 define void @"github.com/goplus/llgo/cl/_testpull/nested.init"() {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpull/nested.init$guard", align 1
@@ -167,8 +182,6 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 

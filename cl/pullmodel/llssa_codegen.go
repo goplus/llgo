@@ -32,15 +32,20 @@ import (
 // CompileValueFunc is a callback to compile SSA values using the main compiler.
 type CompileValueFunc func(b llssa.Builder, v ssa.Value) llssa.Expr
 
+// RegisterValueFunc is a callback to register a pre-computed value mapping.
+// This is used to map original SSA params/values to state struct field loads.
+type RegisterValueFunc func(v ssa.Value, expr llssa.Expr)
+
 // LLSSACodeGen generates LLVM IR code for state machines using llssa API.
 type LLSSACodeGen struct {
 	prog           llssa.Program
 	pkg            llssa.Package
 	ssaPkg         *ssa.Package
 	sm             *StateMachine
-	compileValue   CompileValueFunc // callback to compile SSA values
-	pollStructType types.Type       // cached Poll[T] struct type for consistency
-	pollLLType     llssa.Type       // cached LLVM type for Poll[T]
+	compileValue   CompileValueFunc  // callback to compile SSA values
+	registerValue  RegisterValueFunc // callback to register value mappings
+	pollStructType types.Type        // cached Poll[T] struct type for consistency
+	pollLLType     llssa.Type        // cached LLVM type for Poll[T]
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -64,6 +69,12 @@ func (g *LLSSACodeGen) SetCompileValue(fn CompileValueFunc) {
 	g.compileValue = fn
 }
 
+// SetRegisterValue sets the callback for registering pre-computed value mappings.
+// This is used to map SSA params/values to loaded state struct fields.
+func (g *LLSSACodeGen) SetRegisterValue(fn RegisterValueFunc) {
+	g.registerValue = fn
+}
+
 // Generate generates the complete state machine code.
 // This is the main entry point for llssa code generation.
 func (g *LLSSACodeGen) Generate() error {
@@ -81,6 +92,13 @@ func (g *LLSSACodeGen) Generate() error {
 	// Step 3: Generate Poll method
 	if err := g.generatePollMethod(stateType); err != nil {
 		return fmt.Errorf("failed to generate Poll method: %w", err)
+	}
+
+	// Step 4: Rewrite original function to return state machine
+	// The original function's body is replaced to call the constructor
+	// and return the state as a Future[T]
+	if err := g.generateOriginalFunctionWrapper(stateType); err != nil {
+		return fmt.Errorf("failed to rewrite original function: %w", err)
 	}
 
 	log.Printf("[Pull Model] Successfully generated state machine for %s", g.sm.Original.Name())
@@ -313,6 +331,31 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	ctx := poll.Param(1) // Get ctx parameter
 	for i, state := range g.sm.States {
 		b.SetBlock(poll.Block(i + 1))
+
+		// Register SSA params and cross-vars as loaded values from state struct
+		// This allows compileValue to find them when compiling sub-future initializers
+		if g.registerValue != nil {
+			fn := g.sm.Original
+			fieldIdx := 1 // Start after state field
+
+			// Register original function params
+			for _, param := range fn.Params {
+				// Load param value from state struct
+				fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+				loadedVal := b.Load(fieldPtr)
+				g.registerValue(param, loadedVal)
+				fieldIdx++
+			}
+
+			// Register cross-suspend variables
+			for _, v := range g.sm.CrossVars {
+				fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+				loadedVal := b.Load(fieldPtr)
+				g.registerValue(v, loadedVal)
+				fieldIdx++
+			}
+		}
+
 		g.generateStateBlock(b, poll, statePtr, ctx, state, i)
 	}
 
@@ -562,17 +605,18 @@ func GenerateStateMachine(
 	ssaPkg *ssa.Package,
 	fn *ssa.Function,
 ) error {
-	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil)
+	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil, nil)
 }
 
 // GenerateStateMachineWithCallback is like GenerateStateMachine but accepts
-// a callback function for compiling SSA values (used for sub-future initialization).
+// callback functions for compiling SSA values and registering value mappings.
 func GenerateStateMachineWithCallback(
 	prog llssa.Program,
 	pkg llssa.Package,
 	ssaPkg *ssa.Package,
 	fn *ssa.Function,
 	compileValue CompileValueFunc,
+	registerValue RegisterValueFunc,
 ) error {
 	// Step 1: Analyze SSA and create state machine
 	sm := Transform(fn)
@@ -584,6 +628,9 @@ func GenerateStateMachineWithCallback(
 	codegen := NewLLSSACodeGen(prog, pkg, ssaPkg, sm)
 	if compileValue != nil {
 		codegen.SetCompileValue(compileValue)
+	}
+	if registerValue != nil {
+		codegen.SetRegisterValue(registerValue)
 	}
 	if err := codegen.Generate(); err != nil {
 		return fmt.Errorf("failed to generate code for %s: %w", fn.Name(), err)
@@ -649,4 +696,75 @@ func (g *LLSSACodeGen) createPollType(resultType types.Type) types.Type {
 // avoiding anonymous struct literals like { i1, {} } for Poll[Void].
 func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
 	return g.prog.Nil(g.pollLLType)
+}
+
+// generateOriginalFunctionWrapper rewrites the original async function.
+// The original function body is replaced to:
+// 1. Allocate and initialize the state struct
+// 2. Return a pointer to the state struct as Future[T]
+//
+// This allows callers to use the original function name while actually
+// getting a state machine that implements the Future interface.
+func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) error {
+	fn := g.sm.Original
+
+	// Build concrete return type: *StateStruct (not interface)
+	// Future[T] in source is a compile-time placeholder, replaced with concrete type
+	stateGoType := g.buildStateGoType()
+	statePtrType := types.NewPointer(stateGoType)
+	origSig := fn.Signature
+
+	// Create new signature with concrete state pointer return type
+	newResults := types.NewTuple(types.NewVar(0, nil, "", statePtrType))
+	newSig := types.NewSignatureType(nil, nil, nil, origSig.Params(), newResults, origSig.Variadic())
+
+	// Use the original function's full path name
+	fullName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
+
+	// Create the wrapper function with concrete return type
+	wrapper := g.pkg.NewFunc(fullName, newSig, llssa.InGo)
+
+	// Create entry block
+	b := wrapper.MakeBody(1)
+	b.SetBlock(wrapper.Block(0))
+
+	// Allocate state struct on heap (not stack) so it survives function return
+	statePtr := b.Alloc(stateType, true)
+
+	// Initialize state field (index 0) to 0
+	stateFieldPtr := b.FieldAddr(statePtr, 0)
+	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
+	zero := g.prog.IntVal(0, int8Type)
+	b.Store(stateFieldPtr, zero)
+
+	// Copy parameters to state struct fields
+	fieldIdx := 1 // Start after state field
+	for i := range fn.Params {
+		paramVal := wrapper.Param(i)
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		b.Store(fieldPtr, paramVal)
+		fieldIdx++
+	}
+
+	// Initialize cross-var fields to zero values
+	for _, v := range g.sm.CrossVars {
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		zeroVal := g.prog.Zero(g.prog.Type(v.Type(), llssa.InGo))
+		b.Store(fieldPtr, zeroVal)
+		fieldIdx++
+	}
+
+	// Initialize sub-future fields to nil
+	for _, futType := range g.sm.SubFutures {
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		nilVal := g.prog.Nil(g.prog.Type(futType, llssa.InGo))
+		b.Store(fieldPtr, nilVal)
+		fieldIdx++
+	}
+
+	// Return state pointer directly (no interface boxing!)
+	b.Return(statePtr)
+
+	log.Printf("[Pull Model] Generated wrapper for original function %s", fn.Name())
+	return nil
 }
