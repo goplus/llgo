@@ -14,11 +14,22 @@ func cleanup() {
 	executed = true
 }
 
+// Step returns an async future
+func Step(x int) *async.AsyncFuture[int] {
+	return async.Async(func(resolve func(int)) {
+		resolve(x)
+	})
+}
+
 // TestSimpleDefer tests basic defer functionality
 func TestSimpleDefer() async.Future[int] {
 	defer cleanup()
 	fmt.Println("Inside TestSimpleDefer")
-	return async.Return(42)
+
+	// Add an await to trigger state machine transformation
+	x := Step(21).Await()
+
+	return async.Return(x * 2)
 }
 
 func main() {

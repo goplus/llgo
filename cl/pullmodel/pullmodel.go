@@ -21,6 +21,7 @@ package pullmodel
 
 import (
 	"go/types"
+	"log"
 	"sort"
 	"strings"
 
@@ -354,11 +355,17 @@ func collectOperands(instr ssa.Instruction, uses map[ssa.Value]bool) {
 
 // Transform transforms an async function into a state machine.
 func Transform(fn *ssa.Function) *StateMachine {
-	if !IsAsyncFunc(fn) {
+	isAsync := IsAsyncFunc(fn)
+	numBlocks := len(fn.Blocks)
+	log.Printf("[Pull Model DEBUG] Transform START: fn=%s, IsAsync=%v, Blocks=%d", fn.Name(), isAsync, numBlocks)
+
+	if !isAsync {
+		log.Printf("[Pull Model DEBUG] Transform SKIP: %s is not async", fn.Name())
 		return nil
 	}
 
 	suspends := FindSuspendPoints(fn)
+	log.Printf("[Pull Model DEBUG] Found %d suspend points in %s", len(suspends), fn.Name())
 	crossVars := AnalyzeCrossVars(fn, suspends)
 
 	// Get result type from Future[T]
@@ -374,14 +381,17 @@ func Transform(fn *ssa.Function) *StateMachine {
 	}
 
 	// Scan all blocks for defer/panic/recover instructions
+	log.Printf("[Pull Model] Scanning %d blocks for defer in %s", len(fn.Blocks), fn.Name())
 	for _, block := range fn.Blocks {
 		for _, instr := range block.Instrs {
-			switch instr.(type) {
+			switch v := instr.(type) {
 			case *ssa.Defer:
+				log.Printf("[Pull Model] Found defer instruction in %s: %v", fn.Name(), v)
 				hasDefer = true
 			}
 		}
 	}
+	log.Printf("[Pull Model] hasDefer = %v for %s", hasDefer, fn.Name())
 
 	sm := &StateMachine{
 		Original:   fn,
