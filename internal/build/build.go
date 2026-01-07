@@ -1210,7 +1210,15 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
-	return objFile.Name(), cmd.Compile(args...)
+	if err := cmd.Compile(args...); err != nil {
+		// Save the .ll file for debugging on error
+		debugFile := "/tmp/llgo_error_" + filepath.Base(f.Name())
+		if copyErr := copyFileAtomic(f.Name(), debugFile); copyErr == nil {
+			fmt.Fprintf(os.Stderr, "ERROR: Compilation failed. LLVM IR saved to: %s\n", debugFile)
+		}
+		return "", err
+	}
+	return objFile.Name(), nil
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
