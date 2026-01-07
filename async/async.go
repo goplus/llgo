@@ -21,6 +21,7 @@ package async
 type Poll[T any] struct {
 	ready bool
 	value T
+	err   any // panic value for cross-boundary propagation
 }
 
 // Ready creates a Poll that is ready with the given value.
@@ -33,6 +34,11 @@ func Pending[T any]() Poll[T] {
 	return Poll[T]{ready: false}
 }
 
+// PollError creates a Poll that indicates a panic occurred.
+func PollError[T any](err any) Poll[T] {
+	return Poll[T]{ready: true, err: err}
+}
+
 // IsReady returns true if the Poll contains a ready value.
 func (p Poll[T]) IsReady() bool {
 	return p.ready
@@ -41,6 +47,16 @@ func (p Poll[T]) IsReady() bool {
 // Value returns the value if ready. Should only be called after checking IsReady().
 func (p Poll[T]) Value() T {
 	return p.value
+}
+
+// Error returns the panic value if this Poll represents a panicked state.
+func (p Poll[T]) Error() any {
+	return p.err
+}
+
+// HasError returns true if this Poll represents a panicked state.
+func (p Poll[T]) HasError() bool {
+	return p.err != nil
 }
 
 // Context is passed to Poll and contains the Waker for notifications.
