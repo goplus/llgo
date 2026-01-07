@@ -17,12 +17,12 @@ func cleanup() {
 // TestSimpleDefer tests basic defer functionality
 func TestSimpleDefer() async.Future[int] {
 	defer cleanup()
-
-	result := async.Return(42)
-	return result
+	fmt.Println("Inside TestSimpleDefer")
+	return async.Return(42)
 }
 
 func main() {
+	fmt.Println("Starting defer test...")
 	result := sync.BlockOn(TestSimpleDefer())
 
 	fmt.Printf("Result: %d\n", result)
