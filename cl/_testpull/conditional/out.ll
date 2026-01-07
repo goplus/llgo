@@ -1,31 +1,12 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpull/conditional'
 source_filename = "github.com/goplus/llgo/cl/_testpull/conditional"
 
-%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
+%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 
 @"github.com/goplus/llgo/cl/_testpull/conditional.init$guard" = global i1 false, align 1
 
-define { i8, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @Conditional(i1 %0) {
-_llgo_0:
-  %1 = alloca { i8, i1, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 24, i1 false)
-  %2 = getelementptr inbounds { i8, i1, ptr, ptr }, ptr %1, i32 0, i32 0
-  store i8 0, ptr %2, align 1
-  %3 = getelementptr inbounds { i8, i1, ptr, ptr }, ptr %1, i32 0, i32 1
-  store i1 %0, ptr %3, align 1
-  %4 = getelementptr inbounds { i8, i1, ptr, ptr }, ptr %1, i32 0, i32 2
-  store ptr null, ptr %4, align 8
-  %5 = getelementptr inbounds { i8, i1, ptr, ptr }, ptr %1, i32 0, i32 3
-  store ptr null, ptr %5, align 8
-  %6 = load { i8, i1, ptr, ptr }, ptr %1, align 8
-  ret { i8, i1, ptr, ptr } %6
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"Conditional$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i1, %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -207,5 +188,3 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/async.init"()
-
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

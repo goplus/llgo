@@ -1,27 +1,12 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpull/basic'
 source_filename = "github.com/goplus/llgo/cl/_testpull/basic"
 
-%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
+%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 
 @"github.com/goplus/llgo/cl/_testpull/basic.init$guard" = global i1 false, align 1
 
-define { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @Simple() {
-_llgo_0:
-  %0 = alloca { i8, ptr }, align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
-  %1 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 0
-  store i8 0, ptr %1, align 1
-  %2 = getelementptr inbounds { i8, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = load { i8, ptr }, ptr %0, align 8
-  ret { i8, ptr } %3
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"Simple$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/basic.Simple$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -126,5 +111,3 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/async.init"()
-
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

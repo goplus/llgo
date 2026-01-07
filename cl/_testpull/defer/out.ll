@@ -4,9 +4,9 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/defer"
 %"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/abi.PtrType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr }
+%"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
 %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" = type { { ptr, ptr }, i1, i1, ptr }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
-%"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
 %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" = type { i1, ptr }
 %"github.com/goplus/llgo/cl/_testpull/defer.Resource" = type { i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
@@ -17,28 +17,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/defer"
 @1 = private unnamed_addr constant [6 x i8] c"string", align 1
 @"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 
-define { i8, i1, ptr, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @ConditionalDefer(i1 %0) {
-_llgo_0:
-  %1 = alloca { i8, i1, ptr, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 32, i1 false)
-  %2 = getelementptr inbounds { i8, i1, ptr, ptr, ptr }, ptr %1, i32 0, i32 0
-  store i8 0, ptr %2, align 1
-  %3 = getelementptr inbounds { i8, i1, ptr, ptr, ptr }, ptr %1, i32 0, i32 1
-  store i1 %0, ptr %3, align 1
-  %4 = getelementptr inbounds { i8, i1, ptr, ptr, ptr }, ptr %1, i32 0, i32 2
-  store ptr null, ptr %4, align 8
-  %5 = getelementptr inbounds { i8, i1, ptr, ptr, ptr }, ptr %1, i32 0, i32 3
-  store ptr null, ptr %5, align 8
-  %6 = getelementptr inbounds { i8, i1, ptr, ptr, ptr }, ptr %1, i32 0, i32 4
-  store ptr null, ptr %6, align 8
-  %7 = load { i8, i1, ptr, ptr, ptr }, ptr %1, align 8
-  ret { i8, i1, ptr, ptr, ptr } %7
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"ConditionalDefer$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i1, ptr, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -241,29 +220,7 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-define { i8, i64, ptr, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @LoopDefer(i64 %0) {
-_llgo_0:
-  %1 = alloca { i8, i64, ptr, i64, i64, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 56, i1 false)
-  %2 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 0
-  store i8 0, ptr %2, align 1
-  %3 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 1
-  store i64 %0, ptr %3, align 4
-  %4 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 2
-  store ptr null, ptr %4, align 8
-  %5 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 3
-  store i64 0, ptr %5, align 4
-  %6 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 4
-  store i64 0, ptr %6, align 4
-  %7 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 5
-  store ptr null, ptr %7, align 8
-  %8 = getelementptr inbounds { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, i32 0, i32 6
-  store ptr null, ptr %8, align 8
-  %9 = load { i8, i64, ptr, i64, i64, ptr, ptr }, ptr %1, align 8
-  ret { i8, i64, ptr, i64, i64, ptr, ptr } %9
-}
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"LoopDefer$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i64, ptr, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -443,33 +400,7 @@ _llgo_0:
   ret ptr %1
 }
 
-define { i8, ptr, ptr, ptr, i64, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @MultipleDefer() {
-_llgo_0:
-  %0 = alloca { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 72, i1 false)
-  %1 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 0
-  store i8 0, ptr %1, align 1
-  %2 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 2
-  store ptr null, ptr %3, align 8
-  %4 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 3
-  store ptr null, ptr %4, align 8
-  %5 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 4
-  store i64 0, ptr %5, align 4
-  %6 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 5
-  store ptr null, ptr %6, align 8
-  %7 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 6
-  store ptr null, ptr %7, align 8
-  %8 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 7
-  store ptr null, ptr %8, align 8
-  %9 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, i32 0, i32 8
-  store ptr null, ptr %9, align 8
-  %10 = load { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr }, ptr %0, align 8
-  ret { i8, ptr, ptr, ptr, i64, ptr, ptr, ptr, ptr } %10
-}
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"MultipleDefer$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, ptr, ptr, ptr, i64, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -703,23 +634,7 @@ _llgo_0:
   ret void
 }
 
-define { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @SimpleDefer() {
-_llgo_0:
-  %0 = alloca { i8, ptr, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 32, i1 false)
-  %1 = getelementptr inbounds { i8, ptr, ptr, ptr }, ptr %0, i32 0, i32 0
-  store i8 0, ptr %1, align 1
-  %2 = getelementptr inbounds { i8, ptr, ptr, ptr }, ptr %0, i32 0, i32 1
-  store ptr null, ptr %2, align 8
-  %3 = getelementptr inbounds { i8, ptr, ptr, ptr }, ptr %0, i32 0, i32 2
-  store ptr null, ptr %3, align 8
-  %4 = getelementptr inbounds { i8, ptr, ptr, ptr }, ptr %0, i32 0, i32 3
-  store ptr null, ptr %4, align 8
-  %5 = load { i8, ptr, ptr, ptr }, ptr %0, align 8
-  ret { i8, ptr, ptr, ptr } %5
-}
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"SimpleDefer$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, ptr, %"github.com/goplus/llgo/async.AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -878,5 +793,3 @@ _llgo_0:
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare void @"github.com/goplus/llgo/async.init"()
-
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

@@ -1,31 +1,12 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpull/sequential'
 source_filename = "github.com/goplus/llgo/cl/_testpull/sequential"
 
-%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
+%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 
 @"github.com/goplus/llgo/cl/_testpull/sequential.init$guard" = global i1 false, align 1
 
-define { i8, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @Sequential() {
-_llgo_0:
-  %0 = alloca { i8, i64, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 32, i1 false)
-  %1 = getelementptr inbounds { i8, i64, ptr, ptr }, ptr %0, i32 0, i32 0
-  store i8 0, ptr %1, align 1
-  %2 = getelementptr inbounds { i8, i64, ptr, ptr }, ptr %0, i32 0, i32 1
-  store i64 0, ptr %2, align 4
-  %3 = getelementptr inbounds { i8, i64, ptr, ptr }, ptr %0, i32 0, i32 2
-  store ptr null, ptr %3, align 8
-  %4 = getelementptr inbounds { i8, i64, ptr, ptr }, ptr %0, i32 0, i32 3
-  store ptr null, ptr %4, align 8
-  %5 = load { i8, i64, ptr, ptr }, ptr %0, align 8
-  ret { i8, i64, ptr, ptr } %5
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"Sequential$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/sequential.Sequential$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -201,5 +182,3 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/async.init"()
-
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

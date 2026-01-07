@@ -84,19 +84,13 @@ func (g *LLSSACodeGen) Generate() error {
 		return fmt.Errorf("failed to generate state type: %w", err)
 	}
 
-	// Step 2: Generate constructor function
-	if err := g.generateConstructor(stateType); err != nil {
-		return fmt.Errorf("failed to generate constructor: %w", err)
-	}
-
-	// Step 3: Generate Poll method
+	// Step 2: Generate Poll method
 	if err := g.generatePollMethod(stateType); err != nil {
 		return fmt.Errorf("failed to generate Poll method: %w", err)
 	}
 
-	// Step 4: Rewrite original function to return state machine
-	// The original function's body is replaced to call the constructor
-	// and return the state as a Future[T]
+	// Step 3: Rewrite original function to return state machine
+	// The original function's body is replaced to allocate and init state struct
 	if err := g.generateOriginalFunctionWrapper(stateType); err != nil {
 		return fmt.Errorf("failed to rewrite original function: %w", err)
 	}
@@ -287,8 +281,8 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	// Create Poll method signature: func (s *State) Poll(ctx *Context) Poll[T]
 	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
 
-	// Create the Poll method
-	pollName := fn.Name() + "$Poll"
+	// Create the Poll method with full package path (matches wrapper naming convention)
+	pollName := llssa.FuncName(fn.Pkg.Pkg, fn.Name()+"$Poll", nil, false)
 	poll := g.pkg.NewFunc(pollName, pollSig, llssa.InGo)
 
 	// Create basic blocks:
@@ -718,7 +712,8 @@ func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) err
 	newResults := types.NewTuple(types.NewVar(0, nil, "", statePtrType))
 	newSig := types.NewSignatureType(nil, nil, nil, origSig.Params(), newResults, origSig.Variadic())
 
-	// Use the original function's full path name
+	// Use full package path name (standard Go/LLGO naming convention)
+	// This allows other packages to call this function by its qualified name
 	fullName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
 
 	// Create the wrapper function with concrete return type

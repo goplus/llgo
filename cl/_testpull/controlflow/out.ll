@@ -1,31 +1,12 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testpull/controlflow'
 source_filename = "github.com/goplus/llgo/cl/_testpull/controlflow"
 
-%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64 }
+%"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 
 @"github.com/goplus/llgo/cl/_testpull/controlflow.init$guard" = global i1 false, align 1
 
-define { i8, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @LoopWithBreak(i64 %0) {
-_llgo_0:
-  %1 = alloca { i8, i64, i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 32, i1 false)
-  %2 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 0
-  store i8 0, ptr %2, align 1
-  %3 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 1
-  store i64 %0, ptr %3, align 4
-  %4 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 2
-  store i64 0, ptr %4, align 4
-  %5 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 3
-  store ptr null, ptr %5, align 8
-  %6 = load { i8, i64, i64, ptr }, ptr %1, align 8
-  ret { i8, i64, i64, ptr } %6
-}
-
-; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"LoopWithBreak$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -171,23 +152,7 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-define { i8, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @LoopWithContinue(i64 %0) {
-_llgo_0:
-  %1 = alloca { i8, i64, i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 32, i1 false)
-  %2 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 0
-  store i8 0, ptr %2, align 1
-  %3 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 1
-  store i64 %0, ptr %3, align 4
-  %4 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 2
-  store i64 0, ptr %4, align 4
-  %5 = getelementptr inbounds { i8, i64, i64, ptr }, ptr %1, i32 0, i32 3
-  store ptr null, ptr %5, align 8
-  %6 = load { i8, i64, i64, ptr }, ptr %1, align 8
-  ret { i8, i64, i64, ptr } %6
-}
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"LoopWithContinue$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -308,29 +273,7 @@ _llgo_0:
   ret ptr %1
 }
 
-define { i8, i64, i64, i64, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]" } @NestedLoop(i64 %0, i64 %1) {
-_llgo_0:
-  %2 = alloca { i8, i64, i64, i64, i64, i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 56, i1 false)
-  %3 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 0
-  store i8 0, ptr %3, align 1
-  %4 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 1
-  store i64 %0, ptr %4, align 4
-  %5 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 2
-  store i64 %1, ptr %5, align 4
-  %6 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 3
-  store i64 0, ptr %6, align 4
-  %7 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 4
-  store i64 0, ptr %7, align 4
-  %8 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 5
-  store i64 0, ptr %8, align 4
-  %9 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, i32 0, i32 6
-  store ptr null, ptr %9, align 8
-  %10 = load { i8, i64, i64, i64, i64, i64, ptr }, ptr %2, align 8
-  ret { i8, i64, i64, i64, i64, i64, ptr } %10
-}
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"NestedLoop$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i64, i64, i64, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -515,27 +458,7 @@ _llgo_0:
   ret ptr %2
 }
 
-define { i8, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" } @SwitchCase(i64 %0) {
-_llgo_0:
-  %1 = alloca { i8, i64, i64, ptr, ptr, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 48, i1 false)
-  %2 = getelementptr inbounds { i8, i64, i64, ptr, ptr, ptr }, ptr %1, i32 0, i32 0
-  store i8 0, ptr %2, align 1
-  %3 = getelementptr inbounds { i8, i64, i64, ptr, ptr, ptr }, ptr %1, i32 0, i32 1
-  store i64 %0, ptr %3, align 4
-  %4 = getelementptr inbounds { i8, i64, i64, ptr, ptr, ptr }, ptr %1, i32 0, i32 2
-  store i64 0, ptr %4, align 4
-  %5 = getelementptr inbounds { i8, i64, i64, ptr, ptr, ptr }, ptr %1, i32 0, i32 3
-  store ptr null, ptr %5, align 8
-  %6 = getelementptr inbounds { i8, i64, i64, ptr, ptr, ptr }, ptr %1, i32 0, i32 4
-  store ptr null, ptr %6, align 8
-  %7 = getelementptr inbounds { i8, i64, i64, ptr, ptr, ptr }, ptr %1, i32 0, i32 5
-  store ptr null, ptr %7, align 8
-  %8 = load { i8, i64, i64, ptr, ptr, ptr }, ptr %1, align 8
-  ret { i8, i64, i64, ptr, ptr, ptr } %8
-}
-
-define %"github.com/goplus/llgo/async.Poll[int]" @"SwitchCase$Poll"(ptr %0, ptr %1) {
+define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$Poll"(ptr %0, ptr %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i8, i64, i64, %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]", %"github.com/goplus/llgo/async.AsyncFuture[int]" }, ptr %0, i32 0, i32 0
   %3 = load i8, ptr %2, align 1
@@ -744,5 +667,3 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/async.init"()
-
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

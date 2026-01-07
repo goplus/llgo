@@ -31,8 +31,8 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 
 	ir := string(content)
 
-	// Check for Poll method definition
-	if !strings.Contains(ir, "@\"Simple$Poll\"") {
+	// Check for Poll method definition (now uses full package path)
+	if !strings.Contains(ir, "basic.Simple$Poll") {
 		t.Error("Generated IR should contain Simple$Poll method")
 	}
 
@@ -51,8 +51,8 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 		t.Error("Generated IR should contain switch for state dispatch")
 	}
 
-	// Check for context parameter (ptr %1 is ctx)
-	if !strings.Contains(ir, "@\"Simple$Poll\"(ptr %0, ptr %1)") {
+	// Check for context parameter (ptr %1 is ctx) - now with full package path
+	if !strings.Contains(ir, "basic.Simple$Poll\"(ptr %0, ptr %1)") {
 		t.Error("Generated IR should have Poll method with receiver and ctx parameters")
 	}
 
@@ -154,8 +154,9 @@ func TestGeneratedIR_Complex(t *testing.T) {
 		"TwoLoops$Poll",
 	}
 
+	// Check for function name substring (full path includes package)
 	for _, fn := range expectedFuncs {
-		if !strings.Contains(ir, "@\""+fn+"\"") {
+		if !strings.Contains(ir, "complex."+fn) {
 			t.Errorf("Missing function: %s", fn)
 		}
 	}
