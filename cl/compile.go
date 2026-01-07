@@ -1311,7 +1311,14 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 					return ctx.compileValue(b, v)
 				}
 
-				// Callback 2: registerValue - registers pre-computed value mappings.
+				// Callback 2: compileInstr - compiles SSA instructions.
+				// This is used to compile state body instructions like fmt.Printf
+				// that are not part of the suspend point handling.
+				compileInstr := func(b llssa.Builder, instr ssa.Instruction) {
+					ctx.compileInstr(b, instr)
+				}
+
+				// Callback 3: registerValue - registers pre-computed value mappings.
 				// In Poll methods, original function parameters and cross-suspend variables
 				// are stored in the state struct. The pullmodel package calls this callback
 				// to register mappings from SSA values (e.g., *ssa.Parameter "x") to their
@@ -1321,7 +1328,7 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 					ctx.bvals[v] = expr
 				}
 
-				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue, registerValue); err != nil {
+				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue, compileInstr, registerValue); err != nil {
 					log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", member.Name(), err)
 					ctx.compileFuncDecl(ret, member)
 				}

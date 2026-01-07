@@ -32,6 +32,9 @@ import (
 // CompileValueFunc is a callback to compile SSA values using the main compiler.
 type CompileValueFunc func(b llssa.Builder, v ssa.Value) llssa.Expr
 
+// CompileInstrFunc is a callback to compile SSA instructions using the main compiler.
+type CompileInstrFunc func(b llssa.Builder, instr ssa.Instruction)
+
 // RegisterValueFunc is a callback to register a pre-computed value mapping.
 // This is used to map original SSA params/values to state struct field loads.
 type RegisterValueFunc func(v ssa.Value, expr llssa.Expr)
@@ -43,6 +46,7 @@ type LLSSACodeGen struct {
 	ssaPkg         *ssa.Package
 	sm             *StateMachine
 	compileValue   CompileValueFunc  // callback to compile SSA values
+	compileInstr   CompileInstrFunc  // callback to compile SSA instructions
 	registerValue  RegisterValueFunc // callback to register value mappings
 	pollStructType types.Type        // cached Poll[T] struct type for consistency
 	pollLLType     llssa.Type        // cached LLVM type for Poll[T]
@@ -69,6 +73,12 @@ func NewLLSSACodeGen(
 // This must be called before Generate() if sub-future initialization is needed.
 func (g *LLSSACodeGen) SetCompileValue(fn CompileValueFunc) {
 	g.compileValue = fn
+}
+
+// SetCompileInstr sets the callback for compiling SSA instructions.
+// This is used to compile state body instructions (like fmt.Printf).
+func (g *LLSSACodeGen) SetCompileInstr(fn CompileInstrFunc) {
+	g.compileInstr = fn
 }
 
 // SetRegisterValue sets the callback for registering pre-computed value mappings.
@@ -466,7 +476,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 
 	if state.IsTerminal {
-		// Terminal state: return Ready(result) = Poll[T]{ready: true, value: result}
+		// Terminal state: compile state instructions and return Ready
+		// First compile any instructions in this state (like fmt.Printf)
+		g.compileStateInstructions(b, state, statePtr)
+		// Then return Ready(result) = Poll[T]{ready: true, value: result}
 		// For Future[Void], value is empty struct so we just need ready=true
 		g.returnReadyPoll(b)
 		return
@@ -497,6 +510,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Init path: initialize sub-future pointer
 		b.SetBlock(initBlock)
 		g.replayAllocStores(b, state, statePtr)
+		// Compile state instructions (before the suspend point)
+		g.compileStateInstructions(b, state, statePtr)
 		// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
 		newSubFutPtr := g.compileValue(b, sp.SubFuture)
 		// Store the pointer directly (no dereferencing)
@@ -748,6 +763,44 @@ func (g *LLSSACodeGen) storeSuspendResult(b llssa.Builder, statePtr llssa.Expr, 
 	}
 }
 
+// compileStateInstructions compiles the SSA instructions in a state.
+// It skips instructions that are:
+// - The suspend point call itself (handled separately)
+// - Alloc+Store pairs for heap-escaped params (handled by replayAllocStores)
+// - Return instructions (handled by terminal state logic)
+func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, statePtr llssa.Expr) {
+	if g.compileInstr == nil {
+		return
+	}
+
+	for _, instr := range state.Instructions {
+		// Skip the suspend point call itself - it's handled separately
+		if state.SuspendPoint != nil && instr == state.SuspendPoint.Call {
+			continue
+		}
+
+		// Skip Return instructions for terminal states
+		if _, isReturn := instr.(*ssa.Return); isReturn {
+			continue
+		}
+
+		// Skip Alloc for heap-escaped params (handled by replayAllocStores)
+		if alloc, isAlloc := instr.(*ssa.Alloc); isAlloc && alloc.Heap {
+			continue
+		}
+
+		// Skip Store to heap Alloc (handled by replayAllocStores)
+		if store, isStore := instr.(*ssa.Store); isStore {
+			if alloc, ok := store.Addr.(*ssa.Alloc); ok && alloc.Heap {
+				continue
+			}
+		}
+
+		// Compile all other instructions (like fmt.Printf, BinOp, etc.)
+		g.compileInstr(b, instr)
+	}
+}
+
 // getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
 // With value embedding and state-based init tracking, each sub-future has 1 field.
 func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
@@ -786,17 +839,18 @@ func GenerateStateMachine(
 	ssaPkg *ssa.Package,
 	fn *ssa.Function,
 ) error {
-	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil, nil)
+	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil, nil, nil)
 }
 
 // GenerateStateMachineWithCallback is like GenerateStateMachine but accepts
-// callback functions for compiling SSA values and registering value mappings.
+// callback functions for compiling SSA values/instructions and registering value mappings.
 func GenerateStateMachineWithCallback(
 	prog llssa.Program,
 	pkg llssa.Package,
 	ssaPkg *ssa.Package,
 	fn *ssa.Function,
 	compileValue CompileValueFunc,
+	compileInstr CompileInstrFunc,
 	registerValue RegisterValueFunc,
 ) error {
 	// Step 1: Analyze SSA and create state machine
@@ -809,6 +863,9 @@ func GenerateStateMachineWithCallback(
 	codegen := NewLLSSACodeGen(prog, pkg, ssaPkg, sm)
 	if compileValue != nil {
 		codegen.SetCompileValue(compileValue)
+	}
+	if compileInstr != nil {
+		codegen.SetCompileInstr(compileInstr)
 	}
 	if registerValue != nil {
 		codegen.SetRegisterValue(registerValue)
