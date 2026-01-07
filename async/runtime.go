@@ -57,7 +57,7 @@ func (t *Task) Poll(ctx *Context) Poll[Void] {
 
 // Context returns a Context with this task's waker.
 func (t *Task) Context() *Context {
-	return &Context{Waker: t.waker}
+	return NewContext(t.waker)
 }
 
 // taskWaker implements Waker for a Task.

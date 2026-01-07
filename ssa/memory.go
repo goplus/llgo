@@ -55,6 +55,17 @@ func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 	return Expr{aggregateValue(b.impl, t.ll, flds...), t}
 }
 
+// AggregateExpr builds an aggregate value of type t from the provided fields.
+// Each field is an llssa expression so callers outside the ssa package don't
+// need to manipulate llvm.Value directly.
+func (b Builder) AggregateExpr(t Type, flds ...Expr) Expr {
+	raw := make([]llvm.Value, len(flds))
+	for i, fld := range flds {
+		raw[i] = fld.impl
+	}
+	return b.aggregateValue(t, raw...)
+}
+
 func aggregateValue(b llvm.Builder, tll llvm.Type, flds ...llvm.Value) llvm.Value {
 	agg := llvm.Undef(tll)
 	for i, fld := range flds {

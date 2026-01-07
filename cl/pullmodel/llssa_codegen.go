@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -53,6 +54,9 @@ type LLSSACodeGen struct {
 	stateNamed          *types.Named      // Named type FnName$State for proper itab
 	pollMethod          *types.Func       // Poll method added to stateNamed
 	completedStateIndex int               // sentinel index meaning state machine finished
+	resultFieldIndex    int               // field index storing the final result value
+	stackAllocPtrs      map[*ssa.Alloc]llssa.Expr
+	stackAllocCrossVars map[*ssa.Alloc]struct{}
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -63,10 +67,12 @@ func NewLLSSACodeGen(
 	sm *StateMachine,
 ) *LLSSACodeGen {
 	return &LLSSACodeGen{
-		prog:   prog,
-		pkg:    pkg,
-		ssaPkg: ssaPkg,
-		sm:     sm,
+		prog:             prog,
+		pkg:              pkg,
+		ssaPkg:           ssaPkg,
+		sm:               sm,
+		resultFieldIndex: -1,
+		stackAllocCrossVars: make(map[*ssa.Alloc]struct{}),
 	}
 }
 
@@ -86,6 +92,13 @@ func (g *LLSSACodeGen) SetCompileInstr(fn CompileInstrFunc) {
 // This is used to map SSA params/values to loaded state struct fields.
 func (g *LLSSACodeGen) SetRegisterValue(fn RegisterValueFunc) {
 	g.registerValue = fn
+}
+
+func (g *LLSSACodeGen) cacheValueMapping(v ssa.Value, expr llssa.Expr) {
+	if g.registerValue == nil || expr.IsNil() {
+		return
+	}
+	g.registerValue(v, expr)
 }
 
 // Generate generates the complete state machine code.
@@ -209,7 +222,13 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 	// Initialize cross-var fields to zero values (they'll be set during execution)
 	for _, v := range g.sm.CrossVars {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-		zeroVal := g.prog.Zero(g.prog.Type(v.Type(), llssa.InGo))
+		fieldType := v.Type()
+		if alloc, ok := g.isStackAllocCrossVar(v); ok {
+			if tptr, ok := alloc.Type().(*types.Pointer); ok {
+				fieldType = tptr.Elem()
+			}
+		}
+		zeroVal := g.prog.Zero(g.prog.Type(fieldType, llssa.InGo))
 		b.Store(fieldPtr, zeroVal)
 		fieldIdx++
 	}
@@ -250,7 +269,14 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	// Fields for cross-suspend variables
 	for i, v := range g.sm.CrossVars {
 		name := fmt.Sprintf("var%d", i)
-		fields = append(fields, types.NewField(0, nil, name, v.Type(), false))
+		fieldType := v.Type()
+		if alloc, ok := v.(*ssa.Alloc); ok && !alloc.Heap {
+			if ptr, ok := alloc.Type().(*types.Pointer); ok {
+				fieldType = ptr.Elem()
+				g.stackAllocCrossVars[alloc] = struct{}{}
+			}
+		}
+		fields = append(fields, types.NewField(0, nil, name, fieldType, false))
 		tags = append(tags, "")
 	}
 
@@ -284,6 +310,15 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 		fields = append(fields, types.NewField(0, nil, "recovered", types.Typ[types.Bool], false))
 		tags = append(tags, "")
 	}
+
+	// Field to cache the final result value so subsequent polls can reuse it.
+	resultType := g.sm.ResultType
+	if resultType == nil {
+		resultType = types.NewStruct(nil, nil)
+	}
+	g.resultFieldIndex = len(fields)
+	fields = append(fields, types.NewField(0, nil, "resultValue", resultType, false))
+	tags = append(tags, "")
 
 	structType := types.NewStruct(fields, tags)
 
@@ -414,6 +449,9 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	numBlocks := 3 + numStates // entry + states + done + default
 	poll.MakeBlocks(numBlocks)
 
+	// Pre-allocate stack slots for non-escaping SSA allocs in the entry block.
+	g.prepareStackAllocas(poll)
+
 	// Prepare a recover block so defer statements compiled via compileInstr
 	// have a valid target even though we're outside the normal cl compile pipeline.
 	recovBlock := poll.MakeBlock()
@@ -460,6 +498,7 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	ctx := poll.Param(1) // Get ctx parameter
 	for i, state := range g.sm.States {
 		b.SetBlock(poll.Block(i + 1))
+		g.restoreStackAllocState(b, statePtr)
 
 		// Register SSA params and cross-vars as loaded values from state struct
 		// This allows compileValue to find them when compiling sub-future initializers
@@ -478,9 +517,19 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 
 			// Register cross-suspend variables
 			for _, v := range g.sm.CrossVars {
-				fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-				loadedVal := b.Load(fieldPtr)
-				g.registerValue(v, loadedVal)
+				if alloc, ok := g.isStackAllocCrossVar(v); ok {
+					ptr := g.stackAllocPtr(alloc)
+					if ptr.IsNil() {
+						ptr = g.ensureEntryAlloc(b, alloc)
+					}
+					if !ptr.IsNil() {
+						g.registerValue(v, ptr)
+					}
+				} else {
+					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+					loadedVal := b.Load(fieldPtr)
+					g.registerValue(v, loadedVal)
+				}
 				fieldIdx++
 			}
 		}
@@ -490,7 +539,8 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 
 	// Completed block: return Ready immediately on subsequent polls
 	b.SetBlock(doneBlock)
-	g.returnReadyPoll(b)
+	finalValue := g.loadResultValue(b, statePtr)
+	g.returnReadyPoll(b, finalValue)
 
 	// Default block: unreachable (should never reach here)
 	b.SetBlock(defaultBlock)
@@ -518,16 +568,19 @@ func (g *LLSSACodeGen) generateStateBlock(
 	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 
 	if state.IsTerminal {
-		// Terminal state: compile state instructions and return Ready
-		// First compile any instructions in this state (like fmt.Printf)
-		g.compileStateInstructions(b, state, statePtr)
+		// Terminal state: compile state instructions, capture final result, and return Ready
+		resultVal := g.compileStateInstructions(b, state, statePtr)
+		if !resultVal.IsNil() {
+			g.storeResultValue(b, statePtr, resultVal)
+		}
+		g.flushStackAllocState(b, statePtr)
 		// Mark machine as completed so future polls skip re-running side effects.
 		stateFieldPtr := b.FieldAddr(statePtr, 0)
 		doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
 		b.Store(stateFieldPtr, doneVal)
 		// Then return Ready(result) = Poll[T]{ready: true, value: result}
-		// For Future[Void], value is empty struct so we just need ready=true
-		g.returnReadyPoll(b)
+		finalValue := g.loadResultValue(b, statePtr)
+		g.returnReadyPoll(b, finalValue)
 		return
 	}
 
@@ -557,7 +610,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 		b.SetBlock(initBlock)
 		g.replayAllocStores(b, state, statePtr)
 		// Compile state instructions (before the suspend point)
-		g.compileStateInstructions(b, state, statePtr)
+		_ = g.compileStateInstructions(b, state, statePtr)
 		// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
 		newSubFutPtr := g.compileValue(b, sp.SubFuture)
 		// Store the pointer directly (no dereferencing)
@@ -610,6 +663,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 					b.Jump(poll.Block(stateIdx + 2))
 				} else {
 					// Return zero Poll[T] for fallback
+					g.flushStackAllocState(b, statePtr)
 					b.Return(g.createZeroPoll())
 				}
 				return
@@ -633,17 +687,9 @@ func (g *LLSSACodeGen) generateStateBlock(
 			pollResult = b.Call(methodFunc.Expr, subFutPtrVal, ctx)
 		}
 
-		// Poll[T] is struct { ready bool; value T }
-		// We need to check the ready field
-		pollResultType := g.prog.Type(g.createPollType(resultType), llssa.InGo)
-
-		// Allocate pollResult on stack (not heap) to get address
-		pollResultPtr := b.AllocaT(pollResultType)
-		b.Store(pollResultPtr, pollResult)
-
-		// Extract ready field (field 0)
-		readyFieldPtr := b.FieldAddr(pollResultPtr, 0)
-		ready := b.Load(readyFieldPtr)
+		// Poll[T] is struct { ready bool; value T; err any }
+		// Extract ready field (field 0) directly
+		ready := b.Field(pollResult, 0)
 
 		// Create blocks for ready/pending branching
 		branchBlocks := poll.MakeBlocks(2)
@@ -657,14 +703,14 @@ func (g *LLSSACodeGen) generateStateBlock(
 		b.SetBlock(pendingBlock)
 		// Create a Pending result: Poll[T]{ready: false, value: zero} using cached type
 		pendingResult := g.prog.Nil(g.pollLLType) // ready=false, value=zero
+		g.flushStackAllocState(b, statePtr)
 		b.Return(pendingResult)
 
 		// Ready path: extract value, update state, continue
 		b.SetBlock(readyBlock)
 
 		// Extract value field (field 1) from Poll result
-		valueFieldPtr := b.FieldAddr(pollResultPtr, 1)
-		value := b.Load(valueFieldPtr)
+		value := b.Field(pollResult, 1)
 
 		// Register the SSA result value so compileValue can reuse it without
 		// re-emitting the original Await call.
@@ -683,6 +729,12 @@ func (g *LLSSACodeGen) generateStateBlock(
 			b.Store(resultFieldPtr, value)
 		}
 
+		// Reset the sub-future pointer so subsequent iterations re-create the
+		// awaited future instead of polling a finished one.
+		b.Store(subFutFieldPtr, g.prog.Nil(subFutPtrVal.Type))
+
+		g.flushStackAllocState(b, statePtr)
+
 		// Update state to next
 		nextState := uint64(stateIdx + 1)
 		stateFieldPtr := b.FieldAddr(statePtr, 0)
@@ -693,22 +745,154 @@ func (g *LLSSACodeGen) generateStateBlock(
 			b.Jump(poll.Block(stateIdx + 2)) // +1 for 0-indexed, +1 because block 0 is entry
 		} else {
 			// No more states - this shouldn't happen for suspend states
+			g.flushStackAllocState(b, statePtr)
 			b.Return(g.createZeroPoll())
 		}
 		return
 	}
 
-	// Intermediate state without suspend - just transition to next
-	nextState := uint64(stateIdx + 1)
-	stateFieldPtr := b.FieldAddr(statePtr, 0)
-	b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
+	// Intermediate state without suspend.
+	_ = g.compileStateInstructions(b, state, statePtr)
+	g.flushStackAllocState(b, statePtr)
+	nextStateIdx := stateIdx + 1
+	hasNext := nextStateIdx < len(g.sm.States)
+	nextStateSameBlock := hasNext && state.Block != nil && g.sm.States[nextStateIdx].Block == state.Block
 
-	if stateIdx+1 < len(g.sm.States) {
-		b.Jump(poll.Block(stateIdx + 2))
-	} else {
-		// Return zero Poll[T] for fallback
-		b.Return(g.createZeroPoll())
+	if nextStateSameBlock {
+		// Still executing the same SSA block (e.g., continuation after suspend).
+		nextState := uint64(nextStateIdx)
+		stateFieldPtr := b.FieldAddr(statePtr, 0)
+		b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
+		b.Jump(poll.Block(nextStateIdx + 1))
+		return
 	}
+
+	// Otherwise, branch according to the SSA terminator.
+	terminator := state.Terminator()
+	switch term := terminator.(type) {
+	case *ssa.If:
+		if state.Block == nil || len(state.Block.Succs) != 2 {
+			// Fallback to sequential execution if block metadata is missing.
+			break
+		}
+		cond := g.compileValue(b, term.Cond)
+		trueBlockSSA := state.Block.Succs[0]
+		falseBlockSSA := state.Block.Succs[1]
+		trueIdx := g.stateIndexForBlock(trueBlockSSA)
+		falseIdx := g.stateIndexForBlock(falseBlockSSA)
+		g.branchToState(b, poll, statePtr, cond, state.Block, trueBlockSSA, falseBlockSSA, trueIdx, falseIdx, int8Type)
+		return
+	case *ssa.Jump:
+		if state.Block == nil || len(state.Block.Succs) == 0 {
+			break
+		}
+		targetBlock := state.Block.Succs[0]
+		targetIdx := g.stateIndexForBlock(targetBlock)
+		g.setStateAndJump(b, poll, statePtr, state.Block, targetBlock, targetIdx, int8Type)
+		return
+	}
+
+	// Fallback: behave like original sequential transition.
+	if hasNext {
+		targetBlock := g.sm.States[nextStateIdx].Block
+		g.setStateAndJump(b, poll, statePtr, state.Block, targetBlock, nextStateIdx, int8Type)
+		return
+	}
+
+	// No next state: return zero Poll.
+	g.flushStackAllocState(b, statePtr)
+	b.Return(g.createZeroPoll())
+}
+
+func (g *LLSSACodeGen) prepareStackAllocas(poll llssa.Function) {
+	// Reset cache for the current Poll generation.
+	g.stackAllocPtrs = make(map[*ssa.Alloc]llssa.Expr)
+	entryBuilder := poll.NewBuilder()
+	entryBuilder.SetBlock(poll.Block(0))
+
+	for _, state := range g.sm.States {
+		for _, instr := range state.Instructions {
+			alloc, ok := instr.(*ssa.Alloc)
+			if !ok || alloc.Heap {
+				continue
+			}
+			g.ensureEntryAlloc(entryBuilder, alloc)
+		}
+	}
+}
+
+func (g *LLSSACodeGen) stackAllocPtr(alloc *ssa.Alloc) llssa.Expr {
+	if ptr, ok := g.stackAllocPtrs[alloc]; ok {
+		return ptr
+	}
+	return llssa.Expr{}
+}
+
+func (g *LLSSACodeGen) isStackAllocCrossVar(v ssa.Value) (*ssa.Alloc, bool) {
+	alloc, ok := v.(*ssa.Alloc)
+	if !ok {
+		return nil, false
+	}
+	_, ok = g.stackAllocCrossVars[alloc]
+	return alloc, ok
+}
+
+func (g *LLSSACodeGen) restoreStackAllocState(b llssa.Builder, statePtr llssa.Expr) {
+	if len(g.stackAllocCrossVars) == 0 {
+		return
+	}
+	for alloc := range g.stackAllocCrossVars {
+		idx := g.getCrossVarFieldIndex(alloc)
+		if idx < 0 {
+			continue
+		}
+		ptr := g.stackAllocPtr(alloc)
+		if ptr.IsNil() {
+			continue
+		}
+		fieldPtr := b.FieldAddr(statePtr, idx)
+		val := b.Load(fieldPtr)
+		b.Store(ptr, val)
+		if g.registerValue != nil {
+			g.registerValue(alloc, ptr)
+		}
+	}
+}
+
+func (g *LLSSACodeGen) flushStackAllocState(b llssa.Builder, statePtr llssa.Expr) {
+	if len(g.stackAllocCrossVars) == 0 {
+		return
+	}
+	for alloc := range g.stackAllocCrossVars {
+		idx := g.getCrossVarFieldIndex(alloc)
+		if idx < 0 {
+			continue
+		}
+		ptr := g.stackAllocPtr(alloc)
+		if ptr.IsNil() {
+			continue
+		}
+		fieldPtr := b.FieldAddr(statePtr, idx)
+		val := b.Load(ptr)
+		b.Store(fieldPtr, val)
+	}
+}
+
+func (g *LLSSACodeGen) ensureEntryAlloc(b llssa.Builder, alloc *ssa.Alloc) llssa.Expr {
+	if ptr, ok := g.stackAllocPtrs[alloc]; ok {
+		return ptr
+	}
+	tptr, ok := alloc.Type().(*types.Pointer)
+	if !ok {
+		return llssa.Expr{}
+	}
+	elem := g.prog.Type(tptr.Elem(), llssa.InGo)
+	ptr := b.Alloc(elem, false)
+	g.stackAllocPtrs[alloc] = ptr
+	if g.registerValue != nil {
+		g.registerValue(alloc, ptr)
+	}
+	return ptr
 }
 
 // replayAllocStores eagerly executes heap Alloc+Store pairs so captured pointers
@@ -737,10 +921,25 @@ func (g *LLSSACodeGen) replayAllocStores(b llssa.Builder, state *State, statePtr
 	// Reload cross-suspend variables for the same reason.
 	for _, cross := range g.sm.CrossVars {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-		loaded := b.Load(fieldPtr)
-		valueCache[cross] = loaded
-		if g.registerValue != nil {
-			g.registerValue(cross, loaded)
+		if alloc, ok := g.isStackAllocCrossVar(cross); ok {
+			ptr := g.stackAllocPtr(alloc)
+			if ptr.IsNil() {
+				ptr = g.ensureEntryAlloc(b, alloc)
+			}
+			if !ptr.IsNil() {
+				val := b.Load(fieldPtr)
+				b.Store(ptr, val)
+				valueCache[cross] = ptr
+				if g.registerValue != nil {
+					g.registerValue(cross, ptr)
+				}
+			}
+		} else {
+			loaded := b.Load(fieldPtr)
+			valueCache[cross] = loaded
+			if g.registerValue != nil {
+				g.registerValue(cross, loaded)
+			}
 		}
 		fieldIdx++
 	}
@@ -776,6 +975,9 @@ func (g *LLSSACodeGen) replayAllocStores(b llssa.Builder, state *State, statePtr
 }
 
 func (g *LLSSACodeGen) ensureAllocPtr(b llssa.Builder, statePtr llssa.Expr, alloc *ssa.Alloc) llssa.Expr {
+	if ptr, ok := g.stackAllocPtrs[alloc]; ok {
+		return ptr
+	}
 	tptr, ok := alloc.Type().(*types.Pointer)
 	if !ok {
 		return llssa.Expr{}
@@ -786,6 +988,9 @@ func (g *LLSSACodeGen) ensureAllocPtr(b llssa.Builder, statePtr llssa.Expr, allo
 		g.registerValue(alloc, ptr)
 	}
 	if idx := g.getCrossVarFieldIndex(alloc); idx >= 0 {
+		if _, isStack := g.stackAllocCrossVars[alloc]; isStack {
+			return ptr
+		}
 		fieldPtr := b.FieldAddr(statePtr, idx)
 		b.Store(fieldPtr, ptr)
 	}
@@ -806,6 +1011,17 @@ func (g *LLSSACodeGen) storeSuspendResult(b llssa.Builder, statePtr llssa.Expr, 
 		if idx < 0 {
 			continue
 		}
+		if alloc, ok := g.isStackAllocCrossVar(store.Addr); ok {
+			ptr := g.stackAllocPtr(alloc)
+			if ptr.IsNil() {
+				ptr = g.ensureEntryAlloc(b, alloc)
+			}
+			if ptr.IsNil() {
+				continue
+			}
+			b.Store(ptr, value)
+			continue
+		}
 		fieldPtr := b.FieldAddr(statePtr, idx)
 		targetPtr := b.Load(fieldPtr)
 		if targetPtr.IsNil() {
@@ -815,15 +1031,123 @@ func (g *LLSSACodeGen) storeSuspendResult(b llssa.Builder, statePtr llssa.Expr, 
 	}
 }
 
+func (g *LLSSACodeGen) storePhiValues(
+	b llssa.Builder,
+	statePtr llssa.Expr,
+	fromBlock *ssa.BasicBlock,
+	toBlock *ssa.BasicBlock,
+) {
+	if fromBlock == nil || toBlock == nil {
+		return
+	}
+	for _, instr := range toBlock.Instrs {
+		phi, ok := instr.(*ssa.Phi)
+		if !ok {
+			break
+		}
+		fieldIdx := g.getCrossVarFieldIndex(phi)
+		if fieldIdx < 0 {
+			continue
+		}
+		incomingIdx := -1
+		for i, pred := range toBlock.Preds {
+			if pred == fromBlock {
+				incomingIdx = i
+				break
+			}
+		}
+		if incomingIdx < 0 || incomingIdx >= len(phi.Edges) {
+			continue
+		}
+		incoming := phi.Edges[incomingIdx]
+		if incoming == nil {
+			continue
+		}
+		val := g.compileValue(b, incoming)
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		b.Store(fieldPtr, val)
+		g.cacheValueMapping(phi, val)
+	}
+}
+
+func (g *LLSSACodeGen) storeResultValue(b llssa.Builder, statePtr llssa.Expr, value llssa.Expr) {
+	if g.resultFieldIndex < 0 || value.IsNil() {
+		return
+	}
+	fieldPtr := b.FieldAddr(statePtr, g.resultFieldIndex)
+	b.Store(fieldPtr, value)
+}
+
+func (g *LLSSACodeGen) loadResultValue(b llssa.Builder, statePtr llssa.Expr) llssa.Expr {
+	if g.resultFieldIndex < 0 {
+		return llssa.Expr{}
+	}
+	fieldPtr := b.FieldAddr(statePtr, g.resultFieldIndex)
+	return b.Load(fieldPtr)
+}
+
+func (g *LLSSACodeGen) stateIndexForBlock(block *ssa.BasicBlock) int {
+	if block == nil {
+		return -1
+	}
+	if idx, ok := g.sm.BlockEntries[block]; ok {
+		return idx
+	}
+	return -1
+}
+
+func (g *LLSSACodeGen) setStateAndJump(
+	b llssa.Builder,
+	poll llssa.Function,
+	statePtr llssa.Expr,
+	fromBlock *ssa.BasicBlock,
+	targetBlock *ssa.BasicBlock,
+	targetIdx int,
+	int8Type llssa.Type,
+) {
+	if targetIdx < 0 {
+		// Shouldn't happen, but return zero Poll to avoid invalid state
+		g.flushStackAllocState(b, statePtr)
+		b.Return(g.createZeroPoll())
+		return
+	}
+	g.storePhiValues(b, statePtr, fromBlock, targetBlock)
+	g.flushStackAllocState(b, statePtr)
+	stateFieldPtr := b.FieldAddr(statePtr, 0)
+	b.Store(stateFieldPtr, g.prog.IntVal(uint64(targetIdx), int8Type))
+	b.Jump(poll.Block(targetIdx + 1))
+}
+
+func (g *LLSSACodeGen) branchToState(
+	b llssa.Builder,
+	poll llssa.Function,
+	statePtr llssa.Expr,
+	cond llssa.Expr,
+	fromBlock *ssa.BasicBlock,
+	trueBlockSSA *ssa.BasicBlock,
+	falseBlockSSA *ssa.BasicBlock,
+	trueIdx int,
+	falseIdx int,
+	int8Type llssa.Type,
+) {
+	trueBlock := poll.MakeBlock()
+	falseBlock := poll.MakeBlock()
+	b.If(cond, trueBlock, falseBlock)
+
+	b.SetBlock(trueBlock)
+	g.setStateAndJump(b, poll, statePtr, fromBlock, trueBlockSSA, trueIdx, int8Type)
+
+	b.SetBlock(falseBlock)
+	g.setStateAndJump(b, poll, statePtr, fromBlock, falseBlockSSA, falseIdx, int8Type)
+}
+
 // compileStateInstructions compiles the SSA instructions in a state.
 // It skips instructions that are:
 // - The suspend point call itself (handled separately)
 // - Alloc+Store pairs for heap-escaped params (handled by replayAllocStores)
 // - Return instructions (handled by terminal state logic)
-func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, statePtr llssa.Expr) {
-	if g.compileInstr == nil {
-		return
-	}
+func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, statePtr llssa.Expr) llssa.Expr {
+	var finalValue llssa.Expr
 
 	for _, instr := range state.Instructions {
 		// Skip the suspend point call itself - it's handled separately
@@ -836,14 +1160,53 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 			continue
 		}
 
-		// Skip Alloc for heap-escaped params (handled by replayAllocStores)
-		if alloc, isAlloc := instr.(*ssa.Alloc); isAlloc && alloc.Heap {
+		// Capture async.Return(value) so we can materialize Poll[T] directly.
+		if callInstr, ok := instr.(*ssa.Call); ok {
+			if g.isAsyncReturnCall(callInstr) && len(callInstr.Call.Args) == 1 {
+				log.Printf("[Pull Model] intercept async.Return in %s", g.sm.Original.Name())
+				arg := callInstr.Call.Args[0]
+				if fieldIdx := g.getCrossVarFieldIndex(arg); fieldIdx >= 0 {
+					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+					finalValue = b.Load(fieldPtr)
+				} else {
+					finalValue = g.compileValue(b, arg)
+				}
+				continue
+			}
+		}
+
+		// Branch instructions are handled explicitly when wiring state transitions.
+		if _, isIf := instr.(*ssa.If); isIf {
+			continue
+		}
+		if _, isJump := instr.(*ssa.Jump); isJump {
+			continue
+		}
+		if _, isPhi := instr.(*ssa.Phi); isPhi {
+			// Phi nodes are handled by mapping cross-vars to state fields.
+			continue
+		}
+
+		// Skip Alloc instructions - storage is handled up front (stack or heap)
+		if _, isAlloc := instr.(*ssa.Alloc); isAlloc {
 			continue
 		}
 
 		// Skip Store to heap Alloc (handled by replayAllocStores)
 		if store, isStore := instr.(*ssa.Store); isStore {
-			if alloc, ok := store.Addr.(*ssa.Alloc); ok && alloc.Heap {
+			if alloc, ok := store.Addr.(*ssa.Alloc); ok {
+				if alloc.Heap {
+					continue
+				}
+				ptr := g.ensureAllocPtr(b, statePtr, alloc)
+				if ptr.IsNil() {
+					continue
+				}
+				val := g.compileValue(b, store.Val)
+				if val.IsNil() {
+					continue
+				}
+				b.Store(ptr, val)
 				continue
 			}
 		}
@@ -868,8 +1231,31 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 		}
 
 		// Compile all other instructions (like fmt.Printf, BinOp, etc.)
-		g.compileInstr(b, instr)
+		if g.compileInstr != nil {
+			g.compileInstr(b, instr)
+		}
 	}
+
+	return finalValue
+}
+
+func (g *LLSSACodeGen) isAsyncReturnCall(callInstr *ssa.Call) bool {
+	if callInstr == nil || callInstr.Call.IsInvoke() {
+		return false
+	}
+	callee := callInstr.Call.StaticCallee()
+	if callee == nil {
+		return false
+	}
+	fullName := callee.String()
+	if strings.HasPrefix(fullName, FuturePkgPath+".Return") {
+		return true
+	}
+	if callee.Pkg != nil && callee.Pkg.Pkg != nil && callee.Pkg.Pkg.Path() == FuturePkgPath {
+		name := callee.Name()
+		return name == "Return" || strings.HasPrefix(name, "Return[")
+	}
+	return false
 }
 
 // compileDeferForPullModel handles defer instructions in pull model.
@@ -1241,39 +1627,25 @@ func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
 
 // returnReadyPoll generates code to return Ready(value) = Poll[T]{ready: true, value: ...}.
 // For Future[Void], the value is an empty struct.
-func (g *LLSSACodeGen) returnReadyPoll(b llssa.Builder) {
-	// Poll[T] is a struct { ready bool, value T }
-	// We need to create { true, zeroValue(T) }
-	boolType := g.prog.Type(types.Typ[types.Bool], llssa.InGo)
+func (g *LLSSACodeGen) returnReadyPoll(b llssa.Builder, value llssa.Expr) {
 	trueVal := g.prog.BoolVal(true)
+	zeroPoll := g.createZeroPoll()
 
-	// Get the result type (T from Poll[T])
-	resultType := g.sm.ResultType
-	if resultType == nil {
-		// Void type - use empty struct
-		resultType = types.NewStruct(nil, nil)
+	// Ensure the payload matches the Poll value field type.
+	if value.IsNil() {
+		value = b.Field(zeroPoll, 1)
 	}
 
-	// Create zero value for the result type
-	resultLLType := g.prog.Type(resultType, llssa.InGo)
-	zeroResult := g.prog.Zero(resultLLType)
+	fields := []llssa.Expr{trueVal, value}
 
-	// Build the Poll struct: { ready: true, value: zeroResult }
-	// Use Alloca to construct the struct
-	pollPtr := b.AllocaT(g.pollLLType)
+	// Optional err field (async.Poll includes err any). When using the fallback
+	// anonymous struct there are only two fields, so guard the append.
+	if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
+		fields = append(fields, b.Field(zeroPoll, 2))
+	}
 
-	// Store ready = true
-	readyFieldPtr := b.FieldAddr(pollPtr, 0)
-	b.Store(readyFieldPtr, trueVal)
-
-	// Store value = zeroResult (for Void, this is empty struct)
-	valueFieldPtr := b.FieldAddr(pollPtr, 1)
-	b.Store(valueFieldPtr, zeroResult)
-
-	// Load and return the struct
-	pollVal := b.Load(pollPtr)
+	pollVal := b.AggregateExpr(g.pollLLType, fields...)
 	b.Return(pollVal)
-	_ = boolType // Suppress unused warning
 }
 
 // generateOriginalFunctionWrapper rewrites the original async function.
@@ -1356,7 +1728,13 @@ func (g *LLSSACodeGen) generateConcreteWrapperBody(wrapper llssa.Function, state
 	// Initialize cross-var fields to zero values
 	for _, v := range g.sm.CrossVars {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-		zeroVal := g.prog.Zero(g.prog.Type(v.Type(), llssa.InGo))
+		fieldType := v.Type()
+		if alloc, ok := g.isStackAllocCrossVar(v); ok {
+			if tptr, ok := alloc.Type().(*types.Pointer); ok {
+				fieldType = tptr.Elem()
+			}
+		}
+		zeroVal := g.prog.Zero(g.prog.Type(fieldType, llssa.InGo))
 		b.Store(fieldPtr, zeroVal)
 		fieldIdx++
 	}

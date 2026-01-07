@@ -51,6 +51,8 @@ type StateMachine struct {
 	Original *ssa.Function
 	// States contains all the states after splitting at suspend points
 	States []*State
+	// BlockEntries maps each SSA basic block to the index of its first state
+	BlockEntries map[*ssa.BasicBlock]int
 	// CrossVars are variables that live across suspend points
 	CrossVars []ssa.Value
 	// SubFutures are the concrete future types used by this function
@@ -63,6 +65,9 @@ type StateMachine struct {
 
 // State represents a single state in the state machine.
 type State struct {
+	// Block that this state belongs to. Blocks containing suspend points can
+	// produce multiple states (segments) that share the same Block pointer.
+	Block *ssa.BasicBlock
 	// Index is the state number (0, 1, 2, ...)
 	Index int
 	// Instructions are the SSA instructions for this state
@@ -71,6 +76,14 @@ type State struct {
 	SuspendPoint *SuspendPoint
 	// IsTerminal is true if this state returns a Ready value
 	IsTerminal bool
+}
+
+// Terminator returns the last SSA instruction in this state, if any.
+func (s *State) Terminator() ssa.Instruction {
+	if len(s.Instructions) == 0 {
+		return nil
+	}
+	return s.Instructions[len(s.Instructions)-1]
 }
 
 // IsAsyncFunc checks if a function returns Future[T] and should be transformed.
@@ -242,6 +255,11 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 		return nil
 	}
 
+	paramSet := make(map[ssa.Value]bool, len(fn.Params))
+	for _, p := range fn.Params {
+		paramSet[p] = true
+	}
+
 	// Build a map of suspend point positions for quick lookup
 	suspendPositions := make(map[*ssa.BasicBlock][]int)
 	for _, sp := range suspends {
@@ -289,9 +307,23 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 		}
 	}
 
+	// Ensure phi nodes are preserved across suspends since their values depend
+	// on the predecessor edge that led into the block. Without capturing them,
+	// loop induction variables (e.g. range indices) are lost when resuming.
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			if phi, ok := instr.(*ssa.Phi); ok {
+				crossVars[phi] = true
+			}
+		}
+	}
+
 	// Convert map to slice
 	result := make([]ssa.Value, 0, len(crossVars))
 	for v := range crossVars {
+		if paramSet[v] {
+			continue
+		}
 		result = append(result, v)
 	}
 
@@ -392,19 +424,23 @@ func Transform(fn *ssa.Function) *StateMachine {
 	}
 
 	// Split into states at suspend points
-	sm.States = splitIntoStates(fn, suspends)
+	sm.States, sm.BlockEntries = splitIntoStates(fn, suspends)
 
 	return sm
 }
 
 // splitIntoStates splits the function into states at suspend points.
-func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) []*State {
+// It also records the first state index for every SSA basic block so codegen can
+// jump across blocks (required for supporting loops/branches).
+func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) ([]*State, map[*ssa.BasicBlock]int) {
 	if len(suspends) == 0 {
 		// No suspend points, single state
-		return []*State{{
+		state := &State{
 			Index:      0,
+			Block:      fn.Blocks[0],
 			IsTerminal: true,
-		}}
+		}
+		return []*State{state}, map[*ssa.BasicBlock]int{fn.Blocks[0]: 0}
 	}
 
 	// Build suspend point lookup
@@ -414,6 +450,7 @@ func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) []*State {
 	}
 
 	var states []*State
+	blockEntries := make(map[*ssa.BasicBlock]int, len(fn.Blocks))
 	stateIndex := 0
 
 	// For now, create one state per suspend point plus final state
@@ -428,12 +465,17 @@ func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) []*State {
 			if call, ok := instr.(*ssa.Call); ok {
 				if sp, isSuspend := suspendMap[call]; isSuspend {
 					// End current state with this suspend
-					states = append(states, &State{
+					state := &State{
 						Index:        stateIndex,
+						Block:        block,
 						Instructions: currentInstrs,
 						SuspendPoint: sp,
 						IsTerminal:   false,
-					})
+					}
+					if _, exists := blockEntries[block]; !exists {
+						blockEntries[block] = len(states)
+					}
+					states = append(states, state)
 					stateIndex++
 					currentInstrs = nil
 				}
@@ -446,14 +488,19 @@ func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) []*State {
 			if len(currentInstrs) > 0 {
 				_, isTerminal = currentInstrs[len(currentInstrs)-1].(*ssa.Return)
 			}
-			states = append(states, &State{
+			state := &State{
 				Index:        stateIndex,
+				Block:        block,
 				Instructions: currentInstrs,
 				IsTerminal:   isTerminal,
-			})
+			}
+			if _, exists := blockEntries[block]; !exists {
+				blockEntries[block] = len(states)
+			}
+			states = append(states, state)
 			stateIndex++
 		}
 	}
 
-	return states
+	return states, blockEntries
 }

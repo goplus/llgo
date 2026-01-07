@@ -61,7 +61,13 @@ func (p Poll[T]) HasError() bool {
 
 // Context is passed to Poll and contains the Waker for notifications.
 type Context struct {
-	Waker Waker
+	Waker    Waker
+	hasWaker bool
+}
+
+// NewContext creates a Context with an optional waker.
+func NewContext(w Waker) *Context {
+	return &Context{Waker: w, hasWaker: w != nil}
 }
 
 // Waker is used to notify the executor that a Future is ready to be polled.
@@ -104,7 +110,7 @@ func (f *AsyncFuture[T]) Poll(ctx *Context) Poll[T] {
 		f.fn(func(v T) {
 			f.value = v
 			f.ready = true
-			if ctx.Waker != nil {
+			if ctx != nil && ctx.hasWaker {
 				ctx.Waker.Wake()
 			}
 		})

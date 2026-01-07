@@ -68,7 +68,7 @@ func (e *Executor) Run() {
 // BlockOn runs a single future to completion and returns its result.
 // This is a convenience function for running a future synchronously.
 func BlockOn[T any](f async.Future[T]) T {
-	ctx := &async.Context{Waker: &noopWaker{}}
+	ctx := async.NewContext(&noopWaker{})
 	for {
 		poll := f.Poll(ctx)
 		if poll.IsReady() {

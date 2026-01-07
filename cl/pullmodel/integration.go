@@ -55,7 +55,11 @@ func ShouldTransform(fn *ssa.Function) bool {
 
 	// Must have at least one Await call
 	suspends := FindSuspendPoints(fn)
-	return len(suspends) > 0
+	if len(suspends) == 0 {
+		return false
+	}
+
+	return true
 }
 
 // TransformFunction transforms an async function into a state machine.
