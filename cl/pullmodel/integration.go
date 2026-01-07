@@ -36,15 +36,26 @@ type IntegrationContext struct {
 }
 
 // ShouldTransform checks if a function should be transformed to pull model.
-// This is called from the compiler's processPkg function.
+// A function needs transformation if:
+// 1. It returns Future[T]
+// 2. It contains .Await() calls (suspend points)
+//
+// Functions that return Future[T] but have no Await calls (e.g., return async.Return(...))
+// are handled by normal compilation - no state machine needed.
 func ShouldTransform(fn *ssa.Function) bool {
 	// Skip generic functions
 	if fn.TypeParams() != nil || fn.TypeArgs() != nil {
 		return false
 	}
 
-	// Check if it's an async function
-	return IsAsyncFunc(fn)
+	// Must return Future[T]
+	if !IsAsyncFunc(fn) {
+		return false
+	}
+
+	// Must have at least one Await call
+	suspends := FindSuspendPoints(fn)
+	return len(suspends) > 0
 }
 
 // TransformFunction transforms an async function into a state machine.

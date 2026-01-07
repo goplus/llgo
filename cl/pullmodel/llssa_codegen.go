@@ -46,6 +46,8 @@ type LLSSACodeGen struct {
 	registerValue  RegisterValueFunc // callback to register value mappings
 	pollStructType types.Type        // cached Poll[T] struct type for consistency
 	pollLLType     llssa.Type        // cached LLVM type for Poll[T]
+	stateNamed     *types.Named      // Named type FnName$State for proper itab
+	pollMethod     *types.Func       // Poll method added to stateNamed
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -100,8 +102,19 @@ func (g *LLSSACodeGen) Generate() error {
 }
 
 // generateStateType generates the state machine struct type.
+// Uses Named type (FnName$State) for proper itab generation.
 func (g *LLSSACodeGen) generateStateType() (llssa.Type, error) {
-	// Build field types
+	// Ensure the Named type is created first
+	g.buildStateGoType()
+
+	// Use Named type if available (for proper itab)
+	if g.stateNamed != nil {
+		stateType := g.prog.Type(g.stateNamed, llssa.InGo)
+		log.Printf("[Pull Model] Generated state struct with %d fields", g.stateNamed.Underlying().(*types.Struct).NumFields())
+		return stateType, nil
+	}
+
+	// Fallback: Build anonymous struct type (legacy path)
 	var fieldTypes []llssa.Type
 
 	// Field 0: state (int8)
@@ -207,6 +220,7 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 }
 
 // buildStateGoType builds the Go types.Struct for the state machine.
+// Also creates a Named type FnName$State for proper itab generation.
 func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	var fields []*types.Var
 	var tags []string
@@ -229,23 +243,83 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 		tags = append(tags, "")
 	}
 
-	// Fields for sub-futures with value embedding (design doc 5.2)
-	// Uses two-phase state encoding: state transitions implicitly track initialization
-	// - State N*2:   need to initialize sub-future N
-	// - State N*2+1: sub-future N initialized, polling
+	// Fields for sub-futures - store as pointers for proper closure semantics
+	// The callback inside AsyncFuture captures 'f' by pointer, so we must keep
+	// the original pointer, not copy the struct value.
 	for i, futType := range g.sm.SubFutures {
-		// Add value-embedded sub-future (no init_flag needed)
 		name := fmt.Sprintf("sub%d", i)
-		// If futType is a pointer (*AsyncFuture[T]), use the underlying type (AsyncFuture[T])
-		embedType := futType
-		if ptr, ok := futType.(*types.Pointer); ok {
-			embedType = ptr.Elem()
-		}
-		fields = append(fields, types.NewField(0, nil, name, embedType, false))
+		// Keep the pointer type - do NOT dereference
+		// futType is already *AsyncFuture[T], store it as-is
+		fields = append(fields, types.NewField(0, nil, name, futType, false))
 		tags = append(tags, "")
 	}
 
-	return types.NewStruct(fields, tags)
+	structType := types.NewStruct(fields, tags)
+
+	// Create Named type FnName$State if not already created
+	// This enables proper itab generation when converting to interface
+	if g.stateNamed == nil {
+		fn := g.sm.Original
+		typeName := fn.Name() + "$State"
+
+		// Get the Go package for the type
+		// Use ssaPkg which has the full package info including scope
+		var pkg *types.Package
+		if g.ssaPkg != nil && g.ssaPkg.Pkg != nil {
+			pkg = g.ssaPkg.Pkg
+		} else if fn.Pkg != nil && fn.Pkg.Pkg != nil {
+			pkg = fn.Pkg.Pkg
+		}
+
+		// Create a type object in the same package as the original function
+		typeObj := types.NewTypeName(0, pkg, typeName, nil)
+		g.stateNamed = types.NewNamed(typeObj, structType, nil)
+
+		// Insert the type into the package scope so abiType can find it
+		if pkg != nil && pkg.Scope() != nil {
+			pkg.Scope().Insert(typeObj)
+		}
+
+		// CRITICAL: Add Poll method to the Named type BEFORE any abiType calls
+		// This ensures types.NewMethodSet can find the Poll method when generating itab
+		g.addPollMethodToNamedType(pkg, fn)
+	}
+
+	return structType
+}
+
+// addPollMethodToNamedType adds the Poll method signature to the Named type.
+// This must be called before any abiType() to ensure the method is visible.
+func (g *LLSSACodeGen) addPollMethodToNamedType(pkg *types.Package, fn *ssa.Function) {
+	if g.stateNamed == nil {
+		return
+	}
+
+	// Create receiver: s *FnName$State
+	recvVar := types.NewVar(0, pkg, "s", types.NewPointer(g.stateNamed))
+
+	// Get result type T from Future[T]
+	resultType := g.sm.ResultType
+	if resultType == nil {
+		resultType = types.NewStruct(nil, nil)
+	}
+
+	// Create Poll[T] return type
+	pollStructType := g.createPollType(resultType)
+	pollResults := types.NewTuple(types.NewVar(0, nil, "", pollStructType))
+
+	// Create ctx *async.Context parameter - use actual async.Context type for proper itab matching
+	ctxType := g.getAsyncContextType()
+	ctxParam := types.NewVar(0, nil, "ctx", ctxType)
+	params := types.NewTuple(ctxParam)
+
+	// Create Poll method signature
+	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
+
+	// Create method and add to Named type
+	pollFunc := types.NewFunc(0, pkg, "Poll", pollSig)
+	g.stateNamed.AddMethod(pollFunc)
+	g.pollMethod = pollFunc
 }
 
 // generatePollMethod generates the Poll method for the state machine.
@@ -253,9 +327,18 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	fn := g.sm.Original
 
-	// Build method signature: func (s *StateStruct) Poll(ctx *Context) Poll[T]
-	stateGoType := g.buildStateGoType()
-	statePtrType := types.NewPointer(stateGoType)
+	// Build method signature: func (s *FnName$State) Poll(ctx *Context) Poll[T]
+	// First ensure the Named type is created
+	g.buildStateGoType()
+
+	// Use Named type for receiver (enables proper itab generation)
+	var statePtrType types.Type
+	if g.stateNamed != nil {
+		statePtrType = types.NewPointer(g.stateNamed)
+	} else {
+		// Fallback to struct type (won't have proper itab)
+		statePtrType = types.NewPointer(g.buildStateGoType())
+	}
 	recvVar := types.NewVar(0, nil, "s", statePtrType)
 
 	// Get the result type T from Future[T]
@@ -281,9 +364,13 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	// Create Poll method signature: func (s *State) Poll(ctx *Context) Poll[T]
 	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
 
-	// Create the Poll method with full package path (matches wrapper naming convention)
-	pollName := llssa.FuncName(fn.Pkg.Pkg, fn.Name()+"$Poll", nil, false)
+	// Create the Poll method with proper method naming: pkg.(*FnName$State).Poll
+	// Pass recvVar to FuncName to generate correct method name that matches itab reference
+	pollName := llssa.FuncName(fn.Pkg.Pkg, "Poll", recvVar, false)
 	poll := g.pkg.NewFunc(pollName, pollSig, llssa.InGo)
+
+	// Note: Poll method was already added to Named type in addPollMethodToNamedType()
+	// This ensures the method exists before any abiType() calls
 
 	// Create basic blocks:
 	// - Block 0: entry (switch dispatcher)
@@ -380,10 +467,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 	if state.IsTerminal {
 		// Terminal state: return Ready(result) = Poll[T]{ready: true, value: result}
-		// For now, return a zero Poll[T] (ready=false, value=zero) using cached type
-		// Full implementation would compute actual result value
-		zeroResult := g.prog.Nil(g.pollLLType)
-		b.Return(zeroResult)
+		// For Future[Void], value is empty struct so we just need ready=true
+		g.returnReadyPoll(b)
 		return
 	}
 
@@ -396,16 +481,11 @@ func (g *LLSSACodeGen) generateStateBlock(
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
 		// subFutFieldPtr is the address of the embedded value
 
-		// Check if sub-future needs initialization by examining its first field
-		// AsyncFuture[T] has resolver as first field which is nil when zero-initialized
-		// This eliminates the need for separate init flags
-		resolverFieldPtr := b.FieldAddr(subFutFieldPtr, 0) // resolver is field 0
-		resolverPtrPtr := b.FieldAddr(resolverFieldPtr, 0) // resolver.ptr is field 0 of resolver
-		resolverPtr := b.Load(resolverPtrPtr)
-
-		// Check if resolver.ptr is nil (zero-initialized = needs init)
+		// Sub-future field is now a pointer (*AsyncFuture[T])
+		// Check if it's nil (needs initialization)
+		subFutPtr := b.Load(subFutFieldPtr) // Load the pointer value
 		nilPtr := g.prog.Nil(g.prog.VoidPtr())
-		needsInit := b.BinOp(token.EQL, resolverPtr, nilPtr)
+		needsInit := b.BinOp(token.EQL, subFutPtr, nilPtr)
 
 		// Create blocks for init/poll branching
 		initBlocks := poll.MakeBlocks(2)
@@ -414,20 +494,73 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		b.If(needsInit, initBlock, pollBlock)
 
-		// Init path: initialize sub-future
+		// Init path: initialize sub-future pointer
 		b.SetBlock(initBlock)
 		if g.compileValue != nil {
+			// Re-register params and crossVars for this block so compileValue can find them.
+			// This is needed because registerValue was called in the state block, but we're
+			// now in initBlock. The loaded values from state struct are still valid (SSA
+			// values dominate all uses), but we need to reload and re-register them here
+			// to ensure compileValue uses the correct values when compiling closures.
+			if g.registerValue != nil {
+				fn := g.sm.Original
+				fieldIdx := 1 // Start after state field
+				paramValues := make(map[*ssa.Parameter]llssa.Expr)
+				for _, param := range fn.Params {
+					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+					loadedVal := b.Load(fieldPtr)
+					g.registerValue(param, loadedVal)
+					paramValues[param] = loadedVal
+					fieldIdx++
+				}
+				for _, v := range g.sm.CrossVars {
+					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+					loadedVal := b.Load(fieldPtr)
+					g.registerValue(v, loadedVal)
+					fieldIdx++
+				}
+
+				// Pre-compile Alloc+Store pairs for heap-escaped parameters.
+				// In SSA, when a parameter is captured by a closure, it becomes:
+				//   t0 = new int (x)    // Alloc
+				//   *t0 = x             // Store
+				//   make closure [t0]   // MakeClosure binds t0, not x
+				// When compileValue is called, it only pulls values (not instructions),
+				// so the Store is never executed, leaving t0 uninitialized.
+				// We find these Alloc+Store patterns and pre-compile them here.
+				if len(fn.Blocks) > 0 {
+					for _, instr := range fn.Blocks[0].Instrs {
+						if store, ok := instr.(*ssa.Store); ok {
+							if alloc, ok := store.Addr.(*ssa.Alloc); ok {
+								if param, ok := store.Val.(*ssa.Parameter); ok {
+									if paramVal, found := paramValues[param]; found {
+										// Compile Alloc: allocate space
+										tptr := alloc.Type().(*types.Pointer)
+										elem := g.prog.Type(tptr.Elem(), llssa.InGo)
+										allocPtr := b.Alloc(elem, alloc.Heap)
+										// Execute Store: store param value into allocated space
+										b.Store(allocPtr, paramVal)
+										// Register the Alloc so compileValue can find it
+										g.registerValue(alloc, allocPtr)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 			// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
 			newSubFutPtr := g.compileValue(b, sp.SubFuture)
-			// Dereference pointer to get value, then store to embedded field
-			newSubFutVal := b.Load(newSubFutPtr)
-			b.Store(subFutFieldPtr, newSubFutVal)
+			// Store the pointer directly (no dereferencing)
+			b.Store(subFutFieldPtr, newSubFutPtr)
 		}
 		b.Jump(pollBlock)
 
-		// Poll path: sub-future is already initialized
+		// Poll path: sub-future is initialized
 		b.SetBlock(pollBlock)
-		// subFutFieldPtr IS the receiver (pointer to embedded value)
+		// Load the stored sub-future pointer for use as receiver
+		subFutPtrVal := b.Load(subFutFieldPtr)
 
 		// Get result type from suspend point
 		resultType := sp.Result.Type()
@@ -444,9 +577,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		var pollResult llssa.Expr
 		if isInterface {
-			// Interface: use Imethod - need to load the interface value first
-			subFutIface := b.Load(subFutFieldPtr)
-			pollClosure := b.Imethod(subFutIface, pollMethod)
+			// Interface: use Imethod - subFutPtrVal contains the interface value
+			pollClosure := b.Imethod(subFutPtrVal, pollMethod)
 			pollResult = b.Call(pollClosure, ctx)
 		} else {
 			// Concrete type: lookup method using method set
@@ -479,17 +611,20 @@ func (g *LLSSACodeGen) generateStateBlock(
 			// Get method function object
 			pollMethodObj := pollSel.Obj().(*types.Func)
 
-			// Build full method name: package.(*Type).Method
+			// Build full method name using FuncName with receiver
+			// This generates: pkg.(*Type).Poll matching llgo's method naming conventions
 			methodPkg := pollMethodObj.Pkg()
-			methodName := llssa.FullName(methodPkg, "("+goSubFutType.String()+").Poll")
+			methodSig := pollMethodObj.Type().(*types.Signature)
+
+			// Use FuncName with receiver to generate correct method name
+			methodName := llssa.FuncName(methodPkg, "Poll", methodSig.Recv(), false)
 
 			// Create function reference
-			methodSig := pollMethodObj.Type().(*types.Signature)
 			methodFunc := g.pkg.NewFunc(methodName, methodSig, llssa.InGo)
 
-			// Call the method: methodFunc(subFutFieldPtr, ctx)
-			// subFutFieldPtr is the pointer to embedded value, acting as receiver
-			pollResult = b.Call(methodFunc.Expr, subFutFieldPtr, ctx)
+			// Call the method: methodFunc(subFutPtrVal, ctx)
+			// subFutPtrVal is the loaded pointer value, acting as receiver
+			pollResult = b.Call(methodFunc.Expr, subFutPtrVal, ctx)
 		}
 
 		// Poll[T] is struct { ready bool; value T }
@@ -637,8 +772,30 @@ func GenerateStateMachineWithCallback(
 
 // getAsyncContextType returns the *async.Context type.
 func (g *LLSSACodeGen) getAsyncContextType() *types.Pointer {
-	// TODO: Import async package and get Context type
-	// For now, return a placeholder
+	// Find the async package in imports
+	fn := g.sm.Original
+	pkg := fn.Pkg
+
+	// Look for async package in imports
+	for _, imp := range pkg.Pkg.Imports() {
+		if imp.Path() == FuturePkgPath {
+			// Found async package, look for Context type
+			ctxObj := imp.Scope().Lookup("Context")
+			if ctxObj == nil {
+				break
+			}
+
+			// Get the named type and return pointer to it
+			ctxNamed, ok := ctxObj.Type().(*types.Named)
+			if !ok {
+				break
+			}
+
+			return types.NewPointer(ctxNamed)
+		}
+	}
+
+	// Fallback: return placeholder (should not happen for proper async functions)
 	return types.NewPointer(types.NewStruct(nil, nil))
 }
 
@@ -692,6 +849,43 @@ func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
 	return g.prog.Nil(g.pollLLType)
 }
 
+// returnReadyPoll generates code to return Ready(value) = Poll[T]{ready: true, value: ...}.
+// For Future[Void], the value is an empty struct.
+func (g *LLSSACodeGen) returnReadyPoll(b llssa.Builder) {
+	// Poll[T] is a struct { ready bool, value T }
+	// We need to create { true, zeroValue(T) }
+	boolType := g.prog.Type(types.Typ[types.Bool], llssa.InGo)
+	trueVal := g.prog.BoolVal(true)
+
+	// Get the result type (T from Poll[T])
+	resultType := g.sm.ResultType
+	if resultType == nil {
+		// Void type - use empty struct
+		resultType = types.NewStruct(nil, nil)
+	}
+
+	// Create zero value for the result type
+	resultLLType := g.prog.Type(resultType, llssa.InGo)
+	zeroResult := g.prog.Zero(resultLLType)
+
+	// Build the Poll struct: { ready: true, value: zeroResult }
+	// Use Alloca to construct the struct
+	pollPtr := b.AllocaT(g.pollLLType)
+
+	// Store ready = true
+	readyFieldPtr := b.FieldAddr(pollPtr, 0)
+	b.Store(readyFieldPtr, trueVal)
+
+	// Store value = zeroResult (for Void, this is empty struct)
+	valueFieldPtr := b.FieldAddr(pollPtr, 1)
+	b.Store(valueFieldPtr, zeroResult)
+
+	// Load and return the struct
+	pollVal := b.Load(pollPtr)
+	b.Return(pollVal)
+	_ = boolType // Suppress unused warning
+}
+
 // generateOriginalFunctionWrapper rewrites the original async function.
 // The original function body is replaced to:
 // 1. Allocate and initialize the state struct
@@ -700,30 +894,42 @@ func (g *LLSSACodeGen) createZeroPoll() llssa.Expr {
 // This allows callers to use the original function name while actually
 // getting a state machine that implements the Future interface.
 //
-// Generates TWO functions:
-// 1. MyAsync$Concrete - returns *State directly (for .Await() optimization)
-// 2. MyAsync - returns Future[T] interface (for compatibility)
+// Generates ONE function:
+// FnName$Concrete - returns *State directly
+//
+// The interface wrapper is NOT generated here. Instead, llgo's normal
+// compilation handles interface conversion at call sites where the
+// return value is assigned to a Future[T] variable.
 func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) error {
 	fn := g.sm.Original
 
-	// Build concrete return type: *StateStruct (not interface)
-	// Future[T] in source is a compile-time placeholder, replaced with concrete type
-	stateGoType := g.buildStateGoType()
-	statePtrType := types.NewPointer(stateGoType)
+	// Ensure Named type is created
+	g.buildStateGoType()
+
+	// Build concrete return type: *FnName$State (Named type, not anonymous struct)
+	// This enables proper itab generation when converting to interface
+	var statePtrType types.Type
+	if g.stateNamed != nil {
+		statePtrType = types.NewPointer(g.stateNamed)
+	} else {
+		// Fallback
+		statePtrType = types.NewPointer(g.buildStateGoType())
+	}
 	origSig := fn.Signature
 
 	// Create new signature with concrete state pointer return type
 	newResults := types.NewTuple(types.NewVar(0, nil, "", statePtrType))
 	concreteSig := types.NewSignatureType(nil, nil, nil, origSig.Params(), newResults, origSig.Variadic())
 
-	// 1. Generate $Concrete version (returns *State)
+	// Generate $Concrete version (returns *State)
+	// This is used for .Await() optimization where we want concrete type
 	concreteName := llssa.FuncName(fn.Pkg.Pkg, fn.Name()+"$Concrete", nil, false)
 	concreteWrapper := g.pkg.NewFunc(concreteName, concreteSig, llssa.InGo)
 	g.generateConcreteWrapperBody(concreteWrapper, stateType, fn)
 	log.Printf("[Pull Model] Generated $Concrete wrapper for %s", fn.Name())
 
-	// 2. Generate original name version (returns Future[T] interface)
-	// Keep original signature so it matches what callers expect
+	// Generate original name version that returns Future[T] interface
+	// This matches the source code signature and uses MakeInterface for conversion
 	fullName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
 	ifaceWrapper := g.pkg.NewFunc(fullName, origSig, llssa.InGo)
 	g.generateInterfaceWrapperBody(ifaceWrapper, concreteWrapper, fn)
@@ -778,7 +984,8 @@ func (g *LLSSACodeGen) generateConcreteWrapperBody(wrapper llssa.Function, state
 }
 
 // generateInterfaceWrapperBody generates the body for original-named function
-// that calls $Concrete and converts to interface
+// that calls $Concrete and converts to interface using MakeInterface.
+// The Named type (FnName$State) with registered Poll method enables proper itab.
 func (g *LLSSACodeGen) generateInterfaceWrapperBody(wrapper llssa.Function, concreteWrapper llssa.Function, fn *ssa.Function) {
 	// Create entry block
 	b := wrapper.MakeBody(1)
@@ -794,7 +1001,7 @@ func (g *LLSSACodeGen) generateInterfaceWrapperBody(wrapper llssa.Function, conc
 	concreteResult := b.Call(concreteWrapper.Expr, args...)
 
 	// Convert *State to interface Future[T]
-	// The *State type implements Future[T], so this is an implicit interface conversion
+	// The Named type (FnName$State) with AddMethod(Poll) enables proper itab generation
 	origRetType := fn.Signature.Results().At(0).Type()
 	ifaceType := g.prog.Type(origRetType, llssa.InGo)
 	ifaceVal := b.MakeInterface(ifaceType, concreteResult)
