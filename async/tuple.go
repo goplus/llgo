@@ -33,12 +33,23 @@ type Tuple2[T1, T2 any] struct {
 	V2 T2
 }
 
+// Get returns the two values for convenient destructuring.
+// Example: a, b := tuple.Get()
+func (t Tuple2[T1, T2]) Get() (T1, T2) {
+	return t.V1, t.V2
+}
+
 // Tuple3 represents a triple of values.
 // Use for async functions that need to return 3 values.
 type Tuple3[T1, T2, T3 any] struct {
 	V1 T1
 	V2 T2
 	V3 T3
+}
+
+// Get returns the three values for convenient destructuring.
+func (t Tuple3[T1, T2, T3]) Get() (T1, T2, T3) {
+	return t.V1, t.V2, t.V3
 }
 
 // Tuple4 represents a quadruple of values.
@@ -48,6 +59,11 @@ type Tuple4[T1, T2, T3, T4 any] struct {
 	V2 T2
 	V3 T3
 	V4 T4
+}
+
+// Get returns the four values for convenient destructuring.
+func (t Tuple4[T1, T2, T3, T4]) Get() (T1, T2, T3, T4) {
+	return t.V1, t.V2, t.V3, t.V4
 }
 
 // -----------------------------------------------------------------------------
