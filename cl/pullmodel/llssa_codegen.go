@@ -41,18 +41,18 @@ type RegisterValueFunc func(v ssa.Value, expr llssa.Expr)
 
 // LLSSACodeGen generates LLVM IR code for state machines using llssa API.
 type LLSSACodeGen struct {
-	prog           llssa.Program
-	pkg            llssa.Package
-	ssaPkg         *ssa.Package
-	sm             *StateMachine
-	compileValue   CompileValueFunc  // callback to compile SSA values
-	compileInstr   CompileInstrFunc  // callback to compile SSA instructions
-	registerValue  RegisterValueFunc // callback to register value mappings
-	pollStructType types.Type        // cached Poll[T] struct type for consistency
-	pollLLType     llssa.Type        // cached LLVM type for Poll[T]
-	stateNamed     *types.Named      // Named type FnName$State for proper itab
-	pollMethod     *types.Func       // Poll method added to stateNamed
-	completedStateIndex int          // sentinel index meaning state machine finished
+	prog                llssa.Program
+	pkg                 llssa.Package
+	ssaPkg              *ssa.Package
+	sm                  *StateMachine
+	compileValue        CompileValueFunc  // callback to compile SSA values
+	compileInstr        CompileInstrFunc  // callback to compile SSA instructions
+	registerValue       RegisterValueFunc // callback to register value mappings
+	pollStructType      types.Type        // cached Poll[T] struct type for consistency
+	pollLLType          llssa.Type        // cached LLVM type for Poll[T]
+	stateNamed          *types.Named      // Named type FnName$State for proper itab
+	pollMethod          *types.Func       // Poll method added to stateNamed
+	completedStateIndex int               // sentinel index meaning state machine finished
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -262,6 +262,26 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 		// Keep the pointer type - do NOT dereference
 		// futType is already *AsyncFuture[T], store it as-is
 		fields = append(fields, types.NewField(0, nil, name, futType, false))
+		tags = append(tags, "")
+	}
+
+	// Defer-related fields (only if function uses defer)
+	if g.sm.HasDefer {
+		// deferHead: pointer to defer list head (*runtime.DeferNode)
+		// For now use unsafe.Pointer as placeholder until runtime type defined
+		fields = append(fields, types.NewField(0, nil, "deferHead", types.Typ[types.UnsafePointer], false))
+		tags = append(tags, "")
+
+		// panicValue: any type to hold panic value
+		fields = append(fields, types.NewField(0, nil, "panicValue", types.NewInterfaceType(nil, nil), false))
+		tags = append(tags, "")
+
+		// isPanicking: bool flag
+		fields = append(fields, types.NewField(0, nil, "isPanicking", types.Typ[types.Bool], false))
+		tags = append(tags, "")
+
+		// recovered: bool flag
+		fields = append(fields, types.NewField(0, nil, "recovered", types.Typ[types.Bool], false))
 		tags = append(tags, "")
 	}
 
@@ -852,7 +872,7 @@ func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
 // getCrossVarFieldIndex returns the field index for a cross-suspend variable.
 // Returns -1 if the variable is not a cross-var.
 func (g *LLSSACodeGen) getCrossVarFieldIndex(v ssa.Value) int {
-	// Fields are: state(0), params..., crossVars..., subFutures...
+	// Fields are: state(0), params..., crossVars..., subFutures..., [defer fields if HasDefer]
 	baseIdx := 1 + len(g.sm.Original.Params)
 
 	for i, crossVar := range g.sm.CrossVars {
@@ -861,6 +881,59 @@ func (g *LLSSACodeGen) getCrossVarFieldIndex(v ssa.Value) int {
 		}
 	}
 	return -1 // Not found
+}
+
+// getDeferFieldBaseIndex returns the base index for defer-related fields.
+// Returns -1 if function has no defer.
+func (g *LLSSACodeGen) getDeferFieldBaseIndex() int {
+	if !g.sm.HasDefer {
+		return -1
+	}
+	// Fields are: state(0), params..., crossVars..., subFutures..., defer fields...
+	// Count sub-futures: one field per state with a suspend point
+	subFutCount := 0
+	for _, state := range g.sm.States {
+		if state.SuspendPoint != nil {
+			subFutCount++
+		}
+	}
+	return 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars) + subFutCount
+}
+
+// getDeferHeadFieldIndex returns the field index for deferHead.
+func (g *LLSSACodeGen) getDeferHeadFieldIndex() int {
+	base := g.getDeferFieldBaseIndex()
+	if base < 0 {
+		return -1
+	}
+	return base + 0
+}
+
+// getPanicValueFieldIndex returns the field index for panicValue.
+func (g *LLSSACodeGen) getPanicValueFieldIndex() int {
+	base := g.getDeferFieldBaseIndex()
+	if base < 0 {
+		return -1
+	}
+	return base + 1
+}
+
+// getIsPanickingFieldIndex returns the field index for isPanicking.
+func (g *LLSSACodeGen) getIsPanickingFieldIndex() int {
+	base := g.getDeferFieldBaseIndex()
+	if base < 0 {
+		return -1
+	}
+	return base + 2
+}
+
+// getRecoveredFieldIndex returns the field index for recovered.
+func (g *LLSSACodeGen) getRecoveredFieldIndex() int {
+	base := g.getDeferFieldBaseIndex()
+	if base < 0 {
+		return -1
+	}
+	return base + 3
 }
 
 // GenerateStateMachine is the main entry point called from compile.go.

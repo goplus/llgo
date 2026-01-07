@@ -57,6 +57,8 @@ type StateMachine struct {
 	SubFutures []types.Type
 	// ResultType is the type parameter T of Future[T]
 	ResultType types.Type
+	// HasDefer is true if the function contains defer statements
+	HasDefer bool
 }
 
 // State represents a single state in the state machine.
@@ -362,11 +364,22 @@ func Transform(fn *ssa.Function) *StateMachine {
 	// Get result type from Future[T]
 	resultType := GetFutureResultType(fn.Signature.Results().At(0).Type())
 
-	// Collect sub-future types
+	// Collect sub-future types and detect defer statements
 	var subFutures []types.Type
+	hasDefer := false
 	for _, sp := range suspends {
 		if sp.SubFuture != nil {
 			subFutures = append(subFutures, sp.SubFuture.Type())
+		}
+	}
+
+	// Scan all blocks for defer/panic/recover instructions
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			switch instr.(type) {
+			case *ssa.Defer:
+				hasDefer = true
+			}
 		}
 	}
 
@@ -375,6 +388,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 		CrossVars:  crossVars,
 		SubFutures: subFutures,
 		ResultType: resultType,
+		HasDefer:   hasDefer,
 	}
 
 	// Split into states at suspend points
