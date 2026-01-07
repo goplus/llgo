@@ -56,3 +56,43 @@ func StructFieldAccess(pt Point) async.Future[int] {
 	py := StepInt(pt.Y).Await()
 	return async.Return(px + py)
 }
+
+// === Tuple Return Type Tests ===
+
+// Divmod returns quotient and remainder as Tuple2
+func Divmod(a, b int) async.Future[async.Tuple2[int, int]] {
+	qa := StepInt(a / b).Await()
+	ra := StepInt(a % b).Await()
+	return async.Return(async.MakeTuple2(qa, ra))
+}
+
+// GetMinMax returns min and max of two values
+func GetMinMax(a, b int) async.Future[async.Tuple2[int, int]] {
+	va := StepInt(a).Await()
+	vb := StepInt(b).Await()
+	if va < vb {
+		return async.Return(async.Tuple2[int, int]{va, vb})
+	}
+	return async.Return(async.Tuple2[int, int]{vb, va})
+}
+
+// === Result Return Type Tests ===
+
+// SafeDivide returns Result with error if division by zero
+func SafeDivide(a, b int) async.Future[async.Result[int]] {
+	if b == 0 {
+		return async.Return(async.Err[int](nil)) // would use errors.New in real code
+	}
+	val := StepInt(a / b).Await()
+	return async.Return(async.Ok(val))
+}
+
+// LookupAndDouble looks up a value and doubles it, returns Result
+func LookupAndDouble(m map[string]int, key string) async.Future[async.Result[int]] {
+	v, ok := m[key]
+	if !ok {
+		return async.Return(async.Err[int](nil))
+	}
+	doubled := StepInt(v * 2).Await()
+	return async.Return(async.Ok(doubled))
+}
