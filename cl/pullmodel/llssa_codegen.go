@@ -848,9 +848,89 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 			}
 		}
 
+		// Handle defer specially for pull model - use persistent defer list
+		// instead of setjmp-based implementation
+		if deferInstr, isDefer := instr.(*ssa.Defer); isDefer {
+			g.compileDeferForPullModel(b, statePtr, deferInstr)
+			continue
+		}
+
+		// Handle panic specially - set isPanicking flag and start defer unwinding
+		if panicInstr, isPanic := instr.(*ssa.Panic); isPanic {
+			g.compilePanicForPullModel(b, statePtr, panicInstr)
+			continue
+		}
+
+		// Handle RunDefers - execute stored defer list
+		if _, isRunDefers := instr.(*ssa.RunDefers); isRunDefers {
+			g.compileRunDefersForPullModel(b, statePtr)
+			continue
+		}
+
 		// Compile all other instructions (like fmt.Printf, BinOp, etc.)
 		g.compileInstr(b, instr)
 	}
+}
+
+// compileDeferForPullModel handles defer instructions in pull model.
+// Instead of using setjmp-based defer, we push to a persistent defer list in state struct.
+func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.Expr, deferInstr *ssa.Defer) {
+	if !g.sm.HasDefer {
+		return
+	}
+
+	// TODO: Implement defer list push
+	// For now, log a warning that defer is not fully implemented
+	log.Printf("[Pull Model] WARNING: defer in async function '%s' - full implementation pending", g.sm.Original.Name())
+
+	// Get defer head field pointer
+	deferHeadIdx := g.getDeferHeadFieldIndex()
+	if deferHeadIdx < 0 {
+		return
+	}
+
+	// For now, compile the defer using standard mechanism as fallback
+	// This may not work correctly across await points, but allows basic cases to work
+	if g.compileInstr != nil {
+		g.compileInstr(b, deferInstr)
+	}
+}
+
+// compilePanicForPullModel handles panic instructions in pull model.
+// Sets isPanicking flag and stores panic value in state struct.
+func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.Expr, panicInstr *ssa.Panic) {
+	if !g.sm.HasDefer {
+		// No defer, just compile normally
+		if g.compileInstr != nil {
+			g.compileInstr(b, panicInstr)
+		}
+		return
+	}
+
+	// TODO: Implement panic handling with persistent defer list
+	// For now, log a warning
+	log.Printf("[Pull Model] WARNING: panic in async function '%s' - full implementation pending", g.sm.Original.Name())
+
+	// Fallback to standard panic
+	if g.compileInstr != nil {
+		g.compileInstr(b, panicInstr)
+	}
+}
+
+// compileRunDefersForPullModel handles RunDefers instructions in pull model.
+// Executes the persistent defer list stored in state struct.
+func (g *LLSSACodeGen) compileRunDefersForPullModel(b llssa.Builder, statePtr llssa.Expr) {
+	if !g.sm.HasDefer {
+		return
+	}
+
+	// TODO: Implement defer list execution
+	// For now, log a warning
+	log.Printf("[Pull Model] WARNING: RunDefers in async function '%s' - full implementation pending", g.sm.Original.Name())
+
+	// For now, call standard RunDefers as fallback
+	// This works with the standard setjmp-based defer mechanism
+	b.RunDefers()
 }
 
 // getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
