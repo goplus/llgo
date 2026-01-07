@@ -1,7 +1,8 @@
 # LLGo 拉模型异步机制提案
 
-**日期**: 2026-01-06
-**状态**: 研究提案
+**日期**: 2026-01-07
+**状态**: 实现中（核心功能完成，defer 处理进行中）
+**分支**: pull-model
 **作者**: LLGo Team
 
 ---
@@ -17,10 +18,11 @@
 7. [恢复机制](#7-恢复机制)
 8. [执行器设计](#8-执行器设计)
 9. [Defer 与 Panic 处理](#9-defer-与-panic-处理)
-10. [复杂场景处理](#10-复杂场景处理)
-11. [嵌入式环境](#11-嵌入式环境)
-12. [与推模型对比](#12-与推模型对比)
-13. [实现路径](#13-实现路径)
+10. [同步/异步 Defer 互操作](#10-同步异步-defer-互操作)
+11. [复杂场景处理](#11-复杂场景处理)
+12. [嵌入式环境](#12-嵌入式环境)
+13. [与推模型对比](#13-与推模型对比)
+14. [实现路径与当前进度](#14-实现路径与当前进度)
 
 ---
 
@@ -541,9 +543,147 @@ func (s *State) Poll(ctx *Context) (result Poll[int]) {
 
 ---
 
-## 10. 复杂场景处理
+## 10. 同步/异步 Defer 互操作
 
-### 10.1 条件分支
+### 12.1 双机制设计原则
+
+由于异步函数在 await 点会暂停执行，传统的 setjmp/longjmp 无法跨越 await 点工作。因此采用双机制设计：
+
+| 函数类型 | defer 机制 | 原因 |
+|---------|-----------|------|
+| 同步函数 | setjmp/longjmp | 栈帧连续，传统机制高效 |
+| 异步函数 | 持久化 defer 链表 | 状态跨 await 存活 |
+
+### 12.2 异步函数的 Defer 实现
+
+异步函数的状态结构扩展包含 defer 相关字段：
+
+```go
+type AsyncFn$State struct {
+    stateIdx    int8
+    // ... 参数、跨变量、子future
+
+    // Defer 持久化字段
+    deferHead   *DeferNode   // defer 链表头
+    panicValue  any          // 保存的 panic 值
+    isPanicking bool         // 是否处于 panic 状态
+    recovered   bool         // 是否已 recover
+}
+
+type DeferNode struct {
+    prev    *DeferNode
+    fn      func()
+}
+```
+
+### 12.3 场景 1：同步函数调用异步函数
+
+```go
+func SyncMain() {                    // 同步函数 - setjmp defer
+    defer syncCleanup()
+
+    exec := sync.NewExecutor()
+    future := AsyncWork()            // 创建 Future
+    result := exec.BlockOn(future)   // 同步等待
+}
+
+func AsyncWork() Future[int] {       // 异步函数 - 持久化 defer
+    defer asyncCleanup()
+    return async.Return(42)
+}
+```
+
+**Panic 传播**：异步函数的 panic 通过 `Poll.Error` 返回，`BlockOn` 检测后转为同步 panic：
+
+```go
+func (e *Executor) BlockOn(f Future[T]) T {
+    for {
+        poll := f.Poll(ctx)
+        if poll.Error != nil {
+            runtime.Panic(poll.Error)  // 转为同步 panic
+        }
+        if poll.Ready { return poll.Value }
+        // ...
+    }
+}
+```
+
+### 11.4 场景 2：异步函数调用同步函数
+
+```go
+func AsyncWork() Future[int] {       // 异步函数 - 持久化 defer
+    defer asyncCleanup()
+    result := syncHelper()           // 调用同步函数
+    return async.Return(result)
+}
+
+func syncHelper() int {              // 同步函数 - setjmp defer
+    defer syncCleanup()
+    panic("sync panic")              // 同步 panic
+}
+```
+
+**关键问题**：同步 panic 使用 longjmp，会跳过异步函数的 defer！
+
+**解决方案**：在异步函数的 Poll 方法中设置 setjmp 捕获点：
+
+```go
+func (s *AsyncWork$State) Poll(ctx *Context) Poll[int] {
+    // 设置 setjmp 捕获同步 panic
+    jb := sigsetjmp()
+    if jb != 0 {
+        // 同步 panic 被捕获
+        panicVal := runtime.GetPanicValue()
+        s.doPanic(panicVal)  // 触发异步 defer 链表执行
+        if !s.recovered {
+            return Poll[int]{Error: s.panicValue}
+        }
+    }
+
+    // 正常状态机逻辑...
+    switch s.stateIdx { ... }
+}
+```
+
+### 11.5 深度嵌套传播链
+
+```
+SyncA (setjmp)
+  └─ AsyncB (Poll + 持久化 + setjmp)
+       └─ SyncC (setjmp)
+            └─ AsyncD (Poll + 持久化 + setjmp)
+                 └─ panic!
+```
+
+**传播链**：
+1. AsyncD panic → Poll 返回 Error
+2. SyncC 的 await 点检测 Error → 转为同步 panic
+3. AsyncB 的 Poll setjmp 捕获 → 执行 AsyncB defer → 返回 Error
+4. SyncA 的 BlockOn 检测 Error → 转为同步 panic
+5. SyncA setjmp 捕获 → 执行 SyncA defer
+
+### 11.6 Poll 返回类型扩展
+
+```go
+type Poll[T any] struct {
+    Ready bool
+    Value T
+    Error any  // panic 值，用于跨边界传播
+}
+```
+
+### 11.7 关键实现要点
+
+1. **异步 Poll 方法需要 setjmp**：捕获被调用同步函数的 panic
+2. **Poll 返回 Error 字段**：传播异步 panic
+3. **BlockOn/Await 转换**：Error ↔ 同步 panic 互转
+4. **defer 链正确执行**：每层都执行自己的 defer
+
+---
+
+## 11. 复杂场景处理
+
+### 12.1 条件分支
 
 ```go
 func Example(cond bool) Future[int] {
@@ -578,7 +718,7 @@ func (s *Example_State) Poll(ctx *Context) Poll[int] {
 }
 ```
 
-### 10.2 循环
+### 12.2 循环
 
 ```go
 func Loop(n int) Future[int] {
@@ -616,7 +756,7 @@ func (s *Loop_State) Poll(ctx *Context) Poll[int] {
 }
 ```
 
-### 10.3 模块化编译
+### 12.3 模块化编译
 
 跨包调用需导出具体类型：
 
@@ -631,7 +771,7 @@ type Main_State struct {
 }
 ```
 
-### 10.4 递归
+### 11.4 递归
 
 直接递归需特殊处理：
 
@@ -648,7 +788,7 @@ func Recursive(n int) Future[int] {
 
 ## 11. 嵌入式环境
 
-### 11.1 内存分配策略
+### 12.1 内存分配策略
 
 | 模式 | 堆分配 | 适用场景 |
 |------|--------|---------|
@@ -657,7 +797,7 @@ func Recursive(n int) Future[int] {
 | 预分配池 | ❌ | 有限并发 |
 | 动态 Spawn | ✅ | 一般应用 |
 
-### 11.2 静态任务分配
+### 12.2 静态任务分配
 
 ```go
 // 编译期分配固定槽位
@@ -669,7 +809,7 @@ func main() {
 }
 ```
 
-### 11.3 无堆分配执行
+### 12.3 无堆分配执行
 
 ```go
 func main() {
@@ -680,9 +820,9 @@ func main() {
 
 ---
 
-## 12. 与推模型对比
+## 13. 与推模型对比
 
-### 12.1 技术对比
+### 13.1 技术对比
 
 | 维度 | 推模型 (LLVM coro) | 拉模型 (本提案) |
 |------|-------------------|----------------|
@@ -694,7 +834,7 @@ func main() {
 | WASM 支持 | ⚠️ 有 bug | ✅ 正常 |
 | 实现复杂度 | 低（复用 LLVM） | 高（自己生成） |
 
-### 12.2 使用场景
+### 13.2 使用场景
 
 | 场景 | 推荐方案 | 原因 |
 |------|---------|------|
@@ -706,31 +846,95 @@ func main() {
 
 ---
 
-## 13. 实现路径
+## 14. 实现路径与当前进度
 
-### Phase 1: SSA 分析基础
+### Phase 1: SSA 分析基础 ✅ 完成
 
-- [ ] 识别 `Future[T]` 返回类型
-- [ ] 检测 `.Await()` 调用位置
-- [ ] 分析跨挂起点变量
+- [x] 识别 `Future[T]` 返回类型 (`IsAsyncFunc`)
+- [x] 检测 `.Await()` 调用位置 (`FindSuspendPoints`)
+- [x] 分析跨挂起点变量 (`AnalyzeCrossVars`)
+- [x] 构建状态机数据结构 (`Transform`)
 
-### Phase 2: 状态机生成
+**实现位置**: `cl/pullmodel/pullmodel.go`
 
-- [ ] 生成状态机结构体
-- [ ] 生成 Poll 方法
-- [ ] 处理条件分支和循环
+### Phase 2: 状态机 LLVM IR 生成 ✅ 完成
 
-### Phase 3: 高级特性
+- [x] 生成状态机结构体类型 (`buildStateGoType`)
+- [x] 生成 Named 类型用于 itab (`FnName$State`)
+- [x] 生成构造函数 (`generateConstructor`)
+- [x] 生成 Poll 方法 (`generatePollMethod`)
+- [x] 实现状态转换开关 (`generateStateSwitch`)
+- [x] 处理终态和挂起态 (`generateStateBlock`)
 
-- [ ] Defer 栈实现
-- [ ] Panic/Recover 处理
-- [ ] 跨包类型导出
+**实现位置**: `cl/pullmodel/llssa_codegen.go`
 
-### Phase 4: 优化
+### Phase 3: 控制流处理 ✅ 完成
 
-- [ ] 泛型单态化
-- [ ] 子状态机内嵌
+- [x] 条件分支支持（if/else 中的 await）
+- [x] 循环支持（for 中的 await）
+- [x] 多返回路径
+- [x] 嵌套函数调用
+- [x] 子 future 指针正确存储
+- [x] 跨变量值恢复 (`replayAllocStores`)
+
+**验证**: `examples/auto` 正常运行
+
+### Phase 4: 状态指令编译 ✅ 完成
+
+- [x] `compileStateInstructions` 函数
+- [x] 编译普通指令（如 `fmt.Printf`）
+- [x] 跳过已处理的指令（suspend、return、heap alloc）
+- [x] 注册 await 结果值 (`registerValue`)
+- [x] 终态设置完成标记
+
+**实现位置**: `cl/pullmodel/llssa_codegen.go:823-873`
+
+### Phase 5: Defer/Panic/Recover ⏳ 进行中
+
+- [x] 识别包含 defer 的函数 (`HasDefer` 标志)
+- [x] 状态结构添加 defer 字段 (`deferHead`, `panicValue`, `isPanicking`, `recovered`)
+- [x] defer 字段索引辅助函数
+- [x] `compileStateInstructions` 拦截 defer 指令
+- [ ] 实现持久化 defer 链表操作
+- [ ] 实现 panic 状态设置和 defer 展开
+- [ ] 实现 recover 检查
+- [ ] Poll 方法添加 setjmp 捕获同步 panic
+- [ ] Poll 返回类型添加 Error 字段
+
+**设计文档**: 同步/异步 defer 互操作（本文档第 10 章）
+
+### Phase 6: 优化（未开始）
+
+- [ ] 子状态机值类型嵌入
+- [ ] 泛型单态化 BlockOn
 - [ ] 编译期状态扁平化
+- [ ] defer 数组预分配优化
+
+---
+
+## 附录
+
+### A. 相关代码位置
+
+| 模块 | 文件 | 说明 |
+|------|------|------|
+| 分析 | `cl/pullmodel/pullmodel.go` | SSA 分析、状态机构建 |
+| IR 生成 | `cl/pullmodel/llssa_codegen.go` | LLVM IR 代码生成 |
+| 集成 | `cl/pullmodel/integration.go` | 编译器集成 |
+| async 包 | `async/*.go` | Future、Poll、Executor 类型 |
+| 测试用例 | `cl/_testpull/*` | 各场景测试 |
+| 示例 | `test/asyncpull/examples/*` | 运行示例 |
+
+### B. 平台支持
+
+| 平台 | setjmp/longjmp | LLVM 异常 | 状态 |
+|------|---------------|-----------|------|
+| Linux (x86/ARM) | ✅ | ✅ | 完全支持 |
+| macOS | ✅ | ✅ | 完全支持 |
+| Windows | ✅ | ✅ | 完全支持 |
+| WASM (Emscripten) | ✅ (配置) | ✅ (Wasm EH) | 支持 |
+| WASM (wasi-sdk) | ✅ (配置) | ✅ (Wasm EH) | 支持 |
+| 嵌入式 (ARM) | ✅ | ✅ | 支持 |
 
 ---
 
@@ -741,3 +945,4 @@ func main() {
 - [Rust Async Book](https://rust-lang.github.io/async-book/)
 - [x/tools/go/ssa](https://pkg.go.dev/golang.org/x/tools/go/ssa)
 - [How Rust Optimizes Async/Await](https://tmandry.gitlab.io/blog/posts/optimizing-await-1/)
+

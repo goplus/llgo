@@ -241,10 +241,145 @@ case 1:
 2. 识别 `recover()` 调用，生成 `doRecover` 调用
 3. 在所有 return 路径添加 `runDefers` 调用
 
-### Phase 4: 子 Future Panic 传播
-1. 在 Poll 返回类型中添加 Error 字段
-2. 在 await 点检查子 Future 的 error
-3. 正确传播 panic 到父 Future
+## 同步/异步函数 Defer 互操作
+
+### 设计原则
+
+- **同步函数**：保持 setjmp/longjmp 机制
+- **异步函数**：使用持久化 defer 链表
+- **边界传播**：panic 在边界处正确转换
+
+### 场景 1：同步函数调用异步函数
+
+```go
+func SyncMain() {                    // 同步函数 - setjmp defer
+    defer syncCleanup()
+
+    exec := sync.NewExecutor()
+    future := AsyncWork()            // 创建 Future
+    result := exec.BlockOn(future)   // 同步等待
+}
+
+func AsyncWork() Future[int] {       // 异步函数 - 持久化 defer
+    defer asyncCleanup()
+    return async.Return(42)
+}
+```
+
+**Panic 传播路径**：
+```
+AsyncWork panic → Poll 返回 Error → BlockOn 检测到 Error
+                                    → 调用 runtime.Panic(error)
+                                    → longjmp 到 SyncMain 的 setjmp
+                                    → 执行 syncCleanup()
+```
+
+**实现要点**：
+```go
+// sync.Executor.BlockOn 实现
+func (e *Executor) BlockOn(f Future[T]) T {
+    for {
+        poll := f.Poll(ctx)
+        if poll.Error != nil {
+            // 将异步 panic 转换为同步 panic
+            runtime.Panic(poll.Error)
+        }
+        if poll.Ready {
+            return poll.Value
+        }
+        // ... 等待
+    }
+}
+```
+
+### 场景 2：异步函数调用同步函数
+
+```go
+func AsyncWork() Future[int] {       // 异步函数 - 持久化 defer
+    defer asyncCleanup()
+
+    result := syncHelper()           // 调用同步函数
+    return async.Return(result)
+}
+
+func syncHelper() int {              // 同步函数 - setjmp defer
+    defer syncCleanup()
+    if something {
+        panic("sync panic")
+    }
+    return 42
+}
+```
+
+**Panic 传播路径**：
+```
+syncHelper panic → longjmp 到 syncHelper 的 setjmp
+                 → 执行 syncCleanup()
+                 → 继续 longjmp 向上传播
+                 → 到达 Poll 方法的调用栈顶
+                 → Poll 方法无 setjmp，继续传播到调用者
+                 → 最终到达 Executor.BlockOn 或程序崩溃
+```
+
+**问题**：同步 panic 会跳过异步函数的 defer！
+
+**解决方案**：在异步函数的 Poll 方法中设置 setjmp 捕获点
+
+```go
+func (s *AsyncWork$State) Poll(ctx *Context) Poll[int] {
+    // 设置 setjmp 捕获同步 panic
+    jb := sigsetjmp()
+    if jb != 0 {
+        // 同步 panic 被捕获
+        panicVal := runtime.GetPanicValue()
+        s.doPanic(panicVal)  // 触发异步 defer 链表执行
+        if !s.recovered {
+            return Poll[int]{Error: s.panicValue}
+        }
+    }
+
+    // 正常执行...
+    switch s.stateIdx {
+    case 0:
+        result := syncHelper()  // 如果 panic，会跳到上面的 jb != 0
+        // ...
+    }
+}
+```
+
+### 场景 3：深度嵌套
+
+```
+SyncA (setjmp)
+  └─ AsyncB (Poll + 持久化 + setjmp)
+       └─ SyncC (setjmp)
+            └─ AsyncD (Poll + 持久化 + setjmp)
+                 └─ panic!
+```
+
+**传播链**：
+1. AsyncD panic → Poll 返回 Error
+2. SyncC 的 await 点检测 Error → 转为同步 panic
+3. AsyncB 的 Poll setjmp 捕获 → 执行 AsyncB defer → 返回 Error
+4. SyncA 的 BlockOn 检测 Error → 转为同步 panic
+5. SyncA setjmp 捕获 → 执行 SyncA defer
+
+### 关键实现要点
+
+1. **异步 Poll 方法需要 setjmp**：捕获同步函数的 panic
+2. **Poll 返回 Error 字段**：传播异步 panic
+3. **BlockOn/Await 转换**：Error → 同步 panic
+4. **defer 链正确执行**：每层都执行自己的 defer
+
+### Poll 返回类型扩展
+
+```go
+type Poll[T any] struct {
+    Ready bool
+    Value T
+    Error any  // panic 值，用于跨边界传播
+}
+```
 
 ## 兼容性考虑
 
@@ -252,6 +387,7 @@ case 1:
 2. **正确的 LIFO 顺序** - 链表保证 defer 按后进先出顺序执行
 3. **recover 语义正确** - 只能在 defer 中 recover，且只 recover 一次
 4. **panic 传播** - 未 recover 的 panic 正确传播到调用者
+5. **同步/异步互操作** - panic 在边界处正确转换
 
 ## 性能影响
 
