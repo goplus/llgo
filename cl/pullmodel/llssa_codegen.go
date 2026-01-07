@@ -922,15 +922,41 @@ func (g *LLSSACodeGen) compileRunDefersForPullModel(b llssa.Builder, statePtr ll
 		return
 	}
 
-	log.Printf("[Pull Model] RunDefers call needed for %s (implementation pending)", g.sm.Original.Name())
+	log.Printf("[Pull Model] Generating RunDefers call for %s", g.sm.Original.Name())
 
-	// TODO: Implement actual call to async.(*DeferState).RunDefers
-	// For now, defer functionality is not active but code compiles
-	//
-	// Implementation plan:
-	// 1. Get DeferState field pointer from state struct
-	// 2. Look up github.com/goplus/llgo/async.(*DeferState).RunDefers function
-	// 3. Generate call: deferStatePtr.RunDefers()
+	// Get DeferState field base index
+	deferStateIdx := g.getDeferFieldBaseIndex()
+	if deferStateIdx < 0 {
+		log.Printf("[Pull Model] WARNING: Cannot find defer fields")
+		return
+	}
+
+	// Get pointer to DeferState embedded in state struct
+	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
+
+	// Create function reference for async.(*DeferState).RunDefers
+	// Method signature: func (*DeferState) RunDefers()
+	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	runDefersSig := types.NewSignatureType(
+		types.NewVar(0, nil, "", deferStatePtrType), // receiver
+		nil, nil, nil, nil, false,
+	)
+
+	// Generate method name
+	methodName := llssa.FuncName(
+		types.NewPackage("github.com/goplus/llgo/async", "async"),
+		"RunDefers",
+		runDefersSig.Recv(),
+		false,
+	)
+
+	// Create function reference
+	runDefersFunc := g.pkg.NewFunc(methodName, runDefersSig, llssa.InGo)
+
+	// Call: deferStatePtr.RunDefers()
+	b.Call(runDefersFunc.Expr, deferStatePtr)
+
+	log.Printf("[Pull Model] Generated RunDefers call successfully")
 }
 
 // getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
@@ -1014,6 +1040,28 @@ func (g *LLSSACodeGen) getRecoveredFieldIndex() int {
 		return -1
 	}
 	return base + 3
+}
+
+// getDeferStateType returns the types.Type for async.DeferState
+func (g *LLSSACodeGen) getDeferStateType() types.Type {
+	// Create a named type for async.DeferState
+	asyncPkg := types.NewPackage("github.com/goplus/llgo/async", "async")
+
+	// DeferState struct fields:
+	// DeferHead unsafe.Pointer
+	// PanicValue any
+	// IsPanicking bool
+	// Recovered bool
+	unsafePkg := types.Unsafe
+	fields := []*types.Var{
+		types.NewField(0, asyncPkg, "DeferHead", unsafePkg.Scope().Lookup("Pointer").Type(), false),
+		types.NewField(0, asyncPkg, "PanicValue", types.NewInterfaceType(nil, nil), false),
+		types.NewField(0, asyncPkg, "IsPanicking", types.Typ[types.Bool], false),
+		types.NewField(0, asyncPkg, "Recovered", types.Typ[types.Bool], false),
+	}
+
+	structType := types.NewStruct(fields, nil)
+	return types.NewNamed(types.NewTypeName(0, asyncPkg, "DeferState", nil), structType, nil)
 }
 
 // GenerateStateMachine is the main entry point called from compile.go.
