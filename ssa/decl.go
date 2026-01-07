@@ -202,13 +202,12 @@ type none struct{}
 
 var (
 	reflectFunc = map[string]none{
-		"reflect.ArrayOf":         none{},
-		"reflect.ChanOf":          none{},
-		"reflect.FuncOf":          none{},
-		"reflect.MapOf":           none{},
-		"reflect.SliceOf":         none{},
-		"reflect.StructOf":        none{},
-		"reflect.Value.closureOf": none{},
+		"reflect.ArrayOf":  none{},
+		"reflect.ChanOf":   none{},
+		"reflect.FuncOf":   none{},
+		"reflect.MapOf":    none{},
+		"reflect.SliceOf":  none{},
+		"reflect.StructOf": none{},
 	}
 )
 
