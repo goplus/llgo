@@ -922,12 +922,15 @@ func (g *LLSSACodeGen) compileRunDefersForPullModel(b llssa.Builder, statePtr ll
 		return
 	}
 
-	// TODO: Implement defer list execution
-	// For now, log a warning
-	log.Printf("[Pull Model] WARNING: RunDefers in async function '%s' - full implementation pending", g.sm.Original.Name())
+	log.Printf("[Pull Model] RunDefers call needed for %s (implementation pending)", g.sm.Original.Name())
 
-	// TODO: Generate call to DeferState.RunDefers
-	// For now, we simply skip RunDefers to avoid generating unreachable blocks
+	// TODO: Implement actual call to async.(*DeferState).RunDefers
+	// For now, defer functionality is not active but code compiles
+	//
+	// Implementation plan:
+	// 1. Get DeferState field pointer from state struct
+	// 2. Look up github.com/goplus/llgo/async.(*DeferState).RunDefers function
+	// 3. Generate call: deferStatePtr.RunDefers()
 }
 
 // getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
