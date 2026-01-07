@@ -496,65 +496,11 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		// Init path: initialize sub-future pointer
 		b.SetBlock(initBlock)
-		if g.compileValue != nil {
-			// Re-register params and crossVars for this block so compileValue can find them.
-			// This is needed because registerValue was called in the state block, but we're
-			// now in initBlock. The loaded values from state struct are still valid (SSA
-			// values dominate all uses), but we need to reload and re-register them here
-			// to ensure compileValue uses the correct values when compiling closures.
-			if g.registerValue != nil {
-				fn := g.sm.Original
-				fieldIdx := 1 // Start after state field
-				paramValues := make(map[*ssa.Parameter]llssa.Expr)
-				for _, param := range fn.Params {
-					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-					loadedVal := b.Load(fieldPtr)
-					g.registerValue(param, loadedVal)
-					paramValues[param] = loadedVal
-					fieldIdx++
-				}
-				for _, v := range g.sm.CrossVars {
-					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-					loadedVal := b.Load(fieldPtr)
-					g.registerValue(v, loadedVal)
-					fieldIdx++
-				}
-
-				// Pre-compile Alloc+Store pairs for heap-escaped parameters.
-				// In SSA, when a parameter is captured by a closure, it becomes:
-				//   t0 = new int (x)    // Alloc
-				//   *t0 = x             // Store
-				//   make closure [t0]   // MakeClosure binds t0, not x
-				// When compileValue is called, it only pulls values (not instructions),
-				// so the Store is never executed, leaving t0 uninitialized.
-				// We find these Alloc+Store patterns and pre-compile them here.
-				if len(fn.Blocks) > 0 {
-					for _, instr := range fn.Blocks[0].Instrs {
-						if store, ok := instr.(*ssa.Store); ok {
-							if alloc, ok := store.Addr.(*ssa.Alloc); ok {
-								if param, ok := store.Val.(*ssa.Parameter); ok {
-									if paramVal, found := paramValues[param]; found {
-										// Compile Alloc: allocate space
-										tptr := alloc.Type().(*types.Pointer)
-										elem := g.prog.Type(tptr.Elem(), llssa.InGo)
-										allocPtr := b.Alloc(elem, alloc.Heap)
-										// Execute Store: store param value into allocated space
-										b.Store(allocPtr, paramVal)
-										// Register the Alloc so compileValue can find it
-										g.registerValue(alloc, allocPtr)
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-			// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
-			newSubFutPtr := g.compileValue(b, sp.SubFuture)
-			// Store the pointer directly (no dereferencing)
-			b.Store(subFutFieldPtr, newSubFutPtr)
-		}
+		g.replayAllocStores(b, state, statePtr)
+		// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
+		newSubFutPtr := g.compileValue(b, sp.SubFuture)
+		// Store the pointer directly (no dereferencing)
+		b.Store(subFutFieldPtr, newSubFutPtr)
 		b.Jump(pollBlock)
 
 		// Poll path: sub-future is initialized
@@ -607,7 +553,6 @@ func (g *LLSSACodeGen) generateStateBlock(
 				}
 				return
 			}
-
 			// Get method function object
 			pollMethodObj := pollSel.Obj().(*types.Func)
 
@@ -660,6 +605,9 @@ func (g *LLSSACodeGen) generateStateBlock(
 		valueFieldPtr := b.FieldAddr(pollResultPtr, 1)
 		value := b.Load(valueFieldPtr)
 
+		// Apply pending stores that assign the await result to captured heap vars.
+		g.storeSuspendResult(b, statePtr, sp, value)
+
 		// Find the cross-var index for sp.Result and store the value
 		// CrossVars are stored starting at field 1 (after state field)
 		resultVarIdx := g.getCrossVarFieldIndex(sp.Result)
@@ -693,6 +641,110 @@ func (g *LLSSACodeGen) generateStateBlock(
 	} else {
 		// Return zero Poll[T] for fallback
 		b.Return(g.createZeroPoll())
+	}
+}
+
+// replayAllocStores eagerly executes heap Alloc+Store pairs so captured pointers
+// are initialized even when compileValue only pulls SSA values without running
+// the original Store instructions.
+func (g *LLSSACodeGen) replayAllocStores(b llssa.Builder, state *State, statePtr llssa.Expr) {
+	if g.compileValue == nil {
+		return
+	}
+
+	fn := g.sm.Original
+	fieldIdx := 1 // Skip state field
+	valueCache := make(map[ssa.Value]llssa.Expr, len(fn.Params)+len(g.sm.CrossVars))
+
+	// Reload and register original parameters from the state struct.
+	for _, param := range fn.Params {
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		loaded := b.Load(fieldPtr)
+		valueCache[param] = loaded
+		if g.registerValue != nil {
+			g.registerValue(param, loaded)
+		}
+		fieldIdx++
+	}
+
+	// Reload cross-suspend variables for the same reason.
+	for _, cross := range g.sm.CrossVars {
+		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+		loaded := b.Load(fieldPtr)
+		valueCache[cross] = loaded
+		if g.registerValue != nil {
+			g.registerValue(cross, loaded)
+		}
+		fieldIdx++
+	}
+
+	allocPtrs := make(map[*ssa.Alloc]llssa.Expr)
+	for _, instr := range state.Instructions {
+		switch v := instr.(type) {
+		case *ssa.Alloc:
+			ptr := g.ensureAllocPtr(b, statePtr, v)
+			if !ptr.IsNil() {
+				allocPtrs[v] = ptr
+			}
+		case *ssa.Store:
+			alloc, ok := v.Addr.(*ssa.Alloc)
+			if !ok || !alloc.Heap {
+				continue
+			}
+			val, ok := valueCache[v.Val]
+			if !ok || val.IsNil() {
+				continue
+			}
+			ptr := allocPtrs[alloc]
+			if ptr.IsNil() {
+				ptr = g.ensureAllocPtr(b, statePtr, alloc)
+				if ptr.IsNil() {
+					continue
+				}
+				allocPtrs[alloc] = ptr
+			}
+			b.Store(ptr, val)
+		}
+	}
+}
+
+func (g *LLSSACodeGen) ensureAllocPtr(b llssa.Builder, statePtr llssa.Expr, alloc *ssa.Alloc) llssa.Expr {
+	tptr, ok := alloc.Type().(*types.Pointer)
+	if !ok {
+		return llssa.Expr{}
+	}
+	elem := g.prog.Type(tptr.Elem(), llssa.InGo)
+	ptr := b.Alloc(elem, alloc.Heap)
+	if g.registerValue != nil {
+		g.registerValue(alloc, ptr)
+	}
+	if idx := g.getCrossVarFieldIndex(alloc); idx >= 0 {
+		fieldPtr := b.FieldAddr(statePtr, idx)
+		b.Store(fieldPtr, ptr)
+	}
+	return ptr
+}
+
+func (g *LLSSACodeGen) storeSuspendResult(b llssa.Builder, statePtr llssa.Expr, sp *SuspendPoint, value llssa.Expr) {
+	if value.IsNil() {
+		return
+	}
+	block := sp.Block
+	for i := sp.Index + 1; i < len(block.Instrs); i++ {
+		store, ok := block.Instrs[i].(*ssa.Store)
+		if !ok || store.Val != sp.Result {
+			continue
+		}
+		idx := g.getCrossVarFieldIndex(store.Addr)
+		if idx < 0 {
+			continue
+		}
+		fieldPtr := b.FieldAddr(statePtr, idx)
+		targetPtr := b.Load(fieldPtr)
+		if targetPtr.IsNil() {
+			continue
+		}
+		b.Store(targetPtr, value)
 	}
 }
 
