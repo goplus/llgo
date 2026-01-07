@@ -1066,46 +1066,48 @@ _llgo_3:                                          ; preds = %_llgo_14, %_llgo_0
   %19 = load i64, ptr %18, align 4
   %20 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
   %21 = load ptr, ptr %20, align 8
-  %22 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %74)
+  %22 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %75)
   %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$xltHQulLTi5yBONGGPc9JOa_OlS7yTXwogmOn3sHdV0", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
   %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %23, 0
   %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %24, ptr %22, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %25, ptr %21, align 8
-  %26 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %21, align 8
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %27, align 1
-  %28 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
-  %29 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %28, i32 0, i32 0
-  store i1 true, ptr %29, align 1
-  %30 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %28, i32 0, i32 1
-  store i64 0, ptr %30, align 4
-  %31 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %28, align 8
-  ret %"github.com/goplus/llgo/async.Poll[int]" %31
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
+  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %26)
+  %27 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %21, align 8
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %28, align 1
+  %29 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %29, i32 0, i32 0
+  store i1 true, ptr %30, align 1
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %29, i32 0, i32 1
+  store i64 0, ptr %31, align 4
+  %32 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %29, align 8
+  ret %"github.com/goplus/llgo/async.Poll[int]" %32
 
 _llgo_4:                                          ; preds = %_llgo_0
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
-  %33 = load i64, ptr %32, align 4
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %35 = load ptr, ptr %34, align 8
-  %36 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %35, align 8
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %37, align 1
-  %38 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %38, i32 0, i32 0
-  store i1 true, ptr %39, align 1
-  %40 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %38, i32 0, i32 1
-  store i64 0, ptr %40, align 4
-  %41 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %38, align 8
-  ret %"github.com/goplus/llgo/async.Poll[int]" %41
+  %33 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
+  %34 = load i64, ptr %33, align 4
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %36 = load ptr, ptr %35, align 8
+  %37 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %36, align 8
+  %38 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %38, align 1
+  %39 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
+  %40 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %39, i32 0, i32 0
+  store i1 true, ptr %40, align 1
+  %41 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %39, i32 0, i32 1
+  store i64 0, ptr %41, align 4
+  %42 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %39, align 8
+  ret %"github.com/goplus/llgo/async.Poll[int]" %42
 
 _llgo_5:                                          ; preds = %_llgo_0
-  %42 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %42, i32 0, i32 0
-  store i1 true, ptr %43, align 1
-  %44 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %42, i32 0, i32 1
-  store i64 0, ptr %44, align 4
-  %45 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %42, align 8
-  ret %"github.com/goplus/llgo/async.Poll[int]" %45
+  %43 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
+  %44 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %43, i32 0, i32 0
+  store i1 true, ptr %44, align 1
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %43, i32 0, i32 1
+  store i64 0, ptr %45, align 4
+  %46 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %43, align 8
+  ret %"github.com/goplus/llgo/async.Poll[int]" %46
 
 _llgo_6:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -1114,63 +1116,63 @@ _llgo_7:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 _llgo_8:                                          ; preds = %_llgo_1
-  %46 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
-  %47 = load i64, ptr %46, align 4
-  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %49 = load ptr, ptr %48, align 8
-  %50 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.iface", align 8
-  call void @llvm.memset(ptr %50, i8 0, i64 16, i1 false)
-  %51 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  store ptr %50, ptr %51, align 8
-  %52 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.iface", align 8
-  call void @llvm.memset(ptr %52, i8 0, i64 16, i1 false)
-  %53 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %47)
-  store ptr %53, ptr %8, align 8
+  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
+  %48 = load i64, ptr %47, align 4
+  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %50 = load ptr, ptr %49, align 8
+  %51 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.iface", align 8
+  call void @llvm.memset(ptr %51, i8 0, i64 16, i1 false)
+  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  store ptr %51, ptr %52, align 8
+  %53 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.iface", align 8
+  call void @llvm.memset(ptr %53, i8 0, i64 16, i1 false)
+  %54 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %48)
+  store ptr %54, ptr %8, align 8
   br label %_llgo_9
 
 _llgo_9:                                          ; preds = %_llgo_8, %_llgo_1
-  %54 = load ptr, ptr %8, align 8
-  %55 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %54, ptr %1)
-  %56 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %55, ptr %56, align 8
-  %57 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %56, i32 0, i32 0
-  %58 = load i1, ptr %57, align 1
-  br i1 %58, label %_llgo_10, label %_llgo_11
+  %55 = load ptr, ptr %8, align 8
+  %56 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %55, ptr %1)
+  %57 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %56, ptr %57, align 8
+  %58 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %57, i32 0, i32 0
+  %59 = load i1, ptr %58, align 1
+  br i1 %59, label %_llgo_10, label %_llgo_11
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %59 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %56, i32 0, i32 1
-  %60 = load i64, ptr %59, align 4
-  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %61, align 1
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %57, i32 0, i32 1
+  %61 = load i64, ptr %60, align 4
+  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %62, align 1
   br label %_llgo_2
 
 _llgo_11:                                         ; preds = %_llgo_9
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 _llgo_12:                                         ; preds = %_llgo_2
-  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
-  %63 = load i64, ptr %62, align 4
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %65 = load ptr, ptr %64, align 8
-  %66 = add i64 %60, 10
-  %67 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %66)
-  store ptr %67, ptr %15, align 8
+  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
+  %64 = load i64, ptr %63, align 4
+  %65 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %66 = load ptr, ptr %65, align 8
+  %67 = add i64 %61, 10
+  %68 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %67)
+  store ptr %68, ptr %15, align 8
   br label %_llgo_13
 
 _llgo_13:                                         ; preds = %_llgo_12, %_llgo_2
-  %68 = load ptr, ptr %15, align 8
-  %69 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %68, ptr %1)
-  %70 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
-  store %"github.com/goplus/llgo/async.Poll[int]" %69, ptr %70, align 8
-  %71 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %70, i32 0, i32 0
-  %72 = load i1, ptr %71, align 1
-  br i1 %72, label %_llgo_14, label %_llgo_15
+  %69 = load ptr, ptr %15, align 8
+  %70 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %69, ptr %1)
+  %71 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
+  store %"github.com/goplus/llgo/async.Poll[int]" %70, ptr %71, align 8
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %71, i32 0, i32 0
+  %73 = load i1, ptr %72, align 1
+  br i1 %73, label %_llgo_14, label %_llgo_15
 
 _llgo_14:                                         ; preds = %_llgo_13
-  %73 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %70, i32 0, i32 1
-  %74 = load i64, ptr %73, align 4
-  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %75, align 1
+  %74 = getelementptr inbounds %"github.com/goplus/llgo/async.Poll[int]", ptr %71, i32 0, i32 1
+  %75 = load i64, ptr %74, align 4
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %76, align 1
   br label %_llgo_3
 
 _llgo_15:                                         ; preds = %_llgo_13
@@ -1179,6 +1181,8 @@ _llgo_15:                                         ; preds = %_llgo_13
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+declare void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$Concrete"(i64 %0) {
 _llgo_0:
