@@ -1,7 +1,8 @@
-# LLGo 拉模型异步设计（备选方案）
+# LLGo 拉模型异步设计（Pull Model）
 
 **日期**: 2026-01-06
-**状态**: 提案（Push 模型的备选方案）
+**更新**: 2026-01-07
+**状态**: 已实现（IR 生成完成，运行时测试中）
 
 ---
 
@@ -341,15 +342,18 @@ func (e *LibuvExecutor) Run() {
 
 ---
 
-## 8. 建议
+## 8. 实现状态
 
-> [!NOTE]
-> 本拉模型作为 **备选设计** 记录。推荐生产环境使用当前的推模型（LLVM coro intrinsics），原因：
-> 1. 实现复杂度低
-> 2. 与 libuv 回调集成更好
-> 3. LLVM 验证过的可靠性
+### 8.1 已完成
 
-拉模型可考虑用于：
-- WASM 目标（LLVM coro 有问题）
-- 裸机嵌入式（对内存的最大控制）
-- 学术/研究用途
+- ✅ SSA 分析：识别异步函数、挂起点、跨挂起点变量
+- ✅ 状态机生成：状态结构体、Poll 方法、入口函数
+- ✅ LLVM IR 生成：使用 llssa API 直接生成
+- ✅ 编译器集成：`pullmodel.ShouldTransform` + `GenerateStateMachine`
+- ✅ 测试覆盖：13 个测试目录（basic, complex, conditional, controlflow, crossvar, defer, edgecases, loop, multiret, nested, panic, sequential, types）
+
+### 8.2 待完成
+
+- ⏳ 运行时 executor 测试（`test/asyncpull/examples`）
+- ⏳ 泛型返回值 `async.Return[T]` 正确 IR 生成
+- ⏳ 与推模型（push model）的切换机制
