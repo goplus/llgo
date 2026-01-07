@@ -52,6 +52,7 @@ type LLSSACodeGen struct {
 	pollLLType     llssa.Type        // cached LLVM type for Poll[T]
 	stateNamed     *types.Named      // Named type FnName$State for proper itab
 	pollMethod     *types.Func       // Poll method added to stateNamed
+	completedStateIndex int          // sentinel index meaning state machine finished
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -385,10 +386,21 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	// Create basic blocks:
 	// - Block 0: entry (switch dispatcher)
 	// - Blocks 1..n: state blocks
-	// - Block n+1: default/unreachable
+	// - Block n+1: completed sentinel
+	// - Block n+2: default/unreachable
 	numStates := len(g.sm.States)
-	numBlocks := 2 + numStates // entry + states + default
+	doneStateIdx := numStates // sentinel state meaning "completed"
+	g.completedStateIndex = doneStateIdx
+	numBlocks := 3 + numStates // entry + states + done + default
 	poll.MakeBlocks(numBlocks)
+
+	// Prepare a recover block so defer statements compiled via compileInstr
+	// have a valid target even though we're outside the normal cl compile pipeline.
+	recovBlock := poll.MakeBlock()
+	poll.SetRecover(recovBlock)
+	recovBuilder := poll.NewBuilder()
+	recovBuilder.SetBlock(recovBlock)
+	recovBuilder.Return(g.prog.Nil(g.pollLLType))
 
 	// Get builder
 	b := poll.NewBuilder()
@@ -403,6 +415,8 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	stateFieldPtr := b.FieldAddr(statePtr, 0)
 	stateVal := b.Load(stateFieldPtr)
 
+	// Block that handles already-completed futures (state == doneStateIdx)
+	doneBlock := poll.Block(numBlocks - 2)
 	// Default block (unreachable - should never happen)
 	defaultBlock := poll.Block(numBlocks - 1)
 
@@ -416,6 +430,10 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 		stateBlock := poll.Block(i + 1)
 		sw.Case(caseVal, stateBlock)
 	}
+	// If the future already ran to completion, just return Ready without
+	// re-running terminal side effects.
+	doneCaseVal := g.prog.IntVal(uint64(doneStateIdx), int8Type)
+	sw.Case(doneCaseVal, doneBlock)
 	sw.End(b)
 
 	// Generate code for each state block
@@ -450,6 +468,10 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 		g.generateStateBlock(b, poll, statePtr, ctx, state, i)
 	}
 
+	// Completed block: return Ready immediately on subsequent polls
+	b.SetBlock(doneBlock)
+	g.returnReadyPoll(b)
+
 	// Default block: unreachable (should never reach here)
 	b.SetBlock(defaultBlock)
 	// Return a zero Poll[T] value (unreachable in normal execution)
@@ -479,6 +501,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Terminal state: compile state instructions and return Ready
 		// First compile any instructions in this state (like fmt.Printf)
 		g.compileStateInstructions(b, state, statePtr)
+		// Mark machine as completed so future polls skip re-running side effects.
+		stateFieldPtr := b.FieldAddr(statePtr, 0)
+		doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
+		b.Store(stateFieldPtr, doneVal)
 		// Then return Ready(result) = Poll[T]{ready: true, value: result}
 		// For Future[Void], value is empty struct so we just need ready=true
 		g.returnReadyPoll(b)
@@ -619,6 +645,12 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Extract value field (field 1) from Poll result
 		valueFieldPtr := b.FieldAddr(pollResultPtr, 1)
 		value := b.Load(valueFieldPtr)
+
+		// Register the SSA result value so compileValue can reuse it without
+		// re-emitting the original Await call.
+		if g.registerValue != nil && sp.Result != nil {
+			g.registerValue(sp.Result, value)
+		}
 
 		// Apply pending stores that assign the await result to captured heap vars.
 		g.storeSuspendResult(b, statePtr, sp, value)

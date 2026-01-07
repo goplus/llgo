@@ -960,7 +960,11 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Defer:
-		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
+		kind := llssa.DeferAlways
+		if infos := p.blkInfos; len(infos) > v.Block().Index && v.Block().Index >= 0 {
+			kind = infos[v.Block().Index].Kind
+		}
+		p.call(b, kind, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
 	case *ssa.RunDefers:
