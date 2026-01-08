@@ -63,13 +63,18 @@ type CoroFunc struct {
 // The coro version has a different signature: returns ptr (coroutine handle)
 // instead of the original return type.
 func (p Package) NewCoroFunc(name string, sig *types.Signature, bg Background) *CoroFunc {
+	return p.NewCoroFuncEx(name, sig, bg, false)
+}
+
+// NewCoroFuncEx creates a new coroutine function with hasFreeVars flag.
+func (p Package) NewCoroFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool) *CoroFunc {
 	coroName := name + CoroSuffix
 
 	// Create coro signature: same params, but returns ptr (handle)
 	coroSig := makeCoroSignature(sig, p.Prog)
 
 	// Create the coroutine function
-	coroFn := p.NewFunc(coroName, coroSig, bg)
+	coroFn := p.NewFuncEx(coroName, coroSig, bg, hasFreeVars, false)
 
 	// Mark with presplitcoroutine attribute for LLVM CoroSplit pass
 	// Must use enum attribute, not string attribute, for LLVM to recognize it
@@ -122,6 +127,27 @@ func BaseNameFromCoro(name string) string {
 		return name[:len(name)-len(CoroSuffix)]
 	}
 	return name
+}
+
+// IsClosureName checks if a function name is a closure/anonymous function.
+// Closure names have pattern like "pkg.funcName$1", "pkg.funcName$2", etc.
+func IsClosureName(name string) bool {
+	// Find the last '$' followed by digits
+	for i := len(name) - 1; i >= 0; i-- {
+		if name[i] == '$' {
+			// Check if all remaining chars are digits
+			if i+1 < len(name) {
+				for j := i + 1; j < len(name); j++ {
+					if name[j] < '0' || name[j] > '9' {
+						return false
+					}
+				}
+				return true
+			}
+			return false
+		}
+	}
+	return false
 }
 
 // -----------------------------------------------------------------------------
@@ -891,6 +917,109 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 
 	// Done block: callee finished, continue execution
 	b.SetBlock(doneBlk)
+}
+
+// -----------------------------------------------------------------------------
+// Block-on helpers for closures
+// -----------------------------------------------------------------------------
+
+// CallIndirectCoro calls a closure's $coro version through function pointer.
+// The closure is expected to be a {$f: fn_ptr, $data: ctx_ptr} structure where
+// $f points to the $coro version of the closure function.
+// Returns the coroutine handle (ptr).
+//
+// Important: The fnPtr type is the original closure signature (e.g., func(ctx) int),
+// but the actual function is the $coro version which returns ptr.
+// We must create the correct LLVM call with ptr return type.
+func (b Builder) CallIndirectCoro(fnPtr Expr, args ...Expr) Expr {
+	// Get original signature from fnPtr
+	origSig := fnPtr.raw.Type.(*types.Signature)
+	return b.CallIndirectCoroWithSig(fnPtr, origSig, args...)
+}
+
+// CallIndirectCoroWithSig calls a closure's $coro version through function pointer
+// with an explicit signature. This is needed when fnPtr's type is VoidPtr
+// (e.g., when extracted from a closure loaded from a variable).
+// Returns the coroutine handle (ptr).
+func (b Builder) CallIndirectCoroWithSig(fnPtr Expr, origSig *types.Signature, args ...Expr) Expr {
+	prog := b.Prog
+
+	// Create $coro signature: same params, returns ptr (unsafe.Pointer)
+	// The closure's $coro version has context as first parameter
+	ptrType := prog.VoidPtr().raw.Type
+	results := types.NewTuple(types.NewParam(0, nil, "", ptrType))
+
+	// Build params: context (ptr) + original params
+	ctx := types.NewParam(token.NoPos, nil, "__llgo_ctx", types.Typ[types.UnsafePointer])
+	coroSig := FuncAddCtx(ctx, types.NewSignatureType(
+		nil,
+		nil, nil,
+		origSig.Params(),
+		results,
+		origSig.Variadic(),
+	))
+
+	// Get LLVM function type for coro signature
+	coroLLType := prog.FuncDecl(coroSig, InC).ll
+
+	// Build LLVM args
+	llArgs := make([]llvm.Value, len(args))
+	for i, arg := range args {
+		llArgs[i] = arg.impl
+	}
+
+	// Make the call with correct return type (ptr)
+	ret := llvm.CreateCall(b.impl, coroLLType, fnPtr.impl, llArgs)
+	return Expr{ret, prog.VoidPtr()}
+}
+
+// CoroScheduleUntil calls runtime.CoroScheduleUntil to run the scheduler
+// until the specified coroutine completes.
+// This is used in sync context when calling a closure that may suspend.
+func (b Builder) CoroScheduleUntil(handle Expr) {
+	// Call runtime.CoroScheduleUntil(handle)
+	pkg := b.Pkg
+	scheduleUntilFn := pkg.rtFunc("CoroScheduleUntil")
+	b.Call(scheduleUntilFn, handle)
+}
+
+// CoroBlockOnDynamic generates runtime check for block_on when context is unknown.
+// If isInCoro() is true, use await with suspend; otherwise use scheduleUntil.
+// This is used when the compiler cannot determine at compile-time whether
+// we're in a coroutine context (e.g., closure passed through interface).
+func (b Builder) CoroBlockOnDynamic(handle Expr, state *CoroState) {
+	// For now, just use scheduleUntil as fallback
+	// Full implementation would need runtime isInCoro() check
+	// TODO: implement runtime context detection
+	b.CoroScheduleUntil(handle)
+}
+
+// ExtractClosureFields extracts function pointer and context from a closure value.
+// This handles the case where a closure is loaded from a global variable -
+// the Go type is *types.Signature but the LLVM value is actually {ptr, ptr}.
+// We store to alloca, then use GEP to extract the fields.
+func (b Builder) ExtractClosureFields(closure Expr) (fnPtr, ctx Expr) {
+	prog := b.Prog
+
+	// Create closure struct type {ptr, ptr}
+	closureLLType := prog.ctx.StructType([]llvm.Type{prog.tyVoidPtr(), prog.tyVoidPtr()}, false)
+
+	// Alloca for the closure struct
+	alloca := llvm.CreateAlloca(b.impl, closureLLType)
+
+	// Store the closure value (which is actually {ptr, ptr}) to the alloca
+	b.impl.CreateStore(closure.impl, alloca)
+
+	// GEP to get field addresses
+	zero := llvm.ConstInt(prog.tyInt32(), 0, false)
+	fnPtrAddr := llvm.CreateGEP(b.impl, closureLLType, alloca, []llvm.Value{zero, zero})
+	one := llvm.ConstInt(prog.tyInt32(), 1, false)
+	ctxAddr := llvm.CreateGEP(b.impl, closureLLType, alloca, []llvm.Value{zero, one})
+
+	// Load the fields
+	fnPtr = Expr{llvm.CreateLoad(b.impl, prog.tyVoidPtr(), fnPtrAddr), prog.VoidPtr()}
+	ctx = Expr{llvm.CreateLoad(b.impl, prog.tyVoidPtr(), ctxAddr), prog.VoidPtr()}
+	return
 }
 
 // -----------------------------------------------------------------------------

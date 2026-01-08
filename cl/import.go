@@ -524,6 +524,7 @@ const (
 	llgoCoroDestroy = llgoCoroBase + 1
 	llgoCoroSize    = llgoCoroBase + 2
 	llgoCoroSuspend = llgoCoroBase + 3
+	llgoCoroBlockOn = llgoCoroBase + 4
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )

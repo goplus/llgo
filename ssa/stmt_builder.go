@@ -89,6 +89,11 @@ func (b Builder) SetBlock(blk BasicBlock) Builder {
 	return b
 }
 
+// CurrentBlock returns the current basic block the builder is positioned at.
+func (b Builder) CurrentBlock() BasicBlock {
+	return b.blk
+}
+
 func (b Builder) setBlockMoveLast(blk BasicBlock) (next BasicBlock) {
 	blkLast := blk.last
 	last := blkLast.LastInstruction()

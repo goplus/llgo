@@ -153,6 +153,51 @@ func CoroReschedule(handle CoroHandle) {
 	}
 }
 
+// CoroScheduleUntil runs the scheduler until the specified coroutine completes.
+// This is used by block_on in sync context.
+// It adds the coroutine to the queue and runs the scheduler until it's done.
+func CoroScheduleUntil(handle CoroHandle) {
+	if handle == nil {
+		return
+	}
+
+	// Check if already done
+	resumeFn := *(*unsafe.Pointer)(handle)
+	if resumeFn == nil {
+		// Already completed
+		return
+	}
+
+	// Add to queue and run scheduler until this coroutine is done
+	coroQueuePush(&coroRunQueue, handle)
+
+	// Run scheduler loop until target coroutine is done
+	for {
+		// Check if target coroutine is done
+		resumeFn = *(*unsafe.Pointer)(handle)
+		if resumeFn == nil {
+			// Target coroutine completed
+			break
+		}
+
+		// Schedule one coroutine from queue
+		h := coroQueuePop(&coroRunQueue)
+		if h == nil {
+			// Queue empty but target not done - shouldn't happen
+			// Target might have suspended without being re-queued
+			// Resume target directly
+			coroResume(handle)
+			continue
+		}
+
+		// Resume this coroutine
+		coroResume(h)
+
+		// If resumed coroutine is not done and not the target, re-queue it
+		// (The coroutine itself should call CoroReschedule when suspending)
+	}
+}
+
 // -----------------------------------------------------------------------------
 // LLVM Coroutine intrinsics (to be linked)
 //

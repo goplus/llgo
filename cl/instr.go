@@ -433,6 +433,7 @@ var llgoInstrs = map[string]int{
 	"coroDestroy": llgoCoroDestroy,
 	"coroSize":    llgoCoroSize,
 	"coroSuspend": llgoCoroSuspend,
+	"coroBlockOn": llgoCoroBlockOn,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -667,6 +668,12 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			if p.inCoroFunc && p.coroState != nil {
 				b.CoroSuspendWithCleanup(p.coroState)
 			}
+		case llgoCoroBlockOn: // func coroBlockOn(closure) T
+			// block_on is a compiler intrinsic that calls a closure that may suspend.
+			// - If compile-time known to be in $coro: direct await (no runtime check)
+			// - If compile-time known to be in sync: scheduleUntil (blocking, no runtime check)
+			// Returns the closure's return value
+			ret = p.coroBlockOn(b, args)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
@@ -680,6 +687,96 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		ret = b.Do(act, fn, args...)
 	}
 	return
+}
+
+// coroBlockOn implements the block_on compiler intrinsic.
+// It calls a closure that may have suspend points, handling both coro and sync contexts.
+//
+// Usage: result := coroBlockOn(closure)
+//
+// The closure is expected to be a function that may suspend (its $coro version).
+// Handling depends on compile-time context:
+// - In $coro context (p.inCoroFunc): direct await with suspend (no runtime check)
+// - In sync context (!p.inCoroFunc): direct scheduleUntil (no runtime check)
+// - In unknown context: runtime check isInCoro() and branch to appropriate path
+//
+// The return type matches the closure's return type.
+func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	if len(args) < 1 {
+		panic("coroBlockOn requires at least 1 argument (closure)")
+	}
+
+	// Get the closure argument
+	closureArg := args[0]
+
+	// Get closure signature to determine return type
+	closureType := closureArg.Type()
+	sig, ok := closureType.Underlying().(*types.Signature)
+	if !ok {
+		panic("coroBlockOn: first argument must be a function/closure")
+	}
+
+	// Compile the closure value
+	closure := p.compileValue(b, closureArg)
+
+	// Extract function pointer and context from closure {$f, $data}
+	// When closure is loaded from a global variable, the type is *types.Signature
+	// but the underlying LLVM value is still {ptr, ptr}. We check if the Go type
+	// is a struct (proper closure) or signature (function loaded from variable).
+	var fnPtr, ctx llssa.Expr
+	if _, isSig := closure.RawType().(*types.Signature); isSig {
+		// Function loaded from variable: extract fields via memory
+		fnPtr, ctx = b.ExtractClosureFields(closure)
+	} else {
+		// Normal case: proper closure struct
+		fnPtr = b.Field(closure, 0)
+		ctx = b.Field(closure, 1)
+	}
+
+	// Build call arguments: ctx first, then any additional args
+	callArgs := []llssa.Expr{ctx}
+	if len(args) > 1 {
+		callArgs = append(callArgs, p.compileValues(b, args[1:], fnNormal)...)
+	}
+
+	// Call the $coro version (function pointer is already $coro version)
+	// Returns ptr (coroutine handle)
+	// We need to pass the original signature because fnPtr's type may be VoidPtr
+	// when extracted from a closure loaded from a variable
+	handle := b.CallIndirectCoroWithSig(fnPtr, sig, callArgs...)
+
+	// Determine return type from closure signature
+	results := sig.Results()
+	var retType llssa.Type
+	if results != nil && results.Len() > 0 {
+		if results.Len() == 1 {
+			retType = p.type_(results.At(0).Type(), llssa.InGo)
+		} else {
+			retType = p.type_(results, llssa.InGo)
+		}
+	}
+
+	// Branch based on compile-time context knowledge
+	if p.inCoroFunc && p.coroState != nil {
+		// Compile-time known: in $coro context
+		// Direct await with suspend (cooperative)
+		b.CoroAwaitWithSuspend(handle, p.coroState)
+	} else if !p.inCoroFunc {
+		// Compile-time known: in sync context
+		// Direct scheduleUntil (blocking)
+		b.CoroScheduleUntil(handle)
+	} else {
+		// Cannot determine at compile time (e.g., closure passed through interface)
+		// Generate runtime check: if isInCoro() { await } else { scheduleUntil }
+		b.CoroBlockOnDynamic(handle, p.coroState)
+	}
+
+	// Read return value from promise if any
+	if retType != nil {
+		return b.CoroLoadResult(handle, retType, 8)
+	}
+
+	return llssa.Expr{}
 }
 
 // -----------------------------------------------------------------------------
