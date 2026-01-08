@@ -519,6 +519,14 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			hasVArg = fnHasVArg
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
+		// In coro mode, interface methods use $coro version, need to await
+		// Skip for runtime packages (they don't use async interfaces)
+		if llssa.IsLLVMCoroMode() && p.goTyps.Path() != llssa.PkgRuntime {
+			handle := b.Do(act, fn, args...)
+			sig := call.Signature()
+			ret = p.coroAwaitAndLoadResult(b, handle, sig)
+			return
+		}
 		ret = b.Do(act, fn, args...)
 		return
 	}
@@ -777,17 +785,15 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	// when extracted from a closure loaded from a variable
 	handle := b.CallIndirectCoroWithSig(fnPtr, sig, hasCtx, callArgs...)
 
-	// Determine return type from closure signature
-	results := sig.Results()
-	var retType llssa.Type
-	if results != nil && results.Len() > 0 {
-		if results.Len() == 1 {
-			retType = p.type_(results.At(0).Type(), llssa.InGo)
-		} else {
-			retType = p.type_(results, llssa.InGo)
-		}
-	}
+	// Await and load result using common helper
+	return p.coroAwaitAndLoadResult(b, handle, sig)
+}
 
+// coroAwaitAndLoadResult handles the common block_on pattern:
+// 1. Await on the coroutine handle (using appropriate strategy based on context)
+// 2. Load the result from the promise if there's a return value
+// Returns the loaded result, or empty Expr if there's no return value.
+func (p *context) coroAwaitAndLoadResult(b llssa.Builder, handle llssa.Expr, sig *types.Signature) llssa.Expr {
 	// Branch based on compile-time context knowledge
 	if p.inCoroFunc && p.coroState != nil {
 		// Compile-time known: in $coro context
@@ -804,7 +810,14 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	}
 
 	// Read return value from promise if any
-	if retType != nil {
+	results := sig.Results()
+	if results != nil && results.Len() > 0 {
+		var retType llssa.Type
+		if results.Len() == 1 {
+			retType = p.type_(results.At(0).Type(), llssa.InGo)
+		} else {
+			retType = p.type_(results, llssa.InGo)
+		}
 		return b.CoroLoadResult(handle, retType, 8)
 	}
 

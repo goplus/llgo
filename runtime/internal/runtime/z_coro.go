@@ -53,6 +53,10 @@ var (
 
 	// currentCoro is the currently executing coroutine (nil if in main thread)
 	currentCoro CoroHandle
+
+	// coroDepth tracks nested $coro function depth for isInCoro detection
+	// Incremented on $coro function entry, decremented on exit
+	coroDepth int
 )
 
 // coroQueuePush adds a coroutine handle to the run queue.
@@ -196,6 +200,25 @@ func CoroScheduleUntil(handle CoroHandle) {
 		// If resumed coroutine is not done and not the target, re-queue it
 		// (The coroutine itself should call CoroReschedule when suspending)
 	}
+}
+
+// CoroEnter is called at the entry of a $coro function.
+// It increments the coro depth counter to track nested coro calls.
+func CoroEnter() {
+	coroDepth++
+}
+
+// CoroExit is called at the exit of a $coro function.
+// It decrements the coro depth counter.
+func CoroExit() {
+	coroDepth--
+}
+
+// CoroIsInCoro returns true if we're currently executing inside a coroutine.
+// This is used by block_on to determine whether to use await (coro context)
+// or scheduleUntil (sync context) at runtime.
+func CoroIsInCoro() bool {
+	return coroDepth > 0
 }
 
 // -----------------------------------------------------------------------------

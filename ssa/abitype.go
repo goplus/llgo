@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"sort"
+	"strings"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -467,6 +468,13 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 	}
 	if b.Pkg.fnlink != nil {
 		fullName = b.Pkg.fnlink(fullName)
+	}
+	// In coro mode, interface methods use $coro version
+	// Skip for runtime package (it doesn't use async interfaces)
+	if IsLLVMCoroMode() && !strings.HasPrefix(fullName, PkgRuntime) {
+		coroName := fullName + "$coro"
+		// $coro version returns ptr (handle), create correct signature
+		return b.Pkg.NewFunc(coroName, mSig, InGo).impl
 	}
 	return b.Pkg.NewFunc(fullName, mSig, InGo).impl // TODO(xsw): use rawType to speed up
 }

@@ -20,6 +20,7 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -131,7 +132,12 @@ func BaseNameFromCoro(name string) string {
 
 // IsClosureName checks if a function name is a closure/anonymous function.
 // Closure names have pattern like "pkg.funcName$1", "pkg.funcName$2", etc.
+// Also recognizes $bound (interface method values) and $thunk (method wrappers).
 func IsClosureName(name string) bool {
+	// Check for $bound and $thunk suffixes (interface method values and thunks)
+	if strings.HasSuffix(name, "$bound") || strings.HasSuffix(name, "$thunk") {
+		return true
+	}
 	// Find the last '$' followed by digits
 	for i := len(name) - 1; i >= 0; i-- {
 		if name[i] == '$' {
@@ -668,6 +674,10 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 
 	coroHandle := b.CoroBegin(coroId, memPhi.Expr)
 
+	// Call CoroEnter to track coro depth for isInCoro detection
+	coroEnterFn := b.Pkg.rtFunc("CoroEnter")
+	b.Call(coroEnterFn)
+
 	// Jump to function body
 	b.Jump(bodyStartBlk)
 
@@ -759,6 +769,9 @@ func (b Builder) CoroFuncEpilogue(state *CoroState) {
 	b.SetBlock(state.CleanupBlk)
 	memToFree := b.CoroFree(state.CoroId, state.CoroHandle)
 	b.free(memToFree)
+	// Call CoroExit to decrement coro depth after cleanup (truly done)
+	coroExitFn := b.Pkg.rtFunc("CoroExit")
+	b.Call(coroExitFn)
 	b.Jump(state.EndBlk)
 
 	// Generate end block - single coro.end for all exit paths
@@ -1001,10 +1014,37 @@ func (b Builder) CoroScheduleUntil(handle Expr) {
 // This is used when the compiler cannot determine at compile-time whether
 // we're in a coroutine context (e.g., closure passed through interface).
 func (b Builder) CoroBlockOnDynamic(handle Expr, state *CoroState) {
-	// For now, just use scheduleUntil as fallback
-	// Full implementation would need runtime isInCoro() check
-	// TODO: implement runtime context detection
+	fn := b.Func
+	pkg := b.Pkg
+
+	// Call runtime CoroIsInCoro() to check if we're in a coroutine
+	isInCoroFn := pkg.rtFunc("CoroIsInCoro")
+	isInCoro := b.Call(isInCoroFn)
+
+	// Create branches
+	coroBlk := fn.MakeBlock()
+	syncBlk := fn.MakeBlock()
+	doneBlk := fn.MakeBlock()
+
+	b.If(isInCoro, coroBlk, syncBlk)
+
+	// Coro path: use await with suspend if we have state, otherwise scheduleUntil
+	b.SetBlock(coroBlk)
+	if state != nil {
+		b.CoroAwaitWithSuspend(handle, state)
+	} else {
+		// No state available, fall back to scheduleUntil
+		b.CoroScheduleUntil(handle)
+	}
+	b.Jump(doneBlk)
+
+	// Sync path: use scheduleUntil
+	b.SetBlock(syncBlk)
 	b.CoroScheduleUntil(handle)
+	b.Jump(doneBlk)
+
+	// Continue
+	b.SetBlock(doneBlk)
 }
 
 // ExtractClosureFields extracts function pointer and context from a closure value.

@@ -80,6 +80,13 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 			sig = types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
 		}
 	}
+	// In coro mode, interface methods use $coro version which returns ptr (handle)
+	if IsLLVMCoroMode() {
+		// Create $coro signature: returns ptr instead of original return type
+		ptrType := types.Typ[types.UnsafePointer]
+		coroResults := types.NewTuple(types.NewParam(0, nil, "", ptrType))
+		sig = types.NewSignatureType(nil, nil, nil, sig.Params(), coroResults, sig.Variadic())
+	}
 	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
