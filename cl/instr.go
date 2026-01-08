@@ -792,6 +792,7 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 // coroAwaitAndLoadResult handles the common block_on pattern:
 // 1. Await on the coroutine handle (using appropriate strategy based on context)
 // 2. Load the result from the promise if there's a return value
+// 3. Destroy the coroutine frame to free memory
 // Returns the loaded result, or empty Expr if there's no return value.
 func (p *context) coroAwaitAndLoadResult(b llssa.Builder, handle llssa.Expr, sig *types.Signature) llssa.Expr {
 	// Branch based on compile-time context knowledge
@@ -810,6 +811,7 @@ func (p *context) coroAwaitAndLoadResult(b llssa.Builder, handle llssa.Expr, sig
 	}
 
 	// Read return value from promise if any
+	var result llssa.Expr
 	results := sig.Results()
 	if results != nil && results.Len() > 0 {
 		var retType llssa.Type
@@ -818,10 +820,14 @@ func (p *context) coroAwaitAndLoadResult(b llssa.Builder, handle llssa.Expr, sig
 		} else {
 			retType = p.type_(results, llssa.InGo)
 		}
-		return b.CoroLoadResult(handle, retType, 8)
+		result = b.CoroLoadResult(handle, retType, 8)
 	}
 
-	return llssa.Expr{}
+	// Destroy the coroutine frame to free memory
+	// This triggers the cleanup block which calls coro.free and free
+	b.CoroDestroy(handle)
+
+	return result
 }
 
 // -----------------------------------------------------------------------------
