@@ -5,11 +5,16 @@ import _ "unsafe"
 //go:linkname coroSuspend llgo.coroSuspend
 func coroSuspend()
 
-//go:linkname coroBlockOn llgo.coroBlockOn
-func coroBlockOn(f func() int) int
+// Named function types
+type WorkerFunc func() int
+type ComputeFunc func(x int) int
 
 // Global variable holding async closure (tainted)
 var globalWorker func() int
+
+// Global variables with named function types
+var typedWorker WorkerFunc
+var typedCompute ComputeFunc
 
 // Global variable holding sync closure (not tainted)
 var globalSync func() int
@@ -45,7 +50,7 @@ func createAndStoreSyncWorker(base int) {
 // callGlobalWorker calls the async global closure through block_on
 func callGlobalWorker() int {
 	println("callGlobalWorker: calling block_on on async global closure")
-	result := coroBlockOn(globalWorker)
+	result := globalWorker()
 	println("callGlobalWorker: result =", result)
 	return result
 }
@@ -53,7 +58,7 @@ func callGlobalWorker() int {
 // callGlobalSync calls the sync global closure through block_on
 func callGlobalSync() int {
 	println("callGlobalSync: calling block_on on sync global closure")
-	result := coroBlockOn(globalSync)
+	result := globalSync()
 	println("callGlobalSync: result =", result)
 	return result
 }
@@ -64,7 +69,7 @@ func asyncCallGlobal() {
 	coroSuspend() // make this function tainted
 
 	println("asyncCallGlobal: calling block_on on async global closure")
-	result := coroBlockOn(globalWorker)
+	result := globalWorker()
 	println("asyncCallGlobal: result =", result)
 	println("asyncCallGlobal: done")
 }
@@ -78,11 +83,11 @@ func chainedCall() {
 	inner := func() int {
 		println("inner: calling block_on on global")
 		coroSuspend()
-		return coroBlockOn(globalWorker)
+		return globalWorker()
 	}
 
 	println("chainedCall: calling block_on on inner")
-	result := coroBlockOn(inner)
+	result := inner()
 	println("chainedCall: final result =", result)
 }
 
@@ -93,12 +98,12 @@ func mixedCall() {
 
 	// Call sync closure first
 	println("mixedCall: calling sync closure")
-	r1 := coroBlockOn(globalSync)
+	r1 := globalSync()
 	println("mixedCall: sync result =", r1)
 
 	// Then call async closure
 	println("mixedCall: calling async closure")
-	r2 := coroBlockOn(globalWorker)
+	r2 := globalWorker()
 	println("mixedCall: async result =", r2)
 
 	println("mixedCall: total =", r1+r2)
@@ -121,12 +126,12 @@ func nestedClosures() {
 				coroSuspend()
 				return a + b + c
 			}
-			return coroBlockOn(level3)
+			return level3()
 		}
-		return coroBlockOn(level2)
+		return level2()
 	}
 
-	result := coroBlockOn(level1)
+	result := level1()
 	println("nestedClosures: result =", result)
 }
 
@@ -144,7 +149,7 @@ func closureAsReturn(x int) func() int {
 func closureAsParam(fn func() int, label string) int {
 	println("closureAsParam:", label)
 	coroSuspend()
-	result := coroBlockOn(fn)
+	result := fn()
 	println("closureAsParam: result =", result)
 	return result
 }
@@ -170,13 +175,13 @@ func multipleClosures() {
 		return shared
 	}
 
-	r1 := coroBlockOn(adder)
+	r1 := adder()
 	println("after adder:", r1)
 
-	r2 := coroBlockOn(doubler)
+	r2 := doubler()
 	println("after doubler:", r2)
 
-	r3 := coroBlockOn(adder)
+	r3 := adder()
 	println("after adder again:", r3)
 }
 
@@ -199,7 +204,7 @@ func loopClosures() {
 	// Call them
 	total := 0
 	for i := 0; i < 3; i++ {
-		result := coroBlockOn(closures[i])
+		result := closures[i]()
 		println("loop result =", result)
 		total += result
 	}
@@ -219,12 +224,12 @@ func closureCallsClosure() {
 	outerFn := func() int {
 		println("outerFn: calling innerFn via block_on")
 		coroSuspend()
-		result := coroBlockOn(innerFn)
+		result := innerFn()
 		println("outerFn: innerFn returned", result)
 		return result + 8
 	}
 
-	result := coroBlockOn(outerFn)
+	result := outerFn()
 	println("closureCallsClosure: final result =", result)
 }
 
@@ -258,7 +263,7 @@ func main() {
 
 	println("\n=== Test 9: Closure as return value ===")
 	fn := closureAsReturn(7)
-	r9 := coroBlockOn(fn)
+	r9 := fn()
 	println("main: returned closure result =", r9)
 
 	println("\n=== Test 10: Closure as parameter ===")
@@ -279,5 +284,125 @@ func main() {
 	println("\n=== Test 13: Closure calls closure ===")
 	closureCallsClosure()
 
+	println("\n=== Test 14: Named function types (sync) ===")
+	testNamedFuncTypes()
+
+	println("\n=== Test 15: Named func type as parameter (sync) ===")
+	testNamedFuncParam()
+
+	println("\n=== Test 16: Named function types (async) ===")
+	go testNamedFuncTypesAsync()
+
+	println("\n=== Test 17: Named func type as parameter (async) ===")
+	go testNamedFuncParamAsync()
+
 	println("main: done")
+}
+
+// testNamedFuncTypes tests closures with named function types (sync context)
+func testNamedFuncTypes() {
+	println("testNamedFuncTypes: start")
+
+	// Store async closure in typed global
+	multiplier := 3
+	typedWorker = func() int {
+		println("typedWorker: start, multiplier =", multiplier)
+		coroSuspend()
+		return 100 * multiplier
+	}
+
+	// Store closure with parameter in typed global
+	typedCompute = func(x int) int {
+		println("typedCompute: computing with x =", x)
+		coroSuspend()
+		return x * x
+	}
+
+	// Call typed worker
+	r1 := typedWorker()
+	println("testNamedFuncTypes: typedWorker result =", r1)
+
+	// Call typed compute
+	r2 := typedCompute(7)
+	println("testNamedFuncTypes: typedCompute result =", r2)
+
+	// Local variable with named type
+	var localWorker WorkerFunc = func() int {
+		println("localWorker: running")
+		coroSuspend()
+		return 999
+	}
+	r3 := localWorker()
+	println("testNamedFuncTypes: localWorker result =", r3)
+
+	println("testNamedFuncTypes: total =", r1+r2+r3)
+}
+
+// testNamedFuncTypesAsync tests closures with named function types (async context)
+func testNamedFuncTypesAsync() {
+	println("testNamedFuncTypesAsync: start")
+	coroSuspend() // make this function tainted
+
+	// Call typed globals from async context
+	r1 := typedWorker()
+	println("testNamedFuncTypesAsync: typedWorker result =", r1)
+
+	r2 := typedCompute(5)
+	println("testNamedFuncTypesAsync: typedCompute result =", r2)
+
+	// Local variable with named type in async context
+	var asyncLocalWorker WorkerFunc = func() int {
+		println("asyncLocalWorker: running")
+		coroSuspend()
+		return 777
+	}
+	r3 := asyncLocalWorker()
+	println("testNamedFuncTypesAsync: asyncLocalWorker result =", r3)
+
+	println("testNamedFuncTypesAsync: total =", r1+r2+r3)
+}
+
+// testNamedFuncParam tests passing named function types as parameters (sync context)
+func testNamedFuncParam() {
+	println("testNamedFuncParam: start")
+
+	// Helper that takes WorkerFunc
+	runWorker := func(w WorkerFunc, label string) int {
+		println("runWorker:", label)
+		coroSuspend()
+		return w()
+	}
+
+	// Create a typed closure
+	var myWorker WorkerFunc = func() int {
+		println("myWorker: running")
+		coroSuspend()
+		return 456
+	}
+
+	result := runWorker(myWorker, "testing typed param")
+	println("testNamedFuncParam: result =", result)
+}
+
+// testNamedFuncParamAsync tests passing named function types as parameters (async context)
+func testNamedFuncParamAsync() {
+	println("testNamedFuncParamAsync: start")
+	coroSuspend() // make this function tainted
+
+	// Helper that takes WorkerFunc
+	runWorkerAsync := func(w WorkerFunc, label string) int {
+		println("runWorkerAsync:", label)
+		coroSuspend()
+		return w()
+	}
+
+	// Create a typed closure
+	var myAsyncWorker WorkerFunc = func() int {
+		println("myAsyncWorker: running")
+		coroSuspend()
+		return 789
+	}
+
+	result := runWorkerAsync(myAsyncWorker, "testing async typed param")
+	println("testNamedFuncParamAsync: result =", result)
 }

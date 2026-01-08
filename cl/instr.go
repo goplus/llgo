@@ -550,6 +550,14 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.inCFunc = false
 			ret = b.Do(act, aFn.Expr, args...)
 		case goFunc:
+			// Check if callee is a closure in coro mode - use block_on automatically
+			// This must be done before compiling args since coroBlockOn expects ssa.Value
+			if llssa.IsLLVMCoroMode() && llssa.IsClosureName(cv.Name()) {
+				// Wrap closure call with coroBlockOn: coroBlockOn(closure, args...)
+				newArgs := append([]ssa.Value{cv}, args...)
+				ret = p.coroBlockOn(b, newArgs)
+				return
+			}
 			args := p.compileValues(b, args, kind)
 			// Check if we're in a $coro function and the callee has suspend points
 			if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
@@ -682,6 +690,17 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			}
 		}
 	default:
+		// Check if calling a function variable (closure) in coro mode
+		// This applies to both sync and coro contexts, because the closure stores
+		// the $coro version which returns a handle, not the actual result
+		if llssa.IsLLVMCoroMode() {
+			if _, ok := cv.Type().Underlying().(*types.Signature); ok {
+				// This is a closure variable call - use coroBlockOn
+				newArgs := append([]ssa.Value{cv}, args...)
+				ret = p.coroBlockOn(b, newArgs)
+				return
+			}
+		}
 		fn := p.compileValue(b, cv)
 		args := p.compileValues(b, args, kind)
 		ret = b.Do(act, fn, args...)
@@ -716,6 +735,15 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 		panic("coroBlockOn: first argument must be a function/closure")
 	}
 
+	// Check if closure has FreeVars (needs ctx parameter)
+	hasCtx := true
+	switch v := closureArg.(type) {
+	case *ssa.Function:
+		hasCtx = len(v.FreeVars) > 0
+	case *ssa.MakeClosure:
+		hasCtx = len(v.Bindings) > 0
+	}
+
 	// Compile the closure value
 	closure := p.compileValue(b, closureArg)
 
@@ -723,8 +751,9 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	// When closure is loaded from a global variable, the type is *types.Signature
 	// but the underlying LLVM value is still {ptr, ptr}. We check if the Go type
 	// is a struct (proper closure) or signature (function loaded from variable).
+	// Use Underlying() to handle named function types.
 	var fnPtr, ctx llssa.Expr
-	if _, isSig := closure.RawType().(*types.Signature); isSig {
+	if _, isSig := closure.RawType().Underlying().(*types.Signature); isSig {
 		// Function loaded from variable: extract fields via memory
 		fnPtr, ctx = b.ExtractClosureFields(closure)
 	} else {
@@ -733,8 +762,11 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 		ctx = b.Field(closure, 1)
 	}
 
-	// Build call arguments: ctx first, then any additional args
-	callArgs := []llssa.Expr{ctx}
+	// Build call arguments based on whether closure needs ctx
+	var callArgs []llssa.Expr
+	if hasCtx {
+		callArgs = []llssa.Expr{ctx}
+	}
 	if len(args) > 1 {
 		callArgs = append(callArgs, p.compileValues(b, args[1:], fnNormal)...)
 	}
@@ -743,7 +775,7 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	// Returns ptr (coroutine handle)
 	// We need to pass the original signature because fnPtr's type may be VoidPtr
 	// when extracted from a closure loaded from a variable
-	handle := b.CallIndirectCoroWithSig(fnPtr, sig, callArgs...)
+	handle := b.CallIndirectCoroWithSig(fnPtr, sig, hasCtx, callArgs...)
 
 	// Determine return type from closure signature
 	results := sig.Results()

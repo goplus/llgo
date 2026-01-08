@@ -931,33 +931,46 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 // Important: The fnPtr type is the original closure signature (e.g., func(ctx) int),
 // but the actual function is the $coro version which returns ptr.
 // We must create the correct LLVM call with ptr return type.
-func (b Builder) CallIndirectCoro(fnPtr Expr, args ...Expr) Expr {
+func (b Builder) CallIndirectCoro(fnPtr Expr, hasCtx bool, args ...Expr) Expr {
 	// Get original signature from fnPtr
 	origSig := fnPtr.raw.Type.(*types.Signature)
-	return b.CallIndirectCoroWithSig(fnPtr, origSig, args...)
+	return b.CallIndirectCoroWithSig(fnPtr, origSig, hasCtx, args...)
 }
 
 // CallIndirectCoroWithSig calls a closure's $coro version through function pointer
 // with an explicit signature. This is needed when fnPtr's type is VoidPtr
 // (e.g., when extracted from a closure loaded from a variable).
 // Returns the coroutine handle (ptr).
-func (b Builder) CallIndirectCoroWithSig(fnPtr Expr, origSig *types.Signature, args ...Expr) Expr {
+// The args should already include ctx as first argument if the closure has FreeVars.
+func (b Builder) CallIndirectCoroWithSig(fnPtr Expr, origSig *types.Signature, hasCtx bool, args ...Expr) Expr {
 	prog := b.Prog
 
-	// Create $coro signature: same params, returns ptr (unsafe.Pointer)
-	// The closure's $coro version has context as first parameter
+	// Create $coro signature: returns ptr (unsafe.Pointer)
 	ptrType := prog.VoidPtr().raw.Type
 	results := types.NewTuple(types.NewParam(0, nil, "", ptrType))
 
-	// Build params: context (ptr) + original params
-	ctx := types.NewParam(token.NoPos, nil, "__llgo_ctx", types.Typ[types.UnsafePointer])
-	coroSig := FuncAddCtx(ctx, types.NewSignatureType(
-		nil,
-		nil, nil,
-		origSig.Params(),
-		results,
-		origSig.Variadic(),
-	))
+	// Build the coro signature based on whether we have ctx
+	var coroSig *types.Signature
+	if hasCtx {
+		// Add ctx parameter to signature
+		ctx := types.NewParam(token.NoPos, nil, "__llgo_ctx", types.Typ[types.UnsafePointer])
+		coroSig = FuncAddCtx(ctx, types.NewSignatureType(
+			nil,
+			nil, nil,
+			origSig.Params(),
+			results,
+			origSig.Variadic(),
+		))
+	} else {
+		// No ctx parameter
+		coroSig = types.NewSignatureType(
+			nil,
+			nil, nil,
+			origSig.Params(),
+			results,
+			origSig.Variadic(),
+		)
+	}
 
 	// Get LLVM function type for coro signature
 	coroLLType := prog.FuncDecl(coroSig, InC).ll
