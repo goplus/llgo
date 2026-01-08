@@ -155,26 +155,16 @@ func (g *PullIRCodeGen) addPollMethod(pkg *types.Package, fn *ssa.Function) {
 		resultType = types.NewStruct(nil, nil)
 	}
 
-	// Build Poll[T] struct type
-	pollFields := []*types.Var{
-		types.NewVar(0, nil, "ready", types.Typ[types.Bool]),
-		types.NewVar(0, nil, "value", resultType),
-	}
-	pollStructType := types.NewStruct(pollFields, nil)
+	// Get Poll[T] return type from async package (with proper scope)
+	pollResultType := g.getAsyncPollType(resultType)
+	pollResults := types.NewTuple(types.NewVar(0, nil, "", pollResultType))
 
-	// Get Context type
-	asyncPkg := g.getAsyncPackage()
-	ctxType := types.NewPointer(types.NewNamed(
-		types.NewTypeName(0, asyncPkg, "Context", nil),
-		types.NewStruct(nil, nil), nil,
-	))
+	// Get Context type from async package (with proper scope)
+	ctxType := g.getAsyncContextType()
+	ctxParam := types.NewVar(0, nil, "ctx", ctxType)
+	params := types.NewTuple(ctxParam)
 
-	pollSig := types.NewSignatureType(
-		recvVar, nil, nil,
-		types.NewTuple(types.NewVar(0, nil, "ctx", ctxType)),
-		types.NewTuple(types.NewVar(0, nil, "", pollStructType)),
-		false,
-	)
+	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
 	pollMethod := types.NewFunc(0, pkg, "Poll", pollSig)
 	g.stateNamed.AddMethod(pollMethod)
 }
@@ -192,14 +182,67 @@ func (g *PullIRCodeGen) buildPollLLType() llssa.Type {
 }
 
 func (g *PullIRCodeGen) getAsyncPackage() *types.Package {
-	if g.ssaPkg != nil && g.ssaPkg.Pkg != nil {
-		for _, imp := range g.ssaPkg.Pkg.Imports() {
+	fn := g.pullIR.Original
+	if fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		for _, imp := range fn.Pkg.Pkg.Imports() {
 			if imp.Path() == FuturePkgPath {
 				return imp
 			}
 		}
 	}
 	return types.NewPackage(FuturePkgPath, "async")
+}
+
+// getAsyncContextType returns the *async.Context type from the async package.
+// This retrieves the actual type with proper scope for ABI type name generation.
+func (g *PullIRCodeGen) getAsyncContextType() *types.Pointer {
+	fn := g.pullIR.Original
+	if fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		for _, imp := range fn.Pkg.Pkg.Imports() {
+			if imp.Path() == FuturePkgPath {
+				ctxObj := imp.Scope().Lookup("Context")
+				if ctxObj != nil {
+					if ctxNamed, ok := ctxObj.Type().(*types.Named); ok {
+						return types.NewPointer(ctxNamed)
+					}
+				}
+				break
+			}
+		}
+	}
+	// Fallback
+	return types.NewPointer(types.NewStruct(nil, nil))
+}
+
+// getAsyncPollType creates the Poll[T] type using the async package's Poll type.
+func (g *PullIRCodeGen) getAsyncPollType(resultType types.Type) types.Type {
+	fn := g.pullIR.Original
+	if fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		for _, imp := range fn.Pkg.Pkg.Imports() {
+			if imp.Path() == FuturePkgPath {
+				pollObj := imp.Scope().Lookup("Poll")
+				if pollObj != nil {
+					if pollNamed, ok := pollObj.Type().(*types.Named); ok {
+						// Instantiate Poll[T] with resultType
+						typeParams := pollNamed.TypeParams()
+						if typeParams != nil && typeParams.Len() > 0 {
+							inst, err := types.Instantiate(nil, pollNamed, []types.Type{resultType}, false)
+							if err == nil {
+								return inst
+							}
+						}
+					}
+				}
+				break
+			}
+		}
+	}
+	// Fallback: create anonymous struct
+	pollFields := []*types.Var{
+		types.NewVar(0, nil, "ready", types.Typ[types.Bool]),
+		types.NewVar(0, nil, "value", resultType),
+	}
+	return types.NewStruct(pollFields, nil)
 }
 
 // =============================================================================
@@ -479,40 +522,34 @@ func (g *PullIRCodeGen) generateDoneBlock(b llssa.Builder) {
 // =============================================================================
 
 func (g *PullIRCodeGen) generateInterfaceWrapper() error {
-	// TODO: Fix interface wrapper - requires deep ABI/scope investigation
-	// The issue is that MakeInterface needs proper type scope registration,
-	// but the Future[T] interface type lacks scope info, causing nil pointer
-	// in ssa/abi.TypeName -> scopeIndex -> scope.Parent()
-	//
-	// For now, skip interface wrapper - code generation works, user code
-	// needs to use $Concrete wrapper directly or await the concrete type.
 	fn := g.pullIR.Original
-	log.Printf("[PullIR] Skipping interface wrapper for %s (ABI scope issue)", fn.Name())
+	origSig := fn.Signature
+
+	// Create wrapper with original function signature (returns Future[T] interface)
+	wrapperName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
+	wrapper := g.pkg.NewFunc(wrapperName, origSig, llssa.InGo)
+	wrapper.MakeBlocks(1)
+
+	b := wrapper.NewBuilder()
+	b.SetBlock(wrapper.Block(0))
+
+	// Collect parameters
+	args := make([]llssa.Expr, len(fn.Params))
+	for i := range fn.Params {
+		args[i] = wrapper.Param(i)
+	}
+
+	// Call $Concrete wrapper (which returns *State)
+	concreteResult := b.Call(g.concrete.Expr, args...)
+
+	// Convert *State to Future[T] interface using MakeInterface
+	// The Named type with Poll method enables proper itab generation
+	origRetType := origSig.Results().At(0).Type()
+	ifaceType := g.prog.Type(origRetType, llssa.InGo)
+	ifaceVal := b.MakeInterface(ifaceType, concreteResult)
+
+	b.Return(ifaceVal)
+
+	log.Printf("[PullIR] Generated interface wrapper for %s", fn.Name())
 	return nil
-
-	// Below is the intended implementation once scope issue is fixed:
-	/*
-		origSig := fn.Signature
-
-		wrapperName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
-		wrapper := g.pkg.NewFunc(wrapperName, origSig, llssa.InGo)
-		wrapper.MakeBlocks(1)
-
-		b := wrapper.NewBuilder()
-		b.SetBlock(wrapper.Block(0))
-
-		args := make([]llssa.Expr, len(fn.Params))
-		for i := range fn.Params {
-			args[i] = wrapper.Param(i)
-		}
-
-		concreteResult := b.Call(g.concrete.Expr, args...)
-
-		origRetType := origSig.Results().At(0).Type()
-		ifaceType := g.prog.Type(origRetType, llssa.InGo)
-		ifaceVal := b.MakeInterface(ifaceType, concreteResult)
-
-		b.Return(ifaceVal)
-		log.Printf("[PullIR] Generated interface wrapper for %s", fn.Name())
-	*/
 }
