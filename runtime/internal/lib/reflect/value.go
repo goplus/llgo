@@ -2756,6 +2756,14 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 		rcvrtype = iface.itab.typ
 		fn = unsafe.Pointer(iface.itab.fun[i])
 		t = (*funcType)(unsafe.Pointer(m.Typ_))
+		if rcvrtype.Kind() != abi.Pointer && rcvrtype.IsDirectIface() {
+			for _, em := range rcvrtype.ExportedMethods() {
+				if em.Name() == m.Name() {
+					fn = em.Tfn_
+					break
+				}
+			}
+		}
 	} else {
 		rcvrtype = v.typ()
 		ms := v.typ().ExportedMethods()
