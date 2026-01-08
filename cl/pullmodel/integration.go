@@ -22,6 +22,7 @@ package pullmodel
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -105,37 +106,89 @@ func TransformFunction(ctx *IntegrationContext, fn *ssa.Function) (transformed b
 
 // Example integration in compile.go:
 //
-// func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
-//     // ... existing code ...
+//	func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
+//	    // ... existing code ...
 //
-//     for _, m := range members {
-//         member := m.val
-//         switch member := member.(type) {
-//         case *ssa.Function:
-//             if member.TypeParams() != nil || member.TypeArgs() != nil {
-//                 continue
-//             }
+//	    for _, m := range members {
+//	        member := m.val
+//	        switch member := member.(type) {
+//	        case *ssa.Function:
+//	            if member.TypeParams() != nil || member.TypeArgs() != nil {
+//	                continue
+//	            }
 //
-//             // NEW: Check for async function
-//             if pullmodel.ShouldTransform(member) {
-//                 integCtx := &pullmodel.IntegrationContext{
-//                     LLProg: ctx.prog,
-//                     LLPkg:  ret,
-//                     SSAPkg: pkg,
-//                 }
-//                 if transformed, err := pullmodel.TransformFunction(integCtx, member); err != nil {
-//                     log.Printf("Pull model transformation failed: %v", err)
-//                     // Fallback to normal compilation
-//                     ctx.compileFuncDecl(ret, member)
-//                 } else if transformed {
-//                     log.Printf("Successfully transformed async function: %s", member.Name())
-//                     // Skip normal compilation, state machine is generated
-//                     continue
-//                 }
-//             }
+//	            // NEW: Check for async function
+//	            if pullmodel.ShouldTransform(member) {
+//	                integCtx := &pullmodel.IntegrationContext{
+//	                    LLProg: ctx.prog,
+//	                    LLPkg:  ret,
+//	                    SSAPkg: pkg,
+//	                }
+//	                if transformed, err := pullmodel.TransformFunction(integCtx, member); err != nil {
+//	                    log.Printf("Pull model transformation failed: %v", err)
+//	                    // Fallback to normal compilation
+//	                    ctx.compileFuncDecl(ret, member)
+//	                } else if transformed {
+//	                    log.Printf("Successfully transformed async function: %s", member.Name())
+//	                    // Skip normal compilation, state machine is generated
+//	                    continue
+//	                }
+//	            }
 //
-//             ctx.compileFuncDecl(ret, member)
-//         // ... rest of cases ...
-//         }
-//     }
-// }
+//	            ctx.compileFuncDecl(ret, member)
+//	        // ... rest of cases ...
+//	        }
+//	    }
+//	}
+//
+// usePullIR checks if the Pull IR backend should be used.
+// Set LLGO_PULL_IR=1 to enable the new Pull IR-based code generation.
+var usePullIR = os.Getenv("LLGO_PULL_IR") == "1"
+
+// UsePullIR returns true if Pull IR backend is enabled via environment variable.
+func UsePullIR() bool {
+	return usePullIR
+}
+
+// GenerateWithPullIR generates code for an async function using the Pull IR pipeline.
+// This is an alternative to GenerateStateMachineWithCallback that uses explicit
+// slot-based value storage instead of cached SSA values.
+//
+// The Pull IR approach:
+// 1. Transform SSA to Pull IR with explicit PHI lowering via EdgeWrites
+// 2. Generate LLVM IR with unified Poll loop (for { switch(state) { ... } })
+// 3. All values accessed via explicit Load/Store on state struct fields
+//
+// This eliminates the SSA value caching issues that caused the RangeAggregator bug.
+func GenerateWithPullIR(
+	prog llssa.Program,
+	pkg llssa.Package,
+	ssaPkg *ssa.Package,
+	fn *ssa.Function,
+	compileValue CompileValueFunc,
+	compileInstr CompileInstrFunc,
+) error {
+	// Step 1: Analyze and transform to state machine
+	sm := Transform(fn)
+	if sm == nil {
+		return fmt.Errorf("failed to transform %s to state machine", fn.Name())
+	}
+	log.Printf("[PullIR] Transformed %s: %d states, %d crossvars", fn.Name(), len(sm.States), len(sm.CrossVars))
+
+	// Step 2: Transform SSA to Pull IR
+	pullIR, err := TransformToPullIR(sm)
+	if err != nil {
+		return fmt.Errorf("SSA to Pull IR transform failed: %w", err)
+	}
+	log.Printf("[PullIR] Generated Pull IR: %d states, %d slots", len(pullIR.States), len(pullIR.Slots))
+
+	// Step 3: Generate LLVM IR from Pull IR
+	codegen := NewPullIRCodeGen(prog, pkg, ssaPkg, pullIR)
+	codegen.SetCallbacks(compileValue, compileInstr)
+
+	if err := codegen.Generate(); err != nil {
+		return fmt.Errorf("Pull IR code generation failed: %w", err)
+	}
+
+	return nil
+}

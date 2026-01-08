@@ -1332,7 +1332,30 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 					ctx.bvals[v] = expr
 				}
 
-				if err := pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue, compileInstr, registerValue); err != nil {
+				// Callback 4: clearCacheExcept - clears ALL cached values.
+				// This is called at each state block entry to prevent SSA dominance violations.
+				// We must clear ALL values (not just non-crossvars) because:
+				// 1. BinOps like t6+1 get cached and incorrectly reused across states
+				// 2. The state block entry code will re-register params/crossvars with fresh loads
+				// The 'keep' parameter is now ignored - we clear everything then reload.
+				clearCacheExcept := func(keep []ssa.Value) {
+					// Clear ALL cached values - the block entry code will re-register needed values
+					for v := range ctx.bvals {
+						delete(ctx.bvals, v)
+					}
+				}
+
+				// Choose code generation backend
+				var err error
+				if pullmodel.UsePullIR() {
+					// New Pull IR-based backend with explicit PHI lowering
+					err = pullmodel.GenerateWithPullIR(ctx.prog, ret, pkg, member, compileValue, compileInstr)
+				} else {
+					// Existing SSA-based backend
+					err = pullmodel.GenerateStateMachineWithCallback(ctx.prog, ret, pkg, member, compileValue, compileInstr, registerValue, clearCacheExcept)
+				}
+
+				if err != nil {
 					log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", member.Name(), err)
 					ctx.compileFuncDecl(ret, member)
 				}
