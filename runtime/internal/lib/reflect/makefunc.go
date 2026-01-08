@@ -95,13 +95,6 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	if err != nil {
 		panic("libffi error: " + err.Error())
 	}
-	// styp := runtime.Struct("", 2*unsafe.Sizeof(0), abi.StructField{
-	// 	Name_: "$f",
-	// 	Typ:   &ftyp.Type,
-	// }, abi.StructField{
-	// 	Name_: "$data",
-	// 	Typ:   unsafePointerType,
-	// })
 	styp := closureOf(ftyp)
 	fv := &struct {
 		fn  unsafe.Pointer

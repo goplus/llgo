@@ -2432,7 +2432,11 @@ func resolveIndirectValue(v *Value, typ *abi.Type) {
 		fv := *(*float64)(v.ptr)
 		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat64(fv)))
 	default:
-		v.ptr = *(*unsafe.Pointer)(v.ptr)
+		if typ.Size_ < unsafe.Sizeof(0) {
+			v.ptr = truncate(*(*unsafe.Pointer)(v.ptr), typ.Size_*8)
+		} else {
+			v.ptr = *(*unsafe.Pointer)(v.ptr)
+		}
 	}
 	v.flag &= ^flagIndir
 }
@@ -2451,12 +2455,21 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 	if t.Kind() == abi.Interface {
 		// the interface data word becomes the receiver word
 		iface := (*nonEmptyInterface)(v.ptr)
-		*(*unsafe.Pointer)(p) = iface.word
+		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
+	} else if v.flag&flagIndir == 0 && runtime.DirectIfaceData(t) {
+		*(*unsafe.Pointer)(p) = unsafe.Pointer(&v.ptr)
 	} else {
 		*(*unsafe.Pointer)(p) = v.ptr
 	}
+}
+
+func ifacePtrData(i *nonEmptyInterface) unsafe.Pointer {
+	if runtime.DirectIfaceData(i.itab.typ) {
+		return unsafe.Pointer(&i.word)
+	}
+	return i.word
 }
 
 var stringType = rtypeOf("")
@@ -2767,9 +2780,6 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 			panic("reflect: " + op + " of unexported method")
 		}
 		ifn := m.Ifn_
-		if v.Kind() != Pointer && v.flag&flagIndir == 0 {
-			ifn = m.Tfn_
-		}
 		fn = unsafe.Pointer(ifn)
 		t = (*funcType)(unsafe.Pointer(m.Mtyp_))
 	}

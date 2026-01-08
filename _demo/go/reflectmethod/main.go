@@ -31,8 +31,7 @@ func main() {
 	TestMethodValue(&t)
 	TestVariadicMethodValue(&t)
 	TestDirectIfaceMethod(&t)
-	// TODO: convert
-	//TestMethod5(&t)
+	TestMethod5(&t)
 }
 
 func shouldPanic(expect string, f func()) {
