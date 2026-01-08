@@ -24,5 +24,5 @@
 	"gdb": [
 		"riscv32-esp-elf-gdb"
 	],
-	"emulator": "qemu-system-riscv32 -machine esp32c3 -nographic -drive file={img},if=mtd,format=raw -serial mon:stdio"
+	"emulator": "qemu-system-riscv32 -semihosting -machine esp32c3 -nographic -drive file={img},if=mtd,format=raw -serial mon:stdio"
 }
