@@ -984,3 +984,496 @@ sequenceDiagram
 | 结构体 (Point) | ✓ | ✓ |
 | 结构体指针 (*Point) | ✓ | ✓ |
 | 混合类型 (Point, int, *Point) | ✓ | ✓ |
+
+---
+
+## 8. Block_On 机制（已实现）
+
+### 8.1 问题：如何从 $coro 函数获取返回值
+
+**问题**：在双符号模式下，所有 `$coro` 函数的签名都是 `(参数) → ptr`，返回协程句柄而非实际返回值。当我们需要获取返回值时，需要一个统一的机制来：
+1. 等待协程执行完成
+2. 从 Promise 中提取返回值
+3. 处理资源清理
+
+**解决方案**：Block_On 机制——调用 `$coro` 函数后自动插入等待和提取逻辑。
+
+### 8.2 Block_On 的执行流程
+
+```
+Block_On 执行流程：
+1. 调用 $coro 函数，获取协程句柄 handle
+2. 调用 CoroScheduleUntil(handle) 等待协程完成
+   - 调度器循环调用 coro.resume 直到 coro.done 返回 true
+3. 调用 llvm.coro.promise 获取 Promise 指针
+4. 从 Promise load 返回值
+5. 返回值可用于后续计算
+```
+
+### 8.3 同步上下文 vs 异步上下文
+
+Block_On 的行为取决于调用发生在哪种上下文中：
+
+#### 同步上下文（普通函数调用 $coro）
+
+```go
+func main() {
+    result := compute(10)  // main 是普通函数，调用 tainted 的 compute
+}
+```
+
+- 调用者（main）不是协程，无法挂起自己
+- Block_On 使用**阻塞式等待**：在当前线程上循环 resume 目标协程直到完成
+- 调用者被完全阻塞，类似于 Rust 的 `block_on` 或 Python 的 `asyncio.run()`
+- 适用于程序入口点或从同步代码调用异步逻辑
+
+#### 异步上下文（$coro 函数调用 $coro）
+
+```go
+func caller() {      // caller 是 tainted，生成 caller$coro
+    result := compute(10)  // $coro 调用 $coro
+}
+```
+
+- 调用者（caller$coro）本身是协程，可以挂起
+- Block_On 可以使用**协作式等待**：子协程未完成时，父协程也挂起，让出控制权
+- 调度器可以在多个协程之间切换，实现真正的并发
+- 类似于 async/await 中的 await 关键字
+
+#### 当前实现
+
+当前 MVP 统一使用 `CoroScheduleUntil` 阻塞式等待，暂不区分上下文。这意味着：
+- 同步和异步上下文行为一致
+- 并发调度依赖 `go` 语句显式创建独立协程
+- 未来可扩展：运行时通过 `CoroIsInCoro()` 检测上下文，选择等待策略
+
+### 8.4 Block_On 的应用场景
+
+Block_On 被自动插入到所有需要从 `$coro` 函数获取返回值的场景：
+
+| 场景 | 被调用函数 | 返回类型 | 需要 Block_On |
+|------|-----------|---------|---------------|
+| tainted 函数调用 | `compute$coro` | ptr (handle) | ✓ |
+| 闭包调用 | `closure$coro` | ptr (handle) | ✓ |
+| 接口方法调用 | itab 中的 `$coro` 方法 | ptr (handle) | ✓ |
+| 方法值调用 | `$bound$coro` | ptr (handle) | ✓ |
+| 方法表达式调用 | `$thunk$coro` | ptr (handle) | ✓ |
+
+### 8.5 实现细节
+
+Block_On 由 `coroAwaitAndLoadResult` 函数实现，生成以下 IR：
+
+```llvm
+; 假设 %handle 是调用 $coro 函数返回的协程句柄
+
+; Step 1: 等待协程完成
+call void @"runtime.CoroScheduleUntil"(ptr %handle)
+
+; Step 2: 获取 Promise 指针
+%promise_ptr = call ptr @llvm.coro.promise(ptr %handle, i32 8, i1 false)
+
+; Step 3: 读取返回值
+%result = load i64, ptr %promise_ptr   ; 单返回值情况
+
+; 多返回值情况：
+%tuple = load { i64, i64, i64 }, ptr %promise_ptr
+%a = extractvalue { i64, i64, i64 } %tuple, 0
+%b = extractvalue { i64, i64, i64 } %tuple, 1
+%c = extractvalue { i64, i64, i64 } %tuple, 2
+```
+
+### 8.6 Block_On 与后续功能的关系
+
+Block_On 是闭包、接口、方法值等功能的基础：
+
+```
+                    ┌─────────────┐
+                    │   Block_On  │
+                    │  等待+提取   │
+                    └──────┬──────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+        ▼                  ▼                  ▼
+   ┌─────────┐      ┌───────────┐      ┌───────────┐
+   │  闭包   │      │ 接口方法  │      │ 方法值/   │
+   │ 调用    │      │   调用    │      │ 方法表达式│
+   └─────────┘      └───────────┘      └───────────┘
+```
+
+所有这些场景都返回协程句柄，都依赖 Block_On 来获取实际返回值。
+
+---
+
+## 9. 闭包支持（已实现）
+
+### 9.1 问题：闭包如何支持协程
+
+**问题**：闭包（匿名函数）是 Go 中常用的构造，可能捕获外部变量。在协程模式下：
+- 闭包内部可能包含 suspend 点或调用 tainted 函数
+- 闭包可以被存储到变量、作为参数传递、作为返回值
+- 需要在运行时正确处理闭包调用
+
+**解决方案**：
+1. 闭包统一生成 `$coro` 版本（只有 `$coro` 版本有函数体）
+2. 闭包调用时自动插入 Block_On
+
+### 9.2 闭包的双符号生成
+
+```go
+func createWorker(multiplier int) func(int) int {
+    return func(x int) int {  // 闭包 createWorker$1
+        coroSuspend()
+        return x * multiplier
+    }
+}
+```
+
+**生成的符号**：
+
+| 符号 | 有函数体 | 说明 |
+|------|---------|------|
+| `createWorker$1` | 否（只有声明） | 同步版本，不生成 |
+| `createWorker$1$coro` | 是（完整定义） | 协程版本 |
+
+**原因**：闭包有捕获变量（`FreeVars > 0`），即 `hasCtx = true`。按设计，有上下文的函数只生成 `$coro` 版本。
+
+### 9.3 闭包调用的 Block_On
+
+```go
+func caller() {
+    worker := createWorker(2)
+    result := worker(10)  // 闭包调用
+}
+```
+
+编译流程：
+```
+1. createWorker 返回闭包 { fn_ptr, ctx }
+   - fn_ptr 指向 createWorker$1$coro
+   - ctx 是捕获的 multiplier
+
+2. 调用闭包：
+   %handle = call ptr %fn_ptr(ptr %ctx, i64 10)  ; 返回协程句柄
+
+3. Block_On：
+   call void @CoroScheduleUntil(ptr %handle)
+   %promise = call ptr @llvm.coro.promise(...)
+   %result = load i64, ptr %promise
+```
+
+### 9.4 闭包存储与传递
+
+闭包可以安全地存储到各种位置：
+
+```go
+// 全局变量
+var globalWorker func(int) int
+
+// 结构体字段
+type Handler struct {
+    process func(int) int
+}
+
+// 切片
+var workers []func(int) int
+
+// 函数参数
+func runWorker(fn func(int) int, x int) int {
+    return fn(x)  // Block_On 自动插入
+}
+```
+
+由于闭包统一使用 `$coro` 版本，无论存储在哪里，调用时都自动 Block_On。
+
+### 9.5 命名函数类型
+
+命名函数类型与普通闭包行为一致：
+
+```go
+type WorkerFunc func(int) int
+
+func runWorker(fn WorkerFunc, x int) int {
+    return fn(x)  // Block_On 自动插入
+}
+```
+
+---
+
+## 10. 接口方法支持（已实现）
+
+### 10.1 问题：接口的间接调用如何选择版本
+
+**问题**：接口方法调用是通过 itab 的间接调用，编译期不知道具体实现类型。在协程模式下：
+- 如何决定调用同步版本还是 `$coro` 版本？
+- itab 应该存储哪个版本的方法指针？
+
+**解决方案**：
+1. itab 中统一存储 `$coro` 版本的方法指针
+2. 接口方法调用时自动插入 Block_On
+
+### 10.2 itab 布局变更
+
+```go
+type Worker interface {
+    Work() int
+}
+
+type AsyncWorker struct { value int }
+
+func (w *AsyncWorker) Work() int {
+    coroSuspend()
+    return w.value * 2
+}
+```
+
+**itab 布局**（协程模式）：
+```
+itab for *AsyncWorker implementing Worker:
+  +0:   inter (接口类型指针)
+  +8:   type (具体类型指针)
+  +16:  hash
+  +24:  (*AsyncWorker).Work$coro   ← 存储 $coro 版本
+```
+
+### 10.3 接口方法调用的 Block_On
+
+```go
+func callWorker(w Worker) int {
+    return w.Work()  // 接口方法调用
+}
+```
+
+编译流程：
+```
+1. 从 itab 获取方法指针（已是 $coro 版本）
+   %itab = extractvalue %iface %w, 0
+   %method_ptr = load ptr, ptr (gep %itab, 3)  ; 第一个方法
+
+2. 获取数据指针
+   %data = call ptr @IfacePtrData(%iface %w)
+
+3. 调用方法，返回协程句柄
+   %handle = call ptr %method_ptr(ptr %data)
+
+4. Block_On
+   call void @CoroScheduleUntil(ptr %handle)
+   %promise = call ptr @llvm.coro.promise(...)
+   %result = load i64, ptr %promise
+```
+
+### 10.4 Imethod 签名变更
+
+`Imethod` 是从接口提取方法形成的闭包。在协程模式下，其签名变为 `$coro` 版本：
+
+| 模式 | Imethod 签名 |
+|------|-------------|
+| 同步模式 | `func() int` |
+| 协程模式 | `func() ptr` |
+
+### 10.5 runtime 包排除
+
+**问题**：runtime 包提供协程基础设施（CoroScheduleUntil、CoroEnter 等），如果 runtime 的接口调用也走协程路径会产生循环依赖。
+
+**解决方案**：runtime 包的接口方法不使用 `$coro` 版本：
+- runtime 的 itab 存储同步版本方法指针
+- runtime 的接口调用不插入 Block_On
+
+实现位置：
+- `ssa/abitype.go`: `abiMethodFunc` 跳过 runtime 包
+- `ssa/interface.go`: `Imethod` 对 runtime 包使用原始签名
+- `cl/instr.go`: 接口调用跳过 runtime 包的 Block_On
+
+### 10.6 已验证场景
+
+| 场景 | 状态 | 说明 |
+|------|------|------|
+| 基本接口调用 | ✓ | `w.Work()` |
+| 嵌入接口 | ✓ | `AdvancedWorker` 嵌入 `Worker` |
+| 接口调用接口 | ✓ | Delegator 模式 |
+| 接口返回接口 | ✓ | Factory 模式 |
+| 类型断言 | ✓ | `w.(*AsyncWorker)` |
+| 接口切片 | ✓ | `[]Worker` 迭代 |
+| 嵌套嵌入 | ✓ | 多层接口嵌入 |
+
+---
+
+## 11. 方法值与方法表达式（已实现）
+
+### 11.1 问题：方法引用如何处理
+
+**问题**：Go 支持两种方法引用方式：
+- **方法值**（Method Value）：`instance.Method`，绑定特定接收者
+- **方法表达式**（Method Expression）：`Type.Method`，接收者作为参数
+
+在协程模式下，这两种引用如何生成和调用？
+
+### 11.2 方法值（$bound）
+
+```go
+var w Worker = &AsyncWorker{value: 10}
+workFn := w.Work   // 方法值，类型 func() int
+result := workFn() // 调用
+```
+
+**生成机制**：
+- Go SSA 生成 `Worker.Work$bound` 函数
+- 捕获接口值作为 FreeVar
+- 运行时从 itab 动态获取方法指针并调用
+
+**符号生成**：
+
+| 符号 | 有函数体 | 原因 |
+|------|---------|------|
+| `Worker.Work$bound` | 否 | 有捕获变量，只生成 $coro |
+| `Worker.Work$bound$coro` | 是 | 完整协程函数 |
+
+**$bound$coro 的逻辑**：
+```
+1. 从闭包上下文加载捕获的接口值
+2. 从 itab 获取方法指针（$coro 版本）
+3. 获取数据指针
+4. 调用方法，返回 handle
+5. await handle（$bound$coro 本身也是协程）
+6. 存储结果到自己的 Promise
+```
+
+### 11.3 方法表达式（$thunk）
+
+```go
+workThunk := (*AsyncWorker).Work  // 方法表达式，类型 func(*AsyncWorker) int
+aw := &AsyncWorker{value: 20}
+result := workThunk(aw)           // 调用，接收者作为参数
+```
+
+**生成机制**：
+- Go SSA 生成 `(*AsyncWorker).Work$thunk` 函数
+- 无捕获变量，接收者作为第一个参数
+- 直接调用实际方法
+
+**符号生成**：
+
+| 符号 | 有函数体 | 原因 |
+|------|---------|------|
+| `(*AsyncWorker).Work$thunk` | 是 | 无捕获变量，生成两个版本 |
+| `(*AsyncWorker).Work$thunk$coro` | 是 | |
+
+**$thunk 的逻辑**（简单包装）：
+```llvm
+define i64 @"(*AsyncWorker).Work$thunk"(ptr %recv) {
+    %result = call i64 @"(*AsyncWorker).Work"(ptr %recv)
+    ret i64 %result
+}
+
+define ptr @"(*AsyncWorker).Work$thunk$coro"(ptr %recv) {
+    ; coro prologue
+    %handle = call ptr @"(*AsyncWorker).Work$coro"(ptr %recv)
+    ; await + coro epilogue
+}
+```
+
+### 11.4 $bound vs $thunk 对比
+
+| 特性 | $bound | $thunk |
+|------|--------|--------|
+| 语法 | `instance.Method` | `Type.Method` |
+| 类型示例 | `func() int` | `func(*T) int` |
+| 接收者 | 捕获为 FreeVar | 作为参数 |
+| FreeVars | > 0 | = 0 |
+| 生成版本 | 只有 $coro | 同步 + $coro |
+| 调用方式 | 动态（通过 itab） | 静态 |
+
+### 11.5 IsClosureName 的扩展
+
+为了让编译器正确识别 `$bound` 和 `$thunk` 为闭包类型，扩展了 `IsClosureName` 函数：
+
+```go
+func IsClosureName(name string) bool {
+    // 识别 $bound 和 $thunk
+    if strings.HasSuffix(name, "$bound") || strings.HasSuffix(name, "$thunk") {
+        return true
+    }
+    // 原有逻辑：识别 $1, $2 等数字后缀
+    // ...
+}
+```
+
+---
+
+## 12. 运行时协程跟踪（已实现）
+
+### 12.1 问题：如何检测当前是否在协程上下文中
+
+**问题**：某些场景需要运行时判断当前是否在协程上下文中：
+- Block_On 选择阻塞式还是协作式等待
+- 调试和诊断
+- 未来的反射支持
+
+**解决方案**：通过协程深度计数跟踪。
+
+### 12.2 实现
+
+```go
+// runtime/internal/runtime/z_coro.go
+var coroDepth int
+
+func CoroEnter() {
+    coroDepth++
+}
+
+func CoroExit() {
+    coroDepth--
+}
+
+func CoroIsInCoro() bool {
+    return coroDepth > 0
+}
+```
+
+### 12.3 调用位置
+
+```llvm
+; CoroFuncPrologue（coro.begin 之后）
+%handle = call ptr @llvm.coro.begin(token %id, ptr %mem)
+call void @"runtime.CoroEnter"()   ; ← 标记进入协程
+br label %body
+
+; CoroFuncEpilogue（cleanup 块，free 之后）
+%mem = call ptr @llvm.coro.free(token %id, ptr %handle)
+call void @free(ptr %mem)
+call void @"runtime.CoroExit"()    ; ← 标记退出协程
+br label %end
+```
+
+**CoroExit 在 cleanup 块的原因**：确保协程完全清理后才减少深度计数。如果放在 final suspend 块，协程帧还未释放，可能导致计数不准确。
+
+---
+
+## 13. 当前状态与待实现功能
+
+### 13.1 已实现功能
+
+| 功能 | 状态 | 关键实现 |
+|------|------|---------|
+| 双符号生成 | ✓ | `compileFuncDecl` + `compileCoroFuncDecl` |
+| coroSuspend | ✓ | 编译为 `coro.suspend` |
+| go 语句 | ✓ | 调用 $coro + CoroSpawn |
+| Promise 返回值 | ✓ | `coro.promise` 机制 |
+| 自动 await | ✓ | `$coro` 调用 `$coro` |
+| Taint 分析 | ✓ | 递归传播 |
+| **Block_On** | ✓ | `coroAwaitAndLoadResult` |
+| **闭包** | ✓ | 只生成 $coro，调用时 Block_On |
+| **接口方法** | ✓ | itab 存 $coro，Imethod 改签名 |
+| **方法值 ($bound)** | ✓ | IsClosureName 识别 |
+| **方法表达式 ($thunk)** | ✓ | 双版本生成 |
+| **运行时跟踪** | ✓ | CoroEnter/CoroExit |
+
+### 13.2 待实现功能
+
+| 功能 | 优先级 | 说明 |
+|------|--------|------|
+| Channel 操作 | 高 | `<-ch`、`ch <- v` 作为挂起点 |
+| Select 语句 | 高 | 多路复用等待 |
+| Mutex | 中 | 协作式锁 |
+| 协作式 Block_On | 中 | 根据上下文选择等待策略 |
+| 反射调用 | 低 | 运行时动态选择版本 |
