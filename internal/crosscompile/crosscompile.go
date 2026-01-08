@@ -190,9 +190,12 @@ func compileWithConfig(
 			break
 		}
 		if filepath.Ext(group.OutputFileName) == ".o" {
-			continue
+			// .o files are linked directly (unconditionally)
+			ldflags = append(ldflags, filepath.Join(outputDir, filepath.Base(group.OutputFileName)))
+		} else {
+			// .a files use -l flag (on-demand linking)
+			ldflags = append(ldflags, "-l"+ldFlagsFromFileName(group.OutputFileName))
 		}
-		ldflags = append(ldflags, "-l"+ldFlagsFromFileName(group.OutputFileName))
 	}
 	return
 }
