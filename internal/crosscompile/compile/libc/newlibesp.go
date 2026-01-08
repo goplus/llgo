@@ -48,6 +48,20 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 	return compile.CompileConfig{
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
+			// libsemihost provides semihosting _exit for QEMU emulator support
+			// Compiled as .o to ensure unconditional linking (overrides weak _exit in syscalls.c)
+			{
+				OutputFileName: fmt.Sprintf("libsemihost-%s.o", target),
+				Files: []string{
+					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_exit.c"),
+				},
+				CFlags: []string{
+					"-isystem" + filepath.Join(libcDir, "include"),
+					"-I" + filepath.Join(baseDir, "libgloss", "riscv"),
+				},
+				LDFlags: _libcLDFlags,
+				CCFlags: _libcCCFlags,
+			},
 			{
 				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
 				Files: []string{
