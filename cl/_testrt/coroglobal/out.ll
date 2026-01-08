@@ -156,6 +156,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
   %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -168,6 +169,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %8 = call ptr @llvm.coro.free(token %0, ptr %6)
   call void @free(ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -272,6 +274,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %9 = phi ptr [ null, %_llgo_0 ], [ %8, %_llgo_2 ]
   %10 = call ptr @llvm.coro.begin(token %1, ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_11
@@ -284,6 +287,7 @@ _llgo_4:                                          ; preds = %_llgo_11
 _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
   %12 = call ptr @llvm.coro.free(token %1, ptr %10)
   call void @free(ptr %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
@@ -375,6 +379,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %9 = phi ptr [ null, %_llgo_0 ], [ %8, %_llgo_2 ]
   %10 = call ptr @llvm.coro.begin(token %1, ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_11
@@ -387,6 +392,7 @@ _llgo_4:                                          ; preds = %_llgo_11
 _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
   %12 = call ptr @llvm.coro.free(token %1, ptr %10)
   call void @free(ptr %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
@@ -482,6 +488,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
   %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -494,6 +501,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %8 = call ptr @llvm.coro.free(token %0, ptr %6)
   call void @free(ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -595,6 +603,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -607,6 +616,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -707,6 +717,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %8 = phi ptr [ null, %_llgo_0 ], [ %7, %_llgo_2 ]
   %9 = call ptr @llvm.coro.begin(token %3, ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -719,6 +730,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %11 = call ptr @llvm.coro.free(token %3, ptr %9)
   call void @free(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -823,6 +835,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %11 = phi ptr [ null, %_llgo_0 ], [ %10, %_llgo_2 ]
   %12 = call ptr @llvm.coro.begin(token %2, ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_1
@@ -835,6 +848,7 @@ _llgo_4:                                          ; preds = %_llgo_1
 _llgo_5:                                          ; preds = %_llgo_7, %_llgo_4
   %14 = call ptr @llvm.coro.free(token %2, ptr %12)
   call void @free(ptr %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_8
@@ -880,6 +894,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %3, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -892,6 +907,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %13 = call ptr @llvm.coro.free(token %3, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -969,6 +985,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %11 = phi ptr [ null, %_llgo_0 ], [ %10, %_llgo_2 ]
   %12 = call ptr @llvm.coro.begin(token %0, ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_11
@@ -981,6 +998,7 @@ _llgo_4:                                          ; preds = %_llgo_11
 _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
   %14 = call ptr @llvm.coro.free(token %0, ptr %12)
   call void @free(ptr %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
@@ -1060,6 +1078,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -1072,6 +1091,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -1120,6 +1140,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %8 = phi ptr [ null, %_llgo_0 ], [ %7, %_llgo_2 ]
   %9 = call ptr @llvm.coro.begin(token %3, ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -1132,6 +1153,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %11 = call ptr @llvm.coro.free(token %3, ptr %9)
   call void @free(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -1239,6 +1261,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %1, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_1
@@ -1251,6 +1274,7 @@ _llgo_4:                                          ; preds = %_llgo_1
 _llgo_5:                                          ; preds = %_llgo_7, %_llgo_4
   %13 = call ptr @llvm.coro.free(token %1, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_8
@@ -1301,6 +1325,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %14 = phi ptr [ null, %_llgo_0 ], [ %13, %_llgo_2 ]
   %15 = call ptr @llvm.coro.begin(token %3, ptr %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_1
@@ -1313,6 +1338,7 @@ _llgo_4:                                          ; preds = %_llgo_1
 _llgo_5:                                          ; preds = %_llgo_7, %_llgo_4
   %17 = call ptr @llvm.coro.free(token %3, ptr %15)
   call void @free(ptr %17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_8
@@ -1373,6 +1399,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %1, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_1
@@ -1385,6 +1412,7 @@ _llgo_4:                                          ; preds = %_llgo_1
 _llgo_5:                                          ; preds = %_llgo_7, %_llgo_4
   %13 = call ptr @llvm.coro.free(token %1, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_8
@@ -1430,6 +1458,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %3, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -1442,6 +1471,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %13 = call ptr @llvm.coro.free(token %3, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -1635,6 +1665,7 @@ _llgo_8:                                          ; preds = %_llgo_0
 _llgo_9:                                          ; preds = %_llgo_8, %_llgo_0
   %31 = phi ptr [ null, %_llgo_0 ], [ %30, %_llgo_8 ]
   %32 = call ptr @llvm.coro.begin(token %0, ptr %31)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_10:                                         ; preds = %_llgo_7
@@ -1647,6 +1678,7 @@ _llgo_10:                                         ; preds = %_llgo_7
 _llgo_11:                                         ; preds = %_llgo_22, %_llgo_10, %_llgo_18, %_llgo_1
   %34 = call ptr @llvm.coro.free(token %0, ptr %32)
   call void @free(ptr %34)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_12
 
 _llgo_12:                                         ; preds = %_llgo_11, %_llgo_23
@@ -1736,6 +1768,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %3, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -1748,6 +1781,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %13 = call ptr @llvm.coro.free(token %3, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -1902,6 +1936,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %7 = phi ptr [ null, %_llgo_0 ], [ %6, %_llgo_2 ]
   %8 = call ptr @llvm.coro.begin(token %0, ptr %7)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_81
@@ -1914,6 +1949,7 @@ _llgo_4:                                          ; preds = %_llgo_81
 _llgo_5:                                          ; preds = %_llgo_84, %_llgo_4, %_llgo_80, %_llgo_73, %_llgo_66, %_llgo_59, %_llgo_52, %_llgo_45, %_llgo_38, %_llgo_31, %_llgo_24, %_llgo_17, %_llgo_10
   %10 = call ptr @llvm.coro.free(token %0, ptr %8)
   call void @free(ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_85
@@ -2321,6 +2357,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -2333,6 +2370,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -2417,6 +2455,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %8 = phi ptr [ null, %_llgo_0 ], [ %7, %_llgo_2 ]
   %9 = call ptr @llvm.coro.begin(token %0, ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_18
@@ -2429,6 +2468,7 @@ _llgo_4:                                          ; preds = %_llgo_18
 _llgo_5:                                          ; preds = %_llgo_21, %_llgo_4, %_llgo_17, %_llgo_10
   %11 = call ptr @llvm.coro.free(token %0, ptr %9)
   call void @free(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_22
@@ -2592,6 +2632,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
   %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_27
@@ -2604,6 +2645,7 @@ _llgo_4:                                          ; preds = %_llgo_27
 _llgo_5:                                          ; preds = %_llgo_30, %_llgo_4, %_llgo_26, %_llgo_19, %_llgo_12, %_llgo_1
   %8 = call ptr @llvm.coro.free(token %0, ptr %6)
   call void @free(ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_31
@@ -2776,6 +2818,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %3, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -2788,6 +2831,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %13 = call ptr @llvm.coro.free(token %3, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -2847,6 +2891,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %3, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -2859,6 +2904,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %13 = call ptr @llvm.coro.free(token %3, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -2933,6 +2979,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
   %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -2945,6 +2992,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %8 = call ptr @llvm.coro.free(token %0, ptr %6)
   call void @free(ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -3047,6 +3095,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %18 = phi ptr [ null, %_llgo_0 ], [ %17, %_llgo_2 ]
   %19 = call ptr @llvm.coro.begin(token %3, ptr %18)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_11
@@ -3059,6 +3108,7 @@ _llgo_4:                                          ; preds = %_llgo_11
 _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
   %21 = call ptr @llvm.coro.free(token %3, ptr %19)
   call void @free(ptr %21)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
@@ -3152,6 +3202,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %22 = phi ptr [ null, %_llgo_0 ], [ %21, %_llgo_2 ]
   %23 = call ptr @llvm.coro.begin(token %3, ptr %22)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_11
@@ -3164,6 +3215,7 @@ _llgo_4:                                          ; preds = %_llgo_11
 _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
   %25 = call ptr @llvm.coro.free(token %3, ptr %23)
   call void @free(ptr %25)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
@@ -3246,6 +3298,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %16 = phi ptr [ null, %_llgo_0 ], [ %15, %_llgo_2 ]
   %17 = call ptr @llvm.coro.begin(token %3, ptr %16)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -3258,6 +3311,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %19 = call ptr @llvm.coro.free(token %3, ptr %17)
   call void @free(ptr %19)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -3334,6 +3388,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %0, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_11
@@ -3346,6 +3401,7 @@ _llgo_4:                                          ; preds = %_llgo_11
 _llgo_5:                                          ; preds = %_llgo_14, %_llgo_4, %_llgo_10
   %13 = call ptr @llvm.coro.free(token %0, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_15
@@ -3435,6 +3491,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %8 = phi ptr [ null, %_llgo_0 ], [ %7, %_llgo_2 ]
   %9 = call ptr @llvm.coro.begin(token %3, ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -3447,6 +3504,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %11 = call ptr @llvm.coro.free(token %3, ptr %9)
   call void @free(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -3532,6 +3590,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -3544,6 +3603,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -3609,6 +3669,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
   %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -3621,6 +3682,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %8 = call ptr @llvm.coro.free(token %0, ptr %6)
   call void @free(ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -3723,6 +3785,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %8 = phi ptr [ null, %_llgo_0 ], [ %7, %_llgo_2 ]
   %9 = call ptr @llvm.coro.begin(token %3, ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_13
@@ -3735,6 +3798,7 @@ _llgo_4:                                          ; preds = %_llgo_13
 _llgo_5:                                          ; preds = %_llgo_16, %_llgo_4, %_llgo_12, %_llgo_1
   %11 = call ptr @llvm.coro.free(token %3, ptr %9)
   call void @free(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_17
@@ -3820,6 +3884,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -3832,6 +3897,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -3941,6 +4007,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %14 = phi ptr [ null, %_llgo_0 ], [ %13, %_llgo_2 ]
   %15 = call ptr @llvm.coro.begin(token %0, ptr %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_25
@@ -3953,6 +4020,7 @@ _llgo_4:                                          ; preds = %_llgo_25
 _llgo_5:                                          ; preds = %_llgo_28, %_llgo_4, %_llgo_24, %_llgo_17, %_llgo_10
   %17 = call ptr @llvm.coro.free(token %0, ptr %15)
   call void @free(ptr %17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_29
@@ -4111,6 +4179,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %10 = phi ptr [ null, %_llgo_0 ], [ %9, %_llgo_2 ]
   %11 = call ptr @llvm.coro.begin(token %3, ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -4123,6 +4192,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %13 = call ptr @llvm.coro.free(token %3, ptr %11)
   call void @free(ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -4183,6 +4253,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %7 = phi ptr [ null, %_llgo_0 ], [ %6, %_llgo_2 ]
   %8 = call ptr @llvm.coro.begin(token %2, ptr %7)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -4195,6 +4266,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %10 = call ptr @llvm.coro.free(token %2, ptr %8)
   call void @free(ptr %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -4248,6 +4320,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -4260,6 +4333,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -4347,6 +4421,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
   %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_27
@@ -4359,6 +4434,7 @@ _llgo_4:                                          ; preds = %_llgo_27
 _llgo_5:                                          ; preds = %_llgo_30, %_llgo_4, %_llgo_26, %_llgo_19, %_llgo_12, %_llgo_1
   %8 = call ptr @llvm.coro.free(token %0, ptr %6)
   call void @free(ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_31
@@ -4527,6 +4603,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
   %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
   %7 = call ptr @llvm.coro.begin(token %1, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_7
@@ -4539,6 +4616,7 @@ _llgo_4:                                          ; preds = %_llgo_7
 _llgo_5:                                          ; preds = %_llgo_9, %_llgo_4, %_llgo_1
   %9 = call ptr @llvm.coro.free(token %1, ptr %7)
   call void @free(ptr %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_10
@@ -4584,6 +4662,8 @@ declare ptr @malloc(i64)
 ; Function Attrs: nounwind
 declare ptr @llvm.coro.begin(token, ptr writeonly) #3
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
+
 ; Function Attrs: nounwind
 declare i8 @llvm.coro.suspend(token, i1) #3
 
@@ -4596,6 +4676,8 @@ declare void @llvm.coro.resume(ptr)
 declare ptr @llvm.coro.free(token, ptr nocapture readonly) #5
 
 declare void @free(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
 
 ; Function Attrs: nounwind
 declare i1 @llvm.coro.end(ptr, i1, token) #3
