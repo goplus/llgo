@@ -2395,17 +2395,51 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	switch n := len(tout); n {
 	case 0:
 	case 1:
-		return []Value{NewAt(toType(tout[0]), ret).Elem()}
+		out := NewAt(toType(tout[0]), ret).Elem()
+		resolveIndirectValue(&out, tout[0])
+		return []Value{out}
 	default:
 		out = make([]Value, n)
 		alignment := uintptr(sig.RType.Alignment)
 		var off uintptr
 		for i, tout := range tout {
 			out[i] = NewAt(toType(tout), add(ret, off, "")).Elem()
+			resolveIndirectValue(&out[i], tout)
 			off += (tout.Size_ + alignment - 1) &^ (alignment - 1)
 		}
 	}
 	return
+}
+
+// resolveIndirectValue converts Value's indirect reference to direct based on abi.Type, clears flagIndir
+// It adjusts the Value's ptr (dereferences or truncates) and removes the flagIndir flag.
+func resolveIndirectValue(v *Value, typ *abi.Type) {
+	if !typ.IsDirectIface() || v.flag&flagIndir == 0 {
+		return
+	}
+	k := typ.Kind()
+	switch {
+	case k >= abi.Bool && k <= abi.Uintptr:
+		if typ.Size_ == unsafe.Sizeof(0) {
+			v.ptr = *(*unsafe.Pointer)(v.ptr)
+		} else {
+			v.ptr = truncate(*(*unsafe.Pointer)(v.ptr), typ.Size_*8)
+		}
+	case k == abi.Float32:
+		fv := *(*float32)(v.ptr)
+		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat32(fv)))
+	case k == abi.Float64:
+		fv := *(*float64)(v.ptr)
+		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat64(fv)))
+	default:
+		v.ptr = *(*unsafe.Pointer)(v.ptr)
+	}
+	v.flag &= ^flagIndir
+}
+
+func truncate(addr unsafe.Pointer, bits uintptr) unsafe.Pointer {
+	mask := uintptr(1<<bits) - 1
+	return unsafe.Pointer(uintptr(addr) & mask)
 }
 
 // v is a method receiver. Store at p the word which is used to
