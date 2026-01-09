@@ -259,7 +259,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_write.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "nanosleep.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_close.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_exit.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_fdtable.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_fstat.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_ftime.c"),
