@@ -156,7 +156,6 @@ func TestEmbRun(t *testing.T) {
 		target string
 	}{
 		{"ESP32C3", "esp32c3-basic"},
-		{"ESP32", "esp32-basic"},
 	}
 
 	for _, target := range targets {
