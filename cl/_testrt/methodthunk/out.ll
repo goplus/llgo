@@ -111,7 +111,7 @@ _llgo_0:
   store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/methodthunk.(*InnerInt).M$thunk", ptr null }, ptr %2, align 8
   %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_closure$ygdobeQSbhO1hSbeWA66ORl_cNKHor-iD8MqRFtuWHg", ptr undef }, ptr %2, 1
   %4 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, 0
-  %5 = icmp eq ptr %4, @"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU"
+  %5 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchesClosure"(ptr @"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU", ptr %4)
   br i1 %5, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_8
@@ -144,7 +144,7 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %16 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %3, 0
-  %17 = icmp eq ptr %16, @"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU"
+  %17 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchesClosure"(ptr @"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU", ptr %16)
   br i1 %17, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
@@ -217,6 +217,8 @@ _llgo_0:
   %2 = tail call i64 @"github.com/goplus/llgo/cl/_testrt/methodthunk.(*InnerInt).M$thunk"(ptr %1)
   ret i64 %2
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchesClosure"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr)
 

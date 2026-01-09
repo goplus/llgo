@@ -183,6 +183,17 @@ func IfacePtrData(i iface) unsafe.Pointer {
 	return i.data
 }
 
+// MatchesClosure reports whether the type V matches the closure type T for
+// type assertion purposes.
+func MatchesClosure(T, V *abi.Type) bool {
+	if T == V {
+		return true
+	} else if V == nil || !V.IsClosure() {
+		return false
+	}
+	return T.StructType().Fields[0].Typ == V.StructType().Fields[0].Typ
+}
+
 // Implements reports whether the type V implements the interface type T.
 func Implements(T, V *abi.Type) bool {
 	if V == nil {
