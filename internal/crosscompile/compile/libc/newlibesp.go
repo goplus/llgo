@@ -49,6 +49,20 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
 			{
+				OutputFileName: fmt.Sprintf("libsemihost-%s.a", target),
+				Files: []string{
+					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_exit.c"),
+				},
+				CFlags: []string{
+					"-DHAVE_CONFIG_H",
+					"-isystem" + filepath.Join(libcDir, "include"),
+					"-I" + filepath.Join(baseDir, "libgloss"),
+					"-I" + filepath.Join(baseDir, "libgloss", "riscv"),
+				},
+				LDFlags: _libcLDFlags,
+				CCFlags: _libcCCFlags,
+			},
+			{
 				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
 				Files: []string{
 					filepath.Join(baseDir, "libgloss", "riscv", "esp", "esp_board.c"),
