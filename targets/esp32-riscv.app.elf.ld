@@ -22,7 +22,7 @@ SECTIONS
     PROVIDE (etext = .);
   } > iram_seg
 
-  .rodata    :
+  .rodata :
   {
     *(.rodata .rodata.* .gnu.linkonce.r.*)
     *(.rodata1)

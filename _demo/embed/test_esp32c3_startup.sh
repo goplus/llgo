@@ -9,7 +9,9 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMP_DIR=$(mktemp -d)
+# Create temp dir inside _demo/embed/ to use existing go.mod
+TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
+mkdir -p "$TEMP_DIR"
 TEST_GO="$TEMP_DIR/main.go"
 TEST_ELF="test.elf"
 TEST_BIN="test.bin"
@@ -32,7 +34,11 @@ echo "==> Creating minimal test program..."
 cat > "$TEST_GO" << 'EOF'
 package main
 
-func main() {}
+import "github.com/goplus/lib/c"
+
+func main() {
+	c.Printf(c.Str("Hello World\n"))
+}
 EOF
 
 echo "==> Building for ESP32-C3 target (ELF + BIN)..."
