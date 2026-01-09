@@ -427,6 +427,13 @@ var llgoInstrs = map[string]int{
 
 	"asm":       llgoAsm,
 	"stackSave": llgoStackSave,
+
+	// LLVM Coroutine instructions
+	"coroResume":  llgoCoroResume,
+	"coroDestroy": llgoCoroDestroy,
+	"coroSize":    llgoCoroSize,
+	"coroSuspend": llgoCoroSuspend,
+	"coroBlockOn": llgoCoroBlockOn,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -512,6 +519,13 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			hasVArg = fnHasVArg
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
+		// In coro mode, interface methods use $coro version, need to await
+		if llssa.IsLLVMCoroMode() {
+			handle := b.Do(act, fn, args...)
+			sig := call.Signature()
+			ret = p.coroAwaitAndLoadResult(b, handle, sig)
+			return
+		}
 		ret = b.Do(act, fn, args...)
 		return
 	}
@@ -544,7 +558,43 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = b.Do(act, aFn.Expr, args...)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, aFn.Expr, args...)
+			// Check if we're in a $coro function and the callee has suspend points
+			if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
+				// Check if callee has suspend points (taint analysis)
+				if p.coroAnalysis().HasSuspendPoint(cv) {
+					// Get or create the $coro version
+					coroFn := p.getOrCreateCoroFunc(cv)
+					if coroFn == nil {
+						// Fallback to sync version
+						ret = b.Do(act, aFn.Expr, args...)
+					} else {
+						// Call $coro version and await with suspend
+						handle := b.Do(llssa.Call, coroFn.Expr, args...)
+						b.CoroAwaitWithSuspend(handle, p.coroState)
+
+						// Read return values from promise if any
+						sig := cv.Signature
+						results := sig.Results()
+						if results != nil && results.Len() > 0 {
+							if results.Len() == 1 {
+								// Single return value: promise stores direct type (e.g., i64)
+								promiseType := p.type_(results.At(0).Type(), llssa.InGo)
+								ret = b.CoroLoadResult(handle, promiseType, 8)
+							} else {
+								// Multiple return values: promise stores struct {field0, field1, ...}
+								promiseType := p.type_(results, llssa.InGo)
+								ret = b.CoroLoadResult(handle, promiseType, 8)
+							}
+						}
+					}
+				} else {
+					// No suspend points, call sync version directly
+					ret = b.Do(act, aFn.Expr, args...)
+				}
+			} else {
+				// Not in coro context or coro mode disabled, call sync version
+				ret = b.Do(act, aFn.Expr, args...)
+			}
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
 			ret = b.Do(act, pyFn.Expr, args...)
@@ -612,6 +662,25 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.funcAddr(b, args)
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
+		case llgoCoroResume: // func coroResume(handle)
+			handle := p.compileValue(b, args[0])
+			b.CoroResume(handle)
+		case llgoCoroDestroy: // func coroDestroy(handle)
+			handle := p.compileValue(b, args[0])
+			b.CoroDestroy(handle)
+		case llgoCoroSize: // func coroSize() int64
+			ret = b.CoroSize()
+		case llgoCoroSuspend: // func coroSuspend()
+			// Only generate suspend in $coro functions
+			if p.inCoroFunc && p.coroState != nil {
+				b.CoroSuspendWithCleanup(p.coroState)
+			}
+		case llgoCoroBlockOn: // func coroBlockOn(closure) T
+			// block_on is a compiler intrinsic that calls a closure that may suspend.
+			// - If compile-time known to be in $coro: direct await (no runtime check)
+			// - If compile-time known to be in sync: scheduleUntil (blocking, no runtime check)
+			// Returns the closure's return value
+			ret = p.coroBlockOn(b, args)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
@@ -621,10 +690,137 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		}
 	default:
 		fn := p.compileValue(b, cv)
-		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, fn, args...)
+		compiledArgs := p.compileValues(b, args, kind)
+		// Check if calling a closure in coro mode - need to check $isCoro field at runtime
+		if llssa.IsLLVMCoroMode() {
+			if st, ok := fn.RawType().Underlying().(*types.Struct); ok && llssa.IsClosure(st) {
+				sig, _ := cv.Type().Underlying().(*types.Signature)
+				ret = p.callClosureWithIsCoroCheck(b, fn, sig, compiledArgs)
+				return
+			}
+		}
+		ret = b.Do(act, fn, compiledArgs...)
 	}
 	return
+}
+
+// coroBlockOn implements the block_on compiler intrinsic.
+// It calls a closure and uses runtime $isCoro check to decide calling strategy:
+// - If $isCoro is false: call sync version directly
+// - If $isCoro is true: call $coro version and await result
+//
+// Usage: result := coroBlockOn(closure)
+// The return type matches the closure's return type.
+func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	if len(args) < 1 {
+		panic("coroBlockOn requires at least 1 argument (closure)")
+	}
+
+	closureArg := args[0]
+	sig, ok := closureArg.Type().Underlying().(*types.Signature)
+	if !ok {
+		panic("coroBlockOn: first argument must be a function/closure")
+	}
+
+	closure := p.compileValue(b, closureArg)
+	compiledArgs := p.compileValues(b, args[1:], fnNormal)
+
+	// Use runtime $isCoro check
+	return p.callClosureWithIsCoroCheck(b, closure, sig, compiledArgs)
+}
+
+// coroAwaitAndLoadResult handles the common block_on pattern:
+// 1. Await on the coroutine handle (using appropriate strategy based on context)
+// 2. Load the result from the promise if there's a return value
+// 3. Destroy the coroutine frame to free memory
+// Returns the loaded result, or empty Expr if there's no return value.
+func (p *context) coroAwaitAndLoadResult(b llssa.Builder, handle llssa.Expr, sig *types.Signature) llssa.Expr {
+	// Branch based on compile-time context knowledge
+	if p.inCoroFunc && p.coroState != nil {
+		// Compile-time known: in $coro context
+		// Direct await with suspend (cooperative)
+		b.CoroAwaitWithSuspend(handle, p.coroState)
+	} else if !p.inCoroFunc {
+		// Compile-time known: in sync context
+		// Direct scheduleUntil (blocking)
+		b.CoroScheduleUntil(handle)
+	} else {
+		// Cannot determine at compile time (e.g., closure passed through interface)
+		// Generate runtime check: if isInCoro() { await } else { scheduleUntil }
+		b.CoroBlockOnDynamic(handle, p.coroState)
+	}
+
+	// Read return value from promise if any
+	var result llssa.Expr
+	results := sig.Results()
+	if results != nil && results.Len() > 0 {
+		var retType llssa.Type
+		if results.Len() == 1 {
+			retType = p.type_(results.At(0).Type(), llssa.InGo)
+		} else {
+			retType = p.type_(results, llssa.InGo)
+		}
+		result = b.CoroLoadResult(handle, retType, 8)
+	}
+
+	// Destroy the coroutine frame to free memory
+	// This triggers the cleanup block which calls coro.free and free
+	b.CoroDestroy(handle)
+
+	return result
+}
+
+// callClosureWithIsCoroCheck calls a closure with runtime $isCoro field check.
+// If $isCoro is false, calls the sync version directly.
+// If $isCoro is true, calls the $coro version and awaits the result.
+func (p *context) callClosureWithIsCoroCheck(b llssa.Builder, closure llssa.Expr, sig *types.Signature, args []llssa.Expr) llssa.Expr {
+	fn := b.Func
+
+	// Extract closure fields
+	fnPtr := b.Field(closure, 0)  // $f
+	ctx := b.Field(closure, 1)    // $data
+	isCoro := b.Field(closure, 2) // $isCoro
+
+	// Prepare call arguments (ctx + args)
+	callArgs := append([]llssa.Expr{ctx}, args...)
+
+	// Create basic blocks for branching
+	syncBlk := fn.MakeBlock()
+	coroBlk := fn.MakeBlock()
+	mergeBlk := fn.MakeBlock()
+
+	// Branch based on $isCoro
+	b.If(isCoro, coroBlk, syncBlk)
+
+	// Sync path: call sync version directly
+	b.SetBlock(syncBlk)
+	syncResult := b.CallIndirectWithSig(fnPtr, sig, true, callArgs...)
+	syncExitBlk := b.CurrentBlock()
+	b.Jump(mergeBlk)
+
+	// Coro path: call $coro version and await
+	b.SetBlock(coroBlk)
+	handle := b.CallIndirectCoroWithSig(fnPtr, sig, true, callArgs...)
+	coroResult := p.coroAwaitAndLoadResult(b, handle, sig)
+	coroExitBlk := b.CurrentBlock()
+	b.Jump(mergeBlk)
+
+	// Merge block
+	b.SetBlock(mergeBlk)
+
+	// If there's a return value, create PHI node to merge results
+	results := sig.Results()
+	if results != nil && results.Len() > 0 {
+		phi := b.Phi(syncResult.Type)
+		phi.AddIncoming(b, []llssa.BasicBlock{syncExitBlk, coroExitBlk}, func(i int, blk llssa.BasicBlock) llssa.Expr {
+			if i == 0 {
+				return syncResult
+			}
+			return coroResult
+		})
+		return phi.Expr
+	}
+	return llssa.Expr{}
 }
 
 // -----------------------------------------------------------------------------

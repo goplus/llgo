@@ -518,6 +518,14 @@ const (
 	llgoAsm       = llgoInstrBase + 0x40
 	llgoStackSave = llgoInstrBase + 0x41
 
+	// LLVM Coroutine instructions
+	llgoCoroBase    = llgoInstrBase + 0x50
+	llgoCoroResume  = llgoCoroBase + 0
+	llgoCoroDestroy = llgoCoroBase + 1
+	llgoCoroSize    = llgoCoroBase + 2
+	llgoCoroSuspend = llgoCoroBase + 3
+	llgoCoroBlockOn = llgoCoroBase + 4
+
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
 

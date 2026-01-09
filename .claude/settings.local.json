@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(go list:*)",
+      "Bash(go build:*)",
+      "WebSearch",
+      "Bash(LLGO_ROOT=/Users/haolan/project/t1/llgo LLGO_CORO=1 go run:*)"
+    ]
+  }
+}

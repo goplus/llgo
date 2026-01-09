@@ -108,6 +108,11 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 	case ModeAllFunc:
 		fn := m.FirstFunction()
 		for !fn.IsNil() {
+			// Skip LLVM intrinsics (e.g., llvm.coro.id) which have special types like token
+			if strings.HasPrefix(fn.Name(), "llvm.") {
+				fn = llvm.NextFunction(fn)
+				continue
+			}
 			if p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
 				fns = append(fns, fn)
 			}
@@ -116,8 +121,12 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 				instr := bb.FirstInstruction()
 				for !instr.IsNil() {
 					if call := instr.IsACallInst(); !call.IsNil() {
-						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
-							callInstrs = append(callInstrs, CallInstr{call, fn})
+						calledName := call.CalledValue().Name()
+						// Skip calls to LLVM intrinsics
+						if !strings.HasPrefix(calledName, "llvm.") {
+							if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
+								callInstrs = append(callInstrs, CallInstr{call, fn})
+							}
 						}
 					}
 					instr = llvm.NextInstruction(instr)

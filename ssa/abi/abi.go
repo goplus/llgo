@@ -318,20 +318,22 @@ func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 
 func IsClosure(raw *types.Struct) bool {
 	n := raw.NumFields()
-	if n == 2 {
-		f1, f2 := raw.Field(0), raw.Field(1)
+	if n == 3 {
+		f1, f2, f3 := raw.Field(0), raw.Field(1), raw.Field(2)
 		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
-			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
+			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data" &&
+				f3.Type() == types.Typ[types.Bool] && f3.Name() == "$isCoro"
 		}
 	}
 	return false
 }
 
 func IsClosureFields(fields []*types.Var) bool {
-	if len(fields) == 2 {
-		f1, f2 := fields[0], fields[1]
+	if len(fields) == 3 {
+		f1, f2, f3 := fields[0], fields[1], fields[2]
 		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
-			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
+			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data" &&
+				f3.Type() == types.Typ[types.Bool] && f3.Name() == "$isCoro"
 		}
 	}
 	return false

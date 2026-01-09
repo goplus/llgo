@@ -90,7 +90,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
 	mainMain := declareNoArgFunc(mainPkg, pkg.PkgPath+".main")
 
-	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, mainInit, mainMain, pyInit, rtInit, abiInit)
+	entryFn := defineEntryFunction(ctx, mainPkg, rtPkgPath, argcVar, argvVar, argvValueType, runtimeStub, mainInit, mainMain, pyInit, rtInit, abiInit)
 
 	if needStart(ctx) {
 		defineStart(mainPkg, entryFn, argvValueType)
@@ -106,7 +106,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 // The entry stores argc/argv, optionally disables stdio buffering, runs
 // initialization hooks (Python, runtime, package init), and finally calls
 // main.main before returning 0.
-func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit, abiInit llssa.Function) llssa.Function {
+func defineEntryFunction(ctx *context, pkg llssa.Package, rtPkgPath string, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit, abiInit llssa.Function) llssa.Function {
 	prog := pkg.Prog
 	entryName := "main"
 	if !needStart(ctx) && isWasmTarget(ctx.buildConf.Goos) {
@@ -137,6 +137,13 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	b.Call(runtimeStub.Expr)
 	b.Call(mainInit.Expr)
 	b.Call(mainMain.Expr)
+
+	// If LLVM coroutine mode is enabled, run the scheduler after main
+	if llssa.IsLLVMCoroMode() {
+		coroSchedule := declareNoArgFunc(pkg, rtPkgPath+".CoroSchedule")
+		b.Call(coroSchedule.Expr)
+	}
+
 	b.Return(prog.IntVal(0, prog.Int32()))
 	return fn
 }
