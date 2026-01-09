@@ -2,6 +2,7 @@ package cl_test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -102,9 +103,11 @@ func runEmulatorTest(t *testing.T, testDir, target string) {
 	// Filter emulator startup output and get program output
 	programOutput := strings.TrimSpace(filterEmulatorOutput(output))
 
-	// Log the actual output
-	t.Logf("Program output:\n%s", programOutput)
-	t.Logf("Full emulator output:\n%s", output)
+	// Always output the test results (not affected by -v flag)
+	fmt.Printf("\n=== Test Output for %s ===\n", testDir)
+	fmt.Printf("Program output:\n%s\n", programOutput)
+	fmt.Printf("Full emulator output:\n%s\n", output)
+	fmt.Printf("========================\n\n")
 
 	// Compare output
 	if programOutput != expected {
