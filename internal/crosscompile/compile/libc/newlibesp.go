@@ -29,10 +29,10 @@ func withDefaultCCFlags(ccflags []string) []string {
 // GetNewlibESP32Config returns the configuration for downloading and building newlib for ESP32
 func GetNewlibESP32Config() compile.LibConfig {
 	return compile.LibConfig{
-		Url:            "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch4.tar.gz",
+		Url:            "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch5.tar.gz",
 		Name:           "newlib-esp32",
-		Version:        "esp-4.3.0_20250211-patch4",
-		ResourceSubDir: "newlib-esp-4.3.0_20250211-patch4",
+		Version:        "esp-4.3.0_20250211-patch5",
+		ResourceSubDir: "newlib-esp-4.3.0_20250211-patch5",
 	}
 }
 
@@ -48,6 +48,20 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 	return compile.CompileConfig{
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
+			{
+				OutputFileName: fmt.Sprintf("libsemihost-%s.a", target),
+				Files: []string{
+					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_exit.c"),
+				},
+				CFlags: []string{
+					"-DHAVE_CONFIG_H",
+					"-isystem" + filepath.Join(libcDir, "include"),
+					"-I" + filepath.Join(baseDir, "libgloss"),
+					"-I" + filepath.Join(baseDir, "libgloss", "riscv"),
+				},
+				LDFlags: _libcLDFlags,
+				CCFlags: _libcCCFlags,
+			},
 			{
 				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
 				Files: []string{
@@ -93,7 +107,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "libnosys", "wait.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "write.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getentropy.c"),
-					filepath.Join(baseDir, "libgloss", "libnosys", "_exit.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getreent.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "time.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "fcntl.c"),
@@ -233,7 +246,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_close.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_conv_stat.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_execve.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "sys_exit.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_faccessat.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_fork.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_fstat.c"),
@@ -260,21 +272,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_wait.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "sys_write.c"),
 					filepath.Join(baseDir, "libgloss", "riscv", "nanosleep.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_close.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_exit.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_fdtable.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_fstat.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_ftime.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_isatty.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_link.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_lseek.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_open.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_read.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_sbrk.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_stat.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_stat_common.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_unlink.c"),
-					filepath.Join(baseDir, "libgloss", "riscv", "semihost-sys_write.c"),
 				},
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
@@ -1112,7 +1109,6 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "libnosys", "wait.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "write.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getentropy.c"),
-					filepath.Join(baseDir, "libgloss", "libnosys", "_exit.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getreent.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "time.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "fcntl.c"),
