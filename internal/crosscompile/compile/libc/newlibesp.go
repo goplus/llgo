@@ -93,7 +93,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "libnosys", "wait.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "write.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getentropy.c"),
-					filepath.Join(baseDir, "libgloss", "libnosys", "_exit.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getreent.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "time.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "fcntl.c"),
