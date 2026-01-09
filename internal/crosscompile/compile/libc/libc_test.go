@@ -17,23 +17,23 @@ func TestGetNewlibESP32Config_LibConfig(t *testing.T) {
 		t.Errorf("Expected Name '%s', got '%s'", expectedName, config.Name)
 	}
 
-	expectedVersion := "esp-4.3.0_20250211-patch4"
+	expectedVersion := "esp-4.3.0_20250211-patch5"
 	if config.Version != expectedVersion {
 		t.Errorf("Expected Version '%s', got '%s'", expectedVersion, config.Version)
 	}
 
-	expectedUrl := "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch4.tar.gz"
+	expectedUrl := "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch5.tar.gz"
 	if config.Url != expectedUrl {
 		t.Errorf("Expected Url '%s', got '%s'", expectedUrl, config.Url)
 	}
 
-	expectedArchiveSrcDir := "newlib-esp-4.3.0_20250211-patch4"
+	expectedArchiveSrcDir := "newlib-esp-4.3.0_20250211-patch5"
 	if config.ResourceSubDir != expectedArchiveSrcDir {
 		t.Errorf("Expected ResourceSubDir '%s', got '%s'", expectedArchiveSrcDir, config.ResourceSubDir)
 	}
 
 	// Test String() method
-	expectedString := "newlib-esp32-esp-4.3.0_20250211-patch4"
+	expectedString := "newlib-esp32-esp-4.3.0_20250211-patch5"
 	if config.String() != expectedString {
 		t.Errorf("Expected String() '%s', got '%s'", expectedString, config.String())
 	}
