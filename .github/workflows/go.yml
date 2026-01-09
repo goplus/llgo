@@ -66,6 +66,18 @@ jobs:
       - name: Build
         run: go build -v ./...
 
+      - name: Install ESP32 RISC-V QEMU
+        run: |
+          chmod +x .github/workflows/install-esp-qemu.sh
+          QEMU_DIR=".cache/qemu"
+          .github/workflows/install-esp-qemu.sh "$QEMU_DIR"
+          echo "${PWD}/${QEMU_DIR}/bin" >> $GITHUB_PATH
+
+      - name: Verify ESP32 RISC-V QEMU installation
+        run: |
+          which qemu-system-riscv32
+          qemu-system-riscv32 --version
+
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -timeout 30m ./...
