@@ -521,7 +521,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		args := p.compileValues(b, call.Args, hasVArg)
 		// In coro mode, interface methods use $coro version, need to await
 		// Skip for runtime packages (they don't use async interfaces)
-		if llssa.IsLLVMCoroMode() && p.goTyps.Path() != llssa.PkgRuntime {
+		if llssa.IsLLVMCoroMode() && !p.inRuntimePkg {
 			handle := b.Do(act, fn, args...)
 			sig := call.Signature()
 			ret = p.coroAwaitAndLoadResult(b, handle, sig)
@@ -560,7 +560,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case goFunc:
 			// Check if callee is a closure in coro mode - use block_on automatically
 			// This must be done before compiling args since coroBlockOn expects ssa.Value
-			if llssa.IsLLVMCoroMode() && llssa.IsClosureName(cv.Name()) {
+			// Skip for runtime package (runtime functions don't use coro)
+			if llssa.IsLLVMCoroMode() && !p.inRuntimePkg && llssa.IsClosureName(cv.Name()) {
 				// Wrap closure call with coroBlockOn: coroBlockOn(closure, args...)
 				newArgs := append([]ssa.Value{cv}, args...)
 				ret = p.coroBlockOn(b, newArgs)
@@ -701,7 +702,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		// Check if calling a function variable (closure) in coro mode
 		// This applies to both sync and coro contexts, because the closure stores
 		// the $coro version which returns a handle, not the actual result
-		if llssa.IsLLVMCoroMode() {
+		// Skip for runtime package (runtime functions don't use coro)
+		if llssa.IsLLVMCoroMode() && !p.inRuntimePkg {
 			if _, ok := cv.Type().Underlying().(*types.Signature); ok {
 				// This is a closure variable call - use coroBlockOn
 				newArgs := append([]ssa.Value{cv}, args...)
@@ -744,12 +746,33 @@ func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	}
 
 	// Check if closure has FreeVars (needs ctx parameter)
+	// Also check if it's a C function - C functions don't have $coro version
 	hasCtx := true
+	isCFunc := false
 	switch v := closureArg.(type) {
 	case *ssa.Function:
 		hasCtx = len(v.FreeVars) > 0
+		// Check if this is a C function by checking funcType
+		if _, _, ftype := p.funcName(v); ftype == cFunc {
+			isCFunc = true
+		}
 	case *ssa.MakeClosure:
 		hasCtx = len(v.Bindings) > 0
+	case *ssa.Parameter:
+		// For parameters, use closure param analysis to check if all callers pass C functions
+		if p.closureParamAnalysis().IsCFuncOnlyParam(v) {
+			isCFunc = true
+		}
+	}
+
+	// C functions don't have $coro version, call directly
+	if isCFunc {
+		fn := p.compileValue(b, closureArg)
+		var callArgs []llssa.Expr
+		if len(args) > 1 {
+			callArgs = p.compileValues(b, args[1:], fnNormal)
+		}
+		return b.Call(fn, callArgs...)
 	}
 
 	// Compile the closure value

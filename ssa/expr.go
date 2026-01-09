@@ -963,7 +963,7 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 //
 //	t0 = make closure anon@1.2 [x y z]
 //	t1 = make closure bound$(main.I).add [i]
-func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
+func (b Builder) MakeClosure(fn Expr, bindings []Expr, origSig *types.Signature) Expr {
 	if debugInstr {
 		log.Printf("MakeClosure %v, %v\n", fn, bindings)
 	}
@@ -976,7 +976,11 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 		ptr := b.aggregateAllocU(prog.rawType(tctx), llvmFields(bindings, tctx, b)...)
 		data = ptr
 	}
-	return b.aggregateValue(prog.Closure(removeCtx(sig)), fn.impl, data)
+	// Use original signature for closure type info (important for interface type assertions in coro mode)
+	if origSig == nil {
+		origSig = removeCtx(sig)
+	}
+	return b.aggregateValue(prog.Closure(origSig), fn.impl, data)
 }
 
 // -----------------------------------------------------------------------------

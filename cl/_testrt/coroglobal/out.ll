@@ -123,6 +123,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %3)
   %4 = call ptr @llvm.coro.promise(ptr %3, i32 8, i1 false)
   %5 = load i64, ptr %4, align 4
+  call void @llvm.coro.destroy(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 25 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
@@ -210,6 +211,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %17 = call ptr @llvm.coro.promise(ptr %13, i32 8, i1 false)
   %18 = load i64, ptr %17, align 4
+  call void @llvm.coro.destroy(ptr %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 25 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %18)
@@ -242,6 +244,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %3)
   %4 = call ptr @llvm.coro.promise(ptr %3, i32 8, i1 false)
   %5 = load i64, ptr %4, align 4
+  call void @llvm.coro.destroy(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
@@ -316,6 +319,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %17 = call ptr @llvm.coro.promise(ptr %6, i32 8, i1 false)
   %18 = load i64, ptr %17, align 4
+  call void @llvm.coro.destroy(ptr %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %18)
@@ -347,6 +351,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %3)
   %4 = call ptr @llvm.coro.promise(ptr %3, i32 8, i1 false)
   %5 = load i64, ptr %4, align 4
+  call void @llvm.coro.destroy(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 26 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
@@ -421,6 +426,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %17 = call ptr @llvm.coro.promise(ptr %6, i32 8, i1 false)
   %18 = load i64, ptr %17, align 4
+  call void @llvm.coro.destroy(ptr %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 26 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %18)
@@ -457,6 +463,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %5)
   %6 = call ptr @llvm.coro.promise(ptr %5, i32 8, i1 false)
   %7 = load i64, ptr %6, align 4
+  call void @llvm.coro.destroy(ptr %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 27 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
@@ -545,6 +552,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %19 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 27 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
@@ -575,6 +583,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %3)
   %4 = call ptr @llvm.coro.promise(ptr %3, i32 8, i1 false)
   %5 = load i64, ptr %4, align 4
+  call void @llvm.coro.destroy(ptr %3)
   ret i64 %5
 }
 
@@ -655,6 +664,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %18 = call ptr @llvm.coro.promise(ptr %14, i32 8, i1 false)
   %19 = load i64, ptr %18, align 4
+  call void @llvm.coro.destroy(ptr %14)
   store i64 %19, ptr %0, align 4
   br label %_llgo_4
 
@@ -683,6 +693,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %4)
   %5 = call ptr @llvm.coro.promise(ptr %4, i32 8, i1 false)
   %6 = load i64, ptr %5, align 4
+  call void @llvm.coro.destroy(ptr %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %6)
@@ -768,6 +779,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %19 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
@@ -949,6 +961,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %6)
   %7 = call ptr @llvm.coro.promise(ptr %6, i32 8, i1 false)
   %8 = load i64, ptr %7, align 4
+  call void @llvm.coro.destroy(ptr %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 35 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %8)
@@ -1027,6 +1040,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %19 = call ptr @llvm.coro.promise(ptr %8, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 35 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
@@ -1193,6 +1207,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %21 = call ptr @llvm.coro.promise(ptr %17, i32 8, i1 false)
   %22 = load i64, ptr %21, align 4
+  call void @llvm.coro.destroy(ptr %17)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @20, i64 25 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %22)
@@ -1572,6 +1587,7 @@ _llgo_5:                                          ; preds = %_llgo_4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %27)
   %28 = call ptr @llvm.coro.promise(ptr %27, i32 8, i1 false)
   %29 = load i64, ptr %28, align 4
+  call void @llvm.coro.destroy(ptr %27)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 13 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %29)
@@ -1715,6 +1731,7 @@ _llgo_18:                                         ; preds = %_llgo_17
 _llgo_19:                                         ; preds = %_llgo_17, %_llgo_15
   %41 = call ptr @llvm.coro.promise(ptr %28, i32 8, i1 false)
   %42 = load i64, ptr %41, align 4
+  call void @llvm.coro.destroy(ptr %28)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 13 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %42)
@@ -1853,6 +1870,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %9)
   %10 = call ptr @llvm.coro.promise(ptr %9, i32 8, i1 false)
   %11 = load i64, ptr %10, align 4
+  call void @llvm.coro.destroy(ptr %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 31 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
@@ -2078,6 +2096,7 @@ _llgo_31:                                         ; preds = %_llgo_30
 _llgo_32:                                         ; preds = %_llgo_30, %_llgo_28
   %31 = call ptr @llvm.coro.promise(ptr %27, i32 8, i1 false)
   %32 = load i64, ptr %31, align 4
+  call void @llvm.coro.destroy(ptr %27)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 31 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %32)
@@ -2404,6 +2423,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %3)
   %4 = call ptr @llvm.coro.promise(ptr %3, i32 8, i1 false)
   %5 = load i64, ptr %4, align 4
+  call void @llvm.coro.destroy(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
@@ -2417,6 +2437,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %9)
   %10 = call ptr @llvm.coro.promise(ptr %9, i32 8, i1 false)
   %11 = load i64, ptr %10, align 4
+  call void @llvm.coro.destroy(ptr %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 25 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
@@ -2497,6 +2518,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %16 = call ptr @llvm.coro.promise(ptr %5, i32 8, i1 false)
   %17 = load i64, ptr %16, align 4
+  call void @llvm.coro.destroy(ptr %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %17)
@@ -2537,6 +2559,7 @@ _llgo_17:                                         ; preds = %_llgo_16
 _llgo_18:                                         ; preds = %_llgo_16, %_llgo_14
   %25 = call ptr @llvm.coro.promise(ptr %21, i32 8, i1 false)
   %26 = load i64, ptr %25, align 4
+  call void @llvm.coro.destroy(ptr %21)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 25 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %26)
@@ -2581,6 +2604,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %9)
   %10 = call ptr @llvm.coro.promise(ptr %9, i32 8, i1 false)
   %11 = load i64, ptr %10, align 4
+  call void @llvm.coro.destroy(ptr %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 12 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
@@ -2591,6 +2615,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %14)
   %15 = call ptr @llvm.coro.promise(ptr %14, i32 8, i1 false)
   %16 = load i64, ptr %15, align 4
+  call void @llvm.coro.destroy(ptr %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 14 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %16)
@@ -2601,6 +2626,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %19)
   %20 = call ptr @llvm.coro.promise(ptr %19, i32 8, i1 false)
   %21 = load i64, ptr %20, align 4
+  call void @llvm.coro.destroy(ptr %19)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 18 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %21)
@@ -2693,6 +2719,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %23 = call ptr @llvm.coro.promise(ptr %19, i32 8, i1 false)
   %24 = load i64, ptr %23, align 4
+  call void @llvm.coro.destroy(ptr %19)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 12 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %24)
@@ -2730,6 +2757,7 @@ _llgo_19:                                         ; preds = %_llgo_18
 _llgo_20:                                         ; preds = %_llgo_18, %_llgo_16
   %31 = call ptr @llvm.coro.promise(ptr %27, i32 8, i1 false)
   %32 = load i64, ptr %31, align 4
+  call void @llvm.coro.destroy(ptr %27)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 14 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %32)
@@ -2767,6 +2795,7 @@ _llgo_26:                                         ; preds = %_llgo_25
 _llgo_27:                                         ; preds = %_llgo_25, %_llgo_23
   %39 = call ptr @llvm.coro.promise(ptr %35, i32 8, i1 false)
   %40 = load i64, ptr %39, align 4
+  call void @llvm.coro.destroy(ptr %35)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 18 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %40)
@@ -2948,6 +2977,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %6)
   %7 = call ptr @llvm.coro.promise(ptr %6, i32 8, i1 false)
   %8 = load i64, ptr %7, align 4
+  call void @llvm.coro.destroy(ptr %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @68, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %8)
@@ -3036,6 +3066,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %20 = call ptr @llvm.coro.promise(ptr %16, i32 8, i1 false)
   %21 = load i64, ptr %20, align 4
+  call void @llvm.coro.destroy(ptr %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @68, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %21)
@@ -3137,6 +3168,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %26 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %27 = load i64, ptr %26, align 4
+  call void @llvm.coro.destroy(ptr %15)
   store i64 %27, ptr %2, align 4
   br label %_llgo_4
 
@@ -3244,6 +3276,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %30 = call ptr @llvm.coro.promise(ptr %19, i32 8, i1 false)
   %31 = load i64, ptr %30, align 4
+  call void @llvm.coro.destroy(ptr %19)
   store i64 %31, ptr %2, align 4
   br label %_llgo_4
 
@@ -3354,6 +3387,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %5)
   %6 = call ptr @llvm.coro.promise(ptr %5, i32 8, i1 false)
   %7 = load i64, ptr %6, align 4
+  call void @llvm.coro.destroy(ptr %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @75, i64 28 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
@@ -3430,6 +3464,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %18 = call ptr @llvm.coro.promise(ptr %7, i32 8, i1 false)
   %19 = load i64, ptr %18, align 4
+  call void @llvm.coro.destroy(ptr %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @75, i64 28 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %19)
@@ -3461,6 +3496,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %4)
   %5 = call ptr @llvm.coro.promise(ptr %4, i32 8, i1 false)
   %6 = load i64, ptr %5, align 4
+  call void @llvm.coro.destroy(ptr %4)
   ret i64 %6
 }
 
@@ -3542,6 +3578,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %19 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %15)
   store i64 %20, ptr %2, align 4
   br label %_llgo_4
 
@@ -3638,6 +3675,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %5)
   %6 = call ptr @llvm.coro.promise(ptr %5, i32 8, i1 false)
   %7 = load i64, ptr %6, align 4
+  call void @llvm.coro.destroy(ptr %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @80, i64 33 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
@@ -3724,6 +3762,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %19 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @80, i64 33 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
@@ -3755,6 +3794,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %4)
   %5 = call ptr @llvm.coro.promise(ptr %4, i32 8, i1 false)
   %6 = load i64, ptr %5, align 4
+  call void @llvm.coro.destroy(ptr %4)
   ret i64 %6
 }
 
@@ -3836,6 +3876,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %19 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %15)
   store i64 %20, ptr %2, align 4
   br label %_llgo_4
 
@@ -3940,6 +3981,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %9)
   %10 = call ptr @llvm.coro.promise(ptr %9, i32 8, i1 false)
   %11 = load i64, ptr %10, align 4
+  call void @llvm.coro.destroy(ptr %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @84, i64 40 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
@@ -3951,6 +3993,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %15)
   %16 = call ptr @llvm.coro.promise(ptr %15, i32 8, i1 false)
   %17 = load i64, ptr %16, align 4
+  call void @llvm.coro.destroy(ptr %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @85, i64 41 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %17)
@@ -3959,6 +4002,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %18)
   %19 = call ptr @llvm.coro.promise(ptr %18, i32 8, i1 false)
   %20 = load i64, ptr %19, align 4
+  call void @llvm.coro.destroy(ptr %18)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @86, i64 40 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
@@ -4049,6 +4093,7 @@ _llgo_10:                                         ; preds = %_llgo_9
 _llgo_11:                                         ; preds = %_llgo_9, %_llgo_7
   %22 = call ptr @llvm.coro.promise(ptr %11, i32 8, i1 false)
   %23 = load i64, ptr %22, align 4
+  call void @llvm.coro.destroy(ptr %11)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @84, i64 40 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %23)
@@ -4087,6 +4132,7 @@ _llgo_17:                                         ; preds = %_llgo_16
 _llgo_18:                                         ; preds = %_llgo_16, %_llgo_14
   %31 = call ptr @llvm.coro.promise(ptr %27, i32 8, i1 false)
   %32 = load i64, ptr %31, align 4
+  call void @llvm.coro.destroy(ptr %27)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @85, i64 41 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %32)
@@ -4122,6 +4168,7 @@ _llgo_24:                                         ; preds = %_llgo_23
 _llgo_25:                                         ; preds = %_llgo_23, %_llgo_21
   %37 = call ptr @llvm.coro.promise(ptr %33, i32 8, i1 false)
   %38 = load i64, ptr %37, align 4
+  call void @llvm.coro.destroy(ptr %33)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @86, i64 40 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %38)
@@ -4365,6 +4412,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %3)
   %4 = call ptr @llvm.coro.promise(ptr %3, i32 8, i1 false)
   %5 = load i64, ptr %4, align 4
+  call void @llvm.coro.destroy(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @92, i64 45 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
@@ -4376,6 +4424,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %9)
   %10 = call ptr @llvm.coro.promise(ptr %9, i32 8, i1 false)
   %11 = load i64, ptr %10, align 4
+  call void @llvm.coro.destroy(ptr %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @93, i64 46 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
@@ -4384,6 +4433,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil"(ptr %12)
   %13 = call ptr @llvm.coro.promise(ptr %12, i32 8, i1 false)
   %14 = load i64, ptr %13, align 4
+  call void @llvm.coro.destroy(ptr %12)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @94, i64 50 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %14)
@@ -4473,6 +4523,7 @@ _llgo_12:                                         ; preds = %_llgo_11
 _llgo_13:                                         ; preds = %_llgo_11, %_llgo_9
   %17 = call ptr @llvm.coro.promise(ptr %13, i32 8, i1 false)
   %18 = load i64, ptr %17, align 4
+  call void @llvm.coro.destroy(ptr %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @92, i64 45 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %18)
@@ -4511,6 +4562,7 @@ _llgo_19:                                         ; preds = %_llgo_18
 _llgo_20:                                         ; preds = %_llgo_18, %_llgo_16
   %26 = call ptr @llvm.coro.promise(ptr %22, i32 8, i1 false)
   %27 = load i64, ptr %26, align 4
+  call void @llvm.coro.destroy(ptr %22)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @93, i64 46 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %27)
@@ -4546,6 +4598,7 @@ _llgo_26:                                         ; preds = %_llgo_25
 _llgo_27:                                         ; preds = %_llgo_25, %_llgo_23
   %32 = call ptr @llvm.coro.promise(ptr %28, i32 8, i1 false)
   %33 = load i64, ptr %32, align 4
+  call void @llvm.coro.destroy(ptr %28)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @94, i64 50 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %33)
@@ -4645,6 +4698,8 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroScheduleUntil
 
 ; Function Attrs: nounwind memory(none)
 declare ptr @llvm.coro.promise(ptr nocapture, i32, i1) #1
+
+declare void @llvm.coro.destroy(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

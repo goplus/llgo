@@ -130,9 +130,10 @@ type context struct {
 	phis      []func()
 	initAfter func()
 
-	state   pkgState
-	inCFunc bool
-	skipall bool
+	state        pkgState
+	inCFunc      bool
+	inRuntimePkg bool // true when compiling a runtime package function
+	skipall      bool
 
 	cgoCalled  bool
 	cgoArgs    []llssa.Expr
@@ -141,11 +142,12 @@ type context struct {
 	rewrites   map[string]string
 
 	// LLVM Coroutine mode fields
-	inCoroFunc        bool                      // true when compiling a $coro version of a function
-	coroFuncs         map[string]llssa.Function // maps function name to its $coro version
-	coroState         *llssa.CoroState          // current coroutine state (for prologue/epilogue)
-	coroAnalysisCache *CoroAnalysis             // cached suspend point analysis
-	coroBlkEnds       map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block
+	inCoroFunc         bool                      // true when compiling a $coro version of a function
+	coroFuncs          map[string]llssa.Function // maps function name to its $coro version
+	coroState          *llssa.CoroState          // current coroutine state (for prologue/epilogue)
+	coroAnalysisCache  *CoroAnalysis             // cached suspend point analysis
+	coroBlkEnds        map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block
+	closureParamCache  *ClosureParamAnalysis     // cached closure parameter analysis
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -370,11 +372,15 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
 
 		// Skip sync body compilation for closures in coro mode
+		// Also skip Go's internal/runtime packages (e.g., internal/runtime/exithook) and syscall
+		pkgPath := llssa.PathOf(pkgTypes)
+		isRuntimePkg := llssa.SkipCoro(pkgPath)
 		if !isClosureCoroOnly {
 			p.inits = append(p.inits, func() {
 			p.fn = fn
 			p.state = state // restore pkgState when compiling funcBody
 			p.inCoroFunc = false
+			p.inRuntimePkg = isRuntimePkg
 			defer func() {
 				p.fn = nil
 			}()
@@ -430,10 +436,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 
 		// Generate $coro version for LLVM coroutine mode (dual-symbol mode)
-		// Skip for: init functions
+		// Skip for: init functions and runtime package (runtime has coro completely disabled)
 		// For closures (hasCtx): ONLY generate $coro version (no sync version)
 		// For regular functions: generate both sync and $coro versions
-		if llssa.IsLLVMCoroMode() && !isInit {
+		// isRuntimePkg was already computed above for p.inRuntimePkg
+		if llssa.IsLLVMCoroMode() && !isInit && !isRuntimePkg {
 			p.compileCoroFuncDecl(pkg, f, fn, name, sig, hasCtx, state, dbgEnabled, dbgSymsEnabled)
 		}
 
@@ -1092,7 +1099,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.MakeClosure:
 		fn := p.compileValue(b, v.Fn)
 		bindings := p.compileValues(b, v.Bindings, 0)
-		ret = b.MakeClosure(fn, bindings)
+		origSig := v.Type().Underlying().(*types.Signature)
+		ret = b.MakeClosure(fn, bindings, origSig)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
 		t := p.type_(v.AssertedType, llssa.InGo)
@@ -1425,6 +1433,13 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.prog.SetPatch(ctx.patchType)
 	ctx.prog.SetCompileMethods(ctx.checkCompileMethods)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
+
+	// Set callback for determining if C function needs coro wrapper
+	// Based on closure parameter analysis: if parameter has mixed callers (not AllCFunc),
+	// C functions passed to it need coro wrapper for uniform handling
+	if llssa.IsLLVMCoroMode() {
+		ret.SetNeedCoroWrapper(ctx.needCoroWrapper)
+	}
 
 	if hasPatch {
 		skips := ctx.skips

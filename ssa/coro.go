@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llvm"
 )
 
@@ -51,6 +52,14 @@ const (
 // Check environment variable LLGO_CORO=1.
 func IsLLVMCoroMode() bool {
 	return os.Getenv(EnvLLGoCoro) == "1"
+}
+
+// SkipCoro returns true if coro generation should be skipped for the given path.
+// The path can be a package path or a function name (pkgPath.funcName).
+// This includes: llgo runtime packages, Go's internal/runtime packages, and syscall.
+func SkipCoro(path string) bool {
+	return strings.HasPrefix(path, env.LLGoRuntimePkg) ||
+		strings.HasPrefix(path, "internal/runtime") || strings.HasPrefix(path, "syscall")
 }
 
 // CoroFunc holds the coroutine version of a function along with metadata
