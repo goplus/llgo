@@ -963,9 +963,9 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 //
 //	t0 = make closure anon@1.2 [x y z]
 //	t1 = make closure bound$(main.I).add [i]
-func (b Builder) MakeClosure(fn Expr, bindings []Expr, origSig *types.Signature) Expr {
+func (b Builder) MakeClosure(fn Expr, bindings []Expr, origSig *types.Signature, isCoro bool) Expr {
 	if debugInstr {
-		log.Printf("MakeClosure %v, %v\n", fn, bindings)
+		log.Printf("MakeClosure %v, %v, isCoro=%v\n", fn, bindings, isCoro)
 	}
 	prog := b.Prog
 	tfn := fn.Type
@@ -980,7 +980,9 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr, origSig *types.Signature)
 	if origSig == nil {
 		origSig = removeCtx(sig)
 	}
-	return b.aggregateValue(prog.Closure(origSig), fn.impl, data)
+	// Create isCoro field value
+	isCoroVal := prog.BoolVal(isCoro).impl
+	return b.aggregateValue(prog.Closure(origSig), fn.impl, data, isCoroVal)
 }
 
 // -----------------------------------------------------------------------------
@@ -1015,12 +1017,15 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	switch kind {
 	case vkClosure:
 		data = b.Field(fn, 1)
+		isCoro := b.Field(fn, 2) // $isCoro field
 		fn = b.Field(fn, 0)
 		sig = fn.raw.Type.(*types.Signature)
 		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
 		sigCtx := FuncAddCtx(ctx, sig)
 		ret.Type = b.Prog.retType(sig)
 		ll = b.Prog.FuncDecl(sigCtx, InC).ll
+		// TODO: use isCoro to determine call strategy (sync vs coro)
+		_ = isCoro
 		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sigCtx.Params(), b))
 		return ret
 	case vkFuncPtr:
@@ -1386,7 +1391,10 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 				v, data = b.Pkg.closureStub(b, v, sig, origKind)
 			}
 		}
-		return b.aggregateValue(tclosure, v.impl, data.impl)
+		// For function-to-closure conversion, $isCoro is always false
+		// (regular functions don't have suspend points, only closures created via MakeClosure do)
+		isCoroVal := prog.BoolVal(false).impl
+		return b.aggregateValue(tclosure, v.impl, data.impl, isCoroVal)
 	}
 	return v
 }

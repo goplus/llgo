@@ -130,10 +130,9 @@ type context struct {
 	phis      []func()
 	initAfter func()
 
-	state        pkgState
-	inCFunc      bool
-	inRuntimePkg bool // true when compiling a runtime package function
-	skipall      bool
+	state   pkgState
+	inCFunc bool
+	skipall bool
 
 	cgoCalled  bool
 	cgoArgs    []llssa.Expr
@@ -146,8 +145,8 @@ type context struct {
 	coroFuncs          map[string]llssa.Function // maps function name to its $coro version
 	coroState          *llssa.CoroState          // current coroutine state (for prologue/epilogue)
 	coroAnalysisCache  *CoroAnalysis             // cached suspend point analysis
-	coroBlkEnds        map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block
-	closureParamCache  *ClosureParamAnalysis     // cached closure parameter analysis
+	coroBlkEnds        map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block (coro version)
+	blkEnds            map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block (sync version)
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -356,9 +355,10 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		p.cgoCalled = false
 		p.cgoArgs = nil
 
-		// For closures in LLVM coro mode, skip sync version body compilation
-		// ALL closures only have $coro version in coro mode
-		isClosureCoroOnly := llssa.IsLLVMCoroMode() && hasCtx
+		// For closures with suspend points in LLVM coro mode, skip sync version body compilation
+		// Only closures WITH suspend points skip sync version (they only have $coro version)
+		// Closures WITHOUT suspend points need sync version (no $coro version)
+		isClosureCoroOnly := llssa.IsLLVMCoroMode() && hasCtx && p.coroAnalysis().HasSuspendPoint(f)
 
 		if isCgo {
 			fn.MakeBlocks(1)
@@ -370,17 +370,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 		dbgEnabled := enableDbg && (f == nil || f.Origin() == nil)
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
-
-		// Skip sync body compilation for closures in coro mode
-		// Also skip Go's internal/runtime packages (e.g., internal/runtime/exithook) and syscall
-		pkgPath := llssa.PathOf(pkgTypes)
-		isRuntimePkg := llssa.SkipCoro(pkgPath)
 		if !isClosureCoroOnly {
 			p.inits = append(p.inits, func() {
 			p.fn = fn
 			p.state = state // restore pkgState when compiling funcBody
 			p.inCoroFunc = false
-			p.inRuntimePkg = isRuntimePkg
 			defer func() {
 				p.fn = nil
 			}()
@@ -403,6 +397,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				b.DebugFunction(fn, pos, bodyPos)
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
+			p.blkEnds = make(map[int]llssa.BasicBlock) // Track actual ending blocks for phi resolution
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -420,6 +415,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				block := f.Blocks[i]
 				doModInit := (i == 1 && isInit)
 				p.compileBlock(b, block, off[i], doModInit)
+				// Track actual ending block for this SSA block (needed for phi resolution)
+				p.blkEnds[i] = b.CurrentBlock()
 				if isCgo {
 					// just process first block for performance
 					break
@@ -436,11 +433,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 
 		// Generate $coro version for LLVM coroutine mode (dual-symbol mode)
-		// Skip for: init functions and runtime package (runtime has coro completely disabled)
-		// For closures (hasCtx): ONLY generate $coro version (no sync version)
+		// Skip for: init functions
+		// For closures with suspend points: ONLY generate $coro version (no sync version)
+		// For closures without suspend points: ONLY generate sync version (no $coro version)
 		// For regular functions: generate both sync and $coro versions
-		// isRuntimePkg was already computed above for p.inRuntimePkg
-		if llssa.IsLLVMCoroMode() && !isInit && !isRuntimePkg {
+		if llssa.IsLLVMCoroMode() && !isInit {
 			p.compileCoroFuncDecl(pkg, f, fn, name, sig, hasCtx, state, dbgEnabled, dbgSymsEnabled)
 		}
 
@@ -972,7 +969,14 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 		preds := v.Block().Preds
 		bblks := make([]llssa.BasicBlock, len(preds))
 		for i, pred := range preds {
-			bblks[i] = p.fn.Block(pred.Index)
+			// Use actual ending block from blkEnds (set after compileBlock)
+			// This handles cases where $isCoro branching creates new intermediate blocks
+			if endBlk, ok := p.blkEnds[pred.Index]; ok {
+				bblks[i] = endBlk
+			} else {
+				// Fallback: use block index directly
+				bblks[i] = p.fn.Block(pred.Index)
+			}
 		}
 		edges := v.Edges
 		phi.AddIncoming(b, bblks, func(i int, blk llssa.BasicBlock) llssa.Expr {
@@ -1100,7 +1104,14 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		fn := p.compileValue(b, v.Fn)
 		bindings := p.compileValues(b, v.Bindings, 0)
 		origSig := v.Type().Underlying().(*types.Signature)
-		ret = b.MakeClosure(fn, bindings, origSig)
+		// Use taint analysis to determine if this closure has suspend points
+		isCoro := false
+		if llssa.IsLLVMCoroMode() {
+			if closureFn, ok := v.Fn.(*ssa.Function); ok {
+				isCoro = p.coroAnalysis().HasSuspendPoint(closureFn)
+			}
+		}
+		ret = b.MakeClosure(fn, bindings, origSig, isCoro)
 	case *ssa.TypeAssert:
 		x := p.compileValue(b, v.X)
 		t := p.type_(v.AssertedType, llssa.InGo)
@@ -1292,10 +1303,11 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		aFn, pyFn, _ := p.compileFunction(v)
 		if aFn != nil {
 			// For closures/anonymous funcs in LLVM coro mode, return the $coro version
-			// Closure names have pattern like "funcName$1", "funcName$2", etc.
+			// ONLY if the closure has suspend points. This must match the $isCoro field
+			// set in MakeClosure so that runtime check works correctly.
 			if llssa.IsLLVMCoroMode() {
 				_, name, _ := p.funcName(v)
-				if llssa.IsClosureName(name) {
+				if llssa.IsClosureName(name) && p.coroAnalysis().HasSuspendPoint(v) {
 					if coroFn, ok := p.coroFuncs[name]; ok {
 						return coroFn.Expr
 					}
@@ -1434,11 +1446,10 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.prog.SetCompileMethods(ctx.checkCompileMethods)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
 
-	// Set callback for determining if C function needs coro wrapper
-	// Based on closure parameter analysis: if parameter has mixed callers (not AllCFunc),
-	// C functions passed to it need coro wrapper for uniform handling
+	// Set callback for checking if a function has suspend points
+	// Used by closureWrapDecl to decide sync vs coro wrapper
 	if llssa.IsLLVMCoroMode() {
-		ret.SetNeedCoroWrapper(ctx.needCoroWrapper)
+		ret.SetHasSuspendPoint(ctx.hasSuspendPoint)
 	}
 
 	if hasPatch {

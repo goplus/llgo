@@ -520,8 +520,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
 		// In coro mode, interface methods use $coro version, need to await
-		// Skip for runtime packages (they don't use async interfaces)
-		if llssa.IsLLVMCoroMode() && !p.inRuntimePkg {
+		if llssa.IsLLVMCoroMode() {
 			handle := b.Do(act, fn, args...)
 			sig := call.Signature()
 			ret = p.coroAwaitAndLoadResult(b, handle, sig)
@@ -558,15 +557,6 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.inCFunc = false
 			ret = b.Do(act, aFn.Expr, args...)
 		case goFunc:
-			// Check if callee is a closure in coro mode - use block_on automatically
-			// This must be done before compiling args since coroBlockOn expects ssa.Value
-			// Skip for runtime package (runtime functions don't use coro)
-			if llssa.IsLLVMCoroMode() && !p.inRuntimePkg && llssa.IsClosureName(cv.Name()) {
-				// Wrap closure call with coroBlockOn: coroBlockOn(closure, args...)
-				newArgs := append([]ssa.Value{cv}, args...)
-				ret = p.coroBlockOn(b, newArgs)
-				return
-			}
 			args := p.compileValues(b, args, kind)
 			// Check if we're in a $coro function and the callee has suspend points
 			if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
@@ -699,117 +689,44 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			}
 		}
 	default:
-		// Check if calling a function variable (closure) in coro mode
-		// This applies to both sync and coro contexts, because the closure stores
-		// the $coro version which returns a handle, not the actual result
-		// Skip for runtime package (runtime functions don't use coro)
-		if llssa.IsLLVMCoroMode() && !p.inRuntimePkg {
-			if _, ok := cv.Type().Underlying().(*types.Signature); ok {
-				// This is a closure variable call - use coroBlockOn
-				newArgs := append([]ssa.Value{cv}, args...)
-				ret = p.coroBlockOn(b, newArgs)
+		fn := p.compileValue(b, cv)
+		compiledArgs := p.compileValues(b, args, kind)
+		// Check if calling a closure in coro mode - need to check $isCoro field at runtime
+		if llssa.IsLLVMCoroMode() {
+			if st, ok := fn.RawType().Underlying().(*types.Struct); ok && llssa.IsClosure(st) {
+				sig, _ := cv.Type().Underlying().(*types.Signature)
+				ret = p.callClosureWithIsCoroCheck(b, fn, sig, compiledArgs)
 				return
 			}
 		}
-		fn := p.compileValue(b, cv)
-		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, fn, args...)
+		ret = b.Do(act, fn, compiledArgs...)
 	}
 	return
 }
 
 // coroBlockOn implements the block_on compiler intrinsic.
-// It calls a closure that may have suspend points, handling both coro and sync contexts.
+// It calls a closure and uses runtime $isCoro check to decide calling strategy:
+// - If $isCoro is false: call sync version directly
+// - If $isCoro is true: call $coro version and await result
 //
 // Usage: result := coroBlockOn(closure)
-//
-// The closure is expected to be a function that may suspend (its $coro version).
-// Handling depends on compile-time context:
-// - In $coro context (p.inCoroFunc): direct await with suspend (no runtime check)
-// - In sync context (!p.inCoroFunc): direct scheduleUntil (no runtime check)
-// - In unknown context: runtime check isInCoro() and branch to appropriate path
-//
 // The return type matches the closure's return type.
 func (p *context) coroBlockOn(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	if len(args) < 1 {
 		panic("coroBlockOn requires at least 1 argument (closure)")
 	}
 
-	// Get the closure argument
 	closureArg := args[0]
-
-	// Get closure signature to determine return type
-	closureType := closureArg.Type()
-	sig, ok := closureType.Underlying().(*types.Signature)
+	sig, ok := closureArg.Type().Underlying().(*types.Signature)
 	if !ok {
 		panic("coroBlockOn: first argument must be a function/closure")
 	}
 
-	// Check if closure has FreeVars (needs ctx parameter)
-	// Also check if it's a C function - C functions don't have $coro version
-	hasCtx := true
-	isCFunc := false
-	switch v := closureArg.(type) {
-	case *ssa.Function:
-		hasCtx = len(v.FreeVars) > 0
-		// Check if this is a C function by checking funcType
-		if _, _, ftype := p.funcName(v); ftype == cFunc {
-			isCFunc = true
-		}
-	case *ssa.MakeClosure:
-		hasCtx = len(v.Bindings) > 0
-	case *ssa.Parameter:
-		// For parameters, use closure param analysis to check if all callers pass C functions
-		if p.closureParamAnalysis().IsCFuncOnlyParam(v) {
-			isCFunc = true
-		}
-	}
-
-	// C functions don't have $coro version, call directly
-	if isCFunc {
-		fn := p.compileValue(b, closureArg)
-		var callArgs []llssa.Expr
-		if len(args) > 1 {
-			callArgs = p.compileValues(b, args[1:], fnNormal)
-		}
-		return b.Call(fn, callArgs...)
-	}
-
-	// Compile the closure value
 	closure := p.compileValue(b, closureArg)
+	compiledArgs := p.compileValues(b, args[1:], fnNormal)
 
-	// Extract function pointer and context from closure {$f, $data}
-	// When closure is loaded from a global variable, the type is *types.Signature
-	// but the underlying LLVM value is still {ptr, ptr}. We check if the Go type
-	// is a struct (proper closure) or signature (function loaded from variable).
-	// Use Underlying() to handle named function types.
-	var fnPtr, ctx llssa.Expr
-	if _, isSig := closure.RawType().Underlying().(*types.Signature); isSig {
-		// Function loaded from variable: extract fields via memory
-		fnPtr, ctx = b.ExtractClosureFields(closure)
-	} else {
-		// Normal case: proper closure struct
-		fnPtr = b.Field(closure, 0)
-		ctx = b.Field(closure, 1)
-	}
-
-	// Build call arguments based on whether closure needs ctx
-	var callArgs []llssa.Expr
-	if hasCtx {
-		callArgs = []llssa.Expr{ctx}
-	}
-	if len(args) > 1 {
-		callArgs = append(callArgs, p.compileValues(b, args[1:], fnNormal)...)
-	}
-
-	// Call the $coro version (function pointer is already $coro version)
-	// Returns ptr (coroutine handle)
-	// We need to pass the original signature because fnPtr's type may be VoidPtr
-	// when extracted from a closure loaded from a variable
-	handle := b.CallIndirectCoroWithSig(fnPtr, sig, hasCtx, callArgs...)
-
-	// Await and load result using common helper
-	return p.coroAwaitAndLoadResult(b, handle, sig)
+	// Use runtime $isCoro check
+	return p.callClosureWithIsCoroCheck(b, closure, sig, compiledArgs)
 }
 
 // coroAwaitAndLoadResult handles the common block_on pattern:
@@ -851,6 +768,59 @@ func (p *context) coroAwaitAndLoadResult(b llssa.Builder, handle llssa.Expr, sig
 	b.CoroDestroy(handle)
 
 	return result
+}
+
+// callClosureWithIsCoroCheck calls a closure with runtime $isCoro field check.
+// If $isCoro is false, calls the sync version directly.
+// If $isCoro is true, calls the $coro version and awaits the result.
+func (p *context) callClosureWithIsCoroCheck(b llssa.Builder, closure llssa.Expr, sig *types.Signature, args []llssa.Expr) llssa.Expr {
+	fn := b.Func
+
+	// Extract closure fields
+	fnPtr := b.Field(closure, 0)  // $f
+	ctx := b.Field(closure, 1)    // $data
+	isCoro := b.Field(closure, 2) // $isCoro
+
+	// Prepare call arguments (ctx + args)
+	callArgs := append([]llssa.Expr{ctx}, args...)
+
+	// Create basic blocks for branching
+	syncBlk := fn.MakeBlock()
+	coroBlk := fn.MakeBlock()
+	mergeBlk := fn.MakeBlock()
+
+	// Branch based on $isCoro
+	b.If(isCoro, coroBlk, syncBlk)
+
+	// Sync path: call sync version directly
+	b.SetBlock(syncBlk)
+	syncResult := b.CallIndirectWithSig(fnPtr, sig, true, callArgs...)
+	syncExitBlk := b.CurrentBlock()
+	b.Jump(mergeBlk)
+
+	// Coro path: call $coro version and await
+	b.SetBlock(coroBlk)
+	handle := b.CallIndirectCoroWithSig(fnPtr, sig, true, callArgs...)
+	coroResult := p.coroAwaitAndLoadResult(b, handle, sig)
+	coroExitBlk := b.CurrentBlock()
+	b.Jump(mergeBlk)
+
+	// Merge block
+	b.SetBlock(mergeBlk)
+
+	// If there's a return value, create PHI node to merge results
+	results := sig.Results()
+	if results != nil && results.Len() > 0 {
+		phi := b.Phi(syncResult.Type)
+		phi.AddIncoming(b, []llssa.BasicBlock{syncExitBlk, coroExitBlk}, func(i int, blk llssa.BasicBlock) llssa.Expr {
+			if i == 0 {
+				return syncResult
+			}
+			return coroResult
+		})
+		return phi.Expr
+	}
+	return llssa.Expr{}
 }
 
 // -----------------------------------------------------------------------------

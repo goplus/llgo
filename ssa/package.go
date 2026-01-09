@@ -720,10 +720,10 @@ type aPackage struct {
 	iRoutine int
 	coroFns  map[string]Expr // cache of $coro versions: funcName -> funcName$coro
 
-	// needCoroWrapper is a callback to determine if a C function needs coro wrapper.
-	// Set by cl package based on closure parameter analysis.
-	// If returns true, the C function wrapper returns coro handle instead of actual value.
-	needCoroWrapper func(fnName string) bool
+	// hasSuspendPoint is a callback to check if a function has suspend points.
+	// Set by cl package based on taint analysis (CoroAnalysis).
+	// Used by closureWrapDecl to decide sync vs coro wrapper.
+	hasSuspendPoint func(fnName string) bool
 
 	NeedRuntime bool
 	NeedPyInit  bool
@@ -765,7 +765,6 @@ const (
 
 // closureStub creates or reuses a wrapper for function values that lack closure ctx.
 // It stays on Package to match the original placement of closure stubs.
-// In coro mode, it may return a coro wrapper based on needCoroWrapper callback.
 func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind valueKind) (Expr, Expr) {
 	prog := b.Prog
 	switch origKind {
@@ -800,10 +799,10 @@ func (p Package) SetResolveLinkname(fn func(string) string) {
 	p.fnlink = fn
 }
 
-// SetNeedCoroWrapper sets a callback to determine if a C function needs coro wrapper.
-// The callback receives the function name and returns true if coro wrapper is needed.
-func (p Package) SetNeedCoroWrapper(fn func(string) bool) {
-	p.needCoroWrapper = fn
+// SetHasSuspendPoint sets a callback to check if a function has suspend points.
+// The callback receives the LLVM function name and returns true if it has suspend points.
+func (p Package) SetHasSuspendPoint(fn func(string) bool) {
+	p.hasSuspendPoint = fn
 }
 
 // -----------------------------------------------------------------------------

@@ -305,7 +305,7 @@ func TestMakeClosureWithCtx(t *testing.T) {
 		types.NewTuple(types.NewVar(0, nil, "", outerRetSig)), false)
 	outer := pkg.NewFunc("outer", outerSig, InGo)
 	ob := outer.MakeBody(1)
-	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)}, nil)
+	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)}, nil, false)
 	ob.Return(closure)
 
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'

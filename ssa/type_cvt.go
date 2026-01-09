@@ -185,6 +185,7 @@ func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "$f", raw, false),
 		types.NewField(token.NoPos, nil, "$data", types.Typ[types.UnsafePointer], false),
+		types.NewField(token.NoPos, nil, "$isCoro", types.Typ[types.Bool], false),
 	}
 	return types.NewStruct(flds, nil)
 }

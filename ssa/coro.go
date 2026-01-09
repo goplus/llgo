@@ -22,7 +22,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llvm"
 )
 
@@ -52,14 +51,6 @@ const (
 // Check environment variable LLGO_CORO=1.
 func IsLLVMCoroMode() bool {
 	return os.Getenv(EnvLLGoCoro) == "1"
-}
-
-// SkipCoro returns true if coro generation should be skipped for the given path.
-// The path can be a package path or a function name (pkgPath.funcName).
-// This includes: llgo runtime packages, Go's internal/runtime packages, and syscall.
-func SkipCoro(path string) bool {
-	return strings.HasPrefix(path, env.LLGoRuntimePkg) ||
-		strings.HasPrefix(path, "internal/runtime") || strings.HasPrefix(path, "syscall")
 }
 
 // CoroFunc holds the coroutine version of a function along with metadata
@@ -631,7 +622,7 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 	// Create basic blocks for coroutine structure
 	allocBlk := fn.MakeBlock()
 	beginBlk := fn.MakeBlock()
-	exitBlk := fn.MakeBlock()    // Single final suspend point
+	exitBlk := fn.MakeBlock() // Single final suspend point
 	cleanupBlk := fn.MakeBlock()
 	endBlk := fn.MakeBlock()
 
@@ -957,6 +948,35 @@ func (b Builder) CallIndirectCoro(fnPtr Expr, hasCtx bool, args ...Expr) Expr {
 	// Get original signature from fnPtr
 	origSig := fnPtr.raw.Type.(*types.Signature)
 	return b.CallIndirectCoroWithSig(fnPtr, origSig, hasCtx, args...)
+}
+
+// CallIndirectWithSig calls a function pointer with an explicit signature.
+// This is used for calling closures with known signature when the fnPtr type is VoidPtr.
+// The args should already include ctx as first argument if hasCtx is true.
+func (b Builder) CallIndirectWithSig(fnPtr Expr, origSig *types.Signature, hasCtx bool, args ...Expr) Expr {
+	prog := b.Prog
+
+	// Build the signature based on whether we have ctx
+	var callSig *types.Signature
+	if hasCtx {
+		ctx := types.NewParam(token.NoPos, nil, "__llgo_ctx", types.Typ[types.UnsafePointer])
+		callSig = FuncAddCtx(ctx, origSig)
+	} else {
+		callSig = origSig
+	}
+
+	// Get LLVM function type
+	llType := prog.FuncDecl(callSig, InC).ll
+
+	// Build LLVM args
+	llArgs := make([]llvm.Value, len(args))
+	for i, arg := range args {
+		llArgs[i] = arg.impl
+	}
+
+	// Make the call
+	ret := llvm.CreateCall(b.impl, llType, fnPtr.impl, llArgs)
+	return Expr{ret, prog.retType(origSig)}
 }
 
 // CallIndirectCoroWithSig calls a closure's $coro version through function pointer

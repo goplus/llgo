@@ -79,6 +79,13 @@ func (ca *CoroAnalysis) MarkSuspend(fnName string) {
 	ca.taint[fnName] = TaintSuspend
 }
 
+// HasSuspendPointByName checks if a function has suspend points by its LLVM name.
+// Returns true only if the function has been analyzed and found to have suspend points.
+// Returns false if the function is unknown (not yet analyzed) or clean.
+func (ca *CoroAnalysis) HasSuspendPointByName(fnName string) bool {
+	return ca.taint[fnName] == TaintSuspend
+}
+
 // HasSuspendPoint checks if a function (or any of its callees) has a suspend point.
 // Uses on-demand analysis with caching.
 func (ca *CoroAnalysis) HasSuspendPoint(fn *ssa.Function) bool {
@@ -240,6 +247,13 @@ func (p *context) coroAnalysis() *CoroAnalysis {
 // 3. It's called via 'go' keyword
 func (p *context) NeedsCoroVersion(fn *ssa.Function) bool {
 	return p.coroAnalysis().HasSuspendPoint(fn)
+}
+
+// hasSuspendPoint is the callback for ssa.Package.SetHasSuspendPoint.
+// It receives the LLVM function name and returns true if the function has suspend points.
+// Used by closureWrapDecl to decide between sync and coro wrapper.
+func (p *context) hasSuspendPoint(fnName string) bool {
+	return p.coroAnalysis().HasSuspendPointByName(fnName)
 }
 
 // -----------------------------------------------------------------------------
