@@ -84,10 +84,12 @@ func makeESPFirmareImage(infile, outfile, format string) error {
 	}
 
 	if makeImage {
-		// The bootloader starts at 0x1000, or 4096.
-		// TinyGo doesn't use a separate bootloader and runs the entire
-		// application in the bootloader location.
-		outf.Write(make([]byte, 4096))
+		// For QEMU emulation, we need to place the image at the correct offset.
+		// ESP32 (Xtensa): bootloader starts at 0x1000, so we pad 4KB of zeros.
+		// ESP32-C3 (RISC-V): bootloader starts at 0x0, so no padding needed.
+		if chip == "esp32" {
+			outf.Write(make([]byte, 4096))
+		}
 	}
 
 	// Chip IDs. Source:
