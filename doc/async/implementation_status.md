@@ -48,8 +48,8 @@
 ## ⚠️ Known Limitations
 
 ### Map Iteration
-- **Status**: Compiles but runtime behavior undefined
-- **Issue**: Map iterator state (`ssa.Range`) uses opaque internal types that cannot be persisted across suspend points
+- **Status**: Causes infinite loop at runtime
+- **Issue**: Map iterator state (`ssa.Range`) uses opaque internal types that cannot be persisted across suspend points. The iterator is recreated on each resume, causing the loop to restart from the beginning infinitely.
 - **Workaround**: Convert map to slice before iteration, or use indexed access
 - **Example**:
   ```go

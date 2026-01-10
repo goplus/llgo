@@ -73,7 +73,7 @@ func TestMapParamAsync(t *testing.T) {
 	}
 }
 
-// LIMITATION: Map iterator state cannot be persisted - runtime behavior undefined
+// KNOWN ISSUE: Map iterator causes infinite loop - iterator recreated on each resume
 // func TestMapIterAsync(t *testing.T) {
 // 	m := map[string]int{"x": 1, "y": 2, "z": 3}
 // 	got := pollReady(t, MapIterAsync(m))

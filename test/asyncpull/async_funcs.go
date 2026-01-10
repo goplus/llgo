@@ -343,8 +343,9 @@ func MapParamAsync(m map[string]int, key string) async.Future[int] {
 }
 
 // MapIterAsync tests iterating over map with await.
-// LIMITATION: Map iterator state cannot be persisted across suspend points.
-// This compiles but may not work correctly at runtime - use slice iteration instead.
+// KNOWN ISSUE: Map iterator state cannot be persisted across suspend points.
+// The iterator is recreated on each resume, causing an infinite loop.
+// Workaround: Convert map to slice before iteration, or use indexed access.
 // func MapIterAsync(m map[string]int) async.Future[int] {
 // 	sum := 0
 // 	for _, v := range m {
