@@ -73,7 +73,7 @@ func TestMapParamAsync(t *testing.T) {
 	}
 }
 
-// DISABLED: MapIterAsync is disabled due to compilation issues
+// LIMITATION: Map iterator state cannot be persisted - runtime behavior undefined
 // func TestMapIterAsync(t *testing.T) {
 // 	m := map[string]int{"x": 1, "y": 2, "z": 3}
 // 	got := pollReady(t, MapIterAsync(m))

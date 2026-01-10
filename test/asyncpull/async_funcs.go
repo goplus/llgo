@@ -343,7 +343,8 @@ func MapParamAsync(m map[string]int, key string) async.Future[int] {
 }
 
 // MapIterAsync tests iterating over map with await.
-// DISABLED: for-range over map with await may cause compilation issues
+// LIMITATION: Map iterator state cannot be persisted across suspend points.
+// This compiles but may not work correctly at runtime - use slice iteration instead.
 // func MapIterAsync(m map[string]int) async.Future[int] {
 // 	sum := 0
 // 	for _, v := range m {
