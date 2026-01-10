@@ -247,3 +247,15 @@ func TestGoroutineChannelAsync(t *testing.T) {
 		t.Errorf("GoroutineChannelAsync = %d, want 12", got)
 	}
 }
+
+func TestTupleOkAsync(t *testing.T) {
+	m := map[string]int{"a": 7}
+	got := pollReady(t, TupleOkAsync(m, "a"))
+	if got.V1 != 7 || !got.V2 {
+		t.Fatalf("TupleOkAsync ok case got (%d,%v), want (7,true)", got.V1, got.V2)
+	}
+	got2 := pollReady(t, TupleOkAsync(m, "missing"))
+	if got2.V2 {
+		t.Fatalf("TupleOkAsync missing should be ok=false, got %v", got2.V2)
+	}
+}

@@ -497,3 +497,12 @@ func GoroutineChannelAsync(n int) async.Future[int] {
 	}
 	return async.Return(sum)
 }
+
+// TupleOkAsync returns (value, ok) as tuple to test tuple ABI + await chain.
+func TupleOkAsync(m map[string]int, key string) async.Future[async.Tuple2[int, bool]] {
+	v, ok := m[key]
+	res := async.Tuple2[int, bool]{v, ok}
+	// Await on something else to force suspend.
+	_ = Compute(len(key)).Await()
+	return async.Return(res)
+}
