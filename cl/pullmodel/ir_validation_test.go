@@ -32,8 +32,9 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 	ir := string(content)
 
 	// Check for Poll method definition (now uses full package path)
-	if !strings.Contains(ir, "basic.Simple$Poll") {
-		t.Error("Generated IR should contain Simple$Poll method")
+	// Poll is a method on *State type: pkg.(*Simple$State).Poll
+	if !strings.Contains(ir, "basic.(*Simple$State).Poll") {
+		t.Error("Generated IR should contain Simple$State.Poll method")
 	}
 
 	// Check for actual Poll call to sub-future
@@ -52,7 +53,7 @@ func TestGeneratedIR_HasPollCall(t *testing.T) {
 	}
 
 	// Check for context parameter (ptr %1 is ctx) - now with full package path
-	if !strings.Contains(ir, "basic.Simple$Poll\"(ptr %0, ptr %1)") {
+	if !strings.Contains(ir, "basic.(*Simple$State).Poll\"(ptr %0, ptr %1)") {
 		t.Error("Generated IR should have Poll method with receiver and ctx parameters")
 	}
 
@@ -154,10 +155,13 @@ func TestGeneratedIR_Complex(t *testing.T) {
 		"TwoLoops$Poll",
 	}
 
-	// Check for function name substring (full path includes package)
+	// Check for function name substring (full path includes package and receiver)
+	// Poll method is now: pkg.(*FnName$State).Poll
 	for _, fn := range expectedFuncs {
-		if !strings.Contains(ir, "complex."+fn) {
-			t.Errorf("Missing function: %s", fn)
+		baseName := strings.TrimSuffix(fn, "$Poll")
+		pattern := "complex.(*" + baseName + "$State).Poll"
+		if !strings.Contains(ir, pattern) {
+			t.Errorf("Missing function: %s (expected pattern: %s)", fn, pattern)
 		}
 	}
 

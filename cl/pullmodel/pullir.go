@@ -4,8 +4,10 @@
 package pullmodel
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
+	"io"
 
 	"golang.org/x/tools/go/ssa"
 )
@@ -31,6 +33,11 @@ type Slot struct {
 	FieldIdx int        // Index in state struct (-1 if not persisted)
 	Kind     SlotKind   // Param, Local, or Cross
 	SSAValue ssa.Value  // Original SSA value this slot represents (if any)
+	// StackAlloc indicates this slot represents a non-escaping stack allocation
+	// (ssa.Alloc with Heap=false). Such slots store the *element* value in the
+	// state struct, while a fresh stack slot is allocated in each Poll call and
+	// synchronized on suspend/resume.
+	StackAlloc bool
 }
 
 // IsPersisted returns true if this slot is stored in the state struct.
@@ -308,4 +315,40 @@ func (p *PullIR) NumFields() int {
 		}
 	}
 	return maxField + 1
+}
+
+// Dump prints a readable snapshot of the Pull IR for debugging/analysis.
+func (p *PullIR) Dump(w io.Writer) {
+	if p == nil {
+		return
+	}
+	fmt.Fprintf(w, "PullIR %s (%d states, %d slots)\n", p.FuncName, len(p.States), len(p.Slots))
+	fmt.Fprintln(w, "Slots:")
+	for i, s := range p.Slots {
+		fmt.Fprintf(w, "  [%02d] kind=%v field=%d name=%s go=%T\n", i, s.Kind, s.FieldIdx, s.Name, s.Type)
+	}
+	fmt.Fprintln(w, "States:")
+	for i, st := range p.States {
+		fmt.Fprintf(w, "State %02d: block=%v\n", i, st.OriginalSSA)
+		if len(st.EdgeWrites) > 0 {
+			fmt.Fprintln(w, "  EdgeWrites:")
+			for tgt, ws := range st.EdgeWrites {
+				fmt.Fprintf(w, "    ->%02d :", tgt)
+				for _, ew := range ws {
+					name := "<nil>"
+					if ew.Dst != nil {
+						name = ew.Dst.Name
+					}
+					fmt.Fprintf(w, " [%s=%v]", name, ew.Value)
+				}
+				fmt.Fprintln(w)
+			}
+		}
+		if len(st.Instructions) > 0 {
+			fmt.Fprintln(w, "  Instrs:")
+			for _, instr := range st.Instructions {
+				fmt.Fprintf(w, "    %T %v\n", instr, instr)
+			}
+		}
+	}
 }

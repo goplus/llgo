@@ -40,23 +40,38 @@ type CompileInstrFunc func(b llssa.Builder, instr ssa.Instruction)
 // This is used to map original SSA params/values to state struct field loads.
 type RegisterValueFunc func(v ssa.Value, expr llssa.Expr)
 
+// ClearCacheExceptFunc is a callback to clear cached values except for specified keys.
+// This is used at state block entry to prevent SSA dominance violations from cached
+// values that were computed in other basic blocks.
+type ClearCacheExceptFunc func(keep []ssa.Value)
+
 // LLSSACodeGen generates LLVM IR code for state machines using llssa API.
 type LLSSACodeGen struct {
 	prog                llssa.Program
 	pkg                 llssa.Package
 	ssaPkg              *ssa.Package
 	sm                  *StateMachine
-	compileValue        CompileValueFunc  // callback to compile SSA values
-	compileInstr        CompileInstrFunc  // callback to compile SSA instructions
-	registerValue       RegisterValueFunc // callback to register value mappings
-	pollStructType      types.Type        // cached Poll[T] struct type for consistency
-	pollLLType          llssa.Type        // cached LLVM type for Poll[T]
-	stateNamed          *types.Named      // Named type FnName$State for proper itab
-	pollMethod          *types.Func       // Poll method added to stateNamed
-	completedStateIndex int               // sentinel index meaning state machine finished
-	resultFieldIndex    int               // field index storing the final result value
+	compileValue        CompileValueFunc     // callback to compile SSA values
+	compileInstr        CompileInstrFunc     // callback to compile SSA instructions
+	registerValue       RegisterValueFunc    // callback to register value mappings
+	clearCacheExcept    ClearCacheExceptFunc // callback to clear cached values except keep list
+	pollStructType      types.Type           // cached Poll[T] struct type for consistency
+	pollLLType          llssa.Type           // cached LLVM type for Poll[T]
+	stateNamed          *types.Named         // Named type FnName$State for proper itab
+	pollMethod          *types.Func          // Poll method added to stateNamed
+	completedStateIndex int                  // sentinel index meaning state machine finished
+	resultFieldIndex    int                  // field index storing the final result value
 	stackAllocPtrs      map[*ssa.Alloc]llssa.Expr
 	stackAllocCrossVars map[*ssa.Alloc]struct{}
+	suspendResults      map[ssa.Value]struct{}
+	deferWraps          map[string]deferWrapperInfo
+	deferWrapSeq        int
+}
+
+type deferWrapperInfo struct {
+	fn            llssa.Function
+	argStruct     *types.Struct
+	argStructType llssa.Type
 }
 
 // NewLLSSACodeGen creates a new llssa code generator.
@@ -67,13 +82,53 @@ func NewLLSSACodeGen(
 	sm *StateMachine,
 ) *LLSSACodeGen {
 	return &LLSSACodeGen{
-		prog:             prog,
-		pkg:              pkg,
-		ssaPkg:           ssaPkg,
-		sm:               sm,
-		resultFieldIndex: -1,
+		prog:                prog,
+		pkg:                 pkg,
+		ssaPkg:              ssaPkg,
+		sm:                  sm,
+		resultFieldIndex:    -1,
 		stackAllocCrossVars: make(map[*ssa.Alloc]struct{}),
+		deferWraps:          make(map[string]deferWrapperInfo),
 	}
+}
+
+func (g *LLSSACodeGen) isSuspendResult(v ssa.Value) bool {
+	if v == nil {
+		return false
+	}
+	if g.suspendResults == nil {
+		g.suspendResults = make(map[ssa.Value]struct{})
+		for _, st := range g.sm.States {
+			if st.SuspendPoint != nil && st.SuspendPoint.Result != nil {
+				g.suspendResults[st.SuspendPoint.Result] = struct{}{}
+			}
+		}
+	}
+	_, ok := g.suspendResults[v]
+	return ok
+}
+
+func (g *LLSSACodeGen) shouldPreloadCrossVar(v ssa.Value, block *ssa.BasicBlock) bool {
+	if v == nil {
+		return false
+	}
+	if _, ok := g.isStackAllocCrossVar(v); ok {
+		return true
+	}
+	if defBlk := g.valueBlock(v); defBlk != nil && defBlk == block {
+		if _, isPhi := v.(*ssa.Phi); !isPhi && !g.isSuspendResult(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *LLSSACodeGen) isLoopAlloc(alloc *ssa.Alloc) bool {
+	if g == nil || g.sm == nil || g.sm.LoopAllocs == nil {
+		return false
+	}
+	_, ok := g.sm.LoopAllocs[alloc]
+	return ok
 }
 
 // SetCompileValue sets the callback function for compiling SSA values.
@@ -92,6 +147,32 @@ func (g *LLSSACodeGen) SetCompileInstr(fn CompileInstrFunc) {
 // This is used to map SSA params/values to loaded state struct fields.
 func (g *LLSSACodeGen) SetRegisterValue(fn RegisterValueFunc) {
 	g.registerValue = fn
+}
+
+// SetClearCacheExcept sets the callback for clearing cached values.
+// This is used at state block entry to prevent SSA dominance violations.
+func (g *LLSSACodeGen) SetClearCacheExcept(fn ClearCacheExceptFunc) {
+	g.clearCacheExcept = fn
+}
+
+// clearBlockCache clears the value cache except for params and cross-vars.
+// This must be called at the entry of each state block to prevent SSA dominance
+// violations where values computed in one block are incorrectly reused in another
+// block that doesn't dominate or isn't dominated by the first.
+func (g *LLSSACodeGen) clearBlockCache() {
+	if g.clearCacheExcept == nil {
+		return
+	}
+	// Build list of values to keep: params and cross-vars
+	fn := g.sm.Original
+	keep := make([]ssa.Value, 0, len(fn.Params)+len(g.sm.CrossVars))
+	for _, param := range fn.Params {
+		keep = append(keep, param)
+	}
+	for _, cv := range g.sm.CrossVars {
+		keep = append(keep, cv)
+	}
+	g.clearCacheExcept(keep)
 }
 
 func (g *LLSSACodeGen) cacheValueMapping(v ssa.Value, expr llssa.Expr) {
@@ -274,7 +355,9 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 			if ptr, ok := alloc.Type().(*types.Pointer); ok {
 				fieldType = ptr.Elem()
 				g.stackAllocCrossVars[alloc] = struct{}{}
+			} else {
 			}
+		} else if ok {
 		}
 		fields = append(fields, types.NewField(0, nil, name, fieldType, false))
 		tags = append(tags, "")
@@ -446,8 +529,13 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	numStates := len(g.sm.States)
 	doneStateIdx := numStates // sentinel state meaning "completed"
 	g.completedStateIndex = doneStateIdx
-	numBlocks := 3 + numStates // entry + states + done + default
-	poll.MakeBlocks(numBlocks)
+	// Create named blocks for readability.
+	poll.MakeNamedBlock(fmt.Sprintf("%s_entry", fn.Name()))
+	for i := 0; i < numStates; i++ {
+		poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d", fn.Name(), i))
+	}
+	doneBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_done", fn.Name()))
+	defaultBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_unreach", fn.Name()))
 
 	// Pre-allocate stack slots for non-escaping SSA allocs in the entry block.
 	g.prepareStackAllocas(poll)
@@ -473,10 +561,13 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	stateFieldPtr := b.FieldAddr(statePtr, 0)
 	stateVal := b.Load(stateFieldPtr)
 
+	// Debug: log dispatch state before switching.
+	g.emitPullDebugState(b, stateVal, "dispatch", false, false)
+
 	// Block that handles already-completed futures (state == doneStateIdx)
-	doneBlock := poll.Block(numBlocks - 2)
+	doneBlock = poll.Block(numStates + 1)
 	// Default block (unreachable - should never happen)
-	defaultBlock := poll.Block(numBlocks - 1)
+	defaultBlock = poll.Block(numStates + 2)
 
 	// Create switch statement
 	sw := b.Switch(stateVal, defaultBlock)
@@ -499,6 +590,32 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	for i, state := range g.sm.States {
 		b.SetBlock(poll.Block(i + 1))
 		g.restoreStackAllocState(b, statePtr)
+
+		// Clear the value cache but keep only values we are about to preload.
+		// This avoids stale cross-var mappings when we intentionally skip
+		// preloading values defined in the same block.
+		if g.clearCacheExcept != nil {
+			fn := g.sm.Original
+			keep := make([]ssa.Value, 0, len(fn.Params)+len(g.sm.CrossVars))
+			for _, param := range fn.Params {
+				keep = append(keep, param)
+			}
+			for _, cv := range g.sm.CrossVars {
+				if g.shouldPreloadCrossVar(cv, state.Block) {
+					keep = append(keep, cv)
+				}
+			}
+			g.clearCacheExcept(keep)
+		}
+
+		// Re-register stack alloc pointers so allocs map to the preallocated slots.
+		if g.registerValue != nil {
+			for alloc, ptr := range g.stackAllocPtrs {
+				if !ptr.IsNil() {
+					g.registerValue(alloc, ptr)
+				}
+			}
+		}
 
 		// Register SSA params and cross-vars as loaded values from state struct
 		// This allows compileValue to find them when compiling sub-future initializers
@@ -525,11 +642,18 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 					if !ptr.IsNil() {
 						g.registerValue(v, ptr)
 					}
-				} else {
-					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
-					loadedVal := b.Load(fieldPtr)
-					g.registerValue(v, loadedVal)
+					fieldIdx++
+					continue
 				}
+
+				if !g.shouldPreloadCrossVar(v, state.Block) {
+					fieldIdx++
+					continue
+				}
+
+				fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+				loadedVal := b.Load(fieldPtr)
+				g.registerValue(v, loadedVal)
 				fieldIdx++
 			}
 		}
@@ -539,6 +663,7 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 
 	// Completed block: return Ready immediately on subsequent polls
 	b.SetBlock(doneBlock)
+	g.emitPullDebugState(b, g.prog.IntVal(uint64(doneStateIdx), g.prog.Int()), "done", false, true)
 	finalValue := g.loadResultValue(b, statePtr)
 	g.returnReadyPoll(b, finalValue)
 
@@ -567,6 +692,38 @@ func (g *LLSSACodeGen) generateStateBlock(
 ) {
 	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 
+	g.emitPullDebugState(b, g.prog.IntVal(uint64(stateIdx), g.prog.Int()), "enter", state.SuspendPoint != nil, state.IsTerminal)
+	if g.sm.Original.Name() == "RangeAggregator" && stateIdx == 1 {
+		rangeIdxField := -1
+		for _, cv := range g.sm.CrossVars {
+			if cv != nil && cv.Name() == "t3" {
+				rangeIdxField = g.getCrossVarFieldIndex(cv)
+				break
+			}
+		}
+		if rangeIdxField >= 0 {
+			idxFieldPtr := b.FieldAddr(statePtr, rangeIdxField)
+			idxVal := b.Load(idxFieldPtr)
+			g.emitPullDebugState(b, idxVal, "idx", false, false)
+		}
+		t4Field := -1
+		for _, cv := range g.sm.CrossVars {
+			if cv != nil && cv.Name() == "t4" {
+				t4Field = g.getCrossVarFieldIndex(cv)
+				break
+			}
+		}
+		if t4Field >= 0 {
+			t4FieldPtr := b.FieldAddr(statePtr, t4Field)
+			t4Val := b.Load(t4FieldPtr)
+			g.emitPullDebugState(b, t4Val, "t4", false, false)
+		}
+		opsFieldPtr := b.FieldAddr(statePtr, 1) // param0: ops
+		opsSlice := b.Load(opsFieldPtr)
+		lenVal := b.SliceLen(opsSlice)
+		g.emitPullDebugState(b, lenVal, "len", false, false)
+	}
+
 	if state.IsTerminal {
 		// Terminal state: compile state instructions, capture final result, and return Ready
 		resultVal := g.compileStateInstructions(b, state, statePtr)
@@ -579,6 +736,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 		doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
 		b.Store(stateFieldPtr, doneVal)
 		// Then return Ready(result) = Poll[T]{ready: true, value: result}
+		g.emitPullDebugState(b, g.prog.IntVal(uint64(stateIdx), g.prog.Int()), "ready", false, true)
 		finalValue := g.loadResultValue(b, statePtr)
 		g.returnReadyPoll(b, finalValue)
 		return
@@ -600,9 +758,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 		needsInit := b.BinOp(token.EQL, subFutPtr, nilPtr)
 
 		// Create blocks for init/poll branching
-		initBlocks := poll.MakeBlocks(2)
-		initBlock := initBlocks[0]
-		pollBlock := initBlocks[1]
+		initBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_init", g.sm.Original.Name(), stateIdx))
+		pollBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_poll", g.sm.Original.Name(), stateIdx))
 
 		b.If(needsInit, initBlock, pollBlock)
 
@@ -692,9 +849,8 @@ func (g *LLSSACodeGen) generateStateBlock(
 		ready := b.Field(pollResult, 0)
 
 		// Create blocks for ready/pending branching
-		branchBlocks := poll.MakeBlocks(2)
-		readyBlock := branchBlocks[0]
-		pendingBlock := branchBlocks[1]
+		readyBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_ready", g.sm.Original.Name(), stateIdx))
+		pendingBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_pending", g.sm.Original.Name(), stateIdx))
 
 		// Branch based on ready
 		b.If(ready, readyBlock, pendingBlock)
@@ -704,6 +860,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Create a Pending result: Poll[T]{ready: false, value: zero} using cached type
 		pendingResult := g.prog.Nil(g.pollLLType) // ready=false, value=zero
 		g.flushStackAllocState(b, statePtr)
+		g.emitPullDebugState(b, g.prog.IntVal(uint64(stateIdx), g.prog.Int()), "pending", true, false)
 		b.Return(pendingResult)
 
 		// Ready path: extract value, update state, continue
@@ -712,11 +869,11 @@ func (g *LLSSACodeGen) generateStateBlock(
 		// Extract value field (field 1) from Poll result
 		value := b.Field(pollResult, 1)
 
-		// Register the SSA result value so compileValue can reuse it without
-		// re-emitting the original Await call.
-		if g.registerValue != nil && sp.Result != nil {
-			g.registerValue(sp.Result, value)
-		}
+		// NOTE: Do NOT call registerValue(sp.Result, value) here!
+		// The 'value' register is only valid within this readyBlock.
+		// Subsequent state blocks must reload sp.Result from the state struct
+		// (stored below at resultVarIdx) to maintain SSA dominance.
+		// See: "Always Reload from State Struct" pattern in troubleshooting_guide.md
 
 		// Apply pending stores that assign the await result to captured heap vars.
 		g.storeSuspendResult(b, statePtr, sp, value)
@@ -741,6 +898,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 		b.Store(stateFieldPtr, g.prog.IntVal(nextState, int8Type))
 
 		// Jump to next state block to continue execution in same poll
+		g.emitPullDebugState(b, g.prog.IntVal(uint64(stateIdx), g.prog.Int()), "ready", true, false)
 		if stateIdx+1 < len(g.sm.States) {
 			b.Jump(poll.Block(stateIdx + 2)) // +1 for 0-indexed, +1 because block 0 is entry
 		} else {
@@ -837,6 +995,14 @@ func (g *LLSSACodeGen) isStackAllocCrossVar(v ssa.Value) (*ssa.Alloc, bool) {
 	return alloc, ok
 }
 
+// valueBlock returns the defining basic block of an SSA value if it is an instruction.
+func (g *LLSSACodeGen) valueBlock(v ssa.Value) *ssa.BasicBlock {
+	if instr, ok := v.(ssa.Instruction); ok {
+		return instr.Block()
+	}
+	return nil
+}
+
 func (g *LLSSACodeGen) restoreStackAllocState(b llssa.Builder, statePtr llssa.Expr) {
 	if len(g.stackAllocCrossVars) == 0 {
 		return
@@ -920,6 +1086,10 @@ func (g *LLSSACodeGen) replayAllocStores(b llssa.Builder, state *State, statePtr
 
 	// Reload cross-suspend variables for the same reason.
 	for _, cross := range g.sm.CrossVars {
+		if !g.shouldPreloadCrossVar(cross, state.Block) {
+			fieldIdx++
+			continue
+		}
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		if alloc, ok := g.isStackAllocCrossVar(cross); ok {
 			ptr := g.stackAllocPtr(alloc)
@@ -983,6 +1153,47 @@ func (g *LLSSACodeGen) ensureAllocPtr(b llssa.Builder, statePtr llssa.Expr, allo
 		return llssa.Expr{}
 	}
 	elem := g.prog.Type(tptr.Elem(), llssa.InGo)
+	if alloc.Heap {
+		if g.isLoopAlloc(alloc) {
+			ptr := b.Alloc(elem, true)
+			if g.registerValue != nil {
+				g.registerValue(alloc, ptr)
+			}
+			if idx := g.getCrossVarFieldIndex(alloc); idx >= 0 {
+				if _, isStack := g.stackAllocCrossVars[alloc]; isStack {
+					return ptr
+				}
+				fieldPtr := b.FieldAddr(statePtr, idx)
+				b.Store(fieldPtr, ptr)
+			}
+			return ptr
+		}
+		if idx := g.getCrossVarFieldIndex(alloc); idx >= 0 {
+			fieldPtr := b.FieldAddr(statePtr, idx)
+			existing := b.Load(fieldPtr)
+			nilVal := g.prog.Nil(existing.Type)
+			cond := b.BinOp(token.EQL, existing, nilVal)
+			thenBlock := b.Func.MakeBlock()
+			elseBlock := b.Func.MakeBlock()
+			contBlock := b.Func.MakeBlock()
+			b.If(cond, thenBlock, elseBlock)
+
+			b.SetBlock(thenBlock)
+			newPtr := b.Alloc(elem, true)
+			b.Store(fieldPtr, newPtr)
+			b.Jump(contBlock)
+
+			b.SetBlock(elseBlock)
+			b.Jump(contBlock)
+
+			b.SetBlock(contBlock)
+			ptr := b.Load(fieldPtr)
+			if g.registerValue != nil {
+				g.registerValue(alloc, ptr)
+			}
+			return ptr
+		}
+	}
 	ptr := b.Alloc(elem, alloc.Heap)
 	if g.registerValue != nil {
 		g.registerValue(alloc, ptr)
@@ -1005,6 +1216,14 @@ func (g *LLSSACodeGen) storeSuspendResult(b llssa.Builder, statePtr llssa.Expr, 
 	for i := sp.Index + 1; i < len(block.Instrs); i++ {
 		store, ok := block.Instrs[i].(*ssa.Store)
 		if !ok || store.Val != sp.Result {
+			continue
+		}
+		if alloc, ok := store.Addr.(*ssa.Alloc); ok && alloc.Heap {
+			ptr := g.ensureAllocPtr(b, statePtr, alloc)
+			if ptr.IsNil() {
+				continue
+			}
+			b.Store(ptr, value)
 			continue
 		}
 		idx := g.getCrossVarFieldIndex(store.Addr)
@@ -1057,13 +1276,52 @@ func (g *LLSSACodeGen) storePhiValues(
 			}
 		}
 		if incomingIdx < 0 || incomingIdx >= len(phi.Edges) {
+			// DEBUG: Log when no matching predecessor found
+			log.Printf("[storePhiValues] DEBUG: No matching pred for phi %v: fromBlock=%v (idx=%d), toBlock=%v, preds=%v",
+				phi.Name(), fromBlock.Index, fromBlock.Index, toBlock.Index, func() []int {
+					var indices []int
+					for _, p := range toBlock.Preds {
+						indices = append(indices, p.Index)
+					}
+					return indices
+				}())
 			continue
 		}
 		incoming := phi.Edges[incomingIdx]
 		if incoming == nil {
 			continue
 		}
-		val := g.compileValue(b, incoming)
+		// DEBUG: Log what we're storing
+		log.Printf("[storePhiValues] DEBUG: Storing phi %v: fromBlock=%d, toBlock=%d, incomingIdx=%d, edge=%v (type=%T) to field %d",
+			phi.Name(), fromBlock.Index, toBlock.Index, incomingIdx, incoming, incoming, fieldIdx)
+
+		// DEBUG: If incoming is a BinOp, log its operands
+		if binop, ok := incoming.(*ssa.BinOp); ok {
+			log.Printf("[storePhiValues] DEBUG: BinOp %v: X=%v (type=%T), Y=%v", binop.Name(), binop.X, binop.X, binop.Y)
+		}
+
+		var val llssa.Expr
+		if fieldIdxIncoming := g.getCrossVarFieldIndex(incoming); fieldIdxIncoming >= 0 {
+			if alloc, ok := g.isStackAllocCrossVar(incoming); ok {
+				ptr := g.stackAllocPtr(alloc)
+				if ptr.IsNil() {
+					ptr = g.ensureEntryAlloc(b, alloc)
+				}
+				if !ptr.IsNil() {
+					val = b.Load(ptr)
+				}
+			} else {
+				fieldPtrIncoming := b.FieldAddr(statePtr, fieldIdxIncoming)
+				val = b.Load(fieldPtrIncoming)
+			}
+		}
+		if val.IsNil() {
+			val = g.compileValue(b, incoming)
+		}
+
+		// DEBUG: Log the compiled value
+		log.Printf("[storePhiValues] DEBUG: Compiled %v to LLVM value (fieldIdx=%d)", incoming, fieldIdx)
+
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		b.Store(fieldPtr, val)
 		g.cacheValueMapping(phi, val)
@@ -1084,6 +1342,33 @@ func (g *LLSSACodeGen) loadResultValue(b llssa.Builder, statePtr llssa.Expr) lls
 	}
 	fieldPtr := b.FieldAddr(statePtr, g.resultFieldIndex)
 	return b.Load(fieldPtr)
+}
+
+func (g *LLSSACodeGen) emitPullDebugState(b llssa.Builder, state llssa.Expr, phase string, suspend bool, terminal bool) {
+	asyncPkg := types.NewPackage("github.com/goplus/llgo/async", "async")
+	sig := types.NewSignatureType(
+		nil, nil, nil,
+		types.NewTuple(
+			types.NewVar(0, nil, "funcName", types.Typ[types.String]),
+			types.NewVar(0, nil, "state", types.Typ[types.Int]),
+			types.NewVar(0, nil, "phase", types.Typ[types.String]),
+			types.NewVar(0, nil, "suspend", types.Typ[types.Bool]),
+			types.NewVar(0, nil, "terminal", types.Typ[types.Bool]),
+		),
+		nil, false,
+	)
+	fnName := llssa.FuncName(asyncPkg, "PullDebugState", nil, false)
+	debugFunc := g.pkg.NewFunc(fnName, sig, llssa.InGo)
+
+	funcName := b.Str(g.sm.Original.Name())
+	phaseVal := b.Str(phase)
+	stateVal := state
+	if !state.IsNil() && state.Type != g.prog.Int() {
+		stateVal = b.Convert(g.prog.Int(), state)
+	}
+	suspendVal := g.prog.BoolVal(suspend)
+	terminalVal := g.prog.BoolVal(terminal)
+	b.Call(debugFunc.Expr, funcName, stateVal, phaseVal, suspendVal, terminalVal)
 }
 
 func (g *LLSSACodeGen) stateIndexForBlock(block *ssa.BasicBlock) int {
@@ -1130,8 +1415,8 @@ func (g *LLSSACodeGen) branchToState(
 	falseIdx int,
 	int8Type llssa.Type,
 ) {
-	trueBlock := poll.MakeBlock()
-	falseBlock := poll.MakeBlock()
+	trueBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_true", g.sm.Original.Name(), fromBlock.Index))
+	falseBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_false", g.sm.Original.Name(), fromBlock.Index))
 	b.If(cond, trueBlock, falseBlock)
 
 	b.SetBlock(trueBlock)
@@ -1192,12 +1477,9 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 			continue
 		}
 
-		// Skip Store to heap Alloc (handled by replayAllocStores)
+		// Handle Store to Alloc (heap or stack)
 		if store, isStore := instr.(*ssa.Store); isStore {
 			if alloc, ok := store.Addr.(*ssa.Alloc); ok {
-				if alloc.Heap {
-					continue
-				}
 				ptr := g.ensureAllocPtr(b, statePtr, alloc)
 				if ptr.IsNil() {
 					continue
@@ -1208,6 +1490,20 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 				}
 				b.Store(ptr, val)
 				continue
+			}
+		}
+
+		// If this instruction produces a cross-var value, compute and store it
+		// into the state struct so subsequent states can reload it.
+		if valInstr, ok := instr.(ssa.Value); ok {
+			if fieldIdx := g.getCrossVarFieldIndex(valInstr); fieldIdx >= 0 {
+				val := g.compileValue(b, valInstr)
+				if !val.IsNil() {
+					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+					b.Store(fieldPtr, val)
+					g.cacheValueMapping(valInstr, val)
+					continue
+				}
 			}
 		}
 
@@ -1258,6 +1554,88 @@ func (g *LLSSACodeGen) isAsyncReturnCall(callInstr *ssa.Call) bool {
 	return false
 }
 
+func (g *LLSSACodeGen) deferWrapperKey(fnType types.Type, argTypes []types.Type) string {
+	qual := func(p *types.Package) string {
+		if p == nil {
+			return ""
+		}
+		return p.Path()
+	}
+	var b strings.Builder
+	b.WriteString(types.TypeString(fnType, qual))
+	for _, t := range argTypes {
+		b.WriteString("|")
+		b.WriteString(types.TypeString(t, qual))
+	}
+	return b.String()
+}
+
+func (g *LLSSACodeGen) ensureDeferWrapper(fnType types.Type, argTypes []types.Type) deferWrapperInfo {
+	key := g.deferWrapperKey(fnType, argTypes)
+	if info, ok := g.deferWraps[key]; ok {
+		return info
+	}
+	fields := make([]*types.Var, 0, len(argTypes)+1)
+	fields = append(fields, types.NewVar(0, nil, "fn", fnType))
+	for i, t := range argTypes {
+		fields = append(fields, types.NewVar(0, nil, fmt.Sprintf("a%d", i), t))
+	}
+	argStruct := types.NewStruct(fields, nil)
+	argStructType := g.prog.Type(argStruct, llssa.InGo)
+	g.deferWrapSeq++
+	base := g.sm.Original.String()
+	base = strings.NewReplacer(
+		"*", "",
+		"(", "",
+		")", "",
+		"/", "_",
+		".", "_",
+		"[", "_",
+		"]", "_",
+		" ", "_",
+		",", "_",
+	).Replace(base)
+	wrapperName := fmt.Sprintf("__llgo_defer_wrap$%s$%d", base, g.deferWrapSeq)
+	wrapper := g.buildDeferWrapper(wrapperName, argStruct)
+	info := deferWrapperInfo{
+		fn:            wrapper,
+		argStruct:     argStruct,
+		argStructType: argStructType,
+	}
+	g.deferWraps[key] = info
+	return info
+}
+
+func (g *LLSSACodeGen) buildDeferWrapper(name string, argStruct *types.Struct) llssa.Function {
+	sig := types.NewSignatureType(
+		nil,
+		nil,
+		nil,
+		types.NewTuple(types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer])),
+		nil,
+		false,
+	)
+	fn := g.pkg.NewFunc(name, sig, llssa.InGo)
+	fn.MakeBlocks(1)
+	b := fn.NewBuilder()
+	b.SetBlock(fn.Block(0))
+
+	argParam := fn.Param(0)
+	argStructType := g.prog.Type(argStruct, llssa.InGo)
+	argStructPtr := g.prog.Pointer(argStructType)
+	argPtr := b.PtrCast(argStructPtr, argParam)
+
+	fnVal := b.Load(b.FieldAddr(argPtr, 0))
+	numFields := argStruct.NumFields()
+	callArgs := make([]llssa.Expr, numFields-1)
+	for i := 1; i < numFields; i++ {
+		callArgs[i-1] = b.Load(b.FieldAddr(argPtr, i))
+	}
+	b.Call(fnVal, callArgs...)
+	b.Return()
+	return fn
+}
+
 // compileDeferForPullModel handles defer instructions in pull model.
 // Instead of using setjmp-based defer, we push to a persistent defer list in state struct.
 func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.Expr, deferInstr *ssa.Defer) {
@@ -1277,34 +1655,49 @@ func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.
 	// Get pointer to DeferState embedded in state struct
 	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
 
-	// Get the deferred function
-	// deferInstr.Call contains the function and arguments
-	deferredFunc := deferInstr.Call.Value
-
-	// For now, only support simple function calls without arguments
-	// TODO: Handle defer with arguments and closures
-	if len(deferInstr.Call.Args) > 0 {
-		log.Printf("[Pull Model] WARNING: defer with arguments not yet supported, skipping")
-		return
+	call := deferInstr.Call
+	var fnExpr llssa.Expr
+	if call.IsInvoke() {
+		recv := g.compileValue(b, call.Value)
+		fnExpr = b.Imethod(recv, call.Method)
+	} else {
+		fnExpr = g.compileValue(b, call.Value)
 	}
 
-	// Get function pointer as unsafe.Pointer
-	// Function values are already pointers in LLVM
-	funcPtr := g.compileValue(b, deferredFunc)
+	argTypes := make([]types.Type, len(call.Args))
+	for i, arg := range call.Args {
+		argTypes[i] = arg.Type()
+	}
+	wrapperInfo := g.ensureDeferWrapper(fnExpr.Type.RawType(), argTypes)
 
-	// arg is nil for simple defer func()
+	// Allocate argument bundle on heap and capture values at defer time
+	argPtr := b.Alloc(wrapperInfo.argStructType, true)
+	b.Store(b.FieldAddr(argPtr, 0), fnExpr)
+	for i, arg := range call.Args {
+		val := g.compileValue(b, arg)
+		b.Store(b.FieldAddr(argPtr, i+1), val)
+	}
+
 	unsafePtrType := g.prog.Type(types.Typ[types.UnsafePointer], llssa.InGo)
-	nilPtr := g.prog.Nil(unsafePtrType)
+	argPtrUnsafe := b.Convert(unsafePtrType, argPtr)
 
 	// Create function reference for async.(*DeferState).PushDefer
-	// Method signature: func (*DeferState) PushDefer(fn, arg unsafe.Pointer)
+	// Method signature: func (*DeferState) PushDefer(fn func(unsafe.Pointer), arg unsafe.Pointer)
 	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	wrapperSig := types.NewSignatureType(
+		nil,
+		nil,
+		nil,
+		types.NewTuple(types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer])),
+		nil,
+		false,
+	)
 	pushDeferSig := types.NewSignatureType(
 		types.NewVar(0, nil, "", deferStatePtrType), // receiver
 		nil,
 		nil,
 		types.NewTuple(
-			types.NewVar(0, nil, "fn", types.Typ[types.UnsafePointer]),
+			types.NewVar(0, nil, "fn", wrapperSig),
 			types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer]),
 		),
 		nil,
@@ -1322,8 +1715,8 @@ func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.
 	// Create function reference
 	pushDeferFunc := g.pkg.NewFunc(methodName, pushDeferSig, llssa.InGo)
 
-	// Call: deferStatePtr.PushDefer(funcPtr, nil)
-	b.Call(pushDeferFunc.Expr, deferStatePtr, funcPtr, nilPtr)
+	// Call: deferStatePtr.PushDefer(wrapperFn, argPtr)
+	b.Call(pushDeferFunc.Expr, deferStatePtr, wrapperInfo.fn.Expr, argPtrUnsafe)
 
 	log.Printf("[Pull Model] Generated PushDefer call successfully")
 }
@@ -1339,14 +1732,66 @@ func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.
 		return
 	}
 
-	// TODO: Implement panic handling with persistent defer list
-	// For now, log a warning
-	log.Printf("[Pull Model] WARNING: panic in async function '%s' - full implementation pending", g.sm.Original.Name())
+	log.Printf("[Pull Model] Generating DoPanic call for %s", g.sm.Original.Name())
 
-	// Fallback to standard panic
+	// Get DeferState field base index
+	deferStateIdx := g.getDeferFieldBaseIndex()
+	if deferStateIdx < 0 {
+		log.Printf("[Pull Model] WARNING: Cannot find defer fields")
+		return
+	}
+
+	// Get pointer to DeferState embedded in state struct
+	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
+
+	// Compile panic value (interface{})
+	panicVal := g.compileValue(b, panicInstr.X)
+
+	// Create function reference for async.(*DeferState).DoPanic
+	// Method signature: func (*DeferState) DoPanic(v any) bool
+	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	doPanicSig := types.NewSignatureType(
+		types.NewVar(0, nil, "", deferStatePtrType), // receiver
+		nil,
+		nil,
+		types.NewTuple(
+			types.NewVar(0, nil, "v", types.NewInterfaceType(nil, nil)),
+		),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool])),
+		false,
+	)
+
+	methodName := llssa.FuncName(
+		types.NewPackage("github.com/goplus/llgo/async", "async"),
+		"DoPanic",
+		doPanicSig.Recv(),
+		false,
+	)
+	doPanicFunc := g.pkg.NewFunc(methodName, doPanicSig, llssa.InGo)
+
+	// Call: recovered := deferStatePtr.DoPanic(panicVal)
+	recovered := b.Call(doPanicFunc.Expr, deferStatePtr, panicVal)
+
+	// Branch on recovered
+	recoveredBlock := b.Func.MakeBlock()
+	panicBlock := b.Func.MakeBlock()
+	b.If(recovered, recoveredBlock, panicBlock)
+
+	// Recovered: mark done and return Ready with current result (zero if unset)
+	b.SetBlock(recoveredBlock)
+	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
+	stateFieldPtr := b.FieldAddr(statePtr, 0)
+	doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
+	b.Store(stateFieldPtr, doneVal)
+	finalValue := g.loadResultValue(b, statePtr)
+	g.returnReadyPoll(b, finalValue)
+
+	// Not recovered: fallback to runtime panic
+	b.SetBlock(panicBlock)
 	if g.compileInstr != nil {
 		g.compileInstr(b, panicInstr)
 	}
+	b.Return(g.createZeroPoll())
 }
 
 // compileRunDefersForPullModel handles RunDefers instructions in pull model.
@@ -1506,7 +1951,7 @@ func GenerateStateMachine(
 	ssaPkg *ssa.Package,
 	fn *ssa.Function,
 ) error {
-	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil, nil, nil)
+	return GenerateStateMachineWithCallback(prog, pkg, ssaPkg, fn, nil, nil, nil, nil)
 }
 
 // GenerateStateMachineWithCallback is like GenerateStateMachine but accepts
@@ -1519,6 +1964,7 @@ func GenerateStateMachineWithCallback(
 	compileValue CompileValueFunc,
 	compileInstr CompileInstrFunc,
 	registerValue RegisterValueFunc,
+	clearCacheExcept ClearCacheExceptFunc,
 ) error {
 	// Step 1: Analyze SSA and create state machine
 	sm := Transform(fn)
@@ -1536,6 +1982,9 @@ func GenerateStateMachineWithCallback(
 	}
 	if registerValue != nil {
 		codegen.SetRegisterValue(registerValue)
+	}
+	if clearCacheExcept != nil {
+		codegen.SetClearCacheExcept(clearCacheExcept)
 	}
 	if err := codegen.Generate(); err != nil {
 		return fmt.Errorf("failed to generate code for %s: %w", fn.Name(), err)

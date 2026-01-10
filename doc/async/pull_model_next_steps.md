@@ -1,78 +1,51 @@
-# Pull Model Next Steps (Jan 2026)
+# Pull Model Next Steps (Jan 8, 2026)
 
-*Status: Implementation complete – Pull IR backend operational, interface wrapper partial.*
+*Working draft – keep checkboxes honest.*
 
-## Current Situation (Updated Jan 8)
+## Current Situation
+- **RangeAggregator hang resolved**; `complexdemo` completes with expected outputs (RangeAggregator/InterleaveWords/MatrixSummary/EvaluateRoutes all correct).
+- **LLVM backend crash (Reg:244) resolved** by preloading phi cross-vars from state, avoiding raw LLVM phi emission in state blocks; `llgo build -gen-llfiles` succeeds for `complexdemo` and `cl/_testpull/types`.
+- **typesdemo and asyncpull tests pass** after stack-alloc + cross-var preload fixes.
+- Executors (`async/sync`, `async/libuv`) already re-poll via wakers; the issue was in generated Poll/state handling, not scheduling.
 
-### ✅ What's Working
-- **Pull IR Backend** fully operational (`LLGO_PULL_IR=1` environment variable)
-- **19+ async functions** generate and compile successfully:
-  - typesdemo: 9/9 (Divmod, GetMinMax, LookupAndDouble, MapParam, PointerParam, SafeDivide, SliceParam, StringParam, StructFieldAccess)
-  - complex: 10/10 (ChainedAwaits, ClosureCapture, ConditionalChain, DeferWithAwait, LoopBreakContinue, LoopWithAccumulator, MultipleReturnPaths, NestedConditions, SwitchWithFallthrough, TwoLoops)
-  - RangeAggregator: ✅ fixed (was the original deadlock case)
-- **Unified Poll loop** with `for { switch(state) { ... } }` pattern implemented
-- **PHI EdgeWrites mechanism** working correctly for loop variables
+## Goals
+1) Unblock complexdemo by fixing state/phi handling in the current emitter.  
+2) Redesign around a Pull IR and a unified Poll loop so each `Poll` runs until the next real await (Rust-style).  
+3) Keep executor APIs stable; improvements should be compiler/runtime-internal.
 
-### ⚠️ Known Limitations
-- **Interface wrapper** works for simple return types (int, struct) but hits llssa limitation for nested generics (`Future[Result[T]]` causes `unsupported ptrbytes`)
-- This is a **pre-existing llssa issue**, not Pull IR specific
+## Plan & TODO
 
-## Implementation Summary
+### A. Short-term Debugging & Fixes
+- [x] Add `LLGO_PULL_DEBUG` hook.
+- [x] Preload phi cross-vars from state to avoid LLVM PHI emission inside state blocks (fixes Reg:244 crash).
+- [ ] Instrument pending/ready paths to see why RangeAggregator never marks ready.
+- [x] Patch current emitter (state writes / phi edge stores / stack flush) to make complexdemo finish.
 
-### Pull IR Architecture (Complete)
-```
-SSA → Pull IR → LLVM IR
-      ↓
-   pullir.go         - Core types (Slot, VarRef, PullInstr, PullState)
-   pullir_transform.go - SSA to Pull IR with PHI edge writes
-   pullir_codegen.go   - Pull IR to LLVM with unified Poll loop
-```
+### B. Unified Poll Loop (design+impl)
+- [ ] Emit Poll as `for { switch(state) { … } }`, only returning on Pending/Ready.
+  - [ ] Add a dedicated dispatcher block (not the entry block) to avoid LLVM loop-simplify crashes seen when re-dispatching to entry.
+  - [ ] Ensure single state write per path; minimize ad-hoc flushes.
+- [ ] Re-run typesdemo + complexdemo with debug enabled.
 
-### Key Components
-| File | Purpose | Lines |
-|------|---------|-------|
-| `pullir.go` | Pull IR instruction set | ~300 |
-| `pullir_transform.go` | SSA → Pull IR transformation | ~700 |
-| `pullir_codegen.go` | LLVM IR generation | ~560 |
+### C. Pull IR (mid-term)
+- [ ] Define Pull IR (states, awaits, next-state edges, storage classes).
+- [ ] SSA → Pull IR transform (handles async.Return, stack allocs, defer/panic).
+- [ ] Pull IR → LLVM backend using the unified Poll template.
+- [ ] Migrate incrementally, starting with complexdemo.
 
-### Critical Fixes Applied
-1. **Aggressive slot allocation** - All value-producing instructions get slots, eliminating cross-state value issues
-2. **PHI EdgeWrites** - Phi values assigned at predecessor edges, not at target state entry
-3. **PullRange/PullNext** - for-range loop iteration fully supported
-4. **Proper async type retrieval** - `getAsyncContextType()` and `getAsyncPollType()` for correct scope
+### D. Runtime / Executor Alignment
+- [x] Confirm `async/sync` & `async/libuv` re-poll on wake.
+- [ ] Document waker expectations for Futures returning Pending.
+- [ ] Optional: tiny executor test helpers.
 
-## Remaining Work
+### E. Testing & Tooling
+- [ ] Broaden `test/asyncpull` coverage (more branch/loop/error cases beyond typesdemo).
+- [ ] Keep `tmp/analysis.log` updated (not committed).
+- [ ] Optional: Pull IR dump flag for inspection once IR exists.
 
-### High Priority
-- [ ] Fix llssa `ptrbytes` limitation for nested generic types (affects `Result[T]`)
-- [ ] Enable interface wrapper for all return types
+## Open Questions
+- Switch-loop vs jump-table/continuation pointers once Pull IR exists.
+- Clean defer/panic handling in Pull IR.
+- ABI concerns when Poll returns struct values vs pointers.
 
-### Medium Priority
-- [ ] Optimize slot usage (currently allocates for all values, could be more selective)
-- [ ] Add Pull IR dump flag for debugging (`LLGO_PULL_IR_DUMP`)
-- [ ] Performance benchmarks vs original backend
-
-### Low Priority
-- [ ] Consider switch → jump table optimization in Poll loop
-- [ ] Documentation for Pull IR instruction set
-
-## Usage
-
-```bash
-# Enable Pull IR backend
-LLGO_PULL_IR=1 llgo build ./...
-
-# Test with typesdemo
-cd cl/_testpull/types && LLGO_PULL_IR=1 go run ../../../chore/llgen .
-
-# Test with complexdemo (RangeAggregator)
-cd test/asyncpull/examples/complexdemo && LLGO_PULL_IR=1 go run ../../../../chore/llgen .
-```
-
-## Open Questions (Updated)
-- ~~Should Pull IR support direct continuation pointers?~~ → Using switch loop, working well
-- ~~How to handle defer/panic?~~ → Deferred operations skip in Pull IR, existing mechanism OK
-- [ ] Should we make Pull IR the default backend once llssa issues are resolved?
-
----
-*Last updated: Jan 8, 2026*
+*Last updated: Jan 9, 2026 (complexdemo passes; RangeAggregator hang resolved).*

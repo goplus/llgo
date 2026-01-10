@@ -337,13 +337,22 @@ func (p Function) MakeBlocks(nblk int) []BasicBlock {
 		p.blks = make([]BasicBlock, 0, nblk)
 	}
 	for i := 0; i < nblk; i++ {
-		p.addBlock(n + i)
+		p.addBlockWithName(n+i, "")
 	}
 	return p.blks[n:]
 }
 
 func (p Function) addBlock(idx int) BasicBlock {
-	label := "_llgo_" + strconv.Itoa(idx)
+	return p.addBlockWithName(idx, "")
+}
+
+// addBlockWithName creates a basic block with an optional custom label.
+// When name is empty, the default label "_llgo_<idx>" is used.
+func (p Function) addBlockWithName(idx int, name string) BasicBlock {
+	label := name
+	if label == "" {
+		label = "_llgo_" + strconv.Itoa(idx)
+	}
 	blk := llvm.AddBasicBlock(p.impl, label)
 	ret := &aBasicBlock{blk, blk, p, idx}
 	p.blks = append(p.blks, ret)
@@ -353,6 +362,11 @@ func (p Function) addBlock(idx int) BasicBlock {
 // MakeBlock creates a new basic block for the function.
 func (p Function) MakeBlock() BasicBlock {
 	return p.addBlock(len(p.blks))
+}
+
+// MakeNamedBlock creates a new basic block with a specific label.
+func (p Function) MakeNamedBlock(name string) BasicBlock {
+	return p.addBlockWithName(len(p.blks), name)
 }
 
 // Block returns the ith basic block of the function.

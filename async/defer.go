@@ -18,11 +18,13 @@ package async
 
 import "unsafe"
 
+var currentDeferState *DeferState
+
 // DeferNode represents a single defer call in the persistent defer list.
 // Used by async functions to track defers across await points.
 type DeferNode struct {
 	prev *DeferNode
-	fn   unsafe.Pointer // function pointer
+	fn   func(unsafe.Pointer)
 	arg  unsafe.Pointer // closure/receiver pointer (if any)
 }
 
@@ -36,8 +38,8 @@ type DeferState struct {
 }
 
 // PushDefer adds a defer to the list.
-// fn is the function pointer, arg is the closure/receiver.
-func (s *DeferState) PushDefer(fn, arg unsafe.Pointer) {
+// fn is the wrapper function, arg is the captured arguments bundle.
+func (s *DeferState) PushDefer(fn func(unsafe.Pointer), arg unsafe.Pointer) {
 	node := &DeferNode{
 		prev: (*DeferNode)(s.DeferHead),
 		fn:   fn,
@@ -49,6 +51,9 @@ func (s *DeferState) PushDefer(fn, arg unsafe.Pointer) {
 // RunDefers executes all deferred functions in LIFO order.
 // This is called on normal return.
 func (s *DeferState) RunDefers() {
+	prev := currentDeferState
+	currentDeferState = s
+	defer func() { currentDeferState = prev }()
 	for s.DeferHead != nil {
 		node := (*DeferNode)(s.DeferHead)
 		s.DeferHead = unsafe.Pointer(node.prev)
@@ -63,6 +68,10 @@ func (s *DeferState) DoPanic(v any) bool {
 	s.PanicValue = v
 	s.IsPanicking = true
 	s.Recovered = false
+
+	prev := currentDeferState
+	currentDeferState = s
+	defer func() { currentDeferState = prev }()
 
 	// Execute defers, checking for recover after each
 	for s.DeferHead != nil && !s.Recovered {
@@ -93,22 +102,9 @@ func (s *DeferState) DoRecover() any {
 // This is a placeholder - actual implementation depends on function signature.
 //
 //go:noinline
-func callDeferredFunc(fn, arg unsafe.Pointer) {
+func callDeferredFunc(fn func(unsafe.Pointer), arg unsafe.Pointer) {
 	if fn == nil {
 		return
 	}
-	// For simple func() type defers:
-	// fn is already a function pointer (unsafe.Pointer)
-	// We need to convert it to *func() and call it
-	if arg == nil {
-		// Call fn as func()
-		// fn is the function pointer itself
-		fnPtr := *(*func())(unsafe.Pointer(&fn))
-		fnPtr()
-	} else {
-		// Call fn with arg as receiver/closure
-		// This needs type-specific handling in generated code
-		fnPtr := *(*func())(unsafe.Pointer(&fn))
-		fnPtr()
-	}
+	fn(arg)
 }

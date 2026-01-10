@@ -21,6 +21,7 @@ package pullmodel
 
 import (
 	"go/types"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -61,6 +62,9 @@ type StateMachine struct {
 	ResultType types.Type
 	// HasDefer is true if the function contains defer statements
 	HasDefer bool
+	// LoopAllocs tracks ssa.Alloc instructions that appear in loop blocks.
+	// These allocs should not reuse a single pointer across iterations.
+	LoopAllocs map[*ssa.Alloc]struct{}
 }
 
 // State represents a single state in the state machine.
@@ -318,6 +322,34 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 		}
 	}
 
+	// Include suspend point results - these are defined AT the suspend point
+	// (not before it) but need to persist to the state struct so they can be
+	// reloaded in subsequent states. Without this, the value would only exist
+	// in the readyBlock's scope and violate SSA dominance when used later.
+	for _, sp := range suspends {
+		if sp.Result != nil {
+			crossVars[sp.Result] = true
+		}
+	}
+
+	// Include free vars captured by deferred closures. These values must remain
+	// valid across suspend points because deferred closures execute after return.
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			deferInstr, ok := instr.(*ssa.Defer)
+			if !ok {
+				continue
+			}
+			if mc, ok := deferInstr.Call.Value.(*ssa.MakeClosure); ok {
+				for _, binding := range mc.Bindings {
+					if binding != nil {
+						crossVars[binding] = true
+					}
+				}
+			}
+		}
+	}
+
 	// Convert map to slice
 	result := make([]ssa.Value, 0, len(crossVars))
 	for v := range crossVars {
@@ -329,16 +361,51 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 
 	// Sort for deterministic ordering
 	sort.Slice(result, func(i, j int) bool {
-		// Sort by name first
-		ni, nj := result[i].Name(), result[j].Name()
-		if ni != nj {
-			return ni < nj
+		pi, pj := result[i].Pos(), result[j].Pos()
+		if pi != pj {
+			return pi < pj
 		}
-		// If names are the same, sort by type string
-		return result[i].Type().String() < result[j].Type().String()
+		// Use String() (includes value kind) for stable grouping.
+		si, sj := result[i].String(), result[j].String()
+		if si != sj {
+			return si < sj
+		}
+		// Final tie-breaker: pointer address to avoid mixing same Name().
+		return uintptrPtr(result[i]) < uintptrPtr(result[j])
 	})
 
 	return result
+}
+
+// AnalyzeLoopAllocs collects alloc instructions that live in loop blocks.
+// These are executed on each iteration and must not be pointer-reused.
+func AnalyzeLoopAllocs(fn *ssa.Function) map[*ssa.Alloc]struct{} {
+	if fn == nil || len(fn.Blocks) == 0 {
+		return nil
+	}
+	loops := blocksInLoops(fn)
+	if len(loops) == 0 {
+		return nil
+	}
+	loopAllocs := make(map[*ssa.Alloc]struct{})
+	for _, block := range fn.Blocks {
+		if !loops[block] {
+			continue
+		}
+		for _, instr := range block.Instrs {
+			if alloc, ok := instr.(*ssa.Alloc); ok {
+				loopAllocs[alloc] = struct{}{}
+			}
+		}
+	}
+	if len(loopAllocs) == 0 {
+		return nil
+	}
+	return loopAllocs
+}
+
+func uintptrPtr(v ssa.Value) uintptr {
+	return uintptr(reflect.ValueOf(v).Pointer())
 }
 
 // isDefinedBefore checks if a definition position is before a suspend point.
@@ -375,6 +442,73 @@ func findUsesAfterSuspend(fn *ssa.Function, sp *SuspendPoint) map[ssa.Value]bool
 	return uses
 }
 
+// blocksInLoops returns a set of blocks that are part of a CFG cycle.
+func blocksInLoops(fn *ssa.Function) map[*ssa.BasicBlock]bool {
+	index := 0
+	stack := make([]*ssa.BasicBlock, 0, len(fn.Blocks))
+	onStack := make(map[*ssa.BasicBlock]bool, len(fn.Blocks))
+	indices := make(map[*ssa.BasicBlock]int, len(fn.Blocks))
+	lowlink := make(map[*ssa.BasicBlock]int, len(fn.Blocks))
+	inLoop := make(map[*ssa.BasicBlock]bool, len(fn.Blocks))
+
+	var strongconnect func(v *ssa.BasicBlock)
+	strongconnect = func(v *ssa.BasicBlock) {
+		indices[v] = index
+		lowlink[v] = index
+		index++
+		stack = append(stack, v)
+		onStack[v] = true
+
+		for _, w := range v.Succs {
+			if _, ok := indices[w]; !ok {
+				strongconnect(w)
+				if lowlink[w] < lowlink[v] {
+					lowlink[v] = lowlink[w]
+				}
+			} else if onStack[w] {
+				if indices[w] < lowlink[v] {
+					lowlink[v] = indices[w]
+				}
+			}
+		}
+
+		if lowlink[v] == indices[v] {
+			component := []*ssa.BasicBlock{}
+			for {
+				n := len(stack) - 1
+				w := stack[n]
+				stack = stack[:n]
+				onStack[w] = false
+				component = append(component, w)
+				if w == v {
+					break
+				}
+			}
+			if len(component) > 1 {
+				for _, b := range component {
+					inLoop[b] = true
+				}
+			} else {
+				// Self-loop counts as a cycle.
+				for _, succ := range v.Succs {
+					if succ == v {
+						inLoop[v] = true
+						break
+					}
+				}
+			}
+		}
+	}
+
+	for _, b := range fn.Blocks {
+		if _, ok := indices[b]; !ok {
+			strongconnect(b)
+		}
+	}
+
+	return inLoop
+}
+
 // collectOperands adds all operands of an instruction to the uses map.
 func collectOperands(instr ssa.Instruction, uses map[ssa.Value]bool) {
 	for _, op := range instr.Operands(nil) {
@@ -392,6 +526,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 
 	suspends := FindSuspendPoints(fn)
 	crossVars := AnalyzeCrossVars(fn, suspends)
+	loopAllocs := AnalyzeLoopAllocs(fn)
 
 	// Get result type from Future[T]
 	resultType := GetFutureResultType(fn.Signature.Results().At(0).Type())
@@ -421,6 +556,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 		SubFutures: subFutures,
 		ResultType: resultType,
 		HasDefer:   hasDefer,
+		LoopAllocs: loopAllocs,
 	}
 
 	// Split into states at suspend points

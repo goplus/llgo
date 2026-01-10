@@ -778,6 +778,16 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	return
 }
 
+// PtrCast performs a pointer cast to the target type.
+func (b Builder) PtrCast(t Type, x Expr) (ret Expr) {
+	if debugInstr {
+		log.Printf("PtrCast %v <- %v\n", t.RawType(), x.RawType())
+	}
+	ret.impl = llvm.CreatePointerCast(b.impl, x.impl, t.ll)
+	ret.Type = t
+	return
+}
+
 // The Convert instruction yields the conversion of value X to type
 // Type().  One or both of those types is basic (but possibly named).
 //
@@ -892,6 +902,11 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 			r := b.impl.CreateExtractValue(x.impl, 0, "")
 			i := b.impl.CreateExtractValue(x.impl, 1, "")
 			ret.impl = b.Complex(Expr{castFloat(b, r, ft), ft}, Expr{castFloat(b, i, ft), ft}).impl
+			return
+		}
+		// pointer -> integer/uintptr
+		if x.kind == vkPtr && (typ.Info()&types.IsInteger != 0) {
+			ret.impl = castUintptr(b, x.impl, x.Type, t)
 			return
 		}
 	case *types.Pointer:

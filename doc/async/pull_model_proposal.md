@@ -236,7 +236,56 @@ func findCrossSuspendVars(fn *ssa.Function, suspends []*ssa.Call) []ssa.Value {
 }
 ```
 
-### 4.5 完整转换示例
+### 4.5 SSA 中 Alloc 出现的场景
+
+在 `x/tools/go/ssa` 中，`Alloc` 表示“需要可取址存储单元”的分配。它可能对应源码里的显式分配，也可能是 SSA 构建时为变量创建的隐式存储。常见且需要覆盖的场景如下：
+
+1. **显式分配与取址**
+   - `new(T)`
+   - `&T{...}` / `&struct{...}{...}` / `&[n]T{...}`
+   - 这些通常表现为 `Alloc` + 一系列 `Store` 初始化字段或元素
+
+2. **局部变量/参数被取址**
+   - 显式 `&x`
+   - 通过调用传出 `&x`，或把 `&x` 存入切片 / map / 结构体 / interface
+   - 返回 `&x`（地址逃逸）
+   - 适用于普通局部变量、参数、range 变量、type switch 绑定变量等
+
+3. **闭包或 defer 捕获**
+   - `func() { use x }` 或 `defer func() { use x }()`
+   - 捕获变量通常会被降级为 `Alloc`，并通过 `MakeClosure` 绑定该指针
+
+4. **需要地址以满足方法或接口语义**
+   - 例如对局部变量调用指针接收者方法，SSA 会对该变量创建 `Alloc` 以获得稳定地址
+
+5. **SSA 无法提升到寄存器的变量**
+   - 只要变量有“可取址/逃逸”的需求，SSA 会保留 `Alloc`，而不是提升为纯 SSA 值
+
+补充说明：
+- **Alloc 提升（lift）规则是保守的**：SSA 构建会尝试把局部变量提升为纯 SSA 值（类似 mem2reg），但只在“地址不逃逸、用途受控”的情况下进行。常见无法提升的原因包括：地址被捕获/返回/存入容器/接口；传入未知调用；参与 `unsafe.Pointer` 或反射；地址在多块间被合并或需要保留真实地址语义。只要存在这些风险，`Alloc` 就会保留。
+- **具体失败示例（会保留 Alloc）**：
+  ```go
+  // 1) 取址并返回
+  func f() *int { x := 1; return &x }
+
+  // 2) 取址传给未知调用
+  func g(p *int)
+  func f() { x := 1; g(&x) }
+
+  // 3) 地址进入 interface / 容器
+  func f() { x := 1; var a any = &x; _ = a }
+  func f2() { x := 1; s := []*int{&x}; _ = s }
+
+  // 4) 闭包 / defer 捕获
+  func f() { x := 1; defer func() { _ = x }() }
+
+  // 5) unsafe / reflect 参与
+  func f() { x := 1; _ = uintptr(unsafe.Pointer(&x)) }
+  ```
+- `Alloc.Heap` 为 true 表示该存储必须放在堆上（地址逃逸），否则可在栈上。
+- `make(slice/map/chan)` 不是 `Alloc`，而是 `MakeSlice/MakeMap/MakeChan` 指令。
+
+### 4.6 完整转换示例
 
 **输入：**
 ```go
@@ -320,14 +369,51 @@ func (s *MyAsync_State) Poll(ctx *Context) Poll[int] {
    1 次 malloc，单个大块，内存连续
 ```
 
-### 5.3 变量存储
+### 5.3 变量存储判定
 
-| 变量类型 | 是否保存到状态机 | 原因 |
-|---------|-----------------|------|
-| 参数 | ✅ 是 | 整个执行期间需要 |
-| 跨 await 变量 | ✅ 是 | suspend 后仍需使用 |
-| 不跨 await 变量 | ❌ 否 | 可在栈上临时存储 |
-| 子 future | ✅ 是 | 需要多次 poll |
+#### 5.3.1 基本判定原则
+
+**核心规则**：如果一个 SSA 值需要在 suspend 点之后仍然有效访问，就必须入 state。
+
+| SSA Value 类型 | 入 State 条件 | 存储内容 |
+|----------------|--------------|---------|
+| **参数** (ssa.Parameter) | 后续状态使用 | 值本身 |
+| **普通 SSA Value** | 定义在 suspend 前，使用在 suspend 后 | 值本身 |
+| **Alloc (Heap)** | 跨 suspend 或被闭包捕获 | **指针** |
+| **Alloc (Stack)** | 跨 suspend | **元素值 T**（非 `*T`） |
+| **Await 结果** | 后续状态使用 | 值本身 |
+| **Phi 节点** | 跨状态控制流 | 值本身 |
+| **闭包捕获变量** | 延迟执行时需访问 | 值或地址 |
+
+#### 5.3.2 当前实现的保守策略
+
+当前实现采用**保守策略**，宁可多存也不漏，以避免复杂控制流下的边界情况：
+
+| 策略 | 实现方式 | 原因 |
+|------|---------|------|
+| **Phi 强制入 state** | 所有 Phi 不管是否跨 suspend 都入 state | Phi 依赖前驱边，简单分析可能漏判循环变量 |
+| **Await 结果强制入** | 所有 suspend 点结果入 state | 避免 SSA dominance 问题 |
+| **Defer 捕获强制入** | defer 闭包的所有 Bindings 入 state | 保证延迟执行时变量有效 |
+| **预分配 Slot** | 为所有 value-producing 指令预分配 slot | 避免复杂控制流下遗漏跨状态引用 |
+
+#### 5.3.3 Alloc 处理细节
+
+**Stack Alloc**（`Alloc.Heap == false`）：
+- 存储**元素值** `T` 而非指针 `*T`
+- 每次 Poll 恢复时重新获取栈地址：`localAddr := &s.localVal`
+
+**Loop Alloc**：
+- 循环中的 Alloc 需特殊追踪
+- 避免循环迭代间指针复用
+
+#### 5.3.4 未来优化机会
+
+| 优化项 | 描述 | 预期收益 |
+|-------|------|---------|
+| **精确 Phi 分析** | 只保留真正跨 suspend 的 Phi | 减少 slot 数量 |
+| **按需 Slot 分配** | 替代预分配策略 | 大幅减少 slot |
+| **Slot 复用** | 生命周期不重叠的变量共享 slot | 减少 struct 大小 |
+| **Escape 分析集成** | 利用逃逸分析结果 | 更精确的 Heap/Stack 判定 |
 
 ---
 
@@ -945,4 +1031,3 @@ func main() {
 - [Rust Async Book](https://rust-lang.github.io/async-book/)
 - [x/tools/go/ssa](https://pkg.go.dev/golang.org/x/tools/go/ssa)
 - [How Rust Optimizes Async/Await](https://tmandry.gitlab.io/blog/posts/optimizing-await-1/)
-

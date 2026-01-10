@@ -91,12 +91,22 @@ func (b *PullIRBuilder) Build() (*PullIR, error) {
 
 // allocateSlot creates a new slot for an SSA value.
 func (b *PullIRBuilder) allocateSlot(v ssa.Value, kind SlotKind, name string) *Slot {
+	slotType := v.Type()
+	stackAlloc := false
+	if alloc, ok := v.(*ssa.Alloc); ok && !alloc.Heap {
+		// Persist the element value instead of the transient stack pointer.
+		if ptr, ok := alloc.Type().(*types.Pointer); ok {
+			slotType = ptr.Elem()
+			stackAlloc = true
+		}
+	}
 	slot := &Slot{
-		Name:     name,
-		Type:     v.Type(),
-		FieldIdx: b.nextField,
-		Kind:     kind,
-		SSAValue: v,
+		Name:       name,
+		Type:       slotType,
+		FieldIdx:   b.nextField,
+		Kind:       kind,
+		SSAValue:   v,
+		StackAlloc: stackAlloc,
 	}
 	b.slots[v] = slot
 	b.slotList = append(b.slotList, slot)
@@ -221,6 +231,10 @@ func (b *PullIRBuilder) transformState(state *State, idx int) (*PullState, error
 
 	// Transform each instruction
 	for _, instr := range state.Instructions {
+		// Skip the suspend call itself; handled by handleSuspendPoint/Await.
+		if state.SuspendPoint != nil && instr == state.SuspendPoint.Call {
+			continue
+		}
 		if err := ctx.transformInstr(instr); err != nil {
 			log.Printf("[PullIR] Warning: failed to transform instr %T: %v", instr, err)
 			// Continue with best effort

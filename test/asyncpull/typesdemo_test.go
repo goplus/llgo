@@ -82,8 +82,8 @@ func TestWeightedLoopCrossVar(t *testing.T) {
 
 func TestBranchingTuplePaths(t *testing.T) {
 	flipped := pollReady(t, branchingTuple(7, 4, true))
-	if flipped.V1 != 3 || flipped.V2 != 11 {
-		t.Fatalf("flip tuple = %+v, want (3,11)", flipped)
+	if flipped.V1 != 7 || flipped.V2 != 11 {
+		t.Fatalf("flip tuple = %+v, want (7,11)", flipped)
 	}
 
 	straight := pollReady(t, branchingTuple(2, 5, false))

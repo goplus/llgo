@@ -86,6 +86,56 @@ FuncA:
 
 ---
 
+### 2.3 SSA 中 Alloc 出现的场景
+
+在 go/ssa 中，`Alloc` 表示“为某个值创建可取址存储单元”。它既可能来自源码显式分配，也可能是 SSA 构建阶段无法提升变量时的隐式结果。完整覆盖的常见场景如下：
+
+1. **显式分配与取址**
+   - `new(T)`
+   - `&T{...}` / `&struct{...}{...}` / `&[n]T{...}`
+   - 通常是 `Alloc` + `Store` 初始化
+
+2. **局部变量/参数被取址或地址逃逸**
+   - 显式 `&x`
+   - 将 `&x` 传出函数、存入切片/map/结构体/interface、或返回 `&x`
+   - 适用于普通局部变量、参数、range 变量、type switch 绑定变量等
+
+3. **闭包或 defer 捕获**
+   - `func() { use x }`、`defer func() { use x }()`
+   - 捕获变量会变成 `Alloc`，并通过 `MakeClosure` 绑定
+
+4. **需要稳定地址以满足方法/接口语义**
+   - 对局部变量调用指针接收者方法，SSA 会为其创建 `Alloc` 以取得地址
+
+5. **无法提升到 SSA 值的变量**
+   - 只要变量具有“可取址/逃逸”需求，SSA 构建会保留 `Alloc`，而非纯 SSA 值
+
+补充：
+- **Alloc 提升（lift）是保守的**：SSA 会尽量把局部变量提升成纯 SSA 值，但只在“地址不逃逸、用途可控”的情况下进行。常见无法提升的原因包括：地址被捕获/返回/存入容器或接口；传入未知调用；参与 `unsafe.Pointer` 或反射；地址在多个块之间需要合并或保留真实地址语义。
+- **具体失败示例（会保留 Alloc）**：
+  ```go
+  // 1) 取址并返回
+  func f() *int { x := 1; return &x }
+
+  // 2) 取址传给未知调用
+  func g(p *int)
+  func f() { x := 1; g(&x) }
+
+  // 3) 地址进入 interface / 容器
+  func f() { x := 1; var a any = &x; _ = a }
+  func f2() { x := 1; s := []*int{&x}; _ = s }
+
+  // 4) 闭包 / defer 捕获
+  func f() { x := 1; defer func() { _ = x }() }
+
+  // 5) unsafe / reflect 参与
+  func f() { x := 1; _ = uintptr(unsafe.Pointer(&x)) }
+  ```
+- `Alloc.Heap` 为 true 表示地址逃逸，需要堆分配，否则可在栈上。
+- `make(slice/map/chan)` 对应 `MakeSlice/MakeMap/MakeChan`，不是 `Alloc`。
+
+---
+
 ## 3. 转换步骤
 
 ### 3.1 步骤1：识别异步函数
@@ -740,9 +790,162 @@ type SSAToStateMachine interface {
 
 ---
 
-## 8. 注意事项
+## 8. State 存储判定与策略
 
-### 8.1 类型推断
+本节描述哪些 SSA 值需要存入状态机的 state 结构体，以及当前实现采用的保守策略。
+
+### 8.1 基本判定原则
+
+**核心规则**：如果一个 SSA 值需要在 suspend 点之后仍然有效访问，就必须入 state。
+
+| SSA Value 类型 | 入 State 条件 | 存储内容 |
+|----------------|--------------|---------|
+| **参数** (ssa.Parameter) | 后续状态使用 | 值本身 |
+| **普通 SSA Value** | 定义在 suspend 前，使用在 suspend 后 | 值本身 |
+| **Alloc (Heap)** | 跨 suspend 或被闭包捕获 | **指针** |
+| **Alloc (Stack)** | 跨 suspend | **元素值 T**（非 `*T`） |
+| **Await 结果** | 后续状态使用 | 值本身 |
+| **Phi 节点** | 跨状态控制流 | 值本身 |
+| **闭包捕获变量** | 延迟执行时需访问 | 值或地址 |
+
+### 8.2 当前实现的保守策略
+
+当前实现采用**保守策略**，宁可多存也不漏，以避免复杂控制流下的边界情况。
+
+#### 8.2.1 Phi 节点强制入 State
+
+```go
+// 当前实现：所有 Phi 强制入 state
+for _, block := range fn.Blocks {
+    for _, instr := range block.Instrs {
+        if phi, ok := instr.(*ssa.Phi); ok {
+            crossVars[phi] = true  // 不管是否跨 suspend
+        }
+    }
+}
+```
+
+**原因**：Phi 值依赖于进入 block 的前驱边。在复杂循环中（如 `for.loop` block），简单的 `isDefinedBefore` 分析可能错误判断 Phi 的定义位置，导致循环变量（如 `i`, `sum`）丢失。
+
+#### 8.2.2 Await 结果强制入 State
+
+```go
+// 当前实现：所有 Await 结果强制入 state
+for _, sp := range suspends {
+    if sp.Result != nil {
+        crossVars[sp.Result] = true
+    }
+}
+```
+
+**原因**：Await 结果定义在 suspend 点本身，需要在后续状态中可访问。强制入 state 避免 SSA dominance 问题。
+
+#### 8.2.3 Defer 闭包捕获强制入 State
+
+```go
+// 当前实现：defer 闭包的所有 Bindings 强制入 state
+if deferInstr, ok := instr.(*ssa.Defer); ok {
+    if mc, ok := deferInstr.Call.Value.(*ssa.MakeClosure); ok {
+        for _, binding := range mc.Bindings {
+            crossVars[binding] = true
+        }
+    }
+}
+```
+
+**原因**：defer 闭包在函数返回时执行，必须保证捕获的变量在整个函数生命周期内有效。
+
+#### 8.2.4 预分配所有 Value-Producing 指令的 Slot
+
+```go
+// 当前实现：为几乎所有产生值的指令预分配 slot
+func (b *PullIRBuilder) allocateCrossStateSlots() {
+    for _, state := range b.sm.States {
+        for _, instr := range state.Instructions {
+            if v, ok := instr.(ssa.Value); ok {
+                if b.getSlot(v) == nil {
+                    b.allocateSlot(v, SlotCross, name)
+                }
+            }
+        }
+    }
+}
+```
+
+**原因**：避免复杂控制流（分支、循环、多前驱）下遗漏跨状态引用。
+
+### 8.3 Stack Alloc 的特殊处理
+
+Stack Alloc（`Alloc.Heap == false`）存储**元素值**而非指针：
+
+```go
+if alloc, ok := v.(*ssa.Alloc); ok && !alloc.Heap {
+    if ptr, ok := alloc.Type().(*types.Pointer); ok {
+        slotType = ptr.Elem()  // 存 T，不是 *T
+        stackAlloc = true
+    }
+}
+```
+
+在 Poll 方法中，每次恢复时需要重新获取栈地址：
+```go
+localAddr := &s.localVal  // 从 state 字段取地址
+```
+
+### 8.4 Loop Alloc 的特殊处理
+
+循环中的 Alloc 需要追踪，避免指针复用：
+
+```go
+func AnalyzeLoopAllocs(fn *ssa.Function) map[*ssa.Alloc]struct{} {
+    // 使用 Tarjan SCC 检测循环块
+    loops := blocksInLoops(fn)
+    // 收集循环中的 Alloc
+    for _, block := range fn.Blocks {
+        if loops[block] {
+            for _, instr := range block.Instrs {
+                if alloc, ok := instr.(*ssa.Alloc); ok {
+                    loopAllocs[alloc] = struct{}{}
+                }
+            }
+        }
+    }
+}
+```
+
+### 8.5 Phi 节点的 EdgeWrites 处理
+
+Phi 值在状态机中通过**出口侧写入**（EdgeWrites）而非入口侧加载：
+
+```go
+// PullState 结构
+type PullState struct {
+    EdgeWrites map[int][]EdgeWrite  // targetState -> writes
+}
+
+// 在跳转前写入 Phi 对应的 slot
+ctx.generatePhiEdgeWrites(fromBlock, toBlock, targetState)
+```
+
+这确保了 Phi 语义的正确性：每条入边对应一个特定的值。
+
+### 8.6 未来优化机会
+
+当前保守策略会导致 state 结构体偏大。未来可以优化：
+
+| 优化项 | 描述 | 预期收益 |
+|-------|------|---------|
+| **精确 Phi 分析** | 只保留真正跨 suspend 的 Phi | 减少 slot 数量 |
+| **按需 Slot 分配** | 替代预分配策略，精确分析跨状态引用 | 大幅减少 slot |
+| **Slot 复用** | 生命周期不重叠的变量共享 slot | 减少 struct 大小 |
+| **Local 变量优化** | 不跨 suspend 的变量使用栈临时存储 | 减少持久化开销 |
+| **Escape 分析集成** | 利用 Go 编译器的逃逸分析结果 | 更精确的 Heap/Stack 判定 |
+
+---
+
+## 9. 注意事项
+
+### 9.1 类型推断
 
 子 future 类型需要在编译期确定：
 
@@ -755,7 +958,7 @@ var f Future[int] = getFuture()  // 运行时动态类型
 x := f.Await()
 ```
 
-### 8.2 跨包调用
+### 9.2 跨包调用
 
 跨包的 async 函数需要导出状态机类型：
 
@@ -769,7 +972,7 @@ type FuncA_State struct {
 }
 ```
 
-### 8.3 递归
+### 9.3 递归
 
 直接递归需要特殊处理（使用 Box 或接口）：
 

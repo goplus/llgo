@@ -36,8 +36,15 @@ type Defer struct {
 	Args unsafe.Pointer // defer func and args links
 }
 
+var asyncRecoverHook func() (any, bool)
+
 // Recover recovers a panic.
 func Recover() (ret any) {
+	if asyncRecoverHook != nil {
+		if v, ok := asyncRecoverHook(); ok {
+			return v
+		}
+	}
 	ptr := excepKey.Get()
 	if ptr != nil {
 		excepKey.Set(nil)

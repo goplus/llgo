@@ -181,6 +181,16 @@ func GenerateWithPullIR(
 		return fmt.Errorf("SSA to Pull IR transform failed: %w", err)
 	}
 	log.Printf("[PullIR] Generated Pull IR: %d states, %d slots", len(pullIR.States), len(pullIR.Slots))
+	if os.Getenv("LLGO_PULL_IR_DUMP") == "1" {
+		path := fmt.Sprintf("tmp/pullir_%s.txt", fn.Name())
+		if f, ferr := os.Create(path); ferr == nil {
+			defer f.Close()
+			pullIR.Dump(f)
+			log.Printf("[PullIR] Dumped to %s", path)
+		} else {
+			log.Printf("[PullIR] Failed to dump Pull IR: %v", ferr)
+		}
+	}
 
 	// Step 3: Generate LLVM IR from Pull IR
 	codegen := NewPullIRCodeGen(prog, pkg, ssaPkg, pullIR)
