@@ -95,14 +95,13 @@ func TestHeapAllocAsync(t *testing.T) {
 	}
 }
 
-// DISABLED: StructAllocAsync has issues with heap alloc pointer tracking across await
-// func TestStructAllocAsync(t *testing.T) {
-// 	got := pollReady(t, StructAllocAsync(3, 4))
-// 	// Compute(3) + Compute(4) = 6 + 8 = 14
-// 	if got != 14 {
-// 		t.Errorf("StructAllocAsync(3, 4) = %d, want 14", got)
-// 	}
-// }
+func TestStructAllocAsync(t *testing.T) {
+	got := pollReady(t, StructAllocAsync(3, 4))
+	// Compute(3) + Compute(4) = 6 + 8 = 14
+	if got != 14 {
+		t.Errorf("StructAllocAsync(3, 4) = %d, want 14", got)
+	}
+}
 
 // -----------------------------------------------------------------------------
 // Complex Control Flow Tests

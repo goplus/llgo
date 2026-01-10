@@ -115,6 +115,11 @@ func (g *LLSSACodeGen) shouldPreloadCrossVar(v ssa.Value, block *ssa.BasicBlock)
 	if _, ok := g.isStackAllocCrossVar(v); ok {
 		return true
 	}
+	// Always preload heap allocs that are cross-vars, since they need to persist
+	// across multiple states even within the same SSA block.
+	if alloc, ok := v.(*ssa.Alloc); ok && alloc.Heap {
+		return true
+	}
 	if defBlk := g.valueBlock(v); defBlk != nil && defBlk == block {
 		if _, isPhi := v.(*ssa.Phi); !isPhi && !g.isSuspendResult(v) {
 			return false
