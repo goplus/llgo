@@ -71,7 +71,7 @@ func direntNamlen(buf []byte) (uint64, bool) {
 //	}
 type Errno uint32
 
-func (e Errno) Error() string {
+func Error(e Errno) string {
 	if 0 <= int(e) && int(e) < len(errorstr) {
 		s := errorstr[e]
 		if s != "" {
@@ -79,28 +79,6 @@ func (e Errno) Error() string {
 		}
 	}
 	return "errno " + utoa(uint64(e))
-}
-
-func (e Errno) Is(target error) bool {
-	switch target {
-	case ErrPermission:
-		return e == EACCES || e == EPERM
-	case ErrExist:
-		return e == EEXIST || e == ENOTEMPTY
-	case ErrNotExist:
-		return e == ENOENT
-	case ErrUnsupported:
-		return e == ENOSYS
-	}
-	return false
-}
-
-func (e Errno) Temporary() bool {
-	return e == EINTR || e == EMFILE || e.Timeout()
-}
-
-func (e Errno) Timeout() bool {
-	return e == EAGAIN || e == ETIMEDOUT
 }
 
 // A Signal is a number describing a process signal.
@@ -353,9 +331,9 @@ func RawSyscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err Errn
 	return 0, 0, ENOSYS
 }
 
-func Sysctl(key string) (string, error) {
+func Sysctl(key string) (string, Errno) {
 	if key == "kern.hostname" {
-		return "wasip1", nil
+		return "wasip1", 0
 	}
 	return "", ENOSYS
 }
@@ -376,8 +354,8 @@ func Getegid() int {
 	return 1
 }
 
-func Getgroups() ([]int, error) {
-	return []int{1}, nil
+func Getgroups() ([]int, Errno) {
+	return []int{1}, 0
 }
 
 func Getpid() int {
@@ -388,24 +366,24 @@ func Getppid() int {
 	return 2
 }
 
-// func Gettimeofday(tv *Timeval) error {
+// func Gettimeofday(tv *Timeval) Errno {
 // 	var time timestamp
 // 	if errno := clock_time_get(clockRealtime, 1e3, &time); errno != 0 {
 // 		return errno
 // 	}
 // 	tv.setTimestamp(time)
-// 	return nil
+// 	return 0
 // }
 
-func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
+func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err Errno) {
 	return 0, ENOSYS
 }
 
-func StartProcess(argv0 string, argv []string, attr *ProcAttr) (pid int, handle uintptr, err error) {
+func StartProcess(argv0 string, argv []string, attr *ProcAttr) (pid int, handle uintptr, err Errno) {
 	return 0, 0, ENOSYS
 }
 
-func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err Errno) {
 	return 0, ENOSYS
 }
 
@@ -440,7 +418,7 @@ const (
 	clockThreadCPUTimeID
 )
 
-func SetNonblock(fd int, nonblocking bool) error {
+func SetNonblock(fd int, nonblocking bool) Errno {
 	panic("todo: syscall.SetNonblock")
 }
 
@@ -453,7 +431,7 @@ const (
 	RLIMIT_NOFILE = iota
 )
 
-func Getrlimit(which int, lim *Rlimit) error {
+func Getrlimit(which int, lim *Rlimit) Errno {
 	return ENOSYS
 }
 

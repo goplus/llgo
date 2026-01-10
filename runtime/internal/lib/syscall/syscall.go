@@ -163,5 +163,9 @@ func Accept(fd int) (nfd int, sa origSyscall.Sockaddr, err error) {
 }
 
 func Kill(pid int, signum Signal) error {
-	return syscall.Kill(pid, syscall.Signal(signum))
+	errno := syscall.Kill(pid, syscall.Signal(signum))
+	if errno == 0 {
+		return nil
+	}
+	return Errno(errno)
 }

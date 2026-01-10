@@ -4,7 +4,7 @@ package syscall
 
 type Errno uintptr
 
-func (e Errno) Error() string {
+func Error(e Errno) string {
 	if 0 <= int(e) && int(e) < len(errors) {
 		s := errors[e]
 		if s != "" {
@@ -12,28 +12,6 @@ func (e Errno) Error() string {
 		}
 	}
 	return "errno " + utoa(uint64(e))
-}
-
-func (e Errno) Is(target error) bool {
-	switch target {
-	case ErrPermission:
-		return e == EACCES || e == EPERM
-	case ErrExist:
-		return e == EEXIST || e == ENOTEMPTY
-	case ErrNotExist:
-		return e == ENOENT
-	case ErrUnsupported:
-		return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
-	}
-	return false
-}
-
-func (e Errno) Temporary() bool {
-	return e == EINTR || e == EMFILE || e == ENFILE || e.Timeout()
-}
-
-func (e Errno) Timeout() bool {
-	return e == EAGAIN || e == EWOULDBLOCK || e == ETIMEDOUT
 }
 
 // A Signal is a number describing a process signal.

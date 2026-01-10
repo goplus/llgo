@@ -121,7 +121,7 @@ func (f *File) ReadDir(n int) (dirents []DirEntry, err error) {
 	// Open directory using file descriptor
 	dir := os.Fdopendir(c.Int(f.fd))
 	if dir == nil {
-		return nil, syscall.Errno(os.Errno())
+		return nil, origSyscall.Errno(os.Errno())
 	}
 	defer os.Closedir(dir)
 

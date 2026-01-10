@@ -7,7 +7,10 @@
 package syscall
 
 import (
+	"errors"
 	"strconv"
+
+	"github.com/goplus/llgo/runtime/internal/lib/internal/oserror"
 
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
@@ -63,11 +66,29 @@ type Dirent struct {
 type Errno syscall.Errno
 
 func (e Errno) Error() string {
-	return syscall.Errno(e).Error()
+	return syscall.Error(syscall.Errno(e))
 }
 
 func (e Errno) Is(target error) bool {
-	return syscall.Errno(e).Is(target)
+	switch target {
+	case oserror.ErrPermission:
+		return e == Errno(syscall.EACCES) || e == Errno(syscall.EPERM)
+	case oserror.ErrExist:
+		return e == Errno(syscall.EEXIST) || e == Errno(syscall.ENOTEMPTY)
+	case oserror.ErrNotExist:
+		return e == Errno(syscall.ENOENT)
+	case errors.ErrUnsupported:
+		return e == Errno(syscall.ENOSYS)
+	}
+	return false
+}
+
+func (e Errno) Temporary() bool {
+	return e == Errno(syscall.EINTR) || e == Errno(syscall.EMFILE) || e.Timeout()
+}
+
+func (e Errno) Timeout() bool {
+	return e == Errno(syscall.EAGAIN) || e == Errno(syscall.ETIMEDOUT)
 }
 
 // A Signal is a number describing a process signal.
