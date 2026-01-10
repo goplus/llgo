@@ -159,6 +159,13 @@ func (p Program) Zero(t Type) Expr {
 		ret = p.Zero(p.rtType(name)).impl
 	case *types.Map:
 		ret = p.Zero(p.rtType("Map")).impl
+	case *types.Tuple:
+		n := u.Len()
+		flds := make([]llvm.Value, n)
+		for i := 0; i < n; i++ {
+			flds[i] = p.Zero(p.Field(t, i)).impl
+		}
+		ret = llvm.ConstStruct(flds, false)
 	default:
 		log.Panicln("todo:", u)
 	}

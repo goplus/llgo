@@ -294,6 +294,25 @@ func MyAsync(x int) Future[int] {
     b := StepB(a).Await()     // 挂起点 2
     return Return(a + b)
 }
+
+### 4.7 特殊/组合场景清单（需重点验证）
+
+1. **迭代器变体**
+   - `func Next() (T, bool)`；高阶迭代器/visitor：`func X() func(func(T))`。Await 可能出现在回调内部，需确保状态机插桩覆盖。
+2. **goroutine 与 async 组合**
+   - async 内启动 goroutine，goroutine 再 Await（应拒绝或报错）；goroutine 与 Await 交错时的 channel 通信。
+3. **控制流 + defer 组合**
+   - defer 位于循环/分支/switch/select；捕获循环变量；panic/recover 与 Await 交织。
+4. **select + Await 组合**
+   - case 内 Await；default/超时；单分支确定性 select；chan 关闭场景。
+5. **range 迭代场景**
+   - range slice/map/chan，迭代变量被 Await 使用或 defer/closure 捕获。
+6. **多返回值/Result 组合**
+   - `(v, ok)`、`Result[T]`、`TupleN` 与 Await 混用，对 ABI/状态机存储的要求。
+7. **嵌套状态机**
+   - async 返回 async，多层 Await 链；子 future 为接口/泛型实例。
+
+> 以上场景需配套测试用例；实现要覆盖 cross-var 分析、ABI Zero/Equal、defer 处理、select/range lowering 等。
 ```
 
 **输出：**

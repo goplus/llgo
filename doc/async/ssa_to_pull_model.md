@@ -406,6 +406,17 @@ func (s *FuncA_State) Poll(ctx *Context) Poll[int] {
 
 ## 5. 复杂场景处理
 
+### 5.0 需要重点覆盖的组合场景（总览）
+- **迭代器变体**：`Next() (T, bool)`；高阶/visitor：`func X() func(func(T))`，Await 可能在回调内部。
+- **goroutine + async**：async 中启动 goroutine，goroutine 内 Await（应拒绝）；goroutine 与 Await 交错的 channel 通信。
+- **控制流 + defer**：defer 在循环/分支/switch/select 中，捕获循环变量，panic/recover 交织 Await。
+- **select + Await**：case 内 Await；default/超时；单分支确定性 select；chan 关闭。
+- **range 迭代**：range slice/map/chan，迭代变量被 Await、defer、closure 使用。
+- **多返回值 / Result / TupleN**：如 `(v, ok)`、`Result[T]`；涉及 tuple 的 ABI/状态机存储。
+- **嵌套状态机**：async 返回 async，多层 Await；子 future 是接口/泛型实例。
+
+以下小节继续展开具体控制流、defer、panic 等的处理。
+
 ### 5.1 条件分支
 
 ```go

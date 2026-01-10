@@ -117,6 +117,10 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 		if t.NumFields() == 1 {
 			return DataKindOf(t.Field(0).Type(), lvl+1, is32Bits)
 		}
+	case *types.Tuple:
+		if t.Len() == 1 {
+			return DataKindOf(t.At(0).Type(), lvl+1, is32Bits)
+		}
 	case *types.Interface, *types.Slice:
 	case *types.Array:
 		if t.Len() == 1 {
@@ -196,6 +200,16 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 			s = "<-chan"
 		}
 		return fmt.Sprintf("%s %s", s, elem), pub
+	case *types.Tuple:
+		n := t.Len()
+		parts := make([]string, n)
+		allPub := true
+		for i := 0; i < n; i++ {
+			name, pub := b.TypeName(t.At(i).Type())
+			parts[i] = name
+			allPub = allPub && pub
+		}
+		return "tuple(" + strings.Join(parts, ",") + ")", allPub
 	case *types.Alias:
 		return b.TypeName(types.Unalias(t))
 	}

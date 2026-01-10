@@ -416,3 +416,44 @@ func ConditionalLoopAsync(n int) async.Future[int] {
 	}
 	return async.Return(sum)
 }
+
+// RangeSliceIdxValAsync iterates a slice with both index/value awaits.
+func RangeSliceIdxValAsync(arr []int) async.Future[int] {
+	sum := 0
+	for idx, v := range arr {
+		a := Compute(idx).Await()
+		b := Compute(v).Await()
+		sum += a + b
+	}
+	return async.Return(sum)
+}
+
+// RangeChanAsync ranges over a prefilled channel.
+func RangeChanAsync(n int) async.Future[int] {
+	ch := make(chan int, n)
+	for i := 0; i < n; i++ {
+		ch <- i
+	}
+	close(ch)
+
+	total := 0
+	for v := range ch {
+		total += Compute(v).Await()
+	}
+	return async.Return(total)
+}
+
+// SelectChanAsync covers select + await inside case.
+func SelectChanAsync() async.Future[int] {
+	ch1 := make(chan struct{}, 1)
+	ch1 <- struct{}{} // ready
+
+	var out int
+	select {
+	case <-ch1:
+		out = Compute(4).Await()
+	default:
+		out = -1
+	}
+	return async.Return(out)
+}

@@ -3,6 +3,7 @@ package abi
 import (
 	"go/types"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llgo/runtime/abi"
 )
@@ -56,6 +57,13 @@ func (b *Builder) Str(t types.Type) string {
 	case *types.Chan:
 		_, s := ChanDir(t.Dir())
 		return s + " " + b.realStr(t.Elem())
+	case *types.Tuple:
+		n := t.Len()
+		parts := make([]string, n)
+		for i := 0; i < n; i++ {
+			parts[i] = b.realStr(t.At(i).Type())
+		}
+		return "tuple(" + strings.Join(parts, ",") + ")"
 	case *types.Named:
 		obj := t.Obj()
 		name := NamedName(t)
@@ -259,6 +267,8 @@ func (b *Builder) Kind(t types.Type) abi.Kind {
 		return abi.Map
 	case *types.Array:
 		return abi.Array
+	case *types.Tuple:
+		return abi.Struct
 	case *types.Chan:
 		return abi.Chan
 	case *types.Named:
@@ -312,6 +322,16 @@ func (b *Builder) Align(t types.Type) uintptr {
 			}
 		}
 		return typalign
+	case *types.Tuple:
+		var typalign uintptr = 1
+		n := t.Len()
+		for i := 0; i < n; i++ {
+			ft := t.At(i).Type()
+			if align := b.Align(ft); align > typalign {
+				typalign = align
+			}
+		}
+		return typalign
 	case *types.Map:
 		return b.PtrSize
 	case *types.Array:
@@ -351,6 +371,25 @@ func (b *Builder) PtrBytes(t types.Type) uintptr {
 		fields := make([]*types.Var, n)
 		for i := 0; i < n; i++ {
 			f := t.Field(i)
+			fields[i] = f
+			if bytes = b.PtrBytes(f.Type()); bytes != 0 {
+				field = i
+			}
+		}
+		if field == -1 {
+			return 0
+		}
+		return uintptr(b.Sizes.Offsetsof(fields)[field]) + bytes
+	case *types.Tuple:
+		var field int = -1
+		var bytes uintptr
+		n := t.Len()
+		if n == 0 {
+			return 0
+		}
+		fields := make([]*types.Var, n)
+		for i := 0; i < n; i++ {
+			f := t.At(i)
 			fields[i] = f
 			if bytes = b.PtrBytes(f.Type()); bytes != 0 {
 				field = i
@@ -415,6 +454,17 @@ func (b *Builder) Size(t types.Type) uintptr {
 		return 2 * b.PtrSize
 	case *types.Struct:
 		return uintptr(b.Sizes.Sizeof(t))
+	case *types.Tuple:
+		n := t.Len()
+		if n == 0 {
+			return 0
+		}
+		fields := make([]*types.Var, n)
+		for i := 0; i < n; i++ {
+			fields[i] = t.At(i)
+		}
+		offsets := b.Sizes.Offsetsof(fields)
+		return uintptr(offsets[n-1]) + b.Size(fields[n-1].Type())
 	case *types.Map:
 		return b.PtrSize
 	case *types.Array:
@@ -440,6 +490,8 @@ func (b *Builder) RuntimeName(t types.Type) string {
 	case *types.Interface:
 		return "interfacetype"
 	case *types.Struct:
+		return "structtype"
+	case *types.Tuple:
 		return "structtype"
 	case *types.Map:
 		return "maptype"
@@ -503,6 +555,17 @@ func (b *Builder) EqualName(t types.Type) string {
 		}
 		for i := 0; i < n; i++ {
 			if b.EqualName(t.Field(i).Type()) == "" {
+				return ""
+			}
+		}
+		return "structequal"
+	case *types.Tuple:
+		n := t.Len()
+		if n == 0 {
+			return "memequal0"
+		}
+		for i := 0; i < n; i++ {
+			if b.EqualName(t.At(i).Type()) == "" {
 				return ""
 			}
 		}

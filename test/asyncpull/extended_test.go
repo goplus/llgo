@@ -139,6 +139,33 @@ func TestConditionalLoopAsync(t *testing.T) {
 	}
 }
 
+func TestRangeSliceIdxValAsync(t *testing.T) {
+	arr := []int{2, 4, 6}
+	// idx:0,1,2 -> Compute(idx)=0,2,4
+	// val:2,4,6 -> Compute(val)=4,8,12
+	// sum = (0+4)+(2+8)+(4+12) = 30
+	got := pollReady(t, RangeSliceIdxValAsync(arr))
+	if got != 30 {
+		t.Errorf("RangeSliceIdxValAsync = %d, want 30", got)
+	}
+}
+
+func TestRangeChanAsync(t *testing.T) {
+	got := pollReady(t, RangeChanAsync(4))
+	// channel has 0,1,2,3 -> Compute = 0,2,4,6 -> sum = 12
+	if got != 12 {
+		t.Errorf("RangeChanAsync(4) = %d, want 12", got)
+	}
+}
+
+func TestSelectChanAsync(t *testing.T) {
+	got := pollReady(t, SelectChanAsync())
+	// deterministic: ch1 ready with 3 -> Compute(4) = 8
+	if got != 8 {
+		t.Errorf("SelectChanAsync = %d, want 8", got)
+	}
+}
+
 // -----------------------------------------------------------------------------
 // Additional Existing Functions Tests
 // -----------------------------------------------------------------------------

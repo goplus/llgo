@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"sort"
+	"strconv"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -312,6 +313,26 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		fields = []llvm.Value{
 			b.Str(pkgPath).impl,
 			b.abiStructFields(t, name+"$fields"),
+		}
+	case *types.Tuple:
+		name, _ = b.Pkg.abi.TypeName(t)
+		n := t.Len()
+		if n == 0 {
+			fields = []llvm.Value{
+				b.Str("").impl,
+				b.abiStructFields(types.NewStruct(nil, nil), name+"$fields"),
+			}
+			break
+		}
+		vars := make([]*types.Var, n)
+		tags := make([]string, n)
+		for i := 0; i < n; i++ {
+			vars[i] = types.NewVar(token.NoPos, nil, "f"+strconv.Itoa(i), t.At(i).Type())
+		}
+		st := types.NewStruct(vars, tags)
+		fields = []llvm.Value{
+			b.Str("").impl,
+			b.abiStructFields(st, name+"$fields"),
 		}
 	case *types.Interface:
 		name, _ = b.Pkg.abi.TypeName(t)
