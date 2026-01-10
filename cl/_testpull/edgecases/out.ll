@@ -769,39 +769,43 @@ MultipleReturns_state_02_pending:                 ; preds = %MultipleReturns_sta
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleReturns_state_02_true:                    ; preds = %MultipleReturns_state_03
-  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %106, align 1
+  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 2
+  store i64 %40, ptr %106, align 4
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %107, align 1
   br label %MultipleReturns_state_04
 
 MultipleReturns_state_02_false:                   ; preds = %MultipleReturns_state_03
-  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %107, align 1
+  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 2
+  store i64 %40, ptr %108, align 4
+  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %109, align 1
   br label %MultipleReturns_state_05
 
 MultipleReturns_state_05_init:                    ; preds = %MultipleReturns_state_05
-  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 1
-  %109 = load i64, ptr %108, align 4
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 2
+  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 1
   %111 = load i64, ptr %110, align 4
-  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 3
+  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 2
   %113 = load i64, ptr %112, align 4
-  %114 = call ptr @"github.com/goplus/llgo/cl/_testpull/edgecases.GetValue"(i64 %111)
-  store ptr %114, ptr %66, align 8
+  %114 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 3
+  %115 = load i64, ptr %114, align 4
+  %116 = call ptr @"github.com/goplus/llgo/cl/_testpull/edgecases.GetValue"(i64 %113)
+  store ptr %116, ptr %66, align 8
   br label %MultipleReturns_state_05_poll
 
 MultipleReturns_state_05_poll:                    ; preds = %MultipleReturns_state_05_init, %MultipleReturns_state_05
-  %115 = load ptr, ptr %66, align 8
-  %116 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %115, ptr %1)
-  %117 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %116, 0
-  br i1 %117, label %MultipleReturns_state_05_ready, label %MultipleReturns_state_05_pending
+  %117 = load ptr, ptr %66, align 8
+  %118 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %117, ptr %1)
+  %119 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %118, 0
+  br i1 %119, label %MultipleReturns_state_05_ready, label %MultipleReturns_state_05_pending
 
 MultipleReturns_state_05_ready:                   ; preds = %MultipleReturns_state_05_poll
-  %118 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %116, 1
-  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 3
-  store i64 %118, ptr %119, align 4
+  %120 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %118, 1
+  %121 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 3
+  store i64 %120, ptr %121, align 4
   store ptr null, ptr %66, align 8
-  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %120, align 1
+  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/edgecases.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %122, align 1
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @49, i64 15 }, i64 5, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 5 }, i1 true, i1 false)
   br label %MultipleReturns_state_06
 

@@ -9,7 +9,6 @@ package pullmodel
 import (
 	"fmt"
 	"go/types"
-	"log"
 	"strings"
 
 	llssa "github.com/goplus/llgo/ssa"
@@ -88,7 +87,7 @@ func (g *PullIRCodeGen) Generate() error {
 	if err != nil {
 		return fmt.Errorf("generate state type: %w", err)
 	}
-	log.Printf("[PullIR] Generated state struct with %d fields", g.pullIR.NumFields())
+	debugf("[PullIR] Generated state struct with %d fields", g.pullIR.NumFields())
 
 	// Step 2: Generate $Concrete wrapper (creates state struct)
 	if err := g.generateConcreteWrapper(stateType); err != nil {
@@ -105,7 +104,7 @@ func (g *PullIRCodeGen) Generate() error {
 		return fmt.Errorf("generate interface wrapper: %w", err)
 	}
 
-	log.Printf("[PullIR] Successfully generated code for %s", g.pullIR.FuncName)
+	debugf("[PullIR] Successfully generated code for %s", g.pullIR.FuncName)
 	return nil
 }
 
@@ -295,7 +294,7 @@ func (g *PullIRCodeGen) generateConcreteWrapper(stateType llssa.Type) error {
 	// Save reference for interface wrapper
 	g.concrete = wrapper
 
-	log.Printf("[PullIR] Generated $Concrete wrapper for %s", fn.Name())
+	debugf("[PullIR] Generated $Concrete wrapper for %s", fn.Name())
 	return nil
 }
 
@@ -369,7 +368,7 @@ func (g *PullIRCodeGen) generatePollMethod(stateType llssa.Type) error {
 	b.SetBlock(defaultBlock)
 	b.Return(g.createZeroPoll())
 
-	log.Printf("[PullIR] Generated Poll method for %s (%d states)", fn.Name(), numStates)
+	debugf("[PullIR] Generated Poll method for %s (%d states)", fn.Name(), numStates)
 	return nil
 }
 
@@ -705,14 +704,14 @@ func (g *PullIRCodeGen) getExpr(b llssa.Builder, ref VarRef) llssa.Expr {
 			if c, ok := ref.Const.(*ssa.Const); ok {
 				return g.prog.Zero(g.prog.Type(c.Type(), llssa.InGo))
 			}
-			log.Printf("[PullIR] Warning: non-const VarRef %v (%T) - should be accessed via slot", ref.Const, ref.Const)
+			debugf("[PullIR] Warning: non-const VarRef %v (%T) - should be accessed via slot", ref.Const, ref.Const)
 		}
 	case VarRefTemp:
 		if ref.Temp >= 0 && ref.Temp < len(g.temps) {
 			return g.temps[ref.Temp]
 		}
 		// Debug: temp index out of range
-		log.Printf("[PullIR] Warning: temp index %d out of range (have %d temps)", ref.Temp, len(g.temps))
+		debugf("[PullIR] Warning: temp index %d out of range (have %d temps)", ref.Temp, len(g.temps))
 	}
 	return g.prog.Nil(g.pollLLType)
 }
@@ -778,6 +777,6 @@ func (g *PullIRCodeGen) generateInterfaceWrapper() error {
 
 	b.Return(ifaceVal)
 
-	log.Printf("[PullIR] Generated interface wrapper for %s", fn.Name())
+	debugf("[PullIR] Generated interface wrapper for %s", fn.Name())
 	return nil
 }

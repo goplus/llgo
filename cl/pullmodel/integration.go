@@ -21,7 +21,6 @@ package pullmodel
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"golang.org/x/tools/go/ssa"
@@ -84,16 +83,16 @@ func TransformFunction(ctx *IntegrationContext, fn *ssa.Function) (transformed b
 	}
 
 	// Step 3: Log transformation (for now, actual LLVM IR generation is Phase 3.2)
-	log.Printf("[Pull Model] Transformed %s:", fn.Name())
-	log.Printf("  - States: %d", len(sm.States))
-	log.Printf("  - CrossVars: %d", len(sm.CrossVars))
-	log.Printf("  - SubFutures: %d", len(sm.SubFutures))
-	log.Printf("  - State struct fields: %d", stateStruct.NumFields())
+	debugf("[Pull Model] Transformed %s:", fn.Name())
+	debugf("  - States: %d", len(sm.States))
+	debugf("  - CrossVars: %d", len(sm.CrossVars))
+	debugf("  - SubFutures: %d", len(sm.SubFutures))
+	debugf("  - State struct fields: %d", stateStruct.NumFields())
 
 	// Log variable mapping
-	log.Printf("  - Param mappings: %d", len(mapping.ParamIndices))
-	log.Printf("  - CrossVar mappings: %d", len(mapping.CrossVarIndices))
-	log.Printf("  - SubFuture mappings: %d", len(mapping.SubFutureIndices))
+	debugf("  - Param mappings: %d", len(mapping.ParamIndices))
+	debugf("  - CrossVar mappings: %d", len(mapping.CrossVarIndices))
+	debugf("  - SubFuture mappings: %d", len(mapping.SubFutureIndices))
 
 	// TODO(Phase 3.2): Generate actual LLVM IR
 	// - Register state struct type with ctx.LLPkg
@@ -173,22 +172,22 @@ func GenerateWithPullIR(
 	if sm == nil {
 		return fmt.Errorf("failed to transform %s to state machine", fn.Name())
 	}
-	log.Printf("[PullIR] Transformed %s: %d states, %d crossvars", fn.Name(), len(sm.States), len(sm.CrossVars))
+	debugf("[PullIR] Transformed %s: %d states, %d crossvars", fn.Name(), len(sm.States), len(sm.CrossVars))
 
 	// Step 2: Transform SSA to Pull IR
 	pullIR, err := TransformToPullIR(sm)
 	if err != nil {
 		return fmt.Errorf("SSA to Pull IR transform failed: %w", err)
 	}
-	log.Printf("[PullIR] Generated Pull IR: %d states, %d slots", len(pullIR.States), len(pullIR.Slots))
+	debugf("[PullIR] Generated Pull IR: %d states, %d slots", len(pullIR.States), len(pullIR.Slots))
 	if os.Getenv("LLGO_PULL_IR_DUMP") == "1" {
 		path := fmt.Sprintf("tmp/pullir_%s.txt", fn.Name())
 		if f, ferr := os.Create(path); ferr == nil {
 			defer f.Close()
 			pullIR.Dump(f)
-			log.Printf("[PullIR] Dumped to %s", path)
+			debugf("[PullIR] Dumped to %s", path)
 		} else {
-			log.Printf("[PullIR] Failed to dump Pull IR: %v", ferr)
+			debugf("[PullIR] Failed to dump Pull IR: %v", ferr)
 		}
 	}
 

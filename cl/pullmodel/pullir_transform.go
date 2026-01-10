@@ -6,7 +6,6 @@ package pullmodel
 import (
 	"fmt"
 	"go/types"
-	"log"
 
 	"golang.org/x/tools/go/ssa"
 )
@@ -99,6 +98,18 @@ func (b *PullIRBuilder) allocateSlot(v ssa.Value, kind SlotKind, name string) *S
 			slotType = ptr.Elem()
 			stackAlloc = true
 		}
+	}
+	// Special handling for Range: it returns an opaque iterator type in SSA,
+	// but in LLVM IR it's just a pointer. Use unsafe.Pointer as the slot type.
+	if _, isRange := v.(*ssa.Range); isRange {
+		slotType = types.Typ[types.UnsafePointer]
+	}
+	// Special handling for Next: it returns a tuple (bool, K, V) that contains
+	// the map type's key/value. The tuple is immediately extracted in the same
+	// block, so we don't actually need to persist the Next result itself.
+	// However, if it somehow ends up in crossVars, treat it as unsafe.Pointer.
+	if _, isNext := v.(*ssa.Next); isNext {
+		slotType = types.Typ[types.UnsafePointer]
 	}
 	slot := &Slot{
 		Name:       name,
@@ -236,7 +247,7 @@ func (b *PullIRBuilder) transformState(state *State, idx int) (*PullState, error
 			continue
 		}
 		if err := ctx.transformInstr(instr); err != nil {
-			log.Printf("[PullIR] Warning: failed to transform instr %T: %v", instr, err)
+			debugf("[PullIR] Warning: failed to transform instr %T: %v", instr, err)
 			// Continue with best effort
 		}
 	}
@@ -350,7 +361,7 @@ func (ctx *stateTransformContext) transformInstr(instr ssa.Instruction) error {
 
 	default:
 		// Unknown instruction - skip with warning
-		log.Printf("[PullIR] Skipping unknown instr type: %T", v)
+		debugf("[PullIR] Skipping unknown instr type: %T", v)
 		return nil
 	}
 }
@@ -630,25 +641,22 @@ func (ctx *stateTransformContext) getVarRef(v ssa.Value) VarRef {
 
 	// Not found - this value is from a different state or not yet processed
 	// For any value-producing instruction from another state, allocate a slot on demand
-	// This handles cases where control flow splits values across states
-	if _, isValue := v.(ssa.Value); isValue {
-		// Check if it produces a value (not just a side-effect instruction)
-		switch v.(type) {
-		case *ssa.Lookup, *ssa.Extract, *ssa.Range, *ssa.Next,
-			*ssa.BinOp, *ssa.UnOp, *ssa.Call, *ssa.Alloc,
-			*ssa.FieldAddr, *ssa.IndexAddr, *ssa.Slice,
-			*ssa.Convert, *ssa.ChangeType, *ssa.MakeInterface,
-			*ssa.Phi, *ssa.Index, *ssa.Field, *ssa.TypeAssert:
-			// These are value-producing instructions that may cross states
-			// Allocate a slot for them on demand
-			name := fmt.Sprintf("cross_%p", v)
-			slot := ctx.builder.allocateSlot(v, SlotCross, name)
-			return NewSlotRef(slot)
-		}
+	// Check if it produces a value (not just a side-effect instruction)
+	switch v.(type) {
+	case *ssa.Lookup, *ssa.Extract, *ssa.Range, *ssa.Next,
+		*ssa.BinOp, *ssa.UnOp, *ssa.Call, *ssa.Alloc,
+		*ssa.FieldAddr, *ssa.IndexAddr, *ssa.Slice,
+		*ssa.Convert, *ssa.ChangeType, *ssa.MakeInterface,
+		*ssa.Phi, *ssa.Index, *ssa.Field, *ssa.TypeAssert:
+		// These are value-producing instructions that may cross states
+		// Allocate a slot for them on demand
+		name := fmt.Sprintf("cross_%p", v)
+		slot := ctx.builder.allocateSlot(v, SlotCross, name)
+		return NewSlotRef(slot)
 	}
 
 	// Unknown value - treat as constant for now
-	log.Printf("[PullIR] Warning: unknown value %v (%T), treating as const", v, v)
+	debugf("[PullIR] Warning: unknown value %v (%T), treating as const", v, v)
 	return NewConstRef(v)
 }
 

@@ -73,15 +73,14 @@ func TestMapParamAsync(t *testing.T) {
 	}
 }
 
-// KNOWN ISSUE: Map iterator causes infinite loop - iterator recreated on each resume
-// func TestMapIterAsync(t *testing.T) {
-// 	m := map[string]int{"x": 1, "y": 2, "z": 3}
-// 	got := pollReady(t, MapIterAsync(m))
-// 	// Compute(1) + Compute(2) + Compute(3) = 2 + 4 + 6 = 12
-// 	if got != 12 {
-// 		t.Errorf("MapIterAsync = %d, want 12", got)
-// 	}
-// }
+func TestMapIterAsync(t *testing.T) {
+	m := map[string]int{"x": 1, "y": 2, "z": 3}
+	got := pollReady(t, MapIterAsync(m))
+	// Compute(1) + Compute(2) + Compute(3) = 2 + 4 + 6 = 12
+	if got != 12 {
+		t.Errorf("MapIterAsync = %d, want 12", got)
+	}
+}
 
 // -----------------------------------------------------------------------------
 // Heap Alloc Tests

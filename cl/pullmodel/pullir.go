@@ -1,6 +1,22 @@
-// Package pullmodel implements the pull-based async/await transformation.
-// This file defines the Pull IR intermediate representation.
+/*
+ * Copyright (c) 2024 The GoPlus Authors (goplus.org). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+// Package pullmodel implements the pull-based async/await transformation.
+// This file defines the Pull IR intermediate representation for async functions.
+// Pull IR is an explicit slot-based representation that avoids SSA value caching issues.
 package pullmodel
 
 import (
@@ -26,18 +42,13 @@ const (
 )
 
 // Slot represents a storage location in the state struct.
-// Unlike SSA values which are ephemeral, slots are explicitly stored.
 type Slot struct {
-	Name     string     // Human-readable name (e.g., "idx", "sum")
-	Type     types.Type // Go type of the stored value
-	FieldIdx int        // Index in state struct (-1 if not persisted)
-	Kind     SlotKind   // Param, Local, or Cross
-	SSAValue ssa.Value  // Original SSA value this slot represents (if any)
-	// StackAlloc indicates this slot represents a non-escaping stack allocation
-	// (ssa.Alloc with Heap=false). Such slots store the *element* value in the
-	// state struct, while a fresh stack slot is allocated in each Poll call and
-	// synchronized on suspend/resume.
-	StackAlloc bool
+	Name       string     // Human-readable name
+	Type       types.Type // Go type of the stored value
+	FieldIdx   int        // Index in state struct (-1 if not persisted)
+	Kind       SlotKind   // Param, Local, or Cross
+	SSAValue   ssa.Value  // Original SSA value this slot represents
+	StackAlloc bool       // True for non-escaping stack allocations
 }
 
 // IsPersisted returns true if this slot is stored in the state struct.
@@ -55,239 +66,146 @@ type VarRefKind int
 const (
 	VarRefSlot  VarRefKind = iota // Load from a slot
 	VarRefConst                   // Constant value
-	VarRefTemp                    // Temporary (result of previous instruction in same state)
+	VarRefTemp                    // Temporary result in same state
 )
 
 // VarRef represents an operand reference in Pull IR instructions.
-// This makes value sources explicit - no implicit caching.
 type VarRef struct {
 	Kind  VarRefKind
 	Slot  *Slot     // For VarRefSlot
-	Const ssa.Value // For VarRefConst (must be *ssa.Const)
-	Temp  int       // For VarRefTemp (index in current state's temps)
+	Const ssa.Value // For VarRefConst
+	Temp  int       // For VarRefTemp
 }
 
 // NewSlotRef creates a VarRef that loads from a slot.
-func NewSlotRef(slot *Slot) VarRef {
-	return VarRef{Kind: VarRefSlot, Slot: slot}
-}
+func NewSlotRef(slot *Slot) VarRef { return VarRef{Kind: VarRefSlot, Slot: slot} }
 
 // NewConstRef creates a VarRef for a constant value.
-func NewConstRef(c ssa.Value) VarRef {
-	return VarRef{Kind: VarRefConst, Const: c}
-}
+func NewConstRef(c ssa.Value) VarRef { return VarRef{Kind: VarRefConst, Const: c} }
 
 // NewTempRef creates a VarRef for a temporary value.
-func NewTempRef(idx int) VarRef {
-	return VarRef{Kind: VarRefTemp, Temp: idx}
-}
+func NewTempRef(idx int) VarRef { return VarRef{Kind: VarRefTemp, Temp: idx} }
 
 // =============================================================================
 // Pull IR Instructions
 // =============================================================================
 
 // PullInstr is the interface for all Pull IR instructions.
-type PullInstr interface {
-	pullInstr() // marker method
-}
+type PullInstr interface{ pullInstr() }
 
-// --- Storage Operations ---
-
-// LoadSlot loads a value from a slot.
-// Result is a temporary that can be referenced by subsequent instructions.
-type LoadSlot struct {
-	Src *Slot // Source slot to load from
-}
-
-func (*LoadSlot) pullInstr() {}
-
-// StoreSlot stores a value to a slot.
+// Storage operations
+type LoadSlot struct{ Src *Slot }
 type StoreSlot struct {
-	Dst   *Slot  // Destination slot
-	Value VarRef // Value to store
+	Dst   *Slot
+	Value VarRef
 }
 
+func (*LoadSlot) pullInstr()  {}
 func (*StoreSlot) pullInstr() {}
 
-// --- Computation Operations ---
-
-// PullBinOp performs a binary operation.
-// Result is a temporary.
+// Computation operations
 type PullBinOp struct {
-	Op token.Token // e.g., token.ADD, token.MUL
-	X  VarRef      // Left operand
-	Y  VarRef      // Right operand
+	Op   token.Token
+	X, Y VarRef
 }
-
-func (*PullBinOp) pullInstr() {}
-
-// PullUnOp performs a unary operation.
 type PullUnOp struct {
 	Op token.Token
 	X  VarRef
 }
-
-func (*PullUnOp) pullInstr() {}
-
-// PullCall calls a function.
-// Result is a temporary (may be void).
 type PullCall struct {
-	Func     ssa.Value // Function to call
-	Args     []VarRef  // Arguments
-	HasValue bool      // True if call returns a value
+	Func     ssa.Value
+	Args     []VarRef
+	HasValue bool
 }
-
-func (*PullCall) pullInstr() {}
-
-// PullExtract extracts a value from a tuple.
 type PullExtract struct {
-	Tuple VarRef // Tuple to extract from
-	Index int    // Index to extract
+	Tuple VarRef
+	Index int
 }
-
-func (*PullExtract) pullInstr() {}
-
-// PullIndex indexes into an array/slice.
 type PullIndex struct {
-	Base  VarRef // Array or slice
-	Index VarRef // Index
+	Base, Index VarRef
 }
-
-func (*PullIndex) pullInstr() {}
-
-// PullSlice creates a slice from an array/slice.
 type PullSlice struct {
-	Base VarRef // Source
-	Low  VarRef // Low bound (may be nil constant for 0)
-	High VarRef // High bound (may be nil for len)
+	Base, Low, High VarRef
 }
-
-func (*PullSlice) pullInstr() {}
-
-// PullLookup performs a map lookup.
 type PullLookup struct {
-	Map     VarRef // Map to lookup
-	Key     VarRef // Key to lookup
-	CommaOk bool   // True if ",ok" variant
+	Map, Key VarRef
+	CommaOk  bool
 }
-
-func (*PullLookup) pullInstr() {}
-
-// PullRange creates an iterator for a collection.
-type PullRange struct {
-	X VarRef // Collection to iterate
-}
-
-func (*PullRange) pullInstr() {}
-
-// PullNext advances an iterator and returns (key, value, ok).
+type PullRange struct{ X VarRef }
 type PullNext struct {
-	Iter     VarRef     // Iterator
-	ElemType types.Type // Element type for iteration
-	IsString bool       // True for string iteration
+	Iter     VarRef
+	ElemType types.Type
+	IsString bool
 }
-
-func (*PullNext) pullInstr() {}
-
-// PullFieldAddr gets the address of a struct field.
 type PullFieldAddr struct {
 	Base  VarRef
 	Field int
 }
-
-func (*PullFieldAddr) pullInstr() {}
-
-// PullLoad loads from a pointer.
-type PullLoad struct {
-	Addr VarRef
-}
-
-func (*PullLoad) pullInstr() {}
-
-// PullStore stores to a pointer.
-type PullStore struct {
-	Addr  VarRef
-	Value VarRef
-}
-
-func (*PullStore) pullInstr() {}
-
-// PullConvert performs type conversion.
+type PullLoad struct{ Addr VarRef }
+type PullStore struct{ Addr, Value VarRef }
 type PullConvert struct {
 	Value VarRef
 	Type  types.Type
 }
-
-func (*PullConvert) pullInstr() {}
-
-// PullAlloc allocates memory (stack or heap).
 type PullAlloc struct {
-	Type types.Type // Element type to allocate
-	Heap bool       // Heap allocation if true
+	Type types.Type
+	Heap bool
 }
-
-func (*PullAlloc) pullInstr() {}
-
-// PullMakeInterface creates an interface from a concrete value.
 type PullMakeInterface struct {
-	IfaceType types.Type // Interface type
-	Value     VarRef     // Concrete value
+	IfaceType types.Type
+	Value     VarRef
 }
 
+func (*PullBinOp) pullInstr()         {}
+func (*PullUnOp) pullInstr()          {}
+func (*PullCall) pullInstr()          {}
+func (*PullExtract) pullInstr()       {}
+func (*PullIndex) pullInstr()         {}
+func (*PullSlice) pullInstr()         {}
+func (*PullLookup) pullInstr()        {}
+func (*PullRange) pullInstr()         {}
+func (*PullNext) pullInstr()          {}
+func (*PullFieldAddr) pullInstr()     {}
+func (*PullLoad) pullInstr()          {}
+func (*PullStore) pullInstr()         {}
+func (*PullConvert) pullInstr()       {}
+func (*PullAlloc) pullInstr()         {}
 func (*PullMakeInterface) pullInstr() {}
 
-// --- Control Flow Operations ---
-
-// Await suspends execution waiting for a sub-future.
-// On resume, the result is stored in ResultSlot.
+// Control flow operations
 type Await struct {
-	SubFuture  VarRef // The future to await
-	ResultSlot *Slot  // Where to store the result
-	NextState  int    // State to transition to after ready
+	SubFuture  VarRef
+	ResultSlot *Slot
+	NextState  int
 }
-
-func (*Await) pullInstr() {}
-
-// Branch conditionally transitions to one of two states.
 type Branch struct {
-	Cond       VarRef // Condition (must be bool)
-	TrueState  int    // State if true
-	FalseState int    // State if false
+	Cond                  VarRef
+	TrueState, FalseState int
 }
+type Jump struct{ Target int }
+type Return struct{ Value VarRef }
 
+func (*Await) pullInstr()  {}
 func (*Branch) pullInstr() {}
-
-// Jump unconditionally transitions to a state.
-type Jump struct {
-	Target int // Target state index
-}
-
-func (*Jump) pullInstr() {}
-
-// Return returns a ready value and terminates the state machine.
-type Return struct {
-	Value VarRef // Value to return
-}
-
+func (*Jump) pullInstr()   {}
 func (*Return) pullInstr() {}
 
 // =============================================================================
 // State: Pull IR State Block
 // =============================================================================
 
-// EdgeWrite represents a slot write that happens before transitioning to a state.
-// This is how PHI nodes are lowered - the incoming value is written at the exit.
+// EdgeWrite represents a slot write before transitioning to a state.
 type EdgeWrite struct {
-	Dst   *Slot  // Slot to write to
-	Value VarRef // Value to write
+	Dst   *Slot
+	Value VarRef
 }
 
 // PullState represents a single state in the Pull IR state machine.
 type PullState struct {
-	Index        int                 // State number (0, 1, 2, ...)
-	Instructions []PullInstr         // Instructions to execute in this state
-	EdgeWrites   map[int][]EdgeWrite // Writes to execute before transitioning: targetState -> writes
-	OriginalSSA  *ssa.BasicBlock     // Original SSA block (for debugging)
+	Index        int
+	Instructions []PullInstr
+	EdgeWrites   map[int][]EdgeWrite
+	OriginalSSA  *ssa.BasicBlock
 }
 
 // =============================================================================
@@ -296,17 +214,16 @@ type PullState struct {
 
 // PullIR is the complete Pull IR representation of an async function.
 type PullIR struct {
-	FuncName   string        // Original function name
-	Original   *ssa.Function // Original SSA function
-	Params     []*Slot       // Function parameter slots
-	Slots      []*Slot       // All slots (includes params)
-	States     []*PullState  // All states
-	ResultSlot *Slot         // Slot for final return value
-	ResultType types.Type    // Type of return value (T in Future[T])
+	FuncName   string
+	Original   *ssa.Function
+	Params     []*Slot
+	Slots      []*Slot
+	States     []*PullState
+	ResultSlot *Slot
+	ResultType types.Type
 }
 
 // NumFields returns the number of fields needed in the state struct.
-// Field 0 is always the state number.
 func (p *PullIR) NumFields() int {
 	maxField := 0
 	for _, slot := range p.Slots {
@@ -317,7 +234,7 @@ func (p *PullIR) NumFields() int {
 	return maxField + 1
 }
 
-// Dump prints a readable snapshot of the Pull IR for debugging/analysis.
+// Dump prints a readable snapshot of the Pull IR.
 func (p *PullIR) Dump(w io.Writer) {
 	if p == nil {
 		return
@@ -325,30 +242,10 @@ func (p *PullIR) Dump(w io.Writer) {
 	fmt.Fprintf(w, "PullIR %s (%d states, %d slots)\n", p.FuncName, len(p.States), len(p.Slots))
 	fmt.Fprintln(w, "Slots:")
 	for i, s := range p.Slots {
-		fmt.Fprintf(w, "  [%02d] kind=%v field=%d name=%s go=%T\n", i, s.Kind, s.FieldIdx, s.Name, s.Type)
+		fmt.Fprintf(w, "  [%02d] kind=%v field=%d name=%s\n", i, s.Kind, s.FieldIdx, s.Name)
 	}
 	fmt.Fprintln(w, "States:")
 	for i, st := range p.States {
-		fmt.Fprintf(w, "State %02d: block=%v\n", i, st.OriginalSSA)
-		if len(st.EdgeWrites) > 0 {
-			fmt.Fprintln(w, "  EdgeWrites:")
-			for tgt, ws := range st.EdgeWrites {
-				fmt.Fprintf(w, "    ->%02d :", tgt)
-				for _, ew := range ws {
-					name := "<nil>"
-					if ew.Dst != nil {
-						name = ew.Dst.Name
-					}
-					fmt.Fprintf(w, " [%s=%v]", name, ew.Value)
-				}
-				fmt.Fprintln(w)
-			}
-		}
-		if len(st.Instructions) > 0 {
-			fmt.Fprintln(w, "  Instrs:")
-			for _, instr := range st.Instructions {
-				fmt.Fprintf(w, "    %T %v\n", instr, instr)
-			}
-		}
+		fmt.Fprintf(w, "State %02d: %d instrs\n", i, len(st.Instructions))
 	}
 }

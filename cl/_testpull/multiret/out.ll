@@ -21,7 +21,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/multiret"
 %"github.com/goplus/llgo/async.Context" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 }
 %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State" = type { i8, i64, i64, ptr, i64 }
 %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State" = type { i8, i64, i64, i64, i64, ptr, ptr, i64 }
-%"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" = type { i8, i64, i64, i64, ptr, i64 }
+%"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" = type { i8, i64, i64, i1, ptr, i64, ptr, i64 }
 
 @0 = private unnamed_addr constant [11 x i8] c"EarlyReturn", align 1
 @1 = private unnamed_addr constant [8 x i8] c"dispatch", align 1
@@ -145,13 +145,15 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/multiret"
 @56 = private unnamed_addr constant [12 x i8] c"ReturnInLoop", align 1
 @"*_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [1 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 60406001, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 27 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 44 }, i16 1, i16 1, i32 24 }, [1 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/multiret.(*ReturnInLoop$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/multiret.(*ReturnInLoop$State).Poll" }] }, align 8
 @57 = private unnamed_addr constant [27 x i8] c"multiret.ReturnInLoop$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 48, i64 32, i32 882565835, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 27 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/multiret.struct$0uzLaevSAyJ8bSs1DWPv0GxO2zaOOAJB0UTtc3v5ZWw$fields", i64 6, i64 6 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 44 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
-@"github.com/goplus/llgo/cl/_testpull/multiret.struct$0uzLaevSAyJ8bSs1DWPv0GxO2zaOOAJB0UTtc3v5ZWw$fields" = weak_odr constant [6 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 6 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @36, i64 4 }, ptr @_llgo_int, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @54, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @37, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 11 }, ptr @_llgo_int, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 64, i64 48, i32 882565835, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 27 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/multiret.struct$ayRPl0Y6El8apACKwlDyCE78-yMQBgMRSTEjwPjh5hY$fields", i64 8, i64 8 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 44 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@58 = private unnamed_addr constant [4 x i8] c"var2", align 1
+@59 = private unnamed_addr constant [4 x i8] c"var3", align 1
+@"github.com/goplus/llgo/cl/_testpull/multiret.struct$ayRPl0Y6El8apACKwlDyCE78-yMQBgMRSTEjwPjh5hY$fields" = weak_odr constant [8 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 6 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @36, i64 4 }, ptr @_llgo_int, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @54, i64 4 }, ptr @_llgo_bool, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 4 }, ptr @_llgo_int, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @37, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 48, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 11 }, ptr @_llgo_int, i64 56, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @"github.com/goplus/llgo/cl/_testpull/multiret.init$guard" = global i1 false, align 1
-@58 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 6 }, ptr @"*_llgo_string" }, align 8
-@59 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@60 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 6 }, ptr @"*_llgo_string" }, align 8
+@61 = private unnamed_addr constant [6 x i8] c"string", align 1
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 
 define %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/cl/_testpull/multiret.(*EarlyReturn$State).Poll"(ptr %0, ptr %1) {
 EarlyReturn_entry:
@@ -535,7 +537,7 @@ _llgo_0:
 define linkonce i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 45 }, ptr %1, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 45 }, ptr %1, align 8
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %1, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   unreachable
@@ -780,23 +782,27 @@ MultipleReturns_state_02_pending:                 ; preds = %MultipleReturns_sta
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleReturns_state_02_true:                    ; preds = %MultipleReturns_state_03
-  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %102, align 1
+  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 2
+  store i64 %34, ptr %102, align 4
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %103, align 1
   br label %MultipleReturns_state_04
 
 MultipleReturns_state_02_false:                   ; preds = %MultipleReturns_state_03
-  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %103, align 1
+  %104 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 2
+  store i64 %34, ptr %104, align 4
+  %105 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %105, align 1
   br label %MultipleReturns_state_05
 
 MultipleReturns_state_04_true:                    ; preds = %MultipleReturns_state_05
-  %104 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %104, align 1
+  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %106, align 1
   br label %MultipleReturns_state_06
 
 MultipleReturns_state_04_false:                   ; preds = %MultipleReturns_state_05
-  %105 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %105, align 1
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.MultipleReturns$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %107, align 1
   br label %MultipleReturns_state_07
 }
 
@@ -1033,41 +1039,45 @@ NestedReturnPaths_state_01_pending:               ; preds = %NestedReturnPaths_s
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 NestedReturnPaths_state_01_true:                  ; preds = %NestedReturnPaths_state_02
-  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %124, align 1
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
+  store i64 %30, ptr %124, align 4
+  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %125, align 1
   br label %NestedReturnPaths_state_04
 
 NestedReturnPaths_state_01_false:                 ; preds = %NestedReturnPaths_state_02
-  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %125, align 1
+  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
+  store i64 %30, ptr %126, align 4
+  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %127, align 1
   br label %NestedReturnPaths_state_05
 
 NestedReturnPaths_state_05_init:                  ; preds = %NestedReturnPaths_state_05
-  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 1
-  %127 = load i64, ptr %126, align 4
-  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 2
+  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 1
   %129 = load i64, ptr %128, align 4
-  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
+  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 2
   %131 = load i64, ptr %130, align 4
-  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
+  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
   %133 = load i64, ptr %132, align 4
-  %134 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %129)
-  store ptr %134, ptr %80, align 8
+  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
+  %135 = load i64, ptr %134, align 4
+  %136 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %131)
+  store ptr %136, ptr %80, align 8
   br label %NestedReturnPaths_state_05_poll
 
 NestedReturnPaths_state_05_poll:                  ; preds = %NestedReturnPaths_state_05_init, %NestedReturnPaths_state_05
-  %135 = load ptr, ptr %80, align 8
-  %136 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %135, ptr %1)
-  %137 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %136, 0
-  br i1 %137, label %NestedReturnPaths_state_05_ready, label %NestedReturnPaths_state_05_pending
+  %137 = load ptr, ptr %80, align 8
+  %138 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %137, ptr %1)
+  %139 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %138, 0
+  br i1 %139, label %NestedReturnPaths_state_05_ready, label %NestedReturnPaths_state_05_pending
 
 NestedReturnPaths_state_05_ready:                 ; preds = %NestedReturnPaths_state_05_poll
-  %138 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %136, 1
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %138, ptr %139, align 4
+  %140 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %138, 1
+  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
+  store i64 %140, ptr %141, align 4
   store ptr null, ptr %80, align 8
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %140, align 1
+  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %142, align 1
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @51, i64 17 }, i64 5, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 5 }, i1 true, i1 false)
   br label %NestedReturnPaths_state_06
 
@@ -1128,119 +1138,143 @@ ReturnInLoop_state_00:                            ; preds = %ReturnInLoop_entry
   %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
   %8 = load i64, ptr %7, align 4
   %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %10 = load i64, ptr %9, align 4
+  %10 = load i1, ptr %9, align 1
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  %12 = load ptr, ptr %11, align 8
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %14 = load i64, ptr %13, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 false, i1 false)
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  store i64 0, ptr %11, align 4
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %12, align 1
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  store i64 0, ptr %15, align 4
+  %16 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %16, align 1
   br label %ReturnInLoop_state_01
 
 ReturnInLoop_state_01:                            ; preds = %ReturnInLoop_state_06, %ReturnInLoop_state_00, %ReturnInLoop_entry
-  %13 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %14 = load i64, ptr %13, align 4
-  %15 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %16 = load i64, ptr %15, align 4
-  %17 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %17 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
   %18 = load i64, ptr %17, align 4
+  %19 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %20 = load i64, ptr %19, align 4
+  %21 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  %22 = load ptr, ptr %21, align 8
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %24 = load i64, ptr %23, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 false, i1 false)
-  %19 = icmp slt i64 %16, %14
-  br i1 %19, label %ReturnInLoop_state_01_true, label %ReturnInLoop_state_01_false
+  %25 = icmp slt i64 %20, %18
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  store i1 %25, ptr %26, align 1
+  br i1 %25, label %ReturnInLoop_state_01_true, label %ReturnInLoop_state_01_false
 
 ReturnInLoop_state_02:                            ; preds = %ReturnInLoop_state_01_true, %ReturnInLoop_entry
-  %20 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %21 = load i64, ptr %20, align 4
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %23 = load i64, ptr %22, align 4
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %25 = load i64, ptr %24, align 4
+  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
+  %28 = load i64, ptr %27, align 4
+  %29 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %30 = load i64, ptr %29, align 4
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %32 = load i1, ptr %31, align 1
+  %33 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %34 = load i64, ptr %33, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 2, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 true, i1 false)
-  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
-  %27 = load ptr, ptr %26, align 8
-  %28 = icmp eq ptr %27, null
-  br i1 %28, label %ReturnInLoop_state_02_init, label %ReturnInLoop_state_02_poll
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 6
+  %36 = load ptr, ptr %35, align 8
+  %37 = icmp eq ptr %36, null
+  br i1 %37, label %ReturnInLoop_state_02_init, label %ReturnInLoop_state_02_poll
 
 ReturnInLoop_state_03:                            ; preds = %ReturnInLoop_state_02_ready, %ReturnInLoop_entry
-  %29 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %30 = load i64, ptr %29, align 4
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %32 = load i64, ptr %31, align 4
-  %33 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %34 = load i64, ptr %33, align 4
+  %38 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
+  %39 = load i64, ptr %38, align 4
+  %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %41 = load i64, ptr %40, align 4
+  %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %43 = load i1, ptr %42, align 1
+  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %45 = load i64, ptr %44, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 3, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 false, i1 false)
-  %35 = icmp sgt i64 %34, 5
-  br i1 %35, label %ReturnInLoop_state_02_true, label %ReturnInLoop_state_02_false
+  %46 = icmp sgt i64 %45, 5
+  br i1 %46, label %ReturnInLoop_state_02_true, label %ReturnInLoop_state_02_false
 
 ReturnInLoop_state_04:                            ; preds = %ReturnInLoop_state_01_false, %ReturnInLoop_entry
-  %36 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %37 = load i64, ptr %36, align 4
-  %38 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %39 = load i64, ptr %38, align 4
-  %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %41 = load i64, ptr %40, align 4
+  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
+  %48 = load i64, ptr %47, align 4
+  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %50 = load i64, ptr %49, align 4
+  %51 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %52 = load i1, ptr %51, align 1
+  %53 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  %54 = load ptr, ptr %53, align 8
+  %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %56 = load i64, ptr %55, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 4, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 false, i1 true)
-  %42 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 -1)
-  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$xltHQulLTi5yBONGGPc9JOa_OlS7yTXwogmOn3sHdV0", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
-  %44 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %43, 0
-  %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %44, ptr %42, 1
-  %46 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  store i64 -1, ptr %46, align 4
-  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %47, align 1
+  %57 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 -1)
+  %58 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$xltHQulLTi5yBONGGPc9JOa_OlS7yTXwogmOn3sHdV0", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
+  %59 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %58, 0
+  %60 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %59, ptr %57, 1
+  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 7
+  store i64 -1, ptr %61, align 4
+  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %62, align 1
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 4, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 5 }, i1 false, i1 true)
-  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  %49 = load i64, ptr %48, align 4
-  %50 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %49, 1
-  %51 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %50, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %51
+  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 7
+  %64 = load i64, ptr %63, align 4
+  %65 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %64, 1
+  %66 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %65, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %66
 
 ReturnInLoop_state_05:                            ; preds = %ReturnInLoop_state_02_true, %ReturnInLoop_entry
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %53 = load i64, ptr %52, align 4
-  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %55 = load i64, ptr %54, align 4
-  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %57 = load i64, ptr %56, align 4
+  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
+  %68 = load i64, ptr %67, align 4
+  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %70 = load i64, ptr %69, align 4
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %72 = load i1, ptr %71, align 1
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  %74 = load ptr, ptr %73, align 8
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %76 = load i64, ptr %75, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 5, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 false, i1 true)
-  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %59 = load i64, ptr %58, align 4
-  %60 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %57)
-  %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$xltHQulLTi5yBONGGPc9JOa_OlS7yTXwogmOn3sHdV0", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
-  %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %61, 0
-  %63 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %62, ptr %60, 1
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  store i64 %59, ptr %64, align 4
-  %65 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %65, align 1
+  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %78 = load i64, ptr %77, align 4
+  %79 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %76)
+  %80 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$xltHQulLTi5yBONGGPc9JOa_OlS7yTXwogmOn3sHdV0", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
+  %81 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %80, 0
+  %82 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %81, ptr %79, 1
+  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 7
+  store i64 %78, ptr %83, align 4
+  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %84, align 1
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 5, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 5 }, i1 false, i1 true)
-  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  %67 = load i64, ptr %66, align 4
-  %68 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %67, 1
-  %69 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %68, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %69
+  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 7
+  %86 = load i64, ptr %85, align 4
+  %87 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %86, 1
+  %88 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %87, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %88
 
 ReturnInLoop_state_06:                            ; preds = %ReturnInLoop_state_02_false, %ReturnInLoop_entry
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %71 = load i64, ptr %70, align 4
-  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %73 = load i64, ptr %72, align 4
-  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %75 = load i64, ptr %74, align 4
+  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
+  %90 = load i64, ptr %89, align 4
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %92 = load i64, ptr %91, align 4
+  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %94 = load i1, ptr %93, align 1
+  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  %96 = load ptr, ptr %95, align 8
+  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %98 = load i64, ptr %97, align 4
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 6, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, i1 false, i1 false)
-  %76 = add i64 %73, 1
-  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  store i64 %76, ptr %77, align 4
-  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %78, align 1
+  %99 = add i64 %92, 1
+  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  store i64 %99, ptr %100, align 4
+  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %101, align 1
   br label %ReturnInLoop_state_01
 
 ReturnInLoop_state_done:                          ; preds = %ReturnInLoop_entry
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 7, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @31, i64 4 }, i1 false, i1 true)
-  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  %80 = load i64, ptr %79, align 4
-  %81 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %80, 1
-  %82 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %81, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %82
+  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 7
+  %103 = load i64, ptr %102, align 4
+  %104 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %103, 1
+  %105 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %104, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %105
 
 ReturnInLoop_state_unreach:                       ; preds = %ReturnInLoop_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -1249,39 +1283,47 @@ _llgo_10:                                         ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ReturnInLoop_state_01_true:                       ; preds = %ReturnInLoop_state_01
-  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %83, align 1
+  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  store i1 %25, ptr %106, align 1
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %107, align 1
   br label %ReturnInLoop_state_02
 
 ReturnInLoop_state_01_false:                      ; preds = %ReturnInLoop_state_01
-  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %84, align 1
+  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  store i1 %25, ptr %108, align 1
+  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %109, align 1
   br label %ReturnInLoop_state_04
 
 ReturnInLoop_state_02_init:                       ; preds = %ReturnInLoop_state_02
-  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
-  %86 = load i64, ptr %85, align 4
-  %87 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  %88 = load i64, ptr %87, align 4
-  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  %90 = load i64, ptr %89, align 4
-  %91 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %88)
-  store ptr %91, ptr %26, align 8
+  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 1
+  %111 = load i64, ptr %110, align 4
+  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
+  %113 = load i64, ptr %112, align 4
+  %114 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
+  %115 = load i1, ptr %114, align 1
+  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  %117 = load i64, ptr %116, align 4
+  %118 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %113)
+  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  store ptr %118, ptr %119, align 8
+  store ptr %118, ptr %35, align 8
   br label %ReturnInLoop_state_02_poll
 
 ReturnInLoop_state_02_poll:                       ; preds = %ReturnInLoop_state_02_init, %ReturnInLoop_state_02
-  %92 = load ptr, ptr %26, align 8
-  %93 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %92, ptr %1)
-  %94 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %93, 0
-  br i1 %94, label %ReturnInLoop_state_02_ready, label %ReturnInLoop_state_02_pending
+  %120 = load ptr, ptr %35, align 8
+  %121 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %120, ptr %1)
+  %122 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %121, 0
+  br i1 %122, label %ReturnInLoop_state_02_ready, label %ReturnInLoop_state_02_pending
 
 ReturnInLoop_state_02_ready:                      ; preds = %ReturnInLoop_state_02_poll
-  %95 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %93, 1
-  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  store i64 %95, ptr %96, align 4
-  store ptr null, ptr %26, align 8
-  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %97, align 1
+  %123 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %121, 1
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  store i64 %123, ptr %124, align 4
+  store ptr null, ptr %35, align 8
+  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %125, align 1
   call void @"github.com/goplus/llgo/async.PullDebugState"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 12 }, i64 2, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 5 }, i1 true, i1 false)
   br label %ReturnInLoop_state_03
 
@@ -1290,19 +1332,28 @@ ReturnInLoop_state_02_pending:                    ; preds = %ReturnInLoop_state_
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ReturnInLoop_state_02_true:                       ; preds = %ReturnInLoop_state_03
-  %98 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %98, align 1
+  %126 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %41)
+  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  store ptr %126, ptr %127, align 8
+  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  store i64 %45, ptr %128, align 4
+  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %129, align 1
   br label %ReturnInLoop_state_05
 
 ReturnInLoop_state_02_false:                      ; preds = %ReturnInLoop_state_03
-  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %99, align 1
+  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  store ptr %126, ptr %130, align 8
+  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  store i64 %45, ptr %131, align 4
+  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %132, align 1
   br label %ReturnInLoop_state_06
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$Concrete"(i64 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 0
   store i8 0, ptr %2, align 1
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 1
@@ -1310,9 +1361,13 @@ _llgo_0:
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 2
   store i64 0, ptr %4, align 4
   %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 3
-  store i64 0, ptr %5, align 4
+  store i1 false, ptr %5, align 1
   %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 4
   store ptr null, ptr %6, align 8
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 5
+  store i64 0, ptr %7, align 4
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %1, i32 0, i32 6
+  store ptr null, ptr %8, align 8
   ret ptr %1
 }
 

@@ -315,15 +315,28 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 		// Find all values used after this suspend point
 		usesAfter := findUsesAfterSuspend(fn, sp)
 
+		// Debug: check if Range is in usesAfter
+		for v := range usesAfter {
+			if _, isRange := v.(*ssa.Range); isRange {
+				debugf("[DEBUG AnalyzeCrossVars] Found Range in usesAfter: %v", v)
+			}
+		}
+
 		// Check which of those were defined before the suspend
 		for v := range usesAfter {
 			dp, ok := definitions[v]
 			if !ok {
+				if _, isRange := v.(*ssa.Range); isRange {
+					debugf("[DEBUG AnalyzeCrossVars] Range %v not in definitions!", v)
+				}
 				continue
 			}
 
 			// Check if defined before suspend
 			if isDefinedBefore(dp, sp) {
+				if _, isRange := v.(*ssa.Range); isRange {
+					debugf("[DEBUG AnalyzeCrossVars] Range %v crosses suspend point!", v)
+				}
 				crossVars[v] = true
 			}
 		}
@@ -347,6 +360,21 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 	for _, sp := range suspends {
 		if sp.Result != nil {
 			crossVars[sp.Result] = true
+		}
+		// Also include operands of SubFuture since they must persist to be available
+		// when the _init path needs to compute the sub-future. For example, if we have
+		// Compute(v).Await() where v comes from MapIterNext, v must be stored before
+		// transitioning states, otherwise _init would re-execute MapIterNext.
+		if sp.SubFuture != nil {
+			debugf("[AnalyzeCrossVars] SubFuture for %s: %v (type=%T)", fn.Name(), sp.SubFuture, sp.SubFuture)
+			// If SubFuture is a Call, log its arguments
+			if call, isCall := sp.SubFuture.(*ssa.Call); isCall {
+				debugf("[AnalyzeCrossVars] SubFuture %s has %d args", fn.Name(), len(call.Call.Args))
+				for i, arg := range call.Call.Args {
+					debugf("[AnalyzeCrossVars] SubFuture %s arg[%d]: %v (type=%T)", fn.Name(), i, arg, arg)
+				}
+			}
+			collectTransitiveDependencies(sp.SubFuture, crossVars)
 		}
 	}
 
@@ -374,21 +402,22 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 		if paramSet[v] {
 			continue
 		}
-		// Skip Range values - they produce opaque iterator types that cannot
-		// be stored in the state struct. Map iteration with await is unsupported.
-		if _, isRange := v.(*ssa.Range); isRange {
-			continue
-		}
-		// Skip Next values - they return tuples that may contain invalid types
-		// for unused key/value components in range loops.
+		// Note: ssa.Range returns a pointer to iterator (not the struct itself)
+		// This pointer can be persisted like any other pointer (8 bytes)
+		// The runtime keeps the iterator alive as long as we hold the pointer
+		// Skip Next values - they return tuples that are immediately extracted
+		// in the same block. The extracted values (key, value) are what get persisted.
 		if _, isNext := v.(*ssa.Next); isNext {
+			debugf("[DEBUG] Skipping Next value: %v (type: %v)", v, v.Type())
 			continue
 		}
 		// Skip Lookup values with CommaOk - they return (T, bool) tuples
 		// that cannot be persisted to the state struct yet.
 		if lookup, isLookup := v.(*ssa.Lookup); isLookup && lookup.CommaOk {
+			debugf("[DEBUG] Skipping Lookup with CommaOk: %v (type: %v)", v, v.Type())
 			continue
 		}
+		debugf("[DEBUG] Adding to crossVars for %s: %v (type: %v, kind: %T)", fn.Name(), v, v.Type(), v)
 		result = append(result, v)
 	}
 
@@ -690,4 +719,65 @@ func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) ([]*State, map[
 	}
 
 	return states, blockEntries
+}
+
+// collectTransitiveDependencies recursively collects all SSA values that a given
+// value depends on and adds them to the crossVars map. This is used to ensure
+// that values needed by suspend point arguments (like v in Compute(v).Await()) are
+// persisted in the state struct, preventing re-execution of their source operations.
+func collectTransitiveDependencies(v ssa.Value, crossVars map[ssa.Value]bool) {
+	if v == nil {
+		return
+	}
+
+	debugf("[collectTransitiveDependencies] Visiting: %v (type=%T)", v, v)
+
+	// Skip constants and function references
+	switch v.(type) {
+	case *ssa.Const, *ssa.Global, *ssa.Function, *ssa.Builtin, *ssa.Parameter:
+		debugf("[collectTransitiveDependencies] Skipping constant/global/function/param: %v", v)
+		return
+	}
+
+	// For Call instructions, ALWAYS process operands (receiver and arguments)
+	// even if the Call itself is already in crossVars, because different calls
+	// to the same function may have different arguments that need to be collected.
+	if call, isCall := v.(*ssa.Call); isCall {
+		debugf("[collectTransitiveDependencies] Call instruction, collecting operands of: %v", call)
+		ops := call.Operands(nil)
+		debugf("[collectTransitiveDependencies] Call operands count: %d", len(ops))
+		for i, op := range ops {
+			if op != nil && *op != nil {
+				debugf("[collectTransitiveDependencies] Call operand %d: %v (type=%T)", i, *op, *op)
+				collectTransitiveDependencies(*op, crossVars)
+			}
+		}
+		// Also explicitly iterate Call.Args since Operands may not include them
+		debugf("[collectTransitiveDependencies] Call.Call.Args count: %d", len(call.Call.Args))
+		for i, arg := range call.Call.Args {
+			if arg != nil {
+				debugf("[collectTransitiveDependencies] Call.Args[%d]: %v (type=%T)", i, arg, arg)
+				collectTransitiveDependencies(arg, crossVars)
+			}
+		}
+		return
+	}
+
+	// Skip if already in crossVars (but not for Calls which were handled above)
+	if crossVars[v] {
+		debugf("[collectTransitiveDependencies] Already in crossVars: %v", v)
+		return
+	}
+
+	// For Extract, add it to crossVars - this is the key fix for map iteration
+	if ext, isExtract := v.(*ssa.Extract); isExtract {
+		crossVars[ext] = true
+		debugf("[collectTransitiveDependencies] Adding Extract to crossVars: %v", ext)
+		return
+	}
+
+	// For other value-producing instructions, add them to crossVars
+	if _, ok := v.(ssa.Instruction); ok {
+		crossVars[v] = true
+	}
 }

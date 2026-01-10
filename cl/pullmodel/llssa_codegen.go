@@ -30,6 +30,17 @@ import (
 	llssa "github.com/goplus/llgo/ssa"
 )
 
+// debugLog controls whether debug output is enabled.
+// Set to true to enable detailed logging of state machine generation.
+const debugLog = false
+
+// debugf logs a message if debug logging is enabled.
+func debugf(format string, args ...interface{}) {
+	if debugLog {
+		log.Printf(format, args...)
+	}
+}
+
 // CompileValueFunc is a callback to compile SSA values using the main compiler.
 type CompileValueFunc func(b llssa.Builder, v ssa.Value) llssa.Expr
 
@@ -120,6 +131,18 @@ func (g *LLSSACodeGen) shouldPreloadCrossVar(v ssa.Value, block *ssa.BasicBlock)
 	if alloc, ok := v.(*ssa.Alloc); ok && alloc.Heap {
 		return true
 	}
+
+	// Special handling for Extract: if the tuple source is from a different block,
+	// the Extract value was pre-computed and stored during state transition.
+	// We must preload it instead of recomputing (which would re-execute the tuple source).
+	if ext, isExtract := v.(*ssa.Extract); isExtract {
+		tupleDefBlock := g.valueBlock(ext.Tuple)
+		if tupleDefBlock != nil && tupleDefBlock != block {
+			// Tuple is from different block - the Extract was stored, preload it
+			return true
+		}
+	}
+
 	if defBlk := g.valueBlock(v); defBlk != nil && defBlk == block {
 		if _, isPhi := v.(*ssa.Phi); !isPhi && !g.isSuspendResult(v) {
 			return false
@@ -207,7 +230,7 @@ func (g *LLSSACodeGen) Generate() error {
 		return fmt.Errorf("failed to rewrite original function: %w", err)
 	}
 
-	log.Printf("[Pull Model] Successfully generated state machine for %s", g.sm.Original.Name())
+	debugf("[Pull Model] Successfully generated state machine for %s", g.sm.Original.Name())
 	return nil
 }
 
@@ -220,7 +243,7 @@ func (g *LLSSACodeGen) generateStateType() (llssa.Type, error) {
 	// Use Named type if available (for proper itab)
 	if g.stateNamed != nil {
 		stateType := g.prog.Type(g.stateNamed, llssa.InGo)
-		log.Printf("[Pull Model] Generated state struct with %d fields", g.stateNamed.Underlying().(*types.Struct).NumFields())
+		debugf("[Pull Model] Generated state struct with %d fields", g.stateNamed.Underlying().(*types.Struct).NumFields())
 		return stateType, nil
 	}
 
@@ -238,8 +261,21 @@ func (g *LLSSACodeGen) generateStateType() (llssa.Type, error) {
 	}
 
 	// Fields for cross-suspend variables
-	for _, v := range g.sm.CrossVars {
-		varType := g.prog.Type(v.Type(), llssa.InGo)
+	debugf("[DEBUG generateStateType fallback] Processing %d crossVars", len(g.sm.CrossVars))
+	for i, v := range g.sm.CrossVars {
+		vType := v.Type()
+		// Special handling for Range: use unsafe.Pointer
+		if _, isRange := v.(*ssa.Range); isRange {
+			debugf("[DEBUG generateStateType fallback] Converting Range to unsafe.Pointer")
+			vType = types.Typ[types.UnsafePointer]
+		}
+		// Special handling for Next: use unsafe.Pointer
+		if _, isNext := v.(*ssa.Next); isNext {
+			debugf("[DEBUG generateStateType fallback] Converting Next to unsafe.Pointer")
+			vType = types.Typ[types.UnsafePointer]
+		}
+		debugf("[DEBUG generateStateType fallback] CrossVar %d: %v (type: %v)", i, v, vType)
+		varType := g.prog.Type(vType, llssa.InGo)
 		fieldTypes = append(fieldTypes, varType)
 	}
 
@@ -253,7 +289,7 @@ func (g *LLSSACodeGen) generateStateType() (llssa.Type, error) {
 	// Create struct type
 	stateType := g.prog.Struct(fieldTypes...)
 
-	log.Printf("[Pull Model] Generated state struct with %d fields", len(fieldTypes))
+	debugf("[Pull Model] Generated state struct with %d fields", len(fieldTypes))
 	return stateType, nil
 }
 
@@ -331,7 +367,7 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 	stateVal := b.Load(statePtr)
 	b.Return(stateVal)
 
-	log.Printf("[Pull Model] Generated constructor for %s with %d params", fn.Name(), len(fn.Params))
+	debugf("[Pull Model] Generated constructor for %s with %d params", fn.Name(), len(fn.Params))
 	return nil
 }
 
@@ -356,6 +392,21 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	for i, v := range g.sm.CrossVars {
 		name := fmt.Sprintf("var%d", i)
 		fieldType := v.Type()
+		debugf("[DEBUG buildStateGoType] Processing crossVar %d: %v (type: %v, kind: %T)", i, v, fieldType, v)
+
+		// Special handling for Range: it returns an opaque iterator type in SSA,
+		// but in LLVM IR it's just a pointer. Use unsafe.Pointer as the field type.
+		if _, isRange := v.(*ssa.Range); isRange {
+			debugf("[DEBUG buildStateGoType] Converting Range to unsafe.Pointer")
+			fieldType = types.Typ[types.UnsafePointer]
+		}
+		// Special handling for Next: it returns a tuple that may contain opaque types.
+		// Treat it as unsafe.Pointer if it somehow ends up in crossVars.
+		if _, isNext := v.(*ssa.Next); isNext {
+			debugf("[DEBUG buildStateGoType] Converting Next to unsafe.Pointer")
+			fieldType = types.Typ[types.UnsafePointer]
+		}
+
 		if alloc, ok := v.(*ssa.Alloc); ok && !alloc.Heap {
 			if ptr, ok := alloc.Type().(*types.Pointer); ok {
 				fieldType = ptr.Elem()
@@ -364,6 +415,7 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 			}
 		} else if ok {
 		}
+		debugf("[DEBUG buildStateGoType] Field %d (%s): final type = %v", i, name, fieldType)
 		fields = append(fields, types.NewField(0, nil, name, fieldType, false))
 		tags = append(tags, "")
 	}
@@ -678,7 +730,7 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	zeroResult := g.prog.Nil(g.pollLLType)
 	b.Return(zeroResult)
 
-	log.Printf("[Pull Model] Generated Poll method for %s with %d states", fn.Name(), numStates)
+	debugf("[Pull Model] Generated Poll method for %s with %d states", fn.Name(), numStates)
 	return nil
 }
 
@@ -1282,7 +1334,7 @@ func (g *LLSSACodeGen) storePhiValues(
 		}
 		if incomingIdx < 0 || incomingIdx >= len(phi.Edges) {
 			// DEBUG: Log when no matching predecessor found
-			log.Printf("[storePhiValues] DEBUG: No matching pred for phi %v: fromBlock=%v (idx=%d), toBlock=%v, preds=%v",
+			debugf("[storePhiValues] DEBUG: No matching pred for phi %v: fromBlock=%v (idx=%d), toBlock=%v, preds=%v",
 				phi.Name(), fromBlock.Index, fromBlock.Index, toBlock.Index, func() []int {
 					var indices []int
 					for _, p := range toBlock.Preds {
@@ -1297,12 +1349,12 @@ func (g *LLSSACodeGen) storePhiValues(
 			continue
 		}
 		// DEBUG: Log what we're storing
-		log.Printf("[storePhiValues] DEBUG: Storing phi %v: fromBlock=%d, toBlock=%d, incomingIdx=%d, edge=%v (type=%T) to field %d",
+		debugf("[storePhiValues] DEBUG: Storing phi %v: fromBlock=%d, toBlock=%d, incomingIdx=%d, edge=%v (type=%T) to field %d",
 			phi.Name(), fromBlock.Index, toBlock.Index, incomingIdx, incoming, incoming, fieldIdx)
 
 		// DEBUG: If incoming is a BinOp, log its operands
 		if binop, ok := incoming.(*ssa.BinOp); ok {
-			log.Printf("[storePhiValues] DEBUG: BinOp %v: X=%v (type=%T), Y=%v", binop.Name(), binop.X, binop.X, binop.Y)
+			debugf("[storePhiValues] DEBUG: BinOp %v: X=%v (type=%T), Y=%v", binop.Name(), binop.X, binop.X, binop.Y)
 		}
 
 		var val llssa.Expr
@@ -1325,7 +1377,7 @@ func (g *LLSSACodeGen) storePhiValues(
 		}
 
 		// DEBUG: Log the compiled value
-		log.Printf("[storePhiValues] DEBUG: Compiled %v to LLVM value (fieldIdx=%d)", incoming, fieldIdx)
+		debugf("[storePhiValues] DEBUG: Compiled %v to LLVM value (fieldIdx=%d)", incoming, fieldIdx)
 
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		b.Store(fieldPtr, val)
@@ -1402,10 +1454,115 @@ func (g *LLSSACodeGen) setStateAndJump(
 		return
 	}
 	g.storePhiValues(b, statePtr, fromBlock, targetBlock)
+	// Store crossVars that the target state needs but are defined in fromBlock.
+	// This is critical for map iteration: the Extract from MapIterNext is defined
+	// in the loop head but used in the loop body. We must store it before
+	// transitioning to avoid re-executing MapIterNext.
+	g.storeCrossVarsForNextState(b, statePtr, fromBlock, targetBlock, targetIdx)
 	g.flushStackAllocState(b, statePtr)
 	stateFieldPtr := b.FieldAddr(statePtr, 0)
 	b.Store(stateFieldPtr, g.prog.IntVal(uint64(targetIdx), int8Type))
 	b.Jump(poll.Block(targetIdx + 1))
+}
+
+// storeCrossVarsForNextState pre-computes and stores crossVars that the target
+// state will need but are defined in the fromBlock. This prevents re-execution
+// of instructions like MapIterNext when the target state's _init path runs.
+func (g *LLSSACodeGen) storeCrossVarsForNextState(
+	b llssa.Builder,
+	statePtr llssa.Expr,
+	fromBlock *ssa.BasicBlock,
+	targetBlock *ssa.BasicBlock,
+	targetIdx int,
+) {
+	if fromBlock == nil || targetBlock == nil || targetIdx < 0 || targetIdx >= len(g.sm.States) {
+		return
+	}
+
+	debugf("[storeCrossVarsForNextState] %s: from block %d to state %d, crossVars count: %d", g.sm.Original.Name(), fromBlock.Index, targetIdx, len(g.sm.CrossVars))
+
+	// Store ALL crossVars defined in fromBlock before state transition.
+	// This is a "live-out" storage strategy: any value defined in this block
+	// that might be needed by successor blocks (directly or indirectly) must
+	// be persisted. This handles cases like:
+	// - Map range: extract from MapIterNext used as function argument
+	// - Channel range: similar pattern
+	// - Any block-local value with indirect successor usage
+	for _, cv := range g.sm.CrossVars {
+		// Skip phi values (handled separately by storePhiValues)
+		if _, isPhi := cv.(*ssa.Phi); isPhi {
+			continue
+		}
+
+		// Get the block where this crossVar is defined
+		defBlock := g.valueBlock(cv)
+
+		// Special handling for Extract: if the Extract's tuple source is defined
+		// in fromBlock, we should compute and store the Extract value now, even
+		// if the Extract instruction itself is in a different block.
+		// This is critical for map iteration: MapIterNext (tuple) is in loop head,
+		// but extract #2 (value) may be in loop body. We must store the extracted
+		// value before transitioning.
+		if ext, isExtract := cv.(*ssa.Extract); isExtract {
+			tupleDefBlock := g.valueBlock(ext.Tuple)
+			debugf("[storeCrossVarsForNextState] Extract %v: defBlock=%v, tupleDefBlock=%v, fromBlock=%d",
+				cv, defBlock, tupleDefBlock, fromBlock.Index)
+			if tupleDefBlock != nil && tupleDefBlock == fromBlock {
+				// Tuple source is in current block, compute and store the Extract
+				fieldIdx := g.getCrossVarFieldIndex(cv)
+				if fieldIdx >= 0 {
+					// Get the fresh tuple value (just computed, not cached)
+					tupleVal := g.compileValue(b, ext.Tuple)
+					if !tupleVal.IsNil() {
+						// Extract the value directly from the tuple
+						val := b.Extract(tupleVal, ext.Index)
+						debugf("[storeCrossVarsForNextState] Storing Extract %v to field %d (fresh extract from tuple in block %d)", cv, fieldIdx, fromBlock.Index)
+						fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+						b.Store(fieldPtr, val)
+						g.cacheValueMapping(cv, val) // Cache the fresh value
+					}
+				}
+			}
+			continue // Don't process Extract further in normal path
+		}
+
+		if defBlock == nil || defBlock != fromBlock {
+			continue
+		}
+
+		// Get the field index for this crossVar
+		fieldIdx := g.getCrossVarFieldIndex(cv)
+		if fieldIdx < 0 {
+			continue
+		}
+
+		// Compile and store the value
+		val := g.compileValue(b, cv)
+		if !val.IsNil() {
+			debugf("[storeCrossVarsForNextState] Storing %v to field %d", cv, fieldIdx)
+			fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+			b.Store(fieldPtr, val)
+			g.cacheValueMapping(cv, val)
+		}
+	}
+}
+
+// instructionUses checks if an instruction uses a specific SSA value
+func (g *LLSSACodeGen) instructionUses(instr ssa.Instruction, v ssa.Value) bool {
+	for _, op := range instr.Operands(nil) {
+		if op != nil && *op == v {
+			return true
+		}
+	}
+	// For Extract, check if the instruction depends on its tuple
+	if ext, isExtract := v.(*ssa.Extract); isExtract {
+		for _, op := range instr.Operands(nil) {
+			if op != nil && *op == ext.Tuple {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (g *LLSSACodeGen) branchToState(
@@ -1453,7 +1610,7 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 		// Capture async.Return(value) so we can materialize Poll[T] directly.
 		if callInstr, ok := instr.(*ssa.Call); ok {
 			if g.isAsyncReturnCall(callInstr) && len(callInstr.Call.Args) == 1 {
-				log.Printf("[Pull Model] intercept async.Return in %s", g.sm.Original.Name())
+				debugf("[Pull Model] intercept async.Return in %s", g.sm.Original.Name())
 				arg := callInstr.Call.Args[0]
 				if fieldIdx := g.getCrossVarFieldIndex(arg); fieldIdx >= 0 {
 					fieldPtr := b.FieldAddr(statePtr, fieldIdx)
@@ -1557,395 +1714,6 @@ func (g *LLSSACodeGen) isAsyncReturnCall(callInstr *ssa.Call) bool {
 		return name == "Return" || strings.HasPrefix(name, "Return[")
 	}
 	return false
-}
-
-func (g *LLSSACodeGen) deferWrapperKey(fnType types.Type, argTypes []types.Type) string {
-	qual := func(p *types.Package) string {
-		if p == nil {
-			return ""
-		}
-		return p.Path()
-	}
-	var b strings.Builder
-	b.WriteString(types.TypeString(fnType, qual))
-	for _, t := range argTypes {
-		b.WriteString("|")
-		b.WriteString(types.TypeString(t, qual))
-	}
-	return b.String()
-}
-
-func (g *LLSSACodeGen) ensureDeferWrapper(fnType types.Type, argTypes []types.Type) deferWrapperInfo {
-	key := g.deferWrapperKey(fnType, argTypes)
-	if info, ok := g.deferWraps[key]; ok {
-		return info
-	}
-	fields := make([]*types.Var, 0, len(argTypes)+1)
-	fields = append(fields, types.NewVar(0, nil, "fn", fnType))
-	for i, t := range argTypes {
-		fields = append(fields, types.NewVar(0, nil, fmt.Sprintf("a%d", i), t))
-	}
-	argStruct := types.NewStruct(fields, nil)
-	argStructType := g.prog.Type(argStruct, llssa.InGo)
-	g.deferWrapSeq++
-	base := g.sm.Original.String()
-	base = strings.NewReplacer(
-		"*", "",
-		"(", "",
-		")", "",
-		"/", "_",
-		".", "_",
-		"[", "_",
-		"]", "_",
-		" ", "_",
-		",", "_",
-	).Replace(base)
-	wrapperName := fmt.Sprintf("__llgo_defer_wrap$%s$%d", base, g.deferWrapSeq)
-	wrapper := g.buildDeferWrapper(wrapperName, argStruct)
-	info := deferWrapperInfo{
-		fn:            wrapper,
-		argStruct:     argStruct,
-		argStructType: argStructType,
-	}
-	g.deferWraps[key] = info
-	return info
-}
-
-func (g *LLSSACodeGen) buildDeferWrapper(name string, argStruct *types.Struct) llssa.Function {
-	sig := types.NewSignatureType(
-		nil,
-		nil,
-		nil,
-		types.NewTuple(types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer])),
-		nil,
-		false,
-	)
-	fn := g.pkg.NewFunc(name, sig, llssa.InGo)
-	fn.MakeBlocks(1)
-	b := fn.NewBuilder()
-	b.SetBlock(fn.Block(0))
-
-	argParam := fn.Param(0)
-	argStructType := g.prog.Type(argStruct, llssa.InGo)
-	argStructPtr := g.prog.Pointer(argStructType)
-	argPtr := b.PtrCast(argStructPtr, argParam)
-
-	fnVal := b.Load(b.FieldAddr(argPtr, 0))
-	numFields := argStruct.NumFields()
-	callArgs := make([]llssa.Expr, numFields-1)
-	for i := 1; i < numFields; i++ {
-		callArgs[i-1] = b.Load(b.FieldAddr(argPtr, i))
-	}
-	b.Call(fnVal, callArgs...)
-	b.Return()
-	return fn
-}
-
-// compileDeferForPullModel handles defer instructions in pull model.
-// Instead of using setjmp-based defer, we push to a persistent defer list in state struct.
-func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.Expr, deferInstr *ssa.Defer) {
-	if !g.sm.HasDefer {
-		return
-	}
-
-	log.Printf("[Pull Model] Generating PushDefer call for %s", g.sm.Original.Name())
-
-	// Get DeferState field base index
-	deferStateIdx := g.getDeferFieldBaseIndex()
-	if deferStateIdx < 0 {
-		log.Printf("[Pull Model] WARNING: Cannot find defer fields")
-		return
-	}
-
-	// Get pointer to DeferState embedded in state struct
-	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
-
-	call := deferInstr.Call
-	var fnExpr llssa.Expr
-	if call.IsInvoke() {
-		recv := g.compileValue(b, call.Value)
-		fnExpr = b.Imethod(recv, call.Method)
-	} else {
-		fnExpr = g.compileValue(b, call.Value)
-	}
-
-	argTypes := make([]types.Type, len(call.Args))
-	for i, arg := range call.Args {
-		argTypes[i] = arg.Type()
-	}
-	wrapperInfo := g.ensureDeferWrapper(fnExpr.Type.RawType(), argTypes)
-
-	// Allocate argument bundle on heap and capture values at defer time
-	argPtr := b.Alloc(wrapperInfo.argStructType, true)
-	b.Store(b.FieldAddr(argPtr, 0), fnExpr)
-	for i, arg := range call.Args {
-		val := g.compileValue(b, arg)
-		b.Store(b.FieldAddr(argPtr, i+1), val)
-	}
-
-	unsafePtrType := g.prog.Type(types.Typ[types.UnsafePointer], llssa.InGo)
-	argPtrUnsafe := b.Convert(unsafePtrType, argPtr)
-
-	// Create function reference for async.(*DeferState).PushDefer
-	// Method signature: func (*DeferState) PushDefer(fn func(unsafe.Pointer), arg unsafe.Pointer)
-	deferStatePtrType := types.NewPointer(g.getDeferStateType())
-	wrapperSig := types.NewSignatureType(
-		nil,
-		nil,
-		nil,
-		types.NewTuple(types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer])),
-		nil,
-		false,
-	)
-	pushDeferSig := types.NewSignatureType(
-		types.NewVar(0, nil, "", deferStatePtrType), // receiver
-		nil,
-		nil,
-		types.NewTuple(
-			types.NewVar(0, nil, "fn", wrapperSig),
-			types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer]),
-		),
-		nil,
-		false,
-	)
-
-	// Generate method name
-	methodName := llssa.FuncName(
-		types.NewPackage("github.com/goplus/llgo/async", "async"),
-		"PushDefer",
-		pushDeferSig.Recv(),
-		false,
-	)
-
-	// Create function reference
-	pushDeferFunc := g.pkg.NewFunc(methodName, pushDeferSig, llssa.InGo)
-
-	// Call: deferStatePtr.PushDefer(wrapperFn, argPtr)
-	b.Call(pushDeferFunc.Expr, deferStatePtr, wrapperInfo.fn.Expr, argPtrUnsafe)
-
-	log.Printf("[Pull Model] Generated PushDefer call successfully")
-}
-
-// compilePanicForPullModel handles panic instructions in pull model.
-// Sets isPanicking flag and stores panic value in state struct.
-func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.Expr, panicInstr *ssa.Panic) {
-	if !g.sm.HasDefer {
-		// No defer, just compile normally
-		if g.compileInstr != nil {
-			g.compileInstr(b, panicInstr)
-		}
-		return
-	}
-
-	log.Printf("[Pull Model] Generating DoPanic call for %s", g.sm.Original.Name())
-
-	// Get DeferState field base index
-	deferStateIdx := g.getDeferFieldBaseIndex()
-	if deferStateIdx < 0 {
-		log.Printf("[Pull Model] WARNING: Cannot find defer fields")
-		return
-	}
-
-	// Get pointer to DeferState embedded in state struct
-	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
-
-	// Compile panic value (interface{})
-	panicVal := g.compileValue(b, panicInstr.X)
-
-	// Create function reference for async.(*DeferState).DoPanic
-	// Method signature: func (*DeferState) DoPanic(v any) bool
-	deferStatePtrType := types.NewPointer(g.getDeferStateType())
-	doPanicSig := types.NewSignatureType(
-		types.NewVar(0, nil, "", deferStatePtrType), // receiver
-		nil,
-		nil,
-		types.NewTuple(
-			types.NewVar(0, nil, "v", types.NewInterfaceType(nil, nil)),
-		),
-		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool])),
-		false,
-	)
-
-	methodName := llssa.FuncName(
-		types.NewPackage("github.com/goplus/llgo/async", "async"),
-		"DoPanic",
-		doPanicSig.Recv(),
-		false,
-	)
-	doPanicFunc := g.pkg.NewFunc(methodName, doPanicSig, llssa.InGo)
-
-	// Call: recovered := deferStatePtr.DoPanic(panicVal)
-	recovered := b.Call(doPanicFunc.Expr, deferStatePtr, panicVal)
-
-	// Branch on recovered
-	recoveredBlock := b.Func.MakeBlock()
-	panicBlock := b.Func.MakeBlock()
-	b.If(recovered, recoveredBlock, panicBlock)
-
-	// Recovered: mark done and return Ready with current result (zero if unset)
-	b.SetBlock(recoveredBlock)
-	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
-	stateFieldPtr := b.FieldAddr(statePtr, 0)
-	doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
-	b.Store(stateFieldPtr, doneVal)
-	finalValue := g.loadResultValue(b, statePtr)
-	g.returnReadyPoll(b, finalValue)
-
-	// Not recovered: fallback to runtime panic
-	b.SetBlock(panicBlock)
-	if g.compileInstr != nil {
-		g.compileInstr(b, panicInstr)
-	}
-	b.Return(g.createZeroPoll())
-}
-
-// compileRunDefersForPullModel handles RunDefers instructions in pull model.
-// Executes the persistent defer list stored in state struct.
-func (g *LLSSACodeGen) compileRunDefersForPullModel(b llssa.Builder, statePtr llssa.Expr) {
-	if !g.sm.HasDefer {
-		return
-	}
-
-	log.Printf("[Pull Model] Generating RunDefers call for %s", g.sm.Original.Name())
-
-	// Get DeferState field base index
-	deferStateIdx := g.getDeferFieldBaseIndex()
-	if deferStateIdx < 0 {
-		log.Printf("[Pull Model] WARNING: Cannot find defer fields")
-		return
-	}
-
-	// Get pointer to DeferState embedded in state struct
-	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
-
-	// Create function reference for async.(*DeferState).RunDefers
-	// Method signature: func (*DeferState) RunDefers()
-	deferStatePtrType := types.NewPointer(g.getDeferStateType())
-	runDefersSig := types.NewSignatureType(
-		types.NewVar(0, nil, "", deferStatePtrType), // receiver
-		nil, nil, nil, nil, false,
-	)
-
-	// Generate method name
-	methodName := llssa.FuncName(
-		types.NewPackage("github.com/goplus/llgo/async", "async"),
-		"RunDefers",
-		runDefersSig.Recv(),
-		false,
-	)
-
-	// Create function reference
-	runDefersFunc := g.pkg.NewFunc(methodName, runDefersSig, llssa.InGo)
-
-	// Call: deferStatePtr.RunDefers()
-	b.Call(runDefersFunc.Expr, deferStatePtr)
-
-	log.Printf("[Pull Model] Generated RunDefers call successfully")
-}
-
-// getSubFutureFieldIndex returns the field index for the sub-future VALUE at given state.
-// With value embedding and state-based init tracking, each sub-future has 1 field.
-func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
-	// Fields are: state(0), params..., crossVars..., sub_futures...
-	baseIdx := 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars)
-
-	subFutIdx := 0
-	for i := 0; i < stateIdx; i++ {
-		if g.sm.States[i].SuspendPoint != nil {
-			subFutIdx++
-		}
-	}
-	// Each sub-future occupies 1 field (no init flag)
-	return baseIdx + subFutIdx
-}
-
-// getCrossVarFieldIndex returns the field index for a cross-suspend variable.
-// Returns -1 if the variable is not a cross-var.
-func (g *LLSSACodeGen) getCrossVarFieldIndex(v ssa.Value) int {
-	// Fields are: state(0), params..., crossVars..., subFutures..., [defer fields if HasDefer]
-	baseIdx := 1 + len(g.sm.Original.Params)
-
-	for i, crossVar := range g.sm.CrossVars {
-		if crossVar == v {
-			return baseIdx + i
-		}
-	}
-	return -1 // Not found
-}
-
-// getDeferFieldBaseIndex returns the base index for defer-related fields.
-// Returns -1 if function has no defer.
-func (g *LLSSACodeGen) getDeferFieldBaseIndex() int {
-	if !g.sm.HasDefer {
-		return -1
-	}
-	// Fields are: state(0), params..., crossVars..., subFutures..., defer fields...
-	// Count sub-futures: one field per state with a suspend point
-	subFutCount := 0
-	for _, state := range g.sm.States {
-		if state.SuspendPoint != nil {
-			subFutCount++
-		}
-	}
-	return 1 + len(g.sm.Original.Params) + len(g.sm.CrossVars) + subFutCount
-}
-
-// getDeferHeadFieldIndex returns the field index for deferHead.
-func (g *LLSSACodeGen) getDeferHeadFieldIndex() int {
-	base := g.getDeferFieldBaseIndex()
-	if base < 0 {
-		return -1
-	}
-	return base + 0
-}
-
-// getPanicValueFieldIndex returns the field index for panicValue.
-func (g *LLSSACodeGen) getPanicValueFieldIndex() int {
-	base := g.getDeferFieldBaseIndex()
-	if base < 0 {
-		return -1
-	}
-	return base + 1
-}
-
-// getIsPanickingFieldIndex returns the field index for isPanicking.
-func (g *LLSSACodeGen) getIsPanickingFieldIndex() int {
-	base := g.getDeferFieldBaseIndex()
-	if base < 0 {
-		return -1
-	}
-	return base + 2
-}
-
-// getRecoveredFieldIndex returns the field index for recovered.
-func (g *LLSSACodeGen) getRecoveredFieldIndex() int {
-	base := g.getDeferFieldBaseIndex()
-	if base < 0 {
-		return -1
-	}
-	return base + 3
-}
-
-// getDeferStateType returns the types.Type for async.DeferState
-func (g *LLSSACodeGen) getDeferStateType() types.Type {
-	// Create a named type for async.DeferState
-	asyncPkg := types.NewPackage("github.com/goplus/llgo/async", "async")
-
-	// DeferState struct fields:
-	// DeferHead unsafe.Pointer
-	// PanicValue any
-	// IsPanicking bool
-	// Recovered bool
-	unsafePkg := types.Unsafe
-	fields := []*types.Var{
-		types.NewField(0, asyncPkg, "DeferHead", unsafePkg.Scope().Lookup("Pointer").Type(), false),
-		types.NewField(0, asyncPkg, "PanicValue", types.NewInterfaceType(nil, nil), false),
-		types.NewField(0, asyncPkg, "IsPanicking", types.Typ[types.Bool], false),
-		types.NewField(0, asyncPkg, "Recovered", types.Typ[types.Bool], false),
-	}
-
-	structType := types.NewStruct(fields, nil)
-	return types.NewNamed(types.NewTypeName(0, asyncPkg, "DeferState", nil), structType, nil)
 }
 
 // GenerateStateMachine is the main entry point called from compile.go.
@@ -2142,14 +1910,14 @@ func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) err
 	concreteName := llssa.FuncName(fn.Pkg.Pkg, fn.Name()+"$Concrete", nil, false)
 	concreteWrapper := g.pkg.NewFunc(concreteName, concreteSig, llssa.InGo)
 	g.generateConcreteWrapperBody(concreteWrapper, stateType, fn)
-	log.Printf("[Pull Model] Generated $Concrete wrapper for %s", fn.Name())
+	debugf("[Pull Model] Generated $Concrete wrapper for %s", fn.Name())
 
 	// Generate original name version that returns Future[T] interface
 	// This matches the source code signature and uses MakeInterface for conversion
 	fullName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
 	ifaceWrapper := g.pkg.NewFunc(fullName, origSig, llssa.InGo)
 	g.generateInterfaceWrapperBody(ifaceWrapper, concreteWrapper, fn)
-	log.Printf("[Pull Model] Generated interface wrapper for %s", fn.Name())
+	debugf("[Pull Model] Generated interface wrapper for %s", fn.Name())
 
 	return nil
 }
@@ -2183,6 +1951,16 @@ func (g *LLSSACodeGen) generateConcreteWrapperBody(wrapper llssa.Function, state
 	for _, v := range g.sm.CrossVars {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		fieldType := v.Type()
+
+		// Special handling for Range: use unsafe.Pointer
+		if _, isRange := v.(*ssa.Range); isRange {
+			fieldType = types.Typ[types.UnsafePointer]
+		}
+		// Special handling for Next: use unsafe.Pointer
+		if _, isNext := v.(*ssa.Next); isNext {
+			fieldType = types.Typ[types.UnsafePointer]
+		}
+
 		if alloc, ok := g.isStackAllocCrossVar(v); ok {
 			if tptr, ok := alloc.Type().(*types.Pointer); ok {
 				fieldType = tptr.Elem()
