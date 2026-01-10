@@ -457,3 +457,43 @@ func SelectChanAsync() async.Future[int] {
 	}
 	return async.Return(out)
 }
+
+// HigherOrderVisitorAsync tests higher-order iterator returning a visitor function.
+func HigherOrderVisitorAsync(n int) async.Future[int] {
+	iter := MakeVisitor(n)
+	vals := make([]int, 0, n)
+	iter(func(v int) {
+		vals = append(vals, v)
+	})
+	sum := 0
+	for _, v := range vals {
+		sum += Compute(v).Await()
+	}
+	return async.Return(sum)
+}
+
+// MakeVisitor returns a visitor-based iterator.
+func MakeVisitor(n int) func(func(int)) {
+	return func(visit func(int)) {
+		for i := 0; i < n; i++ {
+			visit(i)
+		}
+	}
+}
+
+// GoroutineChannelAsync launches a goroutine to feed a channel; async consumes with await.
+func GoroutineChannelAsync(n int) async.Future[int] {
+	ch := make(chan int, n)
+	go func() {
+		for i := 0; i < n; i++ {
+			ch <- i
+		}
+		close(ch)
+	}()
+
+	sum := 0
+	for v := range ch {
+		sum += Compute(v).Await()
+	}
+	return async.Return(sum)
+}

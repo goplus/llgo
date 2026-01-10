@@ -231,3 +231,19 @@ func TestDivmodAsync(t *testing.T) {
 		t.Errorf("DivmodAsync(10, 3) = (%d, %d), want (6, 2)", q, r)
 	}
 }
+
+func TestHigherOrderVisitorAsync(t *testing.T) {
+	got := pollReady(t, HigherOrderVisitorAsync(4))
+	// visitor iter 0..3, Compute doubles: 0+2+4+6 = 12
+	if got != 12 {
+		t.Errorf("HigherOrderVisitorAsync = %d, want 12", got)
+	}
+}
+
+func TestGoroutineChannelAsync(t *testing.T) {
+	got := pollReady(t, GoroutineChannelAsync(4))
+	// channel 0..3, Compute doubles: 0+2+4+6 = 12
+	if got != 12 {
+		t.Errorf("GoroutineChannelAsync = %d, want 12", got)
+	}
+}
