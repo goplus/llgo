@@ -170,36 +170,3 @@ var errorstr = [...]string{
 	EXDEV:           "Cross-device link",
 	ENOTCAPABLE:     "Capabilities insufficient",
 }
-
-// Do the interface allocations only once for common
-// Errno values.
-var (
-	errEAGAIN error = EAGAIN
-	errEINVAL error = EINVAL
-	errENOENT error = ENOENT
-)
-
-// errnoErr returns common boxed Errno values, to prevent
-// allocations at runtime.
-//
-// We set both noinline and nosplit to reduce code size, this function has many
-// call sites in the syscall package, inlining it causes a significant increase
-// of the compiled code; the function call ultimately does not make a difference
-// in the performance of syscall functions since the time is dominated by calls
-// to the imports and path resolution.
-//
-//go:noinline
-//go:nosplit
-func errnoErr(e Errno) error {
-	switch e {
-	case 0:
-		return nil
-	case EAGAIN:
-		return errEAGAIN
-	case EINVAL:
-		return errEINVAL
-	case ENOENT:
-		return errENOENT
-	}
-	return e
-}
