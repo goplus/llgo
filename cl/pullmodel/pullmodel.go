@@ -105,6 +105,15 @@ func IsAsyncFunc(fn *ssa.Function) bool {
 
 // isFutureType checks if a type is Future[T] from the async package.
 func isFutureType(t types.Type) bool {
+	// Handle type aliases (Go 1.22+) - unwrap to get the underlying type
+	for {
+		if alias, ok := t.(*types.Alias); ok {
+			t = alias.Rhs()
+			continue
+		}
+		break
+	}
+
 	// Handle named types (like async.Future[int])
 	named, ok := t.(*types.Named)
 	if !ok {
@@ -132,6 +141,15 @@ func isFutureType(t types.Type) bool {
 
 // GetFutureResultType extracts T from Future[T].
 func GetFutureResultType(t types.Type) types.Type {
+	// Handle type aliases (Go 1.22+) - unwrap to get the underlying type
+	for {
+		if alias, ok := t.(*types.Alias); ok {
+			t = alias.Rhs()
+			continue
+		}
+		break
+	}
+
 	named, ok := t.(*types.Named)
 	if !ok {
 		return nil

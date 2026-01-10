@@ -288,3 +288,132 @@ func DeepNestingAsync(x int) async.Future[int] {
 	}
 	return async.Return(0)
 }
+
+// -----------------------------------------------------------------------------
+// Switch Statement Patterns
+// -----------------------------------------------------------------------------
+
+// SwitchAwaitAsync tests await in switch statement branches.
+func SwitchAwaitAsync(x int) async.Future[int] {
+	var result int
+	switch x {
+	case 0:
+		result = Compute(0).Await()
+	case 1:
+		result = Compute(10).Await()
+	case 2:
+		result = Compute(20).Await()
+	default:
+		result = Compute(100).Await()
+	}
+	return async.Return(result)
+}
+
+// SwitchWithFallthrough tests switch with type-based dispatch.
+func SwitchMultipleCases(x int) async.Future[int] {
+	sum := 0
+	switch {
+	case x < 0:
+		a := Compute(-x).Await()
+		sum = a
+	case x == 0:
+		sum = 0
+	case x > 0 && x < 10:
+		b := Compute(x).Await()
+		sum = b * 2
+	default:
+		c := Compute(x).Await()
+		sum = c + 100
+	}
+	return async.Return(sum)
+}
+
+// -----------------------------------------------------------------------------
+// Map Parameter Patterns
+// -----------------------------------------------------------------------------
+
+// MapParamAsync tests map parameter across await.
+func MapParamAsync(m map[string]int, key string) async.Future[int] {
+	v, ok := m[key]
+	if !ok {
+		return async.Return(-1)
+	}
+	val := Compute(v).Await()
+	return async.Return(val)
+}
+
+// MapIterAsync tests iterating over map with await.
+// DISABLED: for-range over map with await may cause compilation issues
+// func MapIterAsync(m map[string]int) async.Future[int] {
+// 	sum := 0
+// 	for _, v := range m {
+// 		val := Compute(v).Await()
+// 		sum += val
+// 	}
+// 	return async.Return(sum)
+// }
+
+// -----------------------------------------------------------------------------
+// Heap Alloc Patterns
+// -----------------------------------------------------------------------------
+
+// HeapAllocAsync tests new() allocation across await.
+func HeapAllocAsync(x int) async.Future[int] {
+	p := new(int)
+	*p = x
+	val := Compute(*p).Await()
+	*p = val // Modify after await
+	return async.Return(*p)
+}
+
+// StructAllocAsync tests struct allocation across await.
+func StructAllocAsync(x, y int) async.Future[int] {
+	pt := &Point{X: x, Y: y}
+	px := Compute(pt.X).Await()
+	py := Compute(pt.Y).Await()
+	pt.X = px // Modify after await
+	pt.Y = py
+	return async.Return(pt.X + pt.Y)
+}
+
+// -----------------------------------------------------------------------------
+// Complex Control Flow Patterns
+// -----------------------------------------------------------------------------
+
+// NestedLoopAsync tests nested loops with await.
+func NestedLoopAsync(n, m int) async.Future[int] {
+	sum := 0
+	for i := 0; i < n; i++ {
+		for j := 0; j < m; j++ {
+			val := Compute(i + j).Await()
+			sum += val
+		}
+	}
+	return async.Return(sum)
+}
+
+// LoopWithMultipleAwaits tests multiple awaits in single loop iteration.
+func LoopWithMultipleAwaits(n int) async.Future[int] {
+	sum := 0
+	for i := 0; i < n; i++ {
+		a := Compute(i).Await()
+		b := Compute(a).Await()
+		sum += b
+	}
+	return async.Return(sum)
+}
+
+// ConditionalLoopAsync tests conditional inside loop with different await paths.
+func ConditionalLoopAsync(n int) async.Future[int] {
+	sum := 0
+	for i := 0; i < n; i++ {
+		if i%2 == 0 {
+			val := Compute(i).Await()
+			sum += val
+		} else {
+			val := Compute(i * 2).Await()
+			sum += val
+		}
+	}
+	return async.Return(sum)
+}
