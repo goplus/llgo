@@ -374,6 +374,21 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 		if paramSet[v] {
 			continue
 		}
+		// Skip Range values - they produce opaque iterator types that cannot
+		// be stored in the state struct. Map iteration with await is unsupported.
+		if _, isRange := v.(*ssa.Range); isRange {
+			continue
+		}
+		// Skip Next values - they return tuples that may contain invalid types
+		// for unused key/value components in range loops.
+		if _, isNext := v.(*ssa.Next); isNext {
+			continue
+		}
+		// Skip Lookup values with CommaOk - they return (T, bool) tuples
+		// that cannot be persisted to the state struct yet.
+		if lookup, isLookup := v.(*ssa.Lookup); isLookup && lookup.CommaOk {
+			continue
+		}
 		result = append(result, v)
 	}
 
@@ -440,6 +455,8 @@ func isDefinedBefore(dp struct {
 }
 
 // findUsesAfterSuspend finds all values used after a suspend point.
+// This must consider loop back-edges where control flows back to blocks
+// with lower indices than the suspend point's block.
 func findUsesAfterSuspend(fn *ssa.Function, sp *SuspendPoint) map[ssa.Value]bool {
 	uses := make(map[ssa.Value]bool)
 
@@ -448,13 +465,29 @@ func findUsesAfterSuspend(fn *ssa.Function, sp *SuspendPoint) map[ssa.Value]bool
 		collectOperands(sp.Block.Instrs[i], uses)
 	}
 
-	// Collect uses in successor blocks (simplified: all blocks after)
-	for _, block := range fn.Blocks {
-		if block.Index > sp.Block.Index {
-			for _, instr := range block.Instrs {
-				collectOperands(instr, uses)
-			}
+	// Traverse all blocks reachable from the suspend point's successors.
+	// This handles loop back-edges where control returns to blocks with
+	// lower indices (e.g., for-range loop header after await in loop body).
+	visited := make(map[*ssa.BasicBlock]bool)
+	var visit func(b *ssa.BasicBlock)
+	visit = func(b *ssa.BasicBlock) {
+		if visited[b] {
+			return
 		}
+		visited[b] = true
+		// Collect uses from all instructions in this block
+		for _, instr := range b.Instrs {
+			collectOperands(instr, uses)
+		}
+		// Continue to successor blocks
+		for _, succ := range b.Succs {
+			visit(succ)
+		}
+	}
+
+	// Start traversal from all successors of the suspend point's block
+	for _, succ := range sp.Block.Succs {
+		visit(succ)
 	}
 
 	return uses
