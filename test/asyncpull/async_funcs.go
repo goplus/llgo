@@ -472,6 +472,18 @@ func DeferAcrossAwait(out *[]string) async.Future[int] {
 	return async.Return(val)
 }
 
+// RecoverThenRunRemaining: defer2 recovers, earlier defers still run post-recover.
+func RecoverThenRunRemaining(out *[]string) (ret async.Future[int]) {
+	defer func() { *out = append(*out, "first") }()
+	defer func() {
+		if r := recover(); r != nil {
+			*out = append(*out, "recover")
+			ret = async.Return(0)
+		}
+	}()
+	panic("boom")
+}
+
 // PanicWithDefer triggers panic and ensures defers run, propagating error.
 func PanicWithDefer(out *[]string) async.Future[int] {
 	defer func() { *out = append(*out, "cleanup") }()

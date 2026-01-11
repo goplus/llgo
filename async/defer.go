@@ -86,8 +86,8 @@ func (s *DeferState) DoPanic(v any) bool {
 	currentDeferState = s
 	defer func() { currentDeferState = prev }()
 
-	// Execute defers, checking for recover after each
-	for s.DeferHead != nil && !s.Recovered {
+	// Execute defers, allowing recover to stop the panic and continue unwinding.
+	for s.DeferHead != nil {
 		node := (*DeferNode)(s.DeferHead)
 		s.DeferHead = unsafe.Pointer(node.prev)
 		// Call the deferred function (may call DoRecover)
@@ -102,10 +102,16 @@ func (s *DeferState) DoPanic(v any) bool {
 			}()
 			callDeferredFunc(node.fn, node.arg)
 		}()
+
+		// If recovered, clear panicking flag so remaining defers run normally.
+		if s.Recovered {
+			s.IsPanicking = false
+			// keep unwinding the rest of the defers in non-panicking mode
+			continue
+		}
 	}
 
 	if s.Recovered {
-		s.IsPanicking = false
 		return true
 	}
 	return false
