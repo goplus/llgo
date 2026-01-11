@@ -12,3 +12,8 @@ func warnUnsupported(fnName, msg string) {
 	}
 	fmt.Fprintf(os.Stderr, "[pullmodel][warn] %s: %s\n", fnName, msg)
 }
+
+// fatalUnsupported reports whether unsupported patterns should hard-fail.
+func fatalUnsupported() bool {
+	return os.Getenv("LLGO_PULL_ERROR_UNSUPPORTED") == "1"
+}

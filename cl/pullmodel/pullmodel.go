@@ -20,6 +20,7 @@
 package pullmodel
 
 import (
+	"fmt"
 	"go/types"
 	"reflect"
 	"sort"
@@ -614,16 +615,24 @@ func Transform(fn *ssa.Function) *StateMachine {
 
 	suspends := FindSuspendPoints(fn)
 
-	// Non-fatal warnings for tricky patterns (opt-in via env)
+	// Warnings/diagnostics for tricky patterns (goroutine, map range + await)
 	if len(suspends) > 0 {
 		for _, blk := range fn.Blocks {
 			for _, instr := range blk.Instrs {
 				if _, ok := instr.(*ssa.Go); ok {
-					warnUnsupported(fn.Name(), "goroutine inside async is not supported; may misbehave")
+					msg := "goroutine inside async is not supported; may misbehave"
+					if fatalUnsupported() {
+						panic(fmt.Errorf("async function %s: %s", fn.Name(), msg))
+					}
+					warnUnsupported(fn.Name(), msg)
 				}
 				if rng, ok := instr.(*ssa.Range); ok {
 					if _, isMap := rng.X.Type().Underlying().(*types.Map); isMap {
-						warnUnsupported(fn.Name(), "range over map with await is not supported; convert to slice")
+						msg := "range over map with await is not supported; convert map to slice first"
+						if fatalUnsupported() {
+							panic(fmt.Errorf("async function %s: %s", fn.Name(), msg))
+						}
+						warnUnsupported(fn.Name(), msg)
 					}
 				}
 			}

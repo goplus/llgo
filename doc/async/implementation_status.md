@@ -48,7 +48,7 @@
 ## ⚠️ Known Limitations
 
 ### Map Iteration
-- **Status**: Causes infinite loop at runtime
+- **Status**: Causes infinite loop at runtime; now emits optional warning (set `LLGO_PULL_WARN_UNSUPPORTED=1`) or fatal error (set `LLGO_PULL_ERROR_UNSUPPORTED=1`).
 - **Issue**: Map iterator state (`ssa.Range`) uses opaque internal types that cannot be persisted across suspend points. The iterator is recreated on each resume, causing the loop to restart from the beginning infinitely.
 - **Workaround**: Convert map to slice before iteration, or use indexed access
 - **Example**:

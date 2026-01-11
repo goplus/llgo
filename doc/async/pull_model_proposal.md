@@ -404,6 +404,10 @@ func (s *MyAsync_State) Poll(ctx *Context) Poll[int] {
 | **Phi 节点** | 跨状态控制流 | 值本身 |
 | **闭包捕获变量** | 延迟执行时需访问 | 值或地址 |
 
+新增：**闭包 FreeVar 支持**
+- 所有 `ssa.FreeVar` 一律入 state，构造器从 `__llgo_ctx` 抽取实际值再存入。
+- Poll 入口预载 freevar，使 `compileValue` 可直接命中缓存，不再依赖隐式 ctx 参数。
+
 #### 5.3.2 当前实现的保守策略
 
 当前实现采用**保守策略**，宁可多存也不漏，以避免复杂控制流下的边界情况：
@@ -422,8 +426,9 @@ func (s *MyAsync_State) Poll(ctx *Context) Poll[int] {
 - 每次 Poll 恢复时重新获取栈地址：`localAddr := &s.localVal`
 
 **Loop Alloc**：
-- 循环中的 Alloc 需特殊追踪
-- 避免循环迭代间指针复用
+- 循环中的 Alloc 需特殊追踪。我们在 SSA 上做强连通分量分析标记 `LoopAllocs`，确保每次迭代都会新分配地址。
+- 这样避免了「同一堆指针在多次 defer/closure 绑定里被复用」导致的值污染（之前 `for` 中的 `defer func(){use(v)}()` 会得到全部相同的 `v`）。
+- 对非循环的堆 Alloc 仍复用状态机中的指针槽，减少分配。
 
 #### 5.3.4 未来优化机会
 
@@ -948,6 +953,7 @@ func main() {
 | 裸机嵌入式 | 拉模型 | 无 LLVM 依赖 |
 | 极致内存 | 拉模型 | 单次分配 |
 | 深层嵌套 | 推模型 | O(1) 恢复 |
+| map range + await | ⚠️ 不支持 | 迭代器状态不可持久化；需先转 slice |
 
 ---
 
