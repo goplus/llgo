@@ -36,6 +36,8 @@ type iface struct {
 
 type interfacetype = abi.InterfaceType
 
+var envPullDebugEnabled bool
+
 // layout of Itab known to compilers
 // allocated in non-garbage-collected memory
 // Needs to be in sync with
@@ -135,8 +137,12 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 		for i, m := range inter.Methods {
 			fn := findMethod(mthds, m)
 			if fn == nil {
-				ret.fun[0] = 0
-				break
+				if envPullDebugEnabled {
+					println("NewItab: missing method", m.Name_, "for", inter.PkgPath_, "type", typ.String())
+				}
+				// 方法缺失时标记为0，但继续尝试匹配后续方法。
+				*c.Advance(data, i) = 0
+				continue
 			}
 			*c.Advance(data, i) = uintptr(fn)
 		}
@@ -170,6 +176,7 @@ func IfaceType(i iface) *abi.Type {
 
 func IfacePtrData(i iface) unsafe.Pointer {
 	if i.tab == nil {
+		println("IfacePtrData: nil itab")
 		panic(errorString("invalid memory address or nil pointer dereference").Error())
 	}
 	switch i.tab._type.Kind() {

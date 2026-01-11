@@ -85,7 +85,8 @@ func NotAsync() int {
 		{"Simple", true, 1},
 		{"Sequential", true, 2},
 		{"NotAsync", false, 0},
-		{"Step", false, 0}, // Returns *AsyncFuture, not Future interface
+		// Step returns *AsyncFuture; not considered async because it doesn't return Future[T].
+		{"Step", false, 0},
 	}
 
 	for _, tc := range tests {

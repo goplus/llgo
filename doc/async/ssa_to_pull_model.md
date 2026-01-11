@@ -134,6 +134,10 @@ FuncA:
 - `Alloc.Heap` 为 true 表示地址逃逸，需要堆分配，否则可在栈上。
 - `make(slice/map/chan)` 对应 `MakeSlice/MakeMap/MakeChan`，不是 `Alloc`。
 
+**循环分配（LoopAlloc）与闭包捕获**
+- 出现在循环块内的 `Alloc`（含堆分配）必须逐迭代重新分配，不能复用同一指针；否则 defer/闭包会捕获到同一地址导致值污染。实现上通过 CFG SCC 标记 `LoopAllocs`，在状态机生成时跳过“复用已有指针”的优化。
+- 对于 `ssa.FreeVar`（闭包环境），统一视为跨挂起点变量：构造器从隐藏的 `__llgo_ctx` 读取真实值并写入 state 字段，Poll 入口预载入到缓存，保证 Await 在异步闭包里可用。
+
 ---
 
 ## 3. 转换步骤

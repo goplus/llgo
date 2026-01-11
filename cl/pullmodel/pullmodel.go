@@ -129,9 +129,7 @@ func isFutureType(t types.Type) bool {
 	if obj == nil {
 		return false
 	}
-	switch obj.Name() {
-	case "Future", "AsyncFuture", "ReadyFuture":
-	default:
+	if obj.Name() != "Future" {
 		return false
 	}
 	pkg := obj.Pkg()

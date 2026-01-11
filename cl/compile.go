@@ -301,6 +301,36 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	if ftype != goFunc {
 		return nil, nil, ignoredFunc
 	}
+
+	// Pull-model async transform for closures/local funcs as well.
+	if pullmodel.ShouldTransform(f) {
+		if fn := pkg.FuncOf(name); fn != nil && fn.HasBody() {
+			return fn, nil, goFunc
+		}
+		p.bvals = make(map[ssa.Value]llssa.Expr)
+		compileValue := func(b llssa.Builder, v ssa.Value) llssa.Expr { return p.compileValue(b, v) }
+		compileInstr := func(b llssa.Builder, instr ssa.Instruction) { p.compileInstr(b, instr) }
+		registerValue := func(v ssa.Value, expr llssa.Expr) { p.bvals[v] = expr }
+		clearCacheExcept := func(keep []ssa.Value) {
+			for v := range p.bvals {
+				delete(p.bvals, v)
+			}
+		}
+		var err error
+		if pullmodel.UsePullIR() {
+			err = pullmodel.GenerateWithPullIR(p.prog, pkg, f.Pkg, f, compileValue, compileInstr)
+		} else {
+			err = pullmodel.GenerateStateMachineWithCallback(p.prog, pkg, f.Pkg, f, compileValue, compileInstr, registerValue, clearCacheExcept)
+		}
+		if err == nil {
+			if fn := pkg.FuncOf(name); fn != nil && fn.HasBody() {
+				return fn, nil, goFunc
+			}
+		} else {
+			log.Printf("[Pull Model] Transform failed for %s: %v, fallback to normal compilation", f.Name(), err)
+		}
+	}
+
 	sig := p.patchType(f.Signature).(*types.Signature)
 	state := p.state
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
@@ -1057,6 +1087,10 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return b.Const(v.Value, p.type_(t, bg))
 	case *ssa.FreeVar:
+		// Allow pull-model codegen to resolve free variables via cached mapping.
+		if cached, ok := p.bvals[v]; ok {
+			return cached
+		}
 		fn := v.Parent()
 		for idx, freeVar := range fn.FreeVars {
 			if freeVar == v {

@@ -42,7 +42,9 @@ var SizeFormat string
 var SizeLevel string
 var ForceRebuild bool
 
-const DefaultTestTimeout = "10m" // Matches Go's default test timeout
+// DefaultTestTimeout left empty so we don't pass -test.timeout unless user sets it.
+// Our current runtime Duration parser rejects "10m"; avoid breaking tests by default.
+const DefaultTestTimeout = ""
 
 func AddCommonFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&Verbose, "v", false, "Verbose output")

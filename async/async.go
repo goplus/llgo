@@ -84,6 +84,8 @@ type Future[T any] interface {
 	// Poll attempts to resolve the future to a final value.
 	// Returns Ready(value) if complete, Pending() if not ready.
 	Poll(ctx *Context) Poll[T]
+	// Await is a compile-time marker; runtime calls should be rewritten by the compiler.
+	Await() T
 }
 
 // Async wraps a callback-based async function into a Future.
