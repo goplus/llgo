@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
+	"github.com/goplus/llgo/internal/coro"
 	"github.com/goplus/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
 
@@ -144,10 +145,13 @@ type context struct {
 	inCoroFunc         bool                      // true when compiling a $coro version of a function
 	coroFuncs          map[string]llssa.Function // maps function name to its $coro version
 	coroState          *llssa.CoroState          // current coroutine state (for prologue/epilogue)
-	coroAnalysisCache  *CoroAnalysis             // cached suspend point analysis
+	coroAnalysisCache  *coro.Analysis            // cached suspend point analysis
 	coroBlkEnds        map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block (coro version)
 	blkEnds            map[int]llssa.BasicBlock  // maps SSA block index to actual ending LLVM block (sync version)
+	coroDefers         []*ssa.Defer              // recorded defers for coro function (for exit block generation)
+
 }
+
 
 func (p *context) rewriteValue(name string) (string, bool) {
 	if p.rewrites == nil {
@@ -478,10 +482,12 @@ func (p *context) compileCoroFuncDecl(pkg llssa.Package, f *ssa.Function, origFn
 		p.fn = coroFn
 		p.state = state
 		p.inCoroFunc = true // Mark that we're compiling coro version
+		p.coroDefers = nil  // Reset defer list for this function
 		defer func() {
 			p.fn = nil
 			p.inCoroFunc = false
 			p.coroState = nil
+			p.coroDefers = nil
 		}()
 		p.phis = nil
 		if dbgSymsEnabled {
@@ -538,8 +544,17 @@ func (p *context) compileCoroFuncDecl(pkg llssa.Package, f *ssa.Function, origFn
 			phi()
 		}
 
-		// Generate coro epilogue
-		b.CoroFuncEpilogue(p.coroState)
+		// Generate coro epilogue with defer generation callback
+		// Capture coroDefers for the callback closure
+		deferList := p.coroDefers
+		b.CoroFuncEpilogue(p.coroState, func(b llssa.Builder) {
+			// Generate defers in reverse order (LIFO)
+			for i := len(deferList) - 1; i >= 0; i-- {
+				def := deferList[i]
+				// Generate as regular call (not defer)
+				p.call(b, llssa.Call, &def.Call)
+			}
+		})
 
 		b.EndBuild()
 	})
@@ -646,9 +661,9 @@ func (p *context) compileCoroBlock(b llssa.Builder, block *ssa.BasicBlock, n int
 			elseBlk := fn.Block(succs[1].Index + 1)
 			b.If(cond, thenBlk, elseBlk)
 		case *ssa.Panic:
-			// Panic in coro version
+			// Panic in coro version - use CoroPanic to set panic value and jump to exit block
 			val := p.compileValue(b, term.X)
-			b.Panic(val)
+			b.CoroPanic(val, p.coroState.ExitBlk)
 		}
 	}
 
@@ -670,6 +685,14 @@ func (p *context) compileCoroReturn(b llssa.Builder, ret *ssa.Return) {
 	}
 	// Jump to the single exit block (which has the final suspend)
 	b.Jump(p.coroState.ExitBlk)
+}
+
+// compileCoroDefer compiles a Defer instruction in coro version.
+// Instead of using sync defer (sigsetjmp), we record the defer for execution at exit block.
+// All defer types (functions, builtins, closures) are handled uniformly.
+func (p *context) compileCoroDefer(b llssa.Builder, v *ssa.Defer) {
+	// Just record the defer - it will be generated at exit block in reverse order
+	p.coroDefers = append(p.coroDefers, v)
 }
 
 // getOrCreateCoroFunc returns the $coro version of a function.
@@ -1242,14 +1265,28 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Defer:
-		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
+		// In coro mode, use CoroDefer instead of regular Defer
+		if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
+			p.compileCoroDefer(b, v)
+		} else {
+			p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
+		}
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
 	case *ssa.RunDefers:
-		b.RunDefers()
+		// In coro mode, defers are run at exit block via CoroRunDefers
+		// which is called in CoroFuncEpilogue, so nothing to do here
+		if !p.inCoroFunc || p.coroState == nil || !llssa.IsLLVMCoroMode() {
+			b.RunDefers()
+		}
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X)
-		b.Panic(arg)
+		// In coro mode, use CoroPanic which jumps to exit block
+		if p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
+			b.CoroPanic(arg, p.coroState.ExitBlk)
+		} else {
+			b.Panic(arg)
+		}
 	case *ssa.Send:
 		ch := p.compileValue(b, v.Chan)
 		x := p.compileValue(b, v.X)
@@ -1445,12 +1482,6 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.prog.SetPatch(ctx.patchType)
 	ctx.prog.SetCompileMethods(ctx.checkCompileMethods)
 	ret.SetResolveLinkname(ctx.resolveLinkname)
-
-	// Set callback for checking if a function has suspend points
-	// Used by closureWrapDecl to decide sync vs coro wrapper
-	if llssa.IsLLVMCoroMode() {
-		ret.SetHasSuspendPoint(ctx.hasSuspendPoint)
-	}
 
 	if hasPatch {
 		skips := ctx.skips

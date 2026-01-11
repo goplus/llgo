@@ -720,11 +720,6 @@ type aPackage struct {
 	iRoutine int
 	coroFns  map[string]Expr // cache of $coro versions: funcName -> funcName$coro
 
-	// hasSuspendPoint is a callback to check if a function has suspend points.
-	// Set by cl package based on taint analysis (CoroAnalysis).
-	// Used by closureWrapDecl to decide sync vs coro wrapper.
-	hasSuspendPoint func(fnName string) bool
-
 	NeedRuntime bool
 	NeedPyInit  bool
 	NeedAbiInit bool // need load all abi types for reflect make type
@@ -764,12 +759,12 @@ const (
 )
 
 // closureStub creates or reuses a wrapper for function values that lack closure ctx.
-// It stays on Package to match the original placement of closure stubs.
-func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind valueKind) (Expr, Expr) {
+// The isCoro parameter indicates whether the function has suspend points (for coro mode).
+func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind valueKind, isCoro bool) (Expr, Expr) {
 	prog := b.Prog
 	switch origKind {
 	case vkFuncDecl:
-		wrap := p.closureWrapDecl(fn, sig)
+		wrap := p.closureWrapDecl(fn, sig, isCoro)
 		return wrap.Expr, prog.Nil(prog.VoidPtr())
 	case vkFuncPtr:
 		wrap := p.closureWrapPtr(sig)
@@ -797,12 +792,6 @@ func (p Package) String() string {
 // SetResolveLinkname sets a function to resolve linkname.
 func (p Package) SetResolveLinkname(fn func(string) string) {
 	p.fnlink = fn
-}
-
-// SetHasSuspendPoint sets a callback to check if a function has suspend points.
-// The callback receives the LLVM function name and returns true if it has suspend points.
-func (p Package) SetHasSuspendPoint(fn func(string) bool) {
-	p.hasSuspendPoint = fn
 }
 
 // -----------------------------------------------------------------------------

@@ -154,7 +154,88 @@ go install -v ./chore/...
 - `cl` - Core compiler converting Go to LLVM IR
 - `internal/build` - Orchestrates the compilation process
 
+## Module Architecture
+
+### Compilation Pipeline
+
+```
+Go Source → Go SSA → llgo SSA → LLVM IR → Executable
+              ↑          ↑          ↑
+        (go/ssa)      (ssa/)    (llvm bindings)
+```
+
+- **Go SSA**: `golang.org/x/tools/go/ssa` - Standard Go SSA representation
+- **llgo SSA**: `ssa/` package (imported as `llssa`) - Intermediate abstraction layer before LLVM IR
+- **LLVM IR**: Generated via `github.com/goplus/llvm` bindings
+
+### Package Roles
+
+| Package | Role |
+|---------|------|
+| `cl/` | Converts Go SSA → llgo SSA (calls ssa's Builder API) |
+| `ssa/` | Provides llgo SSA abstraction, generates LLVM IR |
+| `internal/build/` | Orchestrates the build process |
+
+### Dependency Direction
+
+```
+cl ──→ ssa ──→ llvm
+```
+
+- `cl` imports `ssa` (uses Builder, Type, Function APIs)
+- `ssa` imports `llvm` bindings (generates LLVM IR)
+- `ssa` does NOT import `cl`
+
 ## Debugging
+
+### Compiler Development Workflow
+
+When modifying the compiler, follow this workflow to test and debug:
+
+1. **Create a test case** in `cl/_testrt/` (or appropriate `_test*` directory):
+   ```bash
+   mkdir cl/_testrt/mytest
+   # Create in.go with your test code
+   ```
+
+2. **Generate out.ll** using llgen:
+   ```bash
+   go install -v ./chore/llgen
+   llgen cl/_testrt/mytest
+   ```
+   This reads `cl/_testrt/mytest/in.go` and generates `cl/_testrt/mytest/out.ll`.
+
+3. **Run the test** with llgo:
+   ```bash
+   LLGO_ROOT=/path/to/llgo go run ./cmd/llgo run -a cl/_testrt/mytest
+   ```
+   The `-a` flag forces rebuild of all packages.
+
+4. **If the program crashes**, debug using **both lldb AND the generated IR** - **DO NOT blindly guess the cause**:
+   ```bash
+   # First build the executable
+   LLGO_ROOT=/path/to/llgo go run ./cmd/llgo build -o mytest cl/_testrt/mytest
+
+   # Debug with lldb
+   lldb ./mytest
+   (lldb) run
+   (lldb) bt              # backtrace when it crashes
+   (lldb) frame select N  # examine specific frame
+   (lldb) disassemble     # see assembly at crash point
+   ```
+
+   **Cross-reference with IR**: Open `cl/_testrt/mytest/out.ll` to understand:
+   - Which LLVM IR instruction corresponds to the crash
+   - The control flow and basic block structure
+   - How values are computed and passed
+
+   **Example debug workflow**:
+   ```
+   1. lldb shows crash at address 0x12345 in function foo
+   2. Open out.ll, find "define ... @foo"
+   3. Match the crash location to specific IR instructions
+   4. Identify the root cause (wrong type, missing null check, etc.)
+   ```
 
 ### Disable Garbage Collection
 For testing purposes, you can disable GC:
@@ -172,11 +253,23 @@ export LLGO_ROOT=/path/to/llgo
 LLGO_ROOT=/path/to/llgo llgo run .
 ```
 
+## Key Implementation Files
+
+When working on specific features, refer to these files:
+
+| Feature | Key Files |
+|---------|-----------|
+| Defer/Panic/Recover | `ssa/eh.go` - defer structure, setjmp/longjmp, RunDefers |
+| Closure | `ssa/closure_wrap.go` - closure wrappers; `ssa/expr.go` - MakeClosure |
+| Type System | `ssa/type.go`, `ssa/type_cvt.go` |
+| Function Calls | `cl/call.go`, `ssa/call.go` |
+| C Integration | Direct LLVM symbol linking via `go:linkname`, no special CGO runtime |
+
 ## Important Notes
 
 1. **Testing Requirement:** All bug fixes and features MUST include tests
 2. **Demo Directory:** Examples in `_demo` are prefixed with `_` to prevent standard `go` command from trying to compile them
-3. **Defer in Loops:** LLGo now supports `defer` within loops, matching Go's semantics of executing defers in LIFO order for every iteration. Be mindful of loop-heavy defer usage as it allocates per iteration.
-4. **C Ecosystem Integration:** LLGo uses `go:linkname` directive to link external symbols through ABI
+3. **Defer in Loops:** LLGo supports `defer` in loops, allocating per iteration (see `ssa/eh.go`)
+4. **C Integration:** Since llgo uses LLVM, C symbols are just normal symbols - no special CGO handling needed
 5. **Python Integration:** Third-party Python libraries require separate installation of library files
 

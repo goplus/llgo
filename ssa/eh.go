@@ -464,3 +464,333 @@ func (b Builder) Panic(v Expr) {
 }
 
 // -----------------------------------------------------------------------------
+// Coroutine Defer Implementation
+//
+// In coroutine mode, defer uses a different mechanism than setjmp/longjmp:
+// - Defers are stored in a linked list with an isCoro field
+// - All defers execute at the exit block (before final suspend)
+// - Panic sets the panic value and jumps to exit block
+// - After defers, check if panic was recovered; if not, propagate
+// - If defer function has suspend points (isCoro), await it
+//
+// Closure already has $isCoro field, so for closures we use that.
+// For regular functions, we store isCoro in the node.
+// -----------------------------------------------------------------------------
+
+// aCoroDefer holds the defer state for coroutine mode.
+type aCoroDefer struct {
+	nextBit int             // next defer bit for conditional defers
+	bitsPtr Expr            // pointer to defer bits (stack allocated)
+	argsPtr Expr            // func and args links (stack allocated)
+	stmts   []coroDeferStmt // deferred function metadata
+}
+
+// coroDeferStmt holds metadata for a single deferred call.
+type coroDeferStmt struct {
+	kind   DoAction
+	typ    Type     // struct type for args storage (nil if no args)
+	fn     Expr     // the function to call
+	args   []Expr   // original args (for type info)
+	isCoro bool     // whether fn has suspend points (for non-closure)
+	bit    Expr     // bit mask for conditional defer
+}
+
+// getCoroDefer returns the coroutine defer state, creating it if needed.
+func (b Builder) getCoroDefer() *aCoroDefer {
+	self := b.Func
+	if self.coroDefer == nil {
+		prog := b.Prog
+
+		// Allocate bits on stack
+		zero := prog.Val(uintptr(0))
+		bitsAlloca := b.AllocaT(prog.Uintptr())
+		b.Store(bitsAlloca, zero)
+
+		// Allocate args link on stack
+		argsAlloca := b.AllocaT(prog.VoidPtr())
+		b.Store(argsAlloca, prog.Nil(prog.VoidPtr()))
+
+		self.coroDefer = &aCoroDefer{
+			bitsPtr: bitsAlloca,
+			argsPtr: argsAlloca,
+		}
+	}
+	return self.coroDefer
+}
+
+// CoroDefer emits a defer instruction in coroutine mode.
+// isCoro indicates whether the deferred function has suspend points.
+// For closures, the $isCoro field is used instead.
+func (b Builder) CoroDefer(kind DoAction, fn Expr, args []Expr, isCoro bool) {
+	if debugInstr {
+		logCall("CoroDefer", fn, args)
+	}
+	prog := b.Prog
+	self := b.getCoroDefer()
+
+	var bit Expr
+	switch kind {
+	case DeferInCond:
+		next := self.nextBit
+		if uintptr(next) >= 64 {
+			panic("too many conditional defers")
+		}
+		self.nextBit++
+		bits := b.Load(self.bitsPtr)
+		bit = prog.Val(uintptr(1 << next))
+		b.Store(self.bitsPtr, b.BinOp(token.OR, bits, bit))
+	}
+
+	// Save fn and args to linked list
+	// For non-closure: {prev, isCoro, fn, args...}
+	// For closure: {prev, closure, args...} - closure has $isCoro
+	typ := b.saveCoroDeferArgs(self, fn, args, isCoro)
+
+	// Record metadata for later execution
+	self.stmts = append(self.stmts, coroDeferStmt{
+		kind:   kind,
+		typ:    typ,
+		fn:     fn,
+		args:   args,
+		isCoro: isCoro,
+		bit:    bit,
+	})
+}
+
+// saveCoroDeferArgs saves deferred function and args to linked list.
+func (b Builder) saveCoroDeferArgs(self *aCoroDefer, fn Expr, args []Expr, isCoro bool) Type {
+	prog := b.Prog
+
+	// Determine structure based on fn type
+	isClosure := fn.kind == vkClosure
+
+	// Calculate offset
+	var offset int
+	if isClosure {
+		// {prev, closure, args...}
+		offset = 2
+	} else {
+		// {prev, isCoro, fn, args...}
+		offset = 3
+	}
+
+	typs := make([]Type, len(args)+offset)
+	flds := make([]llvm.Value, len(args)+offset)
+
+	// Field 0: prev pointer
+	typs[0] = prog.VoidPtr()
+	flds[0] = b.Load(self.argsPtr).impl
+
+	if isClosure {
+		// Field 1: closure (has $isCoro inside)
+		typs[1] = fn.Type
+		flds[1] = fn.impl
+	} else {
+		// Field 1: isCoro flag
+		typs[1] = prog.Bool()
+		flds[1] = prog.BoolVal(isCoro).impl
+		// Field 2: fn
+		typs[2] = fn.Type
+		flds[2] = fn.impl
+	}
+
+	// Remaining fields: args
+	for i, arg := range args {
+		typs[i+offset] = arg.Type
+		flds[i+offset] = arg.impl
+	}
+
+	typ := prog.Struct(typs...)
+	ptr := Expr{b.aggregateAllocU(typ, flds...), prog.VoidPtr()}
+	b.Store(self.argsPtr, ptr)
+	return typ
+}
+
+// CoroRunDefers executes all deferred functions in coroutine mode.
+// This is called at the exit block before final suspend.
+// state is needed for await if defer function has suspend points.
+func (b Builder) CoroRunDefers(state *CoroState) {
+	self := b.Func.coroDefer
+	if self == nil {
+		return
+	}
+	stmts := self.stmts
+	if len(stmts) == 0 {
+		return
+	}
+
+	prog := b.Prog
+	bits := b.Load(self.bitsPtr)
+
+	// Execute defers in reverse order (LIFO)
+	for i := len(stmts) - 1; i >= 0; i-- {
+		stmt := stmts[i]
+		switch stmt.kind {
+		case DeferInCond:
+			zero := prog.Val(uintptr(0))
+			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, stmt.bit), zero)
+			b.IfThen(has, func() {
+				b.execCoroDefer(self, stmt, state)
+			})
+		case DeferAlways:
+			b.execCoroDefer(self, stmt, state)
+		case DeferInLoop:
+			// Drain the linked list
+			condBlk := b.Func.MakeBlock()
+			bodyBlk := b.Func.MakeBlock()
+			exitBlk := b.Func.MakeBlock()
+
+			b.Jump(condBlk)
+			b.SetBlockEx(condBlk, AtEnd, true)
+			list := b.Load(self.argsPtr)
+			has := b.BinOp(token.NEQ, list, prog.Nil(prog.VoidPtr()))
+			b.If(has, bodyBlk, exitBlk)
+
+			b.SetBlockEx(bodyBlk, AtEnd, true)
+			b.execCoroDefer(self, stmt, state)
+			b.Jump(condBlk)
+
+			b.SetBlockEx(exitBlk, AtEnd, true)
+		}
+	}
+}
+
+// execCoroDefer pops and executes a single deferred call.
+func (b Builder) execCoroDefer(self *aCoroDefer, stmt coroDeferStmt, state *CoroState) {
+	prog := b.Prog
+	typ := stmt.typ
+	isClosure := stmt.fn.kind == vkClosure
+
+	if typ == nil {
+		// No args stored, just call directly
+		b.callCoroDeferFn(stmt.fn, stmt.args, stmt.isCoro, isClosure, state)
+		return
+	}
+
+	zero := prog.Nil(prog.VoidPtr())
+	list := b.Load(self.argsPtr)
+	has := b.BinOp(token.NEQ, list, zero)
+
+	b.IfThen(has, func() {
+		ptr := b.Load(self.argsPtr)
+		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
+
+		// Field 0: prev - update argsPtr
+		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
+
+		var callFn Expr
+		var isCoro Expr
+		var offset int
+		args := make([]Expr, len(stmt.args))
+
+		if isClosure {
+			// {prev, closure, args...}
+			// closure is {$f, $data, $isCoro}
+			callFn = b.getField(data, 1) // the closure
+			offset = 2
+		} else {
+			// {prev, isCoro, fn, args...}
+			isCoro = b.getField(data, 1)
+			callFn = b.getField(data, 2)
+			offset = 3
+		}
+
+		for i := 0; i < len(stmt.args); i++ {
+			args[i] = b.getField(data, i+offset)
+		}
+
+		// Call based on type
+		if isClosure {
+			// For closure, extract $isCoro from closure itself
+			closureIsCoro := b.Field(callFn, 2)
+			b.callCoroDeferWithCheck(callFn, args, closureIsCoro, true, state)
+		} else {
+			b.callCoroDeferWithCheck(callFn, args, isCoro, false, state)
+		}
+
+		// Free the node
+		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
+	})
+}
+
+// callCoroDeferFn calls a deferred function directly (compile-time known isCoro).
+func (b Builder) callCoroDeferFn(fn Expr, args []Expr, isCoro bool, isClosure bool, state *CoroState) {
+	if !isCoro {
+		// Direct call
+		b.Call(fn, args...)
+		return
+	}
+
+	// Has suspend points, need to await
+	if isClosure {
+		// Closure: use the stored $coro function pointer
+		fnPtr := b.Field(fn, 0)
+		ctx := b.Field(fn, 1)
+		sig := fn.raw.Type.Underlying().(*types.Struct).Field(0).Type().(*types.Signature)
+		allArgs := append([]Expr{ctx}, args...)
+		handle := b.CallIndirectCoroWithSig(fnPtr, sig, true, allArgs...)
+		b.CoroAwaitWithSuspend(handle, state)
+	} else {
+		// Regular function - should already be $coro version
+		handle := b.Call(fn, args...)
+		b.CoroAwaitWithSuspend(handle, state)
+	}
+}
+
+// callCoroDeferWithCheck calls deferred function with runtime isCoro check.
+func (b Builder) callCoroDeferWithCheck(fn Expr, args []Expr, isCoro Expr, isClosure bool, state *CoroState) {
+	f := b.Func
+
+	coroBlk := f.MakeBlock()
+	syncBlk := f.MakeBlock()
+	doneBlk := f.MakeBlock()
+
+	b.If(isCoro, coroBlk, syncBlk)
+
+	// Coro path: call $coro version and await
+	b.SetBlock(coroBlk)
+	if isClosure {
+		fnPtr := b.Field(fn, 0)
+		ctx := b.Field(fn, 1)
+		sig := fn.raw.Type.Underlying().(*types.Struct).Field(0).Type().(*types.Signature)
+		allArgs := append([]Expr{ctx}, args...)
+		handle := b.CallIndirectCoroWithSig(fnPtr, sig, true, allArgs...)
+		b.CoroAwaitWithSuspend(handle, state)
+	} else {
+		// For regular functions in coro path, fn should be $coro version
+		handle := b.Call(fn, args...)
+		b.CoroAwaitWithSuspend(handle, state)
+	}
+	b.Jump(doneBlk)
+
+	// Sync path: direct call
+	b.SetBlock(syncBlk)
+	b.Call(fn, args...)
+	b.Jump(doneBlk)
+
+	b.SetBlock(doneBlk)
+}
+
+// CoroPanic emits a panic instruction in coroutine mode.
+// Sets the panic value and jumps to the exit block where defers will run.
+func (b Builder) CoroPanic(v Expr, exitBlk BasicBlock) {
+	b.Call(b.Pkg.rtFunc("CoroSetPanic"), v)
+	b.Jump(exitBlk)
+}
+
+// CoroCheckPanic checks if there's an unrecovered panic after defers ran.
+// In coro mode, panic propagates by returning normally from the coroutine.
+// The caller will check CoroIsPanic() after resuming and continue propagation.
+// This function is a no-op placeholder for now - panic state is checked by caller.
+func (b Builder) CoroCheckPanic() {
+	// No-op: panic state (coroPanicVal) is preserved and checked by caller
+	// after the coroutine returns via final suspend.
+}
+
+// CoroRecover implements recover() in coroutine mode.
+// Returns the panic value if in panic state, nil otherwise.
+func (b Builder) CoroRecover() Expr {
+	return b.Call(b.Pkg.rtFunc("CoroRecover"))
+}
+
+// -----------------------------------------------------------------------------

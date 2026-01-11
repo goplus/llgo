@@ -1213,6 +1213,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 	case "recover":
+		// Recover() in runtime now handles both sync and coro modes
+		// by checking CoroIsInCoro() at runtime
 		return b.Recover()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
@@ -1388,11 +1390,11 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 		data := prog.Nil(prog.VoidPtr())
 		if origKind == vkFuncDecl || origKind == vkFuncPtr {
 			if sig, ok := fnType.raw.Type.(*types.Signature); ok && closureCtxParam(sig) == nil {
-				v, data = b.Pkg.closureStub(b, v, sig, origKind)
+				// For function-to-closure conversion, isCoro is always false
+				// (regular functions don't have suspend points, only closures via MakeClosure do)
+				v, data = b.Pkg.closureStub(b, v, sig, origKind, false)
 			}
 		}
-		// For function-to-closure conversion, $isCoro is always false
-		// (regular functions don't have suspend points, only closures created via MakeClosure do)
 		isCoroVal := prog.BoolVal(false).impl
 		return b.aggregateValue(tclosure, v.impl, data.impl, isCoroVal)
 	}

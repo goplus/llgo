@@ -57,6 +57,11 @@ var (
 	// coroDepth tracks nested $coro function depth for isInCoro detection
 	// Incremented on $coro function entry, decremented on exit
 	coroDepth int
+
+	// coroPanicVal stores the panic value for coro mode.
+	// Unlike TLS-based excepKey, this is a simple global variable
+	// suitable for bare-metal environments.
+	coroPanicVal any
 )
 
 // coroQueuePush adds a coroutine handle to the run queue.
@@ -127,11 +132,21 @@ func CoroYield() {
 func CoroSchedule() {
 	for !coroQueueEmpty(&coroRunQueue) {
 		handle := coroQueuePop(&coroRunQueue)
-		if handle != nil {
-			// Resume the coroutine
-			// This will run until the next suspend point
-			coroResume(handle)
+		if handle == nil {
+			continue
 		}
+		// Check if coroutine is already done (resume_fn == null)
+		resumeFn := *(*unsafe.Pointer)(handle)
+		if resumeFn == nil {
+			continue
+		}
+		// Resume the coroutine
+		// This will run until the next suspend point
+		coroResume(handle)
+	}
+	// After all coroutines complete, check for unhandled panic
+	if coroPanicVal != nil {
+		Panic(coroPanicVal)
 	}
 }
 
@@ -219,6 +234,43 @@ func CoroExit() {
 // or scheduleUntil (sync context) at runtime.
 func CoroIsInCoro() bool {
 	return coroDepth > 0
+}
+
+// -----------------------------------------------------------------------------
+// Coro Panic/Recover support
+//
+// These functions manage panic state for coroutine mode.
+// They use a global variable instead of TLS for bare-metal compatibility.
+// -----------------------------------------------------------------------------
+
+// CoroSetPanic sets the panic value.
+// This is called by panic in coro mode.
+func CoroSetPanic(v any) {
+	coroPanicVal = v
+}
+
+// CoroIsPanic returns true if there is a panic in progress.
+func CoroIsPanic() bool {
+	return coroPanicVal != nil
+}
+
+// CoroGetPanic returns the current panic value (may be nil).
+func CoroGetPanic() any {
+	return coroPanicVal
+}
+
+// CoroClearPanic clears the panic state.
+// This is called by recover in coro mode.
+func CoroClearPanic() {
+	coroPanicVal = nil
+}
+
+// CoroRecover recovers from a panic and returns the panic value.
+// Returns nil if there is no panic.
+func CoroRecover() any {
+	v := coroPanicVal
+	coroPanicVal = nil
+	return v
 }
 
 // -----------------------------------------------------------------------------

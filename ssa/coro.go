@@ -599,9 +599,9 @@ func (b Builder) coroSuspendYield() {
 type CoroState struct {
 	CoroId     Expr       // The coro.id token
 	CoroHandle Expr       // The coro.begin handle
-	ExitBlk    BasicBlock // The exit block (single final suspend point)
-	CleanupBlk BasicBlock // The cleanup block
-	EndBlk     BasicBlock // The end block
+	SuspendBlk BasicBlock // SHARED suspend block (all suspend default/-1 cases jump here!)
+	ExitBlk    BasicBlock // Exit block (defer execution, final suspend)
+	CleanupBlk BasicBlock // Cleanup block (free frame)
 	// Promise support for return values
 	Promise      Expr // The promise alloca (for return value storage)
 	PromiseType  Type // The type of the promise (return type)
@@ -622,9 +622,9 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 	// Create basic blocks for coroutine structure
 	allocBlk := fn.MakeBlock()
 	beginBlk := fn.MakeBlock()
-	exitBlk := fn.MakeBlock() // Single final suspend point
-	cleanupBlk := fn.MakeBlock()
-	endBlk := fn.MakeBlock()
+	suspendBlk := fn.MakeBlock() // SHARED suspend block for ALL suspend points!
+	exitBlk := fn.MakeBlock()    // Defer execution + final suspend
+	cleanupBlk := fn.MakeBlock() // Free frame
 
 	// Allocate promise if we have a return type
 	var promise Expr
@@ -684,9 +684,9 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 	return &CoroState{
 		CoroId:       coroId,
 		CoroHandle:   coroHandle,
+		SuspendBlk:   suspendBlk,
 		ExitBlk:      exitBlk,
 		CleanupBlk:   cleanupBlk,
-		EndBlk:       endBlk,
 		Promise:      promise,
 		PromiseType:  retType,
 		PromiseAlign: promiseAlign,
@@ -726,60 +726,73 @@ func (b Builder) CoroLoadResult(handle Expr, retType Type, alignment int) Expr {
 	return b.Load(typedPtr)
 }
 
-// CoroFuncEpilogue generates the coroutine epilogue (exit, cleanup and end blocks).
+// CoroFuncEpilogue generates the coroutine epilogue blocks.
 // This should be called after the function body is generated.
-// All return statements in the function body should jump to ExitBlk.
-func (b Builder) CoroFuncEpilogue(state *CoroState) {
+//
+// Block structure (following C++ coroutine pattern from llvm-coroutine-structure.md):
+//
+//	SuspendBlk: SHARED by all suspend points (default/-1 case)
+//	  call coro.end(null, false, none)
+//	  ret ptr %handle
+//
+//	ExitBlk: defer execution + final suspend
+//	  execute defers
+//	  check panic
+//	  final suspend (final=true)
+//	  switch -> SuspendBlk (default) / CleanupBlk (0,1)
+//
+//	CleanupBlk: free frame
+//	  coro.free + free()
+//	  jump -> SuspendBlk
+func (b Builder) CoroFuncEpilogue(state *CoroState, generateDefers func(b Builder)) {
 	prog := b.Prog
 	fn := b.Func
 
-	// Generate exit block - single final suspend point
+	// 1. Generate SHARED suspend block (ALL suspend points jump here for default/-1!)
+	// This is the critical pattern from C++ coroutines.
+	b.SetBlock(state.SuspendBlk)
+	falseVal := prog.BoolVal(false)
+	b.CoroEnd(state.CoroHandle, falseVal)
+	b.Return(state.CoroHandle)
+
+	// 2. Generate exit block - defer execution + final suspend
 	b.SetBlock(state.ExitBlk)
+
+	// Execute defers via callback
+	if generateDefers != nil {
+		generateDefers(b)
+	}
+
+	// Check for unrecovered panic after defers
+	b.CoroCheckPanic()
+
+	// Final suspend with final=true
 	trueVal := prog.BoolVal(true)
 	result := b.CoroSuspend(Expr{}, trueVal)
 
-	// For final suspend, we use a custom switch instead of CoroSuspendSwitch.
-	// The key difference is the default (-1) path:
-	// - Non-final suspend: default returns handle (so caller can resume later)
-	// - Final suspend: default calls coro.end then returns handle
-	//
-	// The coro.end call is critical because without it, CoroSplit generates
-	// 'unreachable' for this path in the resume function. LLVM then optimizes
-	// the unreachable into a fall-through to cleanup, causing the frame to be
-	// freed before the caller can read the return value.
-	// With coro.end, CoroSplit generates a proper return in the resume function.
-	resumeBlk := fn.MakeBlock()  // case 0: final suspend resumed (go to cleanup)
-	suspendBlk := fn.MakeBlock() // default (-1): suspended
+	// Switch for final suspend:
+	// - default (-1): suspended -> SuspendBlk (shared!)
+	// - 0: resumed after final (shouldn't happen) -> CleanupBlk
+	// - 1: destroy requested -> CleanupBlk
+	resumeBlk := fn.MakeBlock()
 
-	sw := b.impl.CreateSwitch(result.impl, suspendBlk.first, 2)
+	sw := b.impl.CreateSwitch(result.impl, state.SuspendBlk.first, 2)
 	sw.AddCase(llvm.ConstInt(prog.tyInt8(), 0, false), resumeBlk.first)
 	sw.AddCase(llvm.ConstInt(prog.tyInt8(), 1, false), state.CleanupBlk.first)
 
-	// Resume block (case 0) - final suspend shouldn't be resumed, go to cleanup
+	// Resume after final suspend (shouldn't happen) -> go to cleanup
 	b.SetBlock(resumeBlk)
 	b.Jump(state.CleanupBlk)
 
-	// Suspend block (default, -1) - jump to end block
-	// The frame is NOT freed here - caller may still need to read return value.
-	// By going through coro.end, CoroSplit generates proper 'ret void' instead of 'unreachable'.
-	b.SetBlock(suspendBlk)
-	b.Jump(state.EndBlk)
-
-	// Generate cleanup block - use C free for coroutine frame
+	// 3. Generate cleanup block - free frame
 	b.SetBlock(state.CleanupBlk)
 	memToFree := b.CoroFree(state.CoroId, state.CoroHandle)
 	b.free(memToFree)
-	// Call CoroExit to decrement coro depth after cleanup (truly done)
+	// Decrement coro depth
 	coroExitFn := b.Pkg.rtFunc("CoroExit")
 	b.Call(coroExitFn)
-	b.Jump(state.EndBlk)
-
-	// Generate end block - single coro.end for all exit paths
-	b.SetBlock(state.EndBlk)
-	falseVal := prog.BoolVal(false)
-	b.CoroEnd(state.CoroHandle, falseVal)
-	// Return the coroutine handle - coro functions return ptr
-	b.Return(state.CoroHandle)
+	// After cleanup, go through shared suspend block
+	b.Jump(state.SuspendBlk)
 }
 
 // CoroSuspendSwitch generates a switch statement for coro.suspend result.
@@ -804,21 +817,28 @@ func (b Builder) CoroSuspendSwitch(result Expr, resumeBlk, cleanupBlk BasicBlock
 }
 
 // CoroSuspendWithCleanup performs a suspend point with proper cleanup handling.
-// Unlike coroSuspendYield, this handles all suspend result cases:
 // - 0: resumed, continue execution
-// - 1: cleanup, jump to cleanup block
-// - -1: destroy, jump to cleanup block (for final suspend)
+// - 1: cleanup requested, jump to EXIT block (to run defers)
+// - -1: suspended, jump to SHARED SuspendBlk
+//
+// Before suspending, reschedules the coroutine so it can be resumed by the scheduler.
+// This implements yield semantics - the coroutine gives up control temporarily.
+// CRITICAL: Uses shared SuspendBlk for default case (C++ coroutine pattern).
 func (b Builder) CoroSuspendWithCleanup(state *CoroState) {
-	// Use none token for save and false for non-final suspend
-	falseVal := b.Prog.BoolVal(false)
+	// Reschedule ourselves before suspending (yield semantics)
+	rescheduleFn := b.Pkg.rtFunc("CoroReschedule")
+	b.Call(rescheduleFn, state.CoroHandle)
 
+	falseVal := b.Prog.BoolVal(false)
 	result := b.CoroSuspend(Expr{}, falseVal)
 
-	// Create resume block
+	// Create resume block for case 0
 	resumeBlk := b.Func.MakeBlock()
 
-	// Use switch to handle suspend result
-	b.CoroSuspendSwitch(result, resumeBlk, state.CleanupBlk, state.CoroHandle)
+	// Switch: default -> shared SuspendBlk, 0 -> resume, 1 -> ExitBlk
+	sw := b.impl.CreateSwitch(result.impl, state.SuspendBlk.first, 2)
+	sw.AddCase(llvm.ConstInt(b.Prog.tyInt8(), 0, false), resumeBlk.first)
+	sw.AddCase(llvm.ConstInt(b.Prog.tyInt8(), 1, false), state.ExitBlk.first)
 
 	// Resume block - continue with normal execution
 	b.SetBlock(resumeBlk)

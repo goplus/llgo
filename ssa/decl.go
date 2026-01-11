@@ -179,8 +179,9 @@ type aFunction struct {
 
 	blks []BasicBlock
 
-	defer_ *aDefer
-	recov  BasicBlock
+	defer_    *aDefer     // sync defer state
+	coroDefer *aCoroDefer // coro defer state (for $coro functions)
+	recov     BasicBlock
 
 	params   []Type
 	freeVars Expr
