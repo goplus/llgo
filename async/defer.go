@@ -73,9 +73,6 @@ func (s *DeferState) RunDefers() {
 			continue
 		}
 	}
-	if s.IsPanicking && !s.Recovered {
-		panic(s.PanicValue)
-	}
 }
 
 // DoPanic sets the panic state and begins defer unwinding.

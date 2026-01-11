@@ -1690,55 +1690,44 @@ DeferWithAwait_state_02:                          ; preds = %DeferWithAwait_stat
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %40, ptr %41, align 8
   %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
   call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %42)
-  %43 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  store i64 %36, ptr %44, align 4
-  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  %46 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %45, align 8
-  store { ptr, ptr } zeroinitializer, ptr %45, align 8
-  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %48 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %48, ptr %47, align 8
-  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %49, align 1
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  %51 = load i64, ptr %50, align 4
-  %52 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %51, 1
-  %53 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %52, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %53
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %42, i32 0, i32 2
+  %44 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %42, i32 0, i32 3
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %42, i32 0, i32 1
+  %46 = load i1, ptr %43, align 1
+  br i1 %46, label %_llgo_25, label %_llgo_24
 
 DeferWithAwait_state_03:                          ; preds = %DeferWithAwait_entry
-  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %55 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %54, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %55, ptr %2, align 8
-  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
-  %57 = load i64, ptr %56, align 4
-  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
-  %59 = load i64, ptr %58, align 4
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
-  %61 = load i64, ptr %60, align 4
-  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
-  %63 = load i64, ptr %62, align 4
-  %64 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %65 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  %66 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %65, align 8
-  store { ptr, ptr } zeroinitializer, ptr %65, align 8
-  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %68 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %68, ptr %67, align 8
-  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %69, align 1
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  %71 = load i64, ptr %70, align 4
-  %72 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %71, 1
-  %73 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %72, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %73
+  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %48 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %47, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %48, ptr %2, align 8
+  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
+  %50 = load i64, ptr %49, align 4
+  %51 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
+  %52 = load i64, ptr %51, align 4
+  %53 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
+  %54 = load i64, ptr %53, align 4
+  %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
+  %56 = load i64, ptr %55, align 4
+  %57 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  %59 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %58, align 8
+  store { ptr, ptr } zeroinitializer, ptr %58, align 8
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %61 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %61, ptr %60, align 8
+  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %62, align 1
+  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  %64 = load i64, ptr %63, align 4
+  %65 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %64, 1
+  %66 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %65, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %66
 
 DeferWithAwait_state_done:                        ; preds = %DeferWithAwait_entry
-  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  %75 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %74, align 8
-  %76 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %75, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %76
+  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  %68 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %67, align 8
+  %69 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %68, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %69
 
 DeferWithAwait_state_unreach:                     ; preds = %DeferWithAwait_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -1747,185 +1736,217 @@ _llgo_7:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 DeferWithAwait_state_00_init:                     ; preds = %DeferWithAwait_state_00
-  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
-  %78 = load i64, ptr %77, align 4
-  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %80 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %79, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %80, ptr %2, align 8
-  %81 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
-  %82 = load i64, ptr %81, align 4
-  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
-  %84 = load i64, ptr %83, align 4
-  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
-  %86 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %87 = getelementptr inbounds { { ptr, ptr } }, ptr %86, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$1", ptr null }, ptr %87, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %85, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_complex_DeferWithAwait$1", ptr null }, ptr %86)
-  %88 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %78)
-  store ptr %88, ptr %13, align 8
+  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
+  %71 = load i64, ptr %70, align 4
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %73 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %72, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %73, ptr %2, align 8
+  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
+  %75 = load i64, ptr %74, align 4
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
+  %77 = load i64, ptr %76, align 4
+  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
+  %79 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %80 = getelementptr inbounds { { ptr, ptr } }, ptr %79, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$1", ptr null }, ptr %80, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %78, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_complex_DeferWithAwait$1", ptr null }, ptr %79)
+  %81 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %71)
+  store ptr %81, ptr %13, align 8
   br label %DeferWithAwait_state_00_poll
 
 DeferWithAwait_state_00_poll:                     ; preds = %DeferWithAwait_state_00_init, %DeferWithAwait_state_00
-  %89 = load ptr, ptr %13, align 8
-  %90 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %89, ptr %1)
-  %91 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %90, 0
-  br i1 %91, label %DeferWithAwait_state_00_ready, label %DeferWithAwait_state_00_pending
+  %82 = load ptr, ptr %13, align 8
+  %83 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %82, ptr %1)
+  %84 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %83, 0
+  br i1 %84, label %DeferWithAwait_state_00_ready, label %DeferWithAwait_state_00_pending
 
 DeferWithAwait_state_00_ready:                    ; preds = %DeferWithAwait_state_00_poll
-  %92 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %90, 2
-  %93 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %92, { ptr, ptr } zeroinitializer)
-  %94 = xor i1 %93, true
-  br i1 %94, label %DeferWithAwait_state_00_err, label %DeferWithAwait_state_00_ready_cont
+  %85 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %83, 2
+  %86 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %85, { ptr, ptr } zeroinitializer)
+  %87 = xor i1 %86, true
+  br i1 %87, label %DeferWithAwait_state_00_err, label %DeferWithAwait_state_00_ready_cont
 
 DeferWithAwait_state_00_pending:                  ; preds = %DeferWithAwait_state_00_poll
-  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %96 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %96, ptr %95, align 8
+  %88 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %89 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %89, ptr %88, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 DeferWithAwait_state_00_err:                      ; preds = %DeferWithAwait_state_00_ready
-  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
-  %98 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %97, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %92)
-  br i1 %98, label %DeferWithAwait_state_00_err_recovered, label %DeferWithAwait_state_00_err_propagate
+  %90 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
+  %91 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %90, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %85)
+  br i1 %91, label %DeferWithAwait_state_00_err_recovered, label %DeferWithAwait_state_00_err_propagate
 
 DeferWithAwait_state_00_ready_cont:               ; preds = %DeferWithAwait_state_00_ready
-  %99 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %90, 1
-  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
-  store i64 %99, ptr %100, align 4
-  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
-  %102 = add i64 %82, 10
-  store i64 %102, ptr %101, align 4
-  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
-  store i64 %84, ptr %103, align 4
+  %92 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %83, 1
+  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
+  store i64 %92, ptr %93, align 4
+  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
+  %95 = add i64 %75, 10
+  store i64 %95, ptr %94, align 4
+  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
+  store i64 %77, ptr %96, align 4
   store ptr null, ptr %13, align 8
-  %104 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %105 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %105, ptr %104, align 8
-  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %106, align 1
+  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %98 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %98, ptr %97, align 8
+  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %99, align 1
   br label %DeferWithAwait_state_01
 
 DeferWithAwait_state_00_err_recovered:            ; preds = %DeferWithAwait_state_00_err
-  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %107, align 1
-  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  %109 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %108, align 8
-  store { ptr, ptr } zeroinitializer, ptr %108, align 8
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  %111 = load i64, ptr %110, align 4
-  %112 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %113 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %112)
-  %114 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %112, 0
-  %115 = getelementptr ptr, ptr %114, i64 4
-  %116 = load ptr, ptr %115, align 8
-  %117 = insertvalue { ptr, ptr } undef, ptr %116, 0
-  %118 = insertvalue { ptr, ptr } %117, ptr %113, 1
-  %119 = extractvalue { ptr, ptr } %118, 1
-  %120 = extractvalue { ptr, ptr } %118, 0
-  %121 = call %"github.com/goplus/llgo/async.Poll[int]" %120(ptr %119, ptr null)
-  %122 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %121, 1
-  %123 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  store i64 %122, ptr %123, align 4
-  %124 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %122, 1
-  %125 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %124, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %125
+  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %100, align 1
+  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  %102 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %101, align 8
+  store { ptr, ptr } zeroinitializer, ptr %101, align 8
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  %104 = load i64, ptr %103, align 4
+  %105 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %106 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %105)
+  %107 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %105, 0
+  %108 = getelementptr ptr, ptr %107, i64 4
+  %109 = load ptr, ptr %108, align 8
+  %110 = insertvalue { ptr, ptr } undef, ptr %109, 0
+  %111 = insertvalue { ptr, ptr } %110, ptr %106, 1
+  %112 = extractvalue { ptr, ptr } %111, 1
+  %113 = extractvalue { ptr, ptr } %111, 0
+  %114 = call %"github.com/goplus/llgo/async.Poll[int]" %113(ptr %112, ptr null)
+  %115 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %114, 1
+  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  store i64 %115, ptr %116, align 4
+  %117 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %115, 1
+  %118 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %117, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %118
 
 DeferWithAwait_state_00_err_propagate:            ; preds = %DeferWithAwait_state_00_err
-  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %126, align 1
-  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %92, ptr %127, align 8
-  %128 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %92, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %128
+  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %119, align 1
+  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %85, ptr %120, align 8
+  %121 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %85, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %121
 
 DeferWithAwait_state_01_init:                     ; preds = %DeferWithAwait_state_01
-  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
-  %130 = load i64, ptr %129, align 4
-  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %132 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %131, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %132, ptr %2, align 8
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
-  %134 = load i64, ptr %133, align 4
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
-  %136 = load i64, ptr %135, align 4
-  %137 = add i64 %134, 10
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
-  store i64 %137, ptr %138, align 4
-  %139 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %137)
-  store ptr %139, ptr %24, align 8
+  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 1
+  %123 = load i64, ptr %122, align 4
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %125 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %124, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %125, ptr %2, align 8
+  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
+  %127 = load i64, ptr %126, align 4
+  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
+  %129 = load i64, ptr %128, align 4
+  %130 = add i64 %127, 10
+  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
+  store i64 %130, ptr %131, align 4
+  %132 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %130)
+  store ptr %132, ptr %24, align 8
   br label %DeferWithAwait_state_01_poll
 
 DeferWithAwait_state_01_poll:                     ; preds = %DeferWithAwait_state_01_init, %DeferWithAwait_state_01
-  %140 = load ptr, ptr %24, align 8
-  %141 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %140, ptr %1)
-  %142 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %141, 0
-  br i1 %142, label %DeferWithAwait_state_01_ready, label %DeferWithAwait_state_01_pending
+  %133 = load ptr, ptr %24, align 8
+  %134 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %133, ptr %1)
+  %135 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 0
+  br i1 %135, label %DeferWithAwait_state_01_ready, label %DeferWithAwait_state_01_pending
 
 DeferWithAwait_state_01_ready:                    ; preds = %DeferWithAwait_state_01_poll
-  %143 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %141, 2
-  %144 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %143, { ptr, ptr } zeroinitializer)
-  %145 = xor i1 %144, true
-  br i1 %145, label %DeferWithAwait_state_01_err, label %DeferWithAwait_state_01_ready_cont
+  %136 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 2
+  %137 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, { ptr, ptr } zeroinitializer)
+  %138 = xor i1 %137, true
+  br i1 %138, label %DeferWithAwait_state_01_err, label %DeferWithAwait_state_01_ready_cont
 
 DeferWithAwait_state_01_pending:                  ; preds = %DeferWithAwait_state_01_poll
-  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %147 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %147, ptr %146, align 8
+  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %140 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %140, ptr %139, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 DeferWithAwait_state_01_err:                      ; preds = %DeferWithAwait_state_01_ready
-  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
-  %149 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %148, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %143)
-  br i1 %149, label %DeferWithAwait_state_01_err_recovered, label %DeferWithAwait_state_01_err_propagate
+  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 8
+  %142 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %141, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %136)
+  br i1 %142, label %DeferWithAwait_state_01_err_recovered, label %DeferWithAwait_state_01_err_propagate
 
 DeferWithAwait_state_01_ready_cont:               ; preds = %DeferWithAwait_state_01_ready
-  %150 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %141, 1
-  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
-  store i64 %150, ptr %151, align 4
-  %152 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
-  store i64 %134, ptr %152, align 4
-  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
-  store i64 %137, ptr %153, align 4
+  %143 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 1
+  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 5
+  store i64 %143, ptr %144, align 4
+  %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 3
+  store i64 %127, ptr %145, align 4
+  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 4
+  store i64 %130, ptr %146, align 4
   store ptr null, ptr %24, align 8
-  %154 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
-  %155 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %155, ptr %154, align 8
-  %156 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %156, align 1
+  %147 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %148 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %148, ptr %147, align 8
+  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %149, align 1
   br label %DeferWithAwait_state_02
 
 DeferWithAwait_state_01_err_recovered:            ; preds = %DeferWithAwait_state_01_err
-  %157 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %157, align 1
-  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  %159 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %158, align 8
-  store { ptr, ptr } zeroinitializer, ptr %158, align 8
-  %160 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  %161 = load i64, ptr %160, align 4
-  %162 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %163 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %162)
-  %164 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %162, 0
-  %165 = getelementptr ptr, ptr %164, i64 4
-  %166 = load ptr, ptr %165, align 8
-  %167 = insertvalue { ptr, ptr } undef, ptr %166, 0
-  %168 = insertvalue { ptr, ptr } %167, ptr %163, 1
-  %169 = extractvalue { ptr, ptr } %168, 1
-  %170 = extractvalue { ptr, ptr } %168, 0
-  %171 = call %"github.com/goplus/llgo/async.Poll[int]" %170(ptr %169, ptr null)
-  %172 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %171, 1
-  %173 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
-  store i64 %172, ptr %173, align 4
-  %174 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %172, 1
-  %175 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %174, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %175
+  %150 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %150, align 1
+  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  %152 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %151, align 8
+  store { ptr, ptr } zeroinitializer, ptr %151, align 8
+  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  %154 = load i64, ptr %153, align 4
+  %155 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %156 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %155)
+  %157 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %155, 0
+  %158 = getelementptr ptr, ptr %157, i64 4
+  %159 = load ptr, ptr %158, align 8
+  %160 = insertvalue { ptr, ptr } undef, ptr %159, 0
+  %161 = insertvalue { ptr, ptr } %160, ptr %156, 1
+  %162 = extractvalue { ptr, ptr } %161, 1
+  %163 = extractvalue { ptr, ptr } %161, 0
+  %164 = call %"github.com/goplus/llgo/async.Poll[int]" %163(ptr %162, ptr null)
+  %165 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %164, 1
+  %166 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  store i64 %165, ptr %166, align 4
+  %167 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %165, 1
+  %168 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %167, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %168
 
 DeferWithAwait_state_01_err_propagate:            ; preds = %DeferWithAwait_state_01_err
-  %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %176, align 1
-  %177 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %143, ptr %177, align 8
-  %178 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %143, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %178
+  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %169, align 1
+  %170 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, ptr %170, align 8
+  %171 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %171
+
+_llgo_24:                                         ; preds = %_llgo_25, %DeferWithAwait_state_02
+  %172 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %173 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  store i64 %36, ptr %173, align 4
+  %174 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  %175 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %174, align 8
+  store { ptr, ptr } zeroinitializer, ptr %174, align 8
+  %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 2
+  %177 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %177, ptr %176, align 8
+  %178 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %178, align 1
+  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 10
+  %180 = load i64, ptr %179, align 4
+  %181 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %180, 1
+  %182 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %181, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %182
+
+_llgo_25:                                         ; preds = %DeferWithAwait_state_02
+  %183 = load i1, ptr %44, align 1
+  %184 = icmp eq i1 %183, false
+  br i1 %184, label %_llgo_26, label %_llgo_24
+
+_llgo_26:                                         ; preds = %_llgo_25
+  %185 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %45, align 8
+  %186 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %186, align 1
+  %187 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.DeferWithAwait$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %185, ptr %187, align 8
+  %188 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %185, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %188
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)

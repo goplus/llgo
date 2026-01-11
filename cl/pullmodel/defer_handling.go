@@ -21,6 +21,7 @@ package pullmodel
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"log"
 	"strings"
@@ -344,6 +345,35 @@ func (g *LLSSACodeGen) compileRunDefersForPullModel(b llssa.Builder, statePtr ll
 
 	// Call: deferStatePtr.RunDefers()
 	b.Call(runDefersFunc.Expr, deferStatePtr)
+
+	// After running defers, if still panicking and not recovered, propagate as PollError.
+	deferStateType := g.getDeferStateType()
+	deferStatePtrType = types.NewPointer(deferStateType)
+	deferStateLLType := g.prog.Type(deferStatePtrType, llssa.InGo)
+	// Field indices inside DeferState: DeferHead(0), PanicValue(1), IsPanicking(2), Recovered(3)
+	isPanickingPtr := b.FieldAddr(b.Convert(deferStateLLType, deferStatePtr), 2)
+	recoveredPtr := b.FieldAddr(b.Convert(deferStateLLType, deferStatePtr), 3)
+	panicValPtr := b.FieldAddr(b.Convert(deferStateLLType, deferStatePtr), 1)
+
+	isPanicking := b.Load(isPanickingPtr)
+	contBlock := b.Func.MakeBlock()
+	checkRecovered := b.Func.MakeBlock()
+	b.If(isPanicking, checkRecovered, contBlock)
+
+	b.SetBlock(checkRecovered)
+	recovered := b.Load(recoveredPtr)
+	propagateIfNotRec := b.Func.MakeBlock()
+	b.If(b.BinOp(token.EQL, recovered, g.prog.BoolVal(false)), propagateIfNotRec, contBlock)
+
+	b.SetBlock(propagateIfNotRec)
+	panicVal := b.Load(panicValPtr)
+	int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
+	stateFieldPtr := b.FieldAddr(statePtr, 0)
+	b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedStateIndex), int8Type))
+	g.storePanicValue(b, statePtr, panicVal)
+	g.returnErrorPoll(b, panicVal)
+
+	b.SetBlock(contBlock)
 
 	debugf("[Pull Model] Generated RunDefers call successfully")
 }

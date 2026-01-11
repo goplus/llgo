@@ -13,7 +13,6 @@ import (
 
 // TestGeneratedIR_HasPollCall verifies that generated LLVM IR contains actual Poll calls
 func TestGeneratedIR_HasPollCall(t *testing.T) {
-	t.Skip("llgen IR validation disabled for pull-model dev branch")
 	// Find the _testpull/basic directory (in cl/_testpull, not cl/pullmodel/_testpull)
 	wd, _ := os.Getwd()
 	testDir := filepath.Join(wd, "..", "_testpull", "basic")

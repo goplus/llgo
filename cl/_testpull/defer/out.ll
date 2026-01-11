@@ -317,89 +317,67 @@ ConditionalDefer_state_03:                        ; preds = %ConditionalDefer_st
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %50, ptr %51, align 8
   %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
   call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %52)
-  %53 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  store i64 %46, ptr %54, align 4
-  %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  %56 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %55, align 8
-  store { ptr, ptr } zeroinitializer, ptr %55, align 8
-  %57 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %58 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %58, ptr %57, align 8
-  %59 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %59, align 1
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  %61 = load i64, ptr %60, align 4
-  %62 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %61, 1
-  %63 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %62, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %63
+  %53 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %52, i32 0, i32 2
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %52, i32 0, i32 3
+  %55 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %52, i32 0, i32 1
+  %56 = load i1, ptr %53, align 1
+  br i1 %56, label %_llgo_29, label %_llgo_28
 
 ConditionalDefer_state_04:                        ; preds = %ConditionalDefer_state_00_false, %ConditionalDefer_entry
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %65 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %64, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %65, ptr %2, align 8
-  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
-  %67 = load i1, ptr %66, align 1
-  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
-  %69 = load ptr, ptr %68, align 8
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
-  %71 = load i64, ptr %70, align 4
-  %72 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 0)
-  %73 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
-  %74 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %73, 0
-  %75 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %74, ptr %72, 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %75, ptr %2, align 8
-  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %75, ptr %76, align 8
-  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
-  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %77)
-  %78 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  store i64 0, ptr %79, align 4
-  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  %81 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %80, align 8
-  store { ptr, ptr } zeroinitializer, ptr %80, align 8
-  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %83 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %83, ptr %82, align 8
-  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %84, align 1
-  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  %86 = load i64, ptr %85, align 4
-  %87 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %86, 1
-  %88 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %87, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %88
+  %57 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %58 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %57, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %58, ptr %2, align 8
+  %59 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
+  %60 = load i1, ptr %59, align 1
+  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
+  %62 = load ptr, ptr %61, align 8
+  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
+  %64 = load i64, ptr %63, align 4
+  %65 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 0)
+  %66 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
+  %67 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %66, 0
+  %68 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %67, ptr %65, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %68, ptr %2, align 8
+  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %68, ptr %69, align 8
+  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
+  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %70)
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %70, i32 0, i32 2
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %70, i32 0, i32 3
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %70, i32 0, i32 1
+  %74 = load i1, ptr %71, align 1
+  br i1 %74, label %_llgo_32, label %_llgo_31
 
 ConditionalDefer_state_05:                        ; preds = %ConditionalDefer_entry
-  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %90 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %89, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %90, ptr %2, align 8
-  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
-  %92 = load i1, ptr %91, align 1
-  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
-  %94 = load ptr, ptr %93, align 8
-  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
-  %96 = load i64, ptr %95, align 4
-  %97 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %98 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  %99 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %98, align 8
-  store { ptr, ptr } zeroinitializer, ptr %98, align 8
-  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %101 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %101, ptr %100, align 8
-  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %102, align 1
-  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  %104 = load i64, ptr %103, align 4
-  %105 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %104, 1
-  %106 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %105, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %106
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %76 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %75, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %76, ptr %2, align 8
+  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
+  %78 = load i1, ptr %77, align 1
+  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
+  %80 = load ptr, ptr %79, align 8
+  %81 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
+  %82 = load i64, ptr %81, align 4
+  %83 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  %85 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %84, align 8
+  store { ptr, ptr } zeroinitializer, ptr %84, align 8
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %87 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %87, ptr %86, align 8
+  %88 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %88, align 1
+  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  %90 = load i64, ptr %89, align 4
+  %91 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %90, 1
+  %92 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %91, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %92
 
 ConditionalDefer_state_done:                      ; preds = %ConditionalDefer_entry
-  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  %108 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %107, align 8
-  %109 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %108, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %109
+  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  %94 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %93, align 8
+  %95 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %94, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %95
 
 ConditionalDefer_state_unreach:                   ; preds = %ConditionalDefer_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -408,199 +386,263 @@ _llgo_9:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ConditionalDefer_state_00_true:                   ; preds = %ConditionalDefer_state_00
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  store ptr %2, ptr %110, align 8
-  %111 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %112 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %112, ptr %111, align 8
-  %113 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %113, align 1
+  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  store ptr %2, ptr %96, align 8
+  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %98 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %98, ptr %97, align 8
+  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %99, align 1
   br label %ConditionalDefer_state_01
 
 ConditionalDefer_state_00_false:                  ; preds = %ConditionalDefer_state_00
-  %114 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  store ptr %2, ptr %114, align 8
-  %115 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %116 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %116, ptr %115, align 8
-  %117 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %117, align 1
+  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  store ptr %2, ptr %100, align 8
+  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %102 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %102, ptr %101, align 8
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %103, align 1
   br label %ConditionalDefer_state_04
 
 ConditionalDefer_state_01_init:                   ; preds = %ConditionalDefer_state_01
-  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
-  %119 = load i1, ptr %118, align 1
-  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %121 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %120, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %121, ptr %2, align 8
-  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
-  %123 = load ptr, ptr %122, align 8
-  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
-  %125 = load i64, ptr %124, align 4
-  %126 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 1)
-  store ptr %126, ptr %23, align 8
+  %104 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
+  %105 = load i1, ptr %104, align 1
+  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %107 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %106, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %107, ptr %2, align 8
+  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
+  %109 = load ptr, ptr %108, align 8
+  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
+  %111 = load i64, ptr %110, align 4
+  %112 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 1)
+  store ptr %112, ptr %23, align 8
   br label %ConditionalDefer_state_01_poll
 
 ConditionalDefer_state_01_poll:                   ; preds = %ConditionalDefer_state_01_init, %ConditionalDefer_state_01
-  %127 = load ptr, ptr %23, align 8
-  %128 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %127, ptr %1)
-  %129 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %128, 0
-  br i1 %129, label %ConditionalDefer_state_01_ready, label %ConditionalDefer_state_01_pending
+  %113 = load ptr, ptr %23, align 8
+  %114 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %113, ptr %1)
+  %115 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %114, 0
+  br i1 %115, label %ConditionalDefer_state_01_ready, label %ConditionalDefer_state_01_pending
 
 ConditionalDefer_state_01_ready:                  ; preds = %ConditionalDefer_state_01_poll
-  %130 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %128, 2
-  %131 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %130, { ptr, ptr } zeroinitializer)
-  %132 = xor i1 %131, true
-  br i1 %132, label %ConditionalDefer_state_01_err, label %ConditionalDefer_state_01_ready_cont
+  %116 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %114, 2
+  %117 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, { ptr, ptr } zeroinitializer)
+  %118 = xor i1 %117, true
+  br i1 %118, label %ConditionalDefer_state_01_err, label %ConditionalDefer_state_01_ready_cont
 
 ConditionalDefer_state_01_pending:                ; preds = %ConditionalDefer_state_01_poll
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %134 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %134, ptr %133, align 8
+  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %120 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %120, ptr %119, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ConditionalDefer_state_01_err:                    ; preds = %ConditionalDefer_state_01_ready
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
-  %136 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %135, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %130)
-  br i1 %136, label %ConditionalDefer_state_01_err_recovered, label %ConditionalDefer_state_01_err_propagate
+  %121 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
+  %122 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %121, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116)
+  br i1 %122, label %ConditionalDefer_state_01_err_recovered, label %ConditionalDefer_state_01_err_propagate
 
 ConditionalDefer_state_01_ready_cont:             ; preds = %ConditionalDefer_state_01_ready
-  %137 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %128, 1
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
-  store ptr %137, ptr %138, align 8
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
-  store i64 %125, ptr %139, align 4
+  %123 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %114, 1
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
+  store ptr %123, ptr %124, align 8
+  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
+  store i64 %111, ptr %125, align 4
   store ptr null, ptr %23, align 8
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %141 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %141, ptr %140, align 8
-  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %142, align 1
+  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %127 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %127, ptr %126, align 8
+  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %128, align 1
   br label %ConditionalDefer_state_02
 
 ConditionalDefer_state_01_err_recovered:          ; preds = %ConditionalDefer_state_01_err
-  %143 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %143, align 1
-  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  %145 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %144, align 8
-  store { ptr, ptr } zeroinitializer, ptr %144, align 8
-  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  %147 = load i64, ptr %146, align 4
-  %148 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %149 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %148)
-  %150 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %148, 0
-  %151 = getelementptr ptr, ptr %150, i64 4
-  %152 = load ptr, ptr %151, align 8
-  %153 = insertvalue { ptr, ptr } undef, ptr %152, 0
-  %154 = insertvalue { ptr, ptr } %153, ptr %149, 1
-  %155 = extractvalue { ptr, ptr } %154, 1
-  %156 = extractvalue { ptr, ptr } %154, 0
-  %157 = call %"github.com/goplus/llgo/async.Poll[int]" %156(ptr %155, ptr null)
-  %158 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %157, 1
-  %159 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  store i64 %158, ptr %159, align 4
-  %160 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %158, 1
-  %161 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %160, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %161
+  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %129, align 1
+  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  %131 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %130, align 8
+  store { ptr, ptr } zeroinitializer, ptr %130, align 8
+  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  %133 = load i64, ptr %132, align 4
+  %134 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %135 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %134)
+  %136 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %134, 0
+  %137 = getelementptr ptr, ptr %136, i64 4
+  %138 = load ptr, ptr %137, align 8
+  %139 = insertvalue { ptr, ptr } undef, ptr %138, 0
+  %140 = insertvalue { ptr, ptr } %139, ptr %135, 1
+  %141 = extractvalue { ptr, ptr } %140, 1
+  %142 = extractvalue { ptr, ptr } %140, 0
+  %143 = call %"github.com/goplus/llgo/async.Poll[int]" %142(ptr %141, ptr null)
+  %144 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %143, 1
+  %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  store i64 %144, ptr %145, align 4
+  %146 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %144, 1
+  %147 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %146, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %147
 
 ConditionalDefer_state_01_err_propagate:          ; preds = %ConditionalDefer_state_01_err
-  %162 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %162, align 1
-  %163 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %130, ptr %163, align 8
-  %164 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %130, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %164
+  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %148, align 1
+  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, ptr %149, align 8
+  %150 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %116, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %150
 
 ConditionalDefer_state_02_init:                   ; preds = %ConditionalDefer_state_02
-  %165 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
-  %166 = load i1, ptr %165, align 1
-  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %168 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %167, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %168, ptr %2, align 8
-  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
-  %170 = load ptr, ptr %169, align 8
-  %171 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
-  %172 = load i64, ptr %171, align 4
-  %173 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
-  %174 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %175 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %174, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %175, align 8
-  %176 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %174, i32 0, i32 1
-  store ptr %170, ptr %176, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %173, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_ConditionalDefer$1", ptr null }, ptr %174)
-  %177 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %170)
-  store ptr %177, ptr %34, align 8
+  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 1
+  %152 = load i1, ptr %151, align 1
+  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %154 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %153, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %154, ptr %2, align 8
+  %155 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
+  %156 = load ptr, ptr %155, align 8
+  %157 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
+  %158 = load i64, ptr %157, align 4
+  %159 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
+  %160 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %161 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %160, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %161, align 8
+  %162 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %160, i32 0, i32 1
+  store ptr %156, ptr %162, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %159, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_ConditionalDefer$1", ptr null }, ptr %160)
+  %163 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %156)
+  store ptr %163, ptr %34, align 8
   br label %ConditionalDefer_state_02_poll
 
 ConditionalDefer_state_02_poll:                   ; preds = %ConditionalDefer_state_02_init, %ConditionalDefer_state_02
-  %178 = load ptr, ptr %34, align 8
-  %179 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %178, ptr %1)
-  %180 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %179, 0
-  br i1 %180, label %ConditionalDefer_state_02_ready, label %ConditionalDefer_state_02_pending
+  %164 = load ptr, ptr %34, align 8
+  %165 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %164, ptr %1)
+  %166 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %165, 0
+  br i1 %166, label %ConditionalDefer_state_02_ready, label %ConditionalDefer_state_02_pending
 
 ConditionalDefer_state_02_ready:                  ; preds = %ConditionalDefer_state_02_poll
-  %181 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %179, 2
-  %182 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %181, { ptr, ptr } zeroinitializer)
-  %183 = xor i1 %182, true
-  br i1 %183, label %ConditionalDefer_state_02_err, label %ConditionalDefer_state_02_ready_cont
+  %167 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %165, 2
+  %168 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %167, { ptr, ptr } zeroinitializer)
+  %169 = xor i1 %168, true
+  br i1 %169, label %ConditionalDefer_state_02_err, label %ConditionalDefer_state_02_ready_cont
 
 ConditionalDefer_state_02_pending:                ; preds = %ConditionalDefer_state_02_poll
-  %184 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %185 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %185, ptr %184, align 8
+  %170 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %171 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %171, ptr %170, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ConditionalDefer_state_02_err:                    ; preds = %ConditionalDefer_state_02_ready
-  %186 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
-  %187 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %186, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %181)
-  br i1 %187, label %ConditionalDefer_state_02_err_recovered, label %ConditionalDefer_state_02_err_propagate
+  %172 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 7
+  %173 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %172, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %167)
+  br i1 %173, label %ConditionalDefer_state_02_err_recovered, label %ConditionalDefer_state_02_err_propagate
 
 ConditionalDefer_state_02_ready_cont:             ; preds = %ConditionalDefer_state_02_ready
-  %188 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %179, 1
-  %189 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
-  store i64 %188, ptr %189, align 4
-  %190 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
-  store ptr %170, ptr %190, align 8
+  %174 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %165, 1
+  %175 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 4
+  store i64 %174, ptr %175, align 4
+  %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 3
+  store ptr %156, ptr %176, align 8
   store ptr null, ptr %34, align 8
-  %191 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
-  %192 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %192, ptr %191, align 8
-  %193 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %193, align 1
+  %177 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %178 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %178, ptr %177, align 8
+  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %179, align 1
   br label %ConditionalDefer_state_03
 
 ConditionalDefer_state_02_err_recovered:          ; preds = %ConditionalDefer_state_02_err
-  %194 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %194, align 1
-  %195 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  %196 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %195, align 8
-  store { ptr, ptr } zeroinitializer, ptr %195, align 8
-  %197 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  %198 = load i64, ptr %197, align 4
-  %199 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %200 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %199)
-  %201 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %199, 0
-  %202 = getelementptr ptr, ptr %201, i64 4
-  %203 = load ptr, ptr %202, align 8
-  %204 = insertvalue { ptr, ptr } undef, ptr %203, 0
-  %205 = insertvalue { ptr, ptr } %204, ptr %200, 1
-  %206 = extractvalue { ptr, ptr } %205, 1
-  %207 = extractvalue { ptr, ptr } %205, 0
-  %208 = call %"github.com/goplus/llgo/async.Poll[int]" %207(ptr %206, ptr null)
-  %209 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %208, 1
-  %210 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
-  store i64 %209, ptr %210, align 4
-  %211 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %209, 1
+  %180 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %180, align 1
+  %181 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  %182 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %181, align 8
+  store { ptr, ptr } zeroinitializer, ptr %181, align 8
+  %183 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  %184 = load i64, ptr %183, align 4
+  %185 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %186 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %185)
+  %187 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %185, 0
+  %188 = getelementptr ptr, ptr %187, i64 4
+  %189 = load ptr, ptr %188, align 8
+  %190 = insertvalue { ptr, ptr } undef, ptr %189, 0
+  %191 = insertvalue { ptr, ptr } %190, ptr %186, 1
+  %192 = extractvalue { ptr, ptr } %191, 1
+  %193 = extractvalue { ptr, ptr } %191, 0
+  %194 = call %"github.com/goplus/llgo/async.Poll[int]" %193(ptr %192, ptr null)
+  %195 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %194, 1
+  %196 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  store i64 %195, ptr %196, align 4
+  %197 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %195, 1
+  %198 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %197, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %198
+
+ConditionalDefer_state_02_err_propagate:          ; preds = %ConditionalDefer_state_02_err
+  %199 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %199, align 1
+  %200 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %167, ptr %200, align 8
+  %201 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %167, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %201
+
+_llgo_28:                                         ; preds = %_llgo_29, %ConditionalDefer_state_03
+  %202 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %203 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  store i64 %46, ptr %203, align 4
+  %204 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  %205 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %204, align 8
+  store { ptr, ptr } zeroinitializer, ptr %204, align 8
+  %206 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %207 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %207, ptr %206, align 8
+  %208 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %208, align 1
+  %209 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  %210 = load i64, ptr %209, align 4
+  %211 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %210, 1
   %212 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %211, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
   ret %"github.com/goplus/llgo/async.Poll[int]" %212
 
-ConditionalDefer_state_02_err_propagate:          ; preds = %ConditionalDefer_state_02_err
-  %213 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %213, align 1
-  %214 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %181, ptr %214, align 8
-  %215 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %181, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %215
+_llgo_29:                                         ; preds = %ConditionalDefer_state_03
+  %213 = load i1, ptr %54, align 1
+  %214 = icmp eq i1 %213, false
+  br i1 %214, label %_llgo_30, label %_llgo_28
+
+_llgo_30:                                         ; preds = %_llgo_29
+  %215 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %55, align 8
+  %216 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %216, align 1
+  %217 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %215, ptr %217, align 8
+  %218 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %215, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %218
+
+_llgo_31:                                         ; preds = %_llgo_32, %ConditionalDefer_state_04
+  %219 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %220 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  store i64 0, ptr %220, align 4
+  %221 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  %222 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %221, align 8
+  store { ptr, ptr } zeroinitializer, ptr %221, align 8
+  %223 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 2
+  %224 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %224, ptr %223, align 8
+  %225 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %225, align 1
+  %226 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 9
+  %227 = load i64, ptr %226, align 4
+  %228 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %227, 1
+  %229 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %228, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %229
+
+_llgo_32:                                         ; preds = %ConditionalDefer_state_04
+  %230 = load i1, ptr %72, align 1
+  %231 = icmp eq i1 %230, false
+  br i1 %231, label %_llgo_33, label %_llgo_31
+
+_llgo_33:                                         ; preds = %_llgo_32
+  %232 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %73, align 8
+  %233 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %233, align 1
+  %234 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.ConditionalDefer$State", ptr %0, i32 0, i32 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %232, ptr %234, align 8
+  %235 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %232, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %235
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
@@ -1360,63 +1402,52 @@ LoopDefer_state_05:                               ; preds = %LoopDefer_state_01_
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %137, ptr %138, align 8
   %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
   call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %139)
-  %140 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  store i64 %133, ptr %141, align 4
-  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  %143 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %142, align 8
-  store { ptr, ptr } zeroinitializer, ptr %142, align 8
-  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %145 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %145, ptr %144, align 8
-  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %146, align 1
-  %147 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  %148 = load i64, ptr %147, align 4
-  %149 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %148, 1
-  %150 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %149, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %150
+  %140 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %139, i32 0, i32 2
+  %141 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %139, i32 0, i32 3
+  %142 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %139, i32 0, i32 1
+  %143 = load i1, ptr %140, align 1
+  br i1 %143, label %_llgo_30, label %_llgo_29
 
 LoopDefer_state_06:                               ; preds = %LoopDefer_entry
-  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %152 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %151, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %152, ptr %2, align 8
-  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 1
-  %154 = load i64, ptr %153, align 4
-  %155 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
-  %156 = load i64, ptr %155, align 4
-  %157 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
-  %158 = load i64, ptr %157, align 4
-  %159 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  %160 = load i1, ptr %159, align 1
-  %161 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
-  %162 = load ptr, ptr %161, align 8
-  %163 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
-  %164 = load ptr, ptr %163, align 8
-  %165 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
-  %166 = load ptr, ptr %165, align 8
-  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
-  %168 = load i64, ptr %167, align 4
-  %169 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %170 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  %171 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %170, align 8
-  store { ptr, ptr } zeroinitializer, ptr %170, align 8
-  %172 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %173 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %173, ptr %172, align 8
-  %174 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %174, align 1
-  %175 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  %176 = load i64, ptr %175, align 4
-  %177 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %176, 1
-  %178 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %177, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %178
+  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %145 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %144, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %145, ptr %2, align 8
+  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 1
+  %147 = load i64, ptr %146, align 4
+  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
+  %149 = load i64, ptr %148, align 4
+  %150 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
+  %151 = load i64, ptr %150, align 4
+  %152 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  %153 = load i1, ptr %152, align 1
+  %154 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
+  %155 = load ptr, ptr %154, align 8
+  %156 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
+  %157 = load ptr, ptr %156, align 8
+  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
+  %159 = load ptr, ptr %158, align 8
+  %160 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
+  %161 = load i64, ptr %160, align 4
+  %162 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %163 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  %164 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %163, align 8
+  store { ptr, ptr } zeroinitializer, ptr %163, align 8
+  %165 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %166 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %166, ptr %165, align 8
+  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %167, align 1
+  %168 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  %169 = load i64, ptr %168, align 4
+  %170 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %169, 1
+  %171 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %170, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %171
 
 LoopDefer_state_done:                             ; preds = %LoopDefer_entry
-  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  %180 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %179, align 8
-  %181 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %180, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %181
+  %172 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  %173 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %172, align 8
+  %174 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %173, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %174
 
 LoopDefer_state_unreach:                          ; preds = %LoopDefer_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -1425,237 +1456,269 @@ _llgo_10:                                         ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 LoopDefer_state_01_true:                          ; preds = %LoopDefer_state_01
-  %182 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  store i1 %47, ptr %182, align 1
-  %183 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %184 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %184, ptr %183, align 8
-  %185 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %185, align 1
+  %175 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  store i1 %47, ptr %175, align 1
+  %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %177 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %177, ptr %176, align 8
+  %178 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %178, align 1
   br label %LoopDefer_state_02
 
 LoopDefer_state_01_false:                         ; preds = %LoopDefer_state_01
-  %186 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  store i1 %47, ptr %186, align 1
-  %187 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %188 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %188, ptr %187, align 8
-  %189 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %189, align 1
+  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  store i1 %47, ptr %179, align 1
+  %180 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %181 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %181, ptr %180, align 8
+  %182 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %182, align 1
   br label %LoopDefer_state_05
 
 LoopDefer_state_02_init:                          ; preds = %LoopDefer_state_02
-  %190 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 1
-  %191 = load i64, ptr %190, align 4
-  %192 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %193 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %192, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %193, ptr %2, align 8
-  %194 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
-  %195 = load i64, ptr %194, align 4
-  %196 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
-  %197 = load i64, ptr %196, align 4
-  %198 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  %199 = load i1, ptr %198, align 1
-  %200 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
-  %201 = load ptr, ptr %200, align 8
-  %202 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
-  %203 = load i64, ptr %202, align 4
-  %204 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 %197)
-  %205 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
-  store ptr %204, ptr %205, align 8
-  store ptr %204, ptr %65, align 8
+  %183 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 1
+  %184 = load i64, ptr %183, align 4
+  %185 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %186 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %185, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %186, ptr %2, align 8
+  %187 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
+  %188 = load i64, ptr %187, align 4
+  %189 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
+  %190 = load i64, ptr %189, align 4
+  %191 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  %192 = load i1, ptr %191, align 1
+  %193 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
+  %194 = load ptr, ptr %193, align 8
+  %195 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
+  %196 = load i64, ptr %195, align 4
+  %197 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 %190)
+  %198 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
+  store ptr %197, ptr %198, align 8
+  store ptr %197, ptr %65, align 8
   br label %LoopDefer_state_02_poll
 
 LoopDefer_state_02_poll:                          ; preds = %LoopDefer_state_02_init, %LoopDefer_state_02
-  %206 = load ptr, ptr %65, align 8
-  %207 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %206, ptr %1)
-  %208 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %207, 0
-  br i1 %208, label %LoopDefer_state_02_ready, label %LoopDefer_state_02_pending
+  %199 = load ptr, ptr %65, align 8
+  %200 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %199, ptr %1)
+  %201 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %200, 0
+  br i1 %201, label %LoopDefer_state_02_ready, label %LoopDefer_state_02_pending
 
 LoopDefer_state_02_ready:                         ; preds = %LoopDefer_state_02_poll
-  %209 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %207, 2
-  %210 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %209, { ptr, ptr } zeroinitializer)
-  %211 = xor i1 %210, true
-  br i1 %211, label %LoopDefer_state_02_err, label %LoopDefer_state_02_ready_cont
+  %202 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %200, 2
+  %203 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %202, { ptr, ptr } zeroinitializer)
+  %204 = xor i1 %203, true
+  br i1 %204, label %LoopDefer_state_02_err, label %LoopDefer_state_02_ready_cont
 
 LoopDefer_state_02_pending:                       ; preds = %LoopDefer_state_02_poll
-  %212 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %213 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %213, ptr %212, align 8
+  %205 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %206 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %206, ptr %205, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 LoopDefer_state_02_err:                           ; preds = %LoopDefer_state_02_ready
-  %214 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
-  %215 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %214, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %209)
-  br i1 %215, label %LoopDefer_state_02_err_recovered, label %LoopDefer_state_02_err_propagate
+  %207 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
+  %208 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %207, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %202)
+  br i1 %208, label %LoopDefer_state_02_err_recovered, label %LoopDefer_state_02_err_propagate
 
 LoopDefer_state_02_ready_cont:                    ; preds = %LoopDefer_state_02_ready
-  %216 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %207, 1
-  %217 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
-  store ptr %216, ptr %217, align 8
-  %218 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
-  store i64 %195, ptr %218, align 4
-  %219 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
-  store i64 %197, ptr %219, align 4
-  %220 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  store i1 %199, ptr %220, align 1
-  %221 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
-  store ptr %204, ptr %221, align 8
-  %222 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
-  %223 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %201)
-  store ptr %223, ptr %222, align 8
-  %224 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
-  store i64 %203, ptr %224, align 4
+  %209 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %200, 1
+  %210 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
+  store ptr %209, ptr %210, align 8
+  %211 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
+  store i64 %188, ptr %211, align 4
+  %212 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
+  store i64 %190, ptr %212, align 4
+  %213 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  store i1 %192, ptr %213, align 1
+  %214 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
+  store ptr %197, ptr %214, align 8
+  %215 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
+  %216 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %194)
+  store ptr %216, ptr %215, align 8
+  %217 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
+  store i64 %196, ptr %217, align 4
   store ptr null, ptr %65, align 8
-  %225 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %226 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %226, ptr %225, align 8
-  %227 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %227, align 1
+  %218 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %219 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %219, ptr %218, align 8
+  %220 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %220, align 1
   br label %LoopDefer_state_03
 
 LoopDefer_state_02_err_recovered:                 ; preds = %LoopDefer_state_02_err
-  %228 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %228, align 1
-  %229 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  %230 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %229, align 8
-  store { ptr, ptr } zeroinitializer, ptr %229, align 8
-  %231 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  %232 = load i64, ptr %231, align 4
-  %233 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %234 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %233)
-  %235 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %233, 0
-  %236 = getelementptr ptr, ptr %235, i64 4
-  %237 = load ptr, ptr %236, align 8
-  %238 = insertvalue { ptr, ptr } undef, ptr %237, 0
-  %239 = insertvalue { ptr, ptr } %238, ptr %234, 1
-  %240 = extractvalue { ptr, ptr } %239, 1
-  %241 = extractvalue { ptr, ptr } %239, 0
-  %242 = call %"github.com/goplus/llgo/async.Poll[int]" %241(ptr %240, ptr null)
-  %243 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %242, 1
-  %244 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  store i64 %243, ptr %244, align 4
-  %245 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %243, 1
-  %246 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %245, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %246
+  %221 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %221, align 1
+  %222 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  %223 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %222, align 8
+  store { ptr, ptr } zeroinitializer, ptr %222, align 8
+  %224 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  %225 = load i64, ptr %224, align 4
+  %226 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %227 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %226)
+  %228 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %226, 0
+  %229 = getelementptr ptr, ptr %228, i64 4
+  %230 = load ptr, ptr %229, align 8
+  %231 = insertvalue { ptr, ptr } undef, ptr %230, 0
+  %232 = insertvalue { ptr, ptr } %231, ptr %227, 1
+  %233 = extractvalue { ptr, ptr } %232, 1
+  %234 = extractvalue { ptr, ptr } %232, 0
+  %235 = call %"github.com/goplus/llgo/async.Poll[int]" %234(ptr %233, ptr null)
+  %236 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %235, 1
+  %237 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  store i64 %236, ptr %237, align 4
+  %238 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %236, 1
+  %239 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %238, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %239
 
 LoopDefer_state_02_err_propagate:                 ; preds = %LoopDefer_state_02_err
-  %247 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %247, align 1
-  %248 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %209, ptr %248, align 8
-  %249 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %209, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %249
+  %240 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %240, align 1
+  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %202, ptr %241, align 8
+  %242 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %202, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %242
 
 LoopDefer_state_03_init:                          ; preds = %LoopDefer_state_03
-  %250 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 1
-  %251 = load i64, ptr %250, align 4
-  %252 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %253 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %252, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %253, ptr %2, align 8
-  %254 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
-  %255 = load i64, ptr %254, align 4
-  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
-  %257 = load i64, ptr %256, align 4
-  %258 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  %259 = load i1, ptr %258, align 1
-  %260 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
-  %261 = load ptr, ptr %260, align 8
-  %262 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
-  %263 = load i64, ptr %262, align 4
-  %264 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
-  %265 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %266 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %265, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %266, align 8
-  %267 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %265, i32 0, i32 1
-  store ptr %261, ptr %267, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %264, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_LoopDefer$1", ptr null }, ptr %265)
-  %268 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %261)
-  %269 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
-  store ptr %268, ptr %269, align 8
-  store ptr %268, ptr %82, align 8
+  %243 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 1
+  %244 = load i64, ptr %243, align 4
+  %245 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %246 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %245, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %246, ptr %2, align 8
+  %247 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
+  %248 = load i64, ptr %247, align 4
+  %249 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
+  %250 = load i64, ptr %249, align 4
+  %251 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  %252 = load i1, ptr %251, align 1
+  %253 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
+  %254 = load ptr, ptr %253, align 8
+  %255 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
+  %256 = load i64, ptr %255, align 4
+  %257 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
+  %258 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %259 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %258, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %259, align 8
+  %260 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %258, i32 0, i32 1
+  store ptr %254, ptr %260, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %257, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_LoopDefer$1", ptr null }, ptr %258)
+  %261 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %254)
+  %262 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
+  store ptr %261, ptr %262, align 8
+  store ptr %261, ptr %82, align 8
   br label %LoopDefer_state_03_poll
 
 LoopDefer_state_03_poll:                          ; preds = %LoopDefer_state_03_init, %LoopDefer_state_03
-  %270 = load ptr, ptr %82, align 8
-  %271 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %270, ptr %1)
-  %272 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %271, 0
-  br i1 %272, label %LoopDefer_state_03_ready, label %LoopDefer_state_03_pending
+  %263 = load ptr, ptr %82, align 8
+  %264 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %263, ptr %1)
+  %265 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %264, 0
+  br i1 %265, label %LoopDefer_state_03_ready, label %LoopDefer_state_03_pending
 
 LoopDefer_state_03_ready:                         ; preds = %LoopDefer_state_03_poll
-  %273 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %271, 2
-  %274 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %273, { ptr, ptr } zeroinitializer)
-  %275 = xor i1 %274, true
-  br i1 %275, label %LoopDefer_state_03_err, label %LoopDefer_state_03_ready_cont
+  %266 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %264, 2
+  %267 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %266, { ptr, ptr } zeroinitializer)
+  %268 = xor i1 %267, true
+  br i1 %268, label %LoopDefer_state_03_err, label %LoopDefer_state_03_ready_cont
 
 LoopDefer_state_03_pending:                       ; preds = %LoopDefer_state_03_poll
-  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %277 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %277, ptr %276, align 8
+  %269 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %270 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %270, ptr %269, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 LoopDefer_state_03_err:                           ; preds = %LoopDefer_state_03_ready
-  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
-  %279 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %278, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %273)
-  br i1 %279, label %LoopDefer_state_03_err_recovered, label %LoopDefer_state_03_err_propagate
+  %271 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 12
+  %272 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %271, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %266)
+  br i1 %272, label %LoopDefer_state_03_err_recovered, label %LoopDefer_state_03_err_propagate
 
 LoopDefer_state_03_ready_cont:                    ; preds = %LoopDefer_state_03_ready
-  %280 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %271, 1
-  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
-  store i64 %280, ptr %281, align 4
-  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
-  store i64 %255, ptr %282, align 4
-  %283 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
-  store i64 %257, ptr %283, align 4
-  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
-  store i1 %259, ptr %284, align 1
-  %285 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
-  %286 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 %257)
-  store ptr %286, ptr %285, align 8
-  %287 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
-  store ptr %261, ptr %287, align 8
-  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
-  store ptr %268, ptr %288, align 8
+  %273 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %264, 1
+  %274 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 9
+  store i64 %273, ptr %274, align 4
+  %275 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 3
+  store i64 %248, ptr %275, align 4
+  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 4
+  store i64 %250, ptr %276, align 4
+  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 5
+  store i1 %252, ptr %277, align 1
+  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 6
+  %279 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 %250)
+  store ptr %279, ptr %278, align 8
+  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 7
+  store ptr %254, ptr %280, align 8
+  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 8
+  store ptr %261, ptr %281, align 8
   store ptr null, ptr %82, align 8
-  %289 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
-  %290 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %290, ptr %289, align 8
-  %291 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %291, align 1
+  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %283 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %283, ptr %282, align 8
+  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %284, align 1
   br label %LoopDefer_state_04
 
 LoopDefer_state_03_err_recovered:                 ; preds = %LoopDefer_state_03_err
-  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %292, align 1
-  %293 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  %294 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %293, align 8
-  store { ptr, ptr } zeroinitializer, ptr %293, align 8
-  %295 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  %296 = load i64, ptr %295, align 4
-  %297 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %298 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %297)
-  %299 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %297, 0
-  %300 = getelementptr ptr, ptr %299, i64 4
-  %301 = load ptr, ptr %300, align 8
-  %302 = insertvalue { ptr, ptr } undef, ptr %301, 0
-  %303 = insertvalue { ptr, ptr } %302, ptr %298, 1
-  %304 = extractvalue { ptr, ptr } %303, 1
-  %305 = extractvalue { ptr, ptr } %303, 0
-  %306 = call %"github.com/goplus/llgo/async.Poll[int]" %305(ptr %304, ptr null)
-  %307 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %306, 1
-  %308 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
-  store i64 %307, ptr %308, align 4
-  %309 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %307, 1
-  %310 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %309, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %310
+  %285 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %285, align 1
+  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  %287 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %286, align 8
+  store { ptr, ptr } zeroinitializer, ptr %286, align 8
+  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  %289 = load i64, ptr %288, align 4
+  %290 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %291 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %290)
+  %292 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %290, 0
+  %293 = getelementptr ptr, ptr %292, i64 4
+  %294 = load ptr, ptr %293, align 8
+  %295 = insertvalue { ptr, ptr } undef, ptr %294, 0
+  %296 = insertvalue { ptr, ptr } %295, ptr %291, 1
+  %297 = extractvalue { ptr, ptr } %296, 1
+  %298 = extractvalue { ptr, ptr } %296, 0
+  %299 = call %"github.com/goplus/llgo/async.Poll[int]" %298(ptr %297, ptr null)
+  %300 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %299, 1
+  %301 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  store i64 %300, ptr %301, align 4
+  %302 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %300, 1
+  %303 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %302, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %303
 
 LoopDefer_state_03_err_propagate:                 ; preds = %LoopDefer_state_03_err
-  %311 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %311, align 1
-  %312 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %273, ptr %312, align 8
-  %313 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %273, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %313
+  %304 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %304, align 1
+  %305 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %266, ptr %305, align 8
+  %306 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %266, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %306
+
+_llgo_29:                                         ; preds = %_llgo_30, %LoopDefer_state_05
+  %307 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %308 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  store i64 %133, ptr %308, align 4
+  %309 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  %310 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %309, align 8
+  store { ptr, ptr } zeroinitializer, ptr %309, align 8
+  %311 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 2
+  %312 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %312, ptr %311, align 8
+  %313 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %313, align 1
+  %314 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 14
+  %315 = load i64, ptr %314, align 4
+  %316 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %315, 1
+  %317 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %316, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %317
+
+_llgo_30:                                         ; preds = %LoopDefer_state_05
+  %318 = load i1, ptr %141, align 1
+  %319 = icmp eq i1 %318, false
+  br i1 %319, label %_llgo_31, label %_llgo_29
+
+_llgo_31:                                         ; preds = %_llgo_30
+  %320 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %142, align 8
+  %321 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %321, align 1
+  %322 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.LoopDefer$State", ptr %0, i32 0, i32 13
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %320, ptr %322, align 8
+  %323 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %320, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %323
 }
 
 define void @"__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_LoopDefer$1"(ptr %0) {
@@ -1826,55 +1889,44 @@ MultipleDefer_state_04:                           ; preds = %MultipleDefer_state
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %71, ptr %72, align 8
   %73 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
   call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %73)
-  %74 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  store i64 %67, ptr %75, align 4
-  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %77 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %76, align 8
-  store { ptr, ptr } zeroinitializer, ptr %76, align 8
-  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %79 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %79, ptr %78, align 8
-  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %80, align 1
-  %81 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  %82 = load i64, ptr %81, align 4
-  %83 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %82, 1
-  %84 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %83, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %84
+  %74 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %73, i32 0, i32 2
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %73, i32 0, i32 3
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %73, i32 0, i32 1
+  %77 = load i1, ptr %74, align 1
+  br i1 %77, label %_llgo_43, label %_llgo_42
 
 MultipleDefer_state_05:                           ; preds = %MultipleDefer_entry
-  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %86 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %85, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %86, ptr %2, align 8
-  %87 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  %88 = load ptr, ptr %87, align 8
-  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  %90 = load ptr, ptr %89, align 8
-  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  %92 = load i64, ptr %91, align 4
-  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  %94 = load i64, ptr %93, align 4
-  %95 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %97 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %96, align 8
-  store { ptr, ptr } zeroinitializer, ptr %96, align 8
-  %98 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %99 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %99, ptr %98, align 8
-  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %100, align 1
-  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  %102 = load i64, ptr %101, align 4
-  %103 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %102, 1
-  %104 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %103, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %104
+  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %79 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %78, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %79, ptr %2, align 8
+  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  %81 = load ptr, ptr %80, align 8
+  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  %83 = load ptr, ptr %82, align 8
+  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  %85 = load i64, ptr %84, align 4
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  %87 = load i64, ptr %86, align 4
+  %88 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %90 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %89, align 8
+  store { ptr, ptr } zeroinitializer, ptr %89, align 8
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %92 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %92, ptr %91, align 8
+  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %93, align 1
+  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  %95 = load i64, ptr %94, align 4
+  %96 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %95, 1
+  %97 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %96, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %97
 
 MultipleDefer_state_done:                         ; preds = %MultipleDefer_entry
-  %105 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %106 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %105, align 8
-  %107 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %106, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %107
+  %98 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %99 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %98, align 8
+  %100 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %99, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %100
 
 MultipleDefer_state_unreach:                      ; preds = %MultipleDefer_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -1883,378 +1935,410 @@ _llgo_9:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleDefer_state_00_init:                      ; preds = %MultipleDefer_state_00
-  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %109 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %108, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %109, ptr %2, align 8
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  %111 = load ptr, ptr %110, align 8
-  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  %113 = load ptr, ptr %112, align 8
-  %114 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  %115 = load i64, ptr %114, align 4
-  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  %117 = load i64, ptr %116, align 4
-  %118 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 1)
-  store ptr %118, ptr %15, align 8
+  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %102 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %101, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %102, ptr %2, align 8
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  %104 = load ptr, ptr %103, align 8
+  %105 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  %106 = load ptr, ptr %105, align 8
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  %108 = load i64, ptr %107, align 4
+  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  %110 = load i64, ptr %109, align 4
+  %111 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 1)
+  store ptr %111, ptr %15, align 8
   br label %MultipleDefer_state_00_poll
 
 MultipleDefer_state_00_poll:                      ; preds = %MultipleDefer_state_00_init, %MultipleDefer_state_00
-  %119 = load ptr, ptr %15, align 8
-  %120 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %119, ptr %1)
-  %121 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %120, 0
-  br i1 %121, label %MultipleDefer_state_00_ready, label %MultipleDefer_state_00_pending
+  %112 = load ptr, ptr %15, align 8
+  %113 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %112, ptr %1)
+  %114 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %113, 0
+  br i1 %114, label %MultipleDefer_state_00_ready, label %MultipleDefer_state_00_pending
 
 MultipleDefer_state_00_ready:                     ; preds = %MultipleDefer_state_00_poll
-  %122 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %120, 2
-  %123 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %122, { ptr, ptr } zeroinitializer)
-  %124 = xor i1 %123, true
-  br i1 %124, label %MultipleDefer_state_00_err, label %MultipleDefer_state_00_ready_cont
+  %115 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %113, 2
+  %116 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %115, { ptr, ptr } zeroinitializer)
+  %117 = xor i1 %116, true
+  br i1 %117, label %MultipleDefer_state_00_err, label %MultipleDefer_state_00_ready_cont
 
 MultipleDefer_state_00_pending:                   ; preds = %MultipleDefer_state_00_poll
-  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %126 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %126, ptr %125, align 8
+  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %119 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %119, ptr %118, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleDefer_state_00_err:                       ; preds = %MultipleDefer_state_00_ready
-  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
-  %128 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %127, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %122)
-  br i1 %128, label %MultipleDefer_state_00_err_recovered, label %MultipleDefer_state_00_err_propagate
+  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
+  %121 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %120, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %115)
+  br i1 %121, label %MultipleDefer_state_00_err_recovered, label %MultipleDefer_state_00_err_propagate
 
 MultipleDefer_state_00_ready_cont:                ; preds = %MultipleDefer_state_00_ready
-  %129 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %120, 1
-  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  store ptr %129, ptr %130, align 8
-  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  store ptr %113, ptr %131, align 8
-  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  store i64 %115, ptr %132, align 4
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  store i64 %117, ptr %133, align 4
+  %122 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %113, 1
+  %123 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  store ptr %122, ptr %123, align 8
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  store ptr %106, ptr %124, align 8
+  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  store i64 %108, ptr %125, align 4
+  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  store i64 %110, ptr %126, align 4
   store ptr null, ptr %15, align 8
-  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %135 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %135, ptr %134, align 8
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %136, align 1
+  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %128 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %128, ptr %127, align 8
+  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %129, align 1
   br label %MultipleDefer_state_01
 
 MultipleDefer_state_00_err_recovered:             ; preds = %MultipleDefer_state_00_err
-  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %137, align 1
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %139 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %138, align 8
-  store { ptr, ptr } zeroinitializer, ptr %138, align 8
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  %141 = load i64, ptr %140, align 4
-  %142 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %143 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %142)
-  %144 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %142, 0
-  %145 = getelementptr ptr, ptr %144, i64 4
-  %146 = load ptr, ptr %145, align 8
-  %147 = insertvalue { ptr, ptr } undef, ptr %146, 0
-  %148 = insertvalue { ptr, ptr } %147, ptr %143, 1
-  %149 = extractvalue { ptr, ptr } %148, 1
-  %150 = extractvalue { ptr, ptr } %148, 0
-  %151 = call %"github.com/goplus/llgo/async.Poll[int]" %150(ptr %149, ptr null)
-  %152 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %151, 1
-  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  store i64 %152, ptr %153, align 4
-  %154 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %152, 1
-  %155 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %154, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %155
+  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %130, align 1
+  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %132 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %131, align 8
+  store { ptr, ptr } zeroinitializer, ptr %131, align 8
+  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  %134 = load i64, ptr %133, align 4
+  %135 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %136 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %135)
+  %137 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %135, 0
+  %138 = getelementptr ptr, ptr %137, i64 4
+  %139 = load ptr, ptr %138, align 8
+  %140 = insertvalue { ptr, ptr } undef, ptr %139, 0
+  %141 = insertvalue { ptr, ptr } %140, ptr %136, 1
+  %142 = extractvalue { ptr, ptr } %141, 1
+  %143 = extractvalue { ptr, ptr } %141, 0
+  %144 = call %"github.com/goplus/llgo/async.Poll[int]" %143(ptr %142, ptr null)
+  %145 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %144, 1
+  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  store i64 %145, ptr %146, align 4
+  %147 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %145, 1
+  %148 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %147, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %148
 
 MultipleDefer_state_00_err_propagate:             ; preds = %MultipleDefer_state_00_err
-  %156 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %156, align 1
-  %157 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %122, ptr %157, align 8
-  %158 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %122, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %158
+  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %149, align 1
+  %150 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %115, ptr %150, align 8
+  %151 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %115, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %151
 
 MultipleDefer_state_01_init:                      ; preds = %MultipleDefer_state_01
-  %159 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %160 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %159, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %160, ptr %2, align 8
-  %161 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  %162 = load ptr, ptr %161, align 8
-  %163 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  %164 = load ptr, ptr %163, align 8
-  %165 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  %166 = load i64, ptr %165, align 4
-  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  %168 = load i64, ptr %167, align 4
-  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
-  %170 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %171 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %170, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %171, align 8
-  %172 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %170, i32 0, i32 1
-  store ptr %162, ptr %172, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %169, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_MultipleDefer$1", ptr null }, ptr %170)
-  %173 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 2)
-  store ptr %173, ptr %28, align 8
+  %152 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %153 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %152, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %153, ptr %2, align 8
+  %154 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  %155 = load ptr, ptr %154, align 8
+  %156 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  %157 = load ptr, ptr %156, align 8
+  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  %159 = load i64, ptr %158, align 4
+  %160 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  %161 = load i64, ptr %160, align 4
+  %162 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
+  %163 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %164 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %163, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %164, align 8
+  %165 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %163, i32 0, i32 1
+  store ptr %155, ptr %165, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %162, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_MultipleDefer$1", ptr null }, ptr %163)
+  %166 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 2)
+  store ptr %166, ptr %28, align 8
   br label %MultipleDefer_state_01_poll
 
 MultipleDefer_state_01_poll:                      ; preds = %MultipleDefer_state_01_init, %MultipleDefer_state_01
-  %174 = load ptr, ptr %28, align 8
-  %175 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %174, ptr %1)
-  %176 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %175, 0
-  br i1 %176, label %MultipleDefer_state_01_ready, label %MultipleDefer_state_01_pending
+  %167 = load ptr, ptr %28, align 8
+  %168 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %167, ptr %1)
+  %169 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %168, 0
+  br i1 %169, label %MultipleDefer_state_01_ready, label %MultipleDefer_state_01_pending
 
 MultipleDefer_state_01_ready:                     ; preds = %MultipleDefer_state_01_poll
-  %177 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %175, 2
-  %178 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %177, { ptr, ptr } zeroinitializer)
-  %179 = xor i1 %178, true
-  br i1 %179, label %MultipleDefer_state_01_err, label %MultipleDefer_state_01_ready_cont
+  %170 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %168, 2
+  %171 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %170, { ptr, ptr } zeroinitializer)
+  %172 = xor i1 %171, true
+  br i1 %172, label %MultipleDefer_state_01_err, label %MultipleDefer_state_01_ready_cont
 
 MultipleDefer_state_01_pending:                   ; preds = %MultipleDefer_state_01_poll
-  %180 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %181 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %181, ptr %180, align 8
+  %173 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %174 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %174, ptr %173, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleDefer_state_01_err:                       ; preds = %MultipleDefer_state_01_ready
-  %182 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
-  %183 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %182, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %177)
-  br i1 %183, label %MultipleDefer_state_01_err_recovered, label %MultipleDefer_state_01_err_propagate
+  %175 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
+  %176 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %175, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %170)
+  br i1 %176, label %MultipleDefer_state_01_err_recovered, label %MultipleDefer_state_01_err_propagate
 
 MultipleDefer_state_01_ready_cont:                ; preds = %MultipleDefer_state_01_ready
-  %184 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %175, 1
-  %185 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  store ptr %184, ptr %185, align 8
-  %186 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  store ptr %162, ptr %186, align 8
-  %187 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  store i64 %166, ptr %187, align 4
-  %188 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  store i64 %168, ptr %188, align 4
+  %177 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %168, 1
+  %178 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  store ptr %177, ptr %178, align 8
+  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  store ptr %155, ptr %179, align 8
+  %180 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  store i64 %159, ptr %180, align 4
+  %181 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  store i64 %161, ptr %181, align 4
   store ptr null, ptr %28, align 8
-  %189 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %190 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %190, ptr %189, align 8
-  %191 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %191, align 1
+  %182 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %183 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %183, ptr %182, align 8
+  %184 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %184, align 1
   br label %MultipleDefer_state_02
 
 MultipleDefer_state_01_err_recovered:             ; preds = %MultipleDefer_state_01_err
-  %192 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %192, align 1
-  %193 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %194 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %193, align 8
-  store { ptr, ptr } zeroinitializer, ptr %193, align 8
-  %195 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  %196 = load i64, ptr %195, align 4
-  %197 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %198 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %197)
-  %199 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %197, 0
-  %200 = getelementptr ptr, ptr %199, i64 4
-  %201 = load ptr, ptr %200, align 8
-  %202 = insertvalue { ptr, ptr } undef, ptr %201, 0
-  %203 = insertvalue { ptr, ptr } %202, ptr %198, 1
-  %204 = extractvalue { ptr, ptr } %203, 1
-  %205 = extractvalue { ptr, ptr } %203, 0
-  %206 = call %"github.com/goplus/llgo/async.Poll[int]" %205(ptr %204, ptr null)
-  %207 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %206, 1
-  %208 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  store i64 %207, ptr %208, align 4
-  %209 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %207, 1
-  %210 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %209, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %210
+  %185 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %185, align 1
+  %186 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %187 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %186, align 8
+  store { ptr, ptr } zeroinitializer, ptr %186, align 8
+  %188 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  %189 = load i64, ptr %188, align 4
+  %190 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %191 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %190)
+  %192 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %190, 0
+  %193 = getelementptr ptr, ptr %192, i64 4
+  %194 = load ptr, ptr %193, align 8
+  %195 = insertvalue { ptr, ptr } undef, ptr %194, 0
+  %196 = insertvalue { ptr, ptr } %195, ptr %191, 1
+  %197 = extractvalue { ptr, ptr } %196, 1
+  %198 = extractvalue { ptr, ptr } %196, 0
+  %199 = call %"github.com/goplus/llgo/async.Poll[int]" %198(ptr %197, ptr null)
+  %200 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %199, 1
+  %201 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  store i64 %200, ptr %201, align 4
+  %202 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %200, 1
+  %203 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %202, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %203
 
 MultipleDefer_state_01_err_propagate:             ; preds = %MultipleDefer_state_01_err
-  %211 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %211, align 1
-  %212 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %177, ptr %212, align 8
-  %213 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %177, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %213
+  %204 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %204, align 1
+  %205 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %170, ptr %205, align 8
+  %206 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %170, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %206
 
 MultipleDefer_state_02_init:                      ; preds = %MultipleDefer_state_02
-  %214 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %215 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %214, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %215, ptr %2, align 8
-  %216 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  %217 = load ptr, ptr %216, align 8
-  %218 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  %219 = load ptr, ptr %218, align 8
-  %220 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  %221 = load i64, ptr %220, align 4
-  %222 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  %223 = load i64, ptr %222, align 4
-  %224 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
-  %225 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %226 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %225, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %226, align 8
-  %227 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %225, i32 0, i32 1
-  store ptr %219, ptr %227, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %224, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_MultipleDefer$1", ptr null }, ptr %225)
-  %228 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %217)
-  store ptr %228, ptr %41, align 8
+  %207 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %208 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %207, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %208, ptr %2, align 8
+  %209 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  %210 = load ptr, ptr %209, align 8
+  %211 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  %212 = load ptr, ptr %211, align 8
+  %213 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  %214 = load i64, ptr %213, align 4
+  %215 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  %216 = load i64, ptr %215, align 4
+  %217 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
+  %218 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %219 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %218, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %219, align 8
+  %220 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %218, i32 0, i32 1
+  store ptr %212, ptr %220, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %217, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_MultipleDefer$1", ptr null }, ptr %218)
+  %221 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %210)
+  store ptr %221, ptr %41, align 8
   br label %MultipleDefer_state_02_poll
 
 MultipleDefer_state_02_poll:                      ; preds = %MultipleDefer_state_02_init, %MultipleDefer_state_02
-  %229 = load ptr, ptr %41, align 8
-  %230 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %229, ptr %1)
-  %231 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %230, 0
-  br i1 %231, label %MultipleDefer_state_02_ready, label %MultipleDefer_state_02_pending
+  %222 = load ptr, ptr %41, align 8
+  %223 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %222, ptr %1)
+  %224 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %223, 0
+  br i1 %224, label %MultipleDefer_state_02_ready, label %MultipleDefer_state_02_pending
 
 MultipleDefer_state_02_ready:                     ; preds = %MultipleDefer_state_02_poll
-  %232 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %230, 2
-  %233 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %232, { ptr, ptr } zeroinitializer)
-  %234 = xor i1 %233, true
-  br i1 %234, label %MultipleDefer_state_02_err, label %MultipleDefer_state_02_ready_cont
+  %225 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %223, 2
+  %226 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %225, { ptr, ptr } zeroinitializer)
+  %227 = xor i1 %226, true
+  br i1 %227, label %MultipleDefer_state_02_err, label %MultipleDefer_state_02_ready_cont
 
 MultipleDefer_state_02_pending:                   ; preds = %MultipleDefer_state_02_poll
-  %235 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %236 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %236, ptr %235, align 8
+  %228 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %229 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %229, ptr %228, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleDefer_state_02_err:                       ; preds = %MultipleDefer_state_02_ready
-  %237 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
-  %238 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %237, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %232)
-  br i1 %238, label %MultipleDefer_state_02_err_recovered, label %MultipleDefer_state_02_err_propagate
+  %230 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
+  %231 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %230, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %225)
+  br i1 %231, label %MultipleDefer_state_02_err_recovered, label %MultipleDefer_state_02_err_propagate
 
 MultipleDefer_state_02_ready_cont:                ; preds = %MultipleDefer_state_02_ready
-  %239 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %230, 1
-  %240 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  store i64 %239, ptr %240, align 4
-  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  store ptr %217, ptr %241, align 8
-  %242 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  store ptr %219, ptr %242, align 8
-  %243 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  store i64 %223, ptr %243, align 4
+  %232 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %223, 1
+  %233 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  store i64 %232, ptr %233, align 4
+  %234 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  store ptr %210, ptr %234, align 8
+  %235 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  store ptr %212, ptr %235, align 8
+  %236 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  store i64 %216, ptr %236, align 4
   store ptr null, ptr %41, align 8
-  %244 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %245 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %245, ptr %244, align 8
-  %246 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %246, align 1
+  %237 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %238 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %238, ptr %237, align 8
+  %239 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %239, align 1
   br label %MultipleDefer_state_03
 
 MultipleDefer_state_02_err_recovered:             ; preds = %MultipleDefer_state_02_err
-  %247 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %247, align 1
-  %248 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %249 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %248, align 8
-  store { ptr, ptr } zeroinitializer, ptr %248, align 8
-  %250 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  %251 = load i64, ptr %250, align 4
-  %252 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %253 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %252)
-  %254 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %252, 0
-  %255 = getelementptr ptr, ptr %254, i64 4
-  %256 = load ptr, ptr %255, align 8
-  %257 = insertvalue { ptr, ptr } undef, ptr %256, 0
-  %258 = insertvalue { ptr, ptr } %257, ptr %253, 1
-  %259 = extractvalue { ptr, ptr } %258, 1
-  %260 = extractvalue { ptr, ptr } %258, 0
-  %261 = call %"github.com/goplus/llgo/async.Poll[int]" %260(ptr %259, ptr null)
-  %262 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %261, 1
-  %263 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  store i64 %262, ptr %263, align 4
-  %264 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %262, 1
-  %265 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %264, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %265
+  %240 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %240, align 1
+  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %242 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %241, align 8
+  store { ptr, ptr } zeroinitializer, ptr %241, align 8
+  %243 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  %244 = load i64, ptr %243, align 4
+  %245 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %246 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %245)
+  %247 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %245, 0
+  %248 = getelementptr ptr, ptr %247, i64 4
+  %249 = load ptr, ptr %248, align 8
+  %250 = insertvalue { ptr, ptr } undef, ptr %249, 0
+  %251 = insertvalue { ptr, ptr } %250, ptr %246, 1
+  %252 = extractvalue { ptr, ptr } %251, 1
+  %253 = extractvalue { ptr, ptr } %251, 0
+  %254 = call %"github.com/goplus/llgo/async.Poll[int]" %253(ptr %252, ptr null)
+  %255 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %254, 1
+  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  store i64 %255, ptr %256, align 4
+  %257 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %255, 1
+  %258 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %257, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %258
 
 MultipleDefer_state_02_err_propagate:             ; preds = %MultipleDefer_state_02_err
-  %266 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %266, align 1
-  %267 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %232, ptr %267, align 8
-  %268 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %232, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %268
+  %259 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %259, align 1
+  %260 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %225, ptr %260, align 8
+  %261 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %225, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %261
 
 MultipleDefer_state_03_init:                      ; preds = %MultipleDefer_state_03
-  %269 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %270 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %269, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %270, ptr %2, align 8
-  %271 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  %272 = load ptr, ptr %271, align 8
-  %273 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  %274 = load ptr, ptr %273, align 8
-  %275 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  %276 = load i64, ptr %275, align 4
-  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  %278 = load i64, ptr %277, align 4
-  %279 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %274)
-  store ptr %279, ptr %54, align 8
+  %262 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %263 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %262, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %263, ptr %2, align 8
+  %264 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  %265 = load ptr, ptr %264, align 8
+  %266 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  %267 = load ptr, ptr %266, align 8
+  %268 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  %269 = load i64, ptr %268, align 4
+  %270 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  %271 = load i64, ptr %270, align 4
+  %272 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %267)
+  store ptr %272, ptr %54, align 8
   br label %MultipleDefer_state_03_poll
 
 MultipleDefer_state_03_poll:                      ; preds = %MultipleDefer_state_03_init, %MultipleDefer_state_03
-  %280 = load ptr, ptr %54, align 8
-  %281 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %280, ptr %1)
-  %282 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %281, 0
-  br i1 %282, label %MultipleDefer_state_03_ready, label %MultipleDefer_state_03_pending
+  %273 = load ptr, ptr %54, align 8
+  %274 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %273, ptr %1)
+  %275 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %274, 0
+  br i1 %275, label %MultipleDefer_state_03_ready, label %MultipleDefer_state_03_pending
 
 MultipleDefer_state_03_ready:                     ; preds = %MultipleDefer_state_03_poll
-  %283 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %281, 2
-  %284 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %283, { ptr, ptr } zeroinitializer)
-  %285 = xor i1 %284, true
-  br i1 %285, label %MultipleDefer_state_03_err, label %MultipleDefer_state_03_ready_cont
+  %276 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %274, 2
+  %277 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %276, { ptr, ptr } zeroinitializer)
+  %278 = xor i1 %277, true
+  br i1 %278, label %MultipleDefer_state_03_err, label %MultipleDefer_state_03_ready_cont
 
 MultipleDefer_state_03_pending:                   ; preds = %MultipleDefer_state_03_poll
-  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %287 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %287, ptr %286, align 8
+  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %280 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %280, ptr %279, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleDefer_state_03_err:                       ; preds = %MultipleDefer_state_03_ready
-  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
-  %289 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %288, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %283)
-  br i1 %289, label %MultipleDefer_state_03_err_recovered, label %MultipleDefer_state_03_err_propagate
+  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 10
+  %282 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %281, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %276)
+  br i1 %282, label %MultipleDefer_state_03_err_recovered, label %MultipleDefer_state_03_err_propagate
 
 MultipleDefer_state_03_ready_cont:                ; preds = %MultipleDefer_state_03_ready
-  %290 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %281, 1
-  %291 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
-  store i64 %290, ptr %291, align 4
-  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
-  store ptr %272, ptr %292, align 8
-  %293 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
-  store ptr %274, ptr %293, align 8
-  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
-  store i64 %276, ptr %294, align 4
+  %283 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %274, 1
+  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 5
+  store i64 %283, ptr %284, align 4
+  %285 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 2
+  store ptr %265, ptr %285, align 8
+  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 3
+  store ptr %267, ptr %286, align 8
+  %287 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 4
+  store i64 %269, ptr %287, align 4
   store ptr null, ptr %54, align 8
-  %295 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
-  %296 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %296, ptr %295, align 8
-  %297 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %297, align 1
+  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %289 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %289, ptr %288, align 8
+  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %290, align 1
   br label %MultipleDefer_state_04
 
 MultipleDefer_state_03_err_recovered:             ; preds = %MultipleDefer_state_03_err
-  %298 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %298, align 1
-  %299 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  %300 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %299, align 8
-  store { ptr, ptr } zeroinitializer, ptr %299, align 8
-  %301 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  %302 = load i64, ptr %301, align 4
-  %303 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %304 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %303)
-  %305 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %303, 0
-  %306 = getelementptr ptr, ptr %305, i64 4
-  %307 = load ptr, ptr %306, align 8
-  %308 = insertvalue { ptr, ptr } undef, ptr %307, 0
-  %309 = insertvalue { ptr, ptr } %308, ptr %304, 1
-  %310 = extractvalue { ptr, ptr } %309, 1
-  %311 = extractvalue { ptr, ptr } %309, 0
-  %312 = call %"github.com/goplus/llgo/async.Poll[int]" %311(ptr %310, ptr null)
-  %313 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %312, 1
-  %314 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
-  store i64 %313, ptr %314, align 4
-  %315 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %313, 1
-  %316 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %315, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %316
+  %291 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %291, align 1
+  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %293 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %292, align 8
+  store { ptr, ptr } zeroinitializer, ptr %292, align 8
+  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  %295 = load i64, ptr %294, align 4
+  %296 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %297 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %296)
+  %298 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %296, 0
+  %299 = getelementptr ptr, ptr %298, i64 4
+  %300 = load ptr, ptr %299, align 8
+  %301 = insertvalue { ptr, ptr } undef, ptr %300, 0
+  %302 = insertvalue { ptr, ptr } %301, ptr %297, 1
+  %303 = extractvalue { ptr, ptr } %302, 1
+  %304 = extractvalue { ptr, ptr } %302, 0
+  %305 = call %"github.com/goplus/llgo/async.Poll[int]" %304(ptr %303, ptr null)
+  %306 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %305, 1
+  %307 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  store i64 %306, ptr %307, align 4
+  %308 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %306, 1
+  %309 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %308, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %309
 
 MultipleDefer_state_03_err_propagate:             ; preds = %MultipleDefer_state_03_err
-  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %317, align 1
-  %318 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %283, ptr %318, align 8
-  %319 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %283, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %319
+  %310 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %310, align 1
+  %311 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %276, ptr %311, align 8
+  %312 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %276, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %312
+
+_llgo_42:                                         ; preds = %_llgo_43, %MultipleDefer_state_04
+  %313 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %314 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  store i64 %67, ptr %314, align 4
+  %315 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  %316 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %315, align 8
+  store { ptr, ptr } zeroinitializer, ptr %315, align 8
+  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 1
+  %318 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %318, ptr %317, align 8
+  %319 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %319, align 1
+  %320 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 12
+  %321 = load i64, ptr %320, align 4
+  %322 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %321, 1
+  %323 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %322, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %323
+
+_llgo_43:                                         ; preds = %MultipleDefer_state_04
+  %324 = load i1, ptr %75, align 1
+  %325 = icmp eq i1 %324, false
+  br i1 %325, label %_llgo_44, label %_llgo_42
+
+_llgo_44:                                         ; preds = %_llgo_43
+  %326 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %76, align 8
+  %327 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %327, align 1
+  %328 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.MultipleDefer$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %326, ptr %328, align 8
+  %329 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %326, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %329
 }
 
 define void @"__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_MultipleDefer$1"(ptr %0) {
@@ -2374,51 +2458,40 @@ SimpleDefer_state_02:                             ; preds = %SimpleDefer_state_0
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %34, ptr %35, align 8
   %36 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
   call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %36)
-  %37 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %38 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  store i64 %30, ptr %38, align 4
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  %40 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %39, align 8
-  store { ptr, ptr } zeroinitializer, ptr %39, align 8
-  %41 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %42 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %42, ptr %41, align 8
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %43, align 1
-  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  %45 = load i64, ptr %44, align 4
-  %46 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %45, 1
-  %47 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %46, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %47
+  %37 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %36, i32 0, i32 2
+  %38 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %36, i32 0, i32 3
+  %39 = getelementptr inbounds %"github.com/goplus/llgo/async.DeferState", ptr %36, i32 0, i32 1
+  %40 = load i1, ptr %37, align 1
+  br i1 %40, label %_llgo_25, label %_llgo_24
 
 SimpleDefer_state_03:                             ; preds = %SimpleDefer_entry
-  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %49 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %48, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %49, ptr %2, align 8
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
-  %51 = load ptr, ptr %50, align 8
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
-  %53 = load i64, ptr %52, align 4
-  %54 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  %56 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %55, align 8
-  store { ptr, ptr } zeroinitializer, ptr %55, align 8
-  %57 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %58 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %58, ptr %57, align 8
-  %59 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %59, align 1
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  %61 = load i64, ptr %60, align 4
-  %62 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %61, 1
-  %63 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %62, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %63
+  %41 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %42 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %41, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %42, ptr %2, align 8
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
+  %44 = load ptr, ptr %43, align 8
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
+  %46 = load i64, ptr %45, align 4
+  %47 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  %49 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %48, align 8
+  store { ptr, ptr } zeroinitializer, ptr %48, align 8
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %51 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %51, ptr %50, align 8
+  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %52, align 1
+  %53 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  %54 = load i64, ptr %53, align 4
+  %55 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %54, 1
+  %56 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %55, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %56
 
 SimpleDefer_state_done:                           ; preds = %SimpleDefer_entry
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  %65 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %64, align 8
-  %66 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %65, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %66
+  %57 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  %58 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %57, align 8
+  %59 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %58, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %59
 
 SimpleDefer_state_unreach:                        ; preds = %SimpleDefer_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -2427,175 +2500,207 @@ _llgo_7:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SimpleDefer_state_00_init:                        ; preds = %SimpleDefer_state_00
-  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %68 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %67, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %68, ptr %2, align 8
-  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
-  %70 = load ptr, ptr %69, align 8
-  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
-  %72 = load i64, ptr %71, align 4
-  %73 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 1)
-  store ptr %73, ptr %11, align 8
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %61 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %60, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %61, ptr %2, align 8
+  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
+  %63 = load ptr, ptr %62, align 8
+  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
+  %65 = load i64, ptr %64, align 4
+  %66 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.OpenResource"(i64 1)
+  store ptr %66, ptr %11, align 8
   br label %SimpleDefer_state_00_poll
 
 SimpleDefer_state_00_poll:                        ; preds = %SimpleDefer_state_00_init, %SimpleDefer_state_00
-  %74 = load ptr, ptr %11, align 8
-  %75 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %74, ptr %1)
-  %76 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %75, 0
-  br i1 %76, label %SimpleDefer_state_00_ready, label %SimpleDefer_state_00_pending
+  %67 = load ptr, ptr %11, align 8
+  %68 = call %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" @"github.com/goplus/llgo/async.(*AsyncFuture[*github.com/goplus/llgo/cl/_testpull/defer.Resource]).Poll"(ptr %67, ptr %1)
+  %69 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %68, 0
+  br i1 %69, label %SimpleDefer_state_00_ready, label %SimpleDefer_state_00_pending
 
 SimpleDefer_state_00_ready:                       ; preds = %SimpleDefer_state_00_poll
-  %77 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %75, 2
-  %78 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %77, { ptr, ptr } zeroinitializer)
-  %79 = xor i1 %78, true
-  br i1 %79, label %SimpleDefer_state_00_err, label %SimpleDefer_state_00_ready_cont
+  %70 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %68, 2
+  %71 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %70, { ptr, ptr } zeroinitializer)
+  %72 = xor i1 %71, true
+  br i1 %72, label %SimpleDefer_state_00_err, label %SimpleDefer_state_00_ready_cont
 
 SimpleDefer_state_00_pending:                     ; preds = %SimpleDefer_state_00_poll
-  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %81 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %81, ptr %80, align 8
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %74 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %74, ptr %73, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SimpleDefer_state_00_err:                         ; preds = %SimpleDefer_state_00_ready
-  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
-  %83 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %82, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %77)
-  br i1 %83, label %SimpleDefer_state_00_err_recovered, label %SimpleDefer_state_00_err_propagate
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
+  %76 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %75, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %70)
+  br i1 %76, label %SimpleDefer_state_00_err_recovered, label %SimpleDefer_state_00_err_propagate
 
 SimpleDefer_state_00_ready_cont:                  ; preds = %SimpleDefer_state_00_ready
-  %84 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %75, 1
-  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
-  store ptr %84, ptr %85, align 8
-  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
-  store i64 %72, ptr %86, align 4
+  %77 = extractvalue %"github.com/goplus/llgo/async.Poll[*github.com/goplus/llgo/cl/_testpull/defer.Resource]" %68, 1
+  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
+  store ptr %77, ptr %78, align 8
+  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
+  store i64 %65, ptr %79, align 4
   store ptr null, ptr %11, align 8
-  %87 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %88 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %88, ptr %87, align 8
-  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %89, align 1
+  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %81 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %81, ptr %80, align 8
+  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %82, align 1
   br label %SimpleDefer_state_01
 
 SimpleDefer_state_00_err_recovered:               ; preds = %SimpleDefer_state_00_err
-  %90 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %90, align 1
-  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  %92 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %91, align 8
-  store { ptr, ptr } zeroinitializer, ptr %91, align 8
-  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  %94 = load i64, ptr %93, align 4
-  %95 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %96 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %95)
-  %97 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %95, 0
-  %98 = getelementptr ptr, ptr %97, i64 4
-  %99 = load ptr, ptr %98, align 8
-  %100 = insertvalue { ptr, ptr } undef, ptr %99, 0
-  %101 = insertvalue { ptr, ptr } %100, ptr %96, 1
-  %102 = extractvalue { ptr, ptr } %101, 1
-  %103 = extractvalue { ptr, ptr } %101, 0
-  %104 = call %"github.com/goplus/llgo/async.Poll[int]" %103(ptr %102, ptr null)
-  %105 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %104, 1
-  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  store i64 %105, ptr %106, align 4
-  %107 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %105, 1
-  %108 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %107, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %108
+  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %83, align 1
+  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  %85 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %84, align 8
+  store { ptr, ptr } zeroinitializer, ptr %84, align 8
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  %87 = load i64, ptr %86, align 4
+  %88 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %89 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %88)
+  %90 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %88, 0
+  %91 = getelementptr ptr, ptr %90, i64 4
+  %92 = load ptr, ptr %91, align 8
+  %93 = insertvalue { ptr, ptr } undef, ptr %92, 0
+  %94 = insertvalue { ptr, ptr } %93, ptr %89, 1
+  %95 = extractvalue { ptr, ptr } %94, 1
+  %96 = extractvalue { ptr, ptr } %94, 0
+  %97 = call %"github.com/goplus/llgo/async.Poll[int]" %96(ptr %95, ptr null)
+  %98 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %97, 1
+  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  store i64 %98, ptr %99, align 4
+  %100 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %98, 1
+  %101 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %100, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %101
 
 SimpleDefer_state_00_err_propagate:               ; preds = %SimpleDefer_state_00_err
-  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %109, align 1
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %77, ptr %110, align 8
-  %111 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %77, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %111
+  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %102, align 1
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %70, ptr %103, align 8
+  %104 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %70, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %104
 
 SimpleDefer_state_01_init:                        ; preds = %SimpleDefer_state_01
-  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %113 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %112, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %113, ptr %2, align 8
-  %114 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
-  %115 = load ptr, ptr %114, align 8
-  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
-  %117 = load i64, ptr %116, align 4
-  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
-  %119 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %120 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %119, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %120, align 8
-  %121 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %119, i32 0, i32 1
-  store ptr %115, ptr %121, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %118, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_SimpleDefer$1", ptr null }, ptr %119)
-  %122 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %115)
-  store ptr %122, ptr %20, align 8
+  %105 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %106 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %105, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %106, ptr %2, align 8
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
+  %108 = load ptr, ptr %107, align 8
+  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
+  %110 = load i64, ptr %109, align 4
+  %111 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
+  %112 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %113 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %112, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/defer.(*Resource).Close", ptr null }, ptr %113, align 8
+  %114 = getelementptr inbounds { { ptr, ptr }, ptr }, ptr %112, i32 0, i32 1
+  store ptr %108, ptr %114, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %111, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_SimpleDefer$1", ptr null }, ptr %112)
+  %115 = call ptr @"github.com/goplus/llgo/cl/_testpull/defer.ProcessResource"(ptr %108)
+  store ptr %115, ptr %20, align 8
   br label %SimpleDefer_state_01_poll
 
 SimpleDefer_state_01_poll:                        ; preds = %SimpleDefer_state_01_init, %SimpleDefer_state_01
-  %123 = load ptr, ptr %20, align 8
-  %124 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %123, ptr %1)
-  %125 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %124, 0
-  br i1 %125, label %SimpleDefer_state_01_ready, label %SimpleDefer_state_01_pending
+  %116 = load ptr, ptr %20, align 8
+  %117 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %116, ptr %1)
+  %118 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %117, 0
+  br i1 %118, label %SimpleDefer_state_01_ready, label %SimpleDefer_state_01_pending
 
 SimpleDefer_state_01_ready:                       ; preds = %SimpleDefer_state_01_poll
-  %126 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %124, 2
-  %127 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %126, { ptr, ptr } zeroinitializer)
-  %128 = xor i1 %127, true
-  br i1 %128, label %SimpleDefer_state_01_err, label %SimpleDefer_state_01_ready_cont
+  %119 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %117, 2
+  %120 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %119, { ptr, ptr } zeroinitializer)
+  %121 = xor i1 %120, true
+  br i1 %121, label %SimpleDefer_state_01_err, label %SimpleDefer_state_01_ready_cont
 
 SimpleDefer_state_01_pending:                     ; preds = %SimpleDefer_state_01_poll
-  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %130 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %130, ptr %129, align 8
+  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %123 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %123, ptr %122, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SimpleDefer_state_01_err:                         ; preds = %SimpleDefer_state_01_ready
-  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
-  %132 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %131, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %126)
-  br i1 %132, label %SimpleDefer_state_01_err_recovered, label %SimpleDefer_state_01_err_propagate
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 6
+  %125 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %124, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %119)
+  br i1 %125, label %SimpleDefer_state_01_err_recovered, label %SimpleDefer_state_01_err_propagate
 
 SimpleDefer_state_01_ready_cont:                  ; preds = %SimpleDefer_state_01_ready
-  %133 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %124, 1
-  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
-  store i64 %133, ptr %134, align 4
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
-  store ptr %115, ptr %135, align 8
+  %126 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %117, 1
+  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 3
+  store i64 %126, ptr %127, align 4
+  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 2
+  store ptr %108, ptr %128, align 8
   store ptr null, ptr %20, align 8
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
-  %137 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %137, ptr %136, align 8
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %138, align 1
+  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %130 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %130, ptr %129, align 8
+  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %131, align 1
   br label %SimpleDefer_state_02
 
 SimpleDefer_state_01_err_recovered:               ; preds = %SimpleDefer_state_01_err
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %139, align 1
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  %141 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %140, align 8
-  store { ptr, ptr } zeroinitializer, ptr %140, align 8
-  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  %143 = load i64, ptr %142, align 4
-  %144 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %145 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %144)
-  %146 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %144, 0
-  %147 = getelementptr ptr, ptr %146, i64 4
-  %148 = load ptr, ptr %147, align 8
-  %149 = insertvalue { ptr, ptr } undef, ptr %148, 0
-  %150 = insertvalue { ptr, ptr } %149, ptr %145, 1
-  %151 = extractvalue { ptr, ptr } %150, 1
-  %152 = extractvalue { ptr, ptr } %150, 0
-  %153 = call %"github.com/goplus/llgo/async.Poll[int]" %152(ptr %151, ptr null)
-  %154 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %153, 1
-  %155 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
-  store i64 %154, ptr %155, align 4
-  %156 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %154, 1
-  %157 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %156, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %157
+  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %132, align 1
+  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  %134 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %133, align 8
+  store { ptr, ptr } zeroinitializer, ptr %133, align 8
+  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  %136 = load i64, ptr %135, align 4
+  %137 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %138 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %137)
+  %139 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %137, 0
+  %140 = getelementptr ptr, ptr %139, i64 4
+  %141 = load ptr, ptr %140, align 8
+  %142 = insertvalue { ptr, ptr } undef, ptr %141, 0
+  %143 = insertvalue { ptr, ptr } %142, ptr %138, 1
+  %144 = extractvalue { ptr, ptr } %143, 1
+  %145 = extractvalue { ptr, ptr } %143, 0
+  %146 = call %"github.com/goplus/llgo/async.Poll[int]" %145(ptr %144, ptr null)
+  %147 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %146, 1
+  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  store i64 %147, ptr %148, align 4
+  %149 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %147, 1
+  %150 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %149, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %150
 
 SimpleDefer_state_01_err_propagate:               ; preds = %SimpleDefer_state_01_err
-  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %158, align 1
-  %159 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %126, ptr %159, align 8
-  %160 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %126, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %160
+  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %151, align 1
+  %152 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %119, ptr %152, align 8
+  %153 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %119, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %153
+
+_llgo_24:                                         ; preds = %_llgo_25, %SimpleDefer_state_02
+  %154 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %155 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  store i64 %30, ptr %155, align 4
+  %156 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  %157 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %156, align 8
+  store { ptr, ptr } zeroinitializer, ptr %156, align 8
+  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 1
+  %159 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %159, ptr %158, align 8
+  %160 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %160, align 1
+  %161 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 8
+  %162 = load i64, ptr %161, align 4
+  %163 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %162, 1
+  %164 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %163, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %164
+
+_llgo_25:                                         ; preds = %SimpleDefer_state_02
+  %165 = load i1, ptr %38, align 1
+  %166 = icmp eq i1 %165, false
+  br i1 %166, label %_llgo_26, label %_llgo_24
+
+_llgo_26:                                         ; preds = %_llgo_25
+  %167 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %39, align 8
+  %168 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %168, align 1
+  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/defer.SimpleDefer$State", ptr %0, i32 0, i32 7
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %167, ptr %169, align 8
+  %170 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %167, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %170
 }
 
 define void @"__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_defer_SimpleDefer$1"(ptr %0) {

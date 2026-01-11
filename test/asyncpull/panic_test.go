@@ -56,3 +56,10 @@ func TestChildPanicRecover(t *testing.T) {
 		t.Fatalf("recovered child panic result = %d, want 0", got)
 	}
 }
+
+func TestPanicDeferAfterAwait(t *testing.T) {
+	errVal := pollError(t, PanicDeferAfterAwait())
+	if fmt.Sprint(errVal) != "defer boom" {
+		t.Fatalf("panic from defer after await = %v, want defer boom", errVal)
+	}
+}

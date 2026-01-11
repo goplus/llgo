@@ -507,6 +507,15 @@ func RecoverInDefer() (res async.Future[int]) {
 	return res
 }
 
+// PanicDeferAfterAwait panics inside a defer after an await has suspended/resumed.
+func PanicDeferAfterAwait() async.Future[int] {
+	defer func() {
+		panic("defer boom")
+	}()
+	_ = PendingOnce(1).Await() // force suspend before defer executes
+	return async.Return(1)
+}
+
 // ConditionalLoopAsync tests conditional inside loop with different await paths.
 func ConditionalLoopAsync(n int) async.Future[int] {
 	sum := 0
