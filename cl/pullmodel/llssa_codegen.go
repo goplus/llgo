@@ -1771,6 +1771,10 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 					continue
 				}
 				b.Store(ptr, val)
+				// Track named result variable so recovered panic can read it back.
+				if resAlloc := g.findResultAlloc(); resAlloc != nil && alloc == resAlloc {
+					g.storeResultValue(b, statePtr, val)
+				}
 				continue
 			}
 		}
@@ -2006,6 +2010,21 @@ func (g *LLSSACodeGen) returnErrorPoll(b llssa.Builder, panicVal llssa.Expr) {
 
 	pollVal := b.AggregateExpr(g.pollLLType, fields...)
 	b.Return(pollVal)
+}
+
+// findResultAlloc tries to locate the SSA Alloc that backs the (single) result.
+// Heuristics: named return (~r0), or identifiers prefixed with "result"/"ret".
+func (g *LLSSACodeGen) findResultAlloc() *ssa.Alloc {
+	for _, alloc := range g.sm.Original.Locals {
+		if alloc == nil {
+			continue
+		}
+		name := alloc.Name()
+		if strings.HasPrefix(name, "~r") || strings.HasPrefix(name, "result") || strings.HasPrefix(name, "ret") {
+			return alloc
+		}
+	}
+	return nil
 }
 
 // generateOriginalFunctionWrapper rewrites the original async function.

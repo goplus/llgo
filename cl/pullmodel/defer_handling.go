@@ -262,6 +262,13 @@ func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.
 	doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
 	b.Store(stateFieldPtr, doneVal)
 	finalValue := g.loadResultValue(b, statePtr)
+	// Prefer loading from the result alloc (captures updates made inside defers).
+	if alloc := g.findResultAlloc(); alloc != nil {
+		ptr := g.ensureAllocPtr(b, statePtr, alloc)
+		if !ptr.IsNil() {
+			finalValue = b.Load(ptr)
+		}
+	}
 	g.returnReadyPoll(b, finalValue)
 
 	// Not recovered: fallback to runtime panic

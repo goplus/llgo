@@ -86,5 +86,5 @@ func TestPanicWithDefer(t *testing.T) {
 }
 
 func TestRecoverInDefer(t *testing.T) {
-	t.Skip("TODO: recover semantics in pull-model pending compiler support")
+	t.Skip("recover semantics in pull-model still WIP")
 }
