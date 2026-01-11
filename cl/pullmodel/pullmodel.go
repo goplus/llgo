@@ -614,6 +614,22 @@ func Transform(fn *ssa.Function) *StateMachine {
 
 	suspends := FindSuspendPoints(fn)
 
+	// Non-fatal warnings for tricky patterns (opt-in via env)
+	if len(suspends) > 0 {
+		for _, blk := range fn.Blocks {
+			for _, instr := range blk.Instrs {
+				if _, ok := instr.(*ssa.Go); ok {
+					warnUnsupported(fn.Name(), "goroutine inside async is not supported; may misbehave")
+				}
+				if rng, ok := instr.(*ssa.Range); ok {
+					if _, isMap := rng.X.Type().Underlying().(*types.Map); isMap {
+						warnUnsupported(fn.Name(), "range over map with await is not supported; convert to slice")
+					}
+				}
+			}
+		}
+	}
+
 	crossVars := AnalyzeCrossVars(fn, suspends)
 	loopAllocs := AnalyzeLoopAllocs(fn)
 
