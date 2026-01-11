@@ -58,7 +58,7 @@ _llgo_0:
   store { ptr, ptr } %3, ptr %4, align 8
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk", ptr undef }, ptr %4, 1
   %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 0
-  %7 = icmp eq ptr %6, @"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"
+  %7 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchesClosure"(ptr @"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk", ptr %6)
   br i1 %7, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
@@ -121,6 +121,8 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchesClosure"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
