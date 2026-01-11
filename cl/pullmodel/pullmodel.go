@@ -613,6 +613,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 	}
 
 	suspends := FindSuspendPoints(fn)
+
 	crossVars := AnalyzeCrossVars(fn, suspends)
 	loopAllocs := AnalyzeLoopAllocs(fn)
 
