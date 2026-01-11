@@ -208,6 +208,8 @@ func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.
 		return
 	}
 
+	debugf("[Pull Model] Handling panic in %s", g.sm.Original.Name())
+
 	debugf("[Pull Model] Generating DoPanic call for %s", g.sm.Original.Name())
 
 	// Get DeferState field base index
@@ -264,10 +266,11 @@ func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.
 
 	// Not recovered: fallback to runtime panic
 	b.SetBlock(panicBlock)
-	if g.compileInstr != nil {
-		g.compileInstr(b, panicInstr)
-	}
-	b.Return(g.createZeroPoll())
+	// Mark completed and propagate as PollError
+	int8Type = g.prog.Type(types.Typ[types.Int8], llssa.InGo)
+	stateFieldPtr = b.FieldAddr(statePtr, 0)
+	b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedStateIndex), int8Type))
+	g.returnErrorPoll(b, panicVal)
 }
 
 // compileRunDefersForPullModel handles RunDefers instructions in pull model.

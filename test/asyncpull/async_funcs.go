@@ -15,6 +15,27 @@ import (
 // Helper functions for creating async operations
 // -----------------------------------------------------------------------------
 
+// twoStepFuture yields Pending on first poll, Ready(value) on second.
+type twoStepFuture[T any] struct {
+	value T
+	done  bool
+}
+
+func (f *twoStepFuture[T]) Poll(ctx *async.Context) async.Poll[T] {
+	if f.done {
+		return async.Ready(f.value)
+	}
+	f.done = true
+	return async.Pending[T]()
+}
+
+func (f *twoStepFuture[T]) Await() T { panic("await should be rewritten") }
+
+// PendingOnce returns a Future that suspends once before resolving.
+func PendingOnce[T any](v T) async.Future[T] {
+	return &twoStepFuture[T]{value: v}
+}
+
 // Delay returns an async future that resolves immediately.
 func Delay() *async.AsyncFuture[async.Void] {
 	return async.Async(func(resolve func(async.Void)) {
@@ -400,6 +421,34 @@ func LoopWithMultipleAwaits(n int) async.Future[int] {
 		sum += b
 	}
 	return async.Return(sum)
+}
+
+// DeferAcrossAwait exercises persistent defer through a suspend point.
+func DeferAcrossAwait(out *[]string) async.Future[int] {
+	defer func() { *out = append(*out, "first") }()
+	defer func() { *out = append(*out, "second") }()
+	val := PendingOnce(7).Await() // forces one suspend before completion
+	return async.Return(val)
+}
+
+// PanicWithDefer triggers panic and ensures defers run, propagating error.
+func PanicWithDefer(out *[]string) async.Future[int] {
+	defer func() { *out = append(*out, "cleanup") }()
+	panic("boom")
+}
+
+// RecoverInDefer recovers from panic and returns a synthesized value.
+func RecoverInDefer() async.Future[int] {
+	result := 1
+	defer func() {
+		if r := recover(); r != nil {
+			// simulate user adjusting named return after recover
+			result = 99
+		}
+	}()
+	panic("recover-me")
+	// unreachable, but keeps SSA happy
+	return async.Return(result)
 }
 
 // ConditionalLoopAsync tests conditional inside loop with different await paths.

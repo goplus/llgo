@@ -53,3 +53,38 @@ func TestDeferLoop(t *testing.T) {
 		t.Fatalf("defer loop order mismatch: %v", out)
 	}
 }
+
+func TestDeferAcrossAwait(t *testing.T) {
+	out := []string{}
+	got := pollReady(t, DeferAcrossAwait(&out))
+	if got != 7 {
+		t.Fatalf("DeferAcrossAwait value = %d, want 7", got)
+	}
+	if len(out) != 2 || out[0] != "second" || out[1] != "first" {
+		t.Fatalf("DeferAcrossAwait order mismatch: %v", out)
+	}
+}
+
+func TestPanicWithDefer(t *testing.T) {
+	out := []string{}
+	fut := PanicWithDefer(&out)
+	ctx := &async.Context{}
+	poll := fut.Poll(ctx)
+	if !poll.IsReady() || !poll.HasError() {
+		t.Fatalf("expected panic error poll, got ready=%v err=%v", poll.IsReady(), poll.Error())
+	}
+	if len(out) != 1 || out[0] != "cleanup" {
+		t.Fatalf("defer not executed on panic: %v", out)
+	}
+	if msg, ok := poll.Error().(string); ok {
+		if msg != "boom" {
+			t.Fatalf("panic message = %q, want \"boom\"", msg)
+		}
+	} else {
+		t.Fatalf("panic error type %T, want string", poll.Error())
+	}
+}
+
+func TestRecoverInDefer(t *testing.T) {
+	t.Skip("TODO: recover semantics in pull-model pending compiler support")
+}

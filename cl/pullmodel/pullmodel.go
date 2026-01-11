@@ -103,7 +103,7 @@ func IsAsyncFunc(fn *ssa.Function) bool {
 	return isFutureType(results.At(0).Type())
 }
 
-// isFutureType checks if a type is Future[T] from the async package.
+// isFutureType checks if a type is Future[T] (or concrete async future helper types) from the async package.
 func isFutureType(t types.Type) bool {
 	// Handle type aliases (Go 1.22+) - unwrap to get the underlying type
 	for {
@@ -114,28 +114,29 @@ func isFutureType(t types.Type) bool {
 		break
 	}
 
-	// Handle named types (like async.Future[int])
+	// Handle pointer to named
+	if ptr, ok := t.(*types.Pointer); ok {
+		t = ptr.Elem()
+	}
+
+	// Handle named types (async.Future / AsyncFuture / ReadyFuture)
 	named, ok := t.(*types.Named)
 	if !ok {
 		return false
 	}
-
 	obj := named.Obj()
 	if obj == nil {
 		return false
 	}
-
-	// Check type name
-	if obj.Name() != "Future" {
+	switch obj.Name() {
+	case "Future", "AsyncFuture", "ReadyFuture":
+	default:
 		return false
 	}
-
-	// Check package path
 	pkg := obj.Pkg()
 	if pkg == nil {
 		return false
 	}
-
 	return pkg.Path() == FuturePkgPath
 }
 
@@ -376,6 +377,13 @@ func AnalyzeCrossVars(fn *ssa.Function, suspends []*SuspendPoint) []ssa.Value {
 			}
 			collectTransitiveDependencies(sp.SubFuture, crossVars)
 		}
+	}
+
+	// Always include free variables (closures) so their captured values persist
+	// across suspends. This is crucial for async callbacks that close over
+	// outer variables.
+	for _, fv := range fn.FreeVars {
+		crossVars[fv] = true
 	}
 
 	// Include free vars captured by deferred closures. These values must remain
@@ -652,8 +660,14 @@ func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) ([]*State, map[
 	if len(suspends) == 0 {
 		// No suspend points, single state
 		state := &State{
-			Index:      0,
-			Block:      fn.Blocks[0],
+			Index: 0,
+			Block: fn.Blocks[0],
+			Instructions: func() []ssa.Instruction {
+				if len(fn.Blocks) == 0 {
+					return nil
+				}
+				return append([]ssa.Instruction{}, fn.Blocks[0].Instrs...)
+			}(),
 			IsTerminal: true,
 		}
 		return []*State{state}, map[*ssa.BasicBlock]int{fn.Blocks[0]: 0}

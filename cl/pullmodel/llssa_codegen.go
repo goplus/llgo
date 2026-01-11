@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"os"
 	"strings"
 
 	"golang.org/x/tools/go/ssa"
@@ -31,8 +32,8 @@ import (
 )
 
 // debugLog controls whether debug output is enabled.
-// Set to true to enable detailed logging of state machine generation.
-const debugLog = false
+// Enable by setting env LLGO_PULL_DEBUG=1 when running llgo/llgen/tests.
+var debugLog = os.Getenv("LLGO_PULL_DEBUG") == "1"
 
 // debugf logs a message if debug logging is enabled.
 func debugf(format string, args ...interface{}) {
@@ -103,6 +104,32 @@ func NewLLSSACodeGen(
 	}
 }
 
+// signatureWithCtx returns the function signature, adding the hidden closure
+// context parameter when the SSA function has free variables.
+func (g *LLSSACodeGen) signatureWithCtx(sig *types.Signature) *types.Signature {
+	ctx := g.closureCtxParam()
+	if ctx == nil {
+		return sig
+	}
+	return llssa.FuncAddCtx(ctx, sig)
+}
+
+// closureCtxParam builds the synthetic __llgo_ctx parameter for closures that
+// capture free variables. Returns nil when there are no free vars.
+func (g *LLSSACodeGen) closureCtxParam() *types.Var {
+	fn := g.sm.Original
+	if len(fn.FreeVars) == 0 {
+		return nil
+	}
+	fields := make([]*types.Var, len(fn.FreeVars))
+	for i, fv := range fn.FreeVars {
+		fields[i] = types.NewField(token.NoPos, nil, fv.Name(), fv.Type(), false)
+	}
+	ctxStruct := types.NewStruct(fields, nil)
+	ctxPtr := types.NewPointer(ctxStruct)
+	return types.NewParam(token.NoPos, nil, "__llgo_ctx", ctxPtr)
+}
+
 func (g *LLSSACodeGen) isSuspendResult(v ssa.Value) bool {
 	if v == nil {
 		return false
@@ -124,6 +151,11 @@ func (g *LLSSACodeGen) shouldPreloadCrossVar(v ssa.Value, block *ssa.BasicBlock)
 		return false
 	}
 	if _, ok := g.isStackAllocCrossVar(v); ok {
+		return true
+	}
+	// Free variables are captured environment values; always preload so
+	// compileValue can resolve them without re-evaluating.
+	if _, ok := v.(*ssa.FreeVar); ok {
 		return true
 	}
 	// Always preload heap allocs that are cross-vars, since they need to persist
@@ -254,9 +286,10 @@ func (g *LLSSACodeGen) generateStateType() (llssa.Type, error) {
 	stateFieldType := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 	fieldTypes = append(fieldTypes, stateFieldType)
 
-	// Fields for parameters
-	for _, param := range g.sm.Original.Params {
-		paramType := g.prog.Type(param.Type(), llssa.InGo)
+	// Fields for parameters (include hidden ctx for closures)
+	paramTuple := g.signatureWithCtx(g.sm.Original.Signature).Params()
+	for i := 0; i < paramTuple.Len(); i++ {
+		paramType := g.prog.Type(paramTuple.At(i).Type(), llssa.InGo)
 		fieldTypes = append(fieldTypes, paramType)
 	}
 
@@ -301,7 +334,7 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 	// Build Go types.Signature for the constructor
 	// Params: same as original function
 	// Result: state struct type (as value, not pointer)
-	origSig := fn.Signature
+	origSig := g.signatureWithCtx(fn.Signature)
 	paramTuple := origSig.Params()
 
 	// Create result tuple with state struct type
@@ -334,16 +367,30 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 
 	// Copy parameters to state struct fields
 	fieldIdx := 1 // Start after state field
-	for i := range fn.Params {
+	for i := 0; i < paramTuple.Len(); i++ {
 		paramVal := ctor.Param(i)
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		b.Store(fieldPtr, paramVal)
 		fieldIdx++
 	}
 
-	// Initialize cross-var fields to zero values (they'll be set during execution)
+	// Initialize cross-var fields. For free vars, capture the bound value from ctx.
 	for _, v := range g.sm.CrossVars {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
+
+		// FreeVar: load from closure ctx (first parameter) using the free var index.
+		if fv, ok := v.(*ssa.FreeVar); ok {
+			idx := g.freeVarIndex(fv)
+			if idx >= 0 {
+				ctxParam := ctor.Param(0) // __llgo_ctx is always first when present
+				ctxField := b.FieldAddr(ctxParam, idx)
+				val := b.Load(ctxField)
+				b.Store(fieldPtr, val)
+				fieldIdx++
+				continue
+			}
+		}
+
 		fieldType := v.Type()
 		if alloc, ok := g.isStackAllocCrossVar(v); ok {
 			if tptr, ok := alloc.Type().(*types.Pointer); ok {
@@ -367,7 +414,7 @@ func (g *LLSSACodeGen) generateConstructor(stateType llssa.Type) error {
 	stateVal := b.Load(statePtr)
 	b.Return(stateVal)
 
-	debugf("[Pull Model] Generated constructor for %s with %d params", fn.Name(), len(fn.Params))
+	debugf("[Pull Model] Generated constructor for %s with %d params", fn.Name(), paramTuple.Len())
 	return nil
 }
 
@@ -381,10 +428,11 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	fields = append(fields, types.NewField(0, nil, "state", types.Typ[types.Int8], false))
 	tags = append(tags, "")
 
-	// Fields for parameters
-	for i, param := range g.sm.Original.Params {
+	// Fields for parameters (include hidden ctx when present)
+	paramTuple := g.signatureWithCtx(g.sm.Original.Signature).Params()
+	for i := 0; i < paramTuple.Len(); i++ {
 		name := fmt.Sprintf("param%d", i)
-		fields = append(fields, types.NewField(0, nil, name, param.Type(), false))
+		fields = append(fields, types.NewField(0, nil, name, paramTuple.At(i).Type(), false))
 		tags = append(tags, "")
 	}
 
@@ -433,21 +481,9 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 
 	// Defer-related fields (only if function uses defer)
 	if g.sm.HasDefer {
-		// deferHead: pointer to defer list head (*runtime.DeferNode)
-		// For now use unsafe.Pointer as placeholder until runtime type defined
-		fields = append(fields, types.NewField(0, nil, "deferHead", types.Typ[types.UnsafePointer], false))
-		tags = append(tags, "")
-
-		// panicValue: any type to hold panic value
-		fields = append(fields, types.NewField(0, nil, "panicValue", types.NewInterfaceType(nil, nil), false))
-		tags = append(tags, "")
-
-		// isPanicking: bool flag
-		fields = append(fields, types.NewField(0, nil, "isPanicking", types.Typ[types.Bool], false))
-		tags = append(tags, "")
-
-		// recovered: bool flag
-		fields = append(fields, types.NewField(0, nil, "recovered", types.Typ[types.Bool], false))
+		// Embed async.DeferState as a single field to match runtime layout
+		deferStateType := g.getDeferStateType()
+		fields = append(fields, types.NewField(0, nil, "deferState", deferStateType, false))
 		tags = append(tags, "")
 	}
 
@@ -521,10 +557,15 @@ func (g *LLSSACodeGen) addPollMethodToNamedType(pkg *types.Package, fn *ssa.Func
 
 	// Create Poll method signature
 	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
+	// Create Await method signature (compile-time marker)
+	awaitResults := types.NewTuple(types.NewVar(0, nil, "", resultType))
+	awaitSig := types.NewSignatureType(recvVar, nil, nil, nil, awaitResults, false)
 
-	// Create method and add to Named type
+	// Create methods and add to Named type BEFORE any abiType() calls so itab sees both
 	pollFunc := types.NewFunc(0, pkg, "Poll", pollSig)
+	awaitFunc := types.NewFunc(0, pkg, "Await", awaitSig)
 	g.stateNamed.AddMethod(pollFunc)
+	g.stateNamed.AddMethod(awaitFunc)
 	g.pollMethod = pollFunc
 }
 
@@ -561,11 +602,21 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	g.pollLLType = g.prog.Type(g.pollStructType, llssa.InGo)
 	pollResults := types.NewTuple(types.NewVar(0, nil, "", g.pollStructType))
 
-	// Add ctx *async.Context parameter
-	// TODO: Import async package and get Context type properly
-	ctxType := types.NewPointer(types.NewStruct(nil, nil)) // Placeholder for *async.Context
+	// Add ctx *async.Context parameter using the real async.Context type
+	ctxType := g.getAsyncContextType()
 	ctxParam := types.NewVar(0, nil, "ctx", ctxType)
 	params := types.NewTuple(ctxParam)
+
+	// Also generate a stub Await method so the state type fully satisfies async.Future[T]
+	// This prevents itab generation from zeroing the method table when Await is missing.
+	awaitResults := types.NewTuple(types.NewVar(0, nil, "", resultType))
+	awaitSig := types.NewSignatureType(recvVar, nil, nil, nil, awaitResults, false)
+	awaitName := llssa.FuncName(fn.Pkg.Pkg, "Await", recvVar, false)
+	awaitFn := g.pkg.NewFunc(awaitName, awaitSig, llssa.InGo)
+	awaitBody := awaitFn.MakeBody(1)
+	awaitBody.SetBlock(awaitFn.Block(0))
+	awaitZero := awaitBody.AggregateExpr(g.prog.Type(resultType, llssa.InGo))
+	awaitBody.Return(awaitZero)
 
 	// Create Poll method signature: func (s *State) Poll(ctx *Context) Poll[T]
 	pollSig := types.NewSignatureType(recvVar, nil, nil, params, pollResults, false)
@@ -680,12 +731,20 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 			fn := g.sm.Original
 			fieldIdx := 1 // Start after state field
 
-			// Register original function params
-			for _, param := range fn.Params {
-				// Load param value from state struct
+			// Register parameters (including optional __llgo_ctx). SSA params do not
+			// include ctx, so offset accordingly.
+			paramTuple := g.signatureWithCtx(fn.Signature).Params()
+			ctxOffset := 0
+			if g.closureCtxParam() != nil {
+				ctxOffset = 1
+			}
+			for i := 0; i < paramTuple.Len(); i++ {
 				fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 				loadedVal := b.Load(fieldPtr)
-				g.registerValue(param, loadedVal)
+				if i >= ctxOffset {
+					param := fn.Params[i-ctxOffset]
+					g.registerValue(param, loadedVal)
+				}
 				fieldIdx++
 			}
 
@@ -783,7 +842,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 	if state.IsTerminal {
 		// Terminal state: compile state instructions, capture final result, and return Ready
-		resultVal := g.compileStateInstructions(b, state, statePtr)
+		resultVal, returned := g.compileStateInstructions(b, state, statePtr)
+		if returned {
+			return
+		}
 		if !resultVal.IsNil() {
 			g.storeResultValue(b, statePtr, resultVal)
 		}
@@ -808,11 +870,12 @@ func (g *LLSSACodeGen) generateStateBlock(
 		subFutFieldPtr := b.FieldAddr(statePtr, subFutFieldIdx)
 		// subFutFieldPtr is the address of the embedded value
 
-		// Sub-future field is now a pointer (*AsyncFuture[T])
-		// Check if it's nil (needs initialization)
-		subFutPtr := b.Load(subFutFieldPtr) // Load the pointer value
-		nilPtr := g.prog.Nil(g.prog.VoidPtr())
-		needsInit := b.BinOp(token.EQL, subFutPtr, nilPtr)
+		// Load stored sub-future value
+		subFutVal := b.Load(subFutFieldPtr)
+		// Compare against zero value of the sub-future type to decide init.
+		zeroSubFut := g.prog.Zero(g.prog.Type(sp.SubFuture.Type(), llssa.InGo))
+		needsInit := b.BinOp(token.EQL, subFutVal, zeroSubFut)
+		g.emitPullDebugState(b, subFutVal, fmt.Sprintf("subfut_%02d_val", stateIdx), false, false)
 
 		// Create blocks for init/poll branching
 		initBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_init", g.sm.Original.Name(), stateIdx))
@@ -824,7 +887,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 		b.SetBlock(initBlock)
 		g.replayAllocStores(b, state, statePtr)
 		// Compile state instructions (before the suspend point)
-		_ = g.compileStateInstructions(b, state, statePtr)
+		_, returned := g.compileStateInstructions(b, state, statePtr)
+		if returned {
+			return
+		}
 		// Compile sp.SubFuture (e.g., Step() call) - returns *AsyncFuture[T]
 		newSubFutPtr := g.compileValue(b, sp.SubFuture)
 		// Store the pointer directly (no dereferencing)
@@ -835,6 +901,7 @@ func (g *LLSSACodeGen) generateStateBlock(
 		b.SetBlock(pollBlock)
 		// Load the stored sub-future pointer for use as receiver
 		subFutPtrVal := b.Load(subFutFieldPtr)
+		g.emitPullDebugState(b, subFutPtrVal, fmt.Sprintf("subfut_%02d_ptr", stateIdx), false, false)
 
 		// Get result type from suspend point
 		resultType := sp.Result.Type()
@@ -943,6 +1010,27 @@ func (g *LLSSACodeGen) generateStateBlock(
 			b.Store(resultFieldPtr, value)
 		}
 
+		// Persist other cross-vars that might be needed by the next state (e.g., freevars).
+		// Suspend states bypass compileStateInstructions, so we must manually snapshot
+		// remaining cross-vars here to avoid nil placeholders (see visitor closure crash).
+		for _, cv := range g.sm.CrossVars {
+			if cv == sp.Result {
+				continue // already stored above
+			}
+			// Skip stack alloc cross-vars; they are handled separately.
+			if alloc, ok := g.isStackAllocCrossVar(cv); ok {
+				_ = alloc
+				continue
+			}
+			idx := g.getCrossVarFieldIndex(cv)
+			if idx < 0 {
+				continue
+			}
+			fieldPtr := b.FieldAddr(statePtr, idx)
+			val := g.compileValue(b, cv)
+			b.Store(fieldPtr, val)
+		}
+
 		// Reset the sub-future pointer so subsequent iterations re-create the
 		// awaited future instead of polling a finished one.
 		b.Store(subFutFieldPtr, g.prog.Nil(subFutPtrVal.Type))
@@ -967,7 +1055,10 @@ func (g *LLSSACodeGen) generateStateBlock(
 	}
 
 	// Intermediate state without suspend.
-	_ = g.compileStateInstructions(b, state, statePtr)
+	_, returned := g.compileStateInstructions(b, state, statePtr)
+	if returned {
+		return
+	}
 	g.flushStackAllocState(b, statePtr)
 	nextStateIdx := stateIdx + 1
 	hasNext := nextStateIdx < len(g.sm.States)
@@ -1060,6 +1151,20 @@ func (g *LLSSACodeGen) valueBlock(v ssa.Value) *ssa.BasicBlock {
 	return nil
 }
 
+// freeVarIndex returns the position of a free variable within its parent
+// function's FreeVars slice. Returns -1 if not found (should not happen).
+func (g *LLSSACodeGen) freeVarIndex(fv *ssa.FreeVar) int {
+	if fv == nil || fv.Parent() == nil {
+		return -1
+	}
+	for i, cand := range fv.Parent().FreeVars {
+		if cand == fv {
+			return i
+		}
+	}
+	return -1
+}
+
 func (g *LLSSACodeGen) restoreStackAllocState(b llssa.Builder, statePtr llssa.Expr) {
 	if len(g.stackAllocCrossVars) == 0 {
 		return
@@ -1131,12 +1236,20 @@ func (g *LLSSACodeGen) replayAllocStores(b llssa.Builder, state *State, statePtr
 	valueCache := make(map[ssa.Value]llssa.Expr, len(fn.Params)+len(g.sm.CrossVars))
 
 	// Reload and register original parameters from the state struct.
-	for _, param := range fn.Params {
+	paramTuple := g.signatureWithCtx(fn.Signature).Params()
+	ctxOffset := 0
+	if g.closureCtxParam() != nil {
+		ctxOffset = 1
+	}
+	for i := 0; i < paramTuple.Len(); i++ {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		loaded := b.Load(fieldPtr)
-		valueCache[param] = loaded
-		if g.registerValue != nil {
-			g.registerValue(param, loaded)
+		if i >= ctxOffset {
+			param := fn.Params[i-ctxOffset]
+			valueCache[param] = loaded
+			if g.registerValue != nil {
+				g.registerValue(param, loaded)
+			}
 		}
 		fieldIdx++
 	}
@@ -1402,6 +1515,9 @@ func (g *LLSSACodeGen) loadResultValue(b llssa.Builder, statePtr llssa.Expr) lls
 }
 
 func (g *LLSSACodeGen) emitPullDebugState(b llssa.Builder, state llssa.Expr, phase string, suspend bool, terminal bool) {
+	if !debugLog {
+		return
+	}
 	asyncPkg := types.NewPackage("github.com/goplus/llgo/async", "async")
 	sig := types.NewSignatureType(
 		nil, nil, nil,
@@ -1420,8 +1536,11 @@ func (g *LLSSACodeGen) emitPullDebugState(b llssa.Builder, state llssa.Expr, pha
 	funcName := b.Str(g.sm.Original.Name())
 	phaseVal := b.Str(phase)
 	stateVal := state
-	if !state.IsNil() && state.Type != g.prog.Int() {
-		stateVal = b.Convert(g.prog.Int(), state)
+	if state.IsNil() {
+		stateVal = g.prog.IntVal(0, g.prog.Int())
+	} else if state.Type != g.prog.Int() {
+		// 仅在类型匹配时记录状态值，否则用0占位，避免调试转换引发panic
+		stateVal = g.prog.IntVal(0, g.prog.Int())
 	}
 	suspendVal := g.prog.BoolVal(suspend)
 	terminalVal := g.prog.BoolVal(terminal)
@@ -1593,7 +1712,8 @@ func (g *LLSSACodeGen) branchToState(
 // - The suspend point call itself (handled separately)
 // - Alloc+Store pairs for heap-escaped params (handled by replayAllocStores)
 // - Return instructions (handled by terminal state logic)
-func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, statePtr llssa.Expr) llssa.Expr {
+// It returns (finalValue, returned) where returned indicates the builder already emitted a return.
+func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, statePtr llssa.Expr) (llssa.Expr, bool) {
 	var finalValue llssa.Expr
 
 	for _, instr := range state.Instructions {
@@ -1679,7 +1799,7 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 		// Handle panic specially - set isPanicking flag and start defer unwinding
 		if panicInstr, isPanic := instr.(*ssa.Panic); isPanic {
 			g.compilePanicForPullModel(b, statePtr, panicInstr)
-			continue
+			return finalValue, true
 		}
 
 		// Handle RunDefers - execute stored defer list
@@ -1694,7 +1814,7 @@ func (g *LLSSACodeGen) compileStateInstructions(b llssa.Builder, state *State, s
 		}
 	}
 
-	return finalValue
+	return finalValue, false
 }
 
 func (g *LLSSACodeGen) isAsyncReturnCall(callInstr *ssa.Call) bool {
@@ -1870,6 +1990,24 @@ func (g *LLSSACodeGen) returnReadyPoll(b llssa.Builder, value llssa.Expr) {
 	b.Return(pollVal)
 }
 
+// returnErrorPoll generates Poll[T]{ready:true, err:panicVal}.
+func (g *LLSSACodeGen) returnErrorPoll(b llssa.Builder, panicVal llssa.Expr) {
+	trueVal := g.prog.BoolVal(true)
+	zeroPoll := g.createZeroPoll()
+
+	// value zero from zeroPoll
+	value := b.Field(zeroPoll, 1)
+	fields := []llssa.Expr{trueVal, value}
+
+	// err field if present
+	if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
+		fields = append(fields, panicVal)
+	}
+
+	pollVal := b.AggregateExpr(g.pollLLType, fields...)
+	b.Return(pollVal)
+}
+
 // generateOriginalFunctionWrapper rewrites the original async function.
 // The original function body is replaced to:
 // 1. Allocate and initialize the state struct
@@ -1899,7 +2037,7 @@ func (g *LLSSACodeGen) generateOriginalFunctionWrapper(stateType llssa.Type) err
 		// Fallback
 		statePtrType = types.NewPointer(g.buildStateGoType())
 	}
-	origSig := fn.Signature
+	origSig := g.signatureWithCtx(fn.Signature)
 
 	// Create new signature with concrete state pointer return type
 	newResults := types.NewTuple(types.NewVar(0, nil, "", statePtrType))
@@ -1938,16 +2076,22 @@ func (g *LLSSACodeGen) generateConcreteWrapperBody(wrapper llssa.Function, state
 	zero := g.prog.IntVal(0, int8Type)
 	b.Store(stateFieldPtr, zero)
 
-	// Copy parameters to state struct fields
+	// Copy parameters (including __llgo_ctx when present) to state struct fields
 	fieldIdx := 1 // Start after state field
-	for i := range fn.Params {
+	paramTuple := g.signatureWithCtx(fn.Signature).Params()
+	for i := 0; i < paramTuple.Len(); i++ {
 		paramVal := wrapper.Param(i)
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		b.Store(fieldPtr, paramVal)
 		fieldIdx++
 	}
 
-	// Initialize cross-var fields to zero values
+	// Initialize cross-var fields. For free vars, store the captured value from __llgo_ctx
+	// so they are non-nil when first resumed. Others default to zero.
+	var ctxParam llssa.Expr
+	if g.closureCtxParam() != nil {
+		ctxParam = wrapper.Param(0)
+	}
 	for _, v := range g.sm.CrossVars {
 		fieldPtr := b.FieldAddr(statePtr, fieldIdx)
 		fieldType := v.Type()
@@ -1961,13 +2105,26 @@ func (g *LLSSACodeGen) generateConcreteWrapperBody(wrapper llssa.Function, state
 			fieldType = types.Typ[types.UnsafePointer]
 		}
 
-		if alloc, ok := g.isStackAllocCrossVar(v); ok {
-			if tptr, ok := alloc.Type().(*types.Pointer); ok {
-				fieldType = tptr.Elem()
+		stored := false
+		if fv, ok := v.(*ssa.FreeVar); ok && !ctxParam.IsNil() {
+			idx := g.freeVarIndex(fv)
+			if idx >= 0 {
+				fvPtr := b.FieldAddr(ctxParam, idx)
+				fvVal := b.Load(fvPtr)
+				b.Store(fieldPtr, fvVal)
+				stored = true
 			}
 		}
-		zeroVal := g.prog.Zero(g.prog.Type(fieldType, llssa.InGo))
-		b.Store(fieldPtr, zeroVal)
+
+		if !stored {
+			if alloc, ok := g.isStackAllocCrossVar(v); ok {
+				if tptr, ok := alloc.Type().(*types.Pointer); ok {
+					fieldType = tptr.Elem()
+				}
+			}
+			zeroVal := g.prog.Zero(g.prog.Type(fieldType, llssa.InGo))
+			b.Store(fieldPtr, zeroVal)
+		}
 		fieldIdx++
 	}
 
@@ -1991,9 +2148,10 @@ func (g *LLSSACodeGen) generateInterfaceWrapperBody(wrapper llssa.Function, conc
 	b := wrapper.MakeBody(1)
 	b.SetBlock(wrapper.Block(0))
 
-	// Gather parameters
-	args := make([]llssa.Expr, len(fn.Params))
-	for i := range fn.Params {
+	// Gather parameters (include __llgo_ctx when present)
+	paramTuple := g.signatureWithCtx(fn.Signature).Params()
+	args := make([]llssa.Expr, paramTuple.Len())
+	for i := 0; i < paramTuple.Len(); i++ {
 		args[i] = wrapper.Param(i)
 	}
 
