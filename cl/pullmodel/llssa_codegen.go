@@ -1998,16 +1998,16 @@ func (g *LLSSACodeGen) returnReadyPoll(b llssa.Builder, value llssa.Expr) {
 func (g *LLSSACodeGen) returnErrorPoll(b llssa.Builder, panicVal llssa.Expr) {
 	trueVal := g.prog.BoolVal(true)
 	zeroPoll := g.createZeroPoll()
-
-	// value zero from zeroPoll
 	value := b.Field(zeroPoll, 1)
 	fields := []llssa.Expr{trueVal, value}
-
-	// err field if present
 	if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
-		fields = append(fields, panicVal)
+		errZero := b.Field(zeroPoll, 2)
+		errVal := errZero
+		if !panicVal.IsNil() && panicVal.Type == errZero.Type {
+			errVal = panicVal
+		}
+		fields = append(fields, errVal)
 	}
-
 	pollVal := b.AggregateExpr(g.pollLLType, fields...)
 	b.Return(pollVal)
 }
