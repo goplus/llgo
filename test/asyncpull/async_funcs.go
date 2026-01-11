@@ -624,6 +624,38 @@ func GoroutineChannelAsync(n int) async.Future[int] {
 	return async.Return(sum)
 }
 
+// ChanDeferRange ranges over chan with await in body, ensuring defer runs.
+func ChanDeferRange(n int, seen *[]int, hooks *[]string) async.Future[int] {
+	defer func() { *hooks = append(*hooks, "done") }()
+
+	ch := make(chan int, n)
+	for i := 0; i < n; i++ {
+		ch <- i
+	}
+	close(ch)
+
+	sum := 0
+	for v := range ch {
+		*seen = append(*seen, v)
+		sum += Compute(v).Await()
+	}
+	return async.Return(sum)
+}
+
+// PanicInSelectDefer panics in select default; defer must still run.
+func PanicInSelectDefer(out *[]string) async.Future[int] {
+	defer func() { *out = append(*out, "cleanup") }()
+	// ensure this function is transformed to pull-model state machine
+	_ = Compute(0).Await()
+	ch := make(chan int)
+	select {
+	case <-ch:
+		return async.Return(1)
+	default:
+		panic("select panic")
+	}
+}
+
 // TupleOkAsync returns (value, ok) as tuple to test tuple ABI + await chain.
 func TupleOkAsync(m map[string]int, key string) async.Future[async.Tuple2[int, bool]] {
 	v, ok := m[key]
