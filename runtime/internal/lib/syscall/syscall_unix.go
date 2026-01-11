@@ -7,9 +7,8 @@
 package syscall
 
 import (
-	"unsafe"
+	"errors"
 
-	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/syscall"
 	"github.com/goplus/llgo/runtime/internal/lib/internal/oserror"
 )
@@ -25,8 +24,7 @@ type Errno uintptr
 type Dirent = syscall.Dirent
 
 func (e Errno) Error() string {
-	ret := c.Strerror(c.Int(e))
-	return unsafe.String((*byte)(unsafe.Pointer(ret)), c.Strlen(ret))
+	return syscall.Error(syscall.Errno(e))
 }
 
 func (e Errno) Is(target error) bool {
@@ -37,9 +35,8 @@ func (e Errno) Is(target error) bool {
 		return e == Errno(syscall.EEXIST) || e == Errno(syscall.ENOTEMPTY)
 	case oserror.ErrNotExist:
 		return e == Errno(syscall.ENOENT)
-		// TODO(xsw): go1.21
-		// case errors.ErrUnsupported:
-		//	return e == ENOSYS || e == ENOTSUP || e == EOPNOTSUPP
+	case errors.ErrUnsupported:
+		return e == Errno(syscall.ENOSYS) || e == Errno(syscall.ENOTSUP) || e == Errno(syscall.EOPNOTSUPP)
 	}
 	return false
 }

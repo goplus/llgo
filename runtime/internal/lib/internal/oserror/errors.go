@@ -8,16 +8,16 @@
 package oserror
 
 import (
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	"errors"
 )
 
 // llgo:skipall
 type _oserror struct{}
 
 var (
-	ErrInvalid    = syscall.ErrInvalid
-	ErrPermission = syscall.ErrPermission
-	ErrExist      = syscall.ErrExist
-	ErrNotExist   = syscall.ErrNotExist
-	ErrClosed     = syscall.ErrClosed
+	ErrInvalid    = errors.New("invalid argument")
+	ErrPermission = errors.New("permission denied")
+	ErrExist      = errors.New("file already exists")
+	ErrNotExist   = errors.New("file does not exist")
+	ErrClosed     = errors.New("file already closed")
 )
