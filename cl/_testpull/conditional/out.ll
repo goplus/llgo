@@ -14,7 +14,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/conditional"
 %"github.com/goplus/llgo/runtime/abi.Imethod" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.eface" }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" = type { i8, i1, i64, i64, ptr, ptr, i64 }
+%"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" = type { i8, i1, i64, i64, ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.ReadyFuture[int]" = type { i64 }
@@ -85,7 +85,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/conditional"
 @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI$imethods" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss" }], align 8
 @"*_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -679682363, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 21 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 47 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/conditional.(*Conditional$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/conditional.(*Conditional$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/conditional.(*Conditional$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/conditional.(*Conditional$State).Poll" }] }, align 8
 @27 = private unnamed_addr constant [21 x i8] c"foo.Conditional$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 48, i64 32, i32 119970800, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 21 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/conditional.struct$WA7Jv-czQT_jEx5MThjGXFX6NqecEYG6qlbNzGRzdGQ$fields", i64 7, i64 7 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 47 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 64, i64 40, i32 119970800, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 21 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/conditional.struct$f3Jv7GLBOFuROGMwJRp0K1Q0Xy3WqGXt-ntPuSkN52I$fields", i64 8, i64 8 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 47 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
 @28 = private unnamed_addr constant [5 x i8] c"state", align 1
 @_llgo_int8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 1444672578, i8 12, i8 1, i8 1, i8 35, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 4 }, ptr @"*_llgo_int8" }, align 8
 @29 = private unnamed_addr constant [4 x i8] c"int8", align 1
@@ -122,13 +122,14 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/conditional"
 @43 = private unnamed_addr constant [7 x i8] c"started", align 1
 @"github.com/goplus/llgo/cl/_testpull/conditional.struct$7rDZKmB42_Py8edMKa5F7f4jLaT74tduVmwgA_IDf00$fields" = weak_odr constant [4 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 2 }, ptr @"_llgo_closure$GJlcV766GMBE3IJ_9tkJ4Ppu8coeRlXki_OTyWvNI74", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @43, i64 7 }, ptr @_llgo_bool, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 5 }, ptr @_llgo_bool, i64 17, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @44 = private unnamed_addr constant [4 x i8] c"sub1", align 1
-@45 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
-@"github.com/goplus/llgo/cl/_testpull/conditional.struct$WA7Jv-czQT_jEx5MThjGXFX6NqecEYG6qlbNzGRzdGQ$fields" = weak_odr constant [7 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 6 }, ptr @_llgo_bool, i64 1, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @31, i64 4 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 4 }, ptr @_llgo_int, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @45, i64 11 }, ptr @_llgo_int, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@45 = private unnamed_addr constant [8 x i8] c"panicErr", align 1
+@46 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
+@"github.com/goplus/llgo/cl/_testpull/conditional.struct$f3Jv7GLBOFuROGMwJRp0K1Q0Xy3WqGXt-ntPuSkN52I$fields" = weak_odr constant [8 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 6 }, ptr @_llgo_bool, i64 1, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @31, i64 4 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 4 }, ptr @_llgo_int, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @45, i64 8 }, ptr @_llgo_any, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @46, i64 11 }, ptr @_llgo_int, i64 56, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @"github.com/goplus/llgo/cl/_testpull/conditional.init$guard" = global i1 false, align 1
-@46 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 6 }, ptr @"*_llgo_string" }, align 8
-@47 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@47 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 6 }, ptr @"*_llgo_string" }, align 8
+@48 = private unnamed_addr constant [6 x i8] c"string", align 1
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 
 define i64 @"github.com/goplus/llgo/cl/_testpull/conditional.(*Conditional$State).Await"(ptr %0) {
 _llgo_0:
@@ -169,7 +170,7 @@ Conditional_state_01:                             ; preds = %Conditional_state_0
   %18 = icmp eq ptr %17, null
   br i1 %18, label %Conditional_state_01_init, label %Conditional_state_01_poll
 
-Conditional_state_02:                             ; preds = %Conditional_state_01_ready, %Conditional_entry
+Conditional_state_02:                             ; preds = %Conditional_state_01_ready_cont, %Conditional_entry
   %19 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
   %20 = load i1, ptr %19, align 1
   %21 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
@@ -182,57 +183,62 @@ Conditional_state_02:                             ; preds = %Conditional_state_0
   %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
   %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %28, 0
   %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, ptr %27, 1
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 7
   store i64 %26, ptr %31, align 4
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %32, align 1
-  %33 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
-  %34 = load i64, ptr %33, align 4
-  %35 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %34, 1
-  %36 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %35, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %36
+  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  %33 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %32, align 8
+  store { ptr, ptr } zeroinitializer, ptr %32, align 8
+  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %34, align 1
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 7
+  %36 = load i64, ptr %35, align 4
+  %37 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %36, 1
+  %38 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %37, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %38
 
 Conditional_state_03:                             ; preds = %Conditional_state_00_false, %Conditional_entry
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
-  %38 = load i1, ptr %37, align 1
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  %40 = load i64, ptr %39, align 4
-  %41 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
+  %40 = load i1, ptr %39, align 1
+  %41 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
   %42 = load i64, ptr %41, align 4
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 5
-  %44 = load ptr, ptr %43, align 8
-  %45 = icmp eq ptr %44, null
-  br i1 %45, label %Conditional_state_03_init, label %Conditional_state_03_poll
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  %44 = load i64, ptr %43, align 4
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 5
+  %46 = load ptr, ptr %45, align 8
+  %47 = icmp eq ptr %46, null
+  br i1 %47, label %Conditional_state_03_init, label %Conditional_state_03_poll
 
-Conditional_state_04:                             ; preds = %Conditional_state_03_ready, %Conditional_entry
-  %46 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
-  %47 = load i1, ptr %46, align 1
-  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  %49 = load i64, ptr %48, align 4
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+Conditional_state_04:                             ; preds = %Conditional_state_03_ready_cont, %Conditional_entry
+  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
+  %49 = load i1, ptr %48, align 1
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
   %51 = load i64, ptr %50, align 4
   %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
   %53 = load i64, ptr %52, align 4
-  %54 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %51)
-  %55 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
-  %56 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %55, 0
-  %57 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %56, ptr %54, 1
-  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
-  store i64 %53, ptr %58, align 4
-  %59 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %59, align 1
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
-  %61 = load i64, ptr %60, align 4
-  %62 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %61, 1
-  %63 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %62, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %63
-
-Conditional_state_done:                           ; preds = %Conditional_entry
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  %55 = load i64, ptr %54, align 4
+  %56 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %53)
+  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
+  %58 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %57, 0
+  %59 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %58, ptr %56, 1
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 7
+  store i64 %55, ptr %60, align 4
+  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  %62 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %61, align 8
+  store { ptr, ptr } zeroinitializer, ptr %61, align 8
+  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %63, align 1
+  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 7
   %65 = load i64, ptr %64, align 4
   %66 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %65, 1
   %67 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %66, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
   ret %"github.com/goplus/llgo/async.Poll[int]" %67
+
+Conditional_state_done:                           ; preds = %Conditional_entry
+  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  %69 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %68, align 8
+  %70 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %69, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %70
 
 Conditional_state_unreach:                        ; preds = %Conditional_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -241,76 +247,104 @@ _llgo_8:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 Conditional_state_00_true:                        ; preds = %Conditional_state_00
-  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %68, align 1
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %71, align 1
   br label %Conditional_state_01
 
 Conditional_state_00_false:                       ; preds = %Conditional_state_00
-  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %69, align 1
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %72, align 1
   br label %Conditional_state_03
 
 Conditional_state_01_init:                        ; preds = %Conditional_state_01
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
-  %71 = load i1, ptr %70, align 1
-  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  %73 = load i64, ptr %72, align 4
-  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  %75 = load i64, ptr %74, align 4
-  %76 = call ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepA"()
-  store ptr %76, ptr %16, align 8
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
+  %74 = load i1, ptr %73, align 1
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
+  %76 = load i64, ptr %75, align 4
+  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  %78 = load i64, ptr %77, align 4
+  %79 = call ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepA"()
+  store ptr %79, ptr %16, align 8
   br label %Conditional_state_01_poll
 
 Conditional_state_01_poll:                        ; preds = %Conditional_state_01_init, %Conditional_state_01
-  %77 = load ptr, ptr %16, align 8
-  %78 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %77, ptr %1)
-  %79 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %78, 0
-  br i1 %79, label %Conditional_state_01_ready, label %Conditional_state_01_pending
+  %80 = load ptr, ptr %16, align 8
+  %81 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %80, ptr %1)
+  %82 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %81, 0
+  br i1 %82, label %Conditional_state_01_ready, label %Conditional_state_01_pending
 
 Conditional_state_01_ready:                       ; preds = %Conditional_state_01_poll
-  %80 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %78, 1
-  %81 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  store i64 %80, ptr %81, align 4
-  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  store i64 %75, ptr %82, align 4
-  store ptr null, ptr %16, align 8
-  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %83, align 1
-  br label %Conditional_state_02
+  %83 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %81, 2
+  %84 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %83, { ptr, ptr } zeroinitializer)
+  %85 = xor i1 %84, true
+  br i1 %85, label %Conditional_state_01_err, label %Conditional_state_01_ready_cont
 
 Conditional_state_01_pending:                     ; preds = %Conditional_state_01_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
+Conditional_state_01_err:                         ; preds = %Conditional_state_01_ready
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %86, align 1
+  %87 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %83, ptr %87, align 8
+  %88 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %83, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %88
+
+Conditional_state_01_ready_cont:                  ; preds = %Conditional_state_01_ready
+  %89 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %81, 1
+  %90 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
+  store i64 %89, ptr %90, align 4
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  store i64 %78, ptr %91, align 4
+  store ptr null, ptr %16, align 8
+  %92 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %92, align 1
+  br label %Conditional_state_02
+
 Conditional_state_03_init:                        ; preds = %Conditional_state_03
-  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
-  %85 = load i1, ptr %84, align 1
-  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  %87 = load i64, ptr %86, align 4
-  %88 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  %89 = load i64, ptr %88, align 4
-  %90 = call ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepB"()
-  store ptr %90, ptr %43, align 8
+  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
+  %94 = load i1, ptr %93, align 1
+  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
+  %96 = load i64, ptr %95, align 4
+  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  %98 = load i64, ptr %97, align 4
+  %99 = call ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepB"()
+  store ptr %99, ptr %45, align 8
   br label %Conditional_state_03_poll
 
 Conditional_state_03_poll:                        ; preds = %Conditional_state_03_init, %Conditional_state_03
-  %91 = load ptr, ptr %43, align 8
-  %92 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %91, ptr %1)
-  %93 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %92, 0
-  br i1 %93, label %Conditional_state_03_ready, label %Conditional_state_03_pending
+  %100 = load ptr, ptr %45, align 8
+  %101 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %100, ptr %1)
+  %102 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %101, 0
+  br i1 %102, label %Conditional_state_03_ready, label %Conditional_state_03_pending
 
 Conditional_state_03_ready:                       ; preds = %Conditional_state_03_poll
-  %94 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %92, 1
-  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  store i64 %94, ptr %95, align 4
-  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  store i64 %87, ptr %96, align 4
-  store ptr null, ptr %43, align 8
-  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %97, align 1
-  br label %Conditional_state_04
+  %103 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %101, 2
+  %104 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, { ptr, ptr } zeroinitializer)
+  %105 = xor i1 %104, true
+  br i1 %105, label %Conditional_state_03_err, label %Conditional_state_03_ready_cont
 
 Conditional_state_03_pending:                     ; preds = %Conditional_state_03_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
+
+Conditional_state_03_err:                         ; preds = %Conditional_state_03_ready
+  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %106, align 1
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, ptr %107, align 8
+  %108 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %108
+
+Conditional_state_03_ready_cont:                  ; preds = %Conditional_state_03_ready
+  %109 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %101, 1
+  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  store i64 %109, ptr %110, align 4
+  %111 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
+  store i64 %96, ptr %111, align 4
+  store ptr null, ptr %45, align 8
+  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %112, align 1
+  br label %Conditional_state_04
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepA"() {
@@ -386,6 +420,8 @@ _llgo_6:                                          ; preds = %_llgo_4
   %32 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.Pending[int]"()
   ret %"github.com/goplus/llgo/async.Poll[int]" %32
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define linkonce ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %0) {
 _llgo_0:
@@ -540,7 +576,7 @@ _llgo_0:
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$Concrete"(i1 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %1, i32 0, i32 0
   store i8 0, ptr %2, align 1
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %1, i32 0, i32 1
@@ -570,7 +606,7 @@ _llgo_0:
 define linkonce i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @46, i64 45 }, ptr %1, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 45 }, ptr %1, align 8
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %1, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   unreachable
@@ -661,8 +697,6 @@ _llgo_0:
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/conditional.StepB$1"(ptr %0, { ptr, ptr } %1) {
 _llgo_0:

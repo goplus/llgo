@@ -200,11 +200,15 @@ func (g *LLSSACodeGen) compileDeferForPullModel(b llssa.Builder, statePtr llssa.
 // compilePanicForPullModel handles panic instructions in pull model.
 // Sets isPanicking flag and stores panic value in state struct.
 func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.Expr, panicInstr *ssa.Panic) {
+	panicVal := g.compileValue(b, panicInstr.X)
+
+	// If no defer, store panic and return PollError directly.
 	if !g.sm.HasDefer {
-		// No defer, just compile normally
-		if g.compileInstr != nil {
-			g.compileInstr(b, panicInstr)
-		}
+		int8Type := g.prog.Type(types.Typ[types.Int8], llssa.InGo)
+		stateFieldPtr := b.FieldAddr(statePtr, 0)
+		b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedStateIndex), int8Type))
+		g.storePanicValue(b, statePtr, panicVal)
+		g.returnErrorPoll(b, panicVal)
 		return
 	}
 
@@ -221,9 +225,6 @@ func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.
 
 	// Get pointer to DeferState embedded in state struct
 	deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
-
-	// Compile panic value (interface{})
-	panicVal := g.compileValue(b, panicInstr.X)
 
 	// Create function reference for async.(*DeferState).DoPanic
 	// Method signature: func (*DeferState) DoPanic(v any) bool
@@ -261,22 +262,45 @@ func (g *LLSSACodeGen) compilePanicForPullModel(b llssa.Builder, statePtr llssa.
 	stateFieldPtr := b.FieldAddr(statePtr, 0)
 	doneVal := g.prog.IntVal(uint64(g.completedStateIndex), int8Type)
 	b.Store(stateFieldPtr, doneVal)
+	// Clear panic value
+	if g.panicFieldIndex >= 0 {
+		fieldPtr := b.FieldAddr(statePtr, g.panicFieldIndex)
+		current := b.Load(fieldPtr)
+		zeroIface := g.prog.Zero(current.Type)
+		b.Store(fieldPtr, zeroIface)
+	}
 	finalValue := g.loadResultValue(b, statePtr)
+	if alloc := g.findResultAlloc(); alloc != nil {
+		if ptrType, ok := alloc.Type().(*types.Pointer); ok && isFutureType(ptrType.Elem()) {
+			if v := g.unwrapFutureResult(b, statePtr, alloc); !v.IsNil() {
+				finalValue = v
+				g.storeResultValue(b, statePtr, v)
+			}
+		} else if finalValue.IsNil() {
+			ptr := g.ensureAllocPtr(b, statePtr, alloc)
+			if !ptr.IsNil() {
+				finalValue = b.Load(ptr)
+			}
+		}
+	}
 	// Prefer loading from the result alloc (captures updates made inside defers).
 	if alloc := g.findResultAlloc(); alloc != nil {
-		ptr := g.ensureAllocPtr(b, statePtr, alloc)
-		if !ptr.IsNil() {
-			finalValue = b.Load(ptr)
+		if ptrType, ok := alloc.Type().(*types.Pointer); ok && !isFutureType(ptrType.Elem()) {
+			ptr := g.ensureAllocPtr(b, statePtr, alloc)
+			if !ptr.IsNil() {
+				finalValue = b.Load(ptr)
+			}
 		}
 	}
 	g.returnReadyPoll(b, finalValue)
 
-	// Not recovered: fallback to runtime panic
+	// Not recovered: propagate as PollError
 	b.SetBlock(panicBlock)
 	// Mark completed and propagate as PollError
 	int8Type = g.prog.Type(types.Typ[types.Int8], llssa.InGo)
 	stateFieldPtr = b.FieldAddr(statePtr, 0)
 	b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedStateIndex), int8Type))
+	g.storePanicValue(b, statePtr, panicVal)
 	g.returnErrorPoll(b, panicVal)
 }
 

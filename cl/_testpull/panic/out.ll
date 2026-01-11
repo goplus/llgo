@@ -15,13 +15,13 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/panic"
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.eface" }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
-%"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" = type { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, ptr, %"github.com/goplus/llgo/async.DeferState", i64 }
+%"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" = type { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, ptr, %"github.com/goplus/llgo/async.DeferState", %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 }
 %"github.com/goplus/llgo/async.DeferState" = type { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i1, i1 }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.ReadyFuture[int]" = type { i64 }
 %"github.com/goplus/llgo/async.Context" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 }
-%"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" = type { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, ptr, %"github.com/goplus/llgo/async.DeferState", i64 }
-%"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" = type { i8, i1, %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, ptr, %"github.com/goplus/llgo/async.DeferState", i64 }
+%"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" = type { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, ptr, %"github.com/goplus/llgo/async.DeferState", %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 }
+%"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" = type { i8, i1, %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, ptr, %"github.com/goplus/llgo/async.DeferState", %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 }
 
 @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -103283099, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 22 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/async.ReadyFuture[int]" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 28 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/async.(*ReadyFuture[int]).Await", ptr @"github.com/goplus/llgo/async.(*ReadyFuture[int]).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/async.(*ReadyFuture[int]).Poll", ptr @"github.com/goplus/llgo/async.(*ReadyFuture[int]).Poll" }] }, align 8
 @0 = private unnamed_addr constant [22 x i8] c"async.ReadyFuture[int]", align 1
@@ -88,7 +88,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/panic"
 @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI$imethods" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss" }], align 8
 @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -539005506, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 22 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*PanicInDefer$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*PanicInDefer$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*PanicInDefer$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*PanicInDefer$State).Poll" }] }, align 8
 @27 = private unnamed_addr constant [22 x i8] c"foo.PanicInDefer$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 80, i64 40, i32 -1276059722, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 22 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/panic.struct$MtUifTBBkblqfuvs-o6Sk_4v3OAKzC0T17J9rBq37Ng$fields", i64 6, i64 6 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 96, i64 72, i32 -1276059722, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 22 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/panic.struct$cFkNsKFF-F8omGE4RuALO1MlPJDIekgHxMiqMEae6KE$fields", i64 7, i64 7 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
 @28 = private unnamed_addr constant [5 x i8] c"state", align 1
 @_llgo_int8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 1444672578, i8 12, i8 1, i8 1, i8 35, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 4 }, ptr @"*_llgo_int8" }, align 8
 @29 = private unnamed_addr constant [4 x i8] c"int8", align 1
@@ -156,23 +156,24 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/panic"
 @56 = private unnamed_addr constant [11 x i8] c"IsPanicking", align 1
 @57 = private unnamed_addr constant [9 x i8] c"Recovered", align 1
 @"_llgo_struct$Td80-BLvbtmjWV_MtKrt1TE6IBW4brip3KX8E1cxLks$fields" = weak_odr constant [4 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @54, i64 9 }, ptr @_llgo_Pointer, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @55, i64 10 }, ptr @_llgo_any, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 11 }, ptr @_llgo_bool, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 9 }, ptr @_llgo_bool, i64 25, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
-@58 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
-@"github.com/goplus/llgo/cl/_testpull/panic.struct$MtUifTBBkblqfuvs-o6Sk_4v3OAKzC0T17J9rBq37Ng$fields" = weak_odr constant [6 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 4 }, ptr @"_llgo_github.com/goplus/llgo/async.Future[int]", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 10 }, ptr @"_llgo_github.com/goplus/llgo/async.DeferState", i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 11 }, ptr @_llgo_int, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
-@"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1950770465, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 24 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Poll" }] }, align 8
-@59 = private unnamed_addr constant [24 x i8] c"foo.RecoverInDefer$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 80, i64 40, i32 -1745283989, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 24 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/panic.struct$MtUifTBBkblqfuvs-o6Sk_4v3OAKzC0T17J9rBq37Ng$fields", i64 6, i64 6 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
-@"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1424501638, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 19 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Poll" }] }, align 8
-@60 = private unnamed_addr constant [19 x i8] c"foo.WithPanic$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 80, i64 40, i32 -1826678497, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 19 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/panic.struct$sZIhcEvKfP4lFqnHmkKLRexsbz8q3UwL5r4uTfP4mHI$fields", i64 7, i64 7 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
-@61 = private unnamed_addr constant [6 x i8] c"param0", align 1
-@"github.com/goplus/llgo/cl/_testpull/panic.struct$sZIhcEvKfP4lFqnHmkKLRexsbz8q3UwL5r4uTfP4mHI$fields" = weak_odr constant [7 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 6 }, ptr @_llgo_bool, i64 1, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 4 }, ptr @"_llgo_github.com/goplus/llgo/async.Future[int]", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 10 }, ptr @"_llgo_github.com/goplus/llgo/async.DeferState", i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 11 }, ptr @_llgo_int, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@58 = private unnamed_addr constant [8 x i8] c"panicErr", align 1
+@59 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
+@"github.com/goplus/llgo/cl/_testpull/panic.struct$cFkNsKFF-F8omGE4RuALO1MlPJDIekgHxMiqMEae6KE$fields" = weak_odr constant [7 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 4 }, ptr @"_llgo_github.com/goplus/llgo/async.Future[int]", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 10 }, ptr @"_llgo_github.com/goplus/llgo/async.DeferState", i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 8 }, ptr @_llgo_any, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 11 }, ptr @_llgo_int, i64 88, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1950770465, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 24 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Poll" }] }, align 8
+@60 = private unnamed_addr constant [24 x i8] c"foo.RecoverInDefer$State", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 96, i64 72, i32 -1745283989, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 24 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/panic.struct$cFkNsKFF-F8omGE4RuALO1MlPJDIekgHxMiqMEae6KE$fields", i64 7, i64 7 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1424501638, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 19 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/panic.(*WithPanic$State).Poll" }] }, align 8
+@61 = private unnamed_addr constant [19 x i8] c"foo.WithPanic$State", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 96, i64 72, i32 -1826678497, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 19 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/panic.struct$KAYF6o2sODthCOhNK3cC3rgWm_RT4bS7TZ9VUBSzT-0$fields", i64 8, i64 8 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 41 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@62 = private unnamed_addr constant [6 x i8] c"param0", align 1
+@"github.com/goplus/llgo/cl/_testpull/panic.struct$KAYF6o2sODthCOhNK3cC3rgWm_RT4bS7TZ9VUBSzT-0$fields" = weak_odr constant [8 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 6 }, ptr @_llgo_bool, i64 1, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 4 }, ptr @"_llgo_github.com/goplus/llgo/async.Future[int]", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 10 }, ptr @"_llgo_github.com/goplus/llgo/async.DeferState", i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 8 }, ptr @_llgo_any, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 11 }, ptr @_llgo_int, i64 88, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @"github.com/goplus/llgo/cl/_testpull/panic.init$guard" = global i1 false, align 1
-@62 = private unnamed_addr constant [16 x i8] c"operation failed", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 6 }, ptr @"*_llgo_string" }, align 8
-@63 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
-@64 = private unnamed_addr constant [11 x i8] c"defer panic", align 1
-@65 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
+@63 = private unnamed_addr constant [16 x i8] c"operation failed", align 1
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 6 }, ptr @"*_llgo_string" }, align 8
+@64 = private unnamed_addr constant [6 x i8] c"string", align 1
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@65 = private unnamed_addr constant [11 x i8] c"defer panic", align 1
+@66 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 %0) {
 _llgo_0:
@@ -195,7 +196,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 16 }, ptr %5, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 16 }, ptr %5, align 8
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %5, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
   unreachable
@@ -236,7 +237,7 @@ PanicInDefer_state_00:                            ; preds = %PanicInDefer_entry
   %11 = icmp eq ptr %10, null
   br i1 %11, label %PanicInDefer_state_00_init, label %PanicInDefer_state_00_poll
 
-PanicInDefer_state_01:                            ; preds = %PanicInDefer_state_00_ready, %PanicInDefer_entry
+PanicInDefer_state_01:                            ; preds = %PanicInDefer_state_00_ready_cont, %PanicInDefer_entry
   %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
   %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %12, align 8
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13, ptr %2, align 8
@@ -249,46 +250,53 @@ PanicInDefer_state_01:                            ; preds = %PanicInDefer_state_
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %19, 0
   %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20, ptr %18, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %2, align 8
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 4
-  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %22)
-  %23 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
-  store i64 %17, ptr %24, align 4
-  %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
-  %26 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %26, ptr %25, align 8
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %27, align 1
-  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
-  %29 = load i64, ptr %28, align 4
-  %30 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %29, 1
-  %31 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %30, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %31
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 6
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %22, align 8
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 4
+  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %23)
+  %24 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 6
+  store i64 %17, ptr %25, align 4
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
+  %27 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %26, align 8
+  store { ptr, ptr } zeroinitializer, ptr %26, align 8
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
+  %29 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, ptr %28, align 8
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %30, align 1
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 6
+  %32 = load i64, ptr %31, align 4
+  %33 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %32, 1
+  %34 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %33, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %34
 
 PanicInDefer_state_02:                            ; preds = %PanicInDefer_entry
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
-  %33 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %32, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %33, ptr %2, align 8
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 2
-  %35 = load i64, ptr %34, align 4
-  %36 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
-  %38 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %38, ptr %37, align 8
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %39, align 1
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
+  %36 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %35, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %36, ptr %2, align 8
+  %37 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 2
+  %38 = load i64, ptr %37, align 4
+  %39 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
   %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
-  %41 = load i64, ptr %40, align 4
-  %42 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %41, 1
-  %43 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %42, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %43
+  %41 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %40, align 8
+  store { ptr, ptr } zeroinitializer, ptr %40, align 8
+  %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
+  %43 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %43, ptr %42, align 8
+  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %44, align 1
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 6
+  %46 = load i64, ptr %45, align 4
+  %47 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %46, 1
+  %48 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %47, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %48
 
 PanicInDefer_state_done:                          ; preds = %PanicInDefer_entry
-  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
-  %45 = load i64, ptr %44, align 4
-  %46 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %45, 1
-  %47 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %46, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %47
+  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
+  %50 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %49, align 8
+  %51 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %50, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %51
 
 PanicInDefer_state_unreach:                       ; preds = %PanicInDefer_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -297,43 +305,87 @@ _llgo_6:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 PanicInDefer_state_00_init:                       ; preds = %PanicInDefer_state_00
-  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
-  %49 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %48, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %49, ptr %2, align 8
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 2
-  %51 = load i64, ptr %50, align 4
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 4
-  %53 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %54 = getelementptr inbounds { { ptr, ptr } }, ptr %53, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$1", ptr null }, ptr %54, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %52, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_panic_PanicInDefer$1", ptr null }, ptr %53)
-  %55 = call ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 false)
-  store ptr %55, ptr %9, align 8
+  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
+  %53 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %52, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %53, ptr %2, align 8
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 2
+  %55 = load i64, ptr %54, align 4
+  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 4
+  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %58 = getelementptr inbounds { { ptr, ptr } }, ptr %57, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$1", ptr null }, ptr %58, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %56, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_panic_PanicInDefer$1", ptr null }, ptr %57)
+  %59 = call ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 false)
+  store ptr %59, ptr %9, align 8
   br label %PanicInDefer_state_00_poll
 
 PanicInDefer_state_00_poll:                       ; preds = %PanicInDefer_state_00_init, %PanicInDefer_state_00
-  %56 = load ptr, ptr %9, align 8
-  %57 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %56, ptr %1)
-  %58 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %57, 0
-  br i1 %58, label %PanicInDefer_state_00_ready, label %PanicInDefer_state_00_pending
+  %60 = load ptr, ptr %9, align 8
+  %61 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %60, ptr %1)
+  %62 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 0
+  br i1 %62, label %PanicInDefer_state_00_ready, label %PanicInDefer_state_00_pending
 
 PanicInDefer_state_00_ready:                      ; preds = %PanicInDefer_state_00_poll
-  %59 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %57, 1
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 2
-  store i64 %59, ptr %60, align 4
-  store ptr null, ptr %9, align 8
-  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
-  %62 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %62, ptr %61, align 8
-  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %63, align 1
-  br label %PanicInDefer_state_01
+  %63 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 2
+  %64 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %63, { ptr, ptr } zeroinitializer)
+  %65 = xor i1 %64, true
+  br i1 %65, label %PanicInDefer_state_00_err, label %PanicInDefer_state_00_ready_cont
 
 PanicInDefer_state_00_pending:                    ; preds = %PanicInDefer_state_00_poll
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
-  %65 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %65, ptr %64, align 8
+  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
+  %67 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %67, ptr %66, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
+
+PanicInDefer_state_00_err:                        ; preds = %PanicInDefer_state_00_ready
+  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 4
+  %69 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %68, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %63)
+  br i1 %69, label %PanicInDefer_state_00_err_recovered, label %PanicInDefer_state_00_err_propagate
+
+PanicInDefer_state_00_ready_cont:                 ; preds = %PanicInDefer_state_00_ready
+  %70 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 1
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 2
+  store i64 %70, ptr %71, align 4
+  store ptr null, ptr %9, align 8
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
+  %73 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %73, ptr %72, align 8
+  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %74, align 1
+  br label %PanicInDefer_state_01
+
+PanicInDefer_state_00_err_recovered:              ; preds = %PanicInDefer_state_00_err
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %75, align 1
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
+  %77 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %76, align 8
+  store { ptr, ptr } zeroinitializer, ptr %76, align 8
+  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 6
+  %79 = load i64, ptr %78, align 4
+  %80 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %81 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %80)
+  %82 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %80, 0
+  %83 = getelementptr ptr, ptr %82, i64 4
+  %84 = load ptr, ptr %83, align 8
+  %85 = insertvalue { ptr, ptr } undef, ptr %84, 0
+  %86 = insertvalue { ptr, ptr } %85, ptr %81, 1
+  %87 = extractvalue { ptr, ptr } %86, 1
+  %88 = extractvalue { ptr, ptr } %86, 0
+  %89 = call %"github.com/goplus/llgo/async.Poll[int]" %88(ptr %87, ptr null)
+  %90 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %89, 1
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 6
+  store i64 %90, ptr %91, align 4
+  %92 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %90, 1
+  %93 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %92, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %93
+
+PanicInDefer_state_00_err_propagate:              ; preds = %PanicInDefer_state_00_err
+  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %94, align 1
+  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 5
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %63, ptr %95, align 8
+  %96 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %63, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %96
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
@@ -342,7 +394,7 @@ declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 define void @"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$1"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 11 }, ptr %0, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @65, i64 11 }, ptr %0, align 8
   %1 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %0, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %1)
   unreachable
@@ -433,6 +485,12 @@ _llgo_6:                                          ; preds = %_llgo_4
   %32 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.Pending[int]"()
   ret %"github.com/goplus/llgo/async.Poll[int]" %32
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+declare i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 define linkonce ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %0) {
 _llgo_0:
@@ -575,7 +633,7 @@ declare void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$Concrete"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 80)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 96)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 0
   store i8 0, ptr %1, align 1
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.PanicInDefer$State", ptr %0, i32 0, i32 1
@@ -599,7 +657,7 @@ _llgo_0:
 define linkonce i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @65, i64 45 }, ptr %1, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @66, i64 45 }, ptr %1, align 8
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %1, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   unreachable
@@ -648,8 +706,6 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %27, label %_llgo_1, label %_llgo_2
 }
 
-declare i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.eface")
-
 declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/async.(*DeferState).DoRecover"(ptr)
 
 define i64 @"github.com/goplus/llgo/cl/_testpull/panic.(*RecoverInDefer$State).Await"(ptr %0) {
@@ -681,7 +737,7 @@ RecoverInDefer_state_00:                          ; preds = %RecoverInDefer_entr
   %11 = icmp eq ptr %10, null
   br i1 %11, label %RecoverInDefer_state_00_init, label %RecoverInDefer_state_00_poll
 
-RecoverInDefer_state_01:                          ; preds = %RecoverInDefer_state_00_ready, %RecoverInDefer_entry
+RecoverInDefer_state_01:                          ; preds = %RecoverInDefer_state_00_ready_cont, %RecoverInDefer_entry
   %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
   %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %12, align 8
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13, ptr %2, align 8
@@ -694,46 +750,53 @@ RecoverInDefer_state_01:                          ; preds = %RecoverInDefer_stat
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %19, 0
   %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20, ptr %18, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %2, align 8
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 4
-  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %22)
-  %23 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
-  store i64 %17, ptr %24, align 4
-  %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
-  %26 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %26, ptr %25, align 8
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %27, align 1
-  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
-  %29 = load i64, ptr %28, align 4
-  %30 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %29, 1
-  %31 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %30, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %31
+  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 6
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %22, align 8
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 4
+  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %23)
+  %24 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 6
+  store i64 %17, ptr %25, align 4
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
+  %27 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %26, align 8
+  store { ptr, ptr } zeroinitializer, ptr %26, align 8
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
+  %29 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, ptr %28, align 8
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %30, align 1
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 6
+  %32 = load i64, ptr %31, align 4
+  %33 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %32, 1
+  %34 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %33, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %34
 
 RecoverInDefer_state_02:                          ; preds = %RecoverInDefer_entry
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
-  %33 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %32, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %33, ptr %2, align 8
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 2
-  %35 = load i64, ptr %34, align 4
-  %36 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %37 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
-  %38 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %38, ptr %37, align 8
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %39, align 1
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
+  %36 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %35, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %36, ptr %2, align 8
+  %37 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 2
+  %38 = load i64, ptr %37, align 4
+  %39 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
   %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
-  %41 = load i64, ptr %40, align 4
-  %42 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %41, 1
-  %43 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %42, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %43
+  %41 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %40, align 8
+  store { ptr, ptr } zeroinitializer, ptr %40, align 8
+  %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
+  %43 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %43, ptr %42, align 8
+  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %44, align 1
+  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 6
+  %46 = load i64, ptr %45, align 4
+  %47 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %46, 1
+  %48 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %47, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %48
 
 RecoverInDefer_state_done:                        ; preds = %RecoverInDefer_entry
-  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
-  %45 = load i64, ptr %44, align 4
-  %46 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %45, 1
-  %47 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %46, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %47
+  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
+  %50 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %49, align 8
+  %51 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %50, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %51
 
 RecoverInDefer_state_unreach:                     ; preds = %RecoverInDefer_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -742,43 +805,87 @@ _llgo_6:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 RecoverInDefer_state_00_init:                     ; preds = %RecoverInDefer_state_00
-  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
-  %49 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %48, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %49, ptr %2, align 8
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 2
-  %51 = load i64, ptr %50, align 4
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 4
-  %53 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %54 = getelementptr inbounds { { ptr, ptr } }, ptr %53, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$1", ptr null }, ptr %54, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %52, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_panic_RecoverInDefer$1", ptr null }, ptr %53)
-  %55 = call ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 true)
-  store ptr %55, ptr %9, align 8
+  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
+  %53 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %52, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %53, ptr %2, align 8
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 2
+  %55 = load i64, ptr %54, align 4
+  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 4
+  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %58 = getelementptr inbounds { { ptr, ptr } }, ptr %57, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$1", ptr null }, ptr %58, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %56, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_panic_RecoverInDefer$1", ptr null }, ptr %57)
+  %59 = call ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 true)
+  store ptr %59, ptr %9, align 8
   br label %RecoverInDefer_state_00_poll
 
 RecoverInDefer_state_00_poll:                     ; preds = %RecoverInDefer_state_00_init, %RecoverInDefer_state_00
-  %56 = load ptr, ptr %9, align 8
-  %57 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %56, ptr %1)
-  %58 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %57, 0
-  br i1 %58, label %RecoverInDefer_state_00_ready, label %RecoverInDefer_state_00_pending
+  %60 = load ptr, ptr %9, align 8
+  %61 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %60, ptr %1)
+  %62 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 0
+  br i1 %62, label %RecoverInDefer_state_00_ready, label %RecoverInDefer_state_00_pending
 
 RecoverInDefer_state_00_ready:                    ; preds = %RecoverInDefer_state_00_poll
-  %59 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %57, 1
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 2
-  store i64 %59, ptr %60, align 4
-  store ptr null, ptr %9, align 8
-  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
-  %62 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %62, ptr %61, align 8
-  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %63, align 1
-  br label %RecoverInDefer_state_01
+  %63 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 2
+  %64 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %63, { ptr, ptr } zeroinitializer)
+  %65 = xor i1 %64, true
+  br i1 %65, label %RecoverInDefer_state_00_err, label %RecoverInDefer_state_00_ready_cont
 
 RecoverInDefer_state_00_pending:                  ; preds = %RecoverInDefer_state_00_poll
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
-  %65 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %65, ptr %64, align 8
+  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
+  %67 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %67, ptr %66, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
+
+RecoverInDefer_state_00_err:                      ; preds = %RecoverInDefer_state_00_ready
+  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 4
+  %69 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %68, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %63)
+  br i1 %69, label %RecoverInDefer_state_00_err_recovered, label %RecoverInDefer_state_00_err_propagate
+
+RecoverInDefer_state_00_ready_cont:               ; preds = %RecoverInDefer_state_00_ready
+  %70 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 1
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 2
+  store i64 %70, ptr %71, align 4
+  store ptr null, ptr %9, align 8
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
+  %73 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %73, ptr %72, align 8
+  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %74, align 1
+  br label %RecoverInDefer_state_01
+
+RecoverInDefer_state_00_err_recovered:            ; preds = %RecoverInDefer_state_00_err
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %75, align 1
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
+  %77 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %76, align 8
+  store { ptr, ptr } zeroinitializer, ptr %76, align 8
+  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 6
+  %79 = load i64, ptr %78, align 4
+  %80 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %81 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %80)
+  %82 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %80, 0
+  %83 = getelementptr ptr, ptr %82, i64 4
+  %84 = load ptr, ptr %83, align 8
+  %85 = insertvalue { ptr, ptr } undef, ptr %84, 0
+  %86 = insertvalue { ptr, ptr } %85, ptr %81, 1
+  %87 = extractvalue { ptr, ptr } %86, 1
+  %88 = extractvalue { ptr, ptr } %86, 0
+  %89 = call %"github.com/goplus/llgo/async.Poll[int]" %88(ptr %87, ptr null)
+  %90 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %89, 1
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 6
+  store i64 %90, ptr %91, align 4
+  %92 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %90, 1
+  %93 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %92, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %93
+
+RecoverInDefer_state_00_err_propagate:            ; preds = %RecoverInDefer_state_00_err
+  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %94, align 1
+  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 5
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %63, ptr %95, align 8
+  %96 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %63, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %96
 }
 
 define void @"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$1"() {
@@ -813,7 +920,7 @@ _llgo_0:
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$Concrete"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 80)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 96)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 0
   store i8 0, ptr %1, align 1
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.RecoverInDefer$State", ptr %0, i32 0, i32 1
@@ -865,7 +972,7 @@ WithPanic_state_00:                               ; preds = %WithPanic_entry
   %13 = icmp eq ptr %12, null
   br i1 %13, label %WithPanic_state_00_init, label %WithPanic_state_00_poll
 
-WithPanic_state_01:                               ; preds = %WithPanic_state_00_ready, %WithPanic_entry
+WithPanic_state_01:                               ; preds = %WithPanic_state_00_ready_cont, %WithPanic_entry
   %14 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
   %15 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %14, align 8
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, ptr %2, align 8
@@ -880,48 +987,55 @@ WithPanic_state_01:                               ; preds = %WithPanic_state_00_
   %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %23, 0
   %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %24, ptr %22, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %25, ptr %2, align 8
-  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 5
-  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %26)
-  %27 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
-  store i64 %21, ptr %28, align 4
-  %29 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
-  %30 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %30, ptr %29, align 8
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %31, align 1
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
-  %33 = load i64, ptr %32, align 4
-  %34 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %33, 1
-  %35 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %34, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %35
+  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 7
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %25, ptr %26, align 8
+  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 5
+  call void @"github.com/goplus/llgo/async.(*DeferState).RunDefers"(ptr %27)
+  %28 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %29 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 7
+  store i64 %21, ptr %29, align 4
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
+  %31 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %30, align 8
+  store { ptr, ptr } zeroinitializer, ptr %30, align 8
+  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
+  %33 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %33, ptr %32, align 8
+  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %34, align 1
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 7
+  %36 = load i64, ptr %35, align 4
+  %37 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %36, 1
+  %38 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %37, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %38
 
 WithPanic_state_02:                               ; preds = %WithPanic_entry
-  %36 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
-  %37 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %36, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %37, ptr %2, align 8
-  %38 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 1
-  %39 = load i1, ptr %38, align 1
-  %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 3
-  %41 = load i64, ptr %40, align 4
-  %42 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
-  %44 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %44, ptr %43, align 8
-  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %45, align 1
+  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
+  %40 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %39, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %40, ptr %2, align 8
+  %41 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 1
+  %42 = load i1, ptr %41, align 1
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 3
+  %44 = load i64, ptr %43, align 4
+  %45 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
   %46 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
-  %47 = load i64, ptr %46, align 4
-  %48 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %47, 1
-  %49 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %48, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %49
+  %47 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %46, align 8
+  store { ptr, ptr } zeroinitializer, ptr %46, align 8
+  %48 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
+  %49 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %49, ptr %48, align 8
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %50, align 1
+  %51 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 7
+  %52 = load i64, ptr %51, align 4
+  %53 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %52, 1
+  %54 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %53, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %54
 
 WithPanic_state_done:                             ; preds = %WithPanic_entry
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
-  %51 = load i64, ptr %50, align 4
-  %52 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %51, 1
-  %53 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %52, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %53
+  %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
+  %56 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %55, align 8
+  %57 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %56, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %57
 
 WithPanic_state_unreach:                          ; preds = %WithPanic_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -930,45 +1044,89 @@ _llgo_6:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 WithPanic_state_00_init:                          ; preds = %WithPanic_state_00
-  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 1
-  %55 = load i1, ptr %54, align 1
-  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
-  %57 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %56, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %57, ptr %2, align 8
-  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 3
-  %59 = load i64, ptr %58, align 4
-  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 5
-  %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %62 = getelementptr inbounds { { ptr, ptr } }, ptr %61, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/panic.WithPanic$1", ptr null }, ptr %62, align 8
-  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %60, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_panic_WithPanic$1", ptr null }, ptr %61)
-  %63 = call ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 %55)
-  store ptr %63, ptr %11, align 8
+  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 1
+  %59 = load i1, ptr %58, align 1
+  %60 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
+  %61 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %60, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %61, ptr %2, align 8
+  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 3
+  %63 = load i64, ptr %62, align 4
+  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 5
+  %65 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %66 = getelementptr inbounds { { ptr, ptr } }, ptr %65, i32 0, i32 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testpull/panic.WithPanic$1", ptr null }, ptr %66, align 8
+  call void @"github.com/goplus/llgo/async.(*DeferState).PushDefer"(ptr %64, { ptr, ptr } { ptr @"__llgo_stub.__llgo_defer_wrap$github_com_goplus_llgo_cl__testpull_panic_WithPanic$1", ptr null }, ptr %65)
+  %67 = call ptr @"github.com/goplus/llgo/cl/_testpull/panic.MayFail"(i1 %59)
+  store ptr %67, ptr %11, align 8
   br label %WithPanic_state_00_poll
 
 WithPanic_state_00_poll:                          ; preds = %WithPanic_state_00_init, %WithPanic_state_00
-  %64 = load ptr, ptr %11, align 8
-  %65 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %64, ptr %1)
-  %66 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %65, 0
-  br i1 %66, label %WithPanic_state_00_ready, label %WithPanic_state_00_pending
+  %68 = load ptr, ptr %11, align 8
+  %69 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %68, ptr %1)
+  %70 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %69, 0
+  br i1 %70, label %WithPanic_state_00_ready, label %WithPanic_state_00_pending
 
 WithPanic_state_00_ready:                         ; preds = %WithPanic_state_00_poll
-  %67 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %65, 1
-  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 3
-  store i64 %67, ptr %68, align 4
-  store ptr null, ptr %11, align 8
-  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
-  %70 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %70, ptr %69, align 8
-  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %71, align 1
-  br label %WithPanic_state_01
+  %71 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %69, 2
+  %72 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %71, { ptr, ptr } zeroinitializer)
+  %73 = xor i1 %72, true
+  br i1 %73, label %WithPanic_state_00_err, label %WithPanic_state_00_ready_cont
 
 WithPanic_state_00_pending:                       ; preds = %WithPanic_state_00_poll
-  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
-  %73 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %73, ptr %72, align 8
+  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
+  %75 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %75, ptr %74, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
+
+WithPanic_state_00_err:                           ; preds = %WithPanic_state_00_ready
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 5
+  %77 = call i1 @"github.com/goplus/llgo/async.(*DeferState).DoPanic"(ptr %76, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %71)
+  br i1 %77, label %WithPanic_state_00_err_recovered, label %WithPanic_state_00_err_propagate
+
+WithPanic_state_00_ready_cont:                    ; preds = %WithPanic_state_00_ready
+  %78 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %69, 1
+  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 3
+  store i64 %78, ptr %79, align 4
+  store ptr null, ptr %11, align 8
+  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 2
+  %81 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %81, ptr %80, align 8
+  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %82, align 1
+  br label %WithPanic_state_01
+
+WithPanic_state_00_err_recovered:                 ; preds = %WithPanic_state_00_err
+  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %83, align 1
+  %84 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
+  %85 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %84, align 8
+  store { ptr, ptr } zeroinitializer, ptr %84, align 8
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 7
+  %87 = load i64, ptr %86, align 4
+  %88 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  %89 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %88)
+  %90 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %88, 0
+  %91 = getelementptr ptr, ptr %90, i64 4
+  %92 = load ptr, ptr %91, align 8
+  %93 = insertvalue { ptr, ptr } undef, ptr %92, 0
+  %94 = insertvalue { ptr, ptr } %93, ptr %89, 1
+  %95 = extractvalue { ptr, ptr } %94, 1
+  %96 = extractvalue { ptr, ptr } %94, 0
+  %97 = call %"github.com/goplus/llgo/async.Poll[int]" %96(ptr %95, ptr null)
+  %98 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %97, 1
+  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 7
+  store i64 %98, ptr %99, align 4
+  %100 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %98, 1
+  %101 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %100, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %101
+
+WithPanic_state_00_err_propagate:                 ; preds = %WithPanic_state_00_err
+  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %102, align 1
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %0, i32 0, i32 6
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %71, ptr %103, align 8
+  %104 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %71, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %104
 }
 
 define void @"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$1"() {
@@ -1003,7 +1161,7 @@ _llgo_0:
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$Concrete"(i1 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 80)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 96)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %1, i32 0, i32 0
   store i8 0, ptr %2, align 1
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/panic.WithPanic$State", ptr %1, i32 0, i32 1
@@ -1072,8 +1230,6 @@ _llgo_0:
   ret %"github.com/goplus/llgo/async.Poll[int]" %4
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
-
 define linkonce %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.Pending[int]"() {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/async.Poll[int]", align 8
@@ -1083,8 +1239,6 @@ _llgo_0:
   %2 = load %"github.com/goplus/llgo/async.Poll[int]", ptr %0, align 8
   ret %"github.com/goplus/llgo/async.Poll[int]" %2
 }
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/runtime/internal/runtime.Recover"()
 

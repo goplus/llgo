@@ -53,24 +53,29 @@ func ShouldTransform(fn *ssa.Function) bool {
 		return false
 	}
 
-	// Must have at least one Await call OR contain defer (so we can persist defers/panics).
+	// Must have at least one Await call OR contain defer/panic (so we can persist defers/panics).
 	suspends := FindSuspendPoints(fn)
 	if len(suspends) > 0 {
 		return true
 	}
 	hasDefer := false
+	hasPanic := false
 	for _, b := range fn.Blocks {
 		for _, instr := range b.Instrs {
 			if _, ok := instr.(*ssa.Defer); ok {
 				hasDefer = true
 				break
 			}
+			if _, ok := instr.(*ssa.Panic); ok {
+				hasPanic = true
+				break
+			}
 		}
-		if hasDefer {
+		if hasDefer || hasPanic {
 			break
 		}
 	}
-	return hasDefer
+	return hasDefer || hasPanic
 }
 
 // TransformFunction transforms an async function into a state machine.

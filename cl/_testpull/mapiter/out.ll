@@ -17,7 +17,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/mapiter"
 %"github.com/goplus/llgo/runtime/abi.Imethod" = type { %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.eface" }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" = type { i8, ptr, i1, i64, i64, ptr, ptr, i64, ptr, i64 }
+%"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" = type { i8, ptr, i1, i64, i64, ptr, ptr, i64, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
 %"github.com/goplus/llgo/async.ReadyFuture[int]" = type { i64 }
@@ -126,7 +126,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/mapiter"
 @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI$imethods" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss" }], align 8
 @"*_llgo_github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -2000719008, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 23 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 43 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.(*MapIterAsync$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.(*MapIterAsync$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 4 }, ptr @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss", ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.(*MapIterAsync$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.(*MapIterAsync$State).Poll" }] }, align 8
 @42 = private unnamed_addr constant [23 x i8] c"main.MapIterAsync$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 80, i64 64, i32 -560499704, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 23 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.struct$m8y43_qjenpq6ITJKHoSDtbU0jOQ-DpDi9_oXO5sEL8$fields", i64 10, i64 10 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 43 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 96, i64 72, i32 -560499704, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 23 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.struct$DlArMyOiCyiOdpcXtk-3Qxsqv86WfSSK7IgfRYwFnwI$fields", i64 11, i64 11 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 43 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
 @43 = private unnamed_addr constant [5 x i8] c"state", align 1
 @_llgo_int8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 1444672578, i8 12, i8 1, i8 1, i8 35, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @44, i64 4 }, ptr @"*_llgo_int8" }, align 8
 @44 = private unnamed_addr constant [4 x i8] c"int8", align 1
@@ -163,15 +163,16 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/mapiter"
 @"github.com/goplus/llgo/cl/_testpull/mapiter.struct$7rDZKmB42_Py8edMKa5F7f4jLaT74tduVmwgA_IDf00$fields" = weak_odr constant [4 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @52, i64 2 }, ptr @"_llgo_closure$GJlcV766GMBE3IJ_9tkJ4Ppu8coeRlXki_OTyWvNI74", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 7 }, ptr @_llgo_bool, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 5 }, ptr @_llgo_bool, i64 17, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 5 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @60 = private unnamed_addr constant [4 x i8] c"var5", align 1
 @61 = private unnamed_addr constant [4 x i8] c"sub0", align 1
-@62 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
-@"github.com/goplus/llgo/cl/_testpull/mapiter.struct$m8y43_qjenpq6ITJKHoSDtbU0jOQ-DpDi9_oXO5sEL8$fields" = weak_odr constant [10 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @43, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @45, i64 6 }, ptr @"map[_llgo_string]_llgo_int", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @46, i64 4 }, ptr @_llgo_bool, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 4 }, ptr @_llgo_int, i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @49, i64 4 }, ptr @_llgo_Pointer, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @50, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 48, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 4 }, ptr @_llgo_int, i64 56, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 64, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 11 }, ptr @_llgo_int, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@62 = private unnamed_addr constant [8 x i8] c"panicErr", align 1
+@63 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
+@"github.com/goplus/llgo/cl/_testpull/mapiter.struct$DlArMyOiCyiOdpcXtk-3Qxsqv86WfSSK7IgfRYwFnwI$fields" = weak_odr constant [11 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @43, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @45, i64 6 }, ptr @"map[_llgo_string]_llgo_int", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @46, i64 4 }, ptr @_llgo_bool, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @47, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @48, i64 4 }, ptr @_llgo_int, i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @49, i64 4 }, ptr @_llgo_Pointer, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @50, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 48, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @60, i64 4 }, ptr @_llgo_int, i64 56, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @61, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 64, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @62, i64 8 }, ptr @_llgo_any, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 11 }, ptr @_llgo_int, i64 88, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @"github.com/goplus/llgo/cl/_testpull/mapiter.init$guard" = global i1 false, align 1
-@63 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
-@64 = private unnamed_addr constant [1 x i8] c"x", align 1
-@65 = private unnamed_addr constant [1 x i8] c"y", align 1
-@66 = private unnamed_addr constant [1 x i8] c"z", align 1
-@67 = private unnamed_addr constant [24 x i8] c"Not ready after 10 polls", align 1
-@68 = private unnamed_addr constant [7 x i8] c"Result:", align 1
+@64 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
+@65 = private unnamed_addr constant [1 x i8] c"x", align 1
+@66 = private unnamed_addr constant [1 x i8] c"y", align 1
+@67 = private unnamed_addr constant [1 x i8] c"z", align 1
+@68 = private unnamed_addr constant [24 x i8] c"Not ready after 10 polls", align 1
+@69 = private unnamed_addr constant [7 x i8] c"Result:", align 1
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.Compute"(i64 %0) {
 _llgo_0:
@@ -274,7 +275,7 @@ MapIterAsync_state_02:                            ; preds = %MapIterAsync_state_
   %49 = icmp eq ptr %48, null
   br i1 %49, label %MapIterAsync_state_02_init, label %MapIterAsync_state_02_poll
 
-MapIterAsync_state_03:                            ; preds = %MapIterAsync_state_02_ready, %MapIterAsync_entry
+MapIterAsync_state_03:                            ; preds = %MapIterAsync_state_02_ready_cont, %MapIterAsync_entry
   %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 1
   %51 = load ptr, ptr %50, align 8
   %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
@@ -320,22 +321,24 @@ MapIterAsync_state_04:                            ; preds = %MapIterAsync_state_
   %85 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
   %86 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %85, 0
   %87 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %86, ptr %84, 1
-  %88 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 9
+  %88 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 10
   store i64 %83, ptr %88, align 4
-  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %89, align 1
-  %90 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 9
-  %91 = load i64, ptr %90, align 4
-  %92 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %91, 1
-  %93 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %92, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %93
+  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 9
+  %90 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %89, align 8
+  store { ptr, ptr } zeroinitializer, ptr %89, align 8
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %91, align 1
+  %92 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 10
+  %93 = load i64, ptr %92, align 4
+  %94 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %93, 1
+  %95 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %94, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %95
 
 MapIterAsync_state_done:                          ; preds = %MapIterAsync_entry
-  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 9
-  %95 = load i64, ptr %94, align 4
-  %96 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, i64 %95, 1
-  %97 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" %96, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %97
+  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 9
+  %97 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %96, align 8
+  %98 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %97, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %98
 
 MapIterAsync_state_unreach:                       ; preds = %MapIterAsync_entry
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
@@ -344,94 +347,108 @@ _llgo_8:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 _llgo_9:                                          ; preds = %MapIterAsync_state_01
-  %98 = extractvalue { i1, ptr, ptr } %33, 1
-  %99 = extractvalue { i1, ptr, ptr } %33, 2
-  %100 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %98, align 8
-  %101 = load i64, ptr %99, align 4
-  %102 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } { i1 true, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef, i64 undef }, %"github.com/goplus/llgo/runtime/internal/runtime.String" %100, 1
-  %103 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %102, i64 %101, 2
+  %99 = extractvalue { i1, ptr, ptr } %33, 1
+  %100 = extractvalue { i1, ptr, ptr } %33, 2
+  %101 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %99, align 8
+  %102 = load i64, ptr %100, align 4
+  %103 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } { i1 true, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef, i64 undef }, %"github.com/goplus/llgo/runtime/internal/runtime.String" %101, 1
+  %104 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %103, i64 %102, 2
   br label %_llgo_11
 
 _llgo_10:                                         ; preds = %MapIterAsync_state_01
   br label %_llgo_11
 
 _llgo_11:                                         ; preds = %_llgo_10, %_llgo_9
-  %104 = phi { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } [ %103, %_llgo_9 ], [ zeroinitializer, %_llgo_10 ]
-  %105 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %104, 0
-  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
-  store i1 %105, ptr %106, align 1
-  br i1 %105, label %MapIterAsync_state_01_true, label %MapIterAsync_state_01_false
+  %105 = phi { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } [ %104, %_llgo_9 ], [ zeroinitializer, %_llgo_10 ]
+  %106 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %105, 0
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
+  store i1 %106, ptr %107, align 1
+  br i1 %106, label %MapIterAsync_state_01_true, label %MapIterAsync_state_01_false
 
 MapIterAsync_state_01_true:                       ; preds = %_llgo_11
-  %107 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %104, 0
-  %108 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
-  store i1 %107, ptr %108, align 1
-  %109 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %104, 2
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
-  store i64 %109, ptr %110, align 4
-  %111 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %111, align 1
+  %108 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %105, 0
+  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
+  store i1 %108, ptr %109, align 1
+  %110 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %105, 2
+  %111 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
+  store i64 %110, ptr %111, align 4
+  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %112, align 1
   br label %MapIterAsync_state_02
 
 MapIterAsync_state_01_false:                      ; preds = %_llgo_11
-  %112 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %104, 0
-  %113 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
-  store i1 %112, ptr %113, align 1
-  %114 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %104, 2
-  %115 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
-  store i64 %114, ptr %115, align 4
-  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %116, align 1
+  %113 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %105, 0
+  %114 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
+  store i1 %113, ptr %114, align 1
+  %115 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", i64 } %105, 2
+  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
+  store i64 %115, ptr %116, align 4
+  %117 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %117, align 1
   br label %MapIterAsync_state_04
 
 MapIterAsync_state_02_init:                       ; preds = %MapIterAsync_state_02
-  %117 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 1
-  %118 = load ptr, ptr %117, align 8
-  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
-  %120 = load i1, ptr %119, align 1
-  %121 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
-  %122 = load i64, ptr %121, align 4
-  %123 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 4
-  %124 = load i64, ptr %123, align 4
-  %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 5
-  %126 = load ptr, ptr %125, align 8
-  %127 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 7
-  %128 = load i64, ptr %127, align 4
-  %129 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
-  store i64 %122, ptr %129, align 4
-  %130 = call ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.Compute"(i64 %122)
-  %131 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 6
-  store ptr %130, ptr %131, align 8
-  store ptr %130, ptr %47, align 8
+  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 1
+  %119 = load ptr, ptr %118, align 8
+  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
+  %121 = load i1, ptr %120, align 1
+  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
+  %123 = load i64, ptr %122, align 4
+  %124 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 4
+  %125 = load i64, ptr %124, align 4
+  %126 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 5
+  %127 = load ptr, ptr %126, align 8
+  %128 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 7
+  %129 = load i64, ptr %128, align 4
+  %130 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
+  store i64 %123, ptr %130, align 4
+  %131 = call ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.Compute"(i64 %123)
+  %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 6
+  store ptr %131, ptr %132, align 8
+  store ptr %131, ptr %47, align 8
   br label %MapIterAsync_state_02_poll
 
 MapIterAsync_state_02_poll:                       ; preds = %MapIterAsync_state_02_init, %MapIterAsync_state_02
-  %132 = load ptr, ptr %47, align 8
-  %133 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %132, ptr %1)
-  %134 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %133, 0
-  br i1 %134, label %MapIterAsync_state_02_ready, label %MapIterAsync_state_02_pending
+  %133 = load ptr, ptr %47, align 8
+  %134 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %133, ptr %1)
+  %135 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 0
+  br i1 %135, label %MapIterAsync_state_02_ready, label %MapIterAsync_state_02_pending
 
 MapIterAsync_state_02_ready:                      ; preds = %MapIterAsync_state_02_poll
-  %135 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %133, 1
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 7
-  store i64 %135, ptr %136, align 4
-  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
-  store i1 %120, ptr %137, align 1
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
-  store i64 %122, ptr %138, align 4
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 4
-  store i64 %124, ptr %139, align 4
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 5
-  store ptr %126, ptr %140, align 8
-  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 6
-  store ptr %130, ptr %141, align 8
-  store ptr null, ptr %47, align 8
-  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %142, align 1
-  br label %MapIterAsync_state_03
+  %136 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 2
+  %137 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, { ptr, ptr } zeroinitializer)
+  %138 = xor i1 %137, true
+  br i1 %138, label %MapIterAsync_state_02_err, label %MapIterAsync_state_02_ready_cont
 
 MapIterAsync_state_02_pending:                    ; preds = %MapIterAsync_state_02_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
+
+MapIterAsync_state_02_err:                        ; preds = %MapIterAsync_state_02_ready
+  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %139, align 1
+  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, ptr %140, align 8
+  %141 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %136, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %141
+
+MapIterAsync_state_02_ready_cont:                 ; preds = %MapIterAsync_state_02_ready
+  %142 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 1
+  %143 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 7
+  store i64 %142, ptr %143, align 4
+  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
+  store i1 %121, ptr %144, align 1
+  %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
+  store i64 %123, ptr %145, align 4
+  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 4
+  store i64 %125, ptr %146, align 4
+  %147 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 5
+  store ptr %127, ptr %147, align 8
+  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 6
+  store ptr %131, ptr %148, align 8
+  store ptr null, ptr %47, align 8
+  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %149, align 1
+  br label %MapIterAsync_state_03
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
@@ -535,6 +552,8 @@ _llgo_6:                                          ; preds = %_llgo_4
   %32 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.Pending[int]"()
   ret %"github.com/goplus/llgo/async.Poll[int]" %32
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define linkonce ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %0) {
 _llgo_0:
@@ -649,7 +668,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$Concrete"(ptr %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 80)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 96)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %1, i32 0, i32 0
   store i8 0, ptr %2, align 1
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %1, i32 0, i32 1
@@ -685,7 +704,7 @@ _llgo_0:
 define linkonce i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @63, i64 45 }, ptr %1, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 45 }, ptr %1, align 8
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %1, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   unreachable
@@ -752,15 +771,15 @@ define void @"github.com/goplus/llgo/cl/_testpull/mapiter.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_string]_llgo_int", i64 3)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @64, i64 1 }, ptr %1, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @65, i64 1 }, ptr %1, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_string]_llgo_int", ptr %0, ptr %1)
   store i64 1, ptr %2, align 4
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @65, i64 1 }, ptr %3, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @66, i64 1 }, ptr %3, align 8
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_string]_llgo_int", ptr %0, ptr %3)
   store i64 2, ptr %4, align 4
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @66, i64 1 }, ptr %5, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @67, i64 1 }, ptr %5, align 8
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_string]_llgo_int", ptr %0, ptr %5)
   store i64 3, ptr %6, align 4
   %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync"(ptr %0)
@@ -785,13 +804,13 @@ _llgo_2:                                          ; preds = %_llgo_1
   br i1 %19, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @67, i64 24 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @68, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_2
   %20 = call i64 @"github.com/goplus/llgo/async.Poll[int].Value"(%"github.com/goplus/llgo/async.Poll[int]" %18)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @68, i64 7 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @69, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %20)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
@@ -826,8 +845,6 @@ _llgo_0:
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
-
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

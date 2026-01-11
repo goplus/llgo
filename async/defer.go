@@ -57,8 +57,24 @@ func (s *DeferState) RunDefers() {
 	for s.DeferHead != nil {
 		node := (*DeferNode)(s.DeferHead)
 		s.DeferHead = unsafe.Pointer(node.prev)
-		// Call the deferred function
-		callDeferredFunc(node.fn, node.arg)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					// start panic mode so later defers can recover
+					s.PanicValue = r
+					s.IsPanicking = true
+					s.Recovered = false
+				}
+			}()
+			callDeferredFunc(node.fn, node.arg)
+		}()
+		if s.IsPanicking && s.Recovered {
+			// recover() in a later defer may clear panic; keep unwinding but remember status
+			continue
+		}
+	}
+	if s.IsPanicking && !s.Recovered {
+		panic(s.PanicValue)
 	}
 }
 
@@ -78,7 +94,17 @@ func (s *DeferState) DoPanic(v any) bool {
 		node := (*DeferNode)(s.DeferHead)
 		s.DeferHead = unsafe.Pointer(node.prev)
 		// Call the deferred function (may call DoRecover)
-		callDeferredFunc(node.fn, node.arg)
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					// Replace current panic with new one and continue unwinding.
+					s.PanicValue = r
+					s.IsPanicking = true
+					s.Recovered = false
+				}
+			}()
+			callDeferredFunc(node.fn, node.arg)
+		}()
 	}
 
 	if s.Recovered {

@@ -15,7 +15,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/minrepro"
 %"github.com/goplus/llgo/async.Tuple2[int,int]" = type { i64, i64 }
 %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" = type { i1, %"github.com/goplus/llgo/async.Tuple2[int,int]", %"github.com/goplus/llgo/runtime/internal/runtime.eface" }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" = type { i8, i64, i64, i64, i64, i64, i64, ptr, ptr, %"github.com/goplus/llgo/async.Tuple2[int,int]" }
+%"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" = type { i8, i64, i64, i64, i64, i64, i64, ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/async.Tuple2[int,int]" }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 %"github.com/goplus/llgo/async.Poll[int]" = type { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.eface" }
 %"github.com/goplus/llgo/async.AsyncFuture[int]" = type { { ptr, ptr }, i1, i1, i64 }
@@ -98,7 +98,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/minrepro"
 @"_llgo_iface$JUoXkwpyN4rTSTT_NnAgTEgTKBELlGnXKsPeHB_9_t8$imethods" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr @"_llgo_func$nToCCYBH4T19EsKF-IRXpBfaubZ2qtPBnGpgE2882a4" }, %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 4 }, ptr @"_llgo_func$9R5L_lh66CDHzCqrYvgjs-i0n0AUq8aeFIZkZuYQUMU" }], align 8
 @"*_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1275124037, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 21 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 44 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr @"_llgo_func$nToCCYBH4T19EsKF-IRXpBfaubZ2qtPBnGpgE2882a4", ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.(*Divmod$State).Await", ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.(*Divmod$State).Await" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 4 }, ptr @"_llgo_func$9R5L_lh66CDHzCqrYvgjs-i0n0AUq8aeFIZkZuYQUMU", ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.(*Divmod$State).Poll", ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.(*Divmod$State).Poll" }] }, align 8
 @32 = private unnamed_addr constant [21 x i8] c"minrepro.Divmod$State", align 1
-@"_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 88, i64 64, i32 -980559202, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 21 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.struct$CtX3aegFxXLvP2SyYdiPQP0fuxkPEYWSVYpE1_i3gbY$fields", i64 10, i64 10 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 44 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
+@"_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.StructType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [0 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 104, i64 72, i32 -980559202, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 21 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.struct$fngnuRyWaiyZPinuYR5yWINmz7aW2QBixYV35JLQ8bo$fields", i64 11, i64 11 } }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 44 }, i16 0, i16 0, i32 24 }, [0 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }, align 8
 @33 = private unnamed_addr constant [5 x i8] c"state", align 1
 @_llgo_int8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 1444672578, i8 12, i8 1, i8 1, i8 35, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @34, i64 4 }, ptr @"*_llgo_int8" }, align 8
 @34 = private unnamed_addr constant [4 x i8] c"int8", align 1
@@ -151,13 +151,14 @@ source_filename = "github.com/goplus/llgo/cl/_testpull/minrepro"
 @"github.com/goplus/llgo/cl/_testpull/minrepro.struct$M9E5HRdqyc11Zqvq07yhy6frK_fAyRGIc35bZKl9nrs$fields" = weak_odr constant [3 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @29, i64 5 }, ptr @_llgo_bool, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 5 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @30, i64 3 }, ptr @_llgo_any, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @"_llgo_func$LMNkssIwRQ5S3KjblvOITtLXg_JEzMyFVFUPoZcikss$out" = weak_odr constant [1 x ptr] [ptr @"_llgo_github.com/goplus/llgo/async.Poll[int]"], align 8
 @55 = private unnamed_addr constant [4 x i8] c"sub1", align 1
-@56 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
-@"github.com/goplus/llgo/cl/_testpull/minrepro.struct$CtX3aegFxXLvP2SyYdiPQP0fuxkPEYWSVYpE1_i3gbY$fields" = weak_odr constant [10 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 6 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @36, i64 6 }, ptr @_llgo_int, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @37, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @38, i64 4 }, ptr @_llgo_int, i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 4 }, ptr @_llgo_int, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @40, i64 4 }, ptr @_llgo_int, i64 48, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @41, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 56, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @55, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 64, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 11 }, ptr @"_llgo_github.com/goplus/llgo/async.Tuple2[int,int]", i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
+@56 = private unnamed_addr constant [8 x i8] c"panicErr", align 1
+@57 = private unnamed_addr constant [11 x i8] c"resultValue", align 1
+@"github.com/goplus/llgo/cl/_testpull/minrepro.struct$fngnuRyWaiyZPinuYR5yWINmz7aW2QBixYV35JLQ8bo$fields" = weak_odr constant [11 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr @_llgo_int8, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @35, i64 6 }, ptr @_llgo_int, i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @36, i64 6 }, ptr @_llgo_int, i64 16, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @37, i64 4 }, ptr @_llgo_int, i64 24, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @38, i64 4 }, ptr @_llgo_int, i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 4 }, ptr @_llgo_int, i64 40, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @40, i64 4 }, ptr @_llgo_int, i64 48, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @41, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 56, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @55, i64 4 }, ptr @"*_llgo_github.com/goplus/llgo/async.AsyncFuture[int]", i64 64, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @56, i64 8 }, ptr @_llgo_any, i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 11 }, ptr @"_llgo_github.com/goplus/llgo/async.Tuple2[int,int]", i64 88, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @"github.com/goplus/llgo/cl/_testpull/minrepro.init$guard" = global i1 false, align 1
-@57 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 6 }, ptr @"*_llgo_string" }, align 8
-@58 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@58 = private unnamed_addr constant [45 x i8] c"Await() should be transformed by the compiler", align 1
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 6 }, ptr @"*_llgo_string" }, align 8
+@59 = private unnamed_addr constant [6 x i8] c"string", align 1
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @59, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 
 define %"github.com/goplus/llgo/async.Tuple2[int,int]" @"github.com/goplus/llgo/cl/_testpull/minrepro.(*Divmod$State).Await"(ptr %0) {
 _llgo_0:
@@ -189,7 +190,7 @@ Divmod_state_00:                                  ; preds = %Divmod_entry
   %14 = icmp eq ptr %13, null
   br i1 %14, label %Divmod_state_00_init, label %Divmod_state_00_poll
 
-Divmod_state_01:                                  ; preds = %Divmod_state_00_ready, %Divmod_entry
+Divmod_state_01:                                  ; preds = %Divmod_state_00_ready_cont, %Divmod_entry
   %15 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 1
   %16 = load i64, ptr %15, align 4
   %17 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 2
@@ -203,7 +204,7 @@ Divmod_state_01:                                  ; preds = %Divmod_state_00_rea
   %25 = icmp eq ptr %24, null
   br i1 %25, label %Divmod_state_01_init, label %Divmod_state_01_poll
 
-Divmod_state_02:                                  ; preds = %Divmod_state_01_ready, %Divmod_entry
+Divmod_state_02:                                  ; preds = %Divmod_state_01_ready_cont, %Divmod_entry
   %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 1
   %27 = load i64, ptr %26, align 4
   %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 2
@@ -217,22 +218,24 @@ Divmod_state_02:                                  ; preds = %Divmod_state_01_rea
   %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$JUoXkwpyN4rTSTT_NnAgTEgTKBELlGnXKsPeHB_9_t8", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[github.com/goplus/llgo/async.Tuple2[int, int]]")
   %37 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %36, 0
   %38 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %37, ptr %35, 1
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
+  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 10
   store %"github.com/goplus/llgo/async.Tuple2[int,int]" %34, ptr %39, align 4
-  %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %40, align 1
-  %41 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
-  %42 = load %"github.com/goplus/llgo/async.Tuple2[int,int]", ptr %41, align 4
-  %43 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" { i1 true, %"github.com/goplus/llgo/async.Tuple2[int,int]" undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/async.Tuple2[int,int]" %42, 1
-  %44 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %43, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %44
+  %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
+  %41 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %40, align 8
+  store { ptr, ptr } zeroinitializer, ptr %40, align 8
+  %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %42, align 1
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 10
+  %44 = load %"github.com/goplus/llgo/async.Tuple2[int,int]", ptr %43, align 4
+  %45 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" { i1 true, %"github.com/goplus/llgo/async.Tuple2[int,int]" undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/async.Tuple2[int,int]" %44, 1
+  %46 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %45, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
+  ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %46
 
 Divmod_state_done:                                ; preds = %Divmod_entry
-  %45 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
-  %46 = load %"github.com/goplus/llgo/async.Tuple2[int,int]", ptr %45, align 4
-  %47 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" { i1 true, %"github.com/goplus/llgo/async.Tuple2[int,int]" undef, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/async.Tuple2[int,int]" %46, 1
-  %48 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %47, %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer, 2
-  ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %48
+  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
+  %48 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %47, align 8
+  %49 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" { i1 true, %"github.com/goplus/llgo/async.Tuple2[int,int]" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %48, 2
+  ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %49
 
 Divmod_state_unreach:                             ; preds = %Divmod_entry
   ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" zeroinitializer
@@ -241,86 +244,114 @@ _llgo_6:                                          ; No predecessors!
   ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" zeroinitializer
 
 Divmod_state_00_init:                             ; preds = %Divmod_state_00
-  %49 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 1
-  %50 = load i64, ptr %49, align 4
-  %51 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 2
-  %52 = load i64, ptr %51, align 4
-  %53 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
-  %54 = load i64, ptr %53, align 4
-  %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
-  %56 = load i64, ptr %55, align 4
-  %57 = sdiv i64 %50, %52
-  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 3
-  store i64 %57, ptr %58, align 4
-  %59 = call ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.StepInt"(i64 %57)
-  store ptr %59, ptr %12, align 8
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 1
+  %51 = load i64, ptr %50, align 4
+  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 2
+  %53 = load i64, ptr %52, align 4
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
+  %55 = load i64, ptr %54, align 4
+  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
+  %57 = load i64, ptr %56, align 4
+  %58 = sdiv i64 %51, %53
+  %59 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 3
+  store i64 %58, ptr %59, align 4
+  %60 = call ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.StepInt"(i64 %58)
+  store ptr %60, ptr %12, align 8
   br label %Divmod_state_00_poll
 
 Divmod_state_00_poll:                             ; preds = %Divmod_state_00_init, %Divmod_state_00
-  %60 = load ptr, ptr %12, align 8
-  %61 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %60, ptr %1)
-  %62 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 0
-  br i1 %62, label %Divmod_state_00_ready, label %Divmod_state_00_pending
+  %61 = load ptr, ptr %12, align 8
+  %62 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %61, ptr %1)
+  %63 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %62, 0
+  br i1 %63, label %Divmod_state_00_ready, label %Divmod_state_00_pending
 
 Divmod_state_00_ready:                            ; preds = %Divmod_state_00_poll
-  %63 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %61, 1
-  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
-  store i64 %63, ptr %64, align 4
-  %65 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 3
-  store i64 %57, ptr %65, align 4
-  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 5
-  %67 = srem i64 %50, %52
-  store i64 %67, ptr %66, align 4
-  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
-  store i64 %56, ptr %68, align 4
-  store ptr null, ptr %12, align 8
-  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
-  store i8 1, ptr %69, align 1
-  br label %Divmod_state_01
+  %64 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %62, 2
+  %65 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %64, { ptr, ptr } zeroinitializer)
+  %66 = xor i1 %65, true
+  br i1 %66, label %Divmod_state_00_err, label %Divmod_state_00_ready_cont
 
 Divmod_state_00_pending:                          ; preds = %Divmod_state_00_poll
   ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" zeroinitializer
 
+Divmod_state_00_err:                              ; preds = %Divmod_state_00_ready
+  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %67, align 1
+  %68 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %64, ptr %68, align 8
+  %69 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" { i1 true, %"github.com/goplus/llgo/async.Tuple2[int,int]" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %64, 2
+  ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %69
+
+Divmod_state_00_ready_cont:                       ; preds = %Divmod_state_00_ready
+  %70 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %62, 1
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
+  store i64 %70, ptr %71, align 4
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 3
+  store i64 %58, ptr %72, align 4
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 5
+  %74 = srem i64 %51, %53
+  store i64 %74, ptr %73, align 4
+  %75 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
+  store i64 %57, ptr %75, align 4
+  store ptr null, ptr %12, align 8
+  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
+  store i8 1, ptr %76, align 1
+  br label %Divmod_state_01
+
 Divmod_state_01_init:                             ; preds = %Divmod_state_01
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 1
-  %71 = load i64, ptr %70, align 4
-  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 2
-  %73 = load i64, ptr %72, align 4
-  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
-  %75 = load i64, ptr %74, align 4
-  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
-  %77 = load i64, ptr %76, align 4
-  %78 = srem i64 %71, %73
-  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 5
-  store i64 %78, ptr %79, align 4
-  %80 = call ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.StepInt"(i64 %78)
-  store ptr %80, ptr %23, align 8
+  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 1
+  %78 = load i64, ptr %77, align 4
+  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 2
+  %80 = load i64, ptr %79, align 4
+  %81 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
+  %82 = load i64, ptr %81, align 4
+  %83 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
+  %84 = load i64, ptr %83, align 4
+  %85 = srem i64 %78, %80
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 5
+  store i64 %85, ptr %86, align 4
+  %87 = call ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.StepInt"(i64 %85)
+  store ptr %87, ptr %23, align 8
   br label %Divmod_state_01_poll
 
 Divmod_state_01_poll:                             ; preds = %Divmod_state_01_init, %Divmod_state_01
-  %81 = load ptr, ptr %23, align 8
-  %82 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %81, ptr %1)
-  %83 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %82, 0
-  br i1 %83, label %Divmod_state_01_ready, label %Divmod_state_01_pending
+  %88 = load ptr, ptr %23, align 8
+  %89 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %88, ptr %1)
+  %90 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %89, 0
+  br i1 %90, label %Divmod_state_01_ready, label %Divmod_state_01_pending
 
 Divmod_state_01_ready:                            ; preds = %Divmod_state_01_poll
-  %84 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %82, 1
-  %85 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
-  store i64 %84, ptr %85, align 4
-  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 3
-  %87 = sdiv i64 %71, %73
-  store i64 %87, ptr %86, align 4
-  %88 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
-  store i64 %75, ptr %88, align 4
-  %89 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 5
-  store i64 %78, ptr %89, align 4
-  store ptr null, ptr %23, align 8
-  %90 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %90, align 1
-  br label %Divmod_state_02
+  %91 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %89, 2
+  %92 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %91, { ptr, ptr } zeroinitializer)
+  %93 = xor i1 %92, true
+  br i1 %93, label %Divmod_state_01_err, label %Divmod_state_01_ready_cont
 
 Divmod_state_01_pending:                          ; preds = %Divmod_state_01_poll
   ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" zeroinitializer
+
+Divmod_state_01_err:                              ; preds = %Divmod_state_01_ready
+  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %94, align 1
+  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 9
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %91, ptr %95, align 8
+  %96 = insertvalue %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" { i1 true, %"github.com/goplus/llgo/async.Tuple2[int,int]" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %91, 2
+  ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %96
+
+Divmod_state_01_ready_cont:                       ; preds = %Divmod_state_01_ready
+  %97 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %89, 1
+  %98 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 6
+  store i64 %97, ptr %98, align 4
+  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 3
+  %100 = sdiv i64 %78, %80
+  store i64 %100, ptr %99, align 4
+  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 4
+  store i64 %82, ptr %101, align 4
+  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 5
+  store i64 %85, ptr %102, align 4
+  store ptr null, ptr %23, align 8
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %103, align 1
+  br label %Divmod_state_02
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.StepInt"(i64 %0) {
@@ -405,6 +436,8 @@ _llgo_6:                                          ; preds = %_llgo_4
   %32 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.Pending[int]"()
   ret %"github.com/goplus/llgo/async.Poll[int]" %32
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 define linkonce %"github.com/goplus/llgo/async.Tuple2[int,int]" @"github.com/goplus/llgo/async.MakeTuple2[int,int]"(i64 %0, i64 %1) {
 _llgo_0:
@@ -582,7 +615,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
 define ptr @"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$Concrete"(i64 %0, i64 %1) {
 _llgo_0:
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 88)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 104)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %2, i32 0, i32 0
   store i8 0, ptr %3, align 1
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/minrepro.Divmod$State", ptr %2, i32 0, i32 1
@@ -618,7 +651,7 @@ _llgo_0:
 define linkonce i64 @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Await"(ptr %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @57, i64 45 }, ptr %1, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @58, i64 45 }, ptr %1, align 8
   %2 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %1, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %2)
   unreachable
@@ -775,8 +808,6 @@ _llgo_0:
   %4 = load %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]", ptr %1, align 8
   ret %"github.com/goplus/llgo/async.Poll[github.com/goplus/llgo/async.Tuple2[int, int]]" %4
 }
-
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 

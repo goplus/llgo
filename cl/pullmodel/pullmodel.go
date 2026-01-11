@@ -63,6 +63,8 @@ type StateMachine struct {
 	ResultType types.Type
 	// HasDefer is true if the function contains defer statements
 	HasDefer bool
+	// HasPanic is true if the function contains panic statements
+	HasPanic bool
 	// LoopAllocs tracks ssa.Alloc instructions that appear in loop blocks.
 	// These allocs should not reuse a single pointer across iterations.
 	LoopAllocs map[*ssa.Alloc]struct{}
@@ -160,6 +162,23 @@ func GetFutureResultType(t types.Type) types.Type {
 		return nil
 	}
 	return args.At(0)
+}
+
+func findResultAllocSSA(fn *ssa.Function) *ssa.Alloc {
+	var first *ssa.Alloc
+	for _, alloc := range fn.Locals {
+		if alloc == nil {
+			continue
+		}
+		name := alloc.Name()
+		if strings.HasPrefix(name, "~r") || strings.HasPrefix(name, "result") || strings.HasPrefix(name, "ret") {
+			return alloc
+		}
+		if first == nil {
+			first = alloc
+		}
+	}
+	return first
 }
 
 // FindSuspendPoints finds all .Await() calls in an async function.
@@ -646,6 +665,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 	// Collect sub-future types and detect defer statements
 	var subFutures []types.Type
 	hasDefer := false
+	hasPanic := false
 	for _, sp := range suspends {
 		if sp.SubFuture != nil {
 			subFutures = append(subFutures, sp.SubFuture.Type())
@@ -658,6 +678,24 @@ func Transform(fn *ssa.Function) *StateMachine {
 			switch instr.(type) {
 			case *ssa.Defer:
 				hasDefer = true
+			case *ssa.Panic:
+				hasPanic = true
+			}
+		}
+	}
+
+	// Ensure result alloc persists when defer/panic present (needed for recover).
+	if hasDefer || hasPanic {
+		if resAlloc := findResultAllocSSA(fn); resAlloc != nil {
+			already := false
+			for _, v := range crossVars {
+				if v == resAlloc {
+					already = true
+					break
+				}
+			}
+			if !already {
+				crossVars = append(crossVars, resAlloc)
 			}
 		}
 	}
@@ -668,6 +706,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 		SubFutures: subFutures,
 		ResultType: resultType,
 		HasDefer:   hasDefer,
+		HasPanic:   hasPanic,
 		LoopAllocs: loopAllocs,
 	}
 

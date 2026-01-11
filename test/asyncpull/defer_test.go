@@ -4,6 +4,7 @@
 package asyncpull
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/goplus/llgo/async"
@@ -86,5 +87,20 @@ func TestPanicWithDefer(t *testing.T) {
 }
 
 func TestRecoverInDefer(t *testing.T) {
-	t.Skip("recover semantics in pull-model still WIP")
+	got := pollReady(t, RecoverInDefer())
+	if got != 0 {
+		t.Fatalf("recover defer result = %d, want 0 (unnamed return)", got)
+	}
+}
+
+// DeferPanicChain: inner defer panics, outer defer recovers, function still returns.
+func TestDeferPanicChain(t *testing.T) {
+	out := []string{}
+	got := pollReady(t, DeferPanicChain(&out))
+	if got != 1 {
+		t.Fatalf("result = %d, want 1", got)
+	}
+	if fmt.Sprint(out) != fmt.Sprint([]string{"inner", "recovered"}) {
+		t.Fatalf("defer order = %v, want [inner recovered]", out)
+	}
 }

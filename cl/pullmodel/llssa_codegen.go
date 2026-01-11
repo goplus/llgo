@@ -73,6 +73,7 @@ type LLSSACodeGen struct {
 	pollMethod          *types.Func          // Poll method added to stateNamed
 	completedStateIndex int                  // sentinel index meaning state machine finished
 	resultFieldIndex    int                  // field index storing the final result value
+	panicFieldIndex     int                  // field index storing the panic value (if any)
 	stackAllocPtrs      map[*ssa.Alloc]llssa.Expr
 	stackAllocCrossVars map[*ssa.Alloc]struct{}
 	suspendResults      map[ssa.Value]struct{}
@@ -99,6 +100,7 @@ func NewLLSSACodeGen(
 		ssaPkg:              ssaPkg,
 		sm:                  sm,
 		resultFieldIndex:    -1,
+		panicFieldIndex:     -1,
 		stackAllocCrossVars: make(map[*ssa.Alloc]struct{}),
 		deferWraps:          make(map[string]deferWrapperInfo),
 	}
@@ -428,6 +430,10 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 	fields = append(fields, types.NewField(0, nil, "state", types.Typ[types.Int8], false))
 	tags = append(tags, "")
 
+	if debugLog {
+		log.Printf("[DEBUG buildStateGoType] fn=%s crossVars=%d", g.sm.Original.Name(), len(g.sm.CrossVars))
+	}
+
 	// Fields for parameters (include hidden ctx when present)
 	paramTuple := g.signatureWithCtx(g.sm.Original.Signature).Params()
 	for i := 0; i < paramTuple.Len(); i++ {
@@ -486,6 +492,12 @@ func (g *LLSSACodeGen) buildStateGoType() *types.Struct {
 		fields = append(fields, types.NewField(0, nil, "deferState", deferStateType, false))
 		tags = append(tags, "")
 	}
+
+	// Field to persist panic value (PollError) across polls.
+	g.panicFieldIndex = len(fields)
+	panicType := types.NewInterfaceType(nil, nil) // any
+	fields = append(fields, types.NewField(0, nil, "panicErr", panicType, false))
+	tags = append(tags, "")
 
 	// Field to cache the final result value so subsequent polls can reuse it.
 	resultType := g.sm.ResultType
@@ -780,8 +792,12 @@ func (g *LLSSACodeGen) generatePollMethod(stateType llssa.Type) error {
 	// Completed block: return Ready immediately on subsequent polls
 	b.SetBlock(doneBlock)
 	g.emitPullDebugState(b, g.prog.IntVal(uint64(doneStateIdx), g.prog.Int()), "done", false, true)
-	finalValue := g.loadResultValue(b, statePtr)
-	g.returnReadyPoll(b, finalValue)
+	if panicVal := g.loadPanicValue(b, statePtr); !panicVal.IsNil() {
+		g.returnErrorPoll(b, panicVal)
+	} else {
+		finalValue := g.loadResultValue(b, statePtr)
+		g.returnReadyPoll(b, finalValue)
+	}
 
 	// Default block: unreachable (should never reach here)
 	b.SetBlock(defaultBlock)
@@ -848,6 +864,13 @@ func (g *LLSSACodeGen) generateStateBlock(
 		}
 		if !resultVal.IsNil() {
 			g.storeResultValue(b, statePtr, resultVal)
+		}
+		// Clear any previous panic value on successful completion.
+		if g.panicFieldIndex >= 0 {
+			fieldPtr := b.FieldAddr(statePtr, g.panicFieldIndex)
+			current := b.Load(fieldPtr)
+			zeroIface := g.prog.Zero(current.Type)
+			b.Store(fieldPtr, zeroIface)
 		}
 		g.flushStackAllocState(b, statePtr)
 		// Mark machine as completed so future polls skip re-running side effects.
@@ -989,6 +1012,86 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		// Ready path: extract value, update state, continue
 		b.SetBlock(readyBlock)
+
+		// If sub-future signaled panic via PollError, propagate.
+		if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
+			errVal := b.Field(pollResult, 2)
+			zeroErr := g.prog.Zero(errVal.Type)
+			hasErr := b.BinOp(token.NEQ, errVal, zeroErr)
+
+			errBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_err", g.sm.Original.Name(), stateIdx))
+			continueBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_ready_cont", g.sm.Original.Name(), stateIdx))
+			b.If(hasErr, errBlock, continueBlock)
+
+			// Handle panic propagation from sub-future
+			b.SetBlock(errBlock)
+			if g.sm.HasDefer {
+				deferStateIdx := g.getDeferFieldBaseIndex()
+				if deferStateIdx < 0 {
+					log.Printf("[Pull Model] WARNING: Cannot find defer fields")
+				} else {
+					deferStatePtr := b.FieldAddr(statePtr, deferStateIdx)
+					deferStatePtrType := types.NewPointer(g.getDeferStateType())
+					doPanicSig := types.NewSignatureType(
+						types.NewVar(0, nil, "", deferStatePtrType),
+						nil,
+						nil,
+						types.NewTuple(types.NewVar(0, nil, "v", types.NewInterfaceType(nil, nil))),
+						types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool])),
+						false,
+					)
+					methodName := llssa.FuncName(
+						types.NewPackage("github.com/goplus/llgo/async", "async"),
+						"DoPanic",
+						doPanicSig.Recv(),
+						false,
+					)
+					doPanicFunc := g.pkg.NewFunc(methodName, doPanicSig, llssa.InGo)
+					recovered := b.Call(doPanicFunc.Expr, deferStatePtr, errVal)
+
+					recBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_err_recovered", g.sm.Original.Name(), stateIdx))
+					propagateBlock := poll.MakeNamedBlock(fmt.Sprintf("%s_state_%02d_err_propagate", g.sm.Original.Name(), stateIdx))
+					b.If(recovered, recBlock, propagateBlock)
+
+					// recovered: mark done, clear panic, return Ready(result)
+					b.SetBlock(recBlock)
+					stateFieldPtr := b.FieldAddr(statePtr, 0)
+					b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedStateIndex), int8Type))
+					if g.panicFieldIndex >= 0 {
+						fieldPtr := b.FieldAddr(statePtr, g.panicFieldIndex)
+						current := b.Load(fieldPtr)
+						zeroIface := g.prog.Zero(current.Type)
+						b.Store(fieldPtr, zeroIface)
+					}
+					finalValue := g.loadResultValue(b, statePtr)
+					if alloc := g.findResultAlloc(); alloc != nil {
+						if ptrType, ok := alloc.Type().(*types.Pointer); ok && isFutureType(ptrType.Elem()) {
+							if v := g.unwrapFutureResult(b, statePtr, alloc); !v.IsNil() {
+								finalValue = v
+								g.storeResultValue(b, statePtr, v)
+							}
+						} else if finalValue.IsNil() {
+							ptr := g.ensureAllocPtr(b, statePtr, alloc)
+							if !ptr.IsNil() {
+								finalValue = b.Load(ptr)
+							}
+						}
+					}
+					g.returnReadyPoll(b, finalValue)
+
+					// not recovered: persist panic and propagate
+					b.SetBlock(propagateBlock)
+				}
+			}
+			// No defer or not recovered: mark completed and return error
+			stateFieldPtr := b.FieldAddr(statePtr, 0)
+			b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedStateIndex), int8Type))
+			g.storePanicValue(b, statePtr, errVal)
+			g.returnErrorPoll(b, errVal)
+
+			// Continue normal flow when no error
+			b.SetBlock(continueBlock)
+		}
 
 		// Extract value field (field 1) from Poll result
 		value := b.Field(pollResult, 1)
@@ -1506,6 +1609,78 @@ func (g *LLSSACodeGen) storeResultValue(b llssa.Builder, statePtr llssa.Expr, va
 	b.Store(fieldPtr, value)
 }
 
+func (g *LLSSACodeGen) storePanicValue(b llssa.Builder, statePtr llssa.Expr, value llssa.Expr) {
+	if g.panicFieldIndex < 0 || value.IsNil() {
+		return
+	}
+	fieldPtr := b.FieldAddr(statePtr, g.panicFieldIndex)
+	b.Store(fieldPtr, value)
+}
+
+func (g *LLSSACodeGen) loadPanicValue(b llssa.Builder, statePtr llssa.Expr) llssa.Expr {
+	if g.panicFieldIndex < 0 {
+		return llssa.Expr{}
+	}
+	fieldPtr := b.FieldAddr(statePtr, g.panicFieldIndex)
+	return b.Load(fieldPtr)
+}
+
+// unwrapFutureResult polls a Future[T] value and extracts the inner T.
+// It assumes the future is ready (used after recover where defers set a ready future).
+func (g *LLSSACodeGen) unwrapFutureResult(b llssa.Builder, statePtr llssa.Expr, alloc *ssa.Alloc) llssa.Expr {
+	if alloc == nil {
+		return llssa.Expr{}
+	}
+	ptr := g.ensureAllocPtr(b, statePtr, alloc)
+	if ptr.IsNil() {
+		return llssa.Expr{}
+	}
+	futVal := b.Load(ptr)
+	if futVal.IsNil() {
+		if debugLog {
+			log.Printf("[Pull Model] unwrapFutureResult: future value is nil")
+		}
+		return llssa.Expr{}
+	}
+	if debugLog {
+		log.Printf("[Pull Model] unwrapFutureResult: future type=%v", futVal.Type)
+	}
+
+	ctxType := g.getAsyncContextType()
+	nilCtx := g.prog.Nil(g.prog.Type(ctxType, llssa.InGo))
+
+	futGoType := alloc.Type()
+	if ptrType, ok := futGoType.(*types.Pointer); ok {
+		futGoType = ptrType.Elem()
+	}
+
+	pollMethod := g.createPollMethod(g.sm.ResultType)
+
+	var pollResult llssa.Expr
+	if _, isInterface := futGoType.Underlying().(*types.Interface); isInterface {
+		pollResult = b.Call(b.Imethod(futVal, pollMethod), nilCtx)
+	} else {
+		mset := types.NewMethodSet(futGoType)
+		var pollSel *types.Selection
+		for i := 0; i < mset.Len(); i++ {
+			if mset.At(i).Obj().Name() == "Poll" {
+				pollSel = mset.At(i)
+				break
+			}
+		}
+		if pollSel == nil {
+			return llssa.Expr{}
+		}
+		methodSig := pollSel.Obj().Type().(*types.Signature)
+		methodName := llssa.FuncName(pollSel.Obj().Pkg(), "Poll", methodSig.Recv(), false)
+		methodFunc := g.pkg.NewFunc(methodName, methodSig, llssa.InGo)
+		pollResult = b.Call(methodFunc.Expr, futVal, nilCtx)
+	}
+
+	// Extract value field (field 1)
+	return b.Field(pollResult, 1)
+}
+
 func (g *LLSSACodeGen) loadResultValue(b llssa.Builder, statePtr llssa.Expr) llssa.Expr {
 	if g.resultFieldIndex < 0 {
 		return llssa.Expr{}
@@ -2015,14 +2190,24 @@ func (g *LLSSACodeGen) returnErrorPoll(b llssa.Builder, panicVal llssa.Expr) {
 // findResultAlloc tries to locate the SSA Alloc that backs the (single) result.
 // Heuristics: named return (~r0), or identifiers prefixed with "result"/"ret".
 func (g *LLSSACodeGen) findResultAlloc() *ssa.Alloc {
+	var firstFuture *ssa.Alloc
 	for _, alloc := range g.sm.Original.Locals {
 		if alloc == nil {
 			continue
 		}
 		name := alloc.Name()
+		if debugLog {
+			log.Printf("[Pull Model] result alloc candidate: %s (%v)", name, alloc.Type())
+		}
 		if strings.HasPrefix(name, "~r") || strings.HasPrefix(name, "result") || strings.HasPrefix(name, "ret") {
 			return alloc
 		}
+		if ptr, ok := alloc.Type().(*types.Pointer); ok && isFutureType(ptr.Elem()) && firstFuture == nil {
+			firstFuture = alloc
+		}
+	}
+	if firstFuture != nil {
+		return firstFuture
 	}
 	return nil
 }
