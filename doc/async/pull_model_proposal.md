@@ -953,7 +953,7 @@ func main() {
 | 裸机嵌入式 | 拉模型 | 无 LLVM 依赖 |
 | 极致内存 | 拉模型 | 单次分配 |
 | 深层嵌套 | 推模型 | O(1) 恢复 |
-| map range + await | ⚠️ 不支持 | 迭代器状态不可持久化；需先转 slice |
+| map range + await | ✅ 支持 | 迭代器状态持久化在 state，兼容 await |
 
 ---
 

@@ -9,18 +9,20 @@ import (
 	"github.com/goplus/llgo/async"
 )
 
-// MapRangeAwait demonstrates the current limitation: map iterator cannot be
-// persisted across await, so compilation should fail or be diagnosed.
-// For now we just document expected behavior; this test is skipped until
-// compiler emits a diagnostic.
+// MapRangeAwait ranges over a map while awaiting in the loop body.
 func MapRangeAwait(m map[string]int) async.Future[int] {
 	sum := 0
-	for _, v := range m { // iterator state not persisted today
-		sum += Compute(v).Await()
+	for _, v := range m {
+		sum += Compute(v).Await() // suspend inside map range
 	}
 	return async.Return(sum)
 }
 
-func TestMapRangeAwait_Skip(t *testing.T) {
-	t.Skip("map range + await should be diagnosed; iterator not yet persisted")
+func TestMapRangeAwait(t *testing.T) {
+	m := map[string]int{"a": 1, "b": 2, "c": 3}
+	got := pollReady(t, MapRangeAwait(m))
+	want := (1 * 2) + (2 * 2) + (3 * 2) // Compute doubles
+	if got != want {
+		t.Fatalf("MapRangeAwait = %d, want %d", got, want)
+	}
 }

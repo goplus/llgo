@@ -48,9 +48,8 @@
 ## ⚠️ Known Limitations
 
 ### Map Iteration
-- **Status**: Causes infinite loop at runtime; now emits optional warning (set `LLGO_PULL_WARN_UNSUPPORTED=1`) or fatal error (set `LLGO_PULL_ERROR_UNSUPPORTED=1`).
-- **Issue**: Map iterator state (`ssa.Range`) uses opaque internal types that cannot be persisted across suspend points. The iterator is recreated on each resume, causing the loop to restart from the beginning infinitely.
-- **Workaround**: Convert map to slice before iteration, or use indexed access
+- **Status**: Supported (map range + await passes `MapIterAsync` / `MapRangeAwait`); optional warnings remain可开关。
+- **Notes**: 迭代顺序依赖 Go map 语义（非确定），状态机持久化 map 迭代器以避免重复从头开始。
 - **Example**:
   ```go
   // ❌ Not recommended
