@@ -61,7 +61,7 @@ func FromDir(t *testing.T, sel, relDir string) {
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
 	}
-	dir = path.Join(dir, relDir)
+	dir = filepath.Join(dir, relDir)
 	fis, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal("ReadDir failed:", err)
@@ -71,8 +71,9 @@ func FromDir(t *testing.T, sel, relDir string) {
 		if !fi.IsDir() || strings.HasPrefix(name, "_") {
 			continue
 		}
+		pkgDir := filepath.Join(dir, name)
 		t.Run(name, func(t *testing.T) {
-			testFrom(t, dir+"/"+name, sel)
+			testFrom(t, pkgDir, sel)
 		})
 	}
 }
@@ -82,7 +83,7 @@ func RunFromDir(t *testing.T, sel, relDir string) {
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
 	}
-	dir = path.Join(dir, relDir)
+	dir = filepath.Join(dir, relDir)
 	fis, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal("ReadDir failed:", err)
@@ -92,7 +93,7 @@ func RunFromDir(t *testing.T, sel, relDir string) {
 		if !fi.IsDir() || strings.HasPrefix(name, "_") {
 			continue
 		}
-		pkgDir := dir + "/" + name
+		pkgDir := filepath.Join(dir, name)
 		relPkg := filepath.ToSlash(filepath.Join(relDir, name))
 		t.Run(name, func(t *testing.T) {
 			testRunFrom(t, pkgDir, relPkg, sel)
@@ -145,7 +146,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	out := pkgDir + "/out.ll"
 	b, _ := os.ReadFile(out)
 	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
-		if test.Diff(t, pkgDir+"/out.ll.new", []byte(v), b) {
+		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
 			t.Fatal("llgen.GenFrom: unexpect result")
 		}
 	}
