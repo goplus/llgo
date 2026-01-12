@@ -1,6 +1,1 @@
-stdout ptr: 0x1f8c39358
-outputs to stdout
-hello
-True
-False
-None
+;

@@ -28,7 +28,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -38,6 +37,7 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
@@ -167,13 +167,13 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 		}
 		t.Fatal("ReadFile failed:", err)
 	}
+	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
+		return
+	}
 
 	output, err := RunAndCapture(relPkg, pkgDir)
 	if err != nil {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
-	}
-	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
-		return
 	}
 	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
 		t.Fatal("unexpected output")
@@ -181,13 +181,6 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 }
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
-	var output bytes.Buffer
-	tmpDir, err := os.MkdirTemp("", "llgo-run-*")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -205,25 +198,71 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 		}
 	}()
 
-	conf := build.NewDefaultConf(build.ModeBuild)
-	conf.AppExt = ""
-	if runtime.GOOS == "windows" {
-		conf.AppExt = ".exe"
-	}
-	outPath := filepath.Join(tmpDir, "llgo-run"+conf.AppExt)
-	conf.OutFile = outPath
-	if _, err := build.Do([]string{relPkg}, conf); err != nil {
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.ForceRebuild = true
+
+	originalStdout := os.Stdout
+	originalStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
 		return nil, err
 	}
+	os.Stdout = w
+	os.Stderr = w
+	defer func() {
+		os.Stdout = originalStdout
+		os.Stderr = originalStderr
+	}()
 
-	cmd := exec.Command(outPath)
-	cmd.Dir = pkgDir
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-	if err := cmd.Run(); err != nil {
-		return output.Bytes(), fmt.Errorf("run failed: %w", err)
+	outputCh := make(chan []byte, 1)
+	go func() {
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, r)
+		_ = r.Close()
+		outputCh <- buf.Bytes()
+	}()
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		_ = w.Close()
+		return nil, err
 	}
-	return output.Bytes(), nil
+	if pkgDir != "" {
+		if err := os.Chdir(pkgDir); err != nil {
+			_ = w.Close()
+			return nil, err
+		}
+		defer os.Chdir(origDir)
+		relPkg = "."
+		if _, err := os.Stat(filepath.Join(pkgDir, "in.go")); err == nil {
+			relPkg = "in.go"
+		} else if _, err := os.Stat(filepath.Join(pkgDir, "main.go")); err == nil {
+			relPkg = "main.go"
+		}
+	}
+
+	mockable.EnableMock()
+	defer mockable.DisableMock()
+
+	var runErr error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if s, ok := r.(string); ok && s == "exit" {
+					return
+				}
+				panic(r)
+			}
+		}()
+		_, runErr = build.Do([]string{relPkg}, conf)
+	}()
+
+	_ = w.Close()
+	output := <-outputCh
+	if runErr != nil {
+		return output, fmt.Errorf("run failed: %w", runErr)
+	}
+	return output, nil
 }
 
 func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
