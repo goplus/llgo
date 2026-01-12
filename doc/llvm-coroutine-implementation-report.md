@@ -1,8 +1,22 @@
 # LLGo LLVM Coroutine 实现报告
 
-## 1. 背景：为什么需要双符号模式
+## 1. Await 的 Push 模型（当前重点）
 
-### 1.1 Go Goroutine 与 LLVM Coroutine 的本质差异
+当前实现把 `$coro` 内部的 await 从 **pull 模型** 切换为 **push 模型**，目标是避免 busy-loop，
+并解决“调用者未入队导致无人唤醒”的问题。核心流程：
+
+1. 调用者拿到 callee handle 后先 `coro.done` 检查。
+2. 未完成时，把自己的 handle 加入 callee 的 waiter list（Promise 中维护）。
+3. 将 callee 入队（`CoroReschedule`），调用者自身 `coro.suspend` 让出执行权。
+4. callee 在 final suspend 前调用 `CoroWakeWaiters`，唤醒所有等待者。
+5. 被唤醒的调用者继续 `coro.done` → 读取 Promise → destroy。
+
+**同步边界**：最外层/同步上下文仍使用 `CoroScheduleUntil(handle)` 阻塞等待；
+协程上下文使用 push await，不再依赖调度器忙等。
+
+## 2. 背景：为什么需要双符号模式
+
+### 2.1 Go Goroutine 与 LLVM Coroutine 的本质差异
 
 Go 的 goroutine 是**有栈协程**，每个 goroutine 拥有独立的栈空间，挂起时通过保存 SP/PC/BP 实现状态保存，恢复时直接 JMP 到保存的地址继续执行。
 
@@ -14,11 +28,11 @@ LLVM Coroutine 是**无栈协程**，没有独立栈，共享调用者的栈。�
 | 挂起位置 | 任意位置（隐式） | 仅 suspend point（显式） |
 | 嵌套调用 | 透明支持 | 需要函数着色 |
 
-### 1.2 函数着色问题
+### 2.2 函数着色问题
 
 LLVM Coroutine 的最大挑战是**函数着色**。当 A→B→C 调用链中 C 需要挂起时，整个调用链都必须是协程函数——这就是"着色传染"。
 
-### 1.3 双符号模式的提出
+### 2.3 双符号模式的提出
 
 为解决着色问题并保持与现有代码的兼容性，我们提出**双符号模式**：
 
@@ -28,9 +42,9 @@ LLVM Coroutine 的最大挑战是**函数着色**。当 A→B→C 调用链中 C
 
 ---
 
-## 2. 两个世界的差异
+## 3. 两个世界的差异
 
-### 2.1 执行顺序差异
+### 3.1 执行顺序差异
 
 ```go
 func worker() {
@@ -50,7 +64,7 @@ func main() {
 
 **异步世界**的执行顺序：`start → main → end`（worker suspend 后 main 继续，调度器恢复 worker）
 
-### 2.2 函数签名差异（ABI 差异）
+### 3.2 函数签名差异（ABI 差异）
 
 **同步版本**：签名 `(参数) → 返回值`，阻塞执行
 
@@ -92,15 +106,15 @@ func caller() {
 call void @llvm.coro.destroy(ptr %handle) ; 销毁协程帧
 ```
 
-### 2.3 自动 Await 保证顺序一致性
+### 3.3 自动 Await 保证顺序一致性
 
 当 `A$coro` 调用 `B$coro` 时，编译器自动插入 await 逻辑，采用**协作式等待**：子协程 suspend 时，父协程也 suspend，让出控制权给调度器。
 
 ---
 
-## 3. 双符号的调用规则与 IR 示例
+## 4. 双符号的调用规则与 IR 示例
 
-### 3.1 示例源码
+### 4.1 示例源码
 
 ```go
 func worker(id int) {
@@ -122,7 +136,7 @@ func main() {
 }
 ```
 
-### 3.2 生成的符号
+### 4.2 生成的符号
 
 | 函数 | 同步版本 | 协程版本 |
 |------|---------|---------|
@@ -130,7 +144,7 @@ func main() {
 | helper | `helper()` | `helper$coro()` |
 | main | `main()` | `main$coro()` |
 
-### 3.3 同步版本：worker()
+### 4.3 同步版本：worker()
 
 同步版本中 `coroSuspend()` **不生成任何代码**：
 
@@ -147,7 +161,7 @@ define void @worker(i64 %id) {
 }
 ```
 
-### 3.4 同步版本：helper() 调用 worker()
+### 4.4 同步版本：helper() 调用 worker()
 
 同步版本内部调用同步版本：
 
@@ -160,7 +174,7 @@ define void @helper(i64 %id) {
 }
 ```
 
-### 3.5 main() 中的普通调用 vs go 调用
+### 4.5 main() 中的普通调用 vs go 调用
 
 ```llvm
 define void @main() {
@@ -179,111 +193,29 @@ define void @main() {
 }
 ```
 
-### 3.6 协程版本：worker$coro() 的完整结构
+### 4.6 协程版本：worker$coro() 的结构（简化）
 
-```llvm
-; Function Attrs: presplitcoroutine
-define ptr @worker$coro(i64 %id) #0 {
-; ==================== RAMP 区块（首次调用） ====================
-entry:
-    %token = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
-    %need_alloc = call i1 @llvm.coro.alloc(token %token)
-    br i1 %need_alloc, label %alloc, label %init
+- Ramp：`coro.id/alloc/begin`，返回 handle
+- Body：用户代码 + 中间 suspend
+- Final suspend：标记 done，不释放帧
+- Cleanup：destroy 时释放帧 + `coro.end`
 
-alloc:
-    %size = call i64 @llvm.coro.size.i64()
-    %mem = call ptr @malloc(i64 %size)
-    br label %init
+完整 IR 可参考 `cl/_testrt/corodual/out.ll`。
 
-init:
-    %frame = phi ptr [ null, %entry ], [ %mem, %alloc ]
-    %handle = call ptr @llvm.coro.begin(token %token, ptr %frame)
-    br label %body
+### 4.7 协程版本：helper$coro() 调用 worker$coro() + await（push 模型）
 
-; ==================== RESUME 区块（函数主体） ====================
-body:
-    call void @PrintString("worker : start")
+`$coro` 调用 `$coro` 时使用 push await，核心逻辑如下：
 
-    ; coroSuspend() 编译为中间 suspend
-    %r1 = call i8 @llvm.coro.suspend(token none, i1 false)
-    switch i8 %r1, label %unreachable [
-        i8 0, label %resumed    ; 被 resume，继续执行
-        i8 1, label %cleanup    ; 被 destroy，去清理
-    ]
-
-resumed:
-    call void @PrintString("worker : done")
-    br label %final
-
-final:
-    ; final suspend (i1 true)
-    %r2 = call i8 @llvm.coro.suspend(token none, i1 true)
-    switch i8 %r2, label %unreachable [
-        i8 0, label %unreachable    ; final 不会被 resume
-        i8 1, label %cleanup
-    ]
-
-; ==================== DESTROY 区块（清理） ====================
-cleanup:
-    %mem_to_free = call ptr @llvm.coro.free(token %token, ptr %handle)
-    call void @free(ptr %mem_to_free)
-    br label %end
-
-end:
-    call i1 @llvm.coro.end(ptr %handle, i1 false, token none)
-    ret ptr %handle
-}
+```text
+handle = worker$coro(...)
+if !coro.done(handle):
+    add_waiter(handle, self)
+    reschedule(handle)
+    suspend(self)
+; 被唤醒后继续检查 done，读取 Promise
 ```
 
-### 3.7 协程版本：helper$coro() 调用 worker$coro() + await
-
-`$coro` 函数内部调用其他 `$coro` 函数时，生成 **await 逻辑**：
-
-```llvm
-define ptr @helper$coro(i64 %id) #0 {
-; ... RAMP 区块省略 ...
-
-body:
-    call void @PrintString("helper : calling worker")
-
-    ; 调用 worker$coro，获取句柄
-    %worker_handle = call ptr @worker$coro(i64 %id)
-    br label %await_loop
-
-; ==================== AWAIT 逻辑 ====================
-await_loop:
-    ; 检查 worker 是否完成
-    %done1 = call i1 @llvm.coro.done(ptr %worker_handle)
-    br i1 %done1, label %await_done, label %await_resume
-
-await_resume:
-    ; worker 未完成，resume 它
-    call void @llvm.coro.resume(ptr %worker_handle)
-    br label %await_check
-
-await_check:
-    ; 再次检查
-    %done2 = call i1 @llvm.coro.done(ptr %worker_handle)
-    br i1 %done2, label %await_done, label %await_suspend
-
-await_suspend:
-    ; worker 还在 suspend，我也 suspend（协作式等待）
-    %r = call i8 @llvm.coro.suspend(token none, i1 false)
-    switch i8 %r, label %unreachable [
-        i8 0, label %await_loop    ; 被唤醒后重新检查
-        i8 1, label %cleanup
-    ]
-
-await_done:
-    ; worker 完成，继续执行后续代码
-    call void @PrintString("helper : worker returned")
-    br label %final
-
-; ... final suspend 和 cleanup 省略 ...
-}
-```
-
-### 3.8 协程帧布局
+### 4.8 协程帧布局
 
 ```
 +0:  resume_fn   → func$coro.resume 地址，完成时为 null
@@ -304,7 +236,7 @@ LLVM CoroSplit Pass 将函数拆分为：
 
 ---
 
-## 4. Taint 传播分析
+## 5. Taint 传播分析
 
 编译 `$coro` 版本时，需要判断被调用函数是否包含 suspend 点：
 - 直接调用 `coroSuspend` → tainted
@@ -314,9 +246,9 @@ LLVM CoroSplit Pass 将函数拆分为：
 
 ---
 
-## 5. 边界情况
+## 6. 边界情况
 
-### 5.1 C 调用 Go
+### 6.1 C 调用 Go
 
 **问题**：C 代码通过函数指针或导出符号调用 Go 函数时，C 不理解协程语义，无法处理返回的协程句柄。
 
@@ -324,7 +256,7 @@ LLVM CoroSplit Pass 将函数拆分为：
 
 **限制**：如果 Go 函数内部依赖 suspend 点来实现某些功能（如等待 channel），在 C 调用场景下这些功能会失效。这是有栈/无栈混合模型的固有限制。
 
-### 5.2 Go 调用 C
+### 6.2 Go 调用 C
 
 **问题**：`$coro` 函数内部调用 C 函数时，C 函数没有 `$coro` 版本，如何处理？
 
@@ -336,7 +268,7 @@ LLVM CoroSplit Pass 将函数拆分为：
 Go$coro → C → Go（只能同步）
 ```
 
-### 5.3 反射调用
+### 6.3 反射调用
 
 **问题**：`reflect.Value.Call()` 在运行时动态调用函数，编译期无法确定目标函数。如何选择调用同步版本还是协程版本？
 
@@ -347,620 +279,96 @@ Go$coro → C → Go（只能同步）
 
 **当前 MVP**：统一走同步版本（方案 A）。后续可考虑方案 C，但需要运行时支持"协程上下文"检测。
 
-### 5.4 闭包
+### 6.4 defer + panic/recover 实现（协程）
 
-**问题**：闭包是匿名函数，可能捕获外部变量。闭包是否需要生成双符号？
+**核心目标**：保证 panic 发生后一定先跑完 defer 链，再决定是否继续传播；recover 仅在 defer 中生效。
 
-**讨论**：
-- 如果闭包内部包含 suspend 点或调用 tainted 函数，需要生成 `closure$coro` 版本
-- 闭包捕获的变量需要在协程帧中正确存储（跨挂起点存活）
-- 闭包作为 `go` 语句目标时，需要调用其 `$coro` 版本
+**关键机制**：
 
-**当前 MVP**：闭包统一走同步版本。完整支持需要：
-1. 闭包 taint 分析
-2. 闭包双符号生成
-3. 闭包协程帧中正确存储捕获变量
+- panic 值存放在协程状态中（handle 关联的 panic slot）
+- `panic` 在协程版本中编译为 `CoroPanic(x)` 并跳转到 exit block（保证 defer 一定执行）
+- defer 链以 LIFO 顺序执行，闭包 defer 通过 `$isCoro` 决定同步或 `$coro` + await
+- `recover` 在协程版本中编译为 `CoroRecover()`，只在 defer 里清除 panic 值
 
-### 5.5 接口方法调用
-
-**问题**：接口方法调用是间接调用，编译期不知道具体实现类型。如何选择同步/协程版本？
-
-```go
-type Worker interface {
-    Work()
-}
-
-func runWorker(w Worker) {
-    w.Work()  // 编译期不知道调用哪个实现
-}
-```
-
-**讨论**：
-- 方案 A：接口方法统一调用同步版本
-- 方案 B：接口 itab 中存储两个方法指针（sync 和 coro），运行时根据上下文选择
-- 方案 C：生成 `runWorker$coro` 时，假设所有接口方法都可能 suspend，插入 await 逻辑
-
-**当前 MVP**：统一走同步版本（方案 A）。方案 B 需要修改接口布局，影响较大；方案 C 可能导致不必要的 await 开销。
-
-### 5.6 返回值处理：Promise 机制（已实现）
-
-**问题**：`$coro` 版本签名是 `(参数) → ptr`（返回协程句柄），原始返回值需要另外获取。
-
-**解决方案**：使用 LLVM Coroutine 的 **Promise** 机制存储返回值。
-
-#### Promise 设计
-
-Promise 是在协程入口通过 `alloca` 分配的局部变量，其地址传递给 `llvm.coro.id`。LLVM CoroSplit Pass 会自动将 Promise 重定位到协程帧中，确保跨挂起点存活。
-
-```llvm
-; 协程帧布局（CoroSplit 后）
-%Frame = type {
-    ptr,    ; +0:  resume_fn（完成时为 null）
-    ptr,    ; +8:  destroy_fn
-    T,      ; +16: promise（返回值存储位置）
-    ...     ; 其他跨挂起点存活的变量
-}
-```
-
-#### 协程函数 Prologue：分配 Promise
-
-```llvm
-define ptr @compute$coro(i64 %x) #presplitcoroutine {
-entry:
-    ; 分配 Promise（存储返回值）
-    %promise = alloca i64, align 8
-
-    ; 创建协程 ID，传入 Promise 地址
-    %id = call token @llvm.coro.id(i32 0, ptr %promise, ptr null, ptr null)
-    %need_alloc = call i1 @llvm.coro.alloc(token %id)
-    br i1 %need_alloc, label %alloc, label %begin
-    ; ...
-}
-```
-
-#### 存储返回值：return 语句编译
-
-```go
-func compute(x int) int {
-    coroSuspend()
-    return x * 2  // 编译为 store + jump to final suspend
-}
-```
-
-```llvm
-; return x * 2 编译为：
-%result = mul i64 %x, 2
-store i64 %result, ptr %promise    ; 存储到 Promise
-br label %final_suspend            ; 跳转到 final suspend
-```
-
-#### 读取返回值：await 完成后
-
-```llvm
-; caller$coro 中调用 compute$coro 并获取返回值
-%handle = call ptr @compute$coro(i64 10)
-
-; await 逻辑
-await_loop:
-    %done = call i1 @llvm.coro.done(ptr %handle)
-    br i1 %done, label %await_done, label %await_resume
-    ; ...
-
-await_done:
-    ; 使用 llvm.coro.promise 获取 Promise 指针
-    %promise_ptr = call ptr @llvm.coro.promise(ptr %handle, i32 8, i1 false)
-    %result = load i64, ptr %promise_ptr
-
-    ; 销毁协程帧（返回值已读取）
-    call void @llvm.coro.destroy(ptr %handle)
-    ; 继续使用 %result ...
-```
-
-#### 多返回值处理
-
-对于多返回值函数，Promise 类型是包含所有返回值的结构体：
-
-```go
-func multi(x int) (int, int, int) {
-    coroSuspend()
-    return x*2, x*3, x*4
-}
-```
-
-```llvm
-; Promise 类型
-%MultiReturn = type { i64, i64, i64 }
-
-; 存储多个返回值
-%promise = alloca %MultiReturn
-; ...
-%ptr0 = getelementptr %MultiReturn, ptr %promise, i32 0, i32 0
-store i64 %a, ptr %ptr0
-%ptr1 = getelementptr %MultiReturn, ptr %promise, i32 0, i32 1
-store i64 %b, ptr %ptr1
-%ptr2 = getelementptr %MultiReturn, ptr %promise, i32 0, i32 2
-store i64 %c, ptr %ptr2
-```
-
-#### 结构体返回值
-
-结构体返回值直接作为 Promise 类型：
-
-```go
-type Point struct { X, Y int }
-
-func makePoint(x int) Point {
-    coroSuspend()
-    return Point{x*2, x*3}
-}
-```
-
-```llvm
-; Promise 就是 Point 结构体
-%promise = alloca %Point  ; { i64, i64 }
-; ...
-store %Point { i64 %x2, i64 %x3 }, ptr %promise
-```
-
-#### Final Suspend 与 Frame 生命周期
-
-关键点：**final suspend 后，协程帧必须保持有效**，直到调用者读取完返回值并调用 `coro.destroy`。
+**执行流程（简化）**：
 
 ```
-协程执行流程：
-1. compute$coro 存储返回值到 Promise
-2. compute$coro 到达 final suspend，设置 resume_fn = null
-3. caller$coro 通过 coro.done 检测到完成
-4. caller$coro 通过 coro.promise 读取返回值
-5. caller$coro 调用 coro.destroy 释放协程帧
+panic(x) ->
+    CoroPanic(x)
+    goto exit/defer
+
+exit/defer:
+    run defers (LIFO)
+    if recover() called in defer:
+        panic cleared
+    final suspend
 ```
 
-实现中，final suspend 的 default 路径（-1）跳转到 `coro.end` 但**不释放帧**：
+**传播逻辑**：
 
-```llvm
-final_suspend:
-    %fs = call i8 @llvm.coro.suspend(token none, i1 true)
-    switch i8 %fs, label %suspend [
-        i8 0, label %cleanup,    ; 被 destroy 调用
-        i8 1, label %cleanup
-    ]
+- 如果 defer 执行后 panic 仍存在，await 逻辑会检测子协程的 panic：
+  - `CoroIsPanicByHandle(handle)` → `CoroGetPanicByHandle(handle)`
+  - `CoroClearPanicByHandle(handle)` 后用 `CoroSetPanic(...)` 上抛到当前协程
+- 如果是最外层协程，运行时最终触发未恢复的 panic
 
-suspend:
-    ; 不释放帧，直接到 end
-    br label %end
+**语义要点**：
 
-cleanup:
-    ; 释放帧（由 coro.destroy 触发）
-    %mem = call ptr @llvm.coro.free(token %id, ptr %handle)
-    call void @free(ptr %mem)
-    br label %end
+- `recover` 只在 defer 执行时有效；非 defer 上下文会得到 `nil`
+- `panic` 视为特殊的 suspend 点，因此父协程在 await 子协程时必须检查 panic
 
-end:
-    call i1 @llvm.coro.end(ptr %handle, i1 false, token none)
-    ret ptr %handle
+### 6.5 闭包（已实现，语义更新）
+
+闭包布局为 `{ fn, ctx, $isCoro }`：
+- `$isCoro` 来自 taint 分析，标记该闭包调用是否需要走 `$coro`
+- 调用点根据 `$isCoro` 选择同步调用或 `$coro` + await
+- 普通函数值/函数指针转换为闭包时，会生成 `closureStub/closureWrapPtr` 以补齐 ctx
+
+### 6.6 接口方法调用（已实现）
+
+接口方法在协程模式下统一指向 `$coro` 版本，调用点自动 Block_On/await。
+细节见「接口方法支持」章节。
+
+### 6.7 返回值处理：Promise 机制（简述）
+
+`$coro` 返回句柄，真实返回值存放在 Promise：
+
+```text
+handle = callee$coro(...)
+await(handle)
+promise = coro.promise(handle)
+result = load promise
+destroy(handle)
 ```
+
+Promise 首字段预留 waiter list（push await 使用），多返回值/结构体返回值统一以结构体 Promise 承载；
+详例见 `cl/_testrt/cororet/out.ll`。
 
 ---
 
-## 6. 完整示例：多返回值函数的协程编译
+## 7. 示例与验证（简版）
 
-以 `multi` 函数为例，详细展示协程各区块的生成逻辑。
+为便于汇报，完整 IR 展开已移除。推荐直接查看以下用例与产物：
 
-### 6.1 源码
+- `cl/_testrt/cororet/in.go` / `cl/_testrt/cororet/out.ll`：单返回值/多返回值/结构体返回值
+- `cl/_testrt/corodefer/in.go`：协程 defer 行为
+- `cl/_testrt/coroglobal/in.go`：闭包/命名函数类型/接口调用组合场景
 
-```go
-func multi(x int) (int, int, int) {
-    println("multi: x =", x)
-    coroSuspend()
-    a := x * 2
-    b := x * 3
-    c := x * 4
-    println("multi: returning", a, b, c)
-    return a, b, c
-}
-
-func callerMulti(x int) {
-    println("callerMulti: calling multi")
-    a, b, c := multi(x)
-    println("callerMulti: results =", a, b, c)
-}
-```
-
-### 6.2 同步版本 `multi`
-
-同步版本中 `coroSuspend()` 不生成任何代码，函数直接执行完毕返回：
-
-```llvm
-; 签名：(i64) -> { i64, i64, i64 }  直接返回三元组
-define { i64, i64, i64 } @multi(i64 %0) {
-entry:
-  ; println("multi: x =", x)
-  call void @PrintString("multi: x =")
-  call void @PrintInt(i64 %0)
-
-  ; coroSuspend() 在同步版本中 **完全不生成代码**
-
-  ; a, b, c = x*2, x*3, x*4
-  %1 = mul i64 %0, 2              ; a = x * 2
-  %2 = mul i64 %0, 3              ; b = x * 3
-  %3 = mul i64 %0, 4              ; c = x * 4
-
-  ; println("multi: returning", a, b, c)
-  call void @PrintString("multi: returning")
-  call void @PrintInt(i64 %1)
-  call void @PrintInt(i64 %2)
-  call void @PrintInt(i64 %3)
-
-  ; 构造返回值元组 { a, b, c }
-  %4 = insertvalue { i64, i64, i64 } undef, i64 %1, 0
-  %5 = insertvalue { i64, i64, i64 } %4, i64 %2, 1
-  %6 = insertvalue { i64, i64, i64 } %5, i64 %3, 2
-  ret { i64, i64, i64 } %6        ; 直接返回三元组
-}
-```
-
-### 6.3 协程版本 `multi$coro` 区块结构
-
-```
-┌────────────────────────────────────────────────────────────────────────────┐
-│  multi$coro 协程版本                                                        │
-│  签名: (i64) → ptr   返回协程句柄，真正的返回值存在 Promise 中               │
-├────────────────────────────────────────────────────────────────────────────┤
-│                                                                            │
-│  entry                                                                     │
-│  ┌────────────────────────────────────────┐                                │
-│  │ %promise = alloca { i64, i64, i64 }    │ ← Promise: 存储 (a,b,c)        │
-│  │ %id = coro.id(0, %promise, null, null) │ ← 关联 Promise                 │
-│  │ %need = coro.alloc(%id)                │ ← 是否需要 malloc?             │
-│  │ br %need, allocBlk, beginBlk           │                                │
-│  └─────────────┬──────────────────────────┘                                │
-│                │                                                           │
-│       ┌────────┴────────┐                                                  │
-│       ▼                 ▼                                                  │
-│  allocBlk          beginBlk                                                │
-│  ┌─────────────┐   ┌─────────────────────────────────────┐                 │
-│  │ %size=size()│   │ %mem = phi [null, entry], [%m, alloc]│                │
-│  │ %m = malloc │   │ %handle = coro.begin(%id, %mem)     │ ← Handle        │
-│  │ br beginBlk │   │ br bodyBlk                          │                 │
-│  └─────────────┘   └──────────────────┬──────────────────┘                 │
-│                                       │                                    │
-│                                       ▼                                    │
-│  ═══════════════════════════════ 函数体 ═══════════════════════════════    │
-│                                                                            │
-│  bodyBlk                                                                   │
-│  ┌────────────────────────────────────────┐                                │
-│  │ println("multi: x =", x)               │                                │
-│  │                                        │                                │
-│  │ ; ===== coroSuspend() 编译为 ===== ;   │                                │
-│  │ %r = coro.suspend(none, false)         │ ← 非 final suspend             │
-│  │ switch %r:                             │                                │
-│  │   default(-1) → suspendBlk (返回handle)│                                │
-│  │   0 → resumeBlk (继续执行)             │                                │
-│  │   1 → cleanupBlk                       │                                │
-│  └────────────────────────────────────────┘                                │
-│                │                                                           │
-│       ┌────────┼────────┬─────────────────┐                                │
-│       ▼        ▼        ▼                 │                                │
-│  suspendBlk resumeBlk  cleanupBlk         │                                │
-│  ┌────────┐ ┌────────────────────────────────────────────┐                 │
-│  │ret hdl │ │ %a = x * 2                                 │                 │
-│  └────────┘ │ %b = x * 3                                 │                 │
-│     ↑       │ %c = x * 4                                 │                 │
-│  Ramp函数   │ println("multi: returning", %a, %b, %c)    │                 │
-│  返回点     │                                            │                 │
-│             │ ; ===== return a,b,c 编译为 ===== ;        │                 │
-│             │ GEP promise[0] → store %a                  │                 │
-│             │ GEP promise[1] → store %b                  │                 │
-│             │ GEP promise[2] → store %c                  │                 │
-│             │ br exitBlk                                 │                 │
-│             └────────────────────────────────────────────┘                 │
-│                                       │                                    │
-│  ═══════════════════════════ Final Suspend ════════════════════════════    │
-│                                       ▼                                    │
-│  exitBlk (final suspend)                                                   │
-│  ┌────────────────────────────────────────┐                                │
-│  │ %fs = coro.suspend(none, true)         │ ← final=true                   │
-│  │ switch %fs:                            │                                │
-│  │   default(-1) → finalSuspendBlk        │                                │
-│  │   0 → cleanupBlk                       │                                │
-│  │   1 → cleanupBlk                       │                                │
-│  └────────────────────────────────────────┘                                │
-│                │                                                           │
-│       ┌────────┼────────┐                                                  │
-│       ▼        ▼        ▼                                                  │
-│  finalSusp  cleanupBlk                                                     │
-│  ┌────────┐ ┌─────────────────────┐                                        │
-│  │br endBlk│ │%mem = coro.free()  │                                        │
-│  └───┬────┘ │call free(%mem)      │                                        │
-│      │      │br endBlk            │                                        │
-│  不释放帧   └──────────┬──────────┘                                        │
-│      │                │ 释放帧                                              │
-│      └────────────────┤                                                    │
-│                       ▼                                                    │
-│  endBlk                                                                    │
-│  ┌────────────────────────────────────────┐                                │
-│  │ coro.end(%handle, false)               │                                │
-│  │ ret ptr %handle                        │                                │
-│  └────────────────────────────────────────┘                                │
-│                                                                            │
-└────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 6.4 各区块 IR 详解
-
-#### Entry 区块
-
-```llvm
-entry:
-  ; 1. 分配 Promise（多返回值用结构体）
-  %promise = alloca { i64, i64, i64 }, align 8
-
-  ; 2. 创建协程 ID，第二个参数是 Promise 地址
-  %id = call token @llvm.coro.id(i32 0, ptr %promise, ptr null, ptr null)
-
-  ; 3. 检查是否需要动态分配帧
-  %need_alloc = call i1 @llvm.coro.alloc(token %id)
-  br i1 %need_alloc, label %allocBlk, label %beginBlk
-```
-
-| 指令 | 作用 |
-|------|------|
-| `alloca {i64,i64,i64}` | 分配 Promise，存储三个返回值 |
-| `coro.id(0, %promise, ...)` | 创建协程 ID，**关联 Promise 地址** |
-| `coro.alloc` | 询问 LLVM 是否需要动态分配帧 |
-
-#### Alloc 区块
-
-```llvm
-allocBlk:
-  %size = call i64 @llvm.coro.size.i64()    ; 获取帧大小
-  %mem = call ptr @malloc(i64 %size)        ; C malloc 分配
-  br label %beginBlk
-```
-
-#### Begin 区块
-
-```llvm
-beginBlk:
-  %phi_mem = phi ptr [ null, %entry ], [ %mem, %allocBlk ]
-  %handle = call ptr @llvm.coro.begin(token %id, ptr %phi_mem)
-  br label %bodyBlk
-```
-
-| 指令 | 作用 |
-|------|------|
-| `phi` | 合并内存来源：不需要分配用 null，否则用 malloc 结果 |
-| `coro.begin` | **创建协程句柄**，后续所有操作都用这个句柄 |
-
-#### Body 区块（函数体 + 中间 suspend）
-
-```llvm
-bodyBlk:
-  ; println("multi: x =", x)
-  call void @PrintString(...)
-  call void @PrintInt(i64 %x)
-
-  ; coroSuspend() 编译为：
-  %r = call i8 @llvm.coro.suspend(token none, i1 false)  ; false = 非 final
-  switch i8 %r, label %suspendBlk [
-    i8 0, label %resumeBlk     ; 被 resume，继续执行
-    i8 1, label %cleanupBlk    ; 被 destroy，去清理
-  ]
-```
-
-**coro.suspend 返回值含义**：
-
-| 返回值 | 含义 | 跳转目标 |
-|--------|------|----------|
-| -1 (default) | 挂起成功 | suspendBlk: `ret %handle` 返回句柄 |
-| 0 | 被 `coro.resume` 恢复 | resumeBlk: 继续执行后续代码 |
-| 1 | 被 `coro.destroy` 调用 | cleanupBlk: 清理资源 |
-
-#### Suspend 区块（Ramp 函数返回点）
-
-```llvm
-suspendBlk:
-  ret ptr %handle    ; 返回协程句柄给调用者
-```
-
-这是 **Ramp 函数的返回点**。第一次调用 `multi$coro(x)` 时，执行到 `coro.suspend` 返回 -1，跳到这里返回句柄。
-
-#### Resume 区块（恢复后继续执行）
-
-```llvm
-resumeBlk:
-  %a = mul i64 %x, 2     ; a = x * 2
-  %b = mul i64 %x, 3     ; b = x * 3
-  %c = mul i64 %x, 4     ; c = x * 4
-
-  ; println("multi: returning", a, b, c)
-  call void @PrintString(...)
-  call void @PrintInt(i64 %a)
-  call void @PrintInt(i64 %b)
-  call void @PrintInt(i64 %c)
-
-  ; return a, b, c 编译为：存储到 Promise
-  %ptr0 = getelementptr { i64, i64, i64 }, ptr %promise, i32 0, i32 0
-  store i64 %a, ptr %ptr0    ; Promise[0] = a
-  %ptr1 = getelementptr { i64, i64, i64 }, ptr %promise, i32 0, i32 1
-  store i64 %b, ptr %ptr1    ; Promise[1] = b
-  %ptr2 = getelementptr { i64, i64, i64 }, ptr %promise, i32 0, i32 2
-  store i64 %c, ptr %ptr2    ; Promise[2] = c
-
-  br label %exitBlk          ; 跳转到 final suspend
-```
-
-**关键**：`return a, b, c` 不是真的返回，而是：
-1. 通过 GEP 获取 Promise 各字段地址
-2. `store` 存储返回值到 Promise
-3. 跳转到 final suspend
-
-#### Exit 区块（Final Suspend）
-
-```llvm
-exitBlk:
-  %fs = call i8 @llvm.coro.suspend(token none, i1 true)  ; true = final
-  switch i8 %fs, label %finalSuspendBlk [
-    i8 0, label %cleanupBlk    ; 被 destroy 恢复
-    i8 1, label %cleanupBlk    ; cleanup
-  ]
-```
-
-Final suspend 后，协程标记为 **done**（`resume_fn = null`）。
-
-#### Final Suspend 区块（不释放帧）
-
-```llvm
-finalSuspendBlk:
-  br label %endBlk    ; 直接去 endBlk，不经过 cleanup
-```
-
-**关键**：这里 **不释放帧**！因为调用者还要读取 Promise 中的返回值。
-
-#### Cleanup 区块（释放帧）
-
-```llvm
-cleanupBlk:
-  %mem_to_free = call ptr @llvm.coro.free(token %id, ptr %handle)
-  call void @free(ptr %mem_to_free)
-  br label %endBlk
-```
-
-只有被 `coro.destroy` 触发时才会执行这里。
-
-#### End 区块
-
-```llvm
-endBlk:
-  call i1 @llvm.coro.end(ptr %handle, i1 false, token none)
-  ret ptr %handle
-```
-
-所有路径最终汇聚到这里，调用 `coro.end` 并返回句柄。
-
-### 6.5 调用者 `callerMulti$coro` 的 Await 逻辑
-
-```llvm
-define ptr @callerMulti$coro(i64 %x) {
-  ; ... prologue 省略 ...
-
-bodyBlk:
-  ; println("callerMulti: calling multi")
-  call void @PrintString(...)
-
-  ; 调用 multi$coro，获取句柄
-  %callee_handle = call ptr @multi$coro(i64 %x)
-  br label %awaitLoop
-
-; ====== Await 循环 ======
-awaitLoop:
-  %done1 = call i1 @llvm.coro.done(ptr %callee_handle)
-  br i1 %done1, label %awaitDone, label %awaitResume
-
-awaitResume:
-  call void @llvm.coro.resume(ptr %callee_handle)
-  br label %awaitCheck
-
-awaitCheck:
-  %done2 = call i1 @llvm.coro.done(ptr %callee_handle)
-  br i1 %done2, label %awaitDone, label %awaitSuspend
-
-awaitSuspend:
-  ; callee 还在挂起，我也挂起（协作式等待）
-  %r = call i8 @llvm.coro.suspend(token none, i1 false)
-  switch i8 %r, label %suspendBlk [
-    i8 0, label %awaitLoop    ; 被恢复后继续检查
-    i8 1, label %cleanupBlk
-  ]
-
-; ====== 读取返回值 ======
-awaitDone:
-  ; 通过 coro.promise 获取 Promise 指针
-  %promise_ptr = call ptr @llvm.coro.promise(ptr %callee_handle, i32 8, i1 false)
-
-  ; 加载整个结构体
-  %result = load { i64, i64, i64 }, ptr %promise_ptr
-
-  ; 解构三个返回值
-  %a = extractvalue { i64, i64, i64 } %result, 0
-  %b = extractvalue { i64, i64, i64 } %result, 1
-  %c = extractvalue { i64, i64, i64 } %result, 2
-
-  ; println("callerMulti: results =", a, b, c)
-  call void @PrintString(...)
-  call void @PrintInt(i64 %a)
-  call void @PrintInt(i64 %b)
-  call void @PrintInt(i64 %c)
-
-  br label %exitBlk
-  ; ... epilogue 省略 ...
-}
-```
-
-### 6.6 完整时序图
-
-```mermaid
-sequenceDiagram
-    participant C as callerMulti$coro
-    participant M as multi$coro
-
-    Note over C: println("calling multi")
-    C->>M: call multi$coro(x)
-
-    Note over M: entry: alloca promise
-    Note over M: coro.begin → handle
-    Note over M: println("multi: x =", x)
-    Note over M: coro.suspend(false)
-
-    M-->>C: return handle
-
-    Note over C: coro.done(handle) = false
-    C->>M: coro.resume(handle)
-
-    Note over M: a = x*2, b = x*3, c = x*4
-    Note over M: println("returning", a,b,c)
-    Note over M: store a,b,c to Promise
-    Note over M: coro.suspend(true) [final]
-    Note over M: resume_fn = null
-
-    M-->>C: return (suspended)
-
-    Note over C: coro.done(handle) = true ✓
-    Note over C: ptr = coro.promise(handle)
-    Note over C: {a,b,c} = load ptr
-    Note over C: println("results =", a,b,c)
-
-    opt 可选：销毁协程帧
-        C->>M: coro.destroy(handle)
-        Note over M: cleanup: free(frame)
-        Note over M: coro.end
-    end
-```
-
-### 6.7 关键点总结
-
-| 阶段 | 同步版本 | 协程版本 |
-|------|---------|---------|
-| 函数签名 | `(i64) → {i64,i64,i64}` | `(i64) → ptr` |
-| coroSuspend | 不生成代码 | 生成 `coro.suspend` + switch |
-| return | `insertvalue` + `ret` | `store` 到 Promise + `br exitBlk` |
-| 返回值获取 | 调用返回后立即可用 | await 完成后从 Promise 读取 |
-| 帧生命周期 | 栈帧，函数返回自动销毁 | 堆帧，需要 `coro.destroy` 释放 |
+这些用例覆盖 Promise、await、defer、闭包与接口的关键路径。
 
 ---
 
-## 7. 总结
+## 8. 总结
 
-### 7.1 核心要点
+### 8.1 核心要点
 
 1. **双符号**：每个函数生成 `func` 和 `func$coro` 两个版本
 2. **ABI 差异**：同步版本直接返回值，协程版本返回句柄 + Promise 存储返回值
 3. **调用规则**：普通调用用同步版本，go 语句用 `$coro` 版本，`$coro` 内部只调用 `$coro`（C 除外）
-4. **自动 await**：`$coro` 调用 `$coro` 时自动生成协作式等待逻辑，await 完成后从 Promise 读取返回值
+4. **自动 await**：`$coro` 调用 `$coro` 时自动生成 push await，完成后从 Promise 读取返回值
 5. **taint 分析**：递归识别包含 suspend 点的函数
 6. **Promise 机制**：返回值存储在协程帧 offset 16 位置，通过 `llvm.coro.promise` 访问
 
-### 7.2 协程区块生成规则
+### 8.2 协程区块生成规则
 
 | 区块 | 生成时机 | 作用 |
 |------|---------|------|
@@ -975,7 +383,7 @@ sequenceDiagram
 | cleanupBlk | Epilogue | coro.free + free 释放帧 |
 | endBlk | Epilogue | coro.end + ret handle |
 
-### 7.3 已验证的返回值类型
+### 8.3 已验证的返回值类型
 
 | 类型 | 同步调用 | 异步调用 |
 |------|---------|---------|
@@ -987,9 +395,9 @@ sequenceDiagram
 
 ---
 
-## 8. Block_On 机制（已实现）
+## 9. Block_On 机制（已实现）
 
-### 8.1 问题：如何从 $coro 函数获取返回值
+### 9.1 问题：如何从 $coro 函数获取返回值
 
 **问题**：在双符号模式下，所有 `$coro` 函数的签名都是 `(参数) → ptr`，返回协程句柄而非实际返回值。当我们需要获取返回值时，需要一个统一的机制来：
 1. 等待协程执行完成
@@ -998,58 +406,21 @@ sequenceDiagram
 
 **解决方案**：Block_On 机制——调用 `$coro` 函数后自动插入等待和提取逻辑。
 
-### 8.2 Block_On 的执行流程
+### 9.2 Block_On 的执行流程
 
-```
-Block_On 执行流程：
-1. 调用 $coro 函数，获取协程句柄 handle
-2. 调用 CoroScheduleUntil(handle) 等待协程完成
-   - 调度器循环调用 coro.resume 直到 coro.done 返回 true
-3. 调用 llvm.coro.promise 获取 Promise 指针
-4. 从 Promise load 返回值
-5. 返回值可用于后续计算
-```
+1. 调用 `$coro` 函数，获得 handle。
+2. **同步/最外层上下文**：`CoroScheduleUntil(handle)` 阻塞等待完成。
+3. **协程上下文**：走 push await（加入 waiter → reschedule callee → suspend）。
+4. `coro.promise` 读取返回值，`coro.destroy` 释放帧。
 
-### 8.3 同步上下文 vs 异步上下文
+### 9.3 同步上下文 vs 异步上下文
 
-Block_On 的行为取决于调用发生在哪种上下文中：
+- 同步上下文：阻塞等待，行为等价于传统 `block_on`。
+- 协程上下文：协作式等待，由 callee final suspend 唤醒 waiters（见第 1 节）。
 
-#### 同步上下文（普通函数调用 $coro）
+### 9.4 Block_On 的应用场景
 
-```go
-func main() {
-    result := compute(10)  // main 是普通函数，调用 tainted 的 compute
-}
-```
-
-- 调用者（main）不是协程，无法挂起自己
-- Block_On 使用**阻塞式等待**：在当前线程上循环 resume 目标协程直到完成
-- 调用者被完全阻塞，类似于 Rust 的 `block_on` 或 Python 的 `asyncio.run()`
-- 适用于程序入口点或从同步代码调用异步逻辑
-
-#### 异步上下文（$coro 函数调用 $coro）
-
-```go
-func caller() {      // caller 是 tainted，生成 caller$coro
-    result := compute(10)  // $coro 调用 $coro
-}
-```
-
-- 调用者（caller$coro）本身是协程，可以挂起
-- Block_On 可以使用**协作式等待**：子协程未完成时，父协程也挂起，让出控制权
-- 调度器可以在多个协程之间切换，实现真正的并发
-- 类似于 async/await 中的 await 关键字
-
-#### 当前实现
-
-当前 MVP 统一使用 `CoroScheduleUntil` 阻塞式等待，暂不区分上下文。这意味着：
-- 同步和异步上下文行为一致
-- 并发调度依赖 `go` 语句显式创建独立协程
-- 未来可扩展：运行时通过 `CoroIsInCoro()` 检测上下文，选择等待策略
-
-### 8.4 Block_On 的应用场景
-
-Block_On 被自动插入到所有需要从 `$coro` 函数获取返回值的场景：
+Block_On/await 被自动插入到所有需要从 `$coro` 函数获取返回值的场景：
 
 | 场景 | 被调用函数 | 返回类型 | 需要 Block_On |
 |------|-----------|---------|---------------|
@@ -1059,150 +430,41 @@ Block_On 被自动插入到所有需要从 `$coro` 函数获取返回值的场�
 | 方法值调用 | `$bound$coro` | ptr (handle) | ✓ |
 | 方法表达式调用 | `$thunk$coro` | ptr (handle) | ✓ |
 
-### 8.5 实现细节
+### 9.5 实现细节（简述）
 
-Block_On 由 `coroAwaitAndLoadResult` 函数实现，生成以下 IR：
-
-```llvm
-; 假设 %handle 是调用 $coro 函数返回的协程句柄
-
-; Step 1: 等待协程完成
-call void @"runtime.CoroScheduleUntil"(ptr %handle)
-
-; Step 2: 获取 Promise 指针
-%promise_ptr = call ptr @llvm.coro.promise(ptr %handle, i32 8, i1 false)
-
-; Step 3: 读取返回值
-%result = load i64, ptr %promise_ptr   ; 单返回值情况
-
-; 多返回值情况：
-%tuple = load { i64, i64, i64 }, ptr %promise_ptr
-%a = extractvalue { i64, i64, i64 } %tuple, 0
-%b = extractvalue { i64, i64, i64 } %tuple, 1
-%c = extractvalue { i64, i64, i64 } %tuple, 2
-```
-
-### 8.6 Block_On 与后续功能的关系
-
-Block_On 是闭包、接口、方法值等功能的基础：
-
-```
-                    ┌─────────────┐
-                    │   Block_On  │
-                    │  等待+提取   │
-                    └──────┬──────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-        ▼                  ▼                  ▼
-   ┌─────────┐      ┌───────────┐      ┌───────────┐
-   │  闭包   │      │ 接口方法  │      │ 方法值/   │
-   │ 调用    │      │   调用    │      │ 方法表达式│
-   └─────────┘      └───────────┘      └───────────┘
-```
-
-所有这些场景都返回协程句柄，都依赖 Block_On 来获取实际返回值。
+Block_On 由 `coroAwaitAndLoadResult` 生成，核心是「等待 → 读取 Promise → 销毁 handle」。
+在协程上下文中会复用 push await 路径。
 
 ---
 
-## 9. 闭包支持（已实现）
+## 10. 闭包模型（已实现，语义更新）
 
-### 9.1 问题：闭包如何支持协程
+### 10.1 结构与标记
 
-**问题**：闭包（匿名函数）是 Go 中常用的构造，可能捕获外部变量。在协程模式下：
-- 闭包内部可能包含 suspend 点或调用 tainted 函数
-- 闭包可以被存储到变量、作为参数传递、作为返回值
-- 需要在运行时正确处理闭包调用
+闭包布局为 `{ fn, ctx, $isCoro }`：
+- `$isCoro` 来自 taint 分析，表示该闭包是否需要走 `$coro`
+- `ctx` 保存捕获变量；无捕获时为 `nil`
 
-**解决方案**：
-1. 闭包统一生成 `$coro` 版本（只有 `$coro` 版本有函数体）
-2. 闭包调用时自动插入 Block_On
+### 10.2 生成与转换
 
-### 9.2 闭包的双符号生成
+- `MakeClosure` 在编译期写入 `$isCoro`
+- 普通函数/函数指针转换成闭包时，会生成 `closureStub/closureWrapPtr` 补齐 ctx
+- `$isCoro=false` 的闭包走同步调用路径
 
-```go
-func createWorker(multiplier int) func(int) int {
-    return func(x int) int {  // 闭包 createWorker$1
-        coroSuspend()
-        return x * multiplier
-    }
-}
-```
+### 10.3 调用路径
 
-**生成的符号**：
+- 调用点读取 `$isCoro`，决定同步调用或 `$coro` + await
+- 同步上下文使用 Block_On；协程上下文使用 push await
 
-| 符号 | 有函数体 | 说明 |
-|------|---------|------|
-| `createWorker$1` | 否（只有声明） | 同步版本，不生成 |
-| `createWorker$1$coro` | 是（完整定义） | 协程版本 |
+### 10.4 存储与传递
 
-**原因**：闭包有捕获变量（`FreeVars > 0`），即 `hasCtx = true`。按设计，有上下文的函数只生成 `$coro` 版本。
-
-### 9.3 闭包调用的 Block_On
-
-```go
-func caller() {
-    worker := createWorker(2)
-    result := worker(10)  // 闭包调用
-}
-```
-
-编译流程：
-```
-1. createWorker 返回闭包 { fn_ptr, ctx }
-   - fn_ptr 指向 createWorker$1$coro
-   - ctx 是捕获的 multiplier
-
-2. 调用闭包：
-   %handle = call ptr %fn_ptr(ptr %ctx, i64 10)  ; 返回协程句柄
-
-3. Block_On：
-   call void @CoroScheduleUntil(ptr %handle)
-   %promise = call ptr @llvm.coro.promise(...)
-   %result = load i64, ptr %promise
-```
-
-### 9.4 闭包存储与传递
-
-闭包可以安全地存储到各种位置：
-
-```go
-// 全局变量
-var globalWorker func(int) int
-
-// 结构体字段
-type Handler struct {
-    process func(int) int
-}
-
-// 切片
-var workers []func(int) int
-
-// 函数参数
-func runWorker(fn func(int) int, x int) int {
-    return fn(x)  // Block_On 自动插入
-}
-```
-
-由于闭包统一使用 `$coro` 版本，无论存储在哪里，调用时都自动 Block_On。
-
-### 9.5 命名函数类型
-
-命名函数类型与普通闭包行为一致：
-
-```go
-type WorkerFunc func(int) int
-
-func runWorker(fn WorkerFunc, x int) int {
-    return fn(x)  // Block_On 自动插入
-}
-```
+闭包可存入全局/结构体/切片、可作为参数/返回值传递，`$isCoro` 会随闭包一起传播。
 
 ---
 
-## 10. 接口方法支持（已实现）
+## 11. 接口方法支持（已实现）
 
-### 10.1 问题：接口的间接调用如何选择版本
+### 11.1 问题：接口的间接调用如何选择版本
 
 **问题**：接口方法调用是通过 itab 的间接调用，编译期不知道具体实现类型。在协程模式下：
 - 如何决定调用同步版本还是 `$coro` 版本？
@@ -1212,7 +474,7 @@ func runWorker(fn WorkerFunc, x int) int {
 1. itab 中统一存储 `$coro` 版本的方法指针
 2. 接口方法调用时自动插入 Block_On
 
-### 10.2 itab 布局变更
+### 11.2 itab 布局变更
 
 ```go
 type Worker interface {
@@ -1236,7 +498,7 @@ itab for *AsyncWorker implementing Worker:
   +24:  (*AsyncWorker).Work$coro   ← 存储 $coro 版本
 ```
 
-### 10.3 接口方法调用的 Block_On
+### 11.3 接口方法调用的 Block_On
 
 ```go
 func callWorker(w Worker) int {
@@ -1262,7 +524,7 @@ func callWorker(w Worker) int {
    %result = load i64, ptr %promise
 ```
 
-### 10.4 Imethod 签名变更
+### 11.4 Imethod 签名变更
 
 `Imethod` 是从接口提取方法形成的闭包。在协程模式下，其签名变为 `$coro` 版本：
 
@@ -1271,7 +533,7 @@ func callWorker(w Worker) int {
 | 同步模式 | `func() int` |
 | 协程模式 | `func() ptr` |
 
-### 10.5 runtime 包排除
+### 11.5 runtime 包排除
 
 **问题**：runtime 包提供协程基础设施（CoroScheduleUntil、CoroEnter 等），如果 runtime 的接口调用也走协程路径会产生循环依赖。
 
@@ -1284,7 +546,7 @@ func callWorker(w Worker) int {
 - `ssa/interface.go`: `Imethod` 对 runtime 包使用原始签名
 - `cl/instr.go`: 接口调用跳过 runtime 包的 Block_On
 
-### 10.6 已验证场景
+### 11.6 已验证场景
 
 | 场景 | 状态 | 说明 |
 |------|------|------|
@@ -1298,9 +560,9 @@ func callWorker(w Worker) int {
 
 ---
 
-## 11. 方法值与方法表达式（已实现）
+## 12. 方法值与方法表达式（已实现）
 
-### 11.1 问题：方法引用如何处理
+### 12.1 问题：方法引用如何处理
 
 **问题**：Go 支持两种方法引用方式：
 - **方法值**（Method Value）：`instance.Method`，绑定特定接收者
@@ -1308,7 +570,7 @@ func callWorker(w Worker) int {
 
 在协程模式下，这两种引用如何生成和调用？
 
-### 11.2 方法值（$bound）
+### 12.2 方法值（$bound）
 
 ```go
 var w Worker = &AsyncWorker{value: 10}
@@ -1338,7 +600,7 @@ result := workFn() // 调用
 6. 存储结果到自己的 Promise
 ```
 
-### 11.3 方法表达式（$thunk）
+### 12.3 方法表达式（$thunk）
 
 ```go
 workThunk := (*AsyncWorker).Work  // 方法表达式，类型 func(*AsyncWorker) int
@@ -1372,7 +634,7 @@ define ptr @"(*AsyncWorker).Work$thunk$coro"(ptr %recv) {
 }
 ```
 
-### 11.4 $bound vs $thunk 对比
+### 12.4 $bound vs $thunk 对比
 
 | 特性 | $bound | $thunk |
 |------|--------|--------|
@@ -1383,7 +645,7 @@ define ptr @"(*AsyncWorker).Work$thunk$coro"(ptr %recv) {
 | 生成版本 | 只有 $coro | 同步 + $coro |
 | 调用方式 | 动态（通过 itab） | 静态 |
 
-### 11.5 IsClosureName 的扩展
+### 12.5 IsClosureName 的扩展
 
 为了让编译器正确识别 `$bound` 和 `$thunk` 为闭包类型，扩展了 `IsClosureName` 函数：
 
@@ -1400,18 +662,18 @@ func IsClosureName(name string) bool {
 
 ---
 
-## 12. 运行时协程跟踪（已实现）
+## 13. 运行时协程跟踪（已实现）
 
-### 12.1 问题：如何检测当前是否在协程上下文中
+### 13.1 问题：如何检测当前是否在协程上下文中
 
 **问题**：某些场景需要运行时判断当前是否在协程上下文中：
-- Block_On 选择阻塞式还是协作式等待
+- Block_On/await 选择阻塞式还是 push 等待
 - 调试和诊断
 - 未来的反射支持
 
 **解决方案**：通过协程深度计数跟踪。
 
-### 12.2 实现
+### 13.2 实现
 
 ```go
 // runtime/internal/runtime/z_coro.go
@@ -1430,7 +692,7 @@ func CoroIsInCoro() bool {
 }
 ```
 
-### 12.3 调用位置
+### 13.3 调用位置
 
 ```llvm
 ; CoroFuncPrologue（coro.begin 之后）
@@ -1449,9 +711,9 @@ br label %end
 
 ---
 
-## 13. 当前状态与待实现功能
+## 14. 当前状态与待实现功能
 
-### 13.1 已实现功能
+### 14.1 已实现功能
 
 | 功能 | 状态 | 关键实现 |
 |------|------|---------|
@@ -1459,21 +721,21 @@ br label %end
 | coroSuspend | ✓ | 编译为 `coro.suspend` |
 | go 语句 | ✓ | 调用 $coro + CoroSpawn |
 | Promise 返回值 | ✓ | `coro.promise` 机制 |
-| 自动 await | ✓ | `$coro` 调用 `$coro` |
+| 自动 await | ✓ | `$coro` 调用 `$coro`（push await） |
 | Taint 分析 | ✓ | 递归传播 |
+| defer | ✓ | 协程帧 defer 列表 + await |
 | **Block_On** | ✓ | `coroAwaitAndLoadResult` |
-| **闭包** | ✓ | 只生成 $coro，调用时 Block_On |
+| **闭包** | ✓ | `{fn, ctx, $isCoro}` + 运行时分派 |
 | **接口方法** | ✓ | itab 存 $coro，Imethod 改签名 |
 | **方法值 ($bound)** | ✓ | IsClosureName 识别 |
 | **方法表达式 ($thunk)** | ✓ | 双版本生成 |
 | **运行时跟踪** | ✓ | CoroEnter/CoroExit |
 
-### 13.2 待实现功能
+### 14.2 待实现功能
 
 | 功能 | 优先级 | 说明 |
 |------|--------|------|
 | Channel 操作 | 高 | `<-ch`、`ch <- v` 作为挂起点 |
 | Select 语句 | 高 | 多路复用等待 |
 | Mutex | 中 | 协作式锁 |
-| 协作式 Block_On | 中 | 根据上下文选择等待策略 |
 | 反射调用 | 低 | 运行时动态选择版本 |
