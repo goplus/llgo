@@ -24,8 +24,6 @@ func (t *testingT) Fatalf(format string, args ...any) {
 }
 
 func main() {
-	// TODO: llgo init abi types for closure
-	SliceOf(TypeOf(0))
 	var t testingT
 	TestMethod(&t)
 	TestMethodValue(&t)
