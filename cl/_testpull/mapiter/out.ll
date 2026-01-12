@@ -435,19 +435,13 @@ MapIterAsync_state_02_ready_cont:                 ; preds = %MapIterAsync_state_
   %142 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %134, 1
   %143 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 7
   store i64 %142, ptr %143, align 4
-  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 2
-  store i1 %121, ptr %144, align 1
-  %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
-  store i64 %123, ptr %145, align 4
-  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 4
-  store i64 %125, ptr %146, align 4
-  %147 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 5
-  store ptr %127, ptr %147, align 8
-  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 6
-  store ptr %131, ptr %148, align 8
+  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 3
+  store i64 %123, ptr %144, align 4
+  %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 6
+  store ptr %131, ptr %145, align 8
   store ptr null, ptr %47, align 8
-  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %149, align 1
+  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/mapiter.MapIterAsync$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %146, align 1
   br label %MapIterAsync_state_03
 }
 

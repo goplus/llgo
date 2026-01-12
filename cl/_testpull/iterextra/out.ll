@@ -429,19 +429,11 @@ GoroutineChannel_state_02_ready_cont:             ; preds = %GoroutineChannel_st
   store i64 %163, ptr %164, align 4
   %165 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 2
   store i64 %140, ptr %165, align 4
-  %166 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 3
-  store i1 %142, ptr %166, align 1
-  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 4
-  store i64 %144, ptr %167, align 4
-  %168 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 5
-  store { i64, i1 } %146, ptr %168, align 4
-  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 6
-  store ptr %148, ptr %169, align 8
-  %170 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 7
-  store ptr %152, ptr %170, align 8
+  %166 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 7
+  store ptr %152, ptr %166, align 8
   store ptr null, ptr %69, align 8
-  %171 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %171, align 1
+  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/iterextra.GoroutineChannel$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %167, align 1
   br label %GoroutineChannel_state_03
 }
 

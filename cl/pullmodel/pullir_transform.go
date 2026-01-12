@@ -16,12 +16,13 @@ import (
 
 // PullIRBuilder transforms an SSA function into Pull IR.
 type PullIRBuilder struct {
-	sm        *StateMachine       // Existing state machine analysis
-	slots     map[ssa.Value]*Slot // SSA value -> Slot mapping
-	slotList  []*Slot             // All slots in order
-	nextField int                 // Next field index (0 = state)
-	tempCount int                 // Temporary counter per state
-	states    []*PullState        // Generated Pull IR states
+	sm        *StateMachine            // Existing state machine analysis
+	slots     map[ssa.Value]*Slot      // SSA value -> Slot mapping
+	slotList  []*Slot                  // All slots in order
+	nextField int                      // Next field index (0 = state)
+	tempCount int                      // Temporary counter per state
+	states    []*PullState             // Generated Pull IR states
+	rangeType map[ssa.Value]types.Type // Range iterator -> collection type
 }
 
 // NewPullIRBuilder creates a new Pull IR builder from an analyzed state machine.
@@ -29,8 +30,42 @@ func NewPullIRBuilder(sm *StateMachine) *PullIRBuilder {
 	return &PullIRBuilder{
 		sm:        sm,
 		slots:     make(map[ssa.Value]*Slot),
+		rangeType: make(map[ssa.Value]types.Type),
 		nextField: 1, // Field 0 is state number
 	}
+}
+
+// nextResultTupleType builds the (ok, key, val) tuple type for a Next result.
+// elemType is the collection type (map or string).
+func (b *PullIRBuilder) nextResultTupleType(elemType types.Type, isString bool) types.Type {
+	if elemType == nil {
+		return types.NewTuple(
+			types.NewVar(0, nil, "ok", types.Typ[types.Bool]),
+			types.NewVar(0, nil, "k", types.Typ[types.Invalid]),
+			types.NewVar(0, nil, "v", types.Typ[types.Invalid]),
+		)
+	}
+	if m, ok := elemType.Underlying().(*types.Map); ok {
+		return types.NewTuple(
+			types.NewVar(0, nil, "ok", types.Typ[types.Bool]),
+			types.NewVar(0, nil, "k", m.Key()),
+			types.NewVar(0, nil, "v", m.Elem()),
+		)
+	}
+	if isString {
+		// Range over string: ok, index(int), rune
+		return types.NewTuple(
+			types.NewVar(0, nil, "ok", types.Typ[types.Bool]),
+			types.NewVar(0, nil, "k", types.Typ[types.Int]),
+			types.NewVar(0, nil, "v", types.Typ[types.Rune]),
+		)
+	}
+	// Fallback to SSA-reported invalid tuple shape.
+	return types.NewTuple(
+		types.NewVar(0, nil, "ok", types.Typ[types.Bool]),
+		types.NewVar(0, nil, "k", types.Typ[types.Invalid]),
+		types.NewVar(0, nil, "v", types.Typ[types.Invalid]),
+	)
 }
 
 // Build transforms the state machine into Pull IR.
@@ -85,6 +120,8 @@ func (b *PullIRBuilder) Build() (*PullIR, error) {
 		States:     b.states,
 		ResultSlot: resultSlot,
 		ResultType: b.sm.ResultType,
+		HasDefer:   b.sm.HasDefer,
+		HasPanic:   b.sm.HasPanic,
 	}, nil
 }
 
@@ -285,13 +322,31 @@ func (ctx *stateTransformContext) transformInstr(instr ssa.Instruction) error {
 	case *ssa.Call:
 		return ctx.transformCall(v)
 
+	case *ssa.Defer:
+		return ctx.transformDefer(v)
+
+	case *ssa.Panic:
+		x := ctx.getVarRef(v.X)
+		ctx.emit(&PullPanic{Value: x})
+		return nil
+
+	case *ssa.RunDefers:
+		ctx.emit(&PullRunDefers{})
+		return nil
+
 	case *ssa.Store:
 		return ctx.transformStore(v)
 
 	case *ssa.Alloc:
 		// Stack allocations - check if it's a cross-var slot
 		if slot := ctx.builder.getSlot(v); slot != nil {
-			// Already has a slot from cross-vars, no instruction needed
+			// Heap allocs still need runtime allocation even if they have slots.
+			if v.Heap {
+				elemType := v.Type().(*types.Pointer).Elem()
+				ctx.emit(&PullAlloc{Type: elemType, Heap: v.Heap})
+				ctx.registerTempAndStore(v)
+			}
+			// Non-heap allocs are handled via stack alloc pointers.
 			return nil
 		}
 		// For non-cross-var allocs, emit PullAlloc instruction
@@ -325,6 +380,46 @@ func (ctx *stateTransformContext) transformInstr(instr ssa.Instruction) error {
 		ctx.registerTempAndStore(v)
 		return nil
 
+	case *ssa.MakeChan:
+		size := NewConstRef(nil)
+		if v.Size != nil {
+			size = ctx.getVarRef(v.Size)
+		}
+		ctx.emit(&PullMakeChan{ChanType: v.Type(), Size: size})
+		ctx.registerTempAndStore(v)
+		return nil
+
+	case *ssa.MakeSlice:
+		l := NewConstRef(nil)
+		if v.Len != nil {
+			l = ctx.getVarRef(v.Len)
+		}
+		c := NewConstRef(nil)
+		if v.Cap != nil {
+			c = ctx.getVarRef(v.Cap)
+		}
+		ctx.emit(&PullMakeSlice{SliceType: v.Type(), Len: l, Cap: c})
+		ctx.registerTempAndStore(v)
+		return nil
+
+	case *ssa.MakeMap:
+		reserve := NewConstRef(nil)
+		if v.Reserve != nil {
+			reserve = ctx.getVarRef(v.Reserve)
+		}
+		ctx.emit(&PullMakeMap{MapType: v.Type(), Reserve: reserve})
+		ctx.registerTempAndStore(v)
+		return nil
+
+	case *ssa.MakeClosure:
+		var bindings []VarRef
+		for _, b := range v.Bindings {
+			bindings = append(bindings, ctx.getVarRef(b))
+		}
+		ctx.emit(&PullMakeClosure{Func: v.Fn, Bindings: bindings})
+		ctx.registerTempAndStore(v)
+		return nil
+
 	case *ssa.Lookup:
 		// Map lookup: v, ok = m[key]
 		mapRef := ctx.getVarRef(v.X)
@@ -338,19 +433,59 @@ func (ctx *stateTransformContext) transformInstr(instr ssa.Instruction) error {
 		x := ctx.getVarRef(v.X)
 		ctx.emit(&PullRange{X: x})
 		ctx.registerTempAndStore(v)
+		// Remember collection type for iterator so Next can recover key/value types.
+		ctx.builder.rangeType[v] = v.X.Type()
 		return nil
 
 	case *ssa.Next:
 		// Next advances the iterator, returns (key, value, ok) tuple
 		iter := ctx.getVarRef(v.Iter)
-		ctx.emit(&PullNext{Iter: iter, ElemType: v.Type(), IsString: v.IsString})
+		elemType := v.Type()
+		if t, ok := ctx.builder.rangeType[v.Iter]; ok {
+			elemType = t
+		}
+		ctx.emit(&PullNext{Iter: iter, ElemType: elemType, IsString: v.IsString})
 		ctx.registerTempAndStore(v)
+		// Ensure the slot (if allocated) keeps the SSA tuple type so later Extract works.
+		if slot := ctx.builder.getSlot(v); slot != nil {
+			slot.Type = ctx.builder.nextResultTupleType(elemType, v.IsString)
+		}
 		return nil
 
 	case *ssa.Send:
 		ch := ctx.getVarRef(v.Chan)
 		val := ctx.getVarRef(v.X)
 		ctx.emit(&PullSend{Chan: ch, Value: val})
+		return nil
+
+	case *ssa.Go:
+		call := v.Call
+		var args []VarRef
+		for _, arg := range call.Args {
+			args = append(args, ctx.getVarRef(arg))
+		}
+		fnRef := ctx.getVarRef(call.Value)
+		ctx.emit(&PullGo{
+			IsInvoke: call.IsInvoke(),
+			Method:   call.Method,
+			Func:     fnRef,
+			Args:     args,
+		})
+		return nil
+
+	case *ssa.Select:
+		states := make([]PullSelectState, len(v.States))
+		for i, st := range v.States {
+			ch := ctx.getVarRef(st.Chan)
+			send := st.Dir == types.SendOnly
+			val := NewConstRef(nil)
+			if send && st.Send != nil {
+				val = ctx.getVarRef(st.Send)
+			}
+			states[i] = PullSelectState{Chan: ch, Value: val, Send: send}
+		}
+		ctx.emit(&PullSelect{States: states, Blocking: v.Blocking})
+		ctx.registerTempAndStore(v)
 		return nil
 
 	case *ssa.If:
@@ -396,11 +531,33 @@ func (ctx *stateTransformContext) transformCall(v *ssa.Call) error {
 	for _, arg := range v.Call.Args {
 		args = append(args, ctx.getVarRef(arg))
 	}
-	hasValue := v.Type() != nil
+	hasValue := false
+	if sig := v.Call.Signature(); sig != nil {
+		hasValue = sig.Results().Len() > 0
+	}
 	ctx.emit(&PullCall{Func: v.Call.Value, Args: args, HasValue: hasValue})
 	if hasValue {
 		ctx.registerTempAndStore(v)
 	}
+	return nil
+}
+
+func (ctx *stateTransformContext) transformDefer(v *ssa.Defer) error {
+	call := v.Call
+	var args []VarRef
+	argTypes := make([]types.Type, len(call.Args))
+	for i, arg := range call.Args {
+		args = append(args, ctx.getVarRef(arg))
+		argTypes[i] = arg.Type()
+	}
+	fnRef := ctx.getVarRef(call.Value)
+	ctx.emit(&PullDefer{
+		IsInvoke: call.IsInvoke(),
+		Method:   call.Method,
+		Func:     fnRef,
+		Args:     args,
+		ArgTypes: argTypes,
+	})
 	return nil
 }
 
@@ -439,7 +596,7 @@ func (ctx *stateTransformContext) transformSlice(v *ssa.Slice) error {
 	if v.Low != nil {
 		low = ctx.getVarRef(v.Low)
 	} else {
-		low = NewConstRef(&ssa.Const{}) // Zero
+		low = NewConstRef(nil) // Unspecified => default zero
 	}
 	if v.High != nil {
 		high = ctx.getVarRef(v.High)

@@ -294,56 +294,52 @@ Conditional_state_01_ready_cont:                  ; preds = %Conditional_state_0
   %89 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %81, 1
   %90 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
   store i64 %89, ptr %90, align 4
-  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  store i64 %78, ptr %91, align 4
   store ptr null, ptr %16, align 8
-  %92 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %92, align 1
+  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %91, align 1
   br label %Conditional_state_02
 
 Conditional_state_03_init:                        ; preds = %Conditional_state_03
-  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
-  %94 = load i1, ptr %93, align 1
-  %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  %96 = load i64, ptr %95, align 4
-  %97 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  %98 = load i64, ptr %97, align 4
-  %99 = call ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepB"()
-  store ptr %99, ptr %45, align 8
+  %92 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 1
+  %93 = load i1, ptr %92, align 1
+  %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
+  %95 = load i64, ptr %94, align 4
+  %96 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  %97 = load i64, ptr %96, align 4
+  %98 = call ptr @"github.com/goplus/llgo/cl/_testpull/conditional.StepB"()
+  store ptr %98, ptr %45, align 8
   br label %Conditional_state_03_poll
 
 Conditional_state_03_poll:                        ; preds = %Conditional_state_03_init, %Conditional_state_03
-  %100 = load ptr, ptr %45, align 8
-  %101 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %100, ptr %1)
-  %102 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %101, 0
-  br i1 %102, label %Conditional_state_03_ready, label %Conditional_state_03_pending
+  %99 = load ptr, ptr %45, align 8
+  %100 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %99, ptr %1)
+  %101 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %100, 0
+  br i1 %101, label %Conditional_state_03_ready, label %Conditional_state_03_pending
 
 Conditional_state_03_ready:                       ; preds = %Conditional_state_03_poll
-  %103 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %101, 2
-  %104 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, { ptr, ptr } zeroinitializer)
-  %105 = xor i1 %104, true
-  br i1 %105, label %Conditional_state_03_err, label %Conditional_state_03_ready_cont
+  %102 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %100, 2
+  %103 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %102, { ptr, ptr } zeroinitializer)
+  %104 = xor i1 %103, true
+  br i1 %104, label %Conditional_state_03_err, label %Conditional_state_03_ready_cont
 
 Conditional_state_03_pending:                     ; preds = %Conditional_state_03_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 Conditional_state_03_err:                         ; preds = %Conditional_state_03_ready
-  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %106, align 1
-  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, ptr %107, align 8
-  %108 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %103, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %108
+  %105 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %105, align 1
+  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 6
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %102, ptr %106, align 8
+  %107 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %102, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %107
 
 Conditional_state_03_ready_cont:                  ; preds = %Conditional_state_03_ready
-  %109 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %101, 1
-  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
-  store i64 %109, ptr %110, align 4
-  %111 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 2
-  store i64 %96, ptr %111, align 4
+  %108 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %100, 1
+  %109 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 3
+  store i64 %108, ptr %109, align 4
   store ptr null, ptr %45, align 8
-  %112 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %112, align 1
+  %110 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/conditional.Conditional$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %110, align 1
   br label %Conditional_state_04
 }
 

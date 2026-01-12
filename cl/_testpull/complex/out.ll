@@ -1407,173 +1407,137 @@ ConditionalChain_state_01_ready_cont:             ; preds = %ConditionalChain_st
   %196 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %188, 1
   %197 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
   store i64 %196, ptr %197, align 4
-  %198 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %171, ptr %198, align 8
-  %199 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
-  store i64 %173, ptr %199, align 4
-  %200 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
-  %201 = mul i64 %175, 2
-  store i64 %201, ptr %200, align 4
-  %202 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
-  store i64 %177, ptr %202, align 4
-  %203 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
-  store i64 %179, ptr %203, align 4
-  %204 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
-  store ptr %181, ptr %204, align 8
-  %205 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
-  store i64 %183, ptr %205, align 4
-  %206 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 10
-  store ptr %185, ptr %206, align 8
+  %198 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
+  %199 = mul i64 %175, 2
+  store i64 %199, ptr %198, align 4
   store ptr null, ptr %43, align 8
-  %207 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %207, align 1
+  %200 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %200, align 1
   br label %ConditionalChain_state_02
 
 ConditionalChain_state_03_init:                   ; preds = %ConditionalChain_state_03
-  %208 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 1
-  %209 = load i64, ptr %208, align 4
-  %210 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
-  %211 = load i64, ptr %210, align 4
-  %212 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
-  %213 = load i64, ptr %212, align 4
-  %214 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
-  %215 = load i64, ptr %214, align 4
-  %216 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
-  %217 = load i64, ptr %216, align 4
-  %218 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
-  %219 = load i64, ptr %218, align 4
-  %220 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
-  %221 = load i64, ptr %220, align 4
-  %222 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %211)
-  %223 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
-  store ptr %222, ptr %223, align 8
-  store ptr %222, ptr %86, align 8
+  %201 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 1
+  %202 = load i64, ptr %201, align 4
+  %203 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
+  %204 = load i64, ptr %203, align 4
+  %205 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
+  %206 = load i64, ptr %205, align 4
+  %207 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
+  %208 = load i64, ptr %207, align 4
+  %209 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
+  %210 = load i64, ptr %209, align 4
+  %211 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
+  %212 = load i64, ptr %211, align 4
+  %213 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
+  %214 = load i64, ptr %213, align 4
+  %215 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %204)
+  %216 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
+  store ptr %215, ptr %216, align 8
+  store ptr %215, ptr %86, align 8
   br label %ConditionalChain_state_03_poll
 
 ConditionalChain_state_03_poll:                   ; preds = %ConditionalChain_state_03_init, %ConditionalChain_state_03
-  %224 = load ptr, ptr %86, align 8
-  %225 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %224, ptr %1)
-  %226 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %225, 0
-  br i1 %226, label %ConditionalChain_state_03_ready, label %ConditionalChain_state_03_pending
+  %217 = load ptr, ptr %86, align 8
+  %218 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %217, ptr %1)
+  %219 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %218, 0
+  br i1 %219, label %ConditionalChain_state_03_ready, label %ConditionalChain_state_03_pending
 
 ConditionalChain_state_03_ready:                  ; preds = %ConditionalChain_state_03_poll
-  %227 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %225, 2
-  %228 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %227, { ptr, ptr } zeroinitializer)
-  %229 = xor i1 %228, true
-  br i1 %229, label %ConditionalChain_state_03_err, label %ConditionalChain_state_03_ready_cont
+  %220 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %218, 2
+  %221 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %220, { ptr, ptr } zeroinitializer)
+  %222 = xor i1 %221, true
+  br i1 %222, label %ConditionalChain_state_03_err, label %ConditionalChain_state_03_ready_cont
 
 ConditionalChain_state_03_pending:                ; preds = %ConditionalChain_state_03_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ConditionalChain_state_03_err:                    ; preds = %ConditionalChain_state_03_ready
-  %230 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %230, align 1
-  %231 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 14
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %227, ptr %231, align 8
-  %232 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %227, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %232
+  %223 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %223, align 1
+  %224 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 14
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %220, ptr %224, align 8
+  %225 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %220, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %225
 
 ConditionalChain_state_03_ready_cont:             ; preds = %ConditionalChain_state_03_ready
-  %233 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %225, 1
-  %234 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
-  store i64 %233, ptr %234, align 4
-  %235 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 2
-  %236 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %221)
-  %237 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
-  %238 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %237, 0
-  %239 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %238, ptr %236, 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %239, ptr %235, align 8
-  %240 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
-  store i64 %211, ptr %240, align 4
-  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
-  store i64 %213, ptr %241, align 4
-  %242 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
-  store i64 %215, ptr %242, align 4
-  %243 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
-  store i64 %217, ptr %243, align 4
-  %244 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
-  store i64 %219, ptr %244, align 4
-  %245 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
-  store ptr %222, ptr %245, align 8
-  %246 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 10
-  store ptr %236, ptr %246, align 8
+  %226 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %218, 1
+  %227 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
+  store i64 %226, ptr %227, align 4
+  %228 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 2
+  %229 = call ptr @"github.com/goplus/llgo/async.Return[int]"(i64 %214)
+  %230 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$7f5uMumaCY5YvN8nAe4LstMjKIincDo_4fAZYbFMlbI", ptr @"*_llgo_github.com/goplus/llgo/async.ReadyFuture[int]")
+  %231 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %230, 0
+  %232 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %231, ptr %229, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %232, ptr %228, align 8
+  %233 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
+  store i64 %204, ptr %233, align 4
+  %234 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
+  store ptr %215, ptr %234, align 8
+  %235 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 10
+  store ptr %229, ptr %235, align 8
   store ptr null, ptr %86, align 8
-  %247 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %247, align 1
+  %236 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %236, align 1
   br label %ConditionalChain_state_04
 
 ConditionalChain_state_05_init:                   ; preds = %ConditionalChain_state_05
-  %248 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 1
-  %249 = load i64, ptr %248, align 4
-  %250 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 2
-  %251 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %250, align 8
-  %252 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
-  %253 = load i64, ptr %252, align 4
-  %254 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
-  %255 = load i64, ptr %254, align 4
-  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
-  %257 = load i64, ptr %256, align 4
-  %258 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
-  %259 = load i64, ptr %258, align 4
-  %260 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
-  %261 = load ptr, ptr %260, align 8
-  %262 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
-  %263 = load i64, ptr %262, align 4
-  %264 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 10
-  %265 = load ptr, ptr %264, align 8
-  %266 = sub i64 0, %249
-  %267 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
-  store i64 %266, ptr %267, align 4
-  %268 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %266)
-  store ptr %268, ptr %136, align 8
+  %237 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 1
+  %238 = load i64, ptr %237, align 4
+  %239 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 2
+  %240 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %239, align 8
+  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
+  %242 = load i64, ptr %241, align 4
+  %243 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
+  %244 = load i64, ptr %243, align 4
+  %245 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
+  %246 = load i64, ptr %245, align 4
+  %247 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
+  %248 = load i64, ptr %247, align 4
+  %249 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
+  %250 = load ptr, ptr %249, align 8
+  %251 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
+  %252 = load i64, ptr %251, align 4
+  %253 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 10
+  %254 = load ptr, ptr %253, align 8
+  %255 = sub i64 0, %238
+  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
+  store i64 %255, ptr %256, align 4
+  %257 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %255)
+  store ptr %257, ptr %136, align 8
   br label %ConditionalChain_state_05_poll
 
 ConditionalChain_state_05_poll:                   ; preds = %ConditionalChain_state_05_init, %ConditionalChain_state_05
-  %269 = load ptr, ptr %136, align 8
-  %270 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %269, ptr %1)
-  %271 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %270, 0
-  br i1 %271, label %ConditionalChain_state_05_ready, label %ConditionalChain_state_05_pending
+  %258 = load ptr, ptr %136, align 8
+  %259 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %258, ptr %1)
+  %260 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %259, 0
+  br i1 %260, label %ConditionalChain_state_05_ready, label %ConditionalChain_state_05_pending
 
 ConditionalChain_state_05_ready:                  ; preds = %ConditionalChain_state_05_poll
-  %272 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %270, 2
-  %273 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %272, { ptr, ptr } zeroinitializer)
-  %274 = xor i1 %273, true
-  br i1 %274, label %ConditionalChain_state_05_err, label %ConditionalChain_state_05_ready_cont
+  %261 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %259, 2
+  %262 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %261, { ptr, ptr } zeroinitializer)
+  %263 = xor i1 %262, true
+  br i1 %263, label %ConditionalChain_state_05_err, label %ConditionalChain_state_05_ready_cont
 
 ConditionalChain_state_05_pending:                ; preds = %ConditionalChain_state_05_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 ConditionalChain_state_05_err:                    ; preds = %ConditionalChain_state_05_ready
-  %275 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %275, align 1
-  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 14
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %272, ptr %276, align 8
-  %277 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %272, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %277
+  %264 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %264, align 1
+  %265 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 14
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %261, ptr %265, align 8
+  %266 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %261, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %266
 
 ConditionalChain_state_05_ready_cont:             ; preds = %ConditionalChain_state_05_ready
-  %278 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %270, 1
-  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
-  store i64 %278, ptr %279, align 4
-  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %251, ptr %280, align 8
-  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 3
-  store i64 %253, ptr %281, align 4
-  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 4
-  store i64 %255, ptr %282, align 4
-  %283 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 5
-  store i64 %257, ptr %283, align 4
-  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
-  store i64 %266, ptr %284, align 4
-  %285 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 8
-  store ptr %261, ptr %285, align 8
-  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 9
-  store i64 %263, ptr %286, align 4
-  %287 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 10
-  store ptr %265, ptr %287, align 8
+  %267 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %259, 1
+  %268 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 7
+  store i64 %267, ptr %268, align 4
+  %269 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 6
+  store i64 %255, ptr %269, align 4
   store ptr null, ptr %136, align 8
-  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %288, align 1
+  %270 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.ConditionalChain$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %270, align 1
   br label %ConditionalChain_state_06
 }
 
@@ -2417,29 +2381,11 @@ LoopBreakContinue_state_06_ready_cont:            ; preds = %LoopBreakContinue_s
   %274 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %266, 1
   %275 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 11
   store i64 %274, ptr %275, align 4
-  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %244, ptr %276, align 8
-  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 3
-  store i64 %246, ptr %277, align 4
-  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 4
-  store i64 %248, ptr %278, align 4
-  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 5
-  store i64 %250, ptr %279, align 4
-  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 6
-  store i1 %252, ptr %280, align 1
-  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 7
-  store i64 %254, ptr %281, align 4
-  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 8
-  store i1 %256, ptr %282, align 1
-  %283 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 9
-  store i1 %258, ptr %283, align 1
-  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 10
-  store ptr %263, ptr %284, align 8
-  %285 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 12
-  store ptr %262, ptr %285, align 8
+  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 10
+  store ptr %263, ptr %276, align 8
   store ptr null, ptr %192, align 8
-  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %286, align 1
+  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopBreakContinue$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %277, align 1
   br label %LoopBreakContinue_state_07
 }
 
@@ -2685,17 +2631,11 @@ LoopWithAccumulator_state_02_ready_cont:          ; preds = %LoopWithAccumulator
   %116 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %108, 1
   %117 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 6
   store i64 %116, ptr %117, align 4
-  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 2
-  store i64 %98, ptr %118, align 4
-  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 3
-  store i64 %100, ptr %119, align 4
-  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 4
-  store i1 %102, ptr %120, align 1
-  %121 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 5
-  store ptr %105, ptr %121, align 8
+  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 5
+  store ptr %105, ptr %118, align 8
   store ptr null, ptr %41, align 8
-  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %122, align 1
+  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.LoopWithAccumulator$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %119, align 1
   br label %LoopWithAccumulator_state_03
 }
 
@@ -3058,170 +2998,146 @@ MultipleReturnPaths_state_01_ready_cont:          ; preds = %MultipleReturnPaths
   store i64 %225, ptr %226, align 4
   %227 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
   store i64 %213, ptr %227, align 4
-  %228 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %206, ptr %228, align 4
-  %229 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
-  store i64 %208, ptr %229, align 4
-  %230 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
-  store i64 %210, ptr %230, align 4
-  %231 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
-  store i64 %212, ptr %231, align 4
   store ptr null, ptr %31, align 8
-  %232 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %232, align 1
+  %228 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %228, align 1
   br label %MultipleReturnPaths_state_02
 
 MultipleReturnPaths_state_02_true:                ; preds = %MultipleReturnPaths_state_03
-  %233 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %233, align 1
+  %229 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %229, align 1
   br label %MultipleReturnPaths_state_04
 
 MultipleReturnPaths_state_02_false:               ; preds = %MultipleReturnPaths_state_03
-  %234 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %234, align 1
+  %230 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %230, align 1
   br label %MultipleReturnPaths_state_05
 
 MultipleReturnPaths_state_05_init:                ; preds = %MultipleReturnPaths_state_05
-  %235 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 1
+  %231 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 1
+  %232 = load i64, ptr %231, align 4
+  %233 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
+  %234 = load i64, ptr %233, align 4
+  %235 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 3
   %236 = load i64, ptr %235, align 4
-  %237 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
+  %237 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
   %238 = load i64, ptr %237, align 4
-  %239 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 3
+  %239 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
   %240 = load i64, ptr %239, align 4
-  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
+  %241 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
   %242 = load i64, ptr %241, align 4
-  %243 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
-  %244 = load i64, ptr %243, align 4
-  %245 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
-  %246 = load i64, ptr %245, align 4
-  %247 = mul i64 %236, 2
-  %248 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %247, ptr %248, align 4
-  %249 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %247)
-  store ptr %249, ptr %113, align 8
+  %243 = mul i64 %232, 2
+  %244 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
+  store i64 %243, ptr %244, align 4
+  %245 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %243)
+  store ptr %245, ptr %113, align 8
   br label %MultipleReturnPaths_state_05_poll
 
 MultipleReturnPaths_state_05_poll:                ; preds = %MultipleReturnPaths_state_05_init, %MultipleReturnPaths_state_05
-  %250 = load ptr, ptr %113, align 8
-  %251 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %250, ptr %1)
-  %252 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %251, 0
-  br i1 %252, label %MultipleReturnPaths_state_05_ready, label %MultipleReturnPaths_state_05_pending
+  %246 = load ptr, ptr %113, align 8
+  %247 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %246, ptr %1)
+  %248 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %247, 0
+  br i1 %248, label %MultipleReturnPaths_state_05_ready, label %MultipleReturnPaths_state_05_pending
 
 MultipleReturnPaths_state_05_ready:               ; preds = %MultipleReturnPaths_state_05_poll
-  %253 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %251, 2
-  %254 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %253, { ptr, ptr } zeroinitializer)
-  %255 = xor i1 %254, true
-  br i1 %255, label %MultipleReturnPaths_state_05_err, label %MultipleReturnPaths_state_05_ready_cont
+  %249 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %247, 2
+  %250 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %249, { ptr, ptr } zeroinitializer)
+  %251 = xor i1 %250, true
+  br i1 %251, label %MultipleReturnPaths_state_05_err, label %MultipleReturnPaths_state_05_ready_cont
 
 MultipleReturnPaths_state_05_pending:             ; preds = %MultipleReturnPaths_state_05_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleReturnPaths_state_05_err:                 ; preds = %MultipleReturnPaths_state_05_ready
-  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 10, ptr %256, align 1
-  %257 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 11
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %253, ptr %257, align 8
-  %258 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %253, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %258
+  %252 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 10, ptr %252, align 1
+  %253 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %249, ptr %253, align 8
+  %254 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %249, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %254
 
 MultipleReturnPaths_state_05_ready_cont:          ; preds = %MultipleReturnPaths_state_05_ready
-  %259 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %251, 1
-  %260 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
-  store i64 %259, ptr %260, align 4
-  %261 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
-  store i64 %238, ptr %261, align 4
-  %262 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 3
-  store i64 %240, ptr %262, align 4
-  %263 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %247, ptr %263, align 4
-  %264 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
-  store i64 %244, ptr %264, align 4
-  %265 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
-  store i64 %246, ptr %265, align 4
+  %255 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %247, 1
+  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
+  store i64 %255, ptr %256, align 4
+  %257 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
+  store i64 %243, ptr %257, align 4
   store ptr null, ptr %113, align 8
-  %266 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %266, align 1
+  %258 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %258, align 1
   br label %MultipleReturnPaths_state_06
 
 MultipleReturnPaths_state_04_true:                ; preds = %MultipleReturnPaths_state_06
-  %267 = mul i64 %117, 2
-  %268 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %267, ptr %268, align 4
-  %269 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
-  store i64 %123, ptr %269, align 4
-  %270 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %270, align 1
+  %259 = mul i64 %117, 2
+  %260 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
+  store i64 %259, ptr %260, align 4
+  %261 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
+  store i64 %123, ptr %261, align 4
+  %262 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %262, align 1
   br label %MultipleReturnPaths_state_07
 
 MultipleReturnPaths_state_04_false:               ; preds = %MultipleReturnPaths_state_06
-  %271 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %267, ptr %271, align 4
-  %272 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
-  store i64 %123, ptr %272, align 4
-  %273 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 8, ptr %273, align 1
+  %263 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
+  store i64 %259, ptr %263, align 4
+  %264 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
+  store i64 %123, ptr %264, align 4
+  %265 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 8, ptr %265, align 1
   br label %MultipleReturnPaths_state_08
 
 MultipleReturnPaths_state_08_init:                ; preds = %MultipleReturnPaths_state_08
-  %274 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 1
+  %266 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 1
+  %267 = load i64, ptr %266, align 4
+  %268 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
+  %269 = load i64, ptr %268, align 4
+  %270 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 3
+  %271 = load i64, ptr %270, align 4
+  %272 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
+  %273 = load i64, ptr %272, align 4
+  %274 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
   %275 = load i64, ptr %274, align 4
-  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
+  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
   %277 = load i64, ptr %276, align 4
-  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 3
-  %279 = load i64, ptr %278, align 4
-  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  %281 = load i64, ptr %280, align 4
-  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
-  %283 = load i64, ptr %282, align 4
-  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
-  %285 = load i64, ptr %284, align 4
-  %286 = add i64 %283, 50
-  %287 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
-  store i64 %286, ptr %287, align 4
-  %288 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %286)
-  store ptr %288, ptr %167, align 8
+  %278 = add i64 %275, 50
+  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
+  store i64 %278, ptr %279, align 4
+  %280 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %278)
+  store ptr %280, ptr %167, align 8
   br label %MultipleReturnPaths_state_08_poll
 
 MultipleReturnPaths_state_08_poll:                ; preds = %MultipleReturnPaths_state_08_init, %MultipleReturnPaths_state_08
-  %289 = load ptr, ptr %167, align 8
-  %290 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %289, ptr %1)
-  %291 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %290, 0
-  br i1 %291, label %MultipleReturnPaths_state_08_ready, label %MultipleReturnPaths_state_08_pending
+  %281 = load ptr, ptr %167, align 8
+  %282 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %281, ptr %1)
+  %283 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %282, 0
+  br i1 %283, label %MultipleReturnPaths_state_08_ready, label %MultipleReturnPaths_state_08_pending
 
 MultipleReturnPaths_state_08_ready:               ; preds = %MultipleReturnPaths_state_08_poll
-  %292 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %290, 2
-  %293 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %292, { ptr, ptr } zeroinitializer)
-  %294 = xor i1 %293, true
-  br i1 %294, label %MultipleReturnPaths_state_08_err, label %MultipleReturnPaths_state_08_ready_cont
+  %284 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %282, 2
+  %285 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %284, { ptr, ptr } zeroinitializer)
+  %286 = xor i1 %285, true
+  br i1 %286, label %MultipleReturnPaths_state_08_err, label %MultipleReturnPaths_state_08_ready_cont
 
 MultipleReturnPaths_state_08_pending:             ; preds = %MultipleReturnPaths_state_08_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 MultipleReturnPaths_state_08_err:                 ; preds = %MultipleReturnPaths_state_08_ready
-  %295 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 10, ptr %295, align 1
-  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 11
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %292, ptr %296, align 8
-  %297 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %292, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %297
+  %287 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 10, ptr %287, align 1
+  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 11
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %284, ptr %288, align 8
+  %289 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %284, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %289
 
 MultipleReturnPaths_state_08_ready_cont:          ; preds = %MultipleReturnPaths_state_08_ready
-  %298 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %290, 1
-  %299 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
-  store i64 %298, ptr %299, align 4
-  %300 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 2
-  store i64 %277, ptr %300, align 4
-  %301 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 3
-  store i64 %279, ptr %301, align 4
-  %302 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %281, ptr %302, align 4
-  %303 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 5
-  store i64 %283, ptr %303, align 4
-  %304 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
-  store i64 %286, ptr %304, align 4
+  %290 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %282, 1
+  %291 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 7
+  store i64 %290, ptr %291, align 4
+  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 6
+  store i64 %278, ptr %292, align 4
   store ptr null, ptr %167, align 8
-  %305 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 9, ptr %305, align 1
+  %293 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.MultipleReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 9, ptr %293, align 1
   br label %MultipleReturnPaths_state_09
 }
 
@@ -3640,260 +3556,200 @@ NestedConditions_state_01_ready_cont:             ; preds = %NestedConditions_st
   %275 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %267, 1
   %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
   store i64 %275, ptr %276, align 4
-  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %248, ptr %277, align 8
-  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
-  store i64 %250, ptr %278, align 4
-  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
-  store i64 %254, ptr %279, align 4
-  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  store i64 %256, ptr %280, align 4
-  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  store i64 %258, ptr %281, align 4
-  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  store i64 %260, ptr %282, align 4
-  %283 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  store i64 %262, ptr %283, align 4
-  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  store ptr %264, ptr %284, align 8
   store ptr null, ptr %45, align 8
-  %285 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %285, align 1
+  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %277, align 1
   br label %NestedConditions_state_02
 
 NestedConditions_state_01_true:                   ; preds = %NestedConditions_state_02
-  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  store i64 %55, ptr %286, align 4
-  %287 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %287, align 1
+  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
+  store i64 %55, ptr %278, align 4
+  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %279, align 1
   br label %NestedConditions_state_06
 
 NestedConditions_state_01_false:                  ; preds = %NestedConditions_state_02
-  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  store i64 %55, ptr %288, align 4
-  %289 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 8, ptr %289, align 1
+  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
+  store i64 %55, ptr %280, align 4
+  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 8, ptr %281, align 1
   br label %NestedConditions_state_08
 
 NestedConditions_state_04_init:                   ; preds = %NestedConditions_state_04
-  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 1
+  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 1
+  %283 = load i64, ptr %282, align 4
+  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
+  %285 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %284, align 8
+  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
+  %287 = load i64, ptr %286, align 4
+  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
+  %289 = load i64, ptr %288, align 4
+  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
   %291 = load i64, ptr %290, align 4
-  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  %293 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %292, align 8
-  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
+  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
+  %293 = load i64, ptr %292, align 4
+  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
   %295 = load i64, ptr %294, align 4
-  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
+  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
   %297 = load i64, ptr %296, align 4
-  %298 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
+  %298 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
   %299 = load i64, ptr %298, align 4
-  %300 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  %301 = load i64, ptr %300, align 4
-  %302 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  %303 = load i64, ptr %302, align 4
-  %304 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  %305 = load i64, ptr %304, align 4
-  %306 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  %307 = load i64, ptr %306, align 4
-  %308 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  %309 = load ptr, ptr %308, align 8
-  %310 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 100)
-  store ptr %310, ptr %120, align 8
+  %300 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
+  %301 = load ptr, ptr %300, align 8
+  %302 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 100)
+  store ptr %302, ptr %120, align 8
   br label %NestedConditions_state_04_poll
 
 NestedConditions_state_04_poll:                   ; preds = %NestedConditions_state_04_init, %NestedConditions_state_04
-  %311 = load ptr, ptr %120, align 8
-  %312 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %311, ptr %1)
-  %313 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %312, 0
-  br i1 %313, label %NestedConditions_state_04_ready, label %NestedConditions_state_04_pending
+  %303 = load ptr, ptr %120, align 8
+  %304 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %303, ptr %1)
+  %305 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %304, 0
+  br i1 %305, label %NestedConditions_state_04_ready, label %NestedConditions_state_04_pending
 
 NestedConditions_state_04_ready:                  ; preds = %NestedConditions_state_04_poll
-  %314 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %312, 2
-  %315 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %314, { ptr, ptr } zeroinitializer)
-  %316 = xor i1 %315, true
-  br i1 %316, label %NestedConditions_state_04_err, label %NestedConditions_state_04_ready_cont
+  %306 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %304, 2
+  %307 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %306, { ptr, ptr } zeroinitializer)
+  %308 = xor i1 %307, true
+  br i1 %308, label %NestedConditions_state_04_err, label %NestedConditions_state_04_ready_cont
 
 NestedConditions_state_04_pending:                ; preds = %NestedConditions_state_04_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 NestedConditions_state_04_err:                    ; preds = %NestedConditions_state_04_ready
-  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 10, ptr %317, align 1
-  %318 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 15
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %314, ptr %318, align 8
-  %319 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %314, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %319
+  %309 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 10, ptr %309, align 1
+  %310 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 15
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %306, ptr %310, align 8
+  %311 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %306, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %311
 
 NestedConditions_state_04_ready_cont:             ; preds = %NestedConditions_state_04_ready
-  %320 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %312, 1
-  %321 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  store i64 %320, ptr %321, align 4
-  %322 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %293, ptr %322, align 8
-  %323 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
-  store i64 %295, ptr %323, align 4
-  %324 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  store i64 %297, ptr %324, align 4
-  %325 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
-  store i64 %299, ptr %325, align 4
-  %326 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  store i64 %301, ptr %326, align 4
-  %327 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  store i64 %303, ptr %327, align 4
-  %328 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  store i64 %305, ptr %328, align 4
-  %329 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  store ptr %309, ptr %329, align 8
+  %312 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %304, 1
+  %313 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
+  store i64 %312, ptr %313, align 4
   store ptr null, ptr %120, align 8
-  %330 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %330, align 1
+  %314 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %314, align 1
   br label %NestedConditions_state_05
 
 NestedConditions_state_06_init:                   ; preds = %NestedConditions_state_06
-  %331 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 1
-  %332 = load i64, ptr %331, align 4
-  %333 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  %334 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %333, align 8
-  %335 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
-  %336 = load i64, ptr %335, align 4
-  %337 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  %338 = load i64, ptr %337, align 4
-  %339 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  %340 = load i64, ptr %339, align 4
-  %341 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  %342 = load i64, ptr %341, align 4
-  %343 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  %344 = load i64, ptr %343, align 4
-  %345 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  %346 = load i64, ptr %345, align 4
-  %347 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  %348 = load ptr, ptr %347, align 8
-  %349 = mul i64 %338, 2
-  %350 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
-  store i64 %349, ptr %350, align 4
-  %351 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %349)
-  store ptr %351, ptr %166, align 8
+  %315 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 1
+  %316 = load i64, ptr %315, align 4
+  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
+  %318 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %317, align 8
+  %319 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
+  %320 = load i64, ptr %319, align 4
+  %321 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
+  %322 = load i64, ptr %321, align 4
+  %323 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
+  %324 = load i64, ptr %323, align 4
+  %325 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
+  %326 = load i64, ptr %325, align 4
+  %327 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
+  %328 = load i64, ptr %327, align 4
+  %329 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
+  %330 = load i64, ptr %329, align 4
+  %331 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
+  %332 = load ptr, ptr %331, align 8
+  %333 = mul i64 %322, 2
+  %334 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
+  store i64 %333, ptr %334, align 4
+  %335 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %333)
+  store ptr %335, ptr %166, align 8
   br label %NestedConditions_state_06_poll
 
 NestedConditions_state_06_poll:                   ; preds = %NestedConditions_state_06_init, %NestedConditions_state_06
-  %352 = load ptr, ptr %166, align 8
-  %353 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %352, ptr %1)
-  %354 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %353, 0
-  br i1 %354, label %NestedConditions_state_06_ready, label %NestedConditions_state_06_pending
+  %336 = load ptr, ptr %166, align 8
+  %337 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %336, ptr %1)
+  %338 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %337, 0
+  br i1 %338, label %NestedConditions_state_06_ready, label %NestedConditions_state_06_pending
 
 NestedConditions_state_06_ready:                  ; preds = %NestedConditions_state_06_poll
-  %355 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %353, 2
-  %356 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %355, { ptr, ptr } zeroinitializer)
-  %357 = xor i1 %356, true
-  br i1 %357, label %NestedConditions_state_06_err, label %NestedConditions_state_06_ready_cont
+  %339 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %337, 2
+  %340 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %339, { ptr, ptr } zeroinitializer)
+  %341 = xor i1 %340, true
+  br i1 %341, label %NestedConditions_state_06_err, label %NestedConditions_state_06_ready_cont
 
 NestedConditions_state_06_pending:                ; preds = %NestedConditions_state_06_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 NestedConditions_state_06_err:                    ; preds = %NestedConditions_state_06_ready
-  %358 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 10, ptr %358, align 1
-  %359 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 15
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %355, ptr %359, align 8
-  %360 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %355, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %360
+  %342 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 10, ptr %342, align 1
+  %343 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 15
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %339, ptr %343, align 8
+  %344 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %339, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %344
 
 NestedConditions_state_06_ready_cont:             ; preds = %NestedConditions_state_06_ready
-  %361 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %353, 1
-  %362 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  store i64 %361, ptr %362, align 4
-  %363 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %334, ptr %363, align 8
-  %364 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
-  store i64 %336, ptr %364, align 4
-  %365 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  store i64 %338, ptr %365, align 4
-  %366 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
-  store i64 %349, ptr %366, align 4
-  %367 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  store i64 %342, ptr %367, align 4
-  %368 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  store i64 %344, ptr %368, align 4
-  %369 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  store i64 %346, ptr %369, align 4
-  %370 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  store ptr %348, ptr %370, align 8
+  %345 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %337, 1
+  %346 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
+  store i64 %345, ptr %346, align 4
+  %347 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
+  store i64 %333, ptr %347, align 4
   store ptr null, ptr %166, align 8
-  %371 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %371, align 1
+  %348 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %348, align 1
   br label %NestedConditions_state_07
 
 NestedConditions_state_08_init:                   ; preds = %NestedConditions_state_08
-  %372 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 1
-  %373 = load i64, ptr %372, align 4
-  %374 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  %375 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %374, align 8
-  %376 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
-  %377 = load i64, ptr %376, align 4
-  %378 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  %379 = load i64, ptr %378, align 4
-  %380 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
-  %381 = load i64, ptr %380, align 4
-  %382 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  %383 = load i64, ptr %382, align 4
-  %384 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  %385 = load i64, ptr %384, align 4
-  %386 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  %387 = load i64, ptr %386, align 4
-  %388 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  %389 = load ptr, ptr %388, align 8
-  %390 = add i64 %379, 5
-  %391 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  store i64 %390, ptr %391, align 4
-  %392 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %390)
-  store ptr %392, ptr %212, align 8
+  %349 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 1
+  %350 = load i64, ptr %349, align 4
+  %351 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
+  %352 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %351, align 8
+  %353 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
+  %354 = load i64, ptr %353, align 4
+  %355 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
+  %356 = load i64, ptr %355, align 4
+  %357 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
+  %358 = load i64, ptr %357, align 4
+  %359 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
+  %360 = load i64, ptr %359, align 4
+  %361 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
+  %362 = load i64, ptr %361, align 4
+  %363 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
+  %364 = load i64, ptr %363, align 4
+  %365 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
+  %366 = load ptr, ptr %365, align 8
+  %367 = add i64 %356, 5
+  %368 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
+  store i64 %367, ptr %368, align 4
+  %369 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %367)
+  store ptr %369, ptr %212, align 8
   br label %NestedConditions_state_08_poll
 
 NestedConditions_state_08_poll:                   ; preds = %NestedConditions_state_08_init, %NestedConditions_state_08
-  %393 = load ptr, ptr %212, align 8
-  %394 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %393, ptr %1)
-  %395 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %394, 0
-  br i1 %395, label %NestedConditions_state_08_ready, label %NestedConditions_state_08_pending
+  %370 = load ptr, ptr %212, align 8
+  %371 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %370, ptr %1)
+  %372 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %371, 0
+  br i1 %372, label %NestedConditions_state_08_ready, label %NestedConditions_state_08_pending
 
 NestedConditions_state_08_ready:                  ; preds = %NestedConditions_state_08_poll
-  %396 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %394, 2
-  %397 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %396, { ptr, ptr } zeroinitializer)
-  %398 = xor i1 %397, true
-  br i1 %398, label %NestedConditions_state_08_err, label %NestedConditions_state_08_ready_cont
+  %373 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %371, 2
+  %374 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %373, { ptr, ptr } zeroinitializer)
+  %375 = xor i1 %374, true
+  br i1 %375, label %NestedConditions_state_08_err, label %NestedConditions_state_08_ready_cont
 
 NestedConditions_state_08_pending:                ; preds = %NestedConditions_state_08_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 NestedConditions_state_08_err:                    ; preds = %NestedConditions_state_08_ready
-  %399 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 10, ptr %399, align 1
-  %400 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 15
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %396, ptr %400, align 8
-  %401 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %396, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %401
+  %376 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 10, ptr %376, align 1
+  %377 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 15
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %373, ptr %377, align 8
+  %378 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %373, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %378
 
 NestedConditions_state_08_ready_cont:             ; preds = %NestedConditions_state_08_ready
-  %402 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %394, 1
-  %403 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
-  store i64 %402, ptr %403, align 4
-  %404 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %375, ptr %404, align 8
-  %405 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 3
-  store i64 %377, ptr %405, align 4
-  %406 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 4
-  store i64 %379, ptr %406, align 4
-  %407 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 5
-  store i64 %381, ptr %407, align 4
-  %408 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 6
-  store i64 %383, ptr %408, align 4
-  %409 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
-  store i64 %390, ptr %409, align 4
-  %410 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 9
-  store i64 %387, ptr %410, align 4
-  %411 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 10
-  store ptr %389, ptr %411, align 8
+  %379 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %371, 1
+  %380 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 8
+  store i64 %379, ptr %380, align 4
+  %381 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 7
+  store i64 %367, ptr %381, align 4
   store ptr null, ptr %212, align 8
-  %412 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
-  store i8 9, ptr %412, align 1
+  %382 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.NestedConditions$State", ptr %0, i32 0, i32 0
+  store i8 9, ptr %382, align 1
   br label %NestedConditions_state_09
 }
 
@@ -4327,236 +4183,188 @@ SwitchWithFallthrough_state_02_ready_cont:        ; preds = %SwitchWithFallthrou
   %273 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %265, 1
   %274 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
   store i64 %273, ptr %274, align 4
-  %275 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %250, ptr %275, align 8
-  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
-  store i64 %252, ptr %276, align 4
-  %277 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  store i64 %256, ptr %277, align 4
-  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  store i64 %258, ptr %278, align 4
-  %279 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  store i64 %260, ptr %279, align 4
-  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  store ptr %262, ptr %280, align 8
   store ptr null, ptr %64, align 8
-  %281 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %281, align 1
+  %275 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %275, align 1
   br label %SwitchWithFallthrough_state_03
 
 SwitchWithFallthrough_state_04_init:              ; preds = %SwitchWithFallthrough_state_04
-  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 1
+  %276 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 1
+  %277 = load i64, ptr %276, align 4
+  %278 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
+  %279 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %278, align 8
+  %280 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
+  %281 = load i64, ptr %280, align 4
+  %282 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
   %283 = load i64, ptr %282, align 4
-  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  %285 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %284, align 8
-  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
+  %284 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
+  %285 = load i64, ptr %284, align 4
+  %286 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
   %287 = load i64, ptr %286, align 4
-  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
+  %288 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
   %289 = load i64, ptr %288, align 4
-  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  %291 = load i64, ptr %290, align 4
-  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  %293 = load i64, ptr %292, align 4
-  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  %295 = load i64, ptr %294, align 4
-  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  %297 = load ptr, ptr %296, align 8
-  %298 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 10)
-  store ptr %298, ptr %104, align 8
+  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
+  %291 = load ptr, ptr %290, align 8
+  %292 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 10)
+  store ptr %292, ptr %104, align 8
   br label %SwitchWithFallthrough_state_04_poll
 
 SwitchWithFallthrough_state_04_poll:              ; preds = %SwitchWithFallthrough_state_04_init, %SwitchWithFallthrough_state_04
-  %299 = load ptr, ptr %104, align 8
-  %300 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %299, ptr %1)
-  %301 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %300, 0
-  br i1 %301, label %SwitchWithFallthrough_state_04_ready, label %SwitchWithFallthrough_state_04_pending
+  %293 = load ptr, ptr %104, align 8
+  %294 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %293, ptr %1)
+  %295 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %294, 0
+  br i1 %295, label %SwitchWithFallthrough_state_04_ready, label %SwitchWithFallthrough_state_04_pending
 
 SwitchWithFallthrough_state_04_ready:             ; preds = %SwitchWithFallthrough_state_04_poll
-  %302 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %300, 2
-  %303 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %302, { ptr, ptr } zeroinitializer)
-  %304 = xor i1 %303, true
-  br i1 %304, label %SwitchWithFallthrough_state_04_err, label %SwitchWithFallthrough_state_04_ready_cont
+  %296 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %294, 2
+  %297 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %296, { ptr, ptr } zeroinitializer)
+  %298 = xor i1 %297, true
+  br i1 %298, label %SwitchWithFallthrough_state_04_err, label %SwitchWithFallthrough_state_04_ready_cont
 
 SwitchWithFallthrough_state_04_pending:           ; preds = %SwitchWithFallthrough_state_04_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SwitchWithFallthrough_state_04_err:               ; preds = %SwitchWithFallthrough_state_04_ready
-  %305 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 12, ptr %305, align 1
-  %306 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 13
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %302, ptr %306, align 8
-  %307 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %302, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %307
+  %299 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 12, ptr %299, align 1
+  %300 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 13
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %296, ptr %300, align 8
+  %301 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %296, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %301
 
 SwitchWithFallthrough_state_04_ready_cont:        ; preds = %SwitchWithFallthrough_state_04_ready
-  %308 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %300, 1
-  %309 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  store i64 %308, ptr %309, align 4
-  %310 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %285, ptr %310, align 8
-  %311 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
-  store i64 %287, ptr %311, align 4
-  %312 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
-  store i64 %289, ptr %312, align 4
-  %313 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  store i64 %293, ptr %313, align 4
-  %314 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  store i64 %295, ptr %314, align 4
-  %315 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  store ptr %297, ptr %315, align 8
+  %302 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %294, 1
+  %303 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
+  store i64 %302, ptr %303, align 4
   store ptr null, ptr %104, align 8
-  %316 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %316, align 1
+  %304 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %304, align 1
   br label %SwitchWithFallthrough_state_05
 
 SwitchWithFallthrough_state_04_true:              ; preds = %SwitchWithFallthrough_state_06
-  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %317, align 1
+  %305 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %305, align 1
   br label %SwitchWithFallthrough_state_04
 
 SwitchWithFallthrough_state_04_false:             ; preds = %SwitchWithFallthrough_state_06
-  %318 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 9, ptr %318, align 1
+  %306 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 9, ptr %306, align 1
   br label %SwitchWithFallthrough_state_09
 
 SwitchWithFallthrough_state_07_init:              ; preds = %SwitchWithFallthrough_state_07
-  %319 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 1
+  %307 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 1
+  %308 = load i64, ptr %307, align 4
+  %309 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
+  %310 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %309, align 8
+  %311 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
+  %312 = load i64, ptr %311, align 4
+  %313 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
+  %314 = load i64, ptr %313, align 4
+  %315 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
+  %316 = load i64, ptr %315, align 4
+  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
+  %318 = load i64, ptr %317, align 4
+  %319 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
   %320 = load i64, ptr %319, align 4
-  %321 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  %322 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %321, align 8
-  %323 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
-  %324 = load i64, ptr %323, align 4
-  %325 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
-  %326 = load i64, ptr %325, align 4
-  %327 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  %328 = load i64, ptr %327, align 4
-  %329 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  %330 = load i64, ptr %329, align 4
-  %331 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  %332 = load i64, ptr %331, align 4
-  %333 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  %334 = load ptr, ptr %333, align 8
-  %335 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 20)
-  store ptr %335, ptr %161, align 8
+  %321 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
+  %322 = load ptr, ptr %321, align 8
+  %323 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 20)
+  store ptr %323, ptr %161, align 8
   br label %SwitchWithFallthrough_state_07_poll
 
 SwitchWithFallthrough_state_07_poll:              ; preds = %SwitchWithFallthrough_state_07_init, %SwitchWithFallthrough_state_07
-  %336 = load ptr, ptr %161, align 8
-  %337 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %336, ptr %1)
-  %338 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %337, 0
-  br i1 %338, label %SwitchWithFallthrough_state_07_ready, label %SwitchWithFallthrough_state_07_pending
+  %324 = load ptr, ptr %161, align 8
+  %325 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %324, ptr %1)
+  %326 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %325, 0
+  br i1 %326, label %SwitchWithFallthrough_state_07_ready, label %SwitchWithFallthrough_state_07_pending
 
 SwitchWithFallthrough_state_07_ready:             ; preds = %SwitchWithFallthrough_state_07_poll
-  %339 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %337, 2
-  %340 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %339, { ptr, ptr } zeroinitializer)
-  %341 = xor i1 %340, true
-  br i1 %341, label %SwitchWithFallthrough_state_07_err, label %SwitchWithFallthrough_state_07_ready_cont
+  %327 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %325, 2
+  %328 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %327, { ptr, ptr } zeroinitializer)
+  %329 = xor i1 %328, true
+  br i1 %329, label %SwitchWithFallthrough_state_07_err, label %SwitchWithFallthrough_state_07_ready_cont
 
 SwitchWithFallthrough_state_07_pending:           ; preds = %SwitchWithFallthrough_state_07_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SwitchWithFallthrough_state_07_err:               ; preds = %SwitchWithFallthrough_state_07_ready
-  %342 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 12, ptr %342, align 1
-  %343 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 13
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %339, ptr %343, align 8
-  %344 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %339, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %344
+  %330 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 12, ptr %330, align 1
+  %331 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 13
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %327, ptr %331, align 8
+  %332 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %327, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %332
 
 SwitchWithFallthrough_state_07_ready_cont:        ; preds = %SwitchWithFallthrough_state_07_ready
-  %345 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %337, 1
-  %346 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  store i64 %345, ptr %346, align 4
-  %347 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %322, ptr %347, align 8
-  %348 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
-  store i64 %324, ptr %348, align 4
-  %349 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
-  store i64 %326, ptr %349, align 4
-  %350 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  store i64 %328, ptr %350, align 4
-  %351 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  store i64 %332, ptr %351, align 4
-  %352 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  store ptr %334, ptr %352, align 8
+  %333 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %325, 1
+  %334 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
+  store i64 %333, ptr %334, align 4
   store ptr null, ptr %161, align 8
-  %353 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 8, ptr %353, align 1
+  %335 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 8, ptr %335, align 1
   br label %SwitchWithFallthrough_state_08
 
 SwitchWithFallthrough_state_06_true:              ; preds = %SwitchWithFallthrough_state_09
-  %354 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %354, align 1
+  %336 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %336, align 1
   br label %SwitchWithFallthrough_state_07
 
 SwitchWithFallthrough_state_06_false:             ; preds = %SwitchWithFallthrough_state_09
-  %355 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 10, ptr %355, align 1
+  %337 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 10, ptr %337, align 1
   br label %SwitchWithFallthrough_state_10
 
 SwitchWithFallthrough_state_10_init:              ; preds = %SwitchWithFallthrough_state_10
-  %356 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 1
-  %357 = load i64, ptr %356, align 4
-  %358 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  %359 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %358, align 8
-  %360 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
-  %361 = load i64, ptr %360, align 4
-  %362 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
-  %363 = load i64, ptr %362, align 4
-  %364 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  %365 = load i64, ptr %364, align 4
-  %366 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  %367 = load i64, ptr %366, align 4
-  %368 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  %369 = load i64, ptr %368, align 4
-  %370 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  %371 = load ptr, ptr %370, align 8
-  %372 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 100)
-  store ptr %372, ptr %218, align 8
+  %338 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 1
+  %339 = load i64, ptr %338, align 4
+  %340 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
+  %341 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %340, align 8
+  %342 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
+  %343 = load i64, ptr %342, align 4
+  %344 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
+  %345 = load i64, ptr %344, align 4
+  %346 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
+  %347 = load i64, ptr %346, align 4
+  %348 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
+  %349 = load i64, ptr %348, align 4
+  %350 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
+  %351 = load i64, ptr %350, align 4
+  %352 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
+  %353 = load ptr, ptr %352, align 8
+  %354 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 100)
+  store ptr %354, ptr %218, align 8
   br label %SwitchWithFallthrough_state_10_poll
 
 SwitchWithFallthrough_state_10_poll:              ; preds = %SwitchWithFallthrough_state_10_init, %SwitchWithFallthrough_state_10
-  %373 = load ptr, ptr %218, align 8
-  %374 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %373, ptr %1)
-  %375 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %374, 0
-  br i1 %375, label %SwitchWithFallthrough_state_10_ready, label %SwitchWithFallthrough_state_10_pending
+  %355 = load ptr, ptr %218, align 8
+  %356 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %355, ptr %1)
+  %357 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %356, 0
+  br i1 %357, label %SwitchWithFallthrough_state_10_ready, label %SwitchWithFallthrough_state_10_pending
 
 SwitchWithFallthrough_state_10_ready:             ; preds = %SwitchWithFallthrough_state_10_poll
-  %376 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %374, 2
-  %377 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %376, { ptr, ptr } zeroinitializer)
-  %378 = xor i1 %377, true
-  br i1 %378, label %SwitchWithFallthrough_state_10_err, label %SwitchWithFallthrough_state_10_ready_cont
+  %358 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %356, 2
+  %359 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %358, { ptr, ptr } zeroinitializer)
+  %360 = xor i1 %359, true
+  br i1 %360, label %SwitchWithFallthrough_state_10_err, label %SwitchWithFallthrough_state_10_ready_cont
 
 SwitchWithFallthrough_state_10_pending:           ; preds = %SwitchWithFallthrough_state_10_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SwitchWithFallthrough_state_10_err:               ; preds = %SwitchWithFallthrough_state_10_ready
-  %379 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 12, ptr %379, align 1
-  %380 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 13
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %376, ptr %380, align 8
-  %381 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %376, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %381
+  %361 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 12, ptr %361, align 1
+  %362 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 13
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %358, ptr %362, align 8
+  %363 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %358, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %363
 
 SwitchWithFallthrough_state_10_ready_cont:        ; preds = %SwitchWithFallthrough_state_10_ready
-  %382 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %374, 1
-  %383 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
-  store i64 %382, ptr %383, align 4
-  %384 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %359, ptr %384, align 8
-  %385 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 3
-  store i64 %361, ptr %385, align 4
-  %386 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 4
-  store i64 %363, ptr %386, align 4
-  %387 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 5
-  store i64 %365, ptr %387, align 4
-  %388 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 6
-  store i64 %367, ptr %388, align 4
-  %389 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 8
-  store ptr %371, ptr %389, align 8
+  %364 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %356, 1
+  %365 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 7
+  store i64 %364, ptr %365, align 4
   store ptr null, ptr %218, align 8
-  %390 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
-  store i8 11, ptr %390, align 1
+  %366 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.SwitchWithFallthrough$State", ptr %0, i32 0, i32 0
+  store i8 11, ptr %366, align 1
   br label %SwitchWithFallthrough_state_11
 }
 
@@ -5001,125 +4809,91 @@ TwoLoops_state_02_ready_cont:                     ; preds = %TwoLoops_state_02_r
   %291 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %283, 1
   %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 6
   store i64 %291, ptr %292, align 4
-  %293 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 2
-  store i64 %261, ptr %293, align 4
-  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 3
-  store i64 %263, ptr %294, align 4
-  %295 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 4
-  store i1 %265, ptr %295, align 1
-  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 5
-  store ptr %280, ptr %296, align 8
-  %297 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 7
-  store i64 %269, ptr %297, align 4
-  %298 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 8
-  store i64 %271, ptr %298, align 4
-  %299 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
-  store i1 %273, ptr %299, align 1
-  %300 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 10
-  store ptr %275, ptr %300, align 8
-  %301 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 11
-  store i64 %277, ptr %301, align 4
-  %302 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 12
-  store i64 %279, ptr %302, align 4
+  %293 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 5
+  store ptr %280, ptr %293, align 8
   store ptr null, ptr %77, align 8
-  %303 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %303, align 1
+  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %294, align 1
   br label %TwoLoops_state_03
 
 TwoLoops_state_04_true:                           ; preds = %TwoLoops_state_05
-  %304 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
-  store i1 %159, ptr %304, align 1
-  %305 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %305, align 1
+  %295 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
+  store i1 %159, ptr %295, align 1
+  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %296, align 1
   br label %TwoLoops_state_06
 
 TwoLoops_state_04_false:                          ; preds = %TwoLoops_state_05
-  %306 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
-  store i1 %159, ptr %306, align 1
-  %307 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
-  store i8 8, ptr %307, align 1
+  %297 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
+  store i1 %159, ptr %297, align 1
+  %298 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
+  store i8 8, ptr %298, align 1
   br label %TwoLoops_state_08
 
 TwoLoops_state_06_init:                           ; preds = %TwoLoops_state_06
-  %308 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 1
-  %309 = load i64, ptr %308, align 4
-  %310 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 2
-  %311 = load i64, ptr %310, align 4
-  %312 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 3
-  %313 = load i64, ptr %312, align 4
-  %314 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 4
-  %315 = load i1, ptr %314, align 1
-  %316 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 5
-  %317 = load ptr, ptr %316, align 8
-  %318 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 6
-  %319 = load i64, ptr %318, align 4
-  %320 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 7
-  %321 = load i64, ptr %320, align 4
-  %322 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 8
-  %323 = load i64, ptr %322, align 4
-  %324 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
-  %325 = load i1, ptr %324, align 1
-  %326 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 12
-  %327 = load i64, ptr %326, align 4
-  %328 = mul i64 %323, 2
-  %329 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 11
-  store i64 %328, ptr %329, align 4
-  %330 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %328)
-  %331 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 10
-  store ptr %330, ptr %331, align 8
-  store ptr %330, ptr %181, align 8
+  %299 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 1
+  %300 = load i64, ptr %299, align 4
+  %301 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 2
+  %302 = load i64, ptr %301, align 4
+  %303 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 3
+  %304 = load i64, ptr %303, align 4
+  %305 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 4
+  %306 = load i1, ptr %305, align 1
+  %307 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 5
+  %308 = load ptr, ptr %307, align 8
+  %309 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 6
+  %310 = load i64, ptr %309, align 4
+  %311 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 7
+  %312 = load i64, ptr %311, align 4
+  %313 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 8
+  %314 = load i64, ptr %313, align 4
+  %315 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
+  %316 = load i1, ptr %315, align 1
+  %317 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 12
+  %318 = load i64, ptr %317, align 4
+  %319 = mul i64 %314, 2
+  %320 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 11
+  store i64 %319, ptr %320, align 4
+  %321 = call ptr @"github.com/goplus/llgo/cl/_testpull/complex.Step"(i64 %319)
+  %322 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 10
+  store ptr %321, ptr %322, align 8
+  store ptr %321, ptr %181, align 8
   br label %TwoLoops_state_06_poll
 
 TwoLoops_state_06_poll:                           ; preds = %TwoLoops_state_06_init, %TwoLoops_state_06
-  %332 = load ptr, ptr %181, align 8
-  %333 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %332, ptr %1)
-  %334 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %333, 0
-  br i1 %334, label %TwoLoops_state_06_ready, label %TwoLoops_state_06_pending
+  %323 = load ptr, ptr %181, align 8
+  %324 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %323, ptr %1)
+  %325 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %324, 0
+  br i1 %325, label %TwoLoops_state_06_ready, label %TwoLoops_state_06_pending
 
 TwoLoops_state_06_ready:                          ; preds = %TwoLoops_state_06_poll
-  %335 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %333, 2
-  %336 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %335, { ptr, ptr } zeroinitializer)
-  %337 = xor i1 %336, true
-  br i1 %337, label %TwoLoops_state_06_err, label %TwoLoops_state_06_ready_cont
+  %326 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %324, 2
+  %327 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %326, { ptr, ptr } zeroinitializer)
+  %328 = xor i1 %327, true
+  br i1 %328, label %TwoLoops_state_06_err, label %TwoLoops_state_06_ready_cont
 
 TwoLoops_state_06_pending:                        ; preds = %TwoLoops_state_06_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 TwoLoops_state_06_err:                            ; preds = %TwoLoops_state_06_ready
-  %338 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
-  store i8 9, ptr %338, align 1
-  %339 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 15
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %335, ptr %339, align 8
-  %340 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %335, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %340
+  %329 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
+  store i8 9, ptr %329, align 1
+  %330 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 15
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %326, ptr %330, align 8
+  %331 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %326, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %331
 
 TwoLoops_state_06_ready_cont:                     ; preds = %TwoLoops_state_06_ready
-  %341 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %333, 1
-  %342 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 12
-  store i64 %341, ptr %342, align 4
-  %343 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 2
-  store i64 %311, ptr %343, align 4
-  %344 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 3
-  store i64 %313, ptr %344, align 4
-  %345 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 4
-  store i1 %315, ptr %345, align 1
-  %346 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 5
-  store ptr %317, ptr %346, align 8
-  %347 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 6
-  store i64 %319, ptr %347, align 4
-  %348 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 7
-  store i64 %321, ptr %348, align 4
-  %349 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 8
-  store i64 %323, ptr %349, align 4
-  %350 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 9
-  store i1 %325, ptr %350, align 1
-  %351 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 10
-  store ptr %330, ptr %351, align 8
-  %352 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 11
-  store i64 %328, ptr %352, align 4
+  %332 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %324, 1
+  %333 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 12
+  store i64 %332, ptr %333, align 4
+  %334 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 10
+  store ptr %321, ptr %334, align 8
+  %335 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 11
+  store i64 %319, ptr %335, align 4
   store ptr null, ptr %181, align 8
-  %353 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %353, align 1
+  %336 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/complex.TwoLoops$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %336, align 1
   br label %TwoLoops_state_07
 }
 

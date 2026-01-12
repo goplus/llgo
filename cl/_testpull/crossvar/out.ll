@@ -368,19 +368,11 @@ AccumulateWithMultiplier_state_02_ready_cont:     ; preds = %AccumulateWithMulti
   %132 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %124, 1
   %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 7
   store i64 %132, ptr %133, align 4
-  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 2
-  store i64 %112, ptr %134, align 4
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 3
-  store i64 %114, ptr %135, align 4
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 4
-  store i64 %116, ptr %136, align 4
-  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 5
-  store i1 %118, ptr %137, align 1
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 6
-  store ptr %121, ptr %138, align 8
+  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 6
+  store ptr %121, ptr %134, align 8
   store ptr null, ptr %48, align 8
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %139, align 1
+  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.AccumulateWithMultiplier$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %135, align 1
   br label %AccumulateWithMultiplier_state_03
 }
 
@@ -893,17 +885,11 @@ IncrementInLoop_state_02_ready_cont:              ; preds = %IncrementInLoop_sta
   %117 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %109, 1
   %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 6
   store i64 %117, ptr %118, align 4
-  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 2
-  store i64 %99, ptr %119, align 4
-  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 3
-  store i64 %101, ptr %120, align 4
-  %121 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 4
-  store i1 %103, ptr %121, align 1
-  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 5
-  store ptr %106, ptr %122, align 8
+  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 5
+  store ptr %106, ptr %119, align 8
   store ptr null, ptr %41, align 8
-  %123 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %123, align 1
+  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/crossvar.IncrementInLoop$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %120, align 1
   br label %IncrementInLoop_state_03
 }
 

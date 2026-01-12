@@ -358,17 +358,11 @@ Loop_state_02_ready_cont:                         ; preds = %Loop_state_02_ready
   %116 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %108, 1
   %117 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 6
   store i64 %116, ptr %117, align 4
-  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 2
-  store i64 %98, ptr %118, align 4
-  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 3
-  store i64 %100, ptr %119, align 4
-  %120 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 4
-  store i1 %102, ptr %120, align 1
-  %121 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 5
-  store ptr %105, ptr %121, align 8
+  %118 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 5
+  store ptr %105, ptr %118, align 8
   store ptr null, ptr %41, align 8
-  %122 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %122, align 1
+  %119 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/loop.Loop$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %119, align 1
   br label %Loop_state_03
 }
 

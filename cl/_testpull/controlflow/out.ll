@@ -381,34 +381,30 @@ LoopWithBreak_state_02_ready_cont:                ; preds = %LoopWithBreak_state
   %131 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %123, 1
   %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 5
   store i64 %131, ptr %132, align 4
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 2
-  store i64 %115, ptr %133, align 4
-  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 3
-  store i1 %117, ptr %134, align 1
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 4
-  store ptr %120, ptr %135, align 8
+  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 4
+  store ptr %120, ptr %133, align 8
   store ptr null, ptr %34, align 8
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %136, align 1
+  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %134, align 1
   br label %LoopWithBreak_state_03
 
 LoopWithBreak_state_02_true:                      ; preds = %LoopWithBreak_state_03
-  %137 = call ptr @"github.com/goplus/llgo/cl/_testpull/controlflow.Step"(i64 %40)
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 4
-  store ptr %137, ptr %138, align 8
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 5
-  store i64 %44, ptr %139, align 4
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %140, align 1
+  %135 = call ptr @"github.com/goplus/llgo/cl/_testpull/controlflow.Step"(i64 %40)
+  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 4
+  store ptr %135, ptr %136, align 8
+  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 5
+  store i64 %44, ptr %137, align 4
+  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %138, align 1
   br label %LoopWithBreak_state_05
 
 LoopWithBreak_state_02_false:                     ; preds = %LoopWithBreak_state_03
-  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 4
-  store ptr %137, ptr %141, align 8
-  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 5
-  store i64 %44, ptr %142, align 4
-  %143 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %143, align 1
+  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 4
+  store ptr %135, ptr %139, align 8
+  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 5
+  store i64 %44, ptr %140, align 4
+  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithBreak$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %141, align 1
   br label %LoopWithBreak_state_06
 }
 
@@ -1077,29 +1073,11 @@ LoopWithContinue_state_05_ready_cont:             ; preds = %LoopWithContinue_st
   %248 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %240, 1
   %249 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 11
   store i64 %248, ptr %249, align 4
-  %250 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %218, ptr %250, align 8
-  %251 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 3
-  store i64 %220, ptr %251, align 4
-  %252 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 4
-  store i64 %222, ptr %252, align 4
-  %253 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 5
-  store i64 %224, ptr %253, align 4
-  %254 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 6
-  store i1 %226, ptr %254, align 1
-  %255 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 7
-  store i64 %228, ptr %255, align 4
-  %256 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 8
-  store i64 %230, ptr %256, align 4
-  %257 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 9
-  store i1 %232, ptr %257, align 1
-  %258 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 10
-  store ptr %237, ptr %258, align 8
-  %259 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 12
-  store ptr %236, ptr %259, align 8
+  %250 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 10
+  store ptr %237, ptr %250, align 8
   store ptr null, ptr %168, align 8
-  %260 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %260, align 1
+  %251 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.LoopWithContinue$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %251, align 1
   br label %LoopWithContinue_state_06
 }
 
@@ -1549,29 +1527,13 @@ NestedLoop_state_05_ready_cont:                   ; preds = %NestedLoop_state_05
   %288 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %280, 1
   %289 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 12
   store i64 %288, ptr %289, align 4
-  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 3
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %258, ptr %290, align 8
-  %291 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 4
-  store i64 %260, ptr %291, align 4
-  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 5
-  store i64 %262, ptr %292, align 4
-  %293 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 6
-  store i64 %264, ptr %293, align 4
-  %294 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 7
-  store i1 %266, ptr %294, align 1
-  %295 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 8
-  store i64 %268, ptr %295, align 4
-  %296 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 9
-  store i1 %270, ptr %296, align 1
-  %297 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 10
-  store ptr %277, ptr %297, align 8
-  %298 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 11
-  store i64 %275, ptr %298, align 4
-  %299 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 13
-  store ptr %274, ptr %299, align 8
+  %290 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 10
+  store ptr %277, ptr %290, align 8
+  %291 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 11
+  store i64 %275, ptr %291, align 4
   store ptr null, ptr %175, align 8
-  %300 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %300, align 1
+  %292 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.NestedLoop$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %292, align 1
   br label %NestedLoop_state_06
 }
 
@@ -1853,121 +1815,109 @@ SwitchCase_state_01_ready_cont:                   ; preds = %SwitchCase_state_01
   %144 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %136, 1
   %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
   store i64 %144, ptr %145, align 4
-  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
-  store i64 %131, ptr %146, align 4
-  %147 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
-  store i64 %133, ptr %147, align 4
   store ptr null, ptr %21, align 8
-  %148 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %148, align 1
+  %146 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %146, align 1
   br label %SwitchCase_state_02
 
 SwitchCase_state_03_init:                         ; preds = %SwitchCase_state_03
-  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 1
+  %147 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 1
+  %148 = load i64, ptr %147, align 4
+  %149 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
   %150 = load i64, ptr %149, align 4
-  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
+  %151 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
   %152 = load i64, ptr %151, align 4
-  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
+  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
   %154 = load i64, ptr %153, align 4
-  %155 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
-  %156 = load i64, ptr %155, align 4
-  %157 = call ptr @"github.com/goplus/llgo/cl/_testpull/controlflow.Step"(i64 20)
-  store ptr %157, ptr %54, align 8
+  %155 = call ptr @"github.com/goplus/llgo/cl/_testpull/controlflow.Step"(i64 20)
+  store ptr %155, ptr %54, align 8
   br label %SwitchCase_state_03_poll
 
 SwitchCase_state_03_poll:                         ; preds = %SwitchCase_state_03_init, %SwitchCase_state_03
-  %158 = load ptr, ptr %54, align 8
-  %159 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %158, ptr %1)
-  %160 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %159, 0
-  br i1 %160, label %SwitchCase_state_03_ready, label %SwitchCase_state_03_pending
+  %156 = load ptr, ptr %54, align 8
+  %157 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %156, ptr %1)
+  %158 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %157, 0
+  br i1 %158, label %SwitchCase_state_03_ready, label %SwitchCase_state_03_pending
 
 SwitchCase_state_03_ready:                        ; preds = %SwitchCase_state_03_poll
-  %161 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %159, 2
-  %162 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %161, { ptr, ptr } zeroinitializer)
-  %163 = xor i1 %162, true
-  br i1 %163, label %SwitchCase_state_03_err, label %SwitchCase_state_03_ready_cont
+  %159 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %157, 2
+  %160 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %159, { ptr, ptr } zeroinitializer)
+  %161 = xor i1 %160, true
+  br i1 %161, label %SwitchCase_state_03_err, label %SwitchCase_state_03_ready_cont
 
 SwitchCase_state_03_pending:                      ; preds = %SwitchCase_state_03_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SwitchCase_state_03_err:                          ; preds = %SwitchCase_state_03_ready
-  %164 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 8, ptr %164, align 1
-  %165 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %161, ptr %165, align 8
-  %166 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %161, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %166
+  %162 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 8, ptr %162, align 1
+  %163 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %159, ptr %163, align 8
+  %164 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %159, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %164
 
 SwitchCase_state_03_ready_cont:                   ; preds = %SwitchCase_state_03_ready
-  %167 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %159, 1
-  %168 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
-  store i64 %167, ptr %168, align 4
-  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
-  store i64 %152, ptr %169, align 4
-  %170 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
-  store i64 %156, ptr %170, align 4
+  %165 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %157, 1
+  %166 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
+  store i64 %165, ptr %166, align 4
   store ptr null, ptr %54, align 8
-  %171 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %171, align 1
+  %167 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %167, align 1
   br label %SwitchCase_state_04
 
 SwitchCase_state_03_true:                         ; preds = %SwitchCase_state_05
-  %172 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %172, align 1
+  %168 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %168, align 1
   br label %SwitchCase_state_03
 
 SwitchCase_state_03_false:                        ; preds = %SwitchCase_state_05
-  %173 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %173, align 1
+  %169 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %169, align 1
   br label %SwitchCase_state_06
 
 SwitchCase_state_06_init:                         ; preds = %SwitchCase_state_06
-  %174 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 1
+  %170 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 1
+  %171 = load i64, ptr %170, align 4
+  %172 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
+  %173 = load i64, ptr %172, align 4
+  %174 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
   %175 = load i64, ptr %174, align 4
-  %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
+  %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
   %177 = load i64, ptr %176, align 4
-  %178 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
-  %179 = load i64, ptr %178, align 4
-  %180 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
-  %181 = load i64, ptr %180, align 4
-  %182 = call ptr @"github.com/goplus/llgo/cl/_testpull/controlflow.Step"(i64 30)
-  store ptr %182, ptr %96, align 8
+  %178 = call ptr @"github.com/goplus/llgo/cl/_testpull/controlflow.Step"(i64 30)
+  store ptr %178, ptr %96, align 8
   br label %SwitchCase_state_06_poll
 
 SwitchCase_state_06_poll:                         ; preds = %SwitchCase_state_06_init, %SwitchCase_state_06
-  %183 = load ptr, ptr %96, align 8
-  %184 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %183, ptr %1)
-  %185 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %184, 0
-  br i1 %185, label %SwitchCase_state_06_ready, label %SwitchCase_state_06_pending
+  %179 = load ptr, ptr %96, align 8
+  %180 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %179, ptr %1)
+  %181 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %180, 0
+  br i1 %181, label %SwitchCase_state_06_ready, label %SwitchCase_state_06_pending
 
 SwitchCase_state_06_ready:                        ; preds = %SwitchCase_state_06_poll
-  %186 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %184, 2
-  %187 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %186, { ptr, ptr } zeroinitializer)
-  %188 = xor i1 %187, true
-  br i1 %188, label %SwitchCase_state_06_err, label %SwitchCase_state_06_ready_cont
+  %182 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %180, 2
+  %183 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %182, { ptr, ptr } zeroinitializer)
+  %184 = xor i1 %183, true
+  br i1 %184, label %SwitchCase_state_06_err, label %SwitchCase_state_06_ready_cont
 
 SwitchCase_state_06_pending:                      ; preds = %SwitchCase_state_06_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 SwitchCase_state_06_err:                          ; preds = %SwitchCase_state_06_ready
-  %189 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 8, ptr %189, align 1
-  %190 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %186, ptr %190, align 8
-  %191 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %186, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %191
+  %185 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 8, ptr %185, align 1
+  %186 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %182, ptr %186, align 8
+  %187 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %182, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %187
 
 SwitchCase_state_06_ready_cont:                   ; preds = %SwitchCase_state_06_ready
-  %192 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %184, 1
-  %193 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
-  store i64 %192, ptr %193, align 4
-  %194 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 2
-  store i64 %177, ptr %194, align 4
-  %195 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 3
-  store i64 %179, ptr %195, align 4
+  %188 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %180, 1
+  %189 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 4
+  store i64 %188, ptr %189, align 4
   store ptr null, ptr %96, align 8
-  %196 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %196, align 1
+  %190 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/controlflow.SwitchCase$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %190, align 1
   br label %SwitchCase_state_07
 }
 

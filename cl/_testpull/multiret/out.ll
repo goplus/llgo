@@ -1064,72 +1064,68 @@ NestedReturnPaths_state_01_ready_cont:            ; preds = %NestedReturnPaths_s
   %131 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %123, 1
   %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
   store i64 %131, ptr %132, align 4
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %120, ptr %133, align 4
   store ptr null, ptr %21, align 8
-  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 2, ptr %134, align 1
+  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 2, ptr %133, align 1
   br label %NestedReturnPaths_state_02
 
 NestedReturnPaths_state_01_true:                  ; preds = %NestedReturnPaths_state_02
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
-  store i64 %29, ptr %135, align 4
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 4, ptr %136, align 1
+  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
+  store i64 %29, ptr %134, align 4
+  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 4, ptr %135, align 1
   br label %NestedReturnPaths_state_04
 
 NestedReturnPaths_state_01_false:                 ; preds = %NestedReturnPaths_state_02
-  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
-  store i64 %29, ptr %137, align 4
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %138, align 1
+  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
+  store i64 %29, ptr %136, align 4
+  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %137, align 1
   br label %NestedReturnPaths_state_05
 
 NestedReturnPaths_state_05_init:                  ; preds = %NestedReturnPaths_state_05
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 1
-  %140 = load i64, ptr %139, align 4
-  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 2
-  %142 = load i64, ptr %141, align 4
-  %143 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
-  %144 = load i64, ptr %143, align 4
-  %145 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
-  %146 = load i64, ptr %145, align 4
-  %147 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %142)
-  store ptr %147, ptr %83, align 8
+  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 1
+  %139 = load i64, ptr %138, align 4
+  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 2
+  %141 = load i64, ptr %140, align 4
+  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
+  %143 = load i64, ptr %142, align 4
+  %144 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
+  %145 = load i64, ptr %144, align 4
+  %146 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %141)
+  store ptr %146, ptr %83, align 8
   br label %NestedReturnPaths_state_05_poll
 
 NestedReturnPaths_state_05_poll:                  ; preds = %NestedReturnPaths_state_05_init, %NestedReturnPaths_state_05
-  %148 = load ptr, ptr %83, align 8
-  %149 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %148, ptr %1)
-  %150 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %149, 0
-  br i1 %150, label %NestedReturnPaths_state_05_ready, label %NestedReturnPaths_state_05_pending
+  %147 = load ptr, ptr %83, align 8
+  %148 = call %"github.com/goplus/llgo/async.Poll[int]" @"github.com/goplus/llgo/async.(*AsyncFuture[int]).Poll"(ptr %147, ptr %1)
+  %149 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %148, 0
+  br i1 %149, label %NestedReturnPaths_state_05_ready, label %NestedReturnPaths_state_05_pending
 
 NestedReturnPaths_state_05_ready:                 ; preds = %NestedReturnPaths_state_05_poll
-  %151 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %149, 2
-  %152 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %151, { ptr, ptr } zeroinitializer)
-  %153 = xor i1 %152, true
-  br i1 %153, label %NestedReturnPaths_state_05_err, label %NestedReturnPaths_state_05_ready_cont
+  %150 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %148, 2
+  %151 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %150, { ptr, ptr } zeroinitializer)
+  %152 = xor i1 %151, true
+  br i1 %152, label %NestedReturnPaths_state_05_err, label %NestedReturnPaths_state_05_ready_cont
 
 NestedReturnPaths_state_05_pending:               ; preds = %NestedReturnPaths_state_05_poll
   ret %"github.com/goplus/llgo/async.Poll[int]" zeroinitializer
 
 NestedReturnPaths_state_05_err:                   ; preds = %NestedReturnPaths_state_05_ready
-  %154 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 7, ptr %154, align 1
-  %155 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 7
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %151, ptr %155, align 8
-  %156 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %151, 2
-  ret %"github.com/goplus/llgo/async.Poll[int]" %156
+  %153 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 7, ptr %153, align 1
+  %154 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 7
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %150, ptr %154, align 8
+  %155 = insertvalue %"github.com/goplus/llgo/async.Poll[int]" { i1 true, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %150, 2
+  ret %"github.com/goplus/llgo/async.Poll[int]" %155
 
 NestedReturnPaths_state_05_ready_cont:            ; preds = %NestedReturnPaths_state_05_ready
-  %157 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %149, 1
-  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
-  store i64 %157, ptr %158, align 4
-  %159 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 3
-  store i64 %144, ptr %159, align 4
+  %156 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %148, 1
+  %157 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 4
+  store i64 %156, ptr %157, align 4
   store ptr null, ptr %83, align 8
-  %160 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %160, align 1
+  %158 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.NestedReturnPaths$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %158, align 1
   br label %NestedReturnPaths_state_06
 }
 
@@ -1383,34 +1379,30 @@ ReturnInLoop_state_02_ready_cont:                 ; preds = %ReturnInLoop_state_
   %131 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %123, 1
   %132 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
   store i64 %131, ptr %132, align 4
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 2
-  store i64 %115, ptr %133, align 4
-  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 3
-  store i1 %117, ptr %134, align 1
-  %135 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
-  store ptr %120, ptr %135, align 8
+  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  store ptr %120, ptr %133, align 8
   store ptr null, ptr %34, align 8
-  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %136, align 1
+  %134 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %134, align 1
   br label %ReturnInLoop_state_03
 
 ReturnInLoop_state_02_true:                       ; preds = %ReturnInLoop_state_03
-  %137 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %40)
-  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
-  store ptr %137, ptr %138, align 8
-  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  store i64 %44, ptr %139, align 4
-  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 5, ptr %140, align 1
+  %135 = call ptr @"github.com/goplus/llgo/cl/_testpull/multiret.Step"(i64 %40)
+  %136 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  store ptr %135, ptr %136, align 8
+  %137 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  store i64 %44, ptr %137, align 4
+  %138 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 5, ptr %138, align 1
   br label %ReturnInLoop_state_05
 
 ReturnInLoop_state_02_false:                      ; preds = %ReturnInLoop_state_03
-  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
-  store ptr %137, ptr %141, align 8
-  %142 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
-  store i64 %44, ptr %142, align 4
-  %143 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
-  store i8 6, ptr %143, align 1
+  %139 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 4
+  store ptr %135, ptr %139, align 8
+  %140 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 5
+  store i64 %44, ptr %140, align 4
+  %141 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/multiret.ReturnInLoop$State", ptr %0, i32 0, i32 0
+  store i8 6, ptr %141, align 1
   br label %ReturnInLoop_state_06
 }
 

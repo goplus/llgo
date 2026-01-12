@@ -1831,11 +1831,9 @@ MapParam_state_02_ready_cont:                     ; preds = %MapParam_state_02_r
   %100 = extractvalue %"github.com/goplus/llgo/async.Poll[int]" %92, 1
   %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.MapParam$State", ptr %0, i32 0, i32 4
   store i64 %100, ptr %101, align 4
-  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.MapParam$State", ptr %0, i32 0, i32 3
-  store i64 %87, ptr %102, align 4
   store ptr null, ptr %48, align 8
-  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.MapParam$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %103, align 1
+  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.MapParam$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %102, align 1
   br label %MapParam_state_03
 }
 
@@ -2529,23 +2527,13 @@ SliceParam_state_02_ready_cont:                   ; preds = %SliceParam_state_02
   store i64 %174, ptr %175, align 4
   %176 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 2
   store i64 %161, ptr %176, align 4
-  %177 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 3
-  store i64 %143, ptr %177, align 4
-  %178 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 4
-  store i64 %145, ptr %178, align 4
-  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 5
-  store i64 %147, ptr %179, align 4
-  %180 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 6
-  store i1 %149, ptr %180, align 1
-  %181 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 7
-  store i64 %151, ptr %181, align 4
-  %182 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 8
-  store ptr %159, ptr %182, align 8
-  %183 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 9
-  store ptr %163, ptr %183, align 8
+  %177 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 8
+  store ptr %159, ptr %177, align 8
+  %178 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 9
+  store ptr %163, ptr %178, align 8
   store ptr null, ptr %62, align 8
-  %184 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 0
-  store i8 3, ptr %184, align 1
+  %179 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testpull/types.SliceParam$State", ptr %0, i32 0, i32 0
+  store i8 3, ptr %179, align 1
   br label %SliceParam_state_03
 }
 
