@@ -16,7 +16,9 @@
 
 package runtime
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 // -----------------------------------------------------------------------------
 // LLVM Coroutine Scheduler
@@ -148,6 +150,7 @@ func CoroSchedule() {
 		CoroSetCurrent(handle)
 		coroResume(handle)
 		CoroSetCurrent(nil)
+
 		// If an unrecovered panic occurred, crash immediately
 		if CoroIsPanicByHandle(handle) {
 			Panic(CoroGetPanicByHandle(handle))
@@ -170,6 +173,7 @@ func CoroScheduleOne() bool {
 		CoroSetCurrent(handle)
 		coroResume(handle)
 		CoroSetCurrent(nil)
+
 		if CoroIsPanicByHandle(handle) {
 			Panic(CoroGetPanicByHandle(handle))
 		}
@@ -186,9 +190,40 @@ func CoroReschedule(handle CoroHandle) {
 	}
 }
 
+type coroWaiterNode struct {
+	handle CoroHandle
+	next   *coroWaiterNode
+}
+
+// CoroAddWaiter registers a waiter coroutine in the promise waiters list.
+// waitersField points to a promise field of type unsafe.Pointer (list head).
+func CoroAddWaiter(waitersField *unsafe.Pointer, waiter CoroHandle) {
+	if waitersField == nil || waiter == nil {
+		return
+	}
+	head := (*coroWaiterNode)(*waitersField)
+	node := &coroWaiterNode{handle: waiter, next: head}
+	*waitersField = unsafe.Pointer(node)
+}
+
+// CoroWakeWaiters reschedules all waiters stored in the promise waiters list.
+// waitersField points to a promise field of type unsafe.Pointer (list head).
+func CoroWakeWaiters(waitersField *unsafe.Pointer) {
+	if waitersField == nil {
+		return
+	}
+	node := (*coroWaiterNode)(*waitersField)
+	*waitersField = nil
+	for node != nil {
+		coroQueuePush(&coroRunQueue, node.handle)
+		node = node.next
+	}
+}
+
 // CoroScheduleUntil runs the scheduler until the specified coroutine completes.
 // This is used by block_on in sync context.
-// It adds the coroutine to the queue and runs the scheduler until it's done.
+// The coroutine is NOT added to the queue here because the await path is
+// responsible for enqueuing the callee once when it first waits.
 func CoroScheduleUntil(handle CoroHandle) {
 	if handle == nil {
 		return
@@ -201,8 +236,8 @@ func CoroScheduleUntil(handle CoroHandle) {
 		return
 	}
 
-	// Add to queue and run scheduler until this coroutine is done
-	coroQueuePush(&coroRunQueue, handle)
+	// Note: Do NOT push handle to queue here!
+	// The coroutine already pushed itself when it suspended.
 
 	// Run scheduler loop until target coroutine is done
 	for {
@@ -222,9 +257,16 @@ func CoroScheduleUntil(handle CoroHandle) {
 			CoroSetCurrent(handle)
 			coroResume(handle)
 			CoroSetCurrent(nil)
+
 			if CoroIsPanicByHandle(handle) {
 				Panic(CoroGetPanicByHandle(handle))
 			}
+			continue
+		}
+
+		// Skip handles that are already done.
+		resumeFn = *(*unsafe.Pointer)(h)
+		if resumeFn == nil {
 			continue
 		}
 
@@ -232,12 +274,10 @@ func CoroScheduleUntil(handle CoroHandle) {
 		CoroSetCurrent(h)
 		coroResume(h)
 		CoroSetCurrent(nil)
+
 		if CoroIsPanicByHandle(h) {
 			Panic(CoroGetPanicByHandle(h))
 		}
-
-		// If resumed coroutine is not done and not the target, re-queue it
-		// (The coroutine itself should call CoroReschedule when suspending)
 	}
 
 	// After the target completes, check for unhandled panic
@@ -263,11 +303,6 @@ func CoroExit() {
 // or scheduleUntil (sync context) at runtime.
 func CoroIsInCoro() bool {
 	return coroDepth > 0
-}
-
-// CoroIsTopLevel returns true if we're in the outermost coroutine.
-func CoroIsTopLevel() bool {
-	return coroDepth == 1
 }
 
 // CoroSetCurrent sets the current coroutine handle for panic/recover tracking.
@@ -403,5 +438,13 @@ func coroSize() int64
 //
 //go:linkname coroSuspend llgo.coroSuspend
 func coroSuspend()
+
+// coroPromise returns the promise pointer for a coroutine handle.
+// Maps to llvm.coro.promise intrinsic.
+// alignment: the alignment of the promise in bytes
+// from: if false, handle -> promise; if true, promise -> handle
+//
+//go:linkname coroPromise llgo.coroPromise
+func coroPromise(handle CoroHandle, alignment int32, from bool) unsafe.Pointer
 
 // -----------------------------------------------------------------------------

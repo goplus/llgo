@@ -441,7 +441,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		// For closures with suspend points: ONLY generate $coro version (no sync version)
 		// For closures without suspend points: ONLY generate sync version (no $coro version)
 		// For regular functions: generate both sync and $coro versions
-		if llssa.IsLLVMCoroMode() && !isInit {
+		if llssa.IsLLVMCoroMode() && !isInit && !isExcludedCoroPkg(f) && !isExcludedCoroName(name) {
 			p.compileCoroFuncDecl(pkg, f, fn, name, sig, hasCtx, state, dbgEnabled, dbgSymsEnabled)
 		}
 

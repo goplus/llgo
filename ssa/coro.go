@@ -603,9 +603,54 @@ type CoroState struct {
 	ExitBlk    BasicBlock // Exit block (defer execution, final suspend)
 	CleanupBlk BasicBlock // Cleanup block (free frame)
 	// Promise support for return values
-	Promise      Expr // The promise alloca (for return value storage)
-	PromiseType  Type // The type of the promise (return type)
-	PromiseAlign int  // Alignment of the promise
+	Promise            Expr // The promise alloca (for return value storage)
+	PromiseType        Type // The return type (nil for void)
+	PromiseStruct      Type // The promise struct type
+	PromiseAlign       int  // Alignment of the promise
+	PromiseRetField    int  // Field index of return storage in promise
+	PromiseWaiterField int  // Field index of waiters list in promise
+}
+
+const coroPromiseAlign = 8
+
+// coroPromiseLayout defines the promise struct layout.
+// Layout:
+// - if retType != nil: { unsafe.Pointer, retType }
+// - else: { unsafe.Pointer }
+//
+// IMPORTANT: waiters is ALWAYS at field index 0 (offset 0).
+// This allows the scheduler to wake waiters without knowing the promise layout.
+// Returns the promise struct type, return field index (-1 if none),
+// and waiters field index (always 0).
+func (b Builder) coroPromiseLayout(retType Type) (promise Type, retField int, waitersField int) {
+	// Waiters is always the first field at offset 0
+	fields := []*types.Var{
+		types.NewVar(token.NoPos, nil, "$waiters", types.Typ[types.UnsafePointer]),
+	}
+	waitersField = 0
+
+	if retType != nil {
+		fields = append(fields, types.NewVar(token.NoPos, nil, "$ret", retType.RawType()))
+		retField = 1
+	} else {
+		retField = -1
+	}
+	raw := types.NewStruct(fields, nil)
+	return b.Prog.Type(raw, InGo), retField, waitersField
+}
+
+func (b Builder) coroRetType(sig *types.Signature) Type {
+	if sig == nil {
+		return nil
+	}
+	results := sig.Results()
+	if results == nil || results.Len() == 0 {
+		return nil
+	}
+	if results.Len() == 1 {
+		return b.Prog.Type(results.At(0).Type(), InGo)
+	}
+	return b.Prog.Type(results, InGo)
 }
 
 // CoroFuncPrologue generates the coroutine prologue at function entry.
@@ -613,7 +658,7 @@ type CoroState struct {
 // After coro.begin, it jumps to bodyStartBlk where the function body begins.
 // Returns the CoroState that must be used for epilogue.
 //
-// If retType is non-nil, a promise is allocated to store the return value.
+// A promise is allocated for waiters and (optionally) return value storage.
 // The promise can be accessed via CoroState.Promise after this call.
 func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroState {
 	prog := b.Prog
@@ -626,22 +671,18 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 	exitBlk := fn.MakeBlock()    // Defer execution + final suspend
 	cleanupBlk := fn.MakeBlock() // Free frame
 
-	// Allocate promise if we have a return type
+	// Allocate promise for return value storage and waiters list
 	var promise Expr
 	var promiseAlign int
 	zero := prog.IntVal(0, prog.Int32())
 	null := prog.Nil(prog.VoidPtr())
 
-	if retType == nil {
-		// No return value, use null promise
-		promise = null
-		promiseAlign = 0
-	} else {
-		// Allocate promise for return value
-		// Promise must be allocated before coro.id is called
-		promise = b.AllocaT(retType)
-		promiseAlign = 8 // Default alignment, should be computed from retType
-	}
+	promiseType, retField, waiterField := b.coroPromiseLayout(retType)
+	promise = b.AllocaT(promiseType)
+	promiseAlign = coroPromiseAlign
+	// Initialize waiters list to nil
+	waitersPtr := b.FieldAddr(promise, waiterField)
+	b.Store(waitersPtr, null)
 
 	// Entry block: call coro.id with promise
 	coroId := b.CoroId(zero, promise, null, null)
@@ -682,14 +723,17 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 	b.Jump(bodyStartBlk)
 
 	return &CoroState{
-		CoroId:       coroId,
-		CoroHandle:   coroHandle,
-		SuspendBlk:   suspendBlk,
-		ExitBlk:      exitBlk,
-		CleanupBlk:   cleanupBlk,
-		Promise:      promise,
-		PromiseType:  retType,
-		PromiseAlign: promiseAlign,
+		CoroId:             coroId,
+		CoroHandle:         coroHandle,
+		SuspendBlk:         suspendBlk,
+		ExitBlk:            exitBlk,
+		CleanupBlk:         cleanupBlk,
+		Promise:            promise,
+		PromiseType:        retType,
+		PromiseStruct:      promiseType,
+		PromiseAlign:       promiseAlign,
+		PromiseRetField:    retField,
+		PromiseWaiterField: waiterField,
 	}
 }
 
@@ -697,18 +741,19 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 // This should be called before jumping to ExitBlk in a return statement.
 // Directly stores to the promise alloca - LLVM CoroSplit will relocate it to the frame.
 //
-// For single return value (fieldIndex=0, numResults=1): stores directly to promise
+// For single return value (fieldIndex=0, numResults=1): stores directly to return field
 // For multiple return values: stores to the struct field at fieldIndex
 func (b Builder) CoroStoreResult(state *CoroState, fieldIndex int, numResults int, result Expr) {
 	if state.PromiseType == nil {
 		return // No return value
 	}
+	retPtr := b.FieldAddr(state.Promise, state.PromiseRetField)
 	if numResults == 1 {
-		// Single return value: promise is direct type (e.g., i64), store directly
-		b.Store(state.Promise, result)
+		// Single return value: store directly to the return field
+		b.Store(retPtr, result)
 	} else {
-		// Multiple return values: promise is struct, use FieldAddr
-		fieldPtr := b.FieldAddr(state.Promise, fieldIndex)
+		// Multiple return values: return field is a struct, use FieldAddr
+		fieldPtr := b.FieldAddr(retPtr, fieldIndex)
 		b.Store(fieldPtr, result)
 	}
 }
@@ -721,9 +766,10 @@ func (b Builder) CoroStoreResult(state *CoroState, fieldIndex int, numResults in
 func (b Builder) CoroLoadResult(handle Expr, retType Type, alignment int) Expr {
 	// Get promise pointer from handle
 	promisePtr := b.CoroPromise(handle, alignment, false)
-	// Cast to proper pointer type and load
-	typedPtr := Expr{promisePtr.impl, b.Prog.Pointer(retType)}
-	return b.Load(typedPtr)
+	promiseType, retField, _ := b.coroPromiseLayout(retType)
+	typedPtr := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
+	retPtr := b.FieldAddr(typedPtr, retField)
+	return b.Load(retPtr)
 }
 
 // CoroFuncEpilogue generates the coroutine epilogue blocks.
@@ -765,6 +811,10 @@ func (b Builder) CoroFuncEpilogue(state *CoroState, generateDefers func(b Builde
 
 	// Check for unrecovered panic after defers
 	b.CoroCheckPanic()
+
+	// Wake waiters at final suspend only (push model).
+	waitersPtr := b.FieldAddr(state.Promise, state.PromiseWaiterField)
+	b.Call(b.Pkg.rtFunc("CoroWakeWaiters"), waitersPtr)
 
 	// Final suspend with final=true
 	trueVal := prog.BoolVal(true)
@@ -821,10 +871,11 @@ func (b Builder) CoroSuspendSwitch(result Expr, resumeBlk, cleanupBlk BasicBlock
 // - 1: cleanup requested, jump to EXIT block (to run defers)
 // - -1: suspended, jump to SHARED SuspendBlk
 //
-// Before suspending, reschedules the coroutine so it can be resumed by the scheduler.
-// This implements yield semantics - the coroutine gives up control temporarily.
 // CRITICAL: Uses shared SuspendBlk for default case (C++ coroutine pattern).
-func (b Builder) CoroSuspendWithCleanup(state *CoroState) {
+func (b Builder) CoroSuspendWithCleanup(state *CoroState, reschedule bool) {
+	if reschedule {
+		b.Call(b.Pkg.rtFunc("CoroReschedule"), state.CoroHandle)
+	}
 	falseVal := b.Prog.BoolVal(false)
 	result := b.CoroSuspend(Expr{}, falseVal)
 
@@ -840,134 +891,87 @@ func (b Builder) CoroSuspendWithCleanup(state *CoroState) {
 	b.SetBlock(resumeBlk)
 }
 
-// CoroAwait implements inline await for a coroutine.
-// It resumes the coroutine until completion, blocking the caller.
-// This is used when a coroutine function synchronously calls another
-// function that has suspend points.
-//
-// The pattern is:
-//
-//	loop:
-//	  resume_fn = load handle[0]
-//	  if resume_fn == null: goto done  // coroutine finished
-//	  call llvm.coro.resume(handle)
-//	  goto loop
-//	done:
-//	  ; continue execution
-//
-// Note: This is for void functions. Functions with return values
-// require additional frame access to retrieve the return value.
-func (b Builder) CoroAwait(handle Expr) {
-	prog := b.Prog
-	fn := b.Func
-
-	// Create basic blocks
-	loopBlk := fn.MakeBlock()
-	resumeBlk := fn.MakeBlock()
-	doneBlk := fn.MakeBlock()
-
-	// Jump to loop
-	b.Jump(loopBlk)
-
-	// Loop block: check if coroutine is done
-	b.SetBlock(loopBlk)
-	// Load resume_fn from handle (first field of coroutine frame)
-	resumeFnPtr := handle // handle is already ptr to frame
-	resumeFn := b.Load(Expr{resumeFnPtr.impl, prog.Pointer(prog.VoidPtr())})
-	null := prog.Nil(prog.VoidPtr())
-	isDone := b.BinOp(token.EQL, resumeFn, null)
-	b.If(isDone, doneBlk, resumeBlk)
-
-	// Resume block: resume the coroutine and loop back
-	b.SetBlock(resumeBlk)
-	setCurrent := b.Pkg.rtFunc("CoroSetCurrent")
-	b.Call(setCurrent, handle)
-	b.CoroResume(handle)
-	b.Call(setCurrent, prog.Nil(prog.VoidPtr()))
-	b.Jump(loopBlk)
-
-	// Done block: coroutine finished, continue execution
-	b.SetBlock(doneBlk)
-}
-
 // CoroAwaitWithSuspend implements await with suspension support.
-// Unlike CoroAwait which busy-loops, this suspends the caller when
-// the callee suspends, allowing cooperative scheduling.
+// This uses a push model: the caller registers itself as a waiter on the
+// callee and suspends. The callee wakes its waiters when it reaches the
+// final suspend in the epilogue.
 //
 // The pattern is:
 //
 //	loop:
-//	  resume_fn = load handle[0]
-//	  if resume_fn == null: goto done  // callee finished
-//	  call llvm.coro.resume(handle)
-//	  resume_fn = load handle[0]       // check again after resume
-//	  if resume_fn == null: goto done  // callee finished
-//	  ; callee suspended, we should suspend too
-//	  call runtime.CoroReschedule(callee_handle)  // put callee back in queue
-//	  suspend                                      // suspend ourselves
+//	  if coro.done(handle): goto done
+//	  add_waiter(promise.waiters, self)
+//	  reschedule(handle)
+//	  suspend
 //	  goto loop
 //	done:
 //	  ; continue execution
 //
 // This requires the caller to be in a coroutine context with valid CoroState.
-func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
+func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Type) {
 	fn := b.Func
-	prog := b.Prog
+	entryBlk := b.CurrentBlock()
 
 	// Create basic blocks
 	doneBlk := fn.MakeBlock()
-	loopBlk := fn.MakeBlock()
-	resumeBlk := fn.MakeBlock()
-	checkBlk := fn.MakeBlock()
 	suspendBlk := fn.MakeBlock()
+	chooseBlk := fn.MakeBlock()
+	firstWaitBlk := fn.MakeBlock()
+	waitBlk := fn.MakeBlock()
 
-	// If we're in the outermost coroutine, block like sync by running the scheduler.
-	isTop := b.Call(b.Pkg.rtFunc("CoroIsTopLevel"))
-	schedBlk := fn.MakeBlock()
-	contBlk := fn.MakeBlock()
-	b.If(isTop, schedBlk, contBlk)
+	// Jump to suspend check
+	b.Jump(suspendBlk)
 
-	b.SetBlock(schedBlk)
-	b.CoroScheduleUntil(handle)
-	b.coroPropagatePanic(handle, state)
-	b.Jump(doneBlk)
-
-	b.SetBlock(contBlk)
-
-	// Jump to loop
-	b.Jump(loopBlk)
-
-	// Loop block: check if coroutine is done using llvm.coro.done
-	b.SetBlock(loopBlk)
-	isDone := b.CoroDone(handle)
-	b.If(isDone, doneBlk, resumeBlk)
-
-	// Resume block: resume the callee coroutine
-	b.SetBlock(resumeBlk)
-	setCurrent := b.Pkg.rtFunc("CoroSetCurrent")
-	b.Call(setCurrent, handle)
-	b.CoroResume(handle)
-	if state != nil {
-		b.Call(setCurrent, state.CoroHandle)
-	} else {
-		b.Call(setCurrent, prog.Nil(prog.VoidPtr()))
-	}
-	b.Jump(checkBlk)
-
-	// Check block: see if callee finished or suspended
-	b.SetBlock(checkBlk)
-	isDone2 := b.CoroDone(handle)
-	b.If(isDone2, doneBlk, suspendBlk)
-
-	// Suspend block: callee is still suspended, we should suspend too
+	// Suspend block: check if callee is done.
 	b.SetBlock(suspendBlk)
-	b.CoroSuspendWithCleanup(state)
+	firstPhi := b.Phi(b.Prog.Bool())
+	firstPhi.AddIncoming(b, []BasicBlock{entryBlk, firstWaitBlk, waitBlk}, func(i int, blk BasicBlock) Expr {
+		if i == 0 {
+			return b.Prog.BoolVal(true)
+		}
+		return b.Prog.BoolVal(false)
+	})
+	isDone := b.CoroDone(handle)
+	b.If(isDone, doneBlk, chooseBlk)
+
+	b.SetBlock(chooseBlk)
+	b.If(firstPhi.Expr, firstWaitBlk, waitBlk)
+
+	// First wait block: register as waiter, enqueue callee once, then suspend.
+	b.SetBlock(firstWaitBlk)
+	if state != nil {
+		promisePtr := b.CoroPromise(handle, coroPromiseAlign, false)
+		promiseType, _, waitersField := b.coroPromiseLayout(retType)
+		typedPromise := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
+		waitersPtr := b.FieldAddr(typedPromise, waitersField)
+		b.Call(b.Pkg.rtFunc("CoroAddWaiter"), waitersPtr, state.CoroHandle)
+	}
+	b.Call(b.Pkg.rtFunc("CoroReschedule"), handle)
+	b.CoroSuspendWithCleanup(state, false)
 	// After being resumed, check the callee again
-	b.Jump(loopBlk)
+	b.Jump(suspendBlk)
+
+	// Wait block: register as waiter and suspend (callee will re-enqueue itself).
+	b.SetBlock(waitBlk)
+	if state != nil {
+		promisePtr := b.CoroPromise(handle, coroPromiseAlign, false)
+		promiseType, _, waitersField := b.coroPromiseLayout(retType)
+		typedPromise := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
+		waitersPtr := b.FieldAddr(typedPromise, waitersField)
+		b.Call(b.Pkg.rtFunc("CoroAddWaiter"), waitersPtr, state.CoroHandle)
+	}
+	b.CoroSuspendWithCleanup(state, false)
+	// After being resumed, check the callee again
+	b.Jump(suspendBlk)
 
 	// Done block: callee finished, continue execution
 	b.SetBlock(doneBlk)
 	b.coroPropagatePanic(handle, state)
+}
+
+// CoroReschedule enqueues a coroutine handle back into the scheduler queue.
+func (b Builder) CoroReschedule(handle Expr) {
+	b.Call(b.Pkg.rtFunc("CoroReschedule"), handle)
 }
 
 // -----------------------------------------------------------------------------
@@ -1100,7 +1104,7 @@ func (b Builder) CoroScheduleUntil(handle Expr) {
 // If isInCoro() is true, use await with suspend; otherwise use scheduleUntil.
 // This is used when the compiler cannot determine at compile-time whether
 // we're in a coroutine context (e.g., closure passed through interface).
-func (b Builder) CoroBlockOnDynamic(handle Expr, state *CoroState) {
+func (b Builder) CoroBlockOnDynamic(handle Expr, state *CoroState, retType Type) {
 	fn := b.Func
 	pkg := b.Pkg
 
@@ -1118,7 +1122,7 @@ func (b Builder) CoroBlockOnDynamic(handle Expr, state *CoroState) {
 	// Coro path: use await with suspend if we have state, otherwise scheduleUntil
 	b.SetBlock(coroBlk)
 	if state != nil {
-		b.CoroAwaitWithSuspend(handle, state)
+		b.CoroAwaitWithSuspend(handle, state, retType)
 	} else {
 		// No state available, fall back to scheduleUntil
 		b.CoroScheduleUntil(handle)

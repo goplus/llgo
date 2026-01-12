@@ -19,6 +19,7 @@ package cl
 import (
 	"github.com/goplus/llgo/internal/coro"
 	"golang.org/x/tools/go/ssa"
+	"strings"
 )
 
 // -----------------------------------------------------------------------------
@@ -46,3 +47,19 @@ func (p *context) NeedsCoroVersion(fn *ssa.Function) bool {
 }
 
 // -----------------------------------------------------------------------------
+
+func isExcludedCoroPkg(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "syscall":
+		return true
+	default:
+		return false
+	}
+}
+
+func isExcludedCoroName(name string) bool {
+	return strings.HasPrefix(name, "syscall.")
+}

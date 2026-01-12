@@ -488,11 +488,11 @@ type aCoroDefer struct {
 // coroDeferStmt holds metadata for a single deferred call.
 type coroDeferStmt struct {
 	kind   DoAction
-	typ    Type     // struct type for args storage (nil if no args)
-	fn     Expr     // the function to call
-	args   []Expr   // original args (for type info)
-	isCoro bool     // whether fn has suspend points (for non-closure)
-	bit    Expr     // bit mask for conditional defer
+	typ    Type   // struct type for args storage (nil if no args)
+	fn     Expr   // the function to call
+	args   []Expr // original args (for type info)
+	isCoro bool   // whether fn has suspend points (for non-closure)
+	bit    Expr   // bit mask for conditional defer
 }
 
 // getCoroDefer returns the coroutine defer state, creating it if needed.
@@ -729,11 +729,14 @@ func (b Builder) callCoroDeferFn(fn Expr, args []Expr, isCoro bool, isClosure bo
 		sig := fn.raw.Type.Underlying().(*types.Struct).Field(0).Type().(*types.Signature)
 		allArgs := append([]Expr{ctx}, args...)
 		handle := b.CallIndirectCoroWithSig(fnPtr, sig, true, allArgs...)
-		b.CoroAwaitWithSuspend(handle, state)
+		retType := b.coroRetType(sig)
+		b.CoroAwaitWithSuspend(handle, state, retType)
 	} else {
 		// Regular function - should already be $coro version
 		handle := b.Call(fn, args...)
-		b.CoroAwaitWithSuspend(handle, state)
+		sig, _ := fn.raw.Type.Underlying().(*types.Signature)
+		retType := b.coroRetType(sig)
+		b.CoroAwaitWithSuspend(handle, state, retType)
 	}
 }
 
@@ -755,11 +758,14 @@ func (b Builder) callCoroDeferWithCheck(fn Expr, args []Expr, isCoro Expr, isClo
 		sig := fn.raw.Type.Underlying().(*types.Struct).Field(0).Type().(*types.Signature)
 		allArgs := append([]Expr{ctx}, args...)
 		handle := b.CallIndirectCoroWithSig(fnPtr, sig, true, allArgs...)
-		b.CoroAwaitWithSuspend(handle, state)
+		retType := b.coroRetType(sig)
+		b.CoroAwaitWithSuspend(handle, state, retType)
 	} else {
 		// For regular functions in coro path, fn should be $coro version
 		handle := b.Call(fn, args...)
-		b.CoroAwaitWithSuspend(handle, state)
+		sig, _ := fn.raw.Type.Underlying().(*types.Signature)
+		retType := b.coroRetType(sig)
+		b.CoroAwaitWithSuspend(handle, state, retType)
 	}
 	b.Jump(doneBlk)
 

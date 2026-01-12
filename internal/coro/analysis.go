@@ -132,6 +132,10 @@ func (ca *Analysis) analyzeFunction(fn *ssa.Function) bool {
 	if fn == nil || fn.Blocks == nil {
 		return false
 	}
+	if isExcludedCoroPkg(fn) {
+		// Syscall functions should never be treated as coroutines.
+		return false
+	}
 
 	// Track callees for this function
 	fnName := FullFuncName(fn)
@@ -183,6 +187,18 @@ func (ca *Analysis) analyzeFunction(fn *ssa.Function) bool {
 	}
 
 	return false
+}
+
+func isExcludedCoroPkg(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "syscall":
+		return true
+	default:
+		return false
+	}
 }
 
 // isCoroSuspendCall checks if a call is to the coroSuspend intrinsic.
