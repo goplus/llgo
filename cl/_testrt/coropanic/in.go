@@ -67,6 +67,13 @@ func testRecoverOnlyInDefer() {
 	panic("test panic 4")
 }
 
+// Test 5: unrecovered panic - should propagate to top level
+func testUnrecoveredPanic() {
+	println("about to panic without recover")
+	coroSuspend()
+	panic("unrecovered panic!")
+}
+
 func main() {
 	println("=== Test 1: recover in same goroutine ===")
 	go testRecoverInSameGoroutine()
@@ -79,6 +86,9 @@ func main() {
 
 	println("=== Test 4: recover only in defer ===")
 	go testRecoverOnlyInDefer()
+
+	println("=== Test 5: unrecovered panic ===")
+	go testUnrecoveredPanic()
 
 	println("main done")
 }

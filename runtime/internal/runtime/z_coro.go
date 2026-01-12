@@ -62,6 +62,9 @@ var (
 	// Unlike TLS-based excepKey, this is a simple global variable
 	// suitable for bare-metal environments.
 	coroPanicVal any
+
+	// coroPanicMap stores panic values per coroutine handle.
+	coroPanicMap map[CoroHandle]any
 )
 
 // coroQueuePush adds a coroutine handle to the run queue.
@@ -142,7 +145,13 @@ func CoroSchedule() {
 		}
 		// Resume the coroutine
 		// This will run until the next suspend point
+		CoroSetCurrent(handle)
 		coroResume(handle)
+		CoroSetCurrent(nil)
+		// If an unrecovered panic occurred, crash immediately
+		if CoroIsPanicByHandle(handle) {
+			Panic(CoroGetPanicByHandle(handle))
+		}
 	}
 	// After all coroutines complete, check for unhandled panic
 	if coroPanicVal != nil {
@@ -158,7 +167,12 @@ func CoroScheduleOne() bool {
 	}
 	handle := coroQueuePop(&coroRunQueue)
 	if handle != nil {
+		CoroSetCurrent(handle)
 		coroResume(handle)
+		CoroSetCurrent(nil)
+		if CoroIsPanicByHandle(handle) {
+			Panic(CoroGetPanicByHandle(handle))
+		}
 		return true
 	}
 	return false
@@ -205,15 +219,30 @@ func CoroScheduleUntil(handle CoroHandle) {
 			// Queue empty but target not done - shouldn't happen
 			// Target might have suspended without being re-queued
 			// Resume target directly
+			CoroSetCurrent(handle)
 			coroResume(handle)
+			CoroSetCurrent(nil)
+			if CoroIsPanicByHandle(handle) {
+				Panic(CoroGetPanicByHandle(handle))
+			}
 			continue
 		}
 
 		// Resume this coroutine
+		CoroSetCurrent(h)
 		coroResume(h)
+		CoroSetCurrent(nil)
+		if CoroIsPanicByHandle(h) {
+			Panic(CoroGetPanicByHandle(h))
+		}
 
 		// If resumed coroutine is not done and not the target, re-queue it
 		// (The coroutine itself should call CoroReschedule when suspending)
+	}
+
+	// After the target completes, check for unhandled panic
+	if coroPanicVal != nil {
+		Panic(coroPanicVal)
 	}
 }
 
@@ -236,6 +265,17 @@ func CoroIsInCoro() bool {
 	return coroDepth > 0
 }
 
+// CoroIsTopLevel returns true if we're in the outermost coroutine.
+func CoroIsTopLevel() bool {
+	return coroDepth == 1
+}
+
+// CoroSetCurrent sets the current coroutine handle for panic/recover tracking.
+// Passing nil clears the current coroutine.
+func CoroSetCurrent(handle CoroHandle) {
+	currentCoro = handle
+}
+
 // -----------------------------------------------------------------------------
 // Coro Panic/Recover support
 //
@@ -246,31 +286,90 @@ func CoroIsInCoro() bool {
 // CoroSetPanic sets the panic value.
 // This is called by panic in coro mode.
 func CoroSetPanic(v any) {
+	if currentCoro != nil {
+		if coroPanicMap == nil {
+			coroPanicMap = make(map[CoroHandle]any)
+		}
+		coroPanicMap[currentCoro] = v
+		return
+	}
 	coroPanicVal = v
 }
 
 // CoroIsPanic returns true if there is a panic in progress.
 func CoroIsPanic() bool {
+	if currentCoro != nil {
+		if coroPanicMap == nil {
+			return false
+		}
+		_, ok := coroPanicMap[currentCoro]
+		return ok
+	}
 	return coroPanicVal != nil
 }
 
 // CoroGetPanic returns the current panic value (may be nil).
 func CoroGetPanic() any {
+	if currentCoro != nil {
+		if coroPanicMap == nil {
+			return nil
+		}
+		return coroPanicMap[currentCoro]
+	}
 	return coroPanicVal
 }
 
 // CoroClearPanic clears the panic state.
 // This is called by recover in coro mode.
 func CoroClearPanic() {
+	if currentCoro != nil {
+		if coroPanicMap != nil {
+			delete(coroPanicMap, currentCoro)
+		}
+		return
+	}
 	coroPanicVal = nil
 }
 
 // CoroRecover recovers from a panic and returns the panic value.
 // Returns nil if there is no panic.
 func CoroRecover() any {
+	if currentCoro != nil {
+		if coroPanicMap == nil {
+			return nil
+		}
+		v := coroPanicMap[currentCoro]
+		delete(coroPanicMap, currentCoro)
+		return v
+	}
 	v := coroPanicVal
 	coroPanicVal = nil
 	return v
+}
+
+// CoroIsPanicByHandle returns true if the specified coroutine has a panic.
+func CoroIsPanicByHandle(handle CoroHandle) bool {
+	if handle == nil || coroPanicMap == nil {
+		return false
+	}
+	_, ok := coroPanicMap[handle]
+	return ok
+}
+
+// CoroGetPanicByHandle returns the panic value for the specified coroutine.
+func CoroGetPanicByHandle(handle CoroHandle) any {
+	if handle == nil || coroPanicMap == nil {
+		return nil
+	}
+	return coroPanicMap[handle]
+}
+
+// CoroClearPanicByHandle clears the panic state for the specified coroutine.
+func CoroClearPanicByHandle(handle CoroHandle) {
+	if handle == nil || coroPanicMap == nil {
+		return
+	}
+	delete(coroPanicMap, handle)
 }
 
 // -----------------------------------------------------------------------------

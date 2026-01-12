@@ -825,10 +825,6 @@ func (b Builder) CoroSuspendSwitch(result Expr, resumeBlk, cleanupBlk BasicBlock
 // This implements yield semantics - the coroutine gives up control temporarily.
 // CRITICAL: Uses shared SuspendBlk for default case (C++ coroutine pattern).
 func (b Builder) CoroSuspendWithCleanup(state *CoroState) {
-	// Reschedule ourselves before suspending (yield semantics)
-	rescheduleFn := b.Pkg.rtFunc("CoroReschedule")
-	b.Call(rescheduleFn, state.CoroHandle)
-
 	falseVal := b.Prog.BoolVal(false)
 	result := b.CoroSuspend(Expr{}, falseVal)
 
@@ -884,7 +880,10 @@ func (b Builder) CoroAwait(handle Expr) {
 
 	// Resume block: resume the coroutine and loop back
 	b.SetBlock(resumeBlk)
+	setCurrent := b.Pkg.rtFunc("CoroSetCurrent")
+	b.Call(setCurrent, handle)
 	b.CoroResume(handle)
+	b.Call(setCurrent, prog.Nil(prog.VoidPtr()))
 	b.Jump(loopBlk)
 
 	// Done block: coroutine finished, continue execution
@@ -913,13 +912,27 @@ func (b Builder) CoroAwait(handle Expr) {
 // This requires the caller to be in a coroutine context with valid CoroState.
 func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 	fn := b.Func
+	prog := b.Prog
 
 	// Create basic blocks
+	doneBlk := fn.MakeBlock()
 	loopBlk := fn.MakeBlock()
 	resumeBlk := fn.MakeBlock()
 	checkBlk := fn.MakeBlock()
 	suspendBlk := fn.MakeBlock()
-	doneBlk := fn.MakeBlock()
+
+	// If we're in the outermost coroutine, block like sync by running the scheduler.
+	isTop := b.Call(b.Pkg.rtFunc("CoroIsTopLevel"))
+	schedBlk := fn.MakeBlock()
+	contBlk := fn.MakeBlock()
+	b.If(isTop, schedBlk, contBlk)
+
+	b.SetBlock(schedBlk)
+	b.CoroScheduleUntil(handle)
+	b.coroPropagatePanic(handle, state)
+	b.Jump(doneBlk)
+
+	b.SetBlock(contBlk)
 
 	// Jump to loop
 	b.Jump(loopBlk)
@@ -931,7 +944,14 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 
 	// Resume block: resume the callee coroutine
 	b.SetBlock(resumeBlk)
+	setCurrent := b.Pkg.rtFunc("CoroSetCurrent")
+	b.Call(setCurrent, handle)
 	b.CoroResume(handle)
+	if state != nil {
+		b.Call(setCurrent, state.CoroHandle)
+	} else {
+		b.Call(setCurrent, prog.Nil(prog.VoidPtr()))
+	}
 	b.Jump(checkBlk)
 
 	// Check block: see if callee finished or suspended
@@ -941,20 +961,38 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState) {
 
 	// Suspend block: callee is still suspended, we should suspend too
 	b.SetBlock(suspendBlk)
-	// Put the callee handle back in the queue
-	// Note: This would need runtime support (CoroReschedule)
-	// For now, we just suspend ourselves
 	b.CoroSuspendWithCleanup(state)
 	// After being resumed, check the callee again
 	b.Jump(loopBlk)
 
 	// Done block: callee finished, continue execution
 	b.SetBlock(doneBlk)
+	b.coroPropagatePanic(handle, state)
 }
 
 // -----------------------------------------------------------------------------
 // Block-on helpers for closures
 // -----------------------------------------------------------------------------
+
+func (b Builder) coroPropagatePanic(handle Expr, state *CoroState) {
+	if state == nil {
+		return
+	}
+
+	fn := b.Func
+	isPanic := b.Call(b.Pkg.rtFunc("CoroIsPanicByHandle"), handle)
+	panicBlk := fn.MakeBlock()
+	doneBlk := fn.MakeBlock()
+
+	b.If(isPanic, panicBlk, doneBlk)
+
+	b.SetBlock(panicBlk)
+	panicVal := b.Call(b.Pkg.rtFunc("CoroGetPanicByHandle"), handle)
+	b.Call(b.Pkg.rtFunc("CoroClearPanicByHandle"), handle)
+	b.CoroPanic(panicVal, state.ExitBlk)
+
+	b.SetBlock(doneBlk)
+}
 
 // CallIndirectCoro calls a closure's $coro version through function pointer.
 // The closure is expected to be a {$f: fn_ptr, $data: ctx_ptr} structure where

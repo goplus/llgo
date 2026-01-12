@@ -543,6 +543,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
 			arg := args[0]
 			ret = p.compileValue(b, arg)
+		} else if fn == "recover" && p.inCoroFunc && p.coroState != nil && llssa.IsLLVMCoroMode() {
+			// In coro mode, recover should read from coro panic state.
+			ret = b.CoroRecover()
 		} else {
 			args := p.compileValues(b, args, kind)
 			ret = b.Do(act, llssa.Builtin(fn), args...)

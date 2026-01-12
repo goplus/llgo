@@ -38,12 +38,6 @@ type Defer struct {
 
 // Recover recovers a panic.
 func Recover() (ret any) {
-	// In coro mode, check coroPanicVal first
-	if CoroIsInCoro() && coroPanicVal != nil {
-		ret = coroPanicVal
-		coroPanicVal = nil
-		return
-	}
 	// Sync mode: use TLS-based exception
 	ptr := excepKey.Get()
 	if ptr != nil {
@@ -56,11 +50,6 @@ func Recover() (ret any) {
 
 // Panic panics with a value.
 func Panic(v any) {
-	// In coro mode, set coroPanicVal and return to let caller handle it
-	if CoroIsInCoro() {
-		coroPanicVal = v
-		return
-	}
 	// Sync mode: use TLS-based exception with setjmp/longjmp
 	ptr := c.Malloc(unsafe.Sizeof(v))
 	*(*any)(ptr) = v

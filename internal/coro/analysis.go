@@ -153,6 +153,11 @@ func (ca *Analysis) analyzeFunction(fn *ssa.Function) bool {
 				continue
 			}
 
+			// recover should use coro panic state in coro mode
+			if builtin, ok := call.Call.Value.(*ssa.Builtin); ok && builtin.Name() == "recover" {
+				return true
+			}
+
 			// Check if this is a direct coroSuspend call
 			if ca.isCoroSuspendCall(&call.Call) {
 				return true
