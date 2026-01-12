@@ -19,6 +19,8 @@ package cltest
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -26,6 +28,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -34,6 +37,7 @@ import (
 
 	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/qiniu/x/test"
@@ -69,6 +73,29 @@ func FromDir(t *testing.T, sel, relDir string) {
 		}
 		t.Run(name, func(t *testing.T) {
 			testFrom(t, dir+"/"+name, sel)
+		})
+	}
+}
+
+func RunFromDir(t *testing.T, sel, relDir string) {
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	dir = path.Join(dir, relDir)
+	fis, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal("ReadDir failed:", err)
+	}
+	for _, fi := range fis {
+		name := fi.Name()
+		if !fi.IsDir() || strings.HasPrefix(name, "_") {
+			continue
+		}
+		pkgDir := dir + "/" + name
+		relPkg := filepath.ToSlash(filepath.Join(relDir, name))
+		t.Run(name, func(t *testing.T) {
+			testRunFrom(t, pkgDir, relPkg, sel)
 		})
 	}
 }
@@ -118,10 +145,81 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	out := pkgDir + "/out.ll"
 	b, _ := os.ReadFile(out)
 	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
-		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
+		if test.Diff(t, pkgDir+"/out.ll.new", []byte(v), b) {
 			t.Fatal("llgen.GenFrom: unexpect result")
 		}
 	}
+}
+
+func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
+	if sel != "" && !strings.Contains(pkgDir, sel) {
+		return
+	}
+	expectedPath := filepath.Join(pkgDir, "expect.txt")
+	expected, err := os.ReadFile(expectedPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		t.Fatal("ReadFile failed:", err)
+	}
+
+	output, err := RunAndCapture(relPkg, pkgDir)
+	if err != nil {
+		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
+		return
+	}
+	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
+		t.Fatal("unexpected output")
+	}
+}
+
+func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
+	var output bytes.Buffer
+	tmpDir, err := os.MkdirTemp("", "llgo-run-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(cacheDir)
+	oldCache := os.Getenv("GOCACHE")
+	if err := os.Setenv("GOCACHE", cacheDir); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if oldCache == "" {
+			_ = os.Unsetenv("GOCACHE")
+		} else {
+			_ = os.Setenv("GOCACHE", oldCache)
+		}
+	}()
+
+	conf := build.NewDefaultConf(build.ModeBuild)
+	conf.AppExt = ""
+	if runtime.GOOS == "windows" {
+		conf.AppExt = ".exe"
+	}
+	outPath := filepath.Join(tmpDir, "llgo-run"+conf.AppExt)
+	conf.OutFile = outPath
+	if _, err := build.Do([]string{relPkg}, conf); err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command(outPath)
+	cmd.Dir = pkgDir
+	cmd.Stdout = &output
+	cmd.Stderr = &output
+	if err := cmd.Run(); err != nil {
+		return output.Bytes(), fmt.Errorf("run failed: %w", err)
+	}
+	return output.Bytes(), nil
 }
 
 func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {

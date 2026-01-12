@@ -1,0 +1,6 @@
+before return
+deferred closure
+closure value 42
+struct closure test
+field access test
+callback from field

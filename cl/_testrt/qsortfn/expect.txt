@@ -1,0 +1,60 @@
+Comp => Comp
+2
+7
+8
+23
+100
+fn => Comp
+2
+7
+8
+23
+100
+Comp => fn
+2
+7
+8
+23
+100
+fn => fn
+2
+7
+8
+23
+100
+qsort.Comp => qsort.Comp
+2
+7
+8
+23
+100
+fn => qsort.Comp
+2
+7
+8
+23
+100
+qsort.Comp => fn
+2
+7
+8
+23
+100
+Comp => qsort.fn
+2
+7
+8
+23
+100
+qsort.Comp => Comp()
+2
+7
+8
+23
+100
+Comp => qsort.Comp()
+2
+7
+8
+23
+100

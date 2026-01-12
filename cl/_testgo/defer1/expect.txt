@@ -1,0 +1,3 @@
+bye
+hello
+hi

@@ -19,8 +19,10 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/mod"
 )
@@ -35,6 +37,8 @@ func main() {
 	llgenDir(dir + "/cl/_testgo")
 	llgenDir(dir + "/cl/_testpy")
 	llgenDir(dir + "/cl/_testdata")
+
+	genExpects(dir)
 }
 
 func llgenDir(dir string) {
@@ -49,6 +53,37 @@ func llgenDir(dir string) {
 		fmt.Fprintln(os.Stderr, "llgen", testDir)
 		check(os.Chdir(testDir))
 		llgen.SmartDoFile(testDir)
+	}
+}
+
+func genExpects(root string) {
+	runExpectDir(root, "cl/_testlibc")
+	runExpectDir(root, "cl/_testlibgo")
+	runExpectDir(root, "cl/_testrt")
+	runExpectDir(root, "cl/_testgo")
+	runExpectDir(root, "cl/_testpy")
+	runExpectDir(root, "cl/_testdata")
+}
+
+func runExpectDir(root, relDir string) {
+	dir := filepath.Join(root, relDir)
+	fis, err := os.ReadDir(dir)
+	check(err)
+	for _, fi := range fis {
+		name := fi.Name()
+		if !fi.IsDir() || strings.HasPrefix(name, "_") {
+			continue
+		}
+		relPath := filepath.ToSlash(filepath.Join(relDir, name))
+		testDir := filepath.Join(dir, name)
+		fmt.Fprintln(os.Stderr, "expect", relPath)
+		pkgPath := "./" + relPath
+		output, err := cltest.RunAndCapture(pkgPath, testDir)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error:", relPath, err)
+			output = []byte{';'}
+		}
+		check(os.WriteFile(filepath.Join(testDir, "expect.txt"), output, 0644))
 	}
 }
 

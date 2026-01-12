@@ -1,0 +1,8 @@
+1
+hello
+100
+hello
+0
+[1/1]0x104dadfb0 100
+[1/1]0x104daef40 hello
+[8/8]0x104db1fa0 1

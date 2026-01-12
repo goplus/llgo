@@ -36,16 +36,32 @@ func TestFromTestgo(t *testing.T) {
 	cltest.FromDir(t, "", "./_testgo")
 }
 
+func TestRunFromTestgo(t *testing.T) {
+	cltest.RunFromDir(t, "", "./_testgo")
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy")
+}
+
+func TestRunFromTestpy(t *testing.T) {
+	cltest.RunFromDir(t, "", "./_testpy")
 }
 
 func TestFromTestlibgo(t *testing.T) {
 	cltest.FromDir(t, "", "./_testlibgo")
 }
 
+func TestRunFromTestlibgo(t *testing.T) {
+	cltest.RunFromDir(t, "", "./_testlibgo")
+}
+
 func TestFromTestlibc(t *testing.T) {
 	cltest.FromDir(t, "", "./_testlibc")
+}
+
+func TestRunFromTestlibc(t *testing.T) {
+	cltest.RunFromDir(t, "", "./_testlibc")
 }
 
 func TestFromTestrt(t *testing.T) {
@@ -54,8 +70,16 @@ func TestFromTestrt(t *testing.T) {
 	cl.SetDebug(0)
 }
 
+func TestRunFromTestrt(t *testing.T) {
+	cltest.RunFromDir(t, "", "./_testrt")
+}
+
 func TestFromTestdata(t *testing.T) {
 	cltest.FromDir(t, "", "./_testdata")
+}
+
+func TestRunFromTestdata(t *testing.T) {
+	cltest.RunFromDir(t, "", "./_testdata")
 }
 
 func TestGoPkgMath(t *testing.T) {

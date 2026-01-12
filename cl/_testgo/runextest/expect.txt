@@ -1,0 +1,3 @@
+foo.Foo() 1
+bar.Bar() 2
+Zoo() 3
