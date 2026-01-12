@@ -78,11 +78,11 @@ func FromDir(t *testing.T, sel, relDir string) {
 }
 
 func RunFromDir(t *testing.T, sel, relDir string) {
-	dir, err := os.Getwd()
+	rootDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
 	}
-	dir = filepath.Join(dir, relDir)
+	dir := filepath.Join(rootDir, relDir)
 	fis, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal("ReadDir failed:", err)
@@ -93,7 +93,11 @@ func RunFromDir(t *testing.T, sel, relDir string) {
 			continue
 		}
 		pkgDir := filepath.Join(dir, name)
-		relPkg := filepath.ToSlash(filepath.Join(relDir, name))
+		relPkg, err := filepath.Rel(rootDir, pkgDir)
+		if err != nil {
+			t.Fatal("Rel failed:", err)
+		}
+		relPkg = "./" + filepath.ToSlash(relPkg)
 		t.Run(name, func(t *testing.T) {
 			testRunFrom(t, pkgDir, relPkg, sel)
 		})
