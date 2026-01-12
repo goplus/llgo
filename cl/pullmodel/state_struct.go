@@ -41,7 +41,7 @@ func (g *LLSSACodeGen) getSubFutureFieldIndex(stateIdx int) int {
 	// Each sub-future occupies 1 field (no init flag)
 	idx := baseIdx + subFutIdx
 	if debugLog {
-		debugf("[FieldIndex] subFuture state=%d -> idx=%d (params=%d cross=%d)", stateIdx, idx, paramLen, len(g.sm.CrossVars))
+		debugf("[FieldIndex:%s] subFuture state=%d -> idx=%d (params=%d cross=%d)", g.sm.Original.Name(), stateIdx, idx, paramLen, len(g.sm.CrossVars))
 	}
 	return idx
 }
@@ -57,7 +57,7 @@ func (g *LLSSACodeGen) getCrossVarFieldIndex(v ssa.Value) int {
 		if crossVar == v {
 			idx := baseIdx + i
 			if debugLog {
-				debugf("[FieldIndex] crossVar #%d (%T) -> idx=%d (params=%d)", i, v, idx, paramLen)
+				debugf("[FieldIndex:%s] crossVar #%d (%T) -> idx=%d (params=%d)", g.sm.Original.Name(), i, v, idx, paramLen)
 			}
 			return idx
 		}
@@ -82,7 +82,7 @@ func (g *LLSSACodeGen) getDeferFieldBaseIndex() int {
 	}
 	idx := 1 + paramLen + len(g.sm.CrossVars) + subFutCount
 	if debugLog {
-		debugf("[FieldIndex] defer base idx=%d (params=%d cross=%d sub=%d)", idx, paramLen, len(g.sm.CrossVars), subFutCount)
+		debugf("[FieldIndex:%s] defer base idx=%d (params=%d cross=%d sub=%d)", g.sm.Original.Name(), idx, paramLen, len(g.sm.CrossVars), subFutCount)
 	}
 	return idx
 }

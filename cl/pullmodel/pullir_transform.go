@@ -347,6 +347,12 @@ func (ctx *stateTransformContext) transformInstr(instr ssa.Instruction) error {
 		ctx.registerTempAndStore(v)
 		return nil
 
+	case *ssa.Send:
+		ch := ctx.getVarRef(v.Chan)
+		val := ctx.getVarRef(v.X)
+		ctx.emit(&PullSend{Chan: ch, Value: val})
+		return nil
+
 	case *ssa.If:
 		// Handled in terminator
 		return nil
@@ -380,7 +386,7 @@ func (ctx *stateTransformContext) transformBinOp(v *ssa.BinOp) error {
 
 func (ctx *stateTransformContext) transformUnOp(v *ssa.UnOp) error {
 	x := ctx.getVarRef(v.X)
-	ctx.emit(&PullUnOp{Op: v.Op, X: x})
+	ctx.emit(&PullUnOp{Op: v.Op, X: x, CommaOk: v.CommaOk, ResultType: v.Type()})
 	ctx.registerTempAndStore(v)
 	return nil
 }

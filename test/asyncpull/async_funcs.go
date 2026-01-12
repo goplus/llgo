@@ -7,9 +7,7 @@
  */
 package asyncpull
 
-import (
-	"github.com/goplus/llgo/async"
-)
+import "github.com/goplus/llgo/async"
 
 // -----------------------------------------------------------------------------
 // Helper functions for creating async operations
@@ -622,6 +620,21 @@ func GoroutineChannelAsync(n int) async.Future[int] {
 		sum += Compute(v).Await()
 	}
 	return async.Return(sum)
+}
+
+// ChanSendAwait sends awaited compute results into a channel and then drains it.
+func ChanSendAwait(n int) async.Future[[]int] {
+	ch := make(chan int, n)
+	for i := 0; i < n; i++ {
+		ch <- Compute(i).Await()
+	}
+	close(ch)
+
+	vals := make([]int, 0, n)
+	for v := range ch {
+		vals = append(vals, v)
+	}
+	return async.Return(vals)
 }
 
 // ChanDeferRange ranges over chan with await in body, ensuring defer runs.

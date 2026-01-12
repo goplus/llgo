@@ -1115,7 +1115,11 @@ func (g *LLSSACodeGen) generateStateBlock(
 
 		// Persist other cross-vars that might be needed by the next state (e.g., freevars).
 		// Suspend states bypass compileStateInstructions, so we must manually snapshot
-		// remaining cross-vars here to avoid nil placeholders (see visitor closure crash).
+		// remaining cross-vars defined in this suspend block to avoid nil placeholders
+		// (see visitor closure crash). We must avoid re-evaluating values from other
+		// blocks (e.g., makechan in the entry block), because that would duplicate
+		// side effects such as channel creation and silently drop previously produced
+		// values.
 		for _, cv := range g.sm.CrossVars {
 			if cv == sp.Result {
 				continue // already stored above
@@ -1123,6 +1127,11 @@ func (g *LLSSACodeGen) generateStateBlock(
 			// Skip stack alloc cross-vars; they are handled separately.
 			if alloc, ok := g.isStackAllocCrossVar(cv); ok {
 				_ = alloc
+				continue
+			}
+			// Only persist values defined in the current suspend block. Cross-vars
+			// from other blocks were already stored when entering those blocks.
+			if defBlk := g.valueBlock(cv); defBlk != nil && defBlk != sp.Block {
 				continue
 			}
 			idx := g.getCrossVarFieldIndex(cv)

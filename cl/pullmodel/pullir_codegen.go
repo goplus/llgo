@@ -8,6 +8,7 @@ package pullmodel
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"strings"
 
@@ -412,6 +413,37 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		g.temps = append(g.temps, b.BinOp(v.Op, x, y))
 
 	case *PullUnOp:
+		// Special handling for channel receive to make it non-blocking in pull model.
+		if v.Op == token.ARROW {
+			ch := g.getExpr(b, v.X)
+			// Build a non-blocking select with single recv case.
+			state := llssa.SelectState{Chan: ch, Send: false}
+			sel := b.Select([]*llssa.SelectState{&state}, false)
+			ready := b.Field(sel, 1) // recvOK == tryOK for TrySelect
+
+			readyBlock := g.poll.MakeBlock()
+			pendingBlock := g.poll.MakeBlock()
+			b.If(ready, readyBlock, pendingBlock)
+
+			// Pending -> return Pending[T]
+			b.SetBlock(pendingBlock)
+			g.flushStackAllocState(b)
+			b.Return(g.createZeroPoll())
+
+			// Ready -> extract value (and ok if comma-ok)
+			b.SetBlock(readyBlock)
+			val := b.Field(sel, 2) // first recv value
+			var result llssa.Expr
+			if v.CommaOk {
+				ok := b.Field(sel, 1) // recvOK
+				t := g.prog.Type(v.ResultType, llssa.InGo)
+				result = b.AggregateExpr(t, val, ok)
+			} else {
+				result = val
+			}
+			g.temps = append(g.temps, result)
+			break
+		}
 		x := g.getExpr(b, v.X)
 		g.temps = append(g.temps, b.UnOp(v.Op, x))
 
@@ -471,6 +503,24 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		addr := g.getExpr(b, v.Addr)
 		val := g.getExpr(b, v.Value)
 		b.Store(addr, val)
+
+	case *PullSend:
+		// Non-blocking send using TrySelect with single send case.
+		ch := g.getExpr(b, v.Chan)
+		val := g.getExpr(b, v.Value)
+		state := llssa.SelectState{Chan: ch, Value: val, Send: true}
+		sel := b.Select([]*llssa.SelectState{&state}, false)
+		ready := b.Field(sel, 1) // tryOK
+		readyBlock := g.poll.MakeBlock()
+		pendingBlock := g.poll.MakeBlock()
+		b.If(ready, readyBlock, pendingBlock)
+
+		b.SetBlock(pendingBlock)
+		g.flushStackAllocState(b)
+		b.Return(g.createZeroPoll())
+
+		b.SetBlock(readyBlock)
+		// send has no result, just proceed
 
 	case *PullCall:
 		var args []llssa.Expr

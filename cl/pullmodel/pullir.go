@@ -109,8 +109,10 @@ type PullBinOp struct {
 	X, Y VarRef
 }
 type PullUnOp struct {
-	Op token.Token
-	X  VarRef
+	Op         token.Token
+	X          VarRef
+	CommaOk    bool
+	ResultType types.Type
 }
 type PullCall struct {
 	Func     ssa.Value
@@ -136,6 +138,10 @@ type PullNext struct {
 	Iter     VarRef
 	ElemType types.Type
 	IsString bool
+}
+type PullSend struct {
+	Chan  VarRef
+	Value VarRef
 }
 type PullFieldAddr struct {
 	Base  VarRef
@@ -165,6 +171,7 @@ func (*PullSlice) pullInstr()         {}
 func (*PullLookup) pullInstr()        {}
 func (*PullRange) pullInstr()         {}
 func (*PullNext) pullInstr()          {}
+func (*PullSend) pullInstr()          {}
 func (*PullFieldAddr) pullInstr()     {}
 func (*PullLoad) pullInstr()          {}
 func (*PullStore) pullInstr()         {}

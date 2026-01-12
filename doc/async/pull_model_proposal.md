@@ -793,6 +793,17 @@ type Poll[T any] struct {
 
 ## 11. 复杂场景处理
 
+### 11.x Channel 非阻塞语义（待完成）
+
+当前实现中，channel send/recv/select 仍沿用 Go 的同步阻塞语义；在拉模型 `Poll` 中如果通道未就绪会直接阻塞执行线程，违反 executor 的协作式调度。现有测试之所以通过，是因为用例确保通道已就绪或带缓冲并立即 close。为支持真实异步执行器，需要：
+
+- **运行时原语**：提供非阻塞尝试与唤醒接口，如 `TryRecv/TrySend`（返回 ready/pending + waker 注册）。
+- **编译器转换**：
+  - 将 `send` / `<-` / `range ch` 转为可挂起节点，未就绪时返回 `Pending` 并注册 waker。
+  - `select` 分支采用非阻塞尝试，多路均未就绪时 `Pending`。
+- **执行模型**：executor 反复调用 `Poll`，channel 就绪由 waker 唤醒；避免任何阻塞持锁。
+- **测试补全**：加入无缓冲未就绪 send/recv、全 pending 的 select、producer 慢于 consumer 的 range 等回归用例，验证不会阻塞且能正确 pending/ready。
+
 ### 12.1 条件分支
 
 ```go
