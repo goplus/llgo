@@ -45,6 +45,9 @@ jobs:
         with:
           go-version: "1.24.2"
 
+      - name: Set LLGO_ROOT
+        run: echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
       - name: Build
         run: go build -v ./...
 
