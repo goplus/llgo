@@ -17,46 +17,50 @@ _llgo_0:
 ; Function Attrs: presplitcoroutine
 define ptr @"github.com/goplus/llgo/cl/_testrt/gocoro.hello$coro"() #0 {
 _llgo_0:
-  %0 = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
-  %1 = call i1 @llvm.coro.alloc(token %0)
-  br i1 %1, label %_llgo_2, label %_llgo_3
+  %0 = alloca { ptr }, align 8
+  %1 = getelementptr inbounds { ptr }, ptr %0, i32 0, i32 0
+  store ptr null, ptr %1, align 8
+  %2 = call token @llvm.coro.id(i32 0, ptr %0, ptr null, ptr null)
+  %3 = call i1 @llvm.coro.alloc(token %2)
+  br i1 %3, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 20 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  br label %_llgo_4
+  br label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %2 = call i64 @llvm.coro.size.i64()
-  %3 = call ptr @malloc(i64 %2)
+  %4 = call i64 @llvm.coro.size.i64()
+  %5 = call ptr @malloc(i64 %4)
   br label %_llgo_3
 
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
-  %4 = phi ptr [ null, %_llgo_0 ], [ %3, %_llgo_2 ]
-  %5 = call ptr @llvm.coro.begin(token %0, ptr %4)
+  %6 = phi ptr [ null, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %7 = call ptr @llvm.coro.begin(token %2, ptr %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
-_llgo_4:                                          ; preds = %_llgo_1
-  %6 = call i8 @llvm.coro.suspend(token none, i1 true)
-  switch i8 %6, label %_llgo_8 [
+_llgo_4:                                          ; preds = %_llgo_6, %_llgo_5
+  %8 = call i1 @llvm.coro.end(ptr %7, i1 false, token none)
+  ret ptr %7
+
+_llgo_5:                                          ; preds = %_llgo_1
+  %9 = getelementptr inbounds { ptr }, ptr %0, i32 0, i32 0
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroWakeWaiters"(ptr %9)
+  %10 = call i8 @llvm.coro.suspend(token none, i1 true)
+  switch i8 %10, label %_llgo_4 [
     i8 0, label %_llgo_7
-    i8 1, label %_llgo_5
+    i8 1, label %_llgo_6
   ]
 
-_llgo_5:                                          ; preds = %_llgo_7, %_llgo_4
-  %7 = call ptr @llvm.coro.free(token %0, ptr %5)
-  call void @free(ptr %7)
+_llgo_6:                                          ; preds = %_llgo_7, %_llgo_5
+  %11 = call ptr @llvm.coro.free(token %2, ptr %7)
+  call void @free(ptr %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
+  br label %_llgo_4
+
+_llgo_7:                                          ; preds = %_llgo_5
   br label %_llgo_6
-
-_llgo_6:                                          ; preds = %_llgo_5
-  %8 = call i1 @llvm.coro.end(ptr %5, i1 false, token none)
-  ret ptr %5
-
-_llgo_7:                                          ; preds = %_llgo_4
-  br label %_llgo_5
-
-_llgo_8:                                          ; preds = %_llgo_4
-  ret ptr %5
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/gocoro.init"() {
@@ -84,48 +88,52 @@ _llgo_0:
 ; Function Attrs: presplitcoroutine
 define ptr @"github.com/goplus/llgo/cl/_testrt/gocoro.main$coro"() #0 {
 _llgo_0:
-  %0 = call token @llvm.coro.id(i32 0, ptr null, ptr null, ptr null)
-  %1 = call i1 @llvm.coro.alloc(token %0)
-  br i1 %1, label %_llgo_2, label %_llgo_3
+  %0 = alloca { ptr }, align 8
+  %1 = getelementptr inbounds { ptr }, ptr %0, i32 0, i32 0
+  store ptr null, ptr %1, align 8
+  %2 = call token @llvm.coro.id(i32 0, ptr %0, ptr null, ptr null)
+  %3 = call i1 @llvm.coro.alloc(token %2)
+  br i1 %3, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %2 = call ptr @"github.com/goplus/llgo/cl/_testrt/gocoro.hello$coro"()
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr %2)
+  %4 = call ptr @"github.com/goplus/llgo/cl/_testrt/gocoro.hello$coro"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 9 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  br label %_llgo_4
+  br label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %3 = call i64 @llvm.coro.size.i64()
-  %4 = call ptr @malloc(i64 %3)
+  %5 = call i64 @llvm.coro.size.i64()
+  %6 = call ptr @malloc(i64 %5)
   br label %_llgo_3
 
 _llgo_3:                                          ; preds = %_llgo_2, %_llgo_0
-  %5 = phi ptr [ null, %_llgo_0 ], [ %4, %_llgo_2 ]
-  %6 = call ptr @llvm.coro.begin(token %0, ptr %5)
+  %7 = phi ptr [ null, %_llgo_0 ], [ %6, %_llgo_2 ]
+  %8 = call ptr @llvm.coro.begin(token %2, ptr %7)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
   br label %_llgo_1
 
-_llgo_4:                                          ; preds = %_llgo_1
-  %7 = call i8 @llvm.coro.suspend(token none, i1 true)
-  switch i8 %7, label %_llgo_8 [
+_llgo_4:                                          ; preds = %_llgo_6, %_llgo_5
+  %9 = call i1 @llvm.coro.end(ptr %8, i1 false, token none)
+  ret ptr %8
+
+_llgo_5:                                          ; preds = %_llgo_1
+  %10 = getelementptr inbounds { ptr }, ptr %0, i32 0, i32 0
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroWakeWaiters"(ptr %10)
+  %11 = call i8 @llvm.coro.suspend(token none, i1 true)
+  switch i8 %11, label %_llgo_4 [
     i8 0, label %_llgo_7
-    i8 1, label %_llgo_5
+    i8 1, label %_llgo_6
   ]
 
-_llgo_5:                                          ; preds = %_llgo_7, %_llgo_4
-  %8 = call ptr @llvm.coro.free(token %0, ptr %6)
-  call void @free(ptr %8)
+_llgo_6:                                          ; preds = %_llgo_7, %_llgo_5
+  %12 = call ptr @llvm.coro.free(token %2, ptr %8)
+  call void @free(ptr %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
+  br label %_llgo_4
+
+_llgo_7:                                          ; preds = %_llgo_5
   br label %_llgo_6
-
-_llgo_6:                                          ; preds = %_llgo_5
-  %9 = call i1 @llvm.coro.end(ptr %6, i1 false, token none)
-  ret ptr %6
-
-_llgo_7:                                          ; preds = %_llgo_4
-  br label %_llgo_5
-
-_llgo_8:                                          ; preds = %_llgo_4
-  ret ptr %6
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
@@ -146,6 +154,13 @@ declare ptr @malloc(i64)
 ; Function Attrs: nounwind
 declare ptr @llvm.coro.begin(token, ptr writeonly) #2
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
+
+; Function Attrs: nounwind
+declare i1 @llvm.coro.end(ptr, i1, token) #2
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroWakeWaiters"(ptr)
+
 ; Function Attrs: nounwind
 declare i8 @llvm.coro.suspend(token, i1) #2
 
@@ -154,8 +169,7 @@ declare ptr @llvm.coro.free(token, ptr nocapture readonly) #4
 
 declare void @free(ptr)
 
-; Function Attrs: nounwind
-declare i1 @llvm.coro.end(ptr, i1, token) #2
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSpawn"(ptr)
 
