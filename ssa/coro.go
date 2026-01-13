@@ -904,9 +904,7 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Typ
 	waitBlk := fn.MakeBlock()
 	doneBlk := fn.MakeBlock()
 
-	// Kick the callee once. If it suspends, it is responsible for rescheduling itself
-	// (e.g. via coroSuspend with rescheduleSelf=true). Callers only join the waiter list.
-	b.CoroResume(handle)
+	b.CoroReschedule(handle)
 
 	// Enter loop
 	b.Jump(loopBlk)
