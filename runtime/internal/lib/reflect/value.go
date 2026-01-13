@@ -2419,12 +2419,6 @@ func resolveIndirectValue(v *Value, typ *abi.Type) {
 	}
 	k := typ.Kind()
 	switch {
-	case k >= abi.Bool && k <= abi.Uintptr:
-		if typ.Size_ == unsafe.Sizeof(0) {
-			v.ptr = *(*unsafe.Pointer)(v.ptr)
-		} else {
-			v.ptr = truncate(*(*unsafe.Pointer)(v.ptr), typ.Size_*8)
-		}
 	case k == abi.Float32:
 		fv := *(*float32)(v.ptr)
 		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat32(fv)))
@@ -2432,6 +2426,8 @@ func resolveIndirectValue(v *Value, typ *abi.Type) {
 		fv := *(*float64)(v.ptr)
 		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat64(fv)))
 	default:
+		// convert abi.Bool~abi.Uintptr and abi.Struct/abi.Array themselves.
+		// struct/array elem conversion by caller func.
 		if typ.Size_ < unsafe.Sizeof(0) {
 			v.ptr = truncate(*(*unsafe.Pointer)(v.ptr), typ.Size_*8)
 		} else {
