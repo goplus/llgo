@@ -9,6 +9,10 @@ package os
 import (
 	"syscall"
 	"time"
+	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/os"
 )
 
 // Close closes the File, rendering it unusable for I/O.
@@ -26,23 +30,24 @@ func (f *File) Close() error {
 // It returns the number of bytes read and the error, if any.
 // EOF is signaled by a zero count with err set to nil.
 func (f *File) pread(b []byte, off int64) (n int, err error) {
-	/*
-		n, err = f.pfd.Pread(b, off)
-		runtime.KeepAlive(f)
-		return n, err
-	*/
-	panic("todo: os.(*File).pread")
+	ret := os.Pread(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)), os.OffT(off))
+	if ret > 0 {
+		return int(ret), nil
+	}
+	if ret == 0 {
+		return 0, nil
+	}
+	return 0, syscall.Errno(os.Errno())
 }
 
 // pwrite writes len(b) bytes to the File starting at byte offset off.
 // It returns the number of bytes written and an error, if any.
 func (f *File) pwrite(b []byte, off int64) (n int, err error) {
-	/*
-		n, err = f.pfd.Pwrite(b, off)
-		runtime.KeepAlive(f)
-		return n, err
-	*/
-	panic("todo: os.(*File).pwrite")
+	ret := os.Pwrite(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)), os.OffT(off))
+	if ret >= 0 {
+		return int(ret), nil
+	}
+	return 0, syscall.Errno(os.Errno())
 }
 
 // syscallMode returns the syscall-specific mode bits from Go's portable mode bits.

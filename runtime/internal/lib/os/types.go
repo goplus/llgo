@@ -59,6 +59,18 @@ func (f *File) read(b []byte) (int, error) {
 	return 0, syscall.Errno(os.Errno())
 }
 
+// seek sets the offset for the next Read or Write on file to offset, interpreted
+// according to whence: 0 means relative to the origin of the file, 1 means
+// relative to the current offset, and 2 means relative to the end.
+// It returns the new offset and an error, if any.
+func (f *File) seek(offset int64, whence int) (int64, error) {
+	ret := os.Lseek(c.Int(f.fd), os.OffT(offset), c.Int(whence))
+	if ret >= 0 {
+		return int64(ret), nil
+	}
+	return 0, syscall.Errno(os.Errno())
+}
+
 /* TODO(xsw):
 // read reads up to len(b) bytes from the File.
 // It returns the number of bytes read and an error, if any.
