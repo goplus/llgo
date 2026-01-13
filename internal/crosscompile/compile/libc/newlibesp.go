@@ -1068,6 +1068,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 				Files: []string{
 					filepath.Join(baseDir, "libgloss", "xtensa", "clibrary_init.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "syscalls.c"),
+					filepath.Join(baseDir, "libgloss", "xtensa", "sim-call.S"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "boards", "esp32", "board.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "crt1-boards.S"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "sleep.S"),
@@ -1076,6 +1077,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
 					"-D_LIBGLOSS",
+					"-DQEMU_SEMIHOSTING",
 					"-isystem" + filepath.Join(libcDir, "include"),
 					"-I" + filepath.Join(baseDir, "libgloss"),
 					// TODO(MeteorsLiu): support riscv
