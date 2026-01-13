@@ -45,8 +45,11 @@ func (f *File) pread(b []byte, off int64) (n int, err error) {
 // It returns the number of bytes written and an error, if any.
 func (f *File) pwrite(b []byte, off int64) (n int, err error) {
 	ret := os.Pwrite(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)), os.OffT(off))
-	if ret >= 0 {
+	if ret > 0 {
 		return int(ret), nil
+	}
+	if ret == 0 {
+		return 0, nil
 	}
 	return 0, syscall.Errno(os.Errno())
 }
