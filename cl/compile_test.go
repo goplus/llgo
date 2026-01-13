@@ -84,9 +84,10 @@ func TestFromTestrt(t *testing.T) {
 func TestRunFromTestrt(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
-		// Linux output differs for this case; skip until stabilized.
-		// FIXME(zzy): NULL pointer formatting differs (0x0 vs (nil)) on Linux.
-		ignore = []string{"./_testrt/tpmethod"}
+		ignore = []string{
+			"./_testrt/fprintf",  // Linux uses different stderr symbol (no __stderrp).
+			"./_testrt/tpmethod", // FIXME(zzy): NULL pointer formatting differs (0x0 vs (nil)) on Linux.
+		}
 	}
 	cltest.RunFromDir(t, "", "./_testrt", ignore)
 }
