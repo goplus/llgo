@@ -15,10 +15,12 @@
 	"rtlib": "compiler-rt",
 	"libc": "newlib-esp32",
 	"linkerscript": "targets/esp32.memory.elf.ld",
-	"extra-files": [],
+	"extra-files": [
+		"targets/device/esp/esp32_semihost_init.c"
+	],
 	"binary-format": "esp32",
 	"flash-command": "esptool.py --chip=esp32 --port {port} write_flash 0x1000 {bin} -ff 80m -fm dout",
-	"emulator": "qemu-system-xtensa -machine esp32 -nographic -drive file={img},if=mtd,format=raw",
+	"emulator": "qemu-system-xtensa -semihosting -machine esp32 -nographic -drive file={img},if=mtd,format=raw",
 	"gdb": [
 		"xtensa-esp32-elf-gdb"
 	]
