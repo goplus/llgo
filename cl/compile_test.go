@@ -72,7 +72,13 @@ func TestFromTestlibc(t *testing.T) {
 }
 
 func TestRunFromTestlibc(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibc", nil)
+	var ignore []string
+	if runtime.GOOS == "linux" {
+		ignore = []string{
+			"./_testlibc/demangle", // Linux demangle symbol differs (itaniumDemangle linkage mismatch).
+		}
+	}
+	cltest.RunFromDir(t, "", "./_testlibc", ignore)
 }
 
 func TestFromTestrt(t *testing.T) {
