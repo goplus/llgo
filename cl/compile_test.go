@@ -41,6 +41,7 @@ func TestRunFromTestgo(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		// Linux output differs for these cases; skip until stabilized.
+		// FIXME(zzy): NULL pointer formatting differs (0x0 vs (nil)) on Linux.
 		ignore = []string{
 			"./_testgo/invoke",
 			"./_testgo/reader",
@@ -84,6 +85,7 @@ func TestRunFromTestrt(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		// Linux output differs for this case; skip until stabilized.
+		// FIXME(zzy): NULL pointer formatting differs (0x0 vs (nil)) on Linux.
 		ignore = []string{"./_testrt/tpmethod"}
 	}
 	cltest.RunFromDir(t, "", "./_testrt", ignore)
