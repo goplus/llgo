@@ -32,13 +32,17 @@ package async
 type Poll[T any] struct {
     ready bool
     value T
+    err   any // panic value for跨边界传播
 }
 
 func Ready[T any](v T) Poll[T] { return Poll[T]{ready: true, value: v} }
 func Pending[T any]() Poll[T]  { return Poll[T]{ready: false} }
+func PollError[T any](err any) Poll[T] { return Poll[T]{ready: true, err: err} }
 
 func (p Poll[T]) IsReady() bool { return p.ready }
 func (p Poll[T]) Value() T      { return p.value }
+func (p Poll[T]) Error() any    { return p.err }
+func (p Poll[T]) HasError() bool { return p.err != nil }
 ```
 
 ### 2.2 Future 接口
@@ -47,12 +51,19 @@ func (p Poll[T]) Value() T      { return p.value }
 // Future 表示一个异步计算
 type Future[T any] interface {
     Poll(ctx *Context) Poll[T]
+    // Await 是编译期标记，运行时不应被直接调用
+    Await() T
 }
 
 // Context 提供 Waker 用于重新轮询
 type Context struct {
     Waker Waker
+    hasWaker bool // 由 NewContext / SetWaker 维护
 }
+
+// NewContext(w) 或 ctx.SetWaker(w) 会设置 hasWaker。
+// 直接赋值 ctx.Waker 不会触发 hasWaker=true。
+func (c *Context) SetWaker(w Waker)
 
 // Waker 通知执行器重新轮询 future
 type Waker interface {
@@ -60,9 +71,7 @@ type Waker interface {
 }
 
 // Return 包装返回值为 Future（编译器指令）
-//
-//go:linkname Return llgo.futureReturn
-func Return[T any](v T) Future[T]
+func Return[T any](v T) *ReadyFuture[T]
 ```
 
 ---
@@ -137,6 +146,23 @@ func (f *SleepFuture) Poll(ctx *Context) Poll[Void] {
 ```
 
 ---
+
+## 3.4 运行时/ABI 约定（实现相关）
+
+以下约定与当前实现一致，供编译器/运行时对齐使用：
+
+- `async.Poll[T]` 字段顺序固定：`ready`、`value`、`err`。  
+  `err` 非空代表 panic 跨边界传播（`PollError`）。
+- `runtime.internal.runtime.TrySelectWaker` 语义：  
+  `TrySelectWaker(w Waker, ops ...ChanOp) (isel int, recvOK, tryOK bool)`。  
+  `tryOK=false` 表示当前没有 case 可推进，需返回 Pending，并在 channel 可用时触发 waker。
+- `runtime/internal/runtime.asyncRecoverHook` 由 async 包通过 `go:linkname` 绑定，  
+  用于 defer/recover 与 Pull 模型状态机的衔接。
+
+## 3.5 调试钩子（当前限制）
+
+`async.PullDebug*` 钩子目前仅在 **旧的 LLSSA emitter** 路径中触发；  
+Pull IR 路径尚未注入调试回调。
 
 ## 4. 编译器转换
 
@@ -213,14 +239,9 @@ func (s *MyAsync_State) Poll(ctx *Context) Poll[int] {
 使用类型约束代替接口，实现编译期检查 + 运行时直接调用：
 
 ```go
-// 类型约束（仅编译检查，不产生 itab）
-type Poller[T any] interface {
-    Poll(ctx *Context) Poll[T]
-}
-
 // 泛型函数 - 编译期为每个具体类型生成专用代码
-func BlockOn[F Poller[T], T any](fut F) T {
-    ctx := &Context{Waker: &NoopWaker{}}
+func BlockOn[F Future[T], T any](fut F) T {
+    ctx := NewContext(&NoopWaker{})
     for {
         p := fut.Poll(ctx)  // 直接调用，可内联
         if p.IsReady() {
@@ -268,9 +289,9 @@ MyAsync_State（单次分配，全部内嵌）
 
 ```go
 // Spawn 是唯一的堆分配点
-func Spawn[F Poller[Void]](fn func() F) {
+func Spawn[F Future[Void]](fn func() F) {
     state := fn()             // 栈上创建整个状态机树
-    task := new(Task[F])      // 唯一一次 malloc
+    task := new(Task)         // 唯一一次 malloc
     task.future = state       // 复制到堆
     schedule(task)
 }

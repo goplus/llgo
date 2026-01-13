@@ -7,9 +7,7 @@
  */
 package asyncpull
 
-import (
-	"github.com/goplus/llgo/async"
-)
+import "github.com/goplus/llgo/async"
 
 // -----------------------------------------------------------------------------
 // Helper functions for creating async operations
@@ -177,6 +175,47 @@ func SwapVariables(a, b int) async.Future[int] {
 	vb := Compute(b).Await()
 	va, vb = vb, va // Swap
 	return async.Return(va + vb)
+}
+
+// -----------------------------------------------------------------------------
+// Panic / Recover scenarios
+// -----------------------------------------------------------------------------
+
+// PanicPlain triggers a panic with no defers.
+func PanicPlain() async.Future[int] {
+	panic("plain panic")
+}
+
+// PanicWithRecover recovers in a defer and returns a value.
+func PanicWithRecover() (ret async.Future[int]) {
+	defer func() {
+		if r := recover(); r != nil {
+			ret = async.Return(7)
+		}
+	}()
+	panic("recover me")
+}
+
+// ChildPanic panics to test propagation across await.
+func ChildPanic() async.Future[int] {
+	panic("child panic")
+}
+
+// ParentPropagateChildPanic awaits a child panic without recovering.
+func ParentPropagateChildPanic() async.Future[int] {
+	_ = ChildPanic().Await()
+	return async.Return(0)
+}
+
+// ParentRecoverChildPanic recovers from child panic in its own defer.
+func ParentRecoverChildPanic() (ret async.Future[int]) {
+	defer func() {
+		if r := recover(); r != nil {
+			ret = async.Return(9)
+		}
+	}()
+	_ = ChildPanic().Await()
+	return async.Return(1) // unreachable if panic propagates
 }
 
 // -----------------------------------------------------------------------------
@@ -431,24 +470,60 @@ func DeferAcrossAwait(out *[]string) async.Future[int] {
 	return async.Return(val)
 }
 
+// RecoverThenRunRemaining: defer2 recovers, earlier defers still run post-recover.
+func RecoverThenRunRemaining(out *[]string) (ret async.Future[int]) {
+	defer func() { *out = append(*out, "first") }()
+	defer func() {
+		if r := recover(); r != nil {
+			*out = append(*out, "recover")
+			ret = async.Return(0)
+		}
+	}()
+	panic("boom")
+}
+
 // PanicWithDefer triggers panic and ensures defers run, propagating error.
 func PanicWithDefer(out *[]string) async.Future[int] {
 	defer func() { *out = append(*out, "cleanup") }()
 	panic("boom")
 }
 
+// DeferPanicChain: inner defer panics, outer defer recovers, should still return value.
+func DeferPanicChain(out *[]string) async.Future[int] {
+	defer func() {
+		if r := recover(); r != nil {
+			*out = append(*out, "recovered")
+		}
+	}()
+	defer func() {
+		*out = append(*out, "inner")
+		panic("inner panic")
+	}()
+	return async.Return(1)
+}
+
 // RecoverInDefer recovers from panic and returns a synthesized value.
-func RecoverInDefer() async.Future[int] {
+func RecoverInDefer() (res async.Future[int]) {
 	result := 1
 	defer func() {
 		if r := recover(); r != nil {
 			// simulate user adjusting named return after recover
 			result = 99
+			res = async.Return(result)
 		}
 	}()
 	panic("recover-me")
-	// unreachable, but keeps SSA happy
-	return async.Return(result)
+	// If panic is intercepted, res is set in defer; otherwise unreachable.
+	return res
+}
+
+// PanicDeferAfterAwait panics inside a defer after an await has suspended/resumed.
+func PanicDeferAfterAwait() async.Future[int] {
+	defer func() {
+		panic("defer boom")
+	}()
+	_ = PendingOnce(1).Await() // force suspend before defer executes
+	return async.Return(1)
 }
 
 // ConditionalLoopAsync tests conditional inside loop with different await paths.
@@ -545,6 +620,53 @@ func GoroutineChannelAsync(n int) async.Future[int] {
 		sum += Compute(v).Await()
 	}
 	return async.Return(sum)
+}
+
+// ChanSendAwait sends awaited compute results into a channel and then drains it.
+func ChanSendAwait(n int) async.Future[[]int] {
+	ch := make(chan int, n)
+	for i := 0; i < n; i++ {
+		ch <- Compute(i).Await()
+	}
+	close(ch)
+
+	vals := make([]int, 0, n)
+	for v := range ch {
+		vals = append(vals, v)
+	}
+	return async.Return(vals)
+}
+
+// ChanDeferRange ranges over chan with await in body, ensuring defer runs.
+func ChanDeferRange(n int, seen *[]int, hooks *[]string) async.Future[int] {
+	defer func() { *hooks = append(*hooks, "done") }()
+
+	ch := make(chan int, n)
+	for i := 0; i < n; i++ {
+		ch <- i
+	}
+	close(ch)
+
+	sum := 0
+	for v := range ch {
+		*seen = append(*seen, v)
+		sum += Compute(v).Await()
+	}
+	return async.Return(sum)
+}
+
+// PanicInSelectDefer panics in select default; defer must still run.
+func PanicInSelectDefer(out *[]string) async.Future[int] {
+	defer func() { *out = append(*out, "cleanup") }()
+	// ensure this function is transformed to pull-model state machine
+	_ = Compute(0).Await()
+	ch := make(chan int)
+	select {
+	case <-ch:
+		return async.Return(1)
+	default:
+		panic("select panic")
+	}
 }
 
 // TupleOkAsync returns (value, ok) as tuple to test tuple ABI + await chain.

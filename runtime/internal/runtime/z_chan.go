@@ -25,6 +25,13 @@ import (
 
 // -----------------------------------------------------------------------------
 
+// Waker is used by the async executor to schedule a task for re-polling.
+// It matches github.com/goplus/llgo/async.Waker (same single Wake method)
+// but is defined locally to avoid dependency cycles.
+type Waker interface {
+	Wake()
+}
+
 const (
 	chanNoSendRecv = 0
 	chanHasRecv    = 1
@@ -40,6 +47,9 @@ type Chan struct {
 	sops  []*selectOp
 	sends uint16
 	close bool
+
+	// wakers holds pending async tasks waiting for channel readiness.
+	wakers []Waker
 }
 
 func NewChan(eltSize, cap int) *Chan {
@@ -70,25 +80,53 @@ func ChanCap(p *Chan) int {
 	return p.cap
 }
 
-func notifyOps(p *Chan) {
+func notifyOps(p *Chan) (wakers []Waker) {
 	for _, sop := range p.sops {
 		sop.notify()
+	}
+	if n := len(p.wakers); n > 0 {
+		wakers = append(wakers, p.wakers...)
+		p.wakers = nil
+	}
+	return
+}
+
+func addWakerLocked(p *Chan, w Waker) {
+	if w != nil {
+		p.wakers = append(p.wakers, w)
+	}
+}
+
+func wakeAll(ws []Waker) {
+	for _, w := range ws {
+		if w != nil {
+			w.Wake()
+		}
 	}
 }
 
 func ChanClose(p *Chan) {
+	var wakers []Waker
 	p.mutex.Lock()
 	p.close = true
-	notifyOps(p)
+	wakers = notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
+	wakeAll(wakers)
 }
 
 func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
+	return ChanTrySendWaker(p, v, eltSize, nil)
+}
+
+func ChanTrySendWaker(p *Chan, v unsafe.Pointer, eltSize int, w Waker) bool {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
 		if p.getp != chanHasRecv || p.close {
+			if !p.close {
+				addWakerLocked(p, w)
+			}
 			p.mutex.Unlock()
 			return false
 		}
@@ -98,6 +136,9 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		p.getp = chanNoSendRecv
 	} else {
 		if p.len == n || p.close {
+			if !p.close {
+				addWakerLocked(p, w)
+			}
 			p.mutex.Unlock()
 			return false
 		}
@@ -105,18 +146,29 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		c.Memcpy(c.Advance(p.data, off*eltSize), v, uintptr(eltSize))
 		p.len++
 	}
-	notifyOps(p)
+	wakers := notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
+	wakeAll(wakers)
 	return true
 }
 
 func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
+	var wakers []Waker
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
 		for p.getp != chanHasRecv && !p.close {
+			// A sender is now waiting; wake any async receivers.
+			wakers = append(wakers[:0], notifyOps(p)...)
+			if len(p.wakers) > 0 {
+				wakers = append(wakers, p.wakers...)
+				p.wakers = nil
+			}
 			p.sends++
+			p.mutex.Unlock()
+			wakeAll(wakers)
+			p.mutex.Lock()
 			p.cond.Wait(&p.mutex)
 			p.sends--
 		}
@@ -140,18 +192,27 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		c.Memcpy(c.Advance(p.data, off*eltSize), v, uintptr(eltSize))
 		p.len++
 	}
-	notifyOps(p)
+	wakers = notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
+	wakeAll(wakers)
 	return true
 }
 
 func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK bool) {
+	return ChanTryRecvWaker(p, v, eltSize, nil)
+}
+
+func ChanTryRecvWaker(p *Chan, v unsafe.Pointer, eltSize int, w Waker) (recvOK bool, tryOK bool) {
+	var wakers []Waker
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
 		if p.sends == 0 || p.getp == chanHasRecv || p.close {
 			tryOK = p.close
+			if !p.close {
+				addWakerLocked(p, w)
+			}
 			p.mutex.Unlock()
 			return
 		}
@@ -160,6 +221,9 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 	} else {
 		if p.len == 0 {
 			tryOK = p.close
+			if !p.close {
+				addWakerLocked(p, w)
+			}
 			p.mutex.Unlock()
 			return
 		}
@@ -169,9 +233,10 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 		p.getp = (p.getp + 1) % n
 		p.len--
 	}
-	notifyOps(p)
+	wakers = notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
+	wakeAll(wakers)
 	if n == 0 {
 		p.mutex.Lock()
 		for p.getp == chanHasRecv && !p.close {
@@ -187,6 +252,7 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 }
 
 func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
+	var wakers []Waker
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
@@ -213,7 +279,7 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 		p.getp = (p.getp + 1) % n
 		p.len--
 	}
-	notifyOps(p)
+	wakers = notifyOps(p)
 	p.mutex.Unlock()
 	p.cond.Broadcast()
 	if n == 0 {
@@ -226,6 +292,7 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 	} else {
 		recvOK = true
 	}
+	wakeAll(wakers)
 	return
 }
 
@@ -284,6 +351,23 @@ func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
 			}
 		} else {
 			if recvOK, tryOK = ChanTryRecv(op.C, op.Val, int(op.Size)); tryOK {
+				return
+			}
+		}
+	}
+	return
+}
+
+// TrySelectWaker executes a non-blocking select and registers waker on pending cases.
+func TrySelectWaker(w Waker, ops ...ChanOp) (isel int, recvOK, tryOK bool) {
+	for isel = range ops {
+		op := ops[isel]
+		if op.Send {
+			if tryOK = ChanTrySendWaker(op.C, op.Val, int(op.Size), w); tryOK {
+				return
+			}
+		} else {
+			if recvOK, tryOK = ChanTryRecvWaker(op.C, op.Val, int(op.Size), w); tryOK {
 				return
 			}
 		}

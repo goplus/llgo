@@ -176,8 +176,7 @@ func IfaceType(i iface) *abi.Type {
 
 func IfacePtrData(i iface) unsafe.Pointer {
 	if i.tab == nil {
-		println("IfacePtrData: nil itab")
-		panic(errorString("invalid memory address or nil pointer dereference").Error())
+		return nil
 	}
 	switch i.tab._type.Kind() {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,

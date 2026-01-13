@@ -8,6 +8,7 @@ package pullmodel
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"strings"
 
@@ -31,17 +32,23 @@ type PullIRCodeGen struct {
 	stateNamed *types.Named
 
 	// Code generation state
-	statePtr     llssa.Expr
-	temps        []llssa.Expr // Temps for current state
-	poll         llssa.Function
-	concrete     llssa.Function // $Concrete wrapper function
-	loopBlock    llssa.BasicBlock
-	int8Type     llssa.Type
-	completedIdx int
+	statePtr      llssa.Expr
+	temps         []llssa.Expr // Temps for current state
+	poll          llssa.Function
+	concrete      llssa.Function // $Concrete wrapper function
+	loopBlock     llssa.BasicBlock
+	int8Type      llssa.Type
+	completedIdx  int
+	deferFieldIdx int
+	panicFieldIdx int
 
 	// Stack allocation handling
 	stackAllocSlots map[*Slot]struct{}
 	stackAllocPtrs  map[*Slot]llssa.Expr
+
+	// Defer wrapper cache
+	deferWraps   map[string]deferWrapperInfo
+	deferWrapSeq int
 
 	// Callbacks
 	compileValue CompileValueFunc
@@ -63,6 +70,7 @@ func NewPullIRCodeGen(
 	}
 	gen.stackAllocSlots = make(map[*Slot]struct{})
 	gen.stackAllocPtrs = make(map[*Slot]llssa.Expr)
+	gen.deferWraps = make(map[string]deferWrapperInfo)
 	for _, slot := range pullIR.Slots {
 		if slot.StackAlloc {
 			gen.stackAllocSlots[slot] = struct{}{}
@@ -126,6 +134,18 @@ func (g *PullIRCodeGen) generateStateType() (llssa.Type, error) {
 		}
 		fields = append(fields, types.NewField(0, nil, name, slot.Type, false))
 	}
+
+	g.deferFieldIdx = -1
+	if g.pullIR.HasDefer {
+		g.deferFieldIdx = len(fields)
+		deferStateType := g.getDeferStateType()
+		fields = append(fields, types.NewField(0, nil, "deferState", deferStateType, false))
+	}
+
+	// Always include panicErr to persist panic across polls.
+	g.panicFieldIdx = len(fields)
+	panicType := types.NewInterfaceType(nil, nil)
+	fields = append(fields, types.NewField(0, nil, "panicErr", panicType, false))
 
 	structType := types.NewStruct(fields, nil)
 
@@ -265,7 +285,7 @@ func (g *PullIRCodeGen) generateConcreteWrapper(stateType llssa.Type) error {
 
 	// Return type is *State
 	ptrType := types.NewPointer(g.stateNamed)
-	sig := types.NewSignatureType(nil, nil, nil, fn.Signature.Params(),
+	sig := types.NewSignatureType(nil, nil, nil, g.signatureWithCtx(fn.Signature).Params(),
 		types.NewTuple(types.NewVar(0, nil, "", ptrType)), false)
 
 	wrapper := g.pkg.NewFunc(wrapperName, sig, llssa.InGo)
@@ -281,11 +301,34 @@ func (g *PullIRCodeGen) generateConcreteWrapper(stateType llssa.Type) error {
 	stateFieldPtr := b.FieldAddr(statePtr, 0)
 	b.Store(stateFieldPtr, g.prog.IntVal(0, g.int8Type))
 
-	// Copy parameters
+	// Copy parameters (skip closure ctx when present)
+	paramOffset := 0
+	var ctxParam llssa.Expr
+	if g.closureCtxParam() != nil {
+		ctxParam = wrapper.Param(0)
+		paramOffset = 1
+	}
 	for i, slot := range g.pullIR.Params {
 		if slot.FieldIdx > 0 {
 			fieldPtr := b.FieldAddr(statePtr, slot.FieldIdx)
-			b.Store(fieldPtr, wrapper.Param(i))
+			b.Store(fieldPtr, wrapper.Param(i+paramOffset))
+		}
+	}
+
+	// Initialize captured free vars from closure context.
+	if !ctxParam.IsNil() {
+		for _, slot := range g.pullIR.Slots {
+			fv, ok := slot.SSAValue.(*ssa.FreeVar)
+			if !ok || slot.FieldIdx < 0 {
+				continue
+			}
+			idx := g.freeVarIndex(fv)
+			if idx < 0 {
+				continue
+			}
+			fvPtr := b.FieldAddr(ctxParam, idx)
+			fvVal := b.Load(fvPtr)
+			b.Store(b.FieldAddr(statePtr, slot.FieldIdx), fvVal)
 		}
 	}
 
@@ -375,6 +418,47 @@ func (g *PullIRCodeGen) generatePollMethod(stateType llssa.Type) error {
 func (g *PullIRCodeGen) generateStateBlock(b llssa.Builder, state *PullState, stateIdx int) {
 	g.temps = nil
 	g.restoreStackAllocState(b)
+
+	// If this state contains an Await, split initialization so the sub-future
+	// is created only once and reused across polls.
+	awaitIdx := -1
+	var awaitInstr *Await
+	for i, instr := range state.Instructions {
+		if a, ok := instr.(*Await); ok {
+			awaitIdx = i
+			awaitInstr = a
+			break
+		}
+	}
+	if awaitIdx >= 0 && awaitInstr != nil && awaitInstr.SubFuture.Kind == VarRefSlot && awaitInstr.SubFuture.Slot != nil && awaitInstr.SubFuture.Slot.FieldIdx >= 0 {
+		slot := awaitInstr.SubFuture.Slot
+		var cur llssa.Expr
+		if g.isStackAllocSlot(slot) {
+			cur = b.Load(g.ensureStackAllocPtr(b, slot))
+		} else {
+			cur = b.Load(b.FieldAddr(g.statePtr, slot.FieldIdx))
+		}
+		zero := g.prog.Zero(cur.Type)
+		needsInit := b.BinOp(token.EQL, cur, zero)
+
+		initBlock := g.poll.MakeBlock()
+		pollBlock := g.poll.MakeBlock()
+		b.If(needsInit, initBlock, pollBlock)
+
+		b.SetBlock(initBlock)
+		for i := 0; i < awaitIdx; i++ {
+			g.generateInstr(b, state.Instructions[i], stateIdx)
+		}
+		b.Jump(pollBlock)
+
+		b.SetBlock(pollBlock)
+		g.temps = nil
+		for i := awaitIdx; i < len(state.Instructions); i++ {
+			g.generateInstr(b, state.Instructions[i], stateIdx)
+		}
+		return
+	}
+
 	for _, instr := range state.Instructions {
 		g.generateInstr(b, instr, stateIdx)
 	}
@@ -402,6 +486,13 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 				}
 			} else {
 				fieldPtr := b.FieldAddr(g.statePtr, v.Dst.FieldIdx)
+				// Defensive check: avoid LLVM crash on nil/opaque values during debugging.
+				if fieldPtr.IsNil() || val.IsNil() {
+					panic(fmt.Sprintf("StoreSlot nil ptr/val: dst=%v idx=%d ptrNil=%v valNil=%v", v.Dst.Name, v.Dst.FieldIdx, fieldPtr.IsNil(), val.IsNil()))
+				}
+				if val.Type.RawType().String() == "invalid type" {
+					panic(fmt.Sprintf("StoreSlot invalid val type in %s dst=%s idx=%d ref=%+v", g.pullIR.Original.String(), v.Dst.Name, v.Dst.FieldIdx, v.Value))
+				}
 				b.Store(fieldPtr, val)
 			}
 		}
@@ -412,6 +503,39 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		g.temps = append(g.temps, b.BinOp(v.Op, x, y))
 
 	case *PullUnOp:
+		// Special handling for channel receive to make it non-blocking in pull model.
+		if v.Op == token.ARROW {
+			ch := g.getExpr(b, v.X)
+			waker := g.loadWaker(b)
+			// Build a non-blocking select with single recv case.
+			state := llssa.SelectState{Chan: ch, Send: false}
+			sel := b.SelectWithWaker([]*llssa.SelectState{&state}, waker)
+			chosen := b.Field(sel, 0)
+			ready := b.BinOp(token.NEQ, chosen, g.prog.Val(-1))
+
+			readyBlock := g.poll.MakeBlock()
+			pendingBlock := g.poll.MakeBlock()
+			b.If(ready, readyBlock, pendingBlock)
+
+			// Pending -> return Pending[T]
+			b.SetBlock(pendingBlock)
+			g.flushStackAllocState(b)
+			b.Return(g.createZeroPoll())
+
+			// Ready -> extract value (and ok if comma-ok)
+			b.SetBlock(readyBlock)
+			val := b.Field(sel, 2) // first recv value
+			var result llssa.Expr
+			if v.CommaOk {
+				ok := b.Field(sel, 1) // recvOK
+				t := g.prog.Type(v.ResultType, llssa.InGo)
+				result = b.AggregateExpr(t, val, ok)
+			} else {
+				result = val
+			}
+			g.temps = append(g.temps, result)
+			break
+		}
 		x := g.getExpr(b, v.X)
 		g.temps = append(g.temps, b.UnOp(v.Op, x))
 
@@ -421,12 +545,55 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		ptr := b.Alloc(elemType, v.Heap)
 		g.temps = append(g.temps, ptr)
 
+	case *PullMakeChan:
+		chType := g.prog.Type(v.ChanType, llssa.InGo)
+		size := g.getExpr(b, v.Size)
+		if size.IsNil() {
+			size = g.prog.IntVal(0, g.prog.Int())
+		}
+		g.temps = append(g.temps, b.MakeChan(chType, size))
+
+	case *PullMakeSlice:
+		sliceType := g.prog.Type(v.SliceType, llssa.InGo)
+		lenExpr := g.getExpr(b, v.Len)
+		if lenExpr.IsNil() {
+			lenExpr = g.prog.IntVal(0, g.prog.Int())
+		}
+		capExpr := g.getExpr(b, v.Cap)
+		if capExpr.IsNil() {
+			capExpr = lenExpr
+		}
+		g.temps = append(g.temps, b.MakeSlice(sliceType, lenExpr, capExpr))
+
+	case *PullMakeMap:
+		mapType := g.prog.Type(v.MapType, llssa.InGo)
+		reserve := g.getExpr(b, v.Reserve)
+		if reserve.IsNil() {
+			reserve = g.prog.IntVal(0, g.prog.Int())
+		}
+		g.temps = append(g.temps, b.MakeMap(mapType, reserve))
+
 	case *PullMakeInterface:
 		// Create interface from concrete value
 		ifaceType := g.prog.Type(v.IfaceType, llssa.InGo)
 		concrete := g.getExpr(b, v.Value)
 		iface := b.MakeInterface(ifaceType, concrete)
 		g.temps = append(g.temps, iface)
+
+	case *PullMakeClosure:
+		fnExpr := g.getExpr(b, VarRef{Kind: VarRefConst, Const: v.Func})
+		if fnExpr.IsNil() && g.compileValue != nil {
+			fnExpr = g.compileValue(b, v.Func)
+		}
+		if fnExpr.IsNil() {
+			panic(fmt.Sprintf("MakeClosure nil fn in %s: %v", g.pullIR.FuncName, v.Func))
+		}
+		bindings := make([]llssa.Expr, len(v.Bindings))
+		for i, bind := range v.Bindings {
+			bindings[i] = g.slotValue(b, bind)
+		}
+		closure := b.MakeClosure(fnExpr, bindings)
+		g.temps = append(g.temps, closure)
 
 	case *PullLookup:
 		// Map lookup: value, ok = m[key]
@@ -445,7 +612,7 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		base := g.getExpr(b, v.Base)
 		low := g.getExpr(b, v.Low)
 		high := g.getExpr(b, v.High)
-		ret := b.Slice(base, low, high, g.prog.Nil(base.Type))
+		ret := b.Slice(base, low, high, llssa.Expr{})
 		g.temps = append(g.temps, ret)
 
 	case *PullExtract:
@@ -472,6 +639,71 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		val := g.getExpr(b, v.Value)
 		b.Store(addr, val)
 
+	case *PullSend:
+		// Non-blocking send using TrySelect with single send case.
+		ch := g.getExpr(b, v.Chan)
+		val := g.getExpr(b, v.Value)
+		waker := g.loadWaker(b)
+		state := llssa.SelectState{Chan: ch, Value: val, Send: true}
+		sel := b.SelectWithWaker([]*llssa.SelectState{&state}, waker)
+		chosen := b.Field(sel, 0)
+		ready := b.BinOp(token.NEQ, chosen, g.prog.Val(-1))
+		readyBlock := g.poll.MakeBlock()
+		pendingBlock := g.poll.MakeBlock()
+		b.If(ready, readyBlock, pendingBlock)
+
+		b.SetBlock(pendingBlock)
+		g.flushStackAllocState(b)
+		b.Return(g.createZeroPoll())
+
+		b.SetBlock(readyBlock)
+	// send has no result, just proceed
+
+	case *PullSelect:
+		var states []*llssa.SelectState
+		for i := range v.States {
+			st := v.States[i]
+			ch := g.getExpr(b, st.Chan)
+			var val llssa.Expr
+			if st.Send {
+				val = g.getExpr(b, st.Value)
+			}
+			states = append(states, &llssa.SelectState{Chan: ch, Value: val, Send: st.Send})
+		}
+		waker := g.loadWaker(b)
+		sel := b.SelectWithWaker(states, waker)
+		if v.Blocking {
+			chosen := b.Field(sel, 0)
+			ready := b.BinOp(token.NEQ, chosen, g.prog.Val(-1))
+			readyBlock := g.poll.MakeBlock()
+			pendingBlock := g.poll.MakeBlock()
+			b.If(ready, readyBlock, pendingBlock)
+
+			b.SetBlock(pendingBlock)
+			g.flushStackAllocState(b)
+			b.Return(g.createZeroPoll())
+
+			b.SetBlock(readyBlock)
+		}
+		g.temps = append(g.temps, sel)
+
+	case *PullGo:
+		var args []llssa.Expr
+		for _, a := range v.Args {
+			args = append(args, g.getExpr(b, a))
+		}
+		var fnExpr llssa.Expr
+		if v.IsInvoke {
+			recv := g.slotValue(b, v.Func)
+			fnExpr = b.Imethod(recv, v.Method)
+		} else {
+			fnExpr = g.slotValue(b, v.Func)
+		}
+		if fnExpr.IsNil() {
+			return
+		}
+		b.Go(fnExpr, args...)
+
 	case *PullCall:
 		var args []llssa.Expr
 		for _, a := range v.Args {
@@ -484,10 +716,30 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 			return
 		}
 
-		fnExpr := g.getExpr(b, VarRef{Kind: VarRefConst, Const: v.Func}) // fallback
-		if g.compileValue != nil {
-			if compiled := g.compileValue(b, v.Func); !compiled.IsNil() {
-				fnExpr = compiled
+		var fnExpr llssa.Expr
+		if slot := g.findSlotBySSA(v.Func); slot != nil {
+			fnExpr = g.getExpr(b, NewSlotRef(slot))
+		} else {
+			fnExpr = g.getExpr(b, VarRef{Kind: VarRefConst, Const: v.Func}) // fallback
+			if g.compileValue != nil {
+				if _, ok := v.Func.(*ssa.Builtin); !ok {
+					if compiled := g.compileValue(b, v.Func); !compiled.IsNil() {
+						fnExpr = compiled
+					}
+				}
+			}
+		}
+		if _, ok := v.Func.(*ssa.Builtin); !ok {
+			switch rt := fnExpr.Type.RawType().Underlying().(type) {
+			case *types.Signature:
+				// ok
+			case *types.Struct:
+				// closures are represented as structs
+				if !llssa.IsClosure(rt) {
+					panic(fmt.Sprintf("PullCall fn not callable in %s: %v raw=%T", g.pullIR.FuncName, v.Func, fnExpr.Type.RawType()))
+				}
+			default:
+				panic(fmt.Sprintf("PullCall fn not callable in %s: %v raw=%T", g.pullIR.FuncName, v.Func, fnExpr.Type.RawType()))
 			}
 		}
 		ret := b.Call(fnExpr, args...)
@@ -502,6 +754,9 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 			g.temps = append(g.temps, ret)
 		}
 
+	case *PullDefer:
+		g.emitDefer(b, v)
+
 	case *PullConvert:
 		val := g.getExpr(b, v.Value)
 		t := g.prog.Type(v.Type, llssa.InGo)
@@ -514,23 +769,49 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 		result := b.Next(elemType, iter, v.IsString)
 		g.temps = append(g.temps, result)
 
+	case *PullPanic:
+		panicVal := g.getExpr(b, v.Value)
+		g.emitPanic(b, panicVal)
+
+	case *PullRunDefers:
+		g.emitRunDefers(b)
+
 	case *Await:
 		// Poll the sub-future: if pending -> return Pending; if ready -> store result and continue.
 		subFuture := g.getExpr(b, v.SubFuture)
 
-		// Build Poll method for the concrete sub-future receiver.
-		recvVar := types.NewVar(0, nil, "recv", subFuture.Type.RawType())
-		ctxType := g.getAsyncContextType()
-		ctxVar := types.NewVar(0, nil, "ctx", ctxType)
+		// Build Poll method for the sub-future receiver.
 		resultType := v.ResultSlot.Type
-		pollRetType := g.getAsyncPollType(resultType)
-		pollSig := types.NewSignatureType(recvVar, nil, nil, types.NewTuple(ctxVar), types.NewTuple(types.NewVar(0, nil, "", pollRetType)), false)
-		pollName := llssa.FuncName(g.getAsyncPackage(), "Poll", recvVar, false)
-		pollFunc := g.pkg.NewFunc(pollName, pollSig, llssa.InGo)
-
-		// Call subFuture.Poll(ctx)
+		pollMethod := g.createPollMethod(resultType)
 		ctxParam := g.poll.Param(1)
-		pollResult := b.Call(pollFunc.Expr, subFuture, ctxParam)
+		goSubFutType := subFuture.Type.RawType()
+		_, isInterface := goSubFutType.Underlying().(*types.Interface)
+
+		var pollResult llssa.Expr
+		if isInterface {
+			pollClosure := b.Imethod(subFuture, pollMethod)
+			pollResult = b.Call(pollClosure, ctxParam)
+		} else {
+			mset := types.NewMethodSet(goSubFutType)
+			var pollSel *types.Selection
+			for i := 0; i < mset.Len(); i++ {
+				sel := mset.At(i)
+				if sel.Obj().Name() == "Poll" {
+					pollSel = sel
+					break
+				}
+			}
+			if pollSel == nil {
+				g.flushStackAllocState(b)
+				b.Return(g.createZeroPoll())
+				return
+			}
+			pollMethodObj := pollSel.Obj().(*types.Func)
+			methodSig := pollMethodObj.Type().(*types.Signature)
+			methodName := llssa.FuncName(pollMethodObj.Pkg(), "Poll", methodSig.Recv(), false)
+			methodFunc := g.pkg.NewFunc(methodName, methodSig, llssa.InGo)
+			pollResult = b.Call(methodFunc.Expr, subFuture, ctxParam)
+		}
 
 		ready := b.Field(pollResult, 0)
 		readyBlock := g.poll.MakeBlock()
@@ -544,10 +825,37 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 
 		// Ready: extract value, store, update state, jump loop
 		b.SetBlock(readyBlock)
+		if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
+			errVal := b.Field(pollResult, 2)
+			zeroErr := g.prog.Zero(errVal.Type)
+			hasErr := b.BinOp(token.NEQ, errVal, zeroErr)
+
+			errBlock := g.poll.MakeBlock()
+			continueBlock := g.poll.MakeBlock()
+			b.If(hasErr, errBlock, continueBlock)
+
+			b.SetBlock(errBlock)
+			g.emitPanic(b, errVal)
+
+			b.SetBlock(continueBlock)
+		}
 		value := b.Field(pollResult, 1)
 		if v.ResultSlot != nil && v.ResultSlot.FieldIdx >= 0 {
 			fieldPtr := b.FieldAddr(g.statePtr, v.ResultSlot.FieldIdx)
 			b.Store(fieldPtr, value)
+		}
+		// Reset sub-future slot so next iteration re-creates it.
+		if v.SubFuture.Kind == VarRefSlot && v.SubFuture.Slot != nil && v.SubFuture.Slot.FieldIdx >= 0 {
+			slot := v.SubFuture.Slot
+			zero := g.prog.Zero(g.prog.Type(slot.Type, llssa.InGo))
+			if g.isStackAllocSlot(slot) {
+				if ptr := g.ensureStackAllocPtr(b, slot); !ptr.IsNil() {
+					b.Store(ptr, zero)
+				}
+			} else {
+				fieldPtr := b.FieldAddr(g.statePtr, slot.FieldIdx)
+				b.Store(fieldPtr, zero)
+			}
 		}
 		// Advance state and continue dispatch
 		stateFieldPtr := b.FieldAddr(g.statePtr, 0)
@@ -557,12 +865,23 @@ func (g *PullIRCodeGen) generateInstr(b llssa.Builder, instr PullInstr, stateIdx
 
 	case *Branch:
 		cond := g.getExpr(b, v.Cond)
-		g.generateEdgeWrites(b, stateIdx, v.TrueState)
-		// Note: for proper branch, we'd need separate blocks for edge writes
-		trueBlock := g.poll.Block(2 + v.TrueState)
-		falseBlock := g.poll.Block(2 + v.FalseState)
-		g.flushStackAllocState(b)
+		trueBlock := g.poll.MakeBlock()
+		falseBlock := g.poll.MakeBlock()
 		b.If(cond, trueBlock, falseBlock)
+
+		b.SetBlock(trueBlock)
+		g.generateEdgeWrites(b, stateIdx, v.TrueState)
+		stateFieldPtr := b.FieldAddr(g.statePtr, 0)
+		b.Store(stateFieldPtr, g.prog.IntVal(uint64(v.TrueState), g.int8Type))
+		g.flushStackAllocState(b)
+		b.Jump(g.loopBlock)
+
+		b.SetBlock(falseBlock)
+		g.generateEdgeWrites(b, stateIdx, v.FalseState)
+		stateFieldPtr = b.FieldAddr(g.statePtr, 0)
+		b.Store(stateFieldPtr, g.prog.IntVal(uint64(v.FalseState), g.int8Type))
+		g.flushStackAllocState(b)
+		b.Jump(g.loopBlock)
 
 	case *Jump:
 		g.generateEdgeWrites(b, stateIdx, v.Target)
@@ -606,6 +925,160 @@ func (g *PullIRCodeGen) generateEdgeWrites(b llssa.Builder, fromState, toState i
 // =============================================================================
 // Helpers
 // =============================================================================
+
+func (g *PullIRCodeGen) emitDefer(b llssa.Builder, v *PullDefer) {
+	if !g.pullIR.HasDefer || g.deferFieldIdx < 0 {
+		return
+	}
+	deferStatePtr := b.FieldAddr(g.statePtr, g.deferFieldIdx)
+
+	var fnExpr llssa.Expr
+	if v.IsInvoke {
+		recv := g.slotValue(b, v.Func)
+		fnExpr = b.Imethod(recv, v.Method)
+	} else {
+		fnExpr = g.slotValue(b, v.Func)
+	}
+	if fnExpr.IsNil() {
+		return
+	}
+
+	wrapperInfo := g.ensureDeferWrapper(fnExpr.Type.RawType(), v.ArgTypes)
+
+	// Allocate argument bundle on heap and capture values at defer time.
+	argPtr := b.Alloc(wrapperInfo.argStructType, true)
+	b.Store(b.FieldAddr(argPtr, 0), fnExpr)
+	for i, arg := range v.Args {
+		val := g.slotValue(b, arg)
+		b.Store(b.FieldAddr(argPtr, i+1), val)
+	}
+
+	unsafePtrType := g.prog.Type(types.Typ[types.UnsafePointer], llssa.InGo)
+	argPtrUnsafe := b.Convert(unsafePtrType, argPtr)
+
+	// Create function reference for async.(*DeferState).PushDefer
+	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	wrapperSig := types.NewSignatureType(
+		nil,
+		nil,
+		nil,
+		types.NewTuple(types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer])),
+		nil,
+		false,
+	)
+	pushDeferSig := types.NewSignatureType(
+		types.NewVar(0, nil, "", deferStatePtrType),
+		nil,
+		nil,
+		types.NewTuple(
+			types.NewVar(0, nil, "fn", wrapperSig),
+			types.NewVar(0, nil, "arg", types.Typ[types.UnsafePointer]),
+		),
+		nil,
+		false,
+	)
+	methodName := llssa.FuncName(
+		types.NewPackage(FuturePkgPath, "async"),
+		"PushDefer",
+		pushDeferSig.Recv(),
+		false,
+	)
+	pushDeferFunc := g.pkg.NewFunc(methodName, pushDeferSig, llssa.InGo)
+	b.Call(pushDeferFunc.Expr, deferStatePtr, wrapperInfo.fn.Expr, argPtrUnsafe)
+}
+
+func (g *PullIRCodeGen) emitPanic(b llssa.Builder, panicVal llssa.Expr) {
+	if !g.pullIR.HasDefer || g.deferFieldIdx < 0 {
+		g.markCompleted(b)
+		g.storePanicValue(b, panicVal)
+		g.flushStackAllocState(b)
+		g.returnError(b, panicVal)
+		return
+	}
+
+	deferStatePtr := b.FieldAddr(g.statePtr, g.deferFieldIdx)
+	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	doPanicSig := types.NewSignatureType(
+		types.NewVar(0, nil, "", deferStatePtrType),
+		nil,
+		nil,
+		types.NewTuple(types.NewVar(0, nil, "v", types.NewInterfaceType(nil, nil))),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool])),
+		false,
+	)
+	methodName := llssa.FuncName(
+		types.NewPackage(FuturePkgPath, "async"),
+		"DoPanic",
+		doPanicSig.Recv(),
+		false,
+	)
+	doPanicFunc := g.pkg.NewFunc(methodName, doPanicSig, llssa.InGo)
+	recovered := b.Call(doPanicFunc.Expr, deferStatePtr, panicVal)
+
+	recoveredBlock := b.Func.MakeBlock()
+	panicBlock := b.Func.MakeBlock()
+	b.If(recovered, recoveredBlock, panicBlock)
+
+	b.SetBlock(recoveredBlock)
+	g.markCompleted(b)
+	g.clearPanicValue(b)
+	finalValue := g.loadResultValue(b)
+	g.flushStackAllocState(b)
+	g.returnReady(b, finalValue)
+
+	b.SetBlock(panicBlock)
+	g.markCompleted(b)
+	g.storePanicValue(b, panicVal)
+	g.flushStackAllocState(b)
+	g.returnError(b, panicVal)
+}
+
+func (g *PullIRCodeGen) emitRunDefers(b llssa.Builder) {
+	if !g.pullIR.HasDefer || g.deferFieldIdx < 0 {
+		return
+	}
+	deferStatePtr := b.FieldAddr(g.statePtr, g.deferFieldIdx)
+
+	deferStatePtrType := types.NewPointer(g.getDeferStateType())
+	runDefersSig := types.NewSignatureType(
+		types.NewVar(0, nil, "", deferStatePtrType),
+		nil, nil, nil, nil, false,
+	)
+	methodName := llssa.FuncName(
+		types.NewPackage(FuturePkgPath, "async"),
+		"RunDefers",
+		runDefersSig.Recv(),
+		false,
+	)
+	runDefersFunc := g.pkg.NewFunc(methodName, runDefersSig, llssa.InGo)
+	b.Call(runDefersFunc.Expr, deferStatePtr)
+
+	deferStateType := g.getDeferStateType()
+	deferStatePtrType = types.NewPointer(deferStateType)
+	deferStateLLType := g.prog.Type(deferStatePtrType, llssa.InGo)
+	isPanickingPtr := b.FieldAddr(b.Convert(deferStateLLType, deferStatePtr), 2)
+	recoveredPtr := b.FieldAddr(b.Convert(deferStateLLType, deferStatePtr), 3)
+	panicValPtr := b.FieldAddr(b.Convert(deferStateLLType, deferStatePtr), 1)
+
+	isPanicking := b.Load(isPanickingPtr)
+	contBlock := b.Func.MakeBlock()
+	checkRecovered := b.Func.MakeBlock()
+	b.If(isPanicking, checkRecovered, contBlock)
+
+	b.SetBlock(checkRecovered)
+	recovered := b.Load(recoveredPtr)
+	propagateIfNotRec := b.Func.MakeBlock()
+	b.If(b.BinOp(token.EQL, recovered, g.prog.BoolVal(false)), propagateIfNotRec, contBlock)
+
+	b.SetBlock(propagateIfNotRec)
+	panicVal := b.Load(panicValPtr)
+	g.markCompleted(b)
+	g.storePanicValue(b, panicVal)
+	g.flushStackAllocState(b)
+	g.returnError(b, panicVal)
+
+	b.SetBlock(contBlock)
+}
 
 func (g *PullIRCodeGen) isStackAllocSlot(slot *Slot) bool {
 	if slot == nil {
@@ -671,6 +1144,28 @@ func (g *PullIRCodeGen) flushStackAllocState(b llssa.Builder) {
 	}
 }
 
+// loadWaker returns ctx.Waker for the current Poll invocation.
+// The Context layout is defined in async.Context: field 0 is Waker.
+func (g *PullIRCodeGen) loadWaker(b llssa.Builder) llssa.Expr {
+	if g.poll == nil {
+		return llssa.Expr{}
+	}
+	ctx := g.poll.Param(1)
+	return b.Load(b.FieldAddr(ctx, 0))
+}
+
+func (g *PullIRCodeGen) findSlotBySSA(v ssa.Value) *Slot {
+	if v == nil || g.pullIR == nil {
+		return nil
+	}
+	for _, slot := range g.pullIR.Slots {
+		if slot.SSAValue == v {
+			return slot
+		}
+	}
+	return nil
+}
+
 // slotValue returns the value of a VarRef, loading from stack-alloc pointers when needed.
 func (g *PullIRCodeGen) slotValue(b llssa.Builder, ref VarRef) llssa.Expr {
 	// Fast path: const/temp handled by getExpr
@@ -678,6 +1173,9 @@ func (g *PullIRCodeGen) slotValue(b llssa.Builder, ref VarRef) llssa.Expr {
 		return g.getExpr(b, ref)
 	}
 	expr := g.getExpr(b, ref)
+	if expr.Type.RawType().String() == "invalid type" {
+		panic(fmt.Sprintf("slotValue invalid type: refKind=%v slot=%v", ref.Kind, ref.Slot))
+	}
 	if g.isStackAllocSlot(ref.Slot) {
 		return b.Load(expr)
 	}
@@ -695,17 +1193,22 @@ func (g *PullIRCodeGen) getExpr(b llssa.Builder, ref VarRef) llssa.Expr {
 			return b.Load(b.FieldAddr(g.statePtr, ref.Slot.FieldIdx))
 		}
 	case VarRefConst:
-		if ref.Const != nil {
-			if g.compileValue != nil {
-				if val := g.compileValue(b, ref.Const); !val.IsNil() {
-					return val
-				}
-			}
-			if c, ok := ref.Const.(*ssa.Const); ok {
-				return g.prog.Zero(g.prog.Type(c.Type(), llssa.InGo))
-			}
-			debugf("[PullIR] Warning: non-const VarRef %v (%T) - should be accessed via slot", ref.Const, ref.Const)
+		if ref.Const == nil {
+			// Represents an omitted slice bound or len default.
+			return llssa.Expr{}
 		}
+		if bi, ok := ref.Const.(*ssa.Builtin); ok {
+			return llssa.Builtin(bi.Name())
+		}
+		if g.compileValue != nil {
+			if val := g.compileValue(b, ref.Const); !val.IsNil() {
+				return val
+			}
+		}
+		if c, ok := ref.Const.(*ssa.Const); ok {
+			return g.prog.Zero(g.prog.Type(c.Type(), llssa.InGo))
+		}
+		debugf("[PullIR] Warning: non-const VarRef %v (%T) - should be accessed via slot", ref.Const, ref.Const)
 	case VarRefTemp:
 		if ref.Temp >= 0 && ref.Temp < len(g.temps) {
 			return g.temps[ref.Temp]
@@ -713,7 +1216,7 @@ func (g *PullIRCodeGen) getExpr(b llssa.Builder, ref VarRef) llssa.Expr {
 		// Debug: temp index out of range
 		debugf("[PullIR] Warning: temp index %d out of range (have %d temps)", ref.Temp, len(g.temps))
 	}
-	return g.prog.Nil(g.pollLLType)
+	panic(fmt.Sprintf("getExpr could not resolve VarRef %+v", ref))
 }
 
 func (g *PullIRCodeGen) storeResult(b llssa.Builder, val llssa.Expr) {
@@ -722,12 +1225,72 @@ func (g *PullIRCodeGen) storeResult(b llssa.Builder, val llssa.Expr) {
 	}
 }
 
+func (g *PullIRCodeGen) loadResultValue(b llssa.Builder) llssa.Expr {
+	if g.pullIR.ResultSlot == nil || g.pullIR.ResultSlot.FieldIdx < 0 {
+		return llssa.Expr{}
+	}
+	return b.Load(b.FieldAddr(g.statePtr, g.pullIR.ResultSlot.FieldIdx))
+}
+
+func (g *PullIRCodeGen) markCompleted(b llssa.Builder) {
+	stateFieldPtr := b.FieldAddr(g.statePtr, 0)
+	b.Store(stateFieldPtr, g.prog.IntVal(uint64(g.completedIdx), g.int8Type))
+}
+
+func (g *PullIRCodeGen) storePanicValue(b llssa.Builder, value llssa.Expr) {
+	if g.panicFieldIdx < 0 || value.IsNil() {
+		return
+	}
+	fieldPtr := b.FieldAddr(g.statePtr, g.panicFieldIdx)
+	b.Store(fieldPtr, value)
+}
+
+func (g *PullIRCodeGen) clearPanicValue(b llssa.Builder) {
+	if g.panicFieldIdx < 0 {
+		return
+	}
+	fieldPtr := b.FieldAddr(g.statePtr, g.panicFieldIdx)
+	cur := b.Load(fieldPtr)
+	zero := g.prog.Zero(cur.Type)
+	b.Store(fieldPtr, zero)
+}
+
+func (g *PullIRCodeGen) loadPanicValue(b llssa.Builder) llssa.Expr {
+	if g.panicFieldIdx < 0 {
+		return llssa.Expr{}
+	}
+	fieldPtr := b.FieldAddr(g.statePtr, g.panicFieldIdx)
+	return b.Load(fieldPtr)
+}
+
 func (g *PullIRCodeGen) returnReady(b llssa.Builder, val llssa.Expr) {
 	trueVal := g.prog.BoolVal(true)
+	zeroPoll := g.createZeroPoll()
 	if val.IsNil() {
-		val = b.Field(g.createZeroPoll(), 1)
+		val = b.Field(zeroPoll, 1)
 	}
-	pollVal := b.AggregateExpr(g.pollLLType, trueVal, val)
+	fields := []llssa.Expr{trueVal, val}
+	if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
+		fields = append(fields, b.Field(zeroPoll, 2))
+	}
+	pollVal := b.AggregateExpr(g.pollLLType, fields...)
+	b.Return(pollVal)
+}
+
+func (g *PullIRCodeGen) returnError(b llssa.Builder, panicVal llssa.Expr) {
+	trueVal := g.prog.BoolVal(true)
+	zeroPoll := g.createZeroPoll()
+	value := b.Field(zeroPoll, 1)
+	fields := []llssa.Expr{trueVal, value}
+	if st, ok := g.pollLLType.RawType().Underlying().(*types.Struct); ok && st.NumFields() > 2 {
+		errZero := b.Field(zeroPoll, 2)
+		errVal := errZero
+		if !panicVal.IsNil() && panicVal.Type == errZero.Type {
+			errVal = panicVal
+		}
+		fields = append(fields, errVal)
+	}
+	pollVal := b.AggregateExpr(g.pollLLType, fields...)
 	b.Return(pollVal)
 }
 
@@ -736,6 +1299,20 @@ func (g *PullIRCodeGen) createZeroPoll() llssa.Expr {
 }
 
 func (g *PullIRCodeGen) generateDoneBlock(b llssa.Builder) {
+	if g.panicFieldIdx >= 0 {
+		errVal := b.Load(b.FieldAddr(g.statePtr, g.panicFieldIdx))
+		zeroErr := g.prog.Zero(errVal.Type)
+		hasErr := b.BinOp(token.NEQ, errVal, zeroErr)
+
+		errBlock := b.Func.MakeBlock()
+		okBlock := b.Func.MakeBlock()
+		b.If(hasErr, errBlock, okBlock)
+
+		b.SetBlock(errBlock)
+		g.returnError(b, errVal)
+
+		b.SetBlock(okBlock)
+	}
 	if g.pullIR.ResultSlot != nil && g.pullIR.ResultSlot.FieldIdx >= 0 {
 		val := b.Load(b.FieldAddr(g.statePtr, g.pullIR.ResultSlot.FieldIdx))
 		g.returnReady(b, val)
@@ -750,7 +1327,7 @@ func (g *PullIRCodeGen) generateDoneBlock(b llssa.Builder) {
 
 func (g *PullIRCodeGen) generateInterfaceWrapper() error {
 	fn := g.pullIR.Original
-	origSig := fn.Signature
+	origSig := g.signatureWithCtx(fn.Signature)
 
 	// Create wrapper with original function signature (returns Future[T] interface)
 	wrapperName := llssa.FuncName(fn.Pkg.Pkg, fn.Name(), nil, false)
@@ -760,9 +1337,10 @@ func (g *PullIRCodeGen) generateInterfaceWrapper() error {
 	b := wrapper.NewBuilder()
 	b.SetBlock(wrapper.Block(0))
 
-	// Collect parameters
-	args := make([]llssa.Expr, len(fn.Params))
-	for i := range fn.Params {
+	// Collect parameters (include closure ctx when present)
+	paramTuple := g.signatureWithCtx(fn.Signature).Params()
+	args := make([]llssa.Expr, paramTuple.Len())
+	for i := 0; i < paramTuple.Len(); i++ {
 		args[i] = wrapper.Param(i)
 	}
 

@@ -724,6 +724,20 @@ type SelectState struct {
 //	t3 = select nonblocking [<-t0, t1<-t2]
 //	t4 = select blocking []
 func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
+	return b.selectImpl(states, blocking, Expr{})
+}
+
+// SelectWithWaker is a non-blocking select that registers a waker when all
+// cases are pending. It is used by the pull-model async lowering to avoid
+// busy-polling channels.
+func (b Builder) SelectWithWaker(states []*SelectState, waker Expr) (ret Expr) {
+	if waker.IsNil() {
+		return b.Select(states, false)
+	}
+	return b.selectImpl(states, false, waker)
+}
+
+func (b Builder) selectImpl(states []*SelectState, blocking bool, waker Expr) (ret Expr) {
 	ops := make([]Expr, len(states))
 	for i, s := range states {
 		ops[i] = b.chanOp(s)
@@ -731,17 +745,24 @@ func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
 	var fn Expr
 	if blocking {
 		fn = b.Pkg.rtFunc("Select")
+	} else if !waker.IsNil() {
+		fn = b.Pkg.rtFunc("TrySelectWaker")
 	} else {
 		fn = b.Pkg.rtFunc("TrySelect")
 	}
 	prog := b.Prog
 	tSlice := lastParamType(prog, fn)
 	slice := b.SliceLit(tSlice, ops...)
-	ret = b.Call(fn, slice)
+	if waker.IsNil() {
+		ret = b.Call(fn, slice)
+	} else {
+		ret = b.Call(fn, waker, slice)
+	}
 	chosen := b.impl.CreateExtractValue(ret.impl, 0, "")
 	recvOK := b.impl.CreateExtractValue(ret.impl, 1, "")
 	if !blocking {
-		chosen = llvm.CreateSelect(b.impl, recvOK, chosen, prog.Val(-1).impl)
+		tryOK := b.impl.CreateExtractValue(ret.impl, 2, "")
+		chosen = llvm.CreateSelect(b.impl, tryOK, chosen, prog.Val(-1).impl)
 	}
 	results := []llvm.Value{chosen, recvOK}
 	typs := []Type{prog.Int(), prog.Bool()}

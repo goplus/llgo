@@ -21,6 +21,7 @@ package pullmodel
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"reflect"
 	"sort"
@@ -63,6 +64,8 @@ type StateMachine struct {
 	ResultType types.Type
 	// HasDefer is true if the function contains defer statements
 	HasDefer bool
+	// HasPanic is true if the function contains panic statements
+	HasPanic bool
 	// LoopAllocs tracks ssa.Alloc instructions that appear in loop blocks.
 	// These allocs should not reuse a single pointer across iterations.
 	LoopAllocs map[*ssa.Alloc]struct{}
@@ -160,6 +163,23 @@ func GetFutureResultType(t types.Type) types.Type {
 		return nil
 	}
 	return args.At(0)
+}
+
+func findResultAllocSSA(fn *ssa.Function) *ssa.Alloc {
+	var first *ssa.Alloc
+	for _, alloc := range fn.Locals {
+		if alloc == nil {
+			continue
+		}
+		name := alloc.Name()
+		if strings.HasPrefix(name, "~r") || strings.HasPrefix(name, "result") || strings.HasPrefix(name, "ret") {
+			return alloc
+		}
+		if first == nil {
+			first = alloc
+		}
+	}
+	return first
 }
 
 // FindSuspendPoints finds all .Await() calls in an async function.
@@ -646,6 +666,7 @@ func Transform(fn *ssa.Function) *StateMachine {
 	// Collect sub-future types and detect defer statements
 	var subFutures []types.Type
 	hasDefer := false
+	hasPanic := false
 	for _, sp := range suspends {
 		if sp.SubFuture != nil {
 			subFutures = append(subFutures, sp.SubFuture.Type())
@@ -658,6 +679,24 @@ func Transform(fn *ssa.Function) *StateMachine {
 			switch instr.(type) {
 			case *ssa.Defer:
 				hasDefer = true
+			case *ssa.Panic:
+				hasPanic = true
+			}
+		}
+	}
+
+	// Ensure result alloc persists when defer/panic present (needed for recover).
+	if hasDefer || hasPanic {
+		if resAlloc := findResultAllocSSA(fn); resAlloc != nil {
+			already := false
+			for _, v := range crossVars {
+				if v == resAlloc {
+					already = true
+					break
+				}
+			}
+			if !already {
+				crossVars = append(crossVars, resAlloc)
 			}
 		}
 	}
@@ -668,11 +707,18 @@ func Transform(fn *ssa.Function) *StateMachine {
 		SubFutures: subFutures,
 		ResultType: resultType,
 		HasDefer:   hasDefer,
+		HasPanic:   hasPanic,
 		LoopAllocs: loopAllocs,
 	}
 
 	// Split into states at suspend points
 	sm.States, sm.BlockEntries = splitIntoStates(fn, suspends)
+
+	// Ensure channel receive tuples that flow across state boundaries are
+	// persisted in the state struct. Without this, the receive would be
+	// recomputed in the successor state, double-consuming the channel and
+	// dropping values.
+	appendCrossStateRecvs(sm)
 
 	return sm
 }
@@ -757,6 +803,49 @@ func splitIntoStates(fn *ssa.Function, suspends []*SuspendPoint) ([]*State, map[
 	}
 
 	return states, blockEntries
+}
+
+// appendCrossStateRecvs appends to sm.CrossVars any channel receive tuples
+// (ssa.UnOp with OpRecv) that are defined in one state but used in a different
+// state. This prevents the successor state from re-evaluating the receive and
+// consuming an extra element.
+func appendCrossStateRecvs(sm *StateMachine) {
+	defState := make(map[ssa.Value]int)
+	for idx, st := range sm.States {
+		for _, instr := range st.Instructions {
+			if v, ok := instr.(ssa.Value); ok {
+				defState[v] = idx
+			}
+		}
+	}
+
+	existing := make(map[ssa.Value]bool, len(sm.CrossVars))
+	for _, cv := range sm.CrossVars {
+		existing[cv] = true
+	}
+
+	for idx, st := range sm.States {
+		for _, instr := range st.Instructions {
+			for _, op := range instr.Operands(nil) {
+				if op == nil || *op == nil {
+					continue
+				}
+				v := *op
+				if existing[v] {
+					continue
+				}
+				recv, ok := v.(*ssa.UnOp)
+				if !ok || recv.Op != token.ARROW {
+					continue
+				}
+				if defIdx, ok := defState[v]; !ok || defIdx == idx {
+					continue
+				}
+				sm.CrossVars = append(sm.CrossVars, v)
+				existing[v] = true
+			}
+		}
+	}
 }
 
 // collectTransitiveDependencies recursively collects all SSA values that a given
