@@ -874,7 +874,7 @@ func (b Builder) CoroSuspendSwitch(result Expr, resumeBlk, cleanupBlk BasicBlock
 // CRITICAL: Uses shared SuspendBlk for default case (C++ coroutine pattern).
 func (b Builder) CoroSuspendWithCleanup(state *CoroState, reschedule bool) {
 	if reschedule {
-		b.Call(b.Pkg.rtFunc("CoroReschedule"), state.CoroHandle)
+		b.CoroReschedule(state.CoroHandle)
 	}
 	falseVal := b.Prog.BoolVal(false)
 	result := b.CoroSuspend(Expr{}, falseVal)
@@ -897,7 +897,6 @@ func (b Builder) CoroSuspendWithCleanup(state *CoroState, reschedule bool) {
 // final suspend in the epilogue.
 //
 // The pattern is:
-//
 func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Type) {
 	fn := b.Func
 	// Blocks
@@ -905,8 +904,9 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Typ
 	waitBlk := fn.MakeBlock()
 	doneBlk := fn.MakeBlock()
 
-	// Enqueue the callee once to start execution.
-	b.CoroReschedule(handle)
+	// Kick the callee once. If it suspends, it is responsible for rescheduling itself
+	// (e.g. via coroSuspend with rescheduleSelf=true). Callers only join the waiter list.
+	b.CoroResume(handle)
 
 	// Enter loop
 	b.Jump(loopBlk)
@@ -936,6 +936,7 @@ func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Typ
 // CoroReschedule enqueues a coroutine handle back into the scheduler queue.
 func (b Builder) CoroReschedule(handle Expr) {
 	b.Call(b.Pkg.rtFunc("CoroReschedule"), handle)
+
 }
 
 // -----------------------------------------------------------------------------

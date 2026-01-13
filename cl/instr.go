@@ -435,6 +435,7 @@ var llgoInstrs = map[string]int{
 	"coroSuspend": llgoCoroSuspend,
 	"coroBlockOn": llgoCoroBlockOn,
 	"coroPromise": llgoCoroPromise,
+	"coroDone":    llgoCoroDone,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -695,6 +696,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			// Use constant 8 for alignment (coroPromiseAlign)
 			ret = b.CoroPromise(handle, 8, false)
 			_ = from // from is always false in our use case
+		case llgoCoroDone: // func coroDone(handle) bool
+			handle := p.compileValue(b, args[0])
+			ret = b.CoroDone(handle)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)

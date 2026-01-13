@@ -107,16 +107,13 @@ func coroQueueEmpty(q *coroQueue) bool {
 // CoroSpawn adds a new coroutine to the run queue.
 // This is called when a goroutine is created in coroutine mode.
 // The coroutine has already started and may be suspended at a yield point.
-// If the coroutine is already done (resume_fn == null), it's not queued.
+// If the coroutine is already done (coro.done), it's not queued.
 func CoroSpawn(handle CoroHandle) {
 	if handle == nil {
 		return
 	}
-	// Check if the coroutine is already done (resume_fn == null)
-	// The first field of the coroutine frame is the resume function pointer
-	resumeFn := *(*unsafe.Pointer)(handle)
-	if resumeFn == nil {
-		// Coroutine already completed at final suspend, don't queue
+	// Skip if already at final suspend.
+	if coroDone(handle) {
 		return
 	}
 	coroQueuePush(&coroRunQueue, handle)
@@ -140,9 +137,8 @@ func CoroSchedule() {
 		if handle == nil {
 			continue
 		}
-		// Check if coroutine is already done (resume_fn == null)
-		resumeFn := *(*unsafe.Pointer)(handle)
-		if resumeFn == nil {
+		// Skip handles already at final suspend.
+		if coroDone(handle) {
 			continue
 		}
 		// Resume the coroutine
@@ -170,6 +166,9 @@ func CoroScheduleOne() bool {
 	}
 	handle := coroQueuePop(&coroRunQueue)
 	if handle != nil {
+		if coroDone(handle) {
+			return true
+		}
 		CoroSetCurrent(handle)
 		coroResume(handle)
 		CoroSetCurrent(nil)
@@ -188,15 +187,7 @@ func CoroReschedule(handle CoroHandle) {
 	if handle == nil {
 		return
 	}
-	// Check the target handle; if already done, skip enqueuing.
-	resumeFn := *(*unsafe.Pointer)(handle)
-	if resumeFn == nil {
-		return
-	}
-	coroResume(handle)
-	// recheck
-	resumeFn = *(*unsafe.Pointer)(handle)
-	if resumeFn == nil {
+	if coroDone(handle) {
 		return
 	}
 	coroQueuePush(&coroRunQueue, handle)
@@ -242,8 +233,7 @@ func CoroScheduleUntil(handle CoroHandle) {
 	}
 
 	// Check if already done
-	resumeFn := *(*unsafe.Pointer)(handle)
-	if resumeFn == nil {
+	if coroDone(handle) {
 		// Already completed
 		return
 	}
@@ -254,8 +244,7 @@ func CoroScheduleUntil(handle CoroHandle) {
 	// Run scheduler loop until target coroutine is done
 	for {
 		// Check if target coroutine is done
-		resumeFn = *(*unsafe.Pointer)(handle)
-		if resumeFn == nil {
+		if coroDone(handle) {
 			// Target coroutine completed
 			break
 		}
@@ -277,8 +266,7 @@ func CoroScheduleUntil(handle CoroHandle) {
 		}
 
 		// Skip handles that are already done.
-		resumeFn = *(*unsafe.Pointer)(h)
-		if resumeFn == nil {
+		if coroDone(h) {
 			continue
 		}
 
@@ -437,6 +425,12 @@ func coroResume(handle CoroHandle)
 //
 //go:linkname coroDestroy llgo.coroDestroy
 func coroDestroy(handle CoroHandle)
+
+// coroDone reports whether a coroutine handle is at its final suspend point.
+// Maps to llvm.coro.done intrinsic.
+//
+//go:linkname coroDone llgo.coroDone
+func coroDone(handle CoroHandle) bool
 
 // coroSize returns the size needed for a coroutine frame.
 // Maps to llvm.coro.size.i64 intrinsic.
