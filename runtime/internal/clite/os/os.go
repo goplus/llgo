@@ -173,6 +173,12 @@ func Read(fd c.Int, buf c.Pointer, count uintptr) int
 //go:linkname Write C.write
 func Write(fd c.Int, buf c.Pointer, count uintptr) int
 
+//go:linkname Pread C.pread
+func Pread(fd c.Int, buf c.Pointer, count uintptr, offset OffT) int
+
+//go:linkname Pwrite C.pwrite
+func Pwrite(fd c.Int, buf c.Pointer, count uintptr, offset OffT) int
+
 //go:linkname Lseek C.lseek
 func Lseek(fd c.Int, offset OffT, whence c.Int) OffT
 
