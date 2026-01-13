@@ -936,6 +936,10 @@ func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	if dstSize < 8 {
 		i64 := b.Prog.Int64()
 		if typ.kind == vkUnsigned {
+			// note(zzy): for unsigned targets, split negative vs non-negative.
+			// Negative values need signed expansion (FPToSI) before truncation;
+			// non-negative values can use unsigned expansion (FPToUI). This avoids
+			// direct float->narrow-unsigned conversions and preserves wrap/trunc behavior.
 			zero := llvm.ConstNull(x.Type())
 			isNeg := b.impl.CreateFCmp(llvm.FloatOLT, x, zero, "")
 			neg := llvm.CreateFPToSI(b.impl, x, i64.ll)
