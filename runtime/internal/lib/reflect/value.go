@@ -2302,9 +2302,6 @@ func (v Value) call(op string, in []Value) (out []Value) {
 				rcvrtype *abi.Type
 			)
 			rcvrtype, ft, fn = methodReceiver(op, v, int(v.flag)>>flagMethodShift)
-			if rcvrtype.Kind() != abi.Pointer {
-				rcvrtype = toRType(rcvrtype).ptrTo()
-			}
 			tin = append([]*abi.Type{rcvrtype}, ft.In...)
 			tout = ft.Out
 			ioff = 1
@@ -2775,9 +2772,12 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 		if !abi.IsExported(m.Name()) {
 			panic("reflect: " + op + " of unexported method")
 		}
-		ifn := m.Ifn_
-		fn = unsafe.Pointer(ifn)
+		fn = unsafe.Pointer(m.Ifn_)
 		t = (*funcType)(unsafe.Pointer(m.Mtyp_))
+	}
+	if rcvrtype.Kind() != abi.Pointer {
+		// convert rcvrtype to abi.Pointer to match ifn call
+		rcvrtype = toRType(rcvrtype).ptrTo()
 	}
 	return
 }
