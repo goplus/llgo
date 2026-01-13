@@ -946,6 +946,9 @@ func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 		tmp := llvm.CreateFPToSI(b.impl, x, i64.ll)
 		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
 	}
+	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
+	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction
+	// and https://llvm.org/docs/LangRef.html#fptosi-to-instruction
 	if typ.kind == vkUnsigned {
 		return llvm.CreateFPToUI(b.impl, x, typ.ll)
 	}
