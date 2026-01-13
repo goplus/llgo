@@ -143,9 +143,7 @@ func CoroSchedule() {
 		}
 		// Resume the coroutine
 		// This will run until the next suspend point
-		CoroSetCurrent(handle)
-		coroResume(handle)
-		CoroSetCurrent(nil)
+		resume(handle)
 
 		// If an unrecovered panic occurred, crash immediately
 		if CoroIsPanicByHandle(handle) {
@@ -169,9 +167,7 @@ func CoroScheduleOne() bool {
 		if coroDone(handle) {
 			return true
 		}
-		CoroSetCurrent(handle)
-		coroResume(handle)
-		CoroSetCurrent(nil)
+		resume(handle)
 
 		if CoroIsPanicByHandle(handle) {
 			Panic(CoroGetPanicByHandle(handle))
@@ -255,9 +251,7 @@ func CoroScheduleUntil(handle CoroHandle) {
 			// Queue empty but target not done - shouldn't happen
 			// Target might have suspended without being re-queued
 			// Resume target directly
-			CoroSetCurrent(handle)
-			coroResume(handle)
-			CoroSetCurrent(nil)
+			resume(handle)
 
 			if CoroIsPanicByHandle(handle) {
 				Panic(CoroGetPanicByHandle(handle))
@@ -271,9 +265,7 @@ func CoroScheduleUntil(handle CoroHandle) {
 		}
 
 		// Resume this coroutine
-		CoroSetCurrent(h)
-		coroResume(h)
-		CoroSetCurrent(nil)
+		resume(h)
 
 		if CoroIsPanicByHandle(h) {
 			Panic(CoroGetPanicByHandle(h))
@@ -407,6 +399,36 @@ func CoroClearPanicByHandle(handle CoroHandle) {
 	delete(coroPanicMap, handle)
 }
 
+func resume(handle CoroHandle) {
+	// Skip if already destroyed or done
+	if coroIsDestroyed(handle) {
+		return
+	}
+
+	if coroRawDone(handle) {
+		// At final suspend but not destroyed - wake waiters
+		promise := coroPromise(handle, 8, false)
+		waitersField := (*unsafe.Pointer)(promise)
+		if waitersField != nil {
+			CoroWakeWaiters(waitersField)
+		}
+		return
+	}
+
+	CoroSetCurrent(handle)
+	coroResume(handle)
+	CoroSetCurrent(nil)
+
+	// Check if reached final suspend (but not destroyed yet)
+	if !coroIsDestroyed(handle) && coroRawDone(handle) {
+		promise := coroPromise(handle, 8, false)
+		waitersField := (*unsafe.Pointer)(promise)
+		if waitersField != nil {
+			CoroWakeWaiters(waitersField)
+		}
+	}
+}
+
 // -----------------------------------------------------------------------------
 // LLVM Coroutine intrinsics (to be linked)
 //
@@ -426,11 +448,35 @@ func coroResume(handle CoroHandle)
 //go:linkname coroDestroy llgo.coroDestroy
 func coroDestroy(handle CoroHandle)
 
-// coroDone reports whether a coroutine handle is at its final suspend point.
+// coroIsDestroyed checks if a coroutine handle's frame has been destroyed.
+// Returns true if handle is nil or frame's resume function pointer is nil.
+func coroIsDestroyed(handle CoroHandle) bool {
+	if handle == nil {
+		return true
+	}
+	// Check if frame was destroyed (resume function pointer is nil)
+	resumeFnPtr := *(*unsafe.Pointer)(handle)
+	return resumeFnPtr == nil
+}
+
+// coroDone safely checks whether a coroutine handle is done (destroyed or at final suspend).
+// It performs safety checks before calling the LLVM intrinsic:
+// 1. If handle is nil, returns true
+// 2. If frame's first pointer (resume fn) is nil, the frame was destroyed, returns true
+// 3. Otherwise calls llvm.coro.done
+func coroDone(handle CoroHandle) bool {
+	if coroIsDestroyed(handle) {
+		return true
+	}
+	return coroRawDone(handle)
+}
+
+// coroRawDone reports whether a coroutine handle is at its final suspend point.
 // Maps to llvm.coro.done intrinsic.
+// WARNING: Only call this after verifying handle is valid (not nil, not destroyed).
 //
-//go:linkname coroDone llgo.coroDone
-func coroDone(handle CoroHandle) bool
+//go:linkname coroRawDone llgo.coroDone
+func coroRawDone(handle CoroHandle) bool
 
 // coroSize returns the size needed for a coroutine frame.
 // Maps to llvm.coro.size.i64 intrinsic.

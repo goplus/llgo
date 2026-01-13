@@ -77,6 +77,14 @@ func (p Package) NewCoroFuncEx(name string, sig *types.Signature, bg Background,
 	// Create the coroutine function
 	coroFn := p.NewFuncEx(coroName, coroSig, bg, hasFreeVars, false)
 
+	// For coro functions with free vars, the closure context load must happen
+	// in block 1 (body start block after initial suspend), not block 0 (coro entry).
+	// This avoids an LLVM bug where values loaded before coro.begin and used after
+	// suspend points via extractvalue on empty structs cause IRTranslator crashes.
+	if hasFreeVars {
+		coroFn.SetFreeVarsBlkIdx(1)
+	}
+
 	// Mark with presplitcoroutine attribute for LLVM CoroSplit pass
 	// Must use enum attribute, not string attribute, for LLVM to recognize it
 	kind := llvm.AttributeKindID("presplitcoroutine")
@@ -719,7 +727,23 @@ func (b Builder) CoroFuncPrologue(bodyStartBlk BasicBlock, retType Type) *CoroSt
 	coroEnterFn := b.Pkg.rtFunc("CoroEnter")
 	b.Call(coroEnterFn)
 
-	// Jump to function body
+	// Initial suspend: suspend immediately after coro.begin, returning handle to caller.
+	// This follows the C++ coroutine pattern with suspend_always initial_suspend.
+	// The caller is responsible for scheduling/resuming the coroutine.
+	// No reschedule here - caller will enqueue via CoroReschedule.
+	falseVal := prog.BoolVal(false)
+	initSuspendResult := b.CoroSuspend(Expr{}, falseVal)
+
+	// Create block for resuming after initial suspend
+	initResumeBlk := fn.MakeBlock()
+
+	// Switch: default -> suspendBlk (return handle), 0 -> initResumeBlk (resume), 1 -> exitBlk (cleanup)
+	sw := b.impl.CreateSwitch(initSuspendResult.impl, suspendBlk.first, 2)
+	sw.AddCase(llvm.ConstInt(prog.tyInt8(), 0, false), initResumeBlk.first)
+	sw.AddCase(llvm.ConstInt(prog.tyInt8(), 1, false), exitBlk.first)
+
+	// After initial suspend resume, jump to function body
+	b.SetBlock(initResumeBlk)
 	b.Jump(bodyStartBlk)
 
 	return &CoroState{
@@ -812,10 +836,6 @@ func (b Builder) CoroFuncEpilogue(state *CoroState, generateDefers func(b Builde
 	// Check for unrecovered panic after defers
 	b.CoroCheckPanic()
 
-	// Wake waiters at final suspend only (push model).
-	waitersPtr := b.FieldAddr(state.Promise, state.PromiseWaiterField)
-	b.Call(b.Pkg.rtFunc("CoroWakeWaiters"), waitersPtr)
-
 	// Final suspend with final=true
 	trueVal := prog.BoolVal(true)
 	result := b.CoroSuspend(Expr{}, trueVal)
@@ -900,34 +920,25 @@ func (b Builder) CoroSuspendWithCleanup(state *CoroState, reschedule bool) {
 func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Type) {
 	fn := b.Func
 	// Blocks
-	loopBlk := fn.MakeBlock()
-	waitBlk := fn.MakeBlock()
-	doneBlk := fn.MakeBlock()
+	startBlk := fn.MakeBlock()
 
-	b.CoroReschedule(handle)
+	b.Jump(startBlk)
 
-	// Enter loop
-	b.Jump(loopBlk)
-
-	b.SetBlock(loopBlk)
-	isDone := b.CoroDone(handle)
-	b.If(isDone, doneBlk, waitBlk)
-
-	// Not done: register as waiter and suspend self.
-	b.SetBlock(waitBlk)
+	b.SetBlock(startBlk)
 	promisePtr := b.CoroPromise(handle, coroPromiseAlign, false)
 	promiseType, _, waitersField := b.coroPromiseLayout(retType)
 	typedPromise := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
 	waitersPtr := b.FieldAddr(typedPromise, waitersField)
 	if state != nil {
+		// add_waiter(handle, self)
 		b.Call(b.Pkg.rtFunc("CoroAddWaiter"), waitersPtr, state.CoroHandle)
 	}
+	// Enqueue the callee for execution (with initial suspend, callee hasn't been enqueued yet)
+	b.CoroReschedule(handle)
+	// suspend(self)
+	// handle will wake us up when it's in final suspend
 	b.CoroSuspendWithCleanup(state, false)
-	// After being resumed, check again.
-	b.Jump(loopBlk)
 
-	// Done block: callee finished, continue execution
-	b.SetBlock(doneBlk)
 	b.coroPropagatePanic(handle, state)
 }
 

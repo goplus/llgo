@@ -86,7 +86,7 @@ _llgo_0:
   %3 = call i1 @llvm.coro.alloc(token %2)
   br i1 %3, label %_llgo_4, label %_llgo_5
 
-_llgo_1:                                          ; preds = %_llgo_5
+_llgo_1:                                          ; preds = %_llgo_9
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 0)
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %4, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, i64 0, 1
@@ -96,16 +96,16 @@ _llgo_1:                                          ; preds = %_llgo_5
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/namedslice.MyBytes", ptr undef }, ptr %8, 1
   %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, 0
   %11 = icmp eq ptr %10, @"_llgo_github.com/goplus/llgo/cl/_testrt/namedslice.MyBytes"
-  br i1 %11, label %_llgo_9, label %_llgo_10
+  br i1 %11, label %_llgo_10, label %_llgo_11
 
-_llgo_2:                                          ; preds = %_llgo_11
+_llgo_2:                                          ; preds = %_llgo_12
   %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 9 }, ptr %12, align 8
   %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %12, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSetPanic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %13)
   br label %_llgo_7
 
-_llgo_3:                                          ; preds = %_llgo_11
+_llgo_3:                                          ; preds = %_llgo_12
   br label %_llgo_7
 
 _llgo_4:                                          ; preds = %_llgo_0
@@ -117,44 +117,49 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_0
   %16 = phi ptr [ null, %_llgo_0 ], [ %15, %_llgo_4 ]
   %17 = call ptr @llvm.coro.begin(token %2, ptr %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
-  br label %_llgo_1
+  %18 = call i8 @llvm.coro.suspend(token none, i1 false)
+  switch i8 %18, label %_llgo_6 [
+    i8 0, label %_llgo_9
+    i8 1, label %_llgo_7
+  ]
 
-_llgo_6:                                          ; preds = %_llgo_8, %_llgo_7
-  %18 = call i1 @llvm.coro.end(ptr %17, i1 false, token none)
+_llgo_6:                                          ; preds = %_llgo_8, %_llgo_7, %_llgo_5
+  %19 = call i1 @llvm.coro.end(ptr %17, i1 false, token none)
   ret ptr %17
 
-_llgo_7:                                          ; preds = %_llgo_2, %_llgo_3
-  %19 = getelementptr inbounds { ptr }, ptr %0, i32 0, i32 0
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroWakeWaiters"(ptr %19)
+_llgo_7:                                          ; preds = %_llgo_2, %_llgo_3, %_llgo_5
   %20 = call i8 @llvm.coro.suspend(token none, i1 true)
   switch i8 %20, label %_llgo_6 [
-    i8 0, label %_llgo_12
+    i8 0, label %_llgo_13
     i8 1, label %_llgo_8
   ]
 
-_llgo_8:                                          ; preds = %_llgo_12, %_llgo_7
+_llgo_8:                                          ; preds = %_llgo_13, %_llgo_7
   %21 = call ptr @llvm.coro.free(token %2, ptr %17)
   call void @free(ptr %21)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.CoroExit"()
   br label %_llgo_6
 
-_llgo_9:                                          ; preds = %_llgo_1
+_llgo_9:                                          ; preds = %_llgo_5
+  br label %_llgo_1
+
+_llgo_10:                                         ; preds = %_llgo_1
   %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, 1
   %23 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %22, align 8
   %24 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %23, 0
   %25 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1 } %24, i1 true, 1
-  br label %_llgo_11
+  br label %_llgo_12
 
-_llgo_10:                                         ; preds = %_llgo_1
-  br label %_llgo_11
+_llgo_11:                                         ; preds = %_llgo_1
+  br label %_llgo_12
 
-_llgo_11:                                         ; preds = %_llgo_10, %_llgo_9
-  %26 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1 } [ %25, %_llgo_9 ], [ zeroinitializer, %_llgo_10 ]
+_llgo_12:                                         ; preds = %_llgo_11, %_llgo_10
+  %26 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1 } [ %25, %_llgo_10 ], [ zeroinitializer, %_llgo_11 ]
   %27 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1 } %26, 0
   %28 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", i1 } %26, 1
   br i1 %28, label %_llgo_3, label %_llgo_2
 
-_llgo_12:                                         ; preds = %_llgo_7
+_llgo_13:                                         ; preds = %_llgo_7
   br label %_llgo_8
 }
 
@@ -204,15 +209,13 @@ declare ptr @llvm.coro.begin(token, ptr writeonly) #2
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroEnter"()
 
+; Function Attrs: nounwind
+declare i8 @llvm.coro.suspend(token, i1) #2
+
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroSetPanic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 ; Function Attrs: nounwind
 declare i1 @llvm.coro.end(ptr, i1, token) #2
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.CoroWakeWaiters"(ptr)
-
-; Function Attrs: nounwind
-declare i8 @llvm.coro.suspend(token, i1) #2
 
 ; Function Attrs: nounwind memory(argmem: read)
 declare ptr @llvm.coro.free(token, ptr nocapture readonly) #4

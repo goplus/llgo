@@ -183,10 +183,11 @@ type aFunction struct {
 	coroDefer *aCoroDefer // coro defer state (for $coro functions)
 	recov     BasicBlock
 
-	params   []Type
-	freeVars Expr
-	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+	params         []Type
+	freeVars       Expr
+	freeVarsBlkIdx int // block index where freeVars load should be inserted (0 for normal, 1 for coro)
+	base           int // base = 1 if hasFreeVars; base = 0 otherwise
+	hasVArg        bool
 
 	diFunc DIFunction
 }
@@ -288,9 +289,12 @@ func (p Function) closureCtx(b Builder) Expr {
 			panic("ssa: function has no free variables")
 		}
 		ptr := Expr{p.impl.Param(0), p.params[0]}
-		if b.blk.Index() != 0 {
+		// For coro functions, freeVarsBlkIdx is 1 (body start block after initial suspend)
+		// For normal functions, freeVarsBlkIdx is 0 (entry block)
+		targetBlkIdx := p.freeVarsBlkIdx
+		if b.blk.Index() != targetBlkIdx {
 			blk := b.impl.GetInsertBlock()
-			b.SetBlockEx(p.blks[0], AtStart, false)
+			b.SetBlockEx(p.blks[targetBlkIdx], AtStart, false)
 			p.freeVars = b.Load(ptr)
 			b.impl.SetInsertPointAtEnd(blk)
 		} else {
@@ -304,6 +308,13 @@ func (p Function) closureCtx(b Builder) Expr {
 func (p Function) FreeVar(b Builder, i int) Expr {
 	ctx := p.closureCtx(b)
 	return b.getField(ctx, i)
+}
+
+// SetFreeVarsBlkIdx sets the block index where freeVars load should be inserted.
+// For coro functions, this should be 1 (body start block after initial suspend).
+// For normal functions, this is 0 (entry block) by default.
+func (p Function) SetFreeVarsBlkIdx(idx int) {
+	p.freeVarsBlkIdx = idx
 }
 
 // NewBuilder creates a new Builder for the function.
