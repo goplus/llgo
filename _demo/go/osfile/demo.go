@@ -51,7 +51,7 @@ func main() {
 
 	f.Close()
 
-	// Test WriteAt
+	// Test WriteAt with offset 0
 	f, err = os.OpenFile(testFile, os.O_RDWR, 0644)
 	if err != nil {
 		panic("OpenFile failed: " + err.Error())
@@ -59,12 +59,18 @@ func main() {
 
 	n, err = f.WriteAt([]byte("XXXXX"), 0)
 	if err != nil || n != 5 {
-		panic("WriteAt failed")
+		panic("WriteAt at offset 0 failed")
+	}
+
+	// Test WriteAt with non-zero offset
+	n, err = f.WriteAt([]byte("YYYYY"), 7)
+	if err != nil || n != 5 {
+		panic("WriteAt at offset 7 failed")
 	}
 
 	f.Close()
 
-	// Verify WriteAt result
+	// Verify WriteAt results
 	f, err = os.Open(testFile)
 	if err != nil {
 		panic("Open failed: " + err.Error())
@@ -73,7 +79,13 @@ func main() {
 	buf = make([]byte, 5)
 	n, err = f.ReadAt(buf, 0)
 	if err != nil || n != 5 || string(buf) != "XXXXX" {
-		panic("WriteAt verification failed: expected 'XXXXX'")
+		panic("WriteAt verification at offset 0 failed: expected 'XXXXX'")
+	}
+
+	buf = make([]byte, 5)
+	n, err = f.ReadAt(buf, 7)
+	if err != nil || n != 5 || string(buf) != "YYYYY" {
+		panic("WriteAt verification at offset 7 failed: expected 'YYYYY'")
 	}
 
 	f.Close()
