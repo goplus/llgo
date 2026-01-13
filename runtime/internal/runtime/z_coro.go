@@ -185,9 +185,21 @@ func CoroScheduleOne() bool {
 // CoroReschedule puts the current coroutine back in the run queue.
 // This is called after llvm.coro.suspend returns 0 (resumed).
 func CoroReschedule(handle CoroHandle) {
-	if handle != nil {
-		coroQueuePush(&coroRunQueue, handle)
+	if handle == nil {
+		return
 	}
+	// Check the target handle; if already done, skip enqueuing.
+	resumeFn := *(*unsafe.Pointer)(handle)
+	if resumeFn == nil {
+		return
+	}
+	coroResume(handle)
+	// recheck
+	resumeFn = *(*unsafe.Pointer)(handle)
+	if resumeFn == nil {
+		return
+	}
+	coroQueuePush(&coroRunQueue, handle)
 }
 
 type coroWaiterNode struct {
