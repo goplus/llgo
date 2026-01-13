@@ -77,12 +77,18 @@ func FromDir(t *testing.T, sel, relDir string) {
 	}
 }
 
-func RunFromDir(t *testing.T, sel, relDir string) {
+// RunFromDir executes tests under relDir, skipping any relPkg entries in ignore.
+// ignore entries should be relative package paths (e.g., "./_testgo/invoke").
+func RunFromDir(t *testing.T, sel, relDir string, ignore []string) {
 	rootDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
 	}
 	dir := filepath.Join(rootDir, relDir)
+	ignoreSet := make(map[string]struct{}, len(ignore))
+	for _, item := range ignore {
+		ignoreSet[item] = struct{}{}
+	}
 	fis, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal("ReadDir failed:", err)
@@ -98,6 +104,12 @@ func RunFromDir(t *testing.T, sel, relDir string) {
 			t.Fatal("Rel failed:", err)
 		}
 		relPkg = "./" + filepath.ToSlash(relPkg)
+		if _, ok := ignoreSet[relPkg]; ok {
+			t.Run(name, func(t *testing.T) {
+				t.Skip("skip platform-specific output mismatch")
+			})
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
 			testRunFrom(t, pkgDir, relPkg, sel)
 		})

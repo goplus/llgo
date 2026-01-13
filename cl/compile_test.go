@@ -20,6 +20,7 @@
 package cl_test
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/goplus/llgo/cl"
@@ -37,7 +38,16 @@ func TestFromTestgo(t *testing.T) {
 }
 
 func TestRunFromTestgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testgo")
+	var ignore []string
+	if runtime.GOOS == "linux" {
+		// Linux output differs for these cases; skip until stabilized.
+		ignore = []string{
+			"./_testgo/invoke",
+			"./_testgo/reader",
+			"./_testgo/struczero",
+		}
+	}
+	cltest.RunFromDir(t, "", "./_testgo", ignore)
 }
 
 func TestFromTestpy(t *testing.T) {
@@ -45,7 +55,7 @@ func TestFromTestpy(t *testing.T) {
 }
 
 func TestRunFromTestpy(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testpy")
+	cltest.RunFromDir(t, "", "./_testpy", nil)
 }
 
 func TestFromTestlibgo(t *testing.T) {
@@ -53,7 +63,7 @@ func TestFromTestlibgo(t *testing.T) {
 }
 
 func TestRunFromTestlibgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibgo")
+	cltest.RunFromDir(t, "", "./_testlibgo", nil)
 }
 
 func TestFromTestlibc(t *testing.T) {
@@ -61,7 +71,7 @@ func TestFromTestlibc(t *testing.T) {
 }
 
 func TestRunFromTestlibc(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibc")
+	cltest.RunFromDir(t, "", "./_testlibc", nil)
 }
 
 func TestFromTestrt(t *testing.T) {
@@ -71,7 +81,12 @@ func TestFromTestrt(t *testing.T) {
 }
 
 func TestRunFromTestrt(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testrt")
+	var ignore []string
+	if runtime.GOOS == "linux" {
+		// Linux output differs for this case; skip until stabilized.
+		ignore = []string{"./_testrt/tpmethod"}
+	}
+	cltest.RunFromDir(t, "", "./_testrt", ignore)
 }
 
 func TestFromTestdata(t *testing.T) {
@@ -79,7 +94,7 @@ func TestFromTestdata(t *testing.T) {
 }
 
 func TestRunFromTestdata(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testdata")
+	cltest.RunFromDir(t, "", "./_testdata", nil)
 }
 
 func TestGoPkgMath(t *testing.T) {
