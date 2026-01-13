@@ -85,6 +85,7 @@ func TestRunFromTestrt(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		ignore = []string{
+			"./_testrt/asmfull",  // Output is macOS-specific.
 			"./_testrt/fprintf",  // Linux uses different stderr symbol (no __stderrp).
 			"./_testrt/tpmethod", // FIXME(zzy): NULL pointer formatting differs (0x0 vs (nil)) on Linux.
 		}
