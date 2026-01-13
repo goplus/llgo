@@ -28,10 +28,10 @@
 - [ ] Re-run typesdemo + complexdemo with debug enabled.
 
 ### C. Pull IR (mid-term)
-- [ ] Define Pull IR (states, awaits, next-state edges, storage classes).
-- [ ] SSA → Pull IR transform (handles async.Return, stack allocs, defer/panic).
-- [ ] Pull IR → LLVM backend using the unified Poll template.
-- [ ] Migrate incrementally, starting with complexdemo.
+- [x] Define Pull IR (states, awaits, next-state edges, storage classes).
+- [x] SSA → Pull IR transform (handles async.Return, stack allocs, defer/panic).
+- [x] Pull IR → LLVM backend using the unified Poll template.
+- [x] Migrate incrementally; `test/asyncpull` passes on Pull IR path.
 
 ### D. Runtime / Executor Alignment
 - [x] Confirm `async/sync` & `async/libuv` re-poll on wake.

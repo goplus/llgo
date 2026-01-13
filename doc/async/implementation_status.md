@@ -48,46 +48,11 @@
 ## ⚠️ Known Limitations
 
 ### Map Iteration
-- **Status**: Supported (map range + await passes `MapIterAsync` / `MapRangeAwait`); optional warnings remain可开关。
+- **Status**: Supported（map range + await 在 Pull IR 路径已通过 `MapIterAsync` / `MapRangeAwait`）。
 - **Notes**: 迭代顺序依赖 Go map 语义（非确定），状态机持久化 map 迭代器以避免重复从头开始。
-- **Example**:
-  ```go
-  // ❌ Not recommended
-  for k, v := range myMap {
-      result := Compute(v).Await()
-      // ...
-  }
-
-  // ✅ Use slice iteration instead
-  keys := make([]string, 0, len(myMap))
-  for k := range myMap {
-      keys = append(keys, k)
-  }
-  for _, k := range keys {
-      v := myMap[k]
-      result := Compute(v).Await()
-      // ...
-  }
-  ```
 
 ### Tuple Types in State
-- **Status**: Filtered from cross-state variables
-- **Issue**: Tuples with `CommaOk` (e.g., map lookup `v, ok := m[k]`) cannot be persisted
-- **Workaround**: Extract tuple components before await
-- **Example**:
-  ```go
-  // ❌ May not work
-  tuple := m[key]  // returns (value, bool)
-  result := Compute(x).Await()
-  v, ok := tuple  // tuple may not persist
-
-  // ✅ Extract before await
-  v, ok := m[key]
-  if ok {
-      result := Compute(v).Await()
-      // ...
-  }
-  ```
+- **Status**: Supported（Pull IR 路径对 tuple slot type 有修正，`scanForKey` 等用例已通过）。
 
 ## 📊 Test Coverage
 
@@ -107,7 +72,7 @@
 - Type aliases
 
 ### Disabled Tests
-- `TestMapIterAsync` - Map iteration limitation (documented above)
+- `TestGoroutineAwaitForbidden_Skip` - goroutine+await should be rejected at compile time
 
 ## 🔧 Recent Fixes (Jan 2026)
 
@@ -136,5 +101,4 @@
 4. **Performance Optimizations**: Reduce state struct size for simple cases
 
 ### Non-Goals
-- Channels with await (requires runtime scheduler integration)
-- Goroutines spawned from async functions (use `async.Spawn` instead)
+- Goroutines with `Await` inside (编译期应拒绝；测试中保留 skip 用例).

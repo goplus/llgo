@@ -67,7 +67,16 @@ type Context struct {
 
 // NewContext creates a Context with an optional waker.
 func NewContext(w Waker) *Context {
-	return &Context{Waker: w, hasWaker: w != nil}
+	ctx := &Context{}
+	ctx.SetWaker(w)
+	return ctx
+}
+
+// SetWaker sets the waker and updates internal state.
+// Prefer this over setting Context.Waker directly.
+func (c *Context) SetWaker(w Waker) {
+	c.Waker = w
+	c.hasWaker = w != nil
 }
 
 // Waker is used to notify the executor that a Future is ready to be polled.

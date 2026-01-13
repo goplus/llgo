@@ -1,7 +1,7 @@
 # LLGo 拉模型异步机制提案
 
 **日期**: 2026-01-07
-**状态**: 实现中（核心功能完成，defer 处理进行中）
+**状态**: 实现中（核心功能完成，defer/panic/recover 已实现）
 **分支**: pull-model
 **作者**: LLGo Team
 
@@ -112,17 +112,22 @@ package async
 type Poll[T any] struct {
     ready bool
     value T
+    err   any // panic value for跨边界传播
 }
 
 func Ready[T any](v T) Poll[T] { return Poll[T]{ready: true, value: v} }
 func Pending[T any]() Poll[T]  { return Poll[T]{ready: false} }
+func PollError[T any](err any) Poll[T] { return Poll[T]{ready: true, err: err} }
 
 func (p Poll[T]) IsReady() bool { return p.ready }
 func (p Poll[T]) Value() T      { return p.value }
+func (p Poll[T]) Error() any    { return p.err }
+func (p Poll[T]) HasError() bool { return p.err != nil }
 
 // Context 传递给 poll，包含 Waker
 type Context struct {
     Waker Waker
+    hasWaker bool // 由 NewContext / SetWaker 维护
 }
 
 // Waker 用于通知执行器
@@ -131,26 +136,24 @@ type Waker interface {
 }
 ```
 
-### 3.2 Future 类型约束
+### 3.2 用户 API
 
 ```go
-// Poller 类型约束（编译时检查，无 itab）
-type Poller[T any] interface {
+// Future 是对拉模型异步结果的最小接口
+type Future[T any] interface {
     Poll(ctx *Context) Poll[T]
+    Await() T // 编译期标记
 }
-```
 
-### 3.3 用户 API
-
-```go
-// Await 标记挂起点（编译器识别）
-func (a Async[T]) Await() T
+// NewContext / SetWaker 用于正确设置 hasWaker
+func NewContext(w Waker) *Context
+func (c *Context) SetWaker(w Waker)
 
 // Return 包装返回值
-func Return[T any](v T) Async[T]
+func Return[T any](v T) *ReadyFuture[T]
 ```
 
-### 3.4 使用示例
+### 3.3 使用示例
 
 ```go
 func FetchUser(id int) Future[User] {
@@ -449,8 +452,8 @@ func (s *MyAsync_State) Poll(ctx *Context) Poll[int] {
 
 ```go
 // 泛型 BlockOn - 编译期为每个类型生成专用代码
-func BlockOn[F Poller[T], T any](fut F) T {
-    ctx := &Context{Waker: &NoopWaker{}}
+func BlockOn[F Future[T], T any](fut F) T {
+    ctx := NewContext(&NoopWaker{})
     for {
         p := fut.Poll(ctx)  // 直接调用，可内联
         if p.IsReady() { return p.Value() }
@@ -478,9 +481,9 @@ type MyAsync_State struct {
 ### 6.3 仅 Spawn 时堆分配
 
 ```go
-func Spawn[F Poller[Void]](fn func() F) {
+func Spawn[F Future[Void]](fn func() F) {
     state := fn()             // 栈上创建整个状态机树
-    task := new(Task[F])      // 唯一一次 malloc
+    task := new(Task)         // 唯一一次 malloc
     task.future = state       // 复制到堆
     schedule(task)
 }
@@ -545,8 +548,8 @@ Main.poll() → A.poll() → B.poll() → C.poll()
 ### 8.1 简单阻塞执行器
 
 ```go
-func BlockOn[F Poller[T], T any](fut F) T {
-    ctx := &Context{Waker: &NoopWaker{}}
+func BlockOn[F Future[T], T any](fut F) T {
+    ctx := NewContext(&NoopWaker{})
     for {
         p := fut.Poll(ctx)
         if p.IsReady() { return p.Value() }
@@ -776,15 +779,15 @@ SyncA (setjmp)
 
 ```go
 type Poll[T any] struct {
-    Ready bool
-    Value T
-    Error any  // panic 值，用于跨边界传播
+    ready bool
+    value T
+    err   any  // panic 值，用于跨边界传播
 }
 ```
 
 ### 11.7 关键实现要点
 
-1. **异步 Poll 方法需要 setjmp**：捕获被调用同步函数的 panic
+1. **异步 Poll 方法需要 setjmp**：捕获被调用同步函数的 panic（当前实现以 runtime hook/DeferState 方式完成）
 2. **Poll 返回 Error 字段**：传播异步 panic
 3. **BlockOn/Await 转换**：Error ↔ 同步 panic 互转
 4. **defer 链正确执行**：每层都执行自己的 defer
@@ -793,16 +796,18 @@ type Poll[T any] struct {
 
 ## 11. 复杂场景处理
 
-### 11.x Channel 非阻塞语义（待完成）
+### 11.x Channel 非阻塞语义（已实现）
 
-当前实现中，channel send/recv/select 仍沿用 Go 的同步阻塞语义；在拉模型 `Poll` 中如果通道未就绪会直接阻塞执行线程，违反 executor 的协作式调度。现有测试之所以通过，是因为用例确保通道已就绪或带缓冲并立即 close。为支持真实异步执行器，需要：
+当前实现中，channel send/recv/select 已通过 `TrySelectWaker` + waker 注册实现非阻塞语义。\
+编译器会在 Poll 中进行尝试，未就绪时返回 `Pending` 并注册 waker，避免阻塞执行线程。\
+`test/asyncpull` 已包含无缓冲 channel 的 pending/唤醒用例。
 
-- **运行时原语**：提供非阻塞尝试与唤醒接口，如 `TryRecv/TrySend`（返回 ready/pending + waker 注册）。
+- **运行时原语**：提供非阻塞尝试与唤醒接口，如 `TrySelectWaker` / `ChanTryRecvWaker` / `ChanTrySendWaker`。
 - **编译器转换**：
-  - 将 `send` / `<-` / `range ch` 转为可挂起节点，未就绪时返回 `Pending` 并注册 waker。
+  - `send` / `<-` / `range ch` 在 Poll 中执行非阻塞尝试，未就绪时返回 `Pending` 并注册 waker。
   - `select` 分支采用非阻塞尝试，多路均未就绪时 `Pending`。
 - **执行模型**：executor 反复调用 `Poll`，channel 就绪由 waker 唤醒；避免任何阻塞持锁。
-- **测试补全**：加入无缓冲未就绪 send/recv、全 pending 的 select、producer 慢于 consumer 的 range 等回归用例，验证不会阻塞且能正确 pending/ready。
+- **测试补全**：已加入无缓冲未就绪 send/recv 的 waker 测试；仍建议补充全 pending select、慢生产者 range 等回归用例。
 
 ### 12.1 条件分支
 
