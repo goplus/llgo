@@ -898,71 +898,35 @@ func (b Builder) CoroSuspendWithCleanup(state *CoroState, reschedule bool) {
 //
 // The pattern is:
 //
-//	loop:
-//	  if coro.done(handle): goto done
-//	  add_waiter(promise.waiters, self)
-//	  reschedule(handle)
-//	  suspend
-//	  goto loop
-//	done:
-//	  ; continue execution
-//
-// This requires the caller to be in a coroutine context with valid CoroState.
 func (b Builder) CoroAwaitWithSuspend(handle Expr, state *CoroState, retType Type) {
 	fn := b.Func
-	entryBlk := b.CurrentBlock()
-
-	// Create basic blocks
-	doneBlk := fn.MakeBlock()
-	suspendBlk := fn.MakeBlock()
-	chooseBlk := fn.MakeBlock()
-	firstWaitBlk := fn.MakeBlock()
+	// Blocks
+	loopBlk := fn.MakeBlock()
 	waitBlk := fn.MakeBlock()
+	doneBlk := fn.MakeBlock()
 
-	// Jump to suspend check
-	b.Jump(suspendBlk)
+	// Enqueue the callee once to start execution.
+	b.CoroReschedule(handle)
 
-	// Suspend block: check if callee is done.
-	b.SetBlock(suspendBlk)
-	firstPhi := b.Phi(b.Prog.Bool())
-	firstPhi.AddIncoming(b, []BasicBlock{entryBlk, firstWaitBlk, waitBlk}, func(i int, blk BasicBlock) Expr {
-		if i == 0 {
-			return b.Prog.BoolVal(true)
-		}
-		return b.Prog.BoolVal(false)
-	})
+	// Enter loop
+	b.Jump(loopBlk)
+
+	b.SetBlock(loopBlk)
 	isDone := b.CoroDone(handle)
-	b.If(isDone, doneBlk, chooseBlk)
+	b.If(isDone, doneBlk, waitBlk)
 
-	b.SetBlock(chooseBlk)
-	b.If(firstPhi.Expr, firstWaitBlk, waitBlk)
-
-	// First wait block: register as waiter, enqueue callee once, then suspend.
-	b.SetBlock(firstWaitBlk)
-	if state != nil {
-		promisePtr := b.CoroPromise(handle, coroPromiseAlign, false)
-		promiseType, _, waitersField := b.coroPromiseLayout(retType)
-		typedPromise := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
-		waitersPtr := b.FieldAddr(typedPromise, waitersField)
-		b.Call(b.Pkg.rtFunc("CoroAddWaiter"), waitersPtr, state.CoroHandle)
-	}
-	b.Call(b.Pkg.rtFunc("CoroReschedule"), handle)
-	b.CoroSuspendWithCleanup(state, false)
-	// After being resumed, check the callee again
-	b.Jump(suspendBlk)
-
-	// Wait block: register as waiter and suspend (callee will re-enqueue itself).
+	// Not done: register as waiter and suspend self.
 	b.SetBlock(waitBlk)
+	promisePtr := b.CoroPromise(handle, coroPromiseAlign, false)
+	promiseType, _, waitersField := b.coroPromiseLayout(retType)
+	typedPromise := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
+	waitersPtr := b.FieldAddr(typedPromise, waitersField)
 	if state != nil {
-		promisePtr := b.CoroPromise(handle, coroPromiseAlign, false)
-		promiseType, _, waitersField := b.coroPromiseLayout(retType)
-		typedPromise := Expr{promisePtr.impl, b.Prog.Pointer(promiseType)}
-		waitersPtr := b.FieldAddr(typedPromise, waitersField)
 		b.Call(b.Pkg.rtFunc("CoroAddWaiter"), waitersPtr, state.CoroHandle)
 	}
 	b.CoroSuspendWithCleanup(state, false)
-	// After being resumed, check the callee again
-	b.Jump(suspendBlk)
+	// After being resumed, check again.
+	b.Jump(loopBlk)
 
 	// Done block: callee finished, continue execution
 	b.SetBlock(doneBlk)
