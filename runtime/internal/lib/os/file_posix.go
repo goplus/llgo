@@ -36,8 +36,19 @@ func (f *File) pread(b []byte, off int64) (n int, err error) {
 		return int(ret), nil
 	}
 	if ret == 0 {
+		// When pread returns 0, it typically indicates EOF.
+		// However, for non-blocking files, check if EAGAIN is set.
+		if len(b) > 0 {
+			errno := os.Errno()
+			if errno == os.EAGAIN {
+				// Non-blocking mode: operation would block
+				return 0, syscall.Errno(errno)
+			}
+		}
+		// For blocking mode or regular EOF, return 0 with nil error
 		return 0, nil
 	}
+	// ret < 0 indicates an error
 	return 0, syscall.Errno(os.Errno())
 }
 
@@ -49,8 +60,22 @@ func (f *File) pwrite(b []byte, off int64) (n int, err error) {
 		return int(ret), nil
 	}
 	if ret == 0 {
+		// When pwrite returns 0 but we have data to write, check if the file
+		// is in non-blocking mode and would block.
+		if len(b) > 0 {
+			// Check if there's an errno set (e.g., EAGAIN for non-blocking mode)
+			errno := os.Errno()
+			if errno == os.EAGAIN {
+				// Non-blocking mode: operation would block
+				return 0, syscall.Errno(errno)
+			}
+			// Blocking mode or no specific error: this is unexpected
+			// Return error to prevent infinite loops in WriteAt
+			return 0, io.ErrUnexpectedEOF
+		}
 		return 0, nil
 	}
+	// ret < 0 indicates an error
 	return 0, syscall.Errno(os.Errno())
 }
 
