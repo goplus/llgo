@@ -70,7 +70,9 @@ func PrintHex(v uint64) {
 }
 
 func PrintPointer(p unsafe.Pointer) {
-	c.Fprintf(c.Stderr, c.Str("%p"), p)
+	// Match Go's builtin print/println pointer formatting (0x... even for nil).
+	c.Fprintf(c.Stderr, c.Str("0x"))
+	c.Fprintf(c.Stderr, printFormatPrefixHex, uintptr(p))
 }
 
 func PrintString(s String) {
