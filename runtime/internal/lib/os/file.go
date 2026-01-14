@@ -67,43 +67,37 @@ func (f *File) Read(b []byte) (n int, err error) {
 // ReadAt always returns a non-nil error when n < len(b).
 // At end of file, that error is io.EOF.
 func (f *File) ReadAt(b []byte, off int64) (n int, err error) {
-	/*
-		if err := f.checkValid("read"); err != nil {
-			return 0, err
-		}
+	if err := f.checkValid("read"); err != nil {
+		return 0, err
+	}
 
-		if off < 0 {
-			return 0, &PathError{Op: "readat", Path: f.name, Err: errors.New("negative offset")}
-		}
+	if off < 0 {
+		return 0, &PathError{Op: "readat", Path: f.name, Err: errors.New("negative offset")}
+	}
 
-		for len(b) > 0 {
-			m, e := f.pread(b, off)
-			if e != nil {
-				err = f.wrapErr("read", e)
-				break
-			}
-			n += m
-			b = b[m:]
-			off += int64(m)
+	for len(b) > 0 {
+		m, e := f.pread(b, off)
+		if e != nil {
+			err = f.wrapErr("read", e)
+			break
 		}
-		return
-	*/
-	panic("todo: os.File.ReadAt")
+		n += m
+		b = b[m:]
+		off += int64(m)
+	}
+	return
 }
 
 // ReadFrom implements io.ReaderFrom.
 func (f *File) ReadFrom(r io.Reader) (n int64, err error) {
-	/*
-		if err := f.checkValid("write"); err != nil {
-			return 0, err
-		}
-		n, handled, e := f.readFrom(r)
-		if !handled {
-			return genericReadFrom(f, r) // without wrapping
-		}
-		return n, f.wrapErr("write", e)
-	*/
-	panic("todo: os.File.ReadFrom")
+	if err := f.checkValid("write"); err != nil {
+		return 0, err
+	}
+	n, handled, e := f.readFrom(r)
+	if !handled {
+		return genericReadFrom(f, r) // without wrapping
+	}
+	return n, f.wrapErr("write", e)
 }
 
 func genericReadFrom(f *File, r io.Reader) (int64, error) {
@@ -150,31 +144,28 @@ var errWriteAtInAppendMode = errors.New("os: invalid use of WriteAt on file open
 //
 // If file was opened with the O_APPEND flag, WriteAt returns an error.
 func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
-	/*
-		if err := f.checkValid("write"); err != nil {
-			return 0, err
-		}
-		if f.appendMode {
-			return 0, errWriteAtInAppendMode
-		}
+	if err := f.checkValid("write"); err != nil {
+		return 0, err
+	}
+	if f.appendMode {
+		return 0, errWriteAtInAppendMode
+	}
 
-		if off < 0 {
-			return 0, &PathError{Op: "writeat", Path: f.name, Err: errors.New("negative offset")}
-		}
+	if off < 0 {
+		return 0, &PathError{Op: "writeat", Path: f.name, Err: errors.New("negative offset")}
+	}
 
-		for len(b) > 0 {
-			m, e := f.pwrite(b, off)
-			if e != nil {
-				err = f.wrapErr("write", e)
-				break
-			}
-			n += m
-			b = b[m:]
-			off += int64(m)
+	for len(b) > 0 {
+		m, e := f.pwrite(b, off)
+		if e != nil {
+			err = f.wrapErr("write", e)
+			break
 		}
-		return
-	*/
-	panic("todo: os.(*File).WriteAt")
+		n += m
+		b = b[m:]
+		off += int64(m)
+	}
+	return
 }
 
 // Seek sets the offset for the next Read or Write on file to offset, interpreted
@@ -183,20 +174,14 @@ func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
 // It returns the new offset and an error, if any.
 // The behavior of Seek on a file opened with O_APPEND is not specified.
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
-	/*
-		if err := f.checkValid("seek"); err != nil {
-			return 0, err
-		}
-		r, e := f.seek(offset, whence)
-		if e == nil && f.dirinfo != nil && r != 0 {
-			e = syscall.EISDIR
-		}
-		if e != nil {
-			return 0, f.wrapErr("seek", e)
-		}
-		return r, nil
-	*/
-	panic("todo: os.(*File).Seek")
+	if err := f.checkValid("seek"); err != nil {
+		return 0, err
+	}
+	r, e := f.seek(offset, whence)
+	if e != nil {
+		return 0, f.wrapErr("seek", e)
+	}
+	return r, nil
 }
 
 // WriteString is like Write, but writes the contents of string s rather than

@@ -7,8 +7,13 @@
 package os
 
 import (
+	"io"
 	"syscall"
 	"time"
+	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/os"
 )
 
 // Close closes the File, rendering it unusable for I/O.
@@ -26,23 +31,52 @@ func (f *File) Close() error {
 // It returns the number of bytes read and the error, if any.
 // EOF is signaled by a zero count with err set to nil.
 func (f *File) pread(b []byte, off int64) (n int, err error) {
-	/*
-		n, err = f.pfd.Pread(b, off)
-		runtime.KeepAlive(f)
-		return n, err
-	*/
-	panic("todo: os.(*File).pread")
+	ret := os.Pread(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)), os.OffT(off))
+	if ret > 0 {
+		return int(ret), nil
+	}
+	if ret == 0 {
+		// When pread returns 0, it typically indicates EOF.
+		// However, for non-blocking files, check if EAGAIN is set.
+		if len(b) > 0 {
+			errno := os.Errno()
+			if errno == os.EAGAIN {
+				// Non-blocking mode: operation would block
+				return 0, syscall.Errno(errno)
+			}
+		}
+		// For blocking mode or regular EOF, return 0 with nil error
+		return 0, nil
+	}
+	// ret < 0 indicates an error
+	return 0, syscall.Errno(os.Errno())
 }
 
 // pwrite writes len(b) bytes to the File starting at byte offset off.
 // It returns the number of bytes written and an error, if any.
 func (f *File) pwrite(b []byte, off int64) (n int, err error) {
-	/*
-		n, err = f.pfd.Pwrite(b, off)
-		runtime.KeepAlive(f)
-		return n, err
-	*/
-	panic("todo: os.(*File).pwrite")
+	ret := os.Pwrite(c.Int(f.fd), unsafe.Pointer(unsafe.SliceData(b)), uintptr(len(b)), os.OffT(off))
+	if ret > 0 {
+		return int(ret), nil
+	}
+	if ret == 0 {
+		// When pwrite returns 0 but we have data to write, check if the file
+		// is in non-blocking mode and would block.
+		if len(b) > 0 {
+			// Check if there's an errno set (e.g., EAGAIN for non-blocking mode)
+			errno := os.Errno()
+			if errno == os.EAGAIN {
+				// Non-blocking mode: operation would block
+				return 0, syscall.Errno(errno)
+			}
+			// Blocking mode or no specific error: this is unexpected
+			// Return error to prevent infinite loops in WriteAt
+			return 0, io.ErrUnexpectedEOF
+		}
+		return 0, nil
+	}
+	// ret < 0 indicates an error
+	return 0, syscall.Errno(os.Errno())
 }
 
 // syscallMode returns the syscall-specific mode bits from Go's portable mode bits.
@@ -221,6 +255,23 @@ func (f *File) checkValid(op string) error {
 		return ErrInvalid
 	}
 	return nil
+}
+
+// seek sets the file offset for the next Read or Write on file to offset.
+func (f *File) seek(offset int64, whence int) (int64, error) {
+	ret := os.Lseek(c.Int(f.fd), os.OffT(offset), c.Int(whence))
+	if ret < 0 {
+		return 0, syscall.Errno(os.Errno())
+	}
+	return int64(ret), nil
+}
+
+// readFrom is a platform-specific implementation of io.ReaderFrom.
+// It returns handled=false to fall back to the generic implementation.
+func (f *File) readFrom(r io.Reader) (n int64, handled bool, err error) {
+	// For now, we don't have platform-specific optimizations
+	// Let the generic implementation handle it
+	return 0, false, nil
 }
 
 // ignoringEINTR makes a function call and repeats it if it returns an
