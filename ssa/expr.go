@@ -862,11 +862,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					ret.impl = castInt(b, x.impl, x.Type, t)
 					return
 				} else if xtyp.Info()&types.IsFloat != 0 {
-					if typ.Info()&types.IsUnsigned != 0 {
-						ret.impl = llvm.CreateFPToUI(b.impl, x.impl, t.ll)
-					} else {
-						ret.impl = llvm.CreateFPToSI(b.impl, x.impl, t.ll)
-					}
+					ret.impl = castFloatToInt(b, x.impl, t)
 					return
 				}
 			} else if typ.Info()&types.IsFloat != 0 {
@@ -933,6 +929,34 @@ func castInt(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 		// Source is signed, use sign extension
 		return llvm.CreateSExt(b.impl, x, typ.ll)
 	}
+}
+
+func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
+	dstSize := b.Prog.td.TypeAllocSize(typ.ll)
+	if dstSize < 8 {
+		i64 := b.Prog.Int64()
+		if typ.kind == vkUnsigned {
+			// note(zzy): for unsigned targets, split negative vs non-negative.
+			// Negative values need signed expansion (FPToSI) before truncation;
+			// non-negative values can use unsigned expansion (FPToUI). This avoids
+			// direct float->narrow-unsigned conversions and preserves wrap/trunc behavior.
+			zero := llvm.ConstNull(x.Type())
+			isNeg := b.impl.CreateFCmp(llvm.FloatOLT, x, zero, "")
+			neg := llvm.CreateFPToSI(b.impl, x, i64.ll)
+			pos := llvm.CreateFPToUI(b.impl, x, i64.ll)
+			tmp := b.impl.CreateSelect(isNeg, neg, pos, "")
+			return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+		}
+		tmp := llvm.CreateFPToSI(b.impl, x, i64.ll)
+		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+	}
+	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
+	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction
+	// and https://llvm.org/docs/LangRef.html#fptosi-to-instruction
+	if typ.kind == vkUnsigned {
+		return llvm.CreateFPToUI(b.impl, x, typ.ll)
+	}
+	return llvm.CreateFPToSI(b.impl, x, typ.ll)
 }
 
 func castFloat(b Builder, x llvm.Value, typ Type) llvm.Value {
