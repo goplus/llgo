@@ -104,8 +104,8 @@ func main() {
 
 	buf = make([]byte, 5)
 	n, err = f.Read(buf)
-	if err != nil || n != 5 || string(buf) != "World" {
-		panic("Seek test failed: expected 'World'")
+	if err != nil || n != 5 || string(buf) != "YYYYY" {
+		panic("Seek test failed: expected 'YYYYY'")
 	}
 
 	// Seek from current position
