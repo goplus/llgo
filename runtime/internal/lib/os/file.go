@@ -9,6 +9,7 @@ import (
 	"io"
 	"syscall"
 	"time"
+	"unsafe"
 )
 
 // Name returns the name of the file as presented to Open.
@@ -182,30 +183,21 @@ func (f *File) WriteAt(b []byte, off int64) (n int, err error) {
 // It returns the new offset and an error, if any.
 // The behavior of Seek on a file opened with O_APPEND is not specified.
 func (f *File) Seek(offset int64, whence int) (ret int64, err error) {
-	/*
-		if err := f.checkValid("seek"); err != nil {
-			return 0, err
-		}
-		r, e := f.seek(offset, whence)
-		if e == nil && f.dirinfo != nil && r != 0 {
-			e = syscall.EISDIR
-		}
-		if e != nil {
-			return 0, f.wrapErr("seek", e)
-		}
-		return r, nil
-	*/
-	panic("todo: os.(*File).Seek")
+	if err := f.checkValid("seek"); err != nil {
+		return 0, err
+	}
+	r, e := syscall.Seek(int(f.fd), offset, whence)
+	if e != nil {
+		return 0, f.wrapErr("seek", e)
+	}
+	return r, nil
 }
 
 // WriteString is like Write, but writes the contents of string s rather than
 // a slice of bytes.
 func (f *File) WriteString(s string) (n int, err error) {
-	/*
-		b := unsafe.Slice(unsafe.StringData(s), len(s))
-		return f.Write(b)
-	*/
-	panic("todo: os.(*File).WriteString")
+	b := unsafe.Slice(unsafe.StringData(s), len(s))
+	return f.Write(b)
 }
 
 // Open opens the named file for reading. If successful, methods on
