@@ -1,0 +1,4 @@
+sync.Once
+sync.Once demo
+
+Do once

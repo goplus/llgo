@@ -19,6 +19,8 @@ package cltest
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -26,7 +28,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -34,7 +35,9 @@ import (
 
 	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
@@ -57,7 +60,7 @@ func FromDir(t *testing.T, sel, relDir string) {
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
 	}
-	dir = path.Join(dir, relDir)
+	dir = filepath.Join(dir, relDir)
 	fis, err := os.ReadDir(dir)
 	if err != nil {
 		t.Fatal("ReadDir failed:", err)
@@ -67,8 +70,48 @@ func FromDir(t *testing.T, sel, relDir string) {
 		if !fi.IsDir() || strings.HasPrefix(name, "_") {
 			continue
 		}
+		pkgDir := filepath.Join(dir, name)
 		t.Run(name, func(t *testing.T) {
-			testFrom(t, dir+"/"+name, sel)
+			testFrom(t, pkgDir, sel)
+		})
+	}
+}
+
+// RunFromDir executes tests under relDir, skipping any relPkg entries in ignore.
+// ignore entries should be relative package paths (e.g., "./_testgo/invoke").
+func RunFromDir(t *testing.T, sel, relDir string, ignore []string) {
+	rootDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	dir := filepath.Join(rootDir, relDir)
+	ignoreSet := make(map[string]struct{}, len(ignore))
+	for _, item := range ignore {
+		ignoreSet[item] = struct{}{}
+	}
+	fis, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal("ReadDir failed:", err)
+	}
+	for _, fi := range fis {
+		name := fi.Name()
+		if !fi.IsDir() || strings.HasPrefix(name, "_") {
+			continue
+		}
+		pkgDir := filepath.Join(dir, name)
+		relPkg, err := filepath.Rel(rootDir, pkgDir)
+		if err != nil {
+			t.Fatal("Rel failed:", err)
+		}
+		relPkg = "./" + filepath.ToSlash(relPkg)
+		if _, ok := ignoreSet[relPkg]; ok {
+			t.Run(name, func(t *testing.T) {
+				t.Skip("skip platform-specific output mismatch")
+			})
+			continue
+		}
+		t.Run(name, func(t *testing.T) {
+			testRunFrom(t, pkgDir, relPkg, sel)
 		})
 	}
 }
@@ -122,6 +165,116 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 			t.Fatal("llgen.GenFrom: unexpect result")
 		}
 	}
+}
+
+func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
+	if sel != "" && !strings.Contains(pkgDir, sel) {
+		return
+	}
+	expectedPath := filepath.Join(pkgDir, "expect.txt")
+	expected, err := os.ReadFile(expectedPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return
+		}
+		t.Fatal("ReadFile failed:", err)
+	}
+	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
+		return
+	}
+
+	output, err := RunAndCapture(relPkg, pkgDir)
+	if err != nil {
+		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
+		t.Fatal("unexpected output")
+	}
+}
+
+func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
+	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(cacheDir)
+	oldCache := os.Getenv("GOCACHE")
+	if err := os.Setenv("GOCACHE", cacheDir); err != nil {
+		return nil, err
+	}
+	defer func() {
+		if oldCache == "" {
+			_ = os.Unsetenv("GOCACHE")
+		} else {
+			_ = os.Setenv("GOCACHE", oldCache)
+		}
+	}()
+
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.ForceRebuild = true
+
+	originalStdout := os.Stdout
+	originalStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	os.Stdout = w
+	os.Stderr = w
+	defer func() {
+		os.Stdout = originalStdout
+		os.Stderr = originalStderr
+	}()
+
+	outputCh := make(chan []byte, 1)
+	go func() {
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, r)
+		_ = r.Close()
+		outputCh <- buf.Bytes()
+	}()
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		_ = w.Close()
+		return nil, err
+	}
+	if pkgDir != "" {
+		if err := os.Chdir(pkgDir); err != nil {
+			_ = w.Close()
+			return nil, err
+		}
+		defer os.Chdir(origDir)
+		relPkg = "."
+		if _, err := os.Stat(filepath.Join(pkgDir, "in.go")); err == nil {
+			relPkg = "in.go"
+		} else if _, err := os.Stat(filepath.Join(pkgDir, "main.go")); err == nil {
+			relPkg = "main.go"
+		}
+	}
+
+	mockable.EnableMock()
+	defer mockable.DisableMock()
+
+	var runErr error
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				if s, ok := r.(string); ok && s == "exit" {
+					return
+				}
+				panic(r)
+			}
+		}()
+		_, runErr = build.Do([]string{relPkg}, conf)
+	}()
+
+	_ = w.Close()
+	output := <-outputCh
+	if runErr != nil {
+		return output, fmt.Errorf("run failed: %w", runErr)
+	}
+	return output, nil
 }
 
 func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {

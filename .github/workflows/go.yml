@@ -45,16 +45,34 @@ jobs:
         with:
           go-version: "1.24.2"
 
+      - name: Install further optional dependencies for demos
+        run: |
+          py_deps=(
+            numpy # for github.com/goplus/lib/py/numpy
+            torch # for github.com/goplus/lib/py/torch
+          )
+          pip3.12 install --break-system-packages "${py_deps[@]}"
+          # Align python3-embed with python-3.12-embed to avoid ABI mismatches.
+          pcdir=$HOME/pc
+          mkdir -p "$pcdir"
+          libdir=$(pkg-config --variable=libdir python-3.12-embed)
+          ln -s "$libdir/pkgconfig/python-3.12-embed.pc" "$pcdir/python3-embed.pc"
+          echo "PKG_CONFIG_PATH=$pcdir:${PKG_CONFIG_PATH}" >> $GITHUB_ENV
+          echo "LLGO_FULL_RPATH=true" >> $GITHUB_ENV
+
+      - name: Set LLGO_ROOT
+        run: echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
       - name: Build
         run: go build -v ./...
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test ./...
+        run: go test -timeout 30m ./...
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
-        run: go test -coverprofile="coverage.txt" -covermode=atomic ./...
+        run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Check std symbol coverage
         run: bash doc/_readme/scripts/check_std_cover.sh
