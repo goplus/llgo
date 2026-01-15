@@ -225,10 +225,7 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 		return
 	}
 
-	var (
-		output []byte
-		err    error
-	)
+	var output []byte
 	if opts.conf != nil {
 		output, err = RunAndCaptureWithConf(relPkg, pkgDir, opts.conf)
 	} else {
