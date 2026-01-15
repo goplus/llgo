@@ -22,7 +22,6 @@ package cl_test
 import (
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -43,21 +42,6 @@ func TestFromTestgo(t *testing.T) {
 
 func TestRunFromTestgo(t *testing.T) {
 	cltest.RunFromDir(t, "", "./_testgo", nil)
-}
-
-// filterEmulatorOutput strips boot logs by returning output after "entry 0x...".
-func filterEmulatorOutput(output string) string {
-	lines := strings.Split(output, "\n")
-	entryPattern := regexp.MustCompile(`^entry 0x[0-9a-fA-F]+$`)
-	for i, line := range lines {
-		if entryPattern.MatchString(strings.TrimSpace(line)) {
-			if i+1 < len(lines) {
-				return strings.Join(lines[i+1:], "\n")
-			}
-			return ""
-		}
-	}
-	return output
 }
 
 func TestFilterEmulatorOutput(t *testing.T) {
@@ -99,12 +83,40 @@ Hello World!
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := filterEmulatorOutput(tt.input)
+			got := cltest.FilterEmulatorOutput(tt.input)
 			if got != tt.expected {
 				t.Fatalf("filterEmulatorOutput() = %q, want %q", got, tt.expected)
 			}
 		})
 	}
+}
+
+func buildIgnoreList(t *testing.T, relDir string, allow map[string]struct{}) []string {
+	t.Helper()
+
+	rootDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd failed: %v", err)
+	}
+	dir := filepath.Join(rootDir, relDir)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("ReadDir failed: %v", err)
+	}
+
+	relBase := strings.TrimPrefix(relDir, "./")
+	var ignore []string
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+			continue
+		}
+		relPkg := "./" + filepath.ToSlash(filepath.Join(relBase, entry.Name()))
+		if _, ok := allow[relPkg]; ok {
+			continue
+		}
+		ignore = append(ignore, relPkg)
+	}
+	return ignore
 }
 
 func TestRunESP32C3Emulator(t *testing.T) {
@@ -115,33 +127,19 @@ func TestRunESP32C3Emulator(t *testing.T) {
 		t.Skip("Skipping emulator test on Windows")
 	}
 
-	tmpDir := t.TempDir()
-	mainPath := filepath.Join(tmpDir, "main.go")
-	src := []byte(`package main
-
-import "github.com/goplus/lib/c"
-
-func main() {
-	c.Printf(c.Str("Hello World\n"))
-}
-`)
-	if err := os.WriteFile(mainPath, src, 0644); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = "esp32c3-basic"
 	conf.Emulator = true
 	conf.ForceRebuild = true
 
-	output, err := cltest.RunAndCaptureWithConf(".", tmpDir, conf)
-	if err != nil {
-		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	allow := map[string]struct{}{
+		"./_testgo/print": {},
 	}
-	programOutput := strings.TrimSpace(filterEmulatorOutput(string(output)))
-	if programOutput != "Hello World!" {
-		t.Fatalf("unexpected emulator output: %q", programOutput)
-	}
+	ignore := buildIgnoreList(t, "./_testgo", allow)
+	cltest.RunFromDir(t, "", "./_testgo", ignore,
+		cltest.WithRunConfig(conf),
+		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
+	)
 }
 
 func TestFromTestpy(t *testing.T) {
