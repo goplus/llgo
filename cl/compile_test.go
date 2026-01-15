@@ -20,7 +20,11 @@
 package cl_test
 
 import (
+	"os"
+	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/cl"
@@ -39,6 +43,105 @@ func TestFromTestgo(t *testing.T) {
 
 func TestRunFromTestgo(t *testing.T) {
 	cltest.RunFromDir(t, "", "./_testgo", nil)
+}
+
+// filterEmulatorOutput strips boot logs by returning output after "entry 0x...".
+func filterEmulatorOutput(output string) string {
+	lines := strings.Split(output, "\n")
+	entryPattern := regexp.MustCompile(`^entry 0x[0-9a-fA-F]+$`)
+	for i, line := range lines {
+		if entryPattern.MatchString(strings.TrimSpace(line)) {
+			if i+1 < len(lines) {
+				return strings.Join(lines[i+1:], "\n")
+			}
+			return ""
+		}
+	}
+	return output
+}
+
+func TestFilterEmulatorOutput(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "ESP32C3 output",
+			input: `Adding SPI flash device
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fc855b0,len:0xfc
+load:0x3fc856ac,len:0x4
+load:0x3fc856b0,len:0x44
+load:0x40380000,len:0x1548
+load:0x40381548,len:0x68
+entry 0x40380000
+Hello World!
+`,
+			expected: `Hello World!
+`,
+		},
+		{
+			name: "ESP32 output",
+			input: `Adding SPI flash device
+ESP-ROM:esp32-xxxx
+entry 0x40080000
+Hello World!
+`,
+			expected: `Hello World!
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := filterEmulatorOutput(tt.input)
+			if got != tt.expected {
+				t.Fatalf("filterEmulatorOutput() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestRunESP32C3Emulator(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping emulator test in short mode")
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping emulator test on Windows")
+	}
+
+	tmpDir := t.TempDir()
+	mainPath := filepath.Join(tmpDir, "main.go")
+	src := []byte(`package main
+
+import "github.com/goplus/lib/c"
+
+func main() {
+	c.Printf(c.Str("Hello World\n"))
+}
+`)
+	if err := os.WriteFile(mainPath, src, 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.Target = "esp32c3-basic"
+	conf.Emulator = true
+	conf.ForceRebuild = true
+
+	output, err := cltest.RunAndCaptureWithConf(".", tmpDir, conf)
+	if err != nil {
+		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	programOutput := strings.TrimSpace(filterEmulatorOutput(string(output)))
+	if programOutput != "Hello World!" {
+		t.Fatalf("unexpected emulator output: %q", programOutput)
+	}
 }
 
 func TestFromTestpy(t *testing.T) {
