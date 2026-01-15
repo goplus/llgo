@@ -34,6 +34,9 @@ jobs:
         with:
           llvm-version: ${{matrix.llvm}}
 
+      - name: Install embedded dependencies
+        uses: ./.github/actions/setup-embed-deps
+
       - name: Clang information
         run: |
           echo $PATH
