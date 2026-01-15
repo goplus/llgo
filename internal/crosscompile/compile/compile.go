@@ -35,35 +35,52 @@ func (g CompileGroup) IsCompiled(outputDir string) bool {
 	return err == nil
 }
 
-// Compile compiles all source files in the group into a static library archive
-// If the archive already exists, compilation is skipped
+// getLangFromExt returns the language type based on file extension
+func getLangFromExt(file string) string {
+	if filepath.Ext(file) == ".S" {
+		return "assembler-with-cpp"
+	}
+	return "c"
+}
+
+// Compile compiles all source files in the group into a static library archive (.a)
+// or a single object file (.o) depending on the OutputFileName extension.
+// If the output file already exists, compilation is skipped.
 func (g CompileGroup) Compile(
 	outputDir string, options CompileOptions,
 ) (err error) {
 	if g.IsCompiled(outputDir) {
 		return
 	}
-	tmpCompileDir, err := os.MkdirTemp("", "compile-group*")
-	if err != nil {
-		return
-	}
-	defer os.RemoveAll(tmpCompileDir)
 
 	compileLDFlags := append(slices.Clone(options.LDFLAGS), g.LDFlags...)
 	compileCCFlags := append(slices.Clone(options.CCFLAGS), g.CCFlags...)
 	compileCFFlags := append(slices.Clone(options.CFLAGS), g.CFlags...)
 
 	cfg := clang.NewConfig(options.CC, compileCCFlags, compileCFFlags, compileLDFlags, options.Linker)
-
-	var objFiles []string
-
 	compiler := clang.NewCompiler(cfg)
-
 	compiler.Verbose = true
 
-	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
-	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, archive)
+	output := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
+	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, output)
 
+	// If output is .o file, compile directly (single file only)
+	if filepath.Ext(g.OutputFileName) == ".o" {
+		if len(g.Files) != 1 {
+			return fmt.Errorf("compiling to .o requires exactly 1 source file, got %d", len(g.Files))
+		}
+		file := g.Files[0]
+		return compiler.Compile("-o", output, "-x", getLangFromExt(file), "-c", file)
+	}
+
+	// Otherwise, compile to .a archive
+	tmpCompileDir, err := os.MkdirTemp("", "compile-group*")
+	if err != nil {
+		return
+	}
+	defer os.RemoveAll(tmpCompileDir)
+
+	var objFiles []string
 	for _, file := range g.Files {
 		var tempObjFile *os.File
 		tempObjFile, err = os.CreateTemp(tmpCompileDir, fmt.Sprintf("%s*.o", strings.ReplaceAll(file, string(os.PathSeparator), "-")))
@@ -71,11 +88,7 @@ func (g CompileGroup) Compile(
 			return
 		}
 
-		lang := "c"
-		if filepath.Ext(file) == ".S" {
-			lang = "assembler-with-cpp"
-		}
-		err = compiler.Compile("-o", tempObjFile.Name(), "-x", lang, "-c", file)
+		err = compiler.Compile("-o", tempObjFile.Name(), "-x", getLangFromExt(file), "-c", file)
 		if err != nil {
 			return
 		}
@@ -83,7 +96,7 @@ func (g CompileGroup) Compile(
 		objFiles = append(objFiles, tempObjFile.Name())
 	}
 
-	args := []string{"rcs", archive}
+	args := []string{"rcs", output}
 	args = append(args, objFiles...)
 
 	ccDir := filepath.Dir(options.CC)
