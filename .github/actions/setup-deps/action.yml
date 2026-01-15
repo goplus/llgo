@@ -29,7 +29,7 @@ runs:
         fi
         
         # Install common dependencies
-        brew install bdw-gc openssl libffi libuv sdl2
+        brew install bdw-gc openssl libffi libuv
         brew link --overwrite libffi
 
         # Install optional deps for demos.
@@ -60,7 +60,7 @@ runs:
         fi
         
         # Install common dependencies
-        sudo apt-get install -y pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libuv1-dev libsdl2-2.0-0
+        sudo apt-get install -y pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libuv1-dev
 
         # Install optional deps for demos.
         #
@@ -71,4 +71,3 @@ runs:
           python3.12-dev # for github.com/goplus/lib/py
         )
         sudo apt-get install -y "${opt_deps[@]}"
-
