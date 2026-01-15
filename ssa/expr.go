@@ -23,6 +23,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strconv"
 
 	"github.com/goplus/llvm"
 )
@@ -296,6 +297,70 @@ func (b Builder) InlineAsmFull(instruction, constraints string, retType Type, ex
 	ftype := llvm.FunctionType(retType.ll, typs, false)
 	asm := llvm.InlineAsm(ftype, instruction, constraints, true, false, llvm.InlineAsmDialectATT, false)
 	return Expr{b.impl.CreateCall(ftype, asm, vals, ""), retType}
+}
+
+const ctxGlobalName = "__llgo_closure_ctx"
+
+func (b Builder) ctxGlobal() llvm.Value {
+	g := b.Pkg.VarOf(ctxGlobalName)
+	if g == nil {
+		g = b.Pkg.NewVarEx(ctxGlobalName, b.Prog.Pointer(b.Prog.VoidPtr()))
+		// Use WeakODRLinkage so all modules share the SAME global variable.
+		g.impl.SetLinkage(llvm.WeakODRLinkage)
+		// Use TLS on platforms that support it for thread safety.
+		if b.Prog.target.SupportsTLS() {
+			g.impl.SetThreadLocal(true)
+		}
+		g.InitNil()
+	}
+	return g.impl
+}
+
+// WriteCtxReg writes a pointer value to the closure context register.
+// On architectures that don't support register-based context (e.g., wasm),
+// it falls back to a module-local global slot.
+func (b Builder) WriteCtxReg(val Expr) {
+	ptrType := b.Prog.VoidPtr()
+	casted := b.Convert(ptrType, val)
+	reg := b.Prog.target.CtxRegister()
+	if debugInstr {
+		log.Printf("WriteCtxReg %v to %s\n", casted.impl, reg.Name)
+	}
+	if reg.Name == "" {
+		b.impl.CreateStore(casted.impl, b.ctxGlobal())
+		return
+	}
+	// Use an output constraint tied to the input to ensure the compiler
+	// understands that the target register is modified.
+	// Add a memory clobber to prevent reordering across the call site.
+	ftype := llvm.FunctionType(ptrType.ll, []llvm.Type{ptrType.ll}, false)
+	constraints := "=" + reg.Constraint + ",0,~{memory}"
+	asm := llvm.InlineAsm(ftype, "", constraints, true, false, llvm.InlineAsmDialectATT, false)
+	b.impl.CreateCall(ftype, asm, []llvm.Value{casted.impl}, "")
+}
+
+// ReadCtxReg reads the closure context pointer from the context register.
+// On architectures that don't support register-based context (e.g., wasm),
+// it falls back to a module-local global slot.
+func (b Builder) ReadCtxReg() Expr {
+	reg := b.Prog.target.CtxRegister()
+	if debugInstr {
+		log.Printf("ReadCtxReg from %s\n", reg.Name)
+	}
+	if reg.Name == "" {
+		ptrType := b.Prog.VoidPtr()
+		ret := b.impl.CreateLoad(ptrType.ll, b.ctxGlobal(), "")
+		return Expr{ret, ptrType}
+	}
+	// Use inline asm with input constraint to read from the register.
+	// Example for amd64: constraint "={r12}" forces output from r12.
+	ptrType := b.Prog.VoidPtr()
+	ftype := llvm.FunctionType(ptrType.ll, nil, false)
+	// Add a memory clobber to prevent reordering across the read.
+	constraints := "=" + reg.Constraint + ",~{memory}"
+	asm := llvm.InlineAsm(ftype, "", constraints, true, false, llvm.InlineAsmDialectATT, false)
+	ret := b.impl.CreateCall(ftype, asm, nil, "")
+	return Expr{ret, ptrType}
 }
 
 // GoString returns a Go string
@@ -995,12 +1060,21 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	tfn := fn.Type
 	sig := tfn.raw.Type.(*types.Signature)
 	data := prog.Nil(prog.VoidPtr()).impl
-	if ctxParam := closureCtxParam(sig); ctxParam != nil {
-		tctx := ctxParam.Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
+
+	// If there are bindings (free variables), allocate context structure.
+	if len(bindings) > 0 {
+		// Build context struct type from bindings.
+		fields := make([]*types.Var, len(bindings))
+		for i, binding := range bindings {
+			// Use unique field name to avoid "multiple fields with same name" error.
+			fieldName := "$" + strconv.Itoa(i)
+			fields[i] = types.NewField(0, nil, fieldName, binding.RawType(), false)
+		}
+		tctx := types.NewStruct(fields, nil)
 		ptr := b.aggregateAllocU(prog.rawType(tctx), llvmFields(bindings, tctx, b)...)
 		data = ptr
 	}
-	return b.aggregateValue(prog.Closure(removeCtx(sig)), fn.impl, data)
+	return b.aggregateValue(prog.Closure(sig), fn.impl, data)
 }
 
 // -----------------------------------------------------------------------------
@@ -1024,7 +1098,27 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
 		logCall("Call", fn, args)
 	}
+	stripClosureCtxParam := func(sig *types.Signature, argsLen int) *types.Signature {
+		if sig.Params().Len() != argsLen+1 {
+			return sig
+		}
+		first := sig.Params().At(0).Type().Underlying()
+		if b, ok := first.(*types.Basic); !ok || b.Kind() != types.UnsafePointer {
+			return sig
+		}
+		n := sig.Params().Len()
+		vars := make([]*types.Var, n-1)
+		for i := 1; i < n; i++ {
+			vars[i-1] = sig.Params().At(i)
+		}
+		return types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
+	}
 	var kind = fn.kind
+	// Fallback: if the static type is a closure struct but kind wasn't set,
+	// treat it as a closure call so we still wire up the context register.
+	if kind != vkClosure && fn.Type.kind == vkClosure {
+		kind = vkClosure
+	}
 	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
 	}
@@ -1037,14 +1131,43 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		data = b.Field(fn, 1)
 		fn = b.Field(fn, 0)
 		sig = fn.raw.Type.(*types.Signature)
-		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-		sigCtx := FuncAddCtx(ctx, sig)
+		// If the stored function type still has an explicit ctx param
+		// (legacy closure ABI), drop it and pass ctx via the global slot.
+		sig = stripClosureCtxParam(sig, len(args))
 		ret.Type = b.Prog.retType(sig)
-		ll = b.Prog.FuncDecl(sigCtx, InC).ll
-		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sigCtx.Params(), b))
+		ll = b.Prog.FuncDecl(sig, InC).ll
+		callArgs := llvmParams(0, args, sig.Params(), b)
+		prevCtx := b.ReadCtxReg()
+		b.WriteCtxReg(data)
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
+		// Restore previous closure context to avoid corrupting caller stack frames.
+		b.WriteCtxReg(prevCtx)
+		return ret
+	case vkImethodClosure:
+		// Interface method closure: receiver must be passed as first parameter,
+		// not via the context register. The method function expects receiver as arg.
+		// Still write ctx register for uniform closure-call semantics.
+		data = b.Field(fn, 1)
+		fn = b.Field(fn, 0)
+		sig = fn.raw.Type.(*types.Signature)
+		ret.Type = b.Prog.retType(sig)
+		// Build signature with receiver as first param
+		ctx := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+		sigWithCtx := FuncAddCtx(ctx, sig)
+		ll = b.Prog.FuncDecl(sigWithCtx, InC).ll
+		// Call with receiver as first argument
+		callArgs := llvmParamsEx(data, args, sigWithCtx.Params(), b)
+		prevCtx := b.ReadCtxReg()
+		b.WriteCtxReg(data)
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
+		// Restore previous closure context to avoid corrupting caller stack frames.
+		b.WriteCtxReg(prevCtx)
 		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
+		// If the caller provided fewer args but the function type still has
+		// a leading unsafe.Pointer (legacy closure ctx), strip it.
+		sig = stripClosureCtxParam(sig, len(args))
 		ll = b.Prog.FuncDecl(sig, InC).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
@@ -1056,7 +1179,8 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
 	ret.Type = b.Prog.retType(sig)
-	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
+	callArgs := llvmParamsEx(data, args, sig.Params(), b)
+	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
 	return
 }
 
@@ -1385,12 +1509,15 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if st, ok := t.Underlying().(*types.Struct); ok && IsClosure(st) {
-		if v.kind == vkClosure {
+		prog := b.Prog
+		tclosure := prog.rawType(t)
+		if v.Type == tclosure || isClosureKind(v.kind) || v.impl.Type() == tclosure.ll {
+			// Normalize type to closure type if only LLVM type matches.
+			if v.Type != tclosure {
+				v.Type = tclosure
+			}
 			return v
 		}
-		prog := b.Prog
-		origKind := v.kind
-		tclosure := prog.rawType(t)
 		fnType := prog.Field(tclosure, 0)
 		if v.Type != fnType {
 			// Signature conversions are representationally identical.
@@ -1400,12 +1527,9 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 				v = b.Convert(fnType, v)
 			}
 		}
+		// In register-based ctx mode, no stub wrapper needed.
+		// The caller writes ctx to register before call, callee reads if needed.
 		data := prog.Nil(prog.VoidPtr())
-		if origKind == vkFuncDecl || origKind == vkFuncPtr {
-			if sig, ok := fnType.raw.Type.(*types.Signature); ok && closureCtxParam(sig) == nil {
-				v, data = b.Pkg.closureStub(b, v, sig, origKind)
-			}
-		}
 		return b.aggregateValue(tclosure, v.impl, data.impl)
 	}
 	return v

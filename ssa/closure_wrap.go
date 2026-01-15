@@ -109,3 +109,34 @@ func (p Package) closureWrapPtr(sig *types.Signature) Function {
 	closureWrapReturn(b, sig, ret)
 	return wrap
 }
+
+// closureWrapCtx wraps a function that expects an explicit ctx parameter
+// (as its first argument) into a form that reads ctx from the register and
+// forwards it as the leading argument.
+func (p Package) closureWrapCtx(fn Expr, sig *types.Signature) Function {
+	name := closureStub + fn.impl.Name() + "$ctx"
+	if wrap := p.FuncOf(name); wrap != nil {
+		return wrap
+	}
+	params := sig.Params()
+	if params.Len() == 0 {
+		return p.NewFunc(name, sig, InC)
+	}
+	args := make([]*types.Var, params.Len()-1)
+	for i := 1; i < params.Len(); i++ {
+		args[i-1] = params.At(i)
+	}
+	sigNoCtx := types.NewSignatureType(nil, nil, nil, types.NewTuple(args...), sig.Results(), sig.Variadic())
+	wrap := p.NewFunc(name, sigNoCtx, InC)
+	wrap.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
+	b := wrap.MakeBody(1)
+	ctx := b.ReadCtxReg()
+	callArgs := make([]Expr, 0, len(wrap.params)+1)
+	callArgs = append(callArgs, ctx)
+	for i := 0; i < len(wrap.params); i++ {
+		callArgs = append(callArgs, wrap.Param(i))
+	}
+	ret := b.Call(fn, callArgs...)
+	closureWrapReturn(b, sigNoCtx, ret)
+	return wrap
+}

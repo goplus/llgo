@@ -16,6 +16,8 @@ import (
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
 	envllvm "github.com/goplus/llgo/xtool/env/llvm"
+
+	"github.com/goplus/llgo/internal/ctxreg"
 )
 
 type Export struct {
@@ -246,6 +248,10 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 		export.CCFLAGS = []string{
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
+		}
+		if fixed := ctxreg.Get(goarch).FixedFlag; fixed != "" {
+			export.CCFLAGS = append(export.CCFLAGS, fixed)
+			export.CFLAGS = append(export.CFLAGS, fixed)
 		}
 
 		// Add sysroot for macOS only
@@ -491,6 +497,10 @@ func UseTarget(targetName string) (export Export, err error) {
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
+	}
+	if fixed := ctxreg.Get(config.GOARCH).FixedFlag; fixed != "" {
+		cflags = append(cflags, fixed)
+		ccflags = append(ccflags, fixed)
 	}
 	// Expand template variables in cflags
 	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)
