@@ -1,0 +1,21 @@
+name: "Setup Embedded Dependencies"
+description: "Install dependencies required for embedded QEMU tests"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install macOS embedded dependencies
+      if: runner.os == 'macOS'
+      shell: bash
+      env:
+        HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
+      run: |
+        brew update
+        brew install sdl2
+
+    - name: Install Ubuntu embedded dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libsdl2-2.0-0
