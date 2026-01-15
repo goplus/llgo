@@ -102,6 +102,8 @@ func WithOutputFilter(filter func(string) string) RunOption {
 
 // FilterEmulatorOutput strips emulator boot logs by returning output after "entry 0x...".
 func FilterEmulatorOutput(output string) string {
+	output = strings.ReplaceAll(output, "\r\n", "\n")
+	output = strings.ReplaceAll(output, "\r", "")
 	lines := strings.Split(output, "\n")
 	entryPattern := regexp.MustCompile(`^entry 0x[0-9a-fA-F]+$`)
 	for i, line := range lines {
