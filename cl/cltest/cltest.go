@@ -193,6 +193,13 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 }
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.ForceRebuild = true
+	return RunAndCaptureWithConf(relPkg, pkgDir, conf)
+}
+
+// RunAndCaptureWithConf runs llgo with a custom build config and captures output.
+func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -210,8 +217,10 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 		}
 	}()
 
-	conf := build.NewDefaultConf(build.ModeRun)
-	conf.ForceRebuild = true
+	if conf == nil {
+		return nil, fmt.Errorf("build config is nil")
+	}
+	localConf := *conf
 
 	originalStdout := os.Stdout
 	originalStderr := os.Stderr
@@ -266,7 +275,7 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 				panic(r)
 			}
 		}()
-		_, runErr = build.Do([]string{relPkg}, conf)
+		_, runErr = build.Do([]string{relPkg}, &localConf)
 	}()
 
 	_ = w.Close()
