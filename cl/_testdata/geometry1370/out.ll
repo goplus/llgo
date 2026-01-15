@@ -68,7 +68,10 @@ _llgo_0:
   %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
   %8 = extractvalue { ptr, ptr } %7, 1
   %9 = extractvalue { ptr, ptr } %7, 0
+  %10 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %11 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %8)
   call void %9(ptr %8, i64 %1)
+  %12 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
   ret void
 }
 

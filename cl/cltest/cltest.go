@@ -306,7 +306,7 @@ func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
 
-	if v := ret.String(); v != expected && expected != ";" { // expected == ";" means skipping out.ll
+	if v := llgen.NormalizeIR(ret.String()); v != llgen.NormalizeIR(expected) && expected != ";" { // expected == ";" means skipping out.ll
 		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }

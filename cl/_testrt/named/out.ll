@@ -98,28 +98,35 @@ _llgo_0:
   %61 = load { ptr, ptr }, ptr %60, align 8
   %62 = extractvalue { ptr, ptr } %61, 1
   %63 = extractvalue { ptr, ptr } %61, 0
-  %64 = call i64 %63(ptr %62, i64 -2)
-  %65 = load ptr, ptr %0, align 8
-  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %65, i32 0, i32 3
-  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.minfo", ptr %66, i32 0, i32 0
-  %68 = load ptr, ptr %67, align 8
-  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %68, i32 0, i32 5
-  %70 = load { ptr, ptr }, ptr %69, align 8
-  %71 = extractvalue { ptr, ptr } %70, 1
-  %72 = extractvalue { ptr, ptr } %70, 0
-  %73 = call i64 %72(ptr %71, i64 -3)
-  %74 = call i32 (ptr, ...) @printf(ptr @0, i64 %41, i64 %48, i64 %52, i64 %58, i64 %64, i64 %73)
+  %64 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %65 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %62)
+  %66 = call i64 %63(i64 -2)
+  %67 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %64)
+  %68 = load ptr, ptr %0, align 8
+  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %68, i32 0, i32 3
+  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.minfo", ptr %69, i32 0, i32 0
+  %71 = load ptr, ptr %70, align 8
+  %72 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %71, i32 0, i32 5
+  %73 = load { ptr, ptr }, ptr %72, align 8
+  %74 = extractvalue { ptr, ptr } %73, 1
+  %75 = extractvalue { ptr, ptr } %73, 0
+  %76 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %77 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %74)
+  %78 = call i64 %75(i64 -3)
+  %79 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %76)
+  %80 = call i32 (ptr, ...) @printf(ptr @0, i64 %41, i64 %48, i64 %52, i64 %58, i64 %66, i64 %78)
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/named.main$1"(ptr %0, i64 %1) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/named.main$1"(i64 %0) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
+  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load ptr, ptr %3, align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %4, i32 0, i32 4
   %6 = load i64, ptr %5, align 4
-  %7 = mul i64 %6, %1
+  %7 = mul i64 %6, %0
   ret i64 %7
 }
 

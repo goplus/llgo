@@ -31,6 +31,7 @@ func main() {
 	dir, _, err := mod.FindGoMod(".")
 	check(err)
 
+	llgenDir(dir + "/cl/_testcall")
 	llgenDir(dir + "/cl/_testlibc")
 	llgenDir(dir + "/cl/_testlibgo")
 	llgenDir(dir + "/cl/_testrt")
@@ -57,6 +58,7 @@ func llgenDir(dir string) {
 }
 
 func genExpects(root string) {
+	runExpectDir(root, "cl/_testcall")
 	runExpectDir(root, "cl/_testlibc")
 	runExpectDir(root, "cl/_testlibgo")
 	runExpectDir(root, "cl/_testrt")

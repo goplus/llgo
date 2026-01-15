@@ -9,7 +9,10 @@ define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, { ptr
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %1, 1
   %3 = extractvalue { ptr, ptr } %1, 0
-  call void %3(ptr %2, ptr %0)
+  %4 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %5 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %2)
+  call void %3(ptr %0)
+  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
   ret void
 }
 
@@ -28,20 +31,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/callback.main"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @0, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
-  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @1, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
+  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @0, { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
+  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @1, { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %0) {
 _llgo_0:
   %1 = call i32 (ptr, ...) @printf(ptr %0)
-  ret void
-}
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %0, ptr %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %1)
   ret void
 }
 

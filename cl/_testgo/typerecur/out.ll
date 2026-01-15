@@ -32,7 +32,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" zeroinitializer
 
 _llgo_2:                                          ; preds = %_llgo_0
-  ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/typerecur.init"() {
@@ -54,7 +54,7 @@ _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 1
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
   store i64 5, ptr %1, align 4
-  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }, ptr %2, align 8
+  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }, ptr %2, align 8
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -62,20 +62,23 @@ _llgo_1:                                          ; preds = %_llgo_3
   %4 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %3, align 8
   %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 1
   %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 0
-  %7 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %5, ptr %0)
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %7, ptr %8, align 8
+  %7 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
+  %9 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %0)
+  %10 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %7)
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
+  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %9, ptr %11, align 8
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  %10 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %9, align 8
-  %11 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %10, 0
-  %12 = icmp ne ptr %11, null
-  br i1 %12, label %_llgo_1, label %_llgo_2
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
+  %13 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %12, align 8
+  %14 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %13, 0
+  %15 = icmp ne ptr %14, null
+  br i1 %15, label %_llgo_1, label %_llgo_2
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
@@ -83,11 +86,5 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
-
-define linkonce %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/typerecur.countState"(ptr %0, ptr %1) {
-_llgo_0:
-  %2 = tail call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" @"github.com/goplus/llgo/cl/_testgo/typerecur.countState"(ptr %1)
-  ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %2
-}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
