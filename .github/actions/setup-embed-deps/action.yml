@@ -19,3 +19,17 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libsdl2-2.0-0
+
+    - name: Install ESP32 RISC-V QEMU
+      shell: bash
+      run: |
+        chmod +x .github/workflows/install-esp-qemu.sh
+        QEMU_DIR=".cache/qemu"
+        .github/workflows/install-esp-qemu.sh "$QEMU_DIR"
+        echo "${PWD}/${QEMU_DIR}/bin" >> $GITHUB_PATH
+
+    - name: Verify ESP32 RISC-V QEMU installation
+      shell: bash
+      run: |
+        which qemu-system-riscv32
+        qemu-system-riscv32 --version

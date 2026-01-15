@@ -181,8 +181,6 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
-      - name: Install embedded dependencies
-        uses: ./.github/actions/setup-embed-deps
       - name: Install further optional dependencies for demos
         run: |
           py_deps=(
@@ -229,8 +227,6 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
-      - name: Install embedded dependencies
-        uses: ./.github/actions/setup-embed-deps
 
       - name: Set up Go 1.23 for building llgo
         uses: ./.github/actions/setup-go
@@ -289,8 +285,6 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
-      - name: Install embedded dependencies
-        uses: ./.github/actions/setup-embed-deps
 
       - name: Set up Go for building llgo
         uses: ./.github/actions/setup-go
