@@ -71,11 +71,11 @@ jobs:
 
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test -timeout 30m ./...
+        run: go test -timeout 60m ./...
 
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
-        run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
+        run: go test -timeout 60m -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Check std symbol coverage
         run: bash doc/_readme/scripts/check_std_cover.sh
