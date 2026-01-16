@@ -145,6 +145,7 @@ func TestRunESP32C3Emulator(t *testing.T) {
 	// - ./_testgo/closure: QEMU hits Illegal instruction (Guru Meditation)
 	// - ./_testgo/closure2: QEMU hits Illegal instruction (Guru Meditation)
 	// - ./_testgo/closureall: QEMU hits Illegal instruction (Guru Meditation)
+	// - ./_testgo/defer-alawys: uses defer/recover; link errors (undefined __sigsetjmp), see https://github.com/goplus/llgo/issues/1419
 	// - ./_testgo/indexerr: link errors (undefined __sigsetjmp), see https://github.com/goplus/llgo/issues/1419
 	// - ./_testgo/makeslice: uses defer/recover; link errors (undefined __sigsetjmp), see https://github.com/goplus/llgo/issues/1419
 	// - ./_testgo/multiret: QEMU hits Illegal instruction (Guru Meditation)
