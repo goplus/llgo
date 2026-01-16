@@ -238,7 +238,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Target != "" && export.GOARCH != "" {
 		conf.Goarch = export.GOARCH
 	}
-	explicitTargetTriple := export.LLVMTarget != ""
+	// explicitTargetTriple is true when user explicitly specified a target (via -target flag or TARGET env)
+	// or when crosscompile configured a complete target triple (e.g., wasm, embedded devices).
+	// For simple GOOS/GOARCH cross-compilation (e.g., darwin->linux), we don't want to add --target
+	// because the auto-generated triple may be incomplete and cause clang warnings.
+	explicitTargetTriple := conf.Target != "" || (export.LLVMTarget != "" && export.GOOS == "")
 	if export.LLVMTarget == "" {
 		export.LLVMTarget = intllvm.GetTargetTriple(conf.Goos, conf.Goarch)
 	}
