@@ -20,10 +20,7 @@
 package cl_test
 
 import (
-	"os"
-	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/cl"
@@ -91,108 +88,65 @@ Hello World!
 	}
 }
 
-func buildIgnoreList(t *testing.T, relDir string, allow map[string]struct{}) []string {
-	t.Helper()
-
-	rootDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Getwd failed: %v", err)
-	}
-	dir := filepath.Join(rootDir, relDir)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatalf("ReadDir failed: %v", err)
-	}
-
-	relBase := strings.TrimPrefix(relDir, "./")
-	var ignore []string
-	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
-			continue
-		}
-		relPkg := "./" + filepath.ToSlash(filepath.Join(relBase, entry.Name()))
-		if _, ok := allow[relPkg]; ok {
-			continue
-		}
-		ignore = append(ignore, relPkg)
-	}
-	return ignore
-}
-
 func TestRunESP32C3Emulator(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping emulator test in short mode")
-	}
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping emulator test on Windows")
-	}
-
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = "esp32c3-basic"
 	conf.Emulator = true
 	conf.ForceRebuild = true
 
-	// Not yet in allowlist:
-	// - ./_testgo/abimethod: link errors (faccessat/getrlimit/setrlimit, ffi_*, __sigsetjmp, ldexp, __atomic_*), plus DRAM overflow; see https://github.com/goplus/llgo/issues/1569
-	// - ./_testgo/alias: QEMU hits Illegal instruction (Guru Meditation) before expected output
-	// - ./_testgo/cgobasic: build constraints exclude all Go files (cgo)
-	// - ./_testgo/cgocfiles: build constraints exclude all Go files (cgo)
-	// - ./_testgo/cgodefer: build constraints exclude all Go files (cgo)
-	// - ./_testgo/cgofull: build constraints exclude all Go files (cgo)
-	// - ./_testgo/cgomacro: build constraints exclude all Go files (cgo)
-	// - ./_testgo/cgopython: build constraints exclude all Go files (cgo)
-	// - ./_testgo/chan: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/closure: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/closure2: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/closureall: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/defer-alawys: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/defer1: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/defer2: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/defer3: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/defer4: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/defer5: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/deferclosure: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/defercomplex: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/deferloop: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/errors: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/goexit: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/goroutine: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/ifaceconv: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/ifaceprom: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/interface: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/interface1370: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/invoke: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/reader: QEMU timeout (no expected output)
-	// - ./_testgo/reflect: link errors (__atomic_*, ffi_*, __sigsetjmp) plus DRAM overflow
-	// - ./_testgo/reflectconv: link errors (faccessat/getrlimit/setrlimit, __atomic_*, ffi_*, __sigsetjmp, ldexp) plus DRAM overflow
-	// - ./_testgo/reflectfn: link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __sigsetjmp, __atomic_*, ffi_*) plus DRAM overflow
-	// - ./_testgo/reflectmkfn: link errors (__atomic_*, ffi_*, __sigsetjmp) plus DRAM overflow
-	// - ./_testgo/rewrite: link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __sigsetjmp, __atomic_*, ffi_*) plus DRAM overflow
-	// - ./_testgo/runextest: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/runtest: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/select: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/selects: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/sigsegv: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/strucintf: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/struczero: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/syncmap: link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __sigsetjmp, __atomic_*, ffi_*) plus DRAM overflow
-	// - ./_testgo/tpindex: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/tpinst: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/tpnamed: QEMU hits Instruction access fault
-	// - ./_testgo/tptypes: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/typerecur: QEMU hits Illegal instruction (Guru Meditation)
-	// - ./_testgo/indexerr: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/makeslice: uses defer/recover; needs defer support, see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/multiret: QEMU hits Illegal instruction (Guru Meditation)
-	allow := map[string]struct{}{
-		"./_testgo/allocinloop": {},
-		"./_testgo/print":       {},
-		"./_testgo/constconv":   {},
-		"./_testgo/equal":       {},
-		"./_testgo/tprecur":     {},
-		"./_testgo/tprecurfn":   {},
+	ignore := []string{
+		"./_testgo/abimethod",     // link errors (faccessat/getrlimit/setrlimit, ffi_*, __sigsetjmp, ldexp, __atomic_*), plus DRAM overflow; https://github.com/goplus/llgo/issues/1569
+		"./_testgo/alias",         // QEMU hits Illegal instruction (Guru Meditation) before expected output
+		"./_testgo/cgobasic",      // build constraints exclude all Go files (cgo)
+		"./_testgo/cgocfiles",     // build constraints exclude all Go files (cgo)
+		"./_testgo/cgodefer",      // build constraints exclude all Go files (cgo)
+		"./_testgo/cgofull",       // build constraints exclude all Go files (cgo)
+		"./_testgo/cgomacro",      // build constraints exclude all Go files (cgo)
+		"./_testgo/cgopython",     // build constraints exclude all Go files (cgo)
+		"./_testgo/chan",          // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/closure",       // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/closure2",      // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/closureall",    // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/defer-alawys",  // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/defer1",        // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/defer2",        // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/defer3",        // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/defer4",        // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/defer5",        // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/deferclosure",  // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/defercomplex",  // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/deferloop",     // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/errors",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/goexit",        // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/goroutine",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/ifaceconv",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/ifaceprom",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/indexerr",      // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/interface",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/interface1370", // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/invoke",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/makeslice",     // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/multiret",      // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/reader",        // QEMU timeout (no expected output)
+		"./_testgo/reflect",       // link errors (__atomic_*, ffi_*, __sigsetjmp) plus DRAM overflow
+		"./_testgo/reflectconv",   // link errors (faccessat/getrlimit/setrlimit, __atomic_*, ffi_*, __sigsetjmp, ldexp) plus DRAM overflow
+		"./_testgo/reflectfn",     // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __sigsetjmp, __atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/reflectmkfn",   // link errors (__atomic_*, ffi_*, __sigsetjmp) plus DRAM overflow
+		"./_testgo/rewrite",       // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __sigsetjmp, __atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/runextest",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/runtest",       // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/select",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/selects",       // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/sigsegv",       // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testgo/strucintf",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/struczero",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/syncmap",       // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __sigsetjmp, __atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/tpindex",       // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/tpinst",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/tpnamed",       // QEMU hits Instruction access fault
+		"./_testgo/tptypes",       // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testgo/typerecur",     // QEMU hits Illegal instruction (Guru Meditation)
 	}
-	ignore := buildIgnoreList(t, "./_testgo", allow)
 	cltest.RunFromDir(t, "", "./_testgo", ignore,
 		cltest.WithRunConfig(conf),
 		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
