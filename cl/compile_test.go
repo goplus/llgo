@@ -135,8 +135,11 @@ func TestRunESP32C3Emulator(t *testing.T) {
 	// Not yet in allowlist:
 	// - ./_testgo/abimethod: link errors, see https://github.com/goplus/llgo/issues/1569
 	// - ./_testgo/alias: QEMU hits Illegal instruction before expected output
+	// - ./_testgo/indexerr: link errors, see https://github.com/goplus/llgo/issues/1419
 	allow := map[string]struct{}{
 		"./_testgo/print": {},
+		"./_testgo/constconv": {},
+		"./_testgo/equal": {},
 	}
 	ignore := buildIgnoreList(t, "./_testgo", allow)
 	cltest.RunFromDir(t, "", "./_testgo", ignore,
