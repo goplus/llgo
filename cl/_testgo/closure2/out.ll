@@ -29,22 +29,22 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closure2.main$1", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call { ptr, ptr } %5(i64 1)
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
-  %10 = extractvalue { ptr, ptr } %8, 1
-  %11 = extractvalue { ptr, ptr } %8, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  call void %11(i64 2)
-  %14 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call { ptr, ptr } %5(i64 1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  %10 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
+  call void %9(i64 2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
   ret void
 }
 
 define { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/closure2.main$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
@@ -56,7 +56,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/closure2.main$1$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4

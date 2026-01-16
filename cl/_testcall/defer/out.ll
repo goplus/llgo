@@ -362,10 +362,10 @@ _llgo_20:                                         ; preds = %_llgo_2
   %135 = extractvalue { ptr, { ptr, ptr }, i64 } %132, 2
   %136 = extractvalue { ptr, ptr } %134, 1
   %137 = extractvalue { ptr, ptr } %134, 0
-  %138 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %139 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %136)
-  %140 = call i64 %137(i64 %135)
-  %141 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %138)
+  %138 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %136)
+  %139 = call i64 %137(i64 %135)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %138)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %131)
   br label %_llgo_21
 
@@ -373,170 +373,170 @@ _llgo_21:                                         ; preds = %_llgo_20, %_llgo_2
   br label %_llgo_19
 
 _llgo_22:                                         ; preds = %_llgo_19
-  %142 = load ptr, ptr %21, align 8
-  %143 = load { ptr, i64 }, ptr %142, align 8
-  %144 = extractvalue { ptr, i64 } %143, 0
-  store ptr %144, ptr %21, align 8
-  %145 = extractvalue { ptr, i64 } %143, 1
-  %146 = extractvalue { ptr, ptr } %82, 1
-  %147 = extractvalue { ptr, ptr } %82, 0
-  %148 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %149 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %146)
-  %150 = call i64 %147(ptr %146, i64 %145)
-  %151 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %148)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %142)
+  %140 = load ptr, ptr %21, align 8
+  %141 = load { ptr, i64 }, ptr %140, align 8
+  %142 = extractvalue { ptr, i64 } %141, 0
+  store ptr %142, ptr %21, align 8
+  %143 = extractvalue { ptr, i64 } %141, 1
+  %144 = extractvalue { ptr, ptr } %82, 1
+  %145 = extractvalue { ptr, ptr } %82, 0
+  %146 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %144)
+  %147 = call i64 %145(ptr %144, i64 %143)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %146)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %140)
   br label %_llgo_23
 
 _llgo_23:                                         ; preds = %_llgo_22, %_llgo_19
   br label %_llgo_18
 
 _llgo_24:                                         ; preds = %_llgo_18
-  %152 = load ptr, ptr %21, align 8
-  %153 = load { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 }, ptr %152, align 8
-  %154 = extractvalue { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 } %153, 0
-  store ptr %154, ptr %21, align 8
-  %155 = extractvalue { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 } %153, 1
-  %156 = extractvalue { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 } %153, 2
-  %157 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.S.Inc"(%"github.com/goplus/llgo/cl/_testcall/defer.S" %155, i64 %156)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %152)
+  %148 = load ptr, ptr %21, align 8
+  %149 = load { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 }, ptr %148, align 8
+  %150 = extractvalue { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 } %149, 0
+  store ptr %150, ptr %21, align 8
+  %151 = extractvalue { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 } %149, 1
+  %152 = extractvalue { ptr, %"github.com/goplus/llgo/cl/_testcall/defer.S", i64 } %149, 2
+  %153 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.S.Inc"(%"github.com/goplus/llgo/cl/_testcall/defer.S" %151, i64 %152)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %148)
   br label %_llgo_25
 
 _llgo_25:                                         ; preds = %_llgo_24, %_llgo_18
   br label %_llgo_17
 
 _llgo_26:                                         ; preds = %_llgo_17
-  %158 = load ptr, ptr %21, align 8
-  %159 = load { ptr, ptr, i64 }, ptr %158, align 8
-  %160 = extractvalue { ptr, ptr, i64 } %159, 0
-  store ptr %160, ptr %21, align 8
-  %161 = extractvalue { ptr, ptr, i64 } %159, 1
-  %162 = extractvalue { ptr, ptr, i64 } %159, 2
-  %163 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.(*S).Add"(ptr %161, i64 %162)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %158)
+  %154 = load ptr, ptr %21, align 8
+  %155 = load { ptr, ptr, i64 }, ptr %154, align 8
+  %156 = extractvalue { ptr, ptr, i64 } %155, 0
+  store ptr %156, ptr %21, align 8
+  %157 = extractvalue { ptr, ptr, i64 } %155, 1
+  %158 = extractvalue { ptr, ptr, i64 } %155, 2
+  %159 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.(*S).Add"(ptr %157, i64 %158)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %154)
   br label %_llgo_27
 
 _llgo_27:                                         ; preds = %_llgo_26, %_llgo_17
   br label %_llgo_16
 
 _llgo_28:                                         ; preds = %_llgo_16
-  %164 = load ptr, ptr %21, align 8
-  %165 = load { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" }, ptr %164, align 8
-  %166 = extractvalue { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %165, 0
-  store ptr %166, ptr %21, align 8
-  %167 = extractvalue { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %165, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %167)
+  %160 = load ptr, ptr %21, align 8
+  %161 = load { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" }, ptr %160, align 8
+  %162 = extractvalue { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %161, 0
+  store ptr %162, ptr %21, align 8
+  %163 = extractvalue { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %161, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %163)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %164)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %160)
   br label %_llgo_29
 
 _llgo_29:                                         ; preds = %_llgo_28, %_llgo_16
   br label %_llgo_15
 
 _llgo_30:                                         ; preds = %_llgo_15
-  %168 = load ptr, ptr %21, align 8
-  %169 = load { ptr, i32 }, ptr %168, align 8
-  %170 = extractvalue { ptr, i32 } %169, 0
-  store ptr %170, ptr %21, align 8
-  %171 = extractvalue { ptr, i32 } %169, 1
-  %172 = call i32 @abs(i32 %171)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %168)
+  %164 = load ptr, ptr %21, align 8
+  %165 = load { ptr, i32 }, ptr %164, align 8
+  %166 = extractvalue { ptr, i32 } %165, 0
+  store ptr %166, ptr %21, align 8
+  %167 = extractvalue { ptr, i32 } %165, 1
+  %168 = call i32 @abs(i32 %167)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %164)
   br label %_llgo_31
 
 _llgo_31:                                         ; preds = %_llgo_30, %_llgo_15
   br label %_llgo_14
 
 _llgo_32:                                         ; preds = %_llgo_14
-  %173 = load ptr, ptr %21, align 8
-  %174 = load { ptr, ptr, i64 }, ptr %173, align 8
-  %175 = extractvalue { ptr, ptr, i64 } %174, 0
-  store ptr %175, ptr %21, align 8
-  %176 = extractvalue { ptr, ptr, i64 } %174, 1
-  %177 = extractvalue { ptr, ptr, i64 } %174, 2
-  %178 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.(*S).Add$thunk"(ptr %176, i64 %177)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %173)
+  %169 = load ptr, ptr %21, align 8
+  %170 = load { ptr, ptr, i64 }, ptr %169, align 8
+  %171 = extractvalue { ptr, ptr, i64 } %170, 0
+  store ptr %171, ptr %21, align 8
+  %172 = extractvalue { ptr, ptr, i64 } %170, 1
+  %173 = extractvalue { ptr, ptr, i64 } %170, 2
+  %174 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.(*S).Add$thunk"(ptr %172, i64 %173)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %169)
   br label %_llgo_33
 
 _llgo_33:                                         ; preds = %_llgo_32, %_llgo_14
   br label %_llgo_13
 
 _llgo_34:                                         ; preds = %_llgo_13
-  %179 = load ptr, ptr %21, align 8
-  %180 = load { ptr, { ptr, ptr }, i64 }, ptr %179, align 8
-  %181 = extractvalue { ptr, { ptr, ptr }, i64 } %180, 0
-  store ptr %181, ptr %21, align 8
-  %182 = extractvalue { ptr, { ptr, ptr }, i64 } %180, 1
-  %183 = extractvalue { ptr, { ptr, ptr }, i64 } %180, 2
-  %184 = extractvalue { ptr, ptr } %182, 1
-  %185 = extractvalue { ptr, ptr } %182, 0
-  %186 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %187 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %184)
-  %188 = call i64 %185(i64 %183)
-  %189 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %186)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %179)
+  %175 = load ptr, ptr %21, align 8
+  %176 = load { ptr, { ptr, ptr }, i64 }, ptr %175, align 8
+  %177 = extractvalue { ptr, { ptr, ptr }, i64 } %176, 0
+  store ptr %177, ptr %21, align 8
+  %178 = extractvalue { ptr, { ptr, ptr }, i64 } %176, 1
+  %179 = extractvalue { ptr, { ptr, ptr }, i64 } %176, 2
+  %180 = extractvalue { ptr, ptr } %178, 1
+  %181 = extractvalue { ptr, ptr } %178, 0
+  %182 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %180)
+  %183 = call i64 %181(i64 %179)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %182)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %175)
   br label %_llgo_35
 
 _llgo_35:                                         ; preds = %_llgo_34, %_llgo_13
   br label %_llgo_12
 
 _llgo_36:                                         ; preds = %_llgo_12
-  %190 = load ptr, ptr %21, align 8
-  %191 = load { ptr, { ptr, ptr }, i64 }, ptr %190, align 8
-  %192 = extractvalue { ptr, { ptr, ptr }, i64 } %191, 0
-  store ptr %192, ptr %21, align 8
-  %193 = extractvalue { ptr, { ptr, ptr }, i64 } %191, 1
-  %194 = extractvalue { ptr, { ptr, ptr }, i64 } %191, 2
-  %195 = extractvalue { ptr, ptr } %193, 1
-  %196 = extractvalue { ptr, ptr } %193, 0
-  %197 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %198 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %195)
-  %199 = call i64 %196(i64 %194)
-  %200 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %197)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %190)
+  %184 = load ptr, ptr %21, align 8
+  %185 = load { ptr, { ptr, ptr }, i64 }, ptr %184, align 8
+  %186 = extractvalue { ptr, { ptr, ptr }, i64 } %185, 0
+  store ptr %186, ptr %21, align 8
+  %187 = extractvalue { ptr, { ptr, ptr }, i64 } %185, 1
+  %188 = extractvalue { ptr, { ptr, ptr }, i64 } %185, 2
+  %189 = extractvalue { ptr, ptr } %187, 1
+  %190 = extractvalue { ptr, ptr } %187, 0
+  %191 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %189)
+  %192 = call i64 %190(i64 %188)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %191)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %184)
   br label %_llgo_37
 
 _llgo_37:                                         ; preds = %_llgo_36, %_llgo_12
   br label %_llgo_11
 
 _llgo_38:                                         ; preds = %_llgo_11
-  %201 = load ptr, ptr %21, align 8
-  %202 = load { ptr, i64, i64 }, ptr %201, align 8
-  %203 = extractvalue { ptr, i64, i64 } %202, 0
-  store ptr %203, ptr %21, align 8
-  %204 = extractvalue { ptr, i64, i64 } %202, 1
-  %205 = extractvalue { ptr, i64, i64 } %202, 2
-  %206 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.globalAdd"(i64 %204, i64 %205)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %201)
+  %193 = load ptr, ptr %21, align 8
+  %194 = load { ptr, i64, i64 }, ptr %193, align 8
+  %195 = extractvalue { ptr, i64, i64 } %194, 0
+  store ptr %195, ptr %21, align 8
+  %196 = extractvalue { ptr, i64, i64 } %194, 1
+  %197 = extractvalue { ptr, i64, i64 } %194, 2
+  %198 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.globalAdd"(i64 %196, i64 %197)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %193)
   br label %_llgo_39
 
 _llgo_39:                                         ; preds = %_llgo_38, %_llgo_11
   br label %_llgo_10
 
 _llgo_40:                                         ; preds = %_llgo_9
-  %207 = load ptr, ptr %21, align 8
-  %208 = load { ptr, { ptr, ptr } }, ptr %207, align 8
-  %209 = extractvalue { ptr, { ptr, ptr } } %208, 0
-  store ptr %209, ptr %21, align 8
-  %210 = extractvalue { ptr, { ptr, ptr } } %208, 1
-  %211 = extractvalue { ptr, ptr } %210, 1
-  %212 = extractvalue { ptr, ptr } %210, 0
-  %213 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %214 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %211)
-  call void %212()
-  %215 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %213)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %207)
+  %199 = load ptr, ptr %21, align 8
+  %200 = load { ptr, { ptr, ptr } }, ptr %199, align 8
+  %201 = extractvalue { ptr, { ptr, ptr } } %200, 0
+  store ptr %201, ptr %21, align 8
+  %202 = extractvalue { ptr, { ptr, ptr } } %200, 1
+  %203 = extractvalue { ptr, ptr } %202, 1
+  %204 = extractvalue { ptr, ptr } %202, 0
+  %205 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %203)
+  call void %204()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %205)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %199)
   br label %_llgo_41
 
 _llgo_41:                                         ; preds = %_llgo_40, %_llgo_9
-  %216 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %13, align 8
-  %217 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %216, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %217)
-  %218 = load ptr, ptr %20, align 8
-  indirectbr ptr %218, [label %_llgo_3, label %_llgo_8]
+  %206 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %13, align 8
+  %207 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %206, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %207)
+  %208 = load ptr, ptr %20, align 8
+  indirectbr ptr %208, [label %_llgo_3, label %_llgo_8]
 }
 
 define void @"github.com/goplus/llgo/cl/_testcall/defer.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -560,7 +560,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }
@@ -584,7 +584,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Rethrow"(ptr)
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/defer.(*S).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.(*S).Add"(ptr %3, i64 %0)
@@ -593,7 +593,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/defer.S.Inc$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { %"github.com/goplus/llgo/cl/_testcall/defer.S" }, ptr %1, align 4
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testcall/defer.S" } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/defer.S.Inc"(%"github.com/goplus/llgo/cl/_testcall/defer.S" %3, i64 %0)
@@ -618,7 +618,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/defer.interface{Add(int) int}.Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %1, align 8
   %3 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %2, 0
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
@@ -629,11 +629,11 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11(ptr %10, i64 %0)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  ret i64 %14
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call i64 %11(ptr %10, i64 %0)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  ret i64 %13
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr)

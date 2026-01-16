@@ -23,10 +23,10 @@ _llgo_0:
   %0 = call %"github.com/goplus/llgo/cl/_testcall/freeclosure.Fn" @"github.com/goplus/llgo/cl/_testcall/freeclosure.main$1"(i64 3)
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testcall/freeclosure.Fn" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testcall/freeclosure.Fn" %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
-  %5 = call i64 %2(i64 2)
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
+  %4 = call i64 %2(i64 2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   ret void
 }
 
@@ -46,7 +46,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/freeclosure.main$1$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4

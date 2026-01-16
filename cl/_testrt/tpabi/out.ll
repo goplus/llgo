@@ -94,32 +94,32 @@ _llgo_1:                                          ; preds = %_llgo_0
   %22 = insertvalue { ptr, ptr } %21, ptr %17, 1
   %23 = extractvalue { ptr, ptr } %22, 1
   %24 = extractvalue { ptr, ptr } %22, 0
-  %25 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %26 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %23)
+  %25 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %23)
   call void %24(ptr %23)
-  %27 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %25)
-  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
-  %29 = getelementptr inbounds i64, ptr %28, i64 0
-  %30 = getelementptr inbounds i64, ptr %28, i64 1
-  %31 = getelementptr inbounds i64, ptr %28, i64 2
-  %32 = getelementptr inbounds i64, ptr %28, i64 3
-  store i64 1, ptr %29, align 4
-  store i64 2, ptr %30, align 4
-  store i64 3, ptr %31, align 4
-  store i64 4, ptr %32, align 4
-  %33 = getelementptr [4 x i64], ptr %28, i64 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %33)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %25)
+  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
+  %27 = getelementptr inbounds i64, ptr %26, i64 0
+  %28 = getelementptr inbounds i64, ptr %26, i64 1
+  %29 = getelementptr inbounds i64, ptr %26, i64 2
+  %30 = getelementptr inbounds i64, ptr %26, i64 3
+  store i64 1, ptr %27, align 4
+  store i64 2, ptr %28, align 4
+  store i64 3, ptr %29, align 4
+  store i64 4, ptr %30, align 4
+  %31 = getelementptr [4 x i64], ptr %26, i64 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %31)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %34 = getelementptr [4 x i64], ptr %28, i64 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %34)
+  %32 = getelementptr [4 x i64], ptr %26, i64 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %35 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 83 }, ptr %35, align 8
-  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %35, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %36)
+  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 83 }, ptr %33, align 8
+  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %33, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %34)
   unreachable
 }
 
@@ -146,7 +146,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }

@@ -21,10 +21,10 @@ _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr %4, align 1
   %5 = extractvalue { ptr, ptr } %1, 1
   %6 = extractvalue { ptr, ptr } %1, 0
-  %7 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
+  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
   call void %6()
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %7)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0

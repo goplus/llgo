@@ -20,10 +20,10 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
   call void %2()
-  %5 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 19 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
@@ -35,10 +35,10 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
   call void %2()
-  %5 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 24 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void

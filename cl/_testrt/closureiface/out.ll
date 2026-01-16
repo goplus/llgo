@@ -69,36 +69,36 @@ _llgo_1:                                          ; preds = %_llgo_5
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_5
-  %10 = extractvalue { ptr, ptr } %21, 1
-  %11 = extractvalue { ptr, ptr } %21, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11(i64 100)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %14)
+  %10 = extractvalue { ptr, ptr } %19, 1
+  %11 = extractvalue { ptr, ptr } %19, 0
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call i64 %11(i64 100)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %16 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 1
-  %17 = load { ptr, ptr }, ptr %16, align 8
-  %18 = insertvalue { { ptr, ptr }, i1 } undef, { ptr, ptr } %17, 0
-  %19 = insertvalue { { ptr, ptr }, i1 } %18, i1 true, 1
+  %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 1
+  %15 = load { ptr, ptr }, ptr %14, align 8
+  %16 = insertvalue { { ptr, ptr }, i1 } undef, { ptr, ptr } %15, 0
+  %17 = insertvalue { { ptr, ptr }, i1 } %16, i1 true, 1
   br label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
-  %20 = phi { { ptr, ptr }, i1 } [ %19, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
-  %21 = extractvalue { { ptr, ptr }, i1 } %20, 0
-  %22 = extractvalue { { ptr, ptr }, i1 } %20, 1
-  br i1 %22, label %_llgo_2, label %_llgo_1
+  %18 = phi { { ptr, ptr }, i1 } [ %17, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %19 = extractvalue { { ptr, ptr }, i1 } %18, 0
+  %20 = extractvalue { { ptr, ptr }, i1 } %18, 1
+  br i1 %20, label %_llgo_2, label %_llgo_1
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closureiface.main$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4

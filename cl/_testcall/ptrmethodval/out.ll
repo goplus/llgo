@@ -37,10 +37,10 @@ _llgo_0:
   %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testcall/ptrmethodval.(*S).Add$bound", ptr undef }, ptr %2, 1
   %5 = extractvalue { ptr, ptr } %4, 1
   %6 = extractvalue { ptr, ptr } %4, 0
-  %7 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
-  %9 = call i64 %6(i64 7)
-  %10 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %7)
+  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  %8 = call i64 %6(i64 7)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
   ret void
 }
 
@@ -48,7 +48,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/ptrmethodval.(*S).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/ptrmethodval.(*S).Add"(ptr %3, i64 %0)

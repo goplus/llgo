@@ -104,7 +104,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/ifacego.testGoInterfaceMethod$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.GetThreadDefer"()
   %3 = alloca i8, i64 196, align 1
@@ -159,37 +159,37 @@ _llgo_4:                                          ; preds = %_llgo_0
   %29 = insertvalue { ptr, ptr } %28, ptr %24, 1
   %30 = extractvalue { ptr, ptr } %29, 1
   %31 = extractvalue { ptr, ptr } %29, 0
-  %32 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %33 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %30)
+  %32 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %30)
   call void %31(ptr %30)
-  %34 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %32)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %32)
   store ptr blockaddress(@"github.com/goplus/llgo/cl/_testgo/ifacego.testGoInterfaceMethod$1", %_llgo_6), ptr %11, align 8
   br label %_llgo_2
 
 _llgo_5:                                          ; preds = %_llgo_0
   store ptr blockaddress(@"github.com/goplus/llgo/cl/_testgo/ifacego.testGoInterfaceMethod$1", %_llgo_3), ptr %11, align 8
-  %35 = load ptr, ptr %10, align 8
-  indirectbr ptr %35, [label %_llgo_3, label %_llgo_2]
+  %33 = load ptr, ptr %10, align 8
+  indirectbr ptr %33, [label %_llgo_3, label %_llgo_2]
 
 _llgo_6:                                          ; preds = %_llgo_8
   ret void
 
 _llgo_7:                                          ; preds = %_llgo_2
-  %36 = load ptr, ptr %12, align 8
-  %37 = load { ptr, ptr }, ptr %36, align 8
-  %38 = extractvalue { ptr, ptr } %37, 0
-  store ptr %38, ptr %12, align 8
-  %39 = extractvalue { ptr, ptr } %37, 1
-  call void @"sync.(*WaitGroup).Done"(ptr %39)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %36)
+  %34 = load ptr, ptr %12, align 8
+  %35 = load { ptr, ptr }, ptr %34, align 8
+  %36 = extractvalue { ptr, ptr } %35, 0
+  store ptr %36, ptr %12, align 8
+  %37 = extractvalue { ptr, ptr } %35, 1
+  call void @"sync.(*WaitGroup).Done"(ptr %37)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %34)
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_2
-  %40 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %4, align 8
-  %41 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %40, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %41)
-  %42 = load ptr, ptr %11, align 8
-  indirectbr ptr %42, [label %_llgo_3, label %_llgo_6]
+  %38 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %4, align 8
+  %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %38, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %39)
+  %40 = load ptr, ptr %11, align 8
+  indirectbr ptr %40, [label %_llgo_3, label %_llgo_6]
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
@@ -206,7 +206,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }
@@ -229,10 +229,10 @@ _llgo_0:
   %2 = extractvalue { { ptr, ptr } } %1, 0
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  %5 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %5 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void %4()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
   call void @free(ptr %0)
   ret ptr null
 }

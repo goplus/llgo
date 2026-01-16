@@ -26,22 +26,22 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testcall/nestedclosure.main$1", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call { ptr, ptr } %5()
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
-  %10 = extractvalue { ptr, ptr } %8, 1
-  %11 = extractvalue { ptr, ptr } %8, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11()
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call { ptr, ptr } %5()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  %10 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
+  %11 = call i64 %9()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
   ret void
 }
 
 define { ptr, ptr } @"github.com/goplus/llgo/cl/_testcall/nestedclosure.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 2, ptr %2, align 4
@@ -57,7 +57,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/nestedclosure.main$1$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr } %1, 0
   %3 = load i64, ptr %2, align 4

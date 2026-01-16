@@ -58,15 +58,15 @@ define linkonce [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[githu
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
-  %5 = call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %2()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
-  %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %5, 1
-  %8 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %5, 0
-  %9 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %10 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %7)
-  %11 = call [0 x i8] %8()
-  %12 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %9)
-  ret [0 x i8] %11
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
+  %4 = call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %2()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %4, 1
+  %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %4, 0
+  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  %8 = call [0 x i8] %6()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
+  ret [0 x i8] %8
 }

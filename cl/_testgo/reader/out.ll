@@ -230,7 +230,7 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_6, %_llgo_3, %_llgo_0
-  %3 = phi %"github.com/goplus/llgo/runtime/internal/runtime.Slice" [ %2, %_llgo_0 ], [ %27, %_llgo_3 ], [ %64, %_llgo_6 ]
+  %3 = phi %"github.com/goplus/llgo/runtime/internal/runtime.Slice" [ %2, %_llgo_0 ], [ %25, %_llgo_3 ], [ %62, %_llgo_6 ]
   %4 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
   %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 2
   %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 2
@@ -244,70 +244,70 @@ _llgo_1:                                          ; preds = %_llgo_6, %_llgo_3, 
   %14 = insertvalue { ptr, ptr } %13, ptr %9, 1
   %15 = extractvalue { ptr, ptr } %14, 1
   %16 = extractvalue { ptr, ptr } %14, 0
-  %17 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %18 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %15)
-  %19 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16(ptr %15, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8)
-  %20 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %17)
-  %21 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19, 0
-  %22 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19, 1
-  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
-  %24 = add i64 %23, %21
-  %25 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 2
-  %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
-  %27 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %26, i64 1, i64 %25, i64 0, i64 %24, i64 %25)
-  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %22)
-  %29 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22, 1
-  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %28, 0
-  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %30, ptr %29, 1
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
-  %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %32, 0
-  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %33, ptr null, 1
-  %35 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %31, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %34)
-  %36 = xor i1 %35, true
-  br i1 %36, label %_llgo_2, label %_llgo_3
+  %17 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  %18 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16(ptr %15, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %17)
+  %19 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18, 0
+  %20 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18, 1
+  %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
+  %22 = add i64 %21, %19
+  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 2
+  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
+  %25 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %24, i64 1, i64 %23, i64 0, i64 %22, i64 %23)
+  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %20)
+  %27 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20, 1
+  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %26, 0
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %28, ptr %27, 1
+  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
+  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %30, 0
+  %32 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %31, ptr null, 1
+  %33 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %29, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %32)
+  %34 = xor i1 %33, true
+  br i1 %34, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %37 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr @"github.com/goplus/llgo/cl/_testgo/reader.EOF", align 8
-  %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %22)
-  %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22, 1
-  %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %38, 0
-  %41 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %40, ptr %39, 1
-  %42 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %37)
-  %43 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %37, 1
-  %44 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %42, 0
-  %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %44, ptr %43, 1
-  %46 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %45)
-  br i1 %46, label %_llgo_4, label %_llgo_5
+  %35 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr @"github.com/goplus/llgo/cl/_testgo/reader.EOF", align 8
+  %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %20)
+  %37 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20, 1
+  %38 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %36, 0
+  %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %38, ptr %37, 1
+  %40 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %35)
+  %41 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %35, 1
+  %42 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %40, 0
+  %43 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %42, ptr %41, 1
+  %44 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %39, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %43)
+  br i1 %44, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %47 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %27, 1
-  %48 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %27, 2
-  %49 = icmp eq i64 %47, %48
-  br i1 %49, label %_llgo_6, label %_llgo_1
+  %45 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25, 1
+  %46 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25, 2
+  %47 = icmp eq i64 %45, %46
+  br i1 %47, label %_llgo_6, label %_llgo_1
 
 _llgo_4:                                          ; preds = %_llgo_2
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_2
-  %50 = phi %"github.com/goplus/llgo/runtime/internal/runtime.iface" [ %22, %_llgo_2 ], [ zeroinitializer, %_llgo_4 ]
-  %51 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %27, 0
-  %52 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %51, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %50, 1
-  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %52
+  %48 = phi %"github.com/goplus/llgo/runtime/internal/runtime.iface" [ %20, %_llgo_2 ], [ zeroinitializer, %_llgo_4 ]
+  %49 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25, 0
+  %50 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %49, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %48, 1
+  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %50
 
 _llgo_6:                                          ; preds = %_llgo_3
-  %53 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
-  %54 = getelementptr inbounds i8, ptr %53, i64 0
-  store i8 0, ptr %54, align 1
-  %55 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %53, 0
-  %56 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %55, i64 1, 1
-  %57 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %56, i64 1, 2
-  %58 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %57, 0
-  %59 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %57, 1
-  %60 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %27, ptr %58, i64 %59, i64 1)
-  %61 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %27, 1
-  %62 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %60, 2
-  %63 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %60, 0
-  %64 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %63, i64 1, i64 %62, i64 0, i64 %61, i64 %62)
+  %51 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
+  %52 = getelementptr inbounds i8, ptr %51, i64 0
+  store i8 0, ptr %52, align 1
+  %53 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %51, 0
+  %54 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %53, i64 1, 1
+  %55 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %54, i64 1, 2
+  %56 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %55, 0
+  %57 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %55, 1
+  %58 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25, ptr %56, i64 %57, i64 1)
+  %59 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25, 1
+  %60 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %58, 2
+  %61 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %58, 0
+  %62 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr %61, i64 1, i64 %60, i64 0, i64 %59, i64 %60)
   br label %_llgo_1
 }
 
@@ -318,61 +318,61 @@ _llgo_0:
   br i1 %3, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %44)
-  %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %44, 0
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %40)
+  %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %40, 0
   %6 = getelementptr ptr, ptr %5, i64 3
   %7 = load ptr, ptr %6, align 8
   %8 = insertvalue { ptr, ptr } undef, ptr %7, 0
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  %16 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 0
-  %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 1
-  %18 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %16, 0
-  %19 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %17, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  %14 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 0
+  %15 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 1
+  %16 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %14, 0
+  %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17
 
 _llgo_2:                                          ; preds = %_llgo_5
-  %20 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %23 = getelementptr ptr, ptr %22, i64 3
-  %24 = load ptr, ptr %23, align 8
-  %25 = insertvalue { ptr, ptr } undef, ptr %24, 0
-  %26 = insertvalue { ptr, ptr } %25, ptr %21, 1
-  %27 = extractvalue { ptr, ptr } %26, 1
-  %28 = extractvalue { ptr, ptr } %26, 0
-  %29 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %30 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %27)
-  %31 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %28(ptr %27, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %20)
-  %32 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %29)
-  %33 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %31, 0
-  %34 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %31, 1
-  %35 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %33, 0
-  %36 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %35, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %34, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %36
+  %18 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %20 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %21 = getelementptr ptr, ptr %20, i64 3
+  %22 = load ptr, ptr %21, align 8
+  %23 = insertvalue { ptr, ptr } undef, ptr %22, 0
+  %24 = insertvalue { ptr, ptr } %23, ptr %19, 1
+  %25 = extractvalue { ptr, ptr } %24, 1
+  %26 = extractvalue { ptr, ptr } %24, 0
+  %27 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %25)
+  %28 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %26(ptr %25, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %27)
+  %29 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %28, 0
+  %30 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %28, 1
+  %31 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %29, 0
+  %32 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %31, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %30, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %32
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %37 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
-  %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU", ptr %2)
-  %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %38, 0
-  %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %39, ptr %37, 1
-  %41 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %40, 0
-  %42 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %41, i1 true, 1
+  %33 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
+  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$Ly4zXiUMEac-hYAMw6b6miJ1JEhGfLyBWyBOhpsRZcU", ptr %2)
+  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %34, 0
+  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %35, ptr %33, 1
+  %37 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %36, 0
+  %38 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %37, i1 true, 1
   br label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
-  %43 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %42, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
-  %44 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %43, 0
-  %45 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %43, 1
-  br i1 %45, label %_llgo_1, label %_llgo_2
+  %39 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %38, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %40 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %39, 0
+  %41 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %39, 1
+  br i1 %41, label %_llgo_1, label %_llgo_2
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error"(ptr %0) {
@@ -450,15 +450,15 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 1
   %12 = extractvalue { ptr, ptr } %10, 0
-  %13 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %14 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %11)
-  %15 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %11, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %16 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %13)
-  %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %15, 0
-  %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %15, 1
-  %19 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %17, 0
-  %20 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %18, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %20
+  %13 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %11)
+  %14 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %11, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %13)
+  %15 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 0
+  %16 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 1
+  %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %15, 0
+  %18 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %16, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close"(ptr %0) {
@@ -480,15 +480,15 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  %16 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 0
-  %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 1
-  %18 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %16, 0
-  %19 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %17, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  %14 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 0
+  %15 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 1
+  %16 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %14, 0
+  %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Close"(%"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" %0) {
@@ -511,15 +511,15 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 1
   %12 = extractvalue { ptr, ptr } %10, 0
-  %13 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %14 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %11)
-  %15 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %11, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %16 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %13)
-  %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %15, 0
-  %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %15, 1
-  %19 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %17, 0
-  %20 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %18, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %20
+  %13 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %11)
+  %14 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %11, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %13)
+  %15 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 0
+  %16 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 1
+  %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %15, 0
+  %18 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %16, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo"(%"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo" %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
@@ -546,21 +546,21 @@ _llgo_1:                                          ; preds = %_llgo_0
   %16 = insertvalue { ptr, ptr } %15, ptr %11, 1
   %17 = extractvalue { ptr, ptr } %16, 1
   %18 = extractvalue { ptr, ptr } %16, 0
-  %19 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %20 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %17)
-  %21 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18(ptr %17, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
-  %22 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %19)
-  %23 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %21, 0
-  %24 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %21, 1
-  %25 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %23, 0
-  %26 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %25, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %24, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %26
+  %19 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %17)
+  %20 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18(ptr %17, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %19)
+  %21 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %20, 0
+  %22 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %20, 1
+  %23 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %21, 0
+  %24 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %23, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %24
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @53, i64 122 }, ptr %27, align 8
-  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %27, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %28)
+  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @53, i64 122 }, ptr %25, align 8
+  %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %25, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %26)
   unreachable
 }
 
@@ -583,15 +583,15 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  %16 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 0
-  %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %14, 1
-  %18 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %16, 0
-  %19 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %18, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %17, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11(ptr %10, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  %14 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 0
+  %15 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13, 1
+  %16 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %14, 0
+  %17 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
@@ -1026,7 +1026,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }

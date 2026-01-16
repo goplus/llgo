@@ -117,15 +117,15 @@ _llgo_2:                                          ; preds = %_llgo_5, %_llgo_4
   %24 = load i64, ptr %18, align 4
   %25 = extractvalue { ptr, ptr } %10, 1
   %26 = extractvalue { ptr, ptr } %10, 0
-  %27 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %28 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %25)
+  %27 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %25)
   call void %26(ptr %25)
-  %29 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %27)
-  %30 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %13, align 8
-  %31 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %30, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %31)
-  %32 = load ptr, ptr %20, align 8
-  indirectbr ptr %32, [label %_llgo_3, label %_llgo_6]
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %27)
+  %28 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %13, align 8
+  %29 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %28, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %29)
+  %30 = load ptr, ptr %20, align 8
+  indirectbr ptr %30, [label %_llgo_3, label %_llgo_6]
 
 _llgo_3:                                          ; preds = %_llgo_5, %_llgo_2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Rethrow"(ptr %11)
@@ -139,8 +139,8 @@ _llgo_4:                                          ; preds = %_llgo_0
 
 _llgo_5:                                          ; preds = %_llgo_0
   store ptr blockaddress(@"github.com/goplus/llgo/cl/_testgo/ifacedefer.testDeferInterfaceMethod", %_llgo_3), ptr %20, align 8
-  %33 = load ptr, ptr %19, align 8
-  indirectbr ptr %33, [label %_llgo_3, label %_llgo_2]
+  %31 = load ptr, ptr %19, align 8
+  indirectbr ptr %31, [label %_llgo_3, label %_llgo_2]
 
 _llgo_6:                                          ; preds = %_llgo_2
   ret void
@@ -158,7 +158,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }
