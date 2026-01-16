@@ -41,6 +41,7 @@ import (
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
@@ -49,9 +50,10 @@ import (
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
+	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
-	"github.com/goplus/llgo/xtool/env/llvm"
+	envllvm "github.com/goplus/llgo/xtool/env/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -112,33 +114,34 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos          string
-	Goarch        string
-	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath       string
-	AppExt        string  // ".exe" on Windows, empty on Unix
-	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts       OutFmts // Output format specifications (only for Target != "")
-	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
-	Emulator      bool    // run in emulator mode
-	Port          string  // target port for flashing
-	BaudRate      int     // baudrate for serial communication
-	RunArgs       []string
-	Mode          Mode
-	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode       AbiMode
-	GenExpect     bool // only valid for ModeCmpTest
-	Verbose       bool
-	GenLL         bool // generate pkg .ll files
-	CheckLLFiles  bool // check .ll files valid
-	CheckLinkArgs bool // check linkargs valid
-	ForceEspClang bool // force to use esp-clang
-	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
-	Tags          string
-	SizeReport    bool   // print size report after successful build
-	SizeFormat    string // size report format: text,json (default text)
-	SizeLevel     string // size aggregation level: full,module,package (default module)
-	CompilerHash  string // metadata hash for the running compiler (development builds only)
+	Goos           string
+	Goarch         string
+	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath        string
+	AppExt         string  // ".exe" on Windows, empty on Unix
+	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts        OutFmts // Output format specifications (only for Target != "")
+	CompileOnly    bool    // compile test binary but do not run it (only valid for ModeTest)
+	Emulator       bool    // run in emulator mode
+	Port           string  // target port for flashing
+	BaudRate       int     // baudrate for serial communication
+	RunArgs        []string
+	Mode           Mode
+	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode        AbiMode
+	GenExpect      bool // only valid for ModeCmpTest
+	Verbose        bool
+	GenLL          bool // generate pkg .ll files
+	CheckLLFiles   bool // check .ll files valid
+	CheckLinkArgs  bool // check linkargs valid
+	ForceEspClang  bool // force to use esp-clang
+	ForceRebuild   bool // force rebuilding of packages that are already up-to-date
+	NativeCCompile bool // compile C files for host OS during cross-compilation (avoids sysroot issues)
+	Tags           string
+	SizeReport     bool   // print size report after successful build
+	SizeFormat     string // size report format: text,json (default text)
+	SizeLevel      string // size aggregation level: full,module,package (default module)
+	CompilerHash   string // metadata hash for the running compiler (development builds only)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -235,6 +238,22 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Target != "" && export.GOARCH != "" {
 		conf.Goarch = export.GOARCH
 	}
+	explicitTargetTriple := export.LLVMTarget != ""
+	if export.LLVMTarget == "" {
+		export.LLVMTarget = intllvm.GetTargetTriple(conf.Goos, conf.Goarch)
+	}
+	// Determine the effective GOARCH for ctx register + LLVM backend.
+	// This keeps ctx register selection aligned with the actual target triple.
+	ctxArch := ctxGoarch(conf.Goarch, export.LLVMTarget)
+
+	// Reserve the closure context register in clang so it won't be allocated
+	// for unrelated values (required for register-based ctx passing).
+	{
+		reserve := ctxreg.ReserveFlags(ctxArch)
+		if len(reserve) > 0 {
+			export.CCFLAGS = appendMissingFlags(export.CCFLAGS, reserve)
+		}
+	}
 
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
@@ -276,7 +295,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	target := &llssa.Target{
 		GOOS:   conf.Goos,
-		GOARCH: conf.Goarch,
+		GOARCH: ctxArch,
 	}
 
 	prog := llssa.NewProgram(target)
@@ -300,6 +319,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	check(err)
 	mode := conf.Mode
+	if len(initial) == 0 {
+		return nil, fmt.Errorf("no packages loaded for GOOS=%s GOARCH=%s (patterns=%v)", conf.Goos, conf.Goarch, patterns)
+	}
 	if len(initial) > 1 {
 		switch mode {
 		case ModeBuild:
@@ -352,7 +374,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	env := llvm.New("")
+	env := envllvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
@@ -365,6 +387,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		buildConf:      conf,
 		crossCompile:   export,
 		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
+		explicitTarget: explicitTargetTriple,
 	}
 
 	// default runtime globals must be registered before packages are built
@@ -507,7 +530,7 @@ const (
 )
 
 type context struct {
-	env            *llvm.Env
+	env            *envllvm.Env
 	conf           *packages.Config
 	progSSA        *ssa.Program
 	prog           llssa.Program
@@ -532,13 +555,45 @@ type context struct {
 	// Cache related fields
 	cacheManager *cacheManager
 	llvmVersion  string
+
+	explicitTarget bool
 }
 
-func (c *context) compiler() *clang.Cmd {
+// shouldAddTargetFlag returns true if we need to explicitly add --target flag.
+// This is needed when cross-compiling with an explicit target triple.
+func (c *context) shouldAddTargetFlag() bool {
+	if !c.explicitTarget {
+		return false
+	}
+	if c.crossCompile.LLVMTarget == "" {
+		return false
+	}
+	if hasTargetFlag(c.crossCompile.CCFLAGS) || hasTargetFlag(c.crossCompile.CFLAGS) {
+		return false
+	}
+	return true
+}
+
+// compiler returns a clang compiler command.
+// When compilingCSource is true and NativeCCompile is enabled, C files are
+// compiled for the host OS (without --target) to avoid needing target OS sysroot.
+// Go code and LLVM IR always compile for the target architecture.
+func (c *context) compiler(compilingCSource bool) *clang.Cmd {
+	// Clone slices to avoid modifying the original crossCompile flags
+	ccflags := slices.Clone(c.crossCompile.CCFLAGS)
+	cflags := slices.Clone(c.crossCompile.CFLAGS)
+
+	// Add --target if needed
+	// Skip for C files in NativeCCompile mode (compile for host OS)
+	if c.shouldAddTargetFlag() && !(compilingCSource && c.buildConf.NativeCCompile) {
+		ccflags = append(ccflags, "--target="+c.crossCompile.LLVMTarget)
+		cflags = append(cflags, "--target="+c.crossCompile.LLVMTarget)
+	}
+
 	config := clang.NewConfig(
 		c.crossCompile.CC,
-		c.crossCompile.CCFLAGS,
-		c.crossCompile.CFLAGS,
+		ccflags,
+		cflags,
 		c.crossCompile.LDFLAGS,
 		c.crossCompile.Linker,
 	)
@@ -729,7 +784,7 @@ func appendExternalLinkArgs(ctx *context, aPkg *aPackage, spec string) {
 		}
 	}
 	if ctx.buildConf.CheckLinkArgs {
-		if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
+		if err := ctx.compiler(false).CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
 			panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", spec, expdArgs, pkgLinkArgs, err))
 		}
 	}
@@ -841,7 +896,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			if verbose {
 				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
 			}
-			cmd := ctx.compiler()
+			cmd := ctx.compiler(false)
 			if err := cmd.Compile(llArgs...); err != nil {
 				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
 			}
@@ -853,7 +908,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
-		cmd := ctx.compiler()
+		cmd := ctx.compiler(false)
 		if err := cmd.Compile(objArgs...); err != nil {
 			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
 		}
@@ -1000,7 +1055,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				if verbose {
 					fmt.Fprintln(os.Stderr, "clang", args)
 				}
-				if err := ctx.compiler().Compile(args...); err != nil {
+				if err := ctx.compiler(false).Compile(args...); err != nil {
 					return fmt.Errorf("failed to compile %s: %v", objFile, err)
 				}
 				compiledObjFiles = append(compiledObjFiles, oFile)
@@ -1209,11 +1264,11 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	cmd := ctx.compiler()
+	cmd := ctx.compiler(false)
 	return objFile.Name(), cmd.Compile(args...)
 }
 
-func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
+func llcCheck(env *envllvm.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
@@ -1575,7 +1630,6 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	if ext == ".c" {
 		args = append(args, "-x", "c")
 	}
-
 	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
 	if ctx.buildConf.GenLL {
 		llFile := baseName + ".ll"
@@ -1583,7 +1637,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		if verbose {
 			fmt.Fprintln(os.Stderr, "clang", llArgs)
 		}
-		cmd := ctx.compiler()
+		cmd := ctx.compiler(true) // forCFile=true
 		err := cmd.Compile(llArgs...)
 		check(err)
 	}
@@ -1591,10 +1645,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	// Always compile to .o for linking
 	objFile := baseName + ".o"
 	objArgs := append(args, "-o", objFile, "-c", cFile)
-	if verbose {
-		fmt.Fprintln(os.Stderr, "clang", objArgs)
-	}
-	cmd := ctx.compiler()
+	cmd := ctx.compiler(true) // forCFile=true
 	err := cmd.Compile(objArgs...)
 	check(err)
 	procFile(objFile)
