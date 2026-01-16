@@ -234,6 +234,7 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 		output, err = RunAndCapture(relPkg, pkgDir)
 	}
 	if err != nil {
+		t.Logf("raw output:\n%s", string(output))
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
 	if opts.filter != nil {
