@@ -460,6 +460,12 @@ func (p *TypeInfoRiscv32) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm
 		types := elementTypes(p.td, typ)
 		switch len(types) {
 		case 1:
+			// Single-element struct: flatten to the element type
+			if types[0].TypeKind() == llvm.PointerTypeKind || types[0] == ctx.Int32Type() {
+				info.Kind = AttrWidthType
+				info.Type1 = ctx.Int32Type()
+				return info
+			}
 			if types[0] == ctx.Int64Type() {
 				return info
 			}
@@ -467,6 +473,15 @@ func (p *TypeInfoRiscv32) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm
 				info.Kind = AttrWidthType
 				info.Type1 = ctx.Int64Type()
 				return info
+			}
+			// For float, flatten to float on ilp32f/ilp32d
+			switch p.mabi {
+			case MABI_ILP32F, MABI_ILP32D:
+				if types[0] == ctx.FloatType() {
+					info.Kind = AttrWidthType
+					info.Type1 = ctx.FloatType()
+					return info
+				}
 			}
 		case 2:
 			switch p.mabi {
