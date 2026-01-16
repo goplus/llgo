@@ -132,6 +132,9 @@ func TestRunESP32C3Emulator(t *testing.T) {
 	conf.Emulator = true
 	conf.ForceRebuild = true
 
+	// Not yet in allowlist:
+	// - ./_testgo/abimethod: link errors, see https://github.com/goplus/llgo/issues/1569
+	// - ./_testgo/alias: QEMU hits Illegal instruction before expected output
 	allow := map[string]struct{}{
 		"./_testgo/print": {},
 	}
