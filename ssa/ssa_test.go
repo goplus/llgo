@@ -242,11 +242,11 @@ define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  %4 = call ptr asm sideeffect "", "={r12},~{memory}"()
-  %5 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %2)
-  %6 = call i64 %3(i64 %1)
-  %7 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %4)
-  ret i64 %6
+  %4 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %2)
+  %5 = call i64 %3(i64 %1)
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %4)
+  ret i64 %5
 }
 `)
 }
@@ -379,11 +379,11 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call ptr asm sideeffect "", "={r12},~{memory}"()
-  %10 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %7)
-  %11 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
-  %12 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %9)
-  ret i64 %11
+  %9 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %7)
+  %10 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %9)
+  ret i64 %10
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
@@ -559,8 +559,8 @@ source_filename = "test"
 
 define void @test_ctx_reg() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr null)
-  %1 = call ptr asm sideeffect "", "={r12},~{memory}"()
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr null)
+  %0 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   ret void
 }
 `)
@@ -589,7 +589,7 @@ func TestCallClosureViaRegister(t *testing.T) {
 	// Verify the IR:
 	// 1. Uses inline asm to write to ctx register before call
 	// 2. The function call does NOT have ctx as first parameter
-	if !strings.Contains(ir, `asm sideeffect "", "={r12},0,~{memory}"`) {
+	if !strings.Contains(ir, `asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"`) {
 		t.Errorf("Expected ctx register write before closure call:\n%s", ir)
 	}
 	// The call should use the function directly, no ctx param
@@ -627,8 +627,8 @@ func TestClosureFunctionReadsCtxFromReg(t *testing.T) {
 	ib.Return(result)
 
 	ir := pkg.String()
-	// Verify that the function reads ctx from register (inline asm with ={r12})
-	if !strings.Contains(ir, `asm sideeffect "", "={r12},~{memory}"`) {
+	// Verify that the function reads ctx from register via inline asm
+	if !strings.Contains(ir, `asm sideeffect "mov %r12, $0", "=r,~{memory}"`) {
 		t.Errorf("Expected ctx register read in closure function:\n%s", ir)
 	}
 	// Verify no ctx parameter in function signature
@@ -1298,7 +1298,7 @@ source_filename = "test"
 
 define i64 @iife_inner(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={r12},~{memory}"()
+  %1 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   %2 = load { i64 }, ptr %1, align 4
   %3 = extractvalue { i64 } %2, 0
   %4 = add i64 %3, %0
@@ -1313,11 +1313,11 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @iife_inner, ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "", "={r12},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %4)
-  %8 = call i64 %5(i64 5)
-  %9 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %6)
-  ret i64 %8
+  %6 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %4)
+  %7 = call i64 %5(i64 5)
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %6)
+  ret i64 %7
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
@@ -1353,17 +1353,17 @@ define i64 @applyTwice({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  %4 = call ptr asm sideeffect "", "={r12},~{memory}"()
-  %5 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %2)
-  %6 = call i64 %3(i64 %1)
-  %7 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %4)
-  %8 = extractvalue { ptr, ptr } %0, 1
-  %9 = extractvalue { ptr, ptr } %0, 0
-  %10 = call ptr asm sideeffect "", "={r12},~{memory}"()
-  %11 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %8)
-  %12 = call i64 %9(i64 %6)
-  %13 = call ptr asm sideeffect "", "={r12},0,~{memory}"(ptr %10)
-  ret i64 %12
+  %4 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %2)
+  %5 = call i64 %3(i64 %1)
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %4)
+  %6 = extractvalue { ptr, ptr } %0, 1
+  %7 = extractvalue { ptr, ptr } %0, 0
+  %8 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %6)
+  %9 = call i64 %7(i64 %5)
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %8)
+  ret i64 %9
 }
 `)
 }
@@ -1396,7 +1396,7 @@ source_filename = "test"
 
 define void @defer_body() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={r12},~{memory}"()
+  %0 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   %1 = load { i64 }, ptr %0, align 4
   %2 = extractvalue { i64 } %1, 0
   ret void
@@ -1432,7 +1432,7 @@ source_filename = "test"
 
 define void @goroutine_body() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={r12},~{memory}"()
+  %0 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   %1 = load { i64 }, ptr %0, align 4
   %2 = extractvalue { i64 } %1, 0
   ret void
@@ -1481,8 +1481,12 @@ func TestGoRoutineWrapperCtxIR(t *testing.T) {
 		block = block[:end]
 	}
 	reg := target.CtxRegister()
-	// WriteCtxReg uses tied input/output constraint with memory clobber.
-	expected := fmt.Sprintf(`asm sideeffect "", "=%s,0,~{memory}"`, reg.Constraint)
+	writeAsm, _, _, ok := ctxAsmStrings(target.GOARCH, reg.Name)
+	if !ok {
+		t.Fatalf("missing ctx asm template for %s", target.GOARCH)
+	}
+	// WriteCtxReg uses the per-arch inline asm template with ctx register clobber.
+	expected := fmt.Sprintf(`asm sideeffect %q, "r,~%s,~{memory}"`, writeAsm, reg.Constraint)
 	if !strings.Contains(block, expected) {
 		t.Fatalf("expected ctx register write in goroutine wrapper:\n%s\ngot %q", block, expected)
 	}
@@ -1521,7 +1525,7 @@ source_filename = "test"
 
 define i64 @nested_inner() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={r12},~{memory}"()
+  %0 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   %1 = load { i64, i64 }, ptr %0, align 4
   %2 = extractvalue { i64, i64 } %1, 0
   %3 = extractvalue { i64, i64 } %1, 1
