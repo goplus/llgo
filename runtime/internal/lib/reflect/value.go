@@ -2287,8 +2287,8 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	)
 	if v.typ_.IsClosure() {
 		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
-		// In register-based closure ABI, context is passed via register, not as a function parameter.
-		// Use the function's normal parameters without a leading context pointer.
+		// In register-based closure ABI, context is NOT passed as a function parameter.
+		// The function signature matches the user-visible type without a leading context pointer.
 		tin = ft.In
 		tout = ft.Out
 		c := (*struct {
