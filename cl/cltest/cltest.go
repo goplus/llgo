@@ -187,9 +187,30 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 	if err != nil {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
+	// Filter out linker warnings that vary by environment (e.g., library version mismatches)
+	output = filterLinkerWarnings(output)
 	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
 		t.Fatal("unexpected output")
 	}
+}
+
+// filterLinkerWarnings removes ld64.lld warning lines from output.
+// These warnings about library version mismatches are environment-specific
+// and should not cause test failures.
+func filterLinkerWarnings(output []byte) []byte {
+	var filtered []byte
+	for _, line := range bytes.Split(output, []byte("\n")) {
+		if bytes.HasPrefix(line, []byte("ld64.lld: warning:")) {
+			continue
+		}
+		if len(filtered) > 0 || len(line) > 0 {
+			if len(filtered) > 0 {
+				filtered = append(filtered, '\n')
+			}
+			filtered = append(filtered, line...)
+		}
+	}
+	return filtered
 }
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
