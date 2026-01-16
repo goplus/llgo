@@ -53,7 +53,7 @@ import (
 	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
-	envllvm "github.com/goplus/llgo/xtool/env/llvm"
+	"github.com/goplus/llgo/xtool/env/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -114,29 +114,32 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos           string
-	Goarch         string
-	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath        string
-	AppExt         string  // ".exe" on Windows, empty on Unix
-	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts        OutFmts // Output format specifications (only for Target != "")
-	CompileOnly    bool    // compile test binary but do not run it (only valid for ModeTest)
-	Emulator       bool    // run in emulator mode
-	Port           string  // target port for flashing
-	BaudRate       int     // baudrate for serial communication
-	RunArgs        []string
-	Mode           Mode
-	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode        AbiMode
-	GenExpect      bool // only valid for ModeCmpTest
-	Verbose        bool
-	GenLL          bool // generate pkg .ll files
-	CheckLLFiles   bool // check .ll files valid
-	CheckLinkArgs  bool // check linkargs valid
-	ForceEspClang  bool // force to use esp-clang
-	ForceRebuild   bool // force rebuilding of packages that are already up-to-date
-	NativeCCompile bool // compile C files for host OS during cross-compilation (avoids sysroot issues)
+	Goos          string
+	Goarch        string
+	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath       string
+	AppExt        string  // ".exe" on Windows, empty on Unix
+	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts       OutFmts // Output format specifications (only for Target != "")
+	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
+	Emulator      bool    // run in emulator mode
+	Port          string  // target port for flashing
+	BaudRate      int     // baudrate for serial communication
+	RunArgs       []string
+	Mode          Mode
+	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode       AbiMode
+	GenExpect     bool // only valid for ModeCmpTest
+	Verbose       bool
+	GenLL         bool // generate pkg .ll files
+	CheckLLFiles  bool // check .ll files valid
+	CheckLinkArgs bool // check linkargs valid
+	ForceEspClang bool // force to use esp-clang
+	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
+	// NativeCCompile compiles C files for host OS during cross-compilation.
+	// This is ONLY used by cabi_test to avoid sysroot issues when testing ABI
+	// compatibility across architectures. Do not enable for normal builds.
+	NativeCCompile bool
 	Tags           string
 	SizeReport     bool   // print size report after successful build
 	SizeFormat     string // size report format: text,json (default text)
@@ -238,11 +241,13 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Target != "" && export.GOARCH != "" {
 		conf.Goarch = export.GOARCH
 	}
-	// explicitTargetTriple is true when user explicitly specified a target (via -target flag or TARGET env)
-	// or when crosscompile configured a complete target triple (e.g., wasm, embedded devices).
-	// For simple GOOS/GOARCH cross-compilation (e.g., darwin->linux), we don't want to add --target
-	// because the auto-generated triple may be incomplete and cause clang warnings.
-	explicitTargetTriple := conf.Target != "" || (export.LLVMTarget != "" && export.GOOS == "")
+	// explicitTargetTriple is true when:
+	// 1. User explicitly specified a target (via -target flag or TARGET env), or
+	// 2. Crosscompile configured a complete target triple (e.g., wasm, embedded devices), or
+	// 3. GOOS/GOARCH differs from host (cross-compilation by environment).
+	// This ensures --target flag is added so clang compiles for the correct architecture.
+	isCrossCompiling := conf.Goos != runtime.GOOS || conf.Goarch != runtime.GOARCH
+	explicitTargetTriple := conf.Target != "" || (export.LLVMTarget != "" && export.GOOS == "") || isCrossCompiling
 	if export.LLVMTarget == "" {
 		export.LLVMTarget = intllvm.GetTargetTriple(conf.Goos, conf.Goarch)
 	}
@@ -379,7 +384,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	env := envllvm.New("")
+	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
@@ -535,7 +540,7 @@ const (
 )
 
 type context struct {
-	env            *envllvm.Env
+	env            *llvm.Env
 	conf           *packages.Config
 	progSSA        *ssa.Program
 	prog           llssa.Program
@@ -1273,7 +1278,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	return objFile.Name(), cmd.Compile(args...)
 }
 
-func llcCheck(env *envllvm.Env, exportFile string) (msg string, err error) {
+func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
