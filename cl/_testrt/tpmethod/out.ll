@@ -88,10 +88,10 @@ _llgo_0:
   %3 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, align 8
   %4 = extractvalue { ptr, ptr } %0, 1
   %5 = extractvalue { ptr, ptr } %0, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
   call void %5(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %3)
-  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   ret void
 }
 
@@ -119,10 +119,10 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %10 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %7)
+  %9 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
   call void %8(ptr %7, { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.main$1", ptr null })
-  %11 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %9)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
   ret void
 }
 
@@ -172,10 +172,10 @@ _llgo_0:
   %3 = load { ptr, ptr }, ptr %2, align 8
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
   call void %5({ ptr, ptr } %1)
-  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   ret void
 }
 
@@ -185,7 +185,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }

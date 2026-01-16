@@ -65,18 +65,18 @@ _llgo_0:
   %2 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode$bound", ptr undef }, ptr %0, 1
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  %5 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
-  %7 = call i64 %4()
-  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
-  %9 = icmp ne i64 %7, 1
-  br i1 %9, label %_llgo_1, label %_llgo_2
+  %5 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  %6 = call i64 %4()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  %7 = icmp ne i64 %6, 1
+  br i1 %7, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %10, align 8
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %10, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %11)
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %8, align 8
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %8, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %9)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -85,7 +85,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo2.encode$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { %"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" }, ptr %0, align 1
   %2 = extractvalue { %"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" } %1, 0
   %3 = call i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo2.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" %2)
@@ -96,7 +96,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { %"github.com/goplus/llgo/cl/_testrt/closurebound.demo1" }, ptr %0, align 1
   %2 = extractvalue { %"github.com/goplus/llgo/cl/_testrt/closurebound.demo1" } %1, 0
   %3 = call i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo1" %2)

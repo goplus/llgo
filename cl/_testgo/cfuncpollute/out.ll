@@ -44,21 +44,21 @@ _llgo_0:
   %0 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/cfuncpollute.makeClosure"(i64 42)
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
-  %5 = call i64 %2()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
+  %4 = call i64 %2()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %7 = icmp ne i64 %5, 42
-  br i1 %7, label %_llgo_1, label %_llgo_3
+  %5 = icmp ne i64 %4, 42
+  br i1 %5, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 22 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_2
 
@@ -84,7 +84,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/cfuncpollute.makeClosure$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/cl/_testgo/cfuncpollute.cstr"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 17 })
   %3 = call i32 @printf(ptr %2, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)

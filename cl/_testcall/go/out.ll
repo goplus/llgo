@@ -210,7 +210,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testcall/go.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -234,7 +234,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }
@@ -255,10 +255,10 @@ _llgo_0:
   %2 = extractvalue { { ptr, ptr } } %1, 0
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  %5 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %5 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void %4()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
   call void @free(ptr %0)
   ret ptr null
 }
@@ -289,7 +289,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/go.(*S).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/go.(*S).Add"(ptr %3, i64 %0)
@@ -303,17 +303,17 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, i64 } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call i64 %5(i64 %3)
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call i64 %5(i64 %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   call void @free(ptr %0)
   ret ptr null
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/go.S.Inc$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { %"github.com/goplus/llgo/cl/_testcall/go.S" }, ptr %1, align 4
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testcall/go.S" } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/go.S.Inc"(%"github.com/goplus/llgo/cl/_testcall/go.S" %3, i64 %0)
@@ -327,10 +327,10 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, i64 } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call i64 %5(i64 %3)
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call i64 %5(i64 %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   call void @free(ptr %0)
   ret ptr null
 }
@@ -387,10 +387,10 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, i64 } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call i64 %5(i64 %3)
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call i64 %5(i64 %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   call void @free(ptr %0)
   ret ptr null
 }
@@ -403,7 +403,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/go.interface{Add(int) int}.Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %1, align 8
   %3 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %2, 0
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
@@ -414,11 +414,11 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11(ptr %10, i64 %0)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  ret i64 %14
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call i64 %11(ptr %10, i64 %0)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  ret i64 %13
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testcall/go._llgo_routine$10"(ptr %0) {
@@ -428,10 +428,10 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, i64 } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call i64 %5(i64 %3)
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call i64 %5(i64 %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   call void @free(ptr %0)
   ret ptr null
 }

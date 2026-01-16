@@ -46,30 +46,30 @@ _llgo_0:
   %0 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.main$1"()
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
-  %5 = call i64 %2(i64 100, i64 200)
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
-  %7 = call i32 (ptr, ...) @printf(ptr @0, i64 %5)
-  %8 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"()
-  %9 = extractvalue { ptr, ptr } %8, 1
-  %10 = extractvalue { ptr, ptr } %8, 0
-  %11 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %12 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %9)
-  %13 = call i64 %10(i64 100, i64 200)
-  %14 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %11)
-  %15 = call i32 (ptr, ...) @printf(ptr @1, i64 %13)
-  %16 = call { { ptr, ptr }, i64 } @"github.com/goplus/llgo/cl/_testrt/result.add2"()
-  %17 = extractvalue { { ptr, ptr }, i64 } %16, 0
-  %18 = extractvalue { { ptr, ptr }, i64 } %16, 1
-  %19 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"()
-  %20 = extractvalue { ptr, ptr } %19, 1
-  %21 = extractvalue { ptr, ptr } %19, 0
-  %22 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %23 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %20)
-  %24 = call i64 %21(i64 100, i64 200)
-  %25 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %22)
-  %26 = call i32 (ptr, ...) @printf(ptr @2, i64 %24, i64 %18)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
+  %4 = call i64 %2(i64 100, i64 200)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  %5 = call i32 (ptr, ...) @printf(ptr @0, i64 %4)
+  %6 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"()
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  %9 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
+  %10 = call i64 %8(i64 100, i64 200)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
+  %11 = call i32 (ptr, ...) @printf(ptr @1, i64 %10)
+  %12 = call { { ptr, ptr }, i64 } @"github.com/goplus/llgo/cl/_testrt/result.add2"()
+  %13 = extractvalue { { ptr, ptr }, i64 } %12, 0
+  %14 = extractvalue { { ptr, ptr }, i64 } %12, 1
+  %15 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"()
+  %16 = extractvalue { ptr, ptr } %15, 1
+  %17 = extractvalue { ptr, ptr } %15, 0
+  %18 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  %19 = call i64 %17(i64 100, i64 200)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %18)
+  %20 = call i32 (ptr, ...) @printf(ptr @2, i64 %19, i64 %14)
   ret void
 }
 

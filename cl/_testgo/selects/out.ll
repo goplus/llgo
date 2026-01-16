@@ -128,7 +128,7 @@ _llgo_5:                                          ; preds = %_llgo_3
 
 define void @"github.com/goplus/llgo/cl/_testgo/selects.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr, ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr, ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
@@ -214,10 +214,10 @@ _llgo_0:
   %2 = extractvalue { { ptr, ptr } } %1, 0
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  %5 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %5 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void %4()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
   call void @free(ptr %0)
   ret ptr null
 }

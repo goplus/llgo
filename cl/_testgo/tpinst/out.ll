@@ -79,89 +79,89 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 1
   %12 = extractvalue { ptr, ptr } %10, 0
-  %13 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %14 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %11)
-  %15 = call i64 %12(ptr %11)
-  %16 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %13)
-  %17 = icmp ne i64 %15, 100
-  br i1 %17, label %_llgo_1, label %_llgo_2
+  %13 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %11)
+  %14 = call i64 %12(ptr %11)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %13)
+  %15 = icmp ne i64 %14, 100
+  br i1 %15, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr %18, align 8
-  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %18, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %19)
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr %16, align 8
+  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %16, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %17)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %21 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]", ptr %20, i32 0, i32 0
-  store double 1.001000e+02, ptr %21, align 8
-  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$2dxw6yZ6V86Spb7J0dTDIoWqg7ba7UDXlAlpJv3-HLk", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]")
-  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %22, 0
-  %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %23, ptr %20, 1
-  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %24)
-  %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %24, 0
-  %27 = getelementptr ptr, ptr %26, i64 3
-  %28 = load ptr, ptr %27, align 8
-  %29 = insertvalue { ptr, ptr } undef, ptr %28, 0
-  %30 = insertvalue { ptr, ptr } %29, ptr %25, 1
-  %31 = extractvalue { ptr, ptr } %30, 1
-  %32 = extractvalue { ptr, ptr } %30, 0
-  %33 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %34 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %31)
-  %35 = call double %32(ptr %31)
-  %36 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %33)
-  %37 = fcmp une double %35, 1.001000e+02
-  br i1 %37, label %_llgo_3, label %_llgo_4
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %19 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]", ptr %18, i32 0, i32 0
+  store double 1.001000e+02, ptr %19, align 8
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$2dxw6yZ6V86Spb7J0dTDIoWqg7ba7UDXlAlpJv3-HLk", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]")
+  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %20, 0
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %18, 1
+  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %22)
+  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22, 0
+  %25 = getelementptr ptr, ptr %24, i64 3
+  %26 = load ptr, ptr %25, align 8
+  %27 = insertvalue { ptr, ptr } undef, ptr %26, 0
+  %28 = insertvalue { ptr, ptr } %27, ptr %23, 1
+  %29 = extractvalue { ptr, ptr } %28, 1
+  %30 = extractvalue { ptr, ptr } %28, 0
+  %31 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %29)
+  %32 = call double %30(ptr %29)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %31)
+  %33 = fcmp une double %32, 1.001000e+02
+  br i1 %33, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
+  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr %34, align 8
+  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %34, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %35)
+  unreachable
+
+_llgo_4:                                          ; preds = %_llgo_2
+  %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %4)
+  %37 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww", ptr %36)
+  br i1 %37, label %_llgo_7, label %_llgo_8
+
+_llgo_5:                                          ; preds = %_llgo_7
   %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr %38, align 8
   %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %38, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %39)
   unreachable
 
-_llgo_4:                                          ; preds = %_llgo_2
-  %40 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %4)
-  %41 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww", ptr %40)
-  br i1 %41, label %_llgo_7, label %_llgo_8
-
-_llgo_5:                                          ; preds = %_llgo_7
-  %42 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr %42, align 8
-  %43 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %42, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %43)
-  unreachable
-
 _llgo_6:                                          ; preds = %_llgo_7
   ret void
 
 _llgo_7:                                          ; preds = %_llgo_4
-  %44 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, 1
-  %45 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww", ptr %40)
-  %46 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %45, 0
-  %47 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %46, ptr %44, 1
-  %48 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %47)
-  %49 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %47, 0
-  %50 = getelementptr ptr, ptr %49, i64 3
-  %51 = load ptr, ptr %50, align 8
-  %52 = insertvalue { ptr, ptr } undef, ptr %51, 0
-  %53 = insertvalue { ptr, ptr } %52, ptr %48, 1
-  %54 = extractvalue { ptr, ptr } %53, 1
-  %55 = extractvalue { ptr, ptr } %53, 0
-  %56 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %57 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %54)
-  %58 = call i64 %55(ptr %54)
-  %59 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %56)
-  %60 = icmp ne i64 %58, 100
-  br i1 %60, label %_llgo_5, label %_llgo_6
+  %40 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, 1
+  %41 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww", ptr %36)
+  %42 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %41, 0
+  %43 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %42, ptr %40, 1
+  %44 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %43)
+  %45 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %43, 0
+  %46 = getelementptr ptr, ptr %45, i64 3
+  %47 = load ptr, ptr %46, align 8
+  %48 = insertvalue { ptr, ptr } undef, ptr %47, 0
+  %49 = insertvalue { ptr, ptr } %48, ptr %44, 1
+  %50 = extractvalue { ptr, ptr } %49, 1
+  %51 = extractvalue { ptr, ptr } %49, 0
+  %52 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %50)
+  %53 = call i64 %51(ptr %50)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %52)
+  %54 = icmp ne i64 %53, 100
+  br i1 %54, label %_llgo_5, label %_llgo_6
 
 _llgo_8:                                          ; preds = %_llgo_4
-  %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 95 }, ptr %61, align 8
-  %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %61, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %62)
+  %55 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 95 }, ptr %55, align 8
+  %56 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %55, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %56)
   unreachable
 }
 
@@ -206,7 +206,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }

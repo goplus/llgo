@@ -175,18 +175,18 @@ _llgo_2:                                          ; preds = %_llgo_1
   %14 = load i64, ptr %13, align 4
   %15 = extractvalue { ptr, ptr } %1, 1
   %16 = extractvalue { ptr, ptr } %1, 0
-  %17 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %18 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %15)
-  %19 = call i64 %16(i64 %14)
-  %20 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %17)
-  %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
-  %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
-  %23 = icmp slt i64 %6, 0
-  %24 = icmp sge i64 %6, %22
-  %25 = or i1 %24, %23
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %25)
-  %26 = getelementptr inbounds i64, ptr %21, i64 %6
-  store i64 %19, ptr %26, align 4
+  %17 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  %18 = call i64 %16(i64 %14)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %17)
+  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
+  %20 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
+  %21 = icmp slt i64 %6, 0
+  %22 = icmp sge i64 %6, %20
+  %23 = or i1 %22, %21
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %23)
+  %24 = getelementptr inbounds i64, ptr %19, i64 %6
+  store i64 %18, ptr %24, align 4
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -195,7 +195,7 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.testClosureAsParam$2"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
@@ -273,24 +273,24 @@ _llgo_7:                                          ; preds = %_llgo_2
   %28 = extractvalue { ptr, { ptr, ptr } } %26, 1
   %29 = extractvalue { ptr, ptr } %28, 1
   %30 = extractvalue { ptr, ptr } %28, 0
-  %31 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %32 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %29)
+  %31 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %29)
   call void %30()
-  %33 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %31)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %31)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.FreeDeferNode"(ptr %25)
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_2
-  %34 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %6, align 8
-  %35 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %34, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %35)
-  %36 = load ptr, ptr %13, align 8
-  indirectbr ptr %36, [label %_llgo_3, label %_llgo_6]
+  %32 = load %"github.com/goplus/llgo/runtime/internal/runtime.Defer", ptr %6, align 8
+  %33 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Defer" %32, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer"(ptr %33)
+  %34 = load ptr, ptr %13, align 8
+  indirectbr ptr %34, [label %_llgo_3, label %_llgo_6]
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/closureall.testDeferClosure$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -337,7 +337,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/closureall.testGoClosure$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -361,16 +361,16 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.testIIFE$1", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call i64 %5(i64 5)
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call i64 %5(i64 5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   ret void
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.testIIFE$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
@@ -394,10 +394,10 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 1
   %12 = extractvalue { ptr, ptr } %10, 0
-  %13 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %14 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %11)
-  %15 = call i64 %12(ptr %11, i64 11)
-  %16 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %13)
+  %13 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %11)
+  %14 = call i64 %12(ptr %11, i64 11)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %13)
   ret void
 }
 
@@ -420,17 +420,17 @@ _llgo_1:                                          ; preds = %_llgo_0
   %9 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int}.Add$bound", ptr undef }, ptr %7, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11(i64 9)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call i64 %11(i64 9)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 72 }, ptr %16, align 8
-  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %16, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %17)
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 72 }, ptr %14, align 8
+  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %14, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %15)
   unreachable
 }
 
@@ -459,22 +459,22 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.testNestedClosure$1", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %4)
-  %8 = call { ptr, ptr } %5()
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
-  %10 = extractvalue { ptr, ptr } %8, 1
-  %11 = extractvalue { ptr, ptr } %8, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11()
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
+  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  %7 = call { ptr, ptr } %5()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  %10 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
+  %11 = call i64 %9()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
   ret void
 }
 
 define { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/closureall.testNestedClosure$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 2, ptr %2, align 4
@@ -490,7 +490,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.testNestedClosure$1$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -505,10 +505,10 @@ _llgo_0:
   %0 = call %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" @"github.com/goplus/llgo/cl/_testgo/closureall.testNoFreeClosure$1"()
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
-  %5 = call i64 %2(i64 1)
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
+  %4 = call i64 %2(i64 1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   ret void
 }
 
@@ -534,10 +534,10 @@ _llgo_0:
   %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add$bound", ptr undef }, ptr %2, 1
   %5 = extractvalue { ptr, ptr } %4, 1
   %6 = extractvalue { ptr, ptr } %4, 0
-  %7 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %8 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
-  %9 = call i64 %6(i64 7)
-  %10 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %7)
+  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  %8 = call i64 %6(i64 7)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
   ret void
 }
 
@@ -554,10 +554,10 @@ _llgo_0:
   %5 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc$bound", ptr undef }, ptr %3, 1
   %6 = extractvalue { ptr, ptr } %5, 1
   %7 = extractvalue { ptr, ptr } %5, 0
-  %8 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %9 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %6)
-  %10 = call i64 %7(i64 3)
-  %11 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %8)
+  %8 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  %9 = call i64 %7(i64 3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
   ret void
 }
 
@@ -566,10 +566,10 @@ _llgo_0:
   %0 = call %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" @"github.com/goplus/llgo/cl/_testgo/closureall.testWithFreeClosure$1"(i64 3)
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %0, 0
-  %3 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %4 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %1)
-  %5 = call i64 %2(i64 2)
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
+  %4 = call i64 %2(i64 2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   ret void
 }
 
@@ -589,7 +589,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.testWithFreeClosure$1$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
@@ -627,10 +627,10 @@ _llgo_0:
   %2 = extractvalue { { ptr, ptr } } %1, 0
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  %5 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %6 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %3)
+  %5 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   call void %4()
-  %7 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
   call void @free(ptr %0)
   ret ptr null
 }
@@ -647,7 +647,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
   ret i1 %3
 }
@@ -668,7 +668,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int}.Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %1, align 8
   %3 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %2, 0
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
@@ -679,11 +679,11 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "", "={x26},~{memory}"()
-  %13 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %10)
-  %14 = call i64 %11(ptr %10, i64 %0)
-  %15 = call ptr asm sideeffect "", "={x26},0,~{memory}"(ptr %12)
-  ret i64 %14
+  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %13 = call i64 %11(ptr %10, i64 %0)
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  ret i64 %13
 }
 
 declare i32 @abs(i32)
@@ -696,7 +696,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add"(ptr %3, i64 %0)
@@ -705,7 +705,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "", "={x26},~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %2 = load { %"github.com/goplus/llgo/cl/_testgo/closureall.S" }, ptr %1, align 4
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/closureall.S" } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc"(%"github.com/goplus/llgo/cl/_testgo/closureall.S" %3, i64 %0)
