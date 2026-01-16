@@ -24,6 +24,7 @@ import (
 	"go/types"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -316,6 +317,45 @@ func (b Builder) ctxGlobal() llvm.Value {
 	return g.impl
 }
 
+type ctxAsmTemplate struct {
+	write   string
+	read    string
+	dialect llvm.InlineAsmDialect
+}
+
+var ctxAsmTemplates = map[string]ctxAsmTemplate{
+	"amd64": {
+		write:   "mov $0, %%%s",
+		read:    "mov %%%s, $0",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+	"386": {
+		write:   "mov $0, %%%s",
+		read:    "mov %%%s, $0",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+	"arm64": {
+		write:   "mov %s, $0",
+		read:    "mov $0, %s",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+	"riscv64": {
+		write:   "mv %s, $0",
+		read:    "mv $0, %s",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+}
+
+func ctxAsmStrings(goarch, reg string) (write string, read string, dialect llvm.InlineAsmDialect, ok bool) {
+	tmpl, ok := ctxAsmTemplates[goarch]
+	if !ok {
+		return "", "", llvm.InlineAsmDialectATT, false
+	}
+	write = fmt.Sprintf(tmpl.write, reg)
+	read = fmt.Sprintf(tmpl.read, reg)
+	return write, read, tmpl.dialect, true
+}
+
 // WriteCtxReg writes a pointer value to the closure context register.
 // On architectures that don't support register-based context (e.g., wasm),
 // it falls back to a module-local global slot.
@@ -330,12 +370,19 @@ func (b Builder) WriteCtxReg(val Expr) {
 		b.impl.CreateStore(casted.impl, b.ctxGlobal())
 		return
 	}
-	// Use an output constraint tied to the input to ensure the compiler
-	// understands that the target register is modified.
-	// Add a memory clobber to prevent reordering across the call site.
-	ftype := llvm.FunctionType(ptrType.ll, []llvm.Type{ptrType.ll}, false)
-	constraints := "=" + reg.Constraint + ",0,~{memory}"
-	asm := llvm.InlineAsm(ftype, "", constraints, true, false, llvm.InlineAsmDialectATT, false)
+	writeAsm, _, dialect, ok := ctxAsmStrings(b.Prog.target.GOARCH, reg.Name)
+	if !ok {
+		b.impl.CreateStore(casted.impl, b.ctxGlobal())
+		return
+	}
+	ftype := llvm.FunctionType(b.Prog.tyVoid(), []llvm.Type{ptrType.ll}, false)
+	parts := []string{"r"}
+	if reg.Constraint != "" {
+		parts = append(parts, "~"+reg.Constraint)
+	}
+	parts = append(parts, "~{memory}")
+	constraints := strings.Join(parts, ",")
+	asm := llvm.InlineAsm(ftype, writeAsm, constraints, true, false, dialect, false)
 	b.impl.CreateCall(ftype, asm, []llvm.Value{casted.impl}, "")
 }
 
@@ -352,13 +399,15 @@ func (b Builder) ReadCtxReg() Expr {
 		ret := b.impl.CreateLoad(ptrType.ll, b.ctxGlobal(), "")
 		return Expr{ret, ptrType}
 	}
-	// Use inline asm with input constraint to read from the register.
-	// Example for amd64: constraint "={r12}" forces output from r12.
 	ptrType := b.Prog.VoidPtr()
+	_, readAsm, dialect, ok := ctxAsmStrings(b.Prog.target.GOARCH, reg.Name)
+	if !ok {
+		ret := b.impl.CreateLoad(ptrType.ll, b.ctxGlobal(), "")
+		return Expr{ret, ptrType}
+	}
 	ftype := llvm.FunctionType(ptrType.ll, nil, false)
-	// Add a memory clobber to prevent reordering across the read.
-	constraints := "=" + reg.Constraint + ",~{memory}"
-	asm := llvm.InlineAsm(ftype, "", constraints, true, false, llvm.InlineAsmDialectATT, false)
+	constraints := "=r,~{memory}"
+	asm := llvm.InlineAsm(ftype, readAsm, constraints, true, false, dialect, false)
 	ret := b.impl.CreateCall(ftype, asm, nil, "")
 	return Expr{ret, ptrType}
 }

@@ -68,6 +68,7 @@ Regular function declarations are not wrapped.
   - others: TLS/global fallback
 - TLS/global fallback is thread-local on supported OSes; bare-metal/wasm falls
   back to a process-global slot.
-- Native builds reserve the ctx register in clang with `-ffixed-*` to prevent
-  register allocation clobbering.
+- Native builds reserve the ctx register by passing
+  `-mllvm --reserve-regs-for-regalloc=<reg>` to clang so LLVM keeps the ctx
+  register out of the allocator on all supported platforms.
 - `FuncPCABI0` points at the real symbol (wrappers only for adaptation).
