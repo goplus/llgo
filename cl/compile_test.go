@@ -226,6 +226,27 @@ func TestRunESP32C3Testrt(t *testing.T) {
 	)
 }
 
+func TestRunESP32C3Testdata(t *testing.T) {
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.Target = "esp32c3-basic"
+	conf.Emulator = true
+	conf.ForceRebuild = true
+
+	ignore := []string{
+		"./_testdata/cpkgimp", // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testdata/debug",   // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testdata/fncall",  // QEMU hits Instruction access fault
+		"./_testdata/print",   // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testdata/untyped", // QEMU hits Instruction access fault
+		"./_testdata/utf8",    // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testdata/varinit", // QEMU hits Instruction access fault
+	}
+	cltest.RunFromDir(t, "", "./_testdata", ignore,
+		cltest.WithRunConfig(conf),
+		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
+	)
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy")
 }
