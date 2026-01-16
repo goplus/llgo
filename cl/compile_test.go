@@ -153,6 +153,28 @@ func TestRunESP32C3Emulator(t *testing.T) {
 	)
 }
 
+func TestRunESP32C3Libc(t *testing.T) {
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.Target = "esp32c3-basic"
+	conf.Emulator = true
+	conf.ForceRebuild = true
+
+	ignore := []string{
+		"./_testlibc/argv",     // QEMU hits Load access fault
+		"./_testlibc/atomic",   // link errors (__atomic_*)
+		"./_testlibc/complex",  // link errors (cabsf)
+		"./_testlibc/defer",    // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testlibc/demangle", // link args not supported (LLVM lib not found)
+		"./_testlibc/once",     // pthread/sync build constraints exclude Go files (sync.Once)
+		"./_testlibc/setjmp",   // link errors (__sigsetjmp/siglongjmp, stderr)
+		"./_testlibc/sqlite",   // link errors (sqlite3_*, runtime.AllocZ)
+	}
+	cltest.RunFromDir(t, "", "./_testlibc", ignore,
+		cltest.WithRunConfig(conf),
+		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
+	)
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy")
 }
