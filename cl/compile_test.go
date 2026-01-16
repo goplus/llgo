@@ -135,8 +135,17 @@ func TestRunESP32C3Emulator(t *testing.T) {
 	// Not yet in allowlist:
 	// - ./_testgo/abimethod: link errors (faccessat/getrlimit/setrlimit, ffi_*, __sigsetjmp, ldexp, __atomic_*), plus DRAM overflow; see https://github.com/goplus/llgo/issues/1569
 	// - ./_testgo/alias: QEMU hits Illegal instruction (Guru Meditation) before expected output
+	// - ./_testgo/cgobasic: build constraints exclude all Go files (cgo)
+	// - ./_testgo/cgocfiles: build constraints exclude all Go files (cgo)
+	// - ./_testgo/cgodefer: build constraints exclude all Go files (cgo)
+	// - ./_testgo/cgofull: build constraints exclude all Go files (cgo)
+	// - ./_testgo/cgomacro: build constraints exclude all Go files (cgo)
+	// - ./_testgo/cgopython: build constraints exclude all Go files (cgo)
+	// - ./_testgo/chan: QEMU hits Illegal instruction (Guru Meditation)
+	// - ./_testgo/closure: QEMU hits Illegal instruction (Guru Meditation)
+	// - ./_testgo/closure2: QEMU hits Illegal instruction (Guru Meditation)
 	// - ./_testgo/indexerr: link errors (undefined __sigsetjmp), see https://github.com/goplus/llgo/issues/1419
-	// - ./_testgo/makeslice: link errors (undefined __sigsetjmp)
+	// - ./_testgo/makeslice: uses defer/recover; link errors (undefined __sigsetjmp), see https://github.com/goplus/llgo/issues/1419
 	// - ./_testgo/multiret: QEMU hits Illegal instruction (Guru Meditation)
 	allow := map[string]struct{}{
 		"./_testgo/allocinloop": {},
