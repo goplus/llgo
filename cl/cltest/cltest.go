@@ -161,7 +161,10 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	out := pkgDir + "/out.ll"
 	b, _ := os.ReadFile(out)
 	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
-		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
+		// Normalize both generated and expected IR for cross-platform comparison
+		normalizedGen := llgen.NormalizeIR(v)
+		normalizedExp := llgen.NormalizeIR(string(b))
+		if test.Diff(t, pkgDir+"/result.txt", []byte(normalizedGen), []byte(normalizedExp)) {
 			t.Fatal("llgen.GenFrom: unexpect result")
 		}
 	}
