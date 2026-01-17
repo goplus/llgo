@@ -69,31 +69,29 @@ _llgo_1:                                          ; preds = %_llgo_5
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_5
-  %10 = extractvalue { ptr, ptr } %19, 1
-  %11 = extractvalue { ptr, ptr } %19, 0
-  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %10 = extractvalue { ptr, ptr } %18, 1
+  %11 = extractvalue { ptr, ptr } %18, 0
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
-  %13 = call i64 %11(i64 100)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %13)
+  %12 = call i64 %11(i64 100)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %12)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 1
-  %15 = load { ptr, ptr }, ptr %14, align 8
-  %16 = insertvalue { { ptr, ptr }, i1 } undef, { ptr, ptr } %15, 0
-  %17 = insertvalue { { ptr, ptr }, i1 } %16, i1 true, 1
+  %13 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 1
+  %14 = load { ptr, ptr }, ptr %13, align 8
+  %15 = insertvalue { { ptr, ptr }, i1 } undef, { ptr, ptr } %14, 0
+  %16 = insertvalue { { ptr, ptr }, i1 } %15, i1 true, 1
   br label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
-  %18 = phi { { ptr, ptr }, i1 } [ %17, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
-  %19 = extractvalue { { ptr, ptr }, i1 } %18, 0
-  %20 = extractvalue { { ptr, ptr }, i1 } %18, 1
-  br i1 %20, label %_llgo_2, label %_llgo_1
+  %17 = phi { { ptr, ptr }, i1 } [ %16, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %18 = extractvalue { { ptr, ptr }, i1 } %17, 0
+  %19 = extractvalue { { ptr, ptr }, i1 } %17, 1
+  br i1 %19, label %_llgo_2, label %_llgo_1
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closureiface.main$1"(i64 %0) {

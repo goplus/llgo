@@ -88,10 +88,8 @@ _llgo_0:
   %3 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, align 8
   %4 = extractvalue { ptr, ptr } %0, 1
   %5 = extractvalue { ptr, ptr } %0, 0
-  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
   call void %5(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %3)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   ret void
 }
 
@@ -119,10 +117,8 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
   call void %8(ptr %7, { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.main$1", ptr null })
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
   ret void
 }
 
@@ -172,10 +168,8 @@ _llgo_0:
   %3 = load { ptr, ptr }, ptr %2, align 8
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
   call void %5({ ptr, ptr } %1)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   ret void
 }
 

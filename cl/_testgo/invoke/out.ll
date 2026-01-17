@@ -213,13 +213,11 @@ define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke"(%"github.com/go
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 0
-  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
-  %4 = call i64 %2()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  %3 = call i64 %2()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret i64 6
 }
@@ -254,11 +252,9 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
-  %10 = call i64 %8(ptr %7)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %10)
+  %9 = call i64 %8(ptr %7)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }

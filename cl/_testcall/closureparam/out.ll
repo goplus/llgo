@@ -64,18 +64,16 @@ _llgo_2:                                          ; preds = %_llgo_1
   %14 = load i64, ptr %13, align 4
   %15 = extractvalue { ptr, ptr } %1, 1
   %16 = extractvalue { ptr, ptr } %1, 0
-  %17 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
-  %18 = call i64 %16(i64 %14)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %17)
-  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
-  %20 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
-  %21 = icmp slt i64 %6, 0
-  %22 = icmp sge i64 %6, %20
-  %23 = or i1 %22, %21
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %23)
-  %24 = getelementptr inbounds i64, ptr %19, i64 %6
-  store i64 %18, ptr %24, align 4
+  %17 = call i64 %16(i64 %14)
+  %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
+  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
+  %20 = icmp slt i64 %6, 0
+  %21 = icmp sge i64 %6, %19
+  %22 = or i1 %21, %20
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %22)
+  %23 = getelementptr inbounds i64, ptr %18, i64 %6
+  store i64 %17, ptr %23, align 4
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1

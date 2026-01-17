@@ -9,10 +9,8 @@ define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, { ptr
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %1, 1
   %3 = extractvalue { ptr, ptr } %1, 0
-  %4 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %2)
   call void %3(ptr %0)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
   ret void
 }
 

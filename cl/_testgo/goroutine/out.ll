@@ -97,10 +97,8 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
   call void %5(%"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
   call void @free(ptr %0)
   ret ptr null
 }

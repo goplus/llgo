@@ -12,10 +12,8 @@ define void @"github.com/goplus/llgo/cl/_testgo/simplecall.callFunc"({ ptr, ptr 
 _llgo_0:
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
   call void %2()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
   ret void
 }
 

@@ -23,10 +23,8 @@ _llgo_0:
   %0 = call %"github.com/goplus/llgo/cl/_testcall/freeclosure.Fn" @"github.com/goplus/llgo/cl/_testcall/freeclosure.main$1"(i64 3)
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testcall/freeclosure.Fn" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testcall/freeclosure.Fn" %0, 0
-  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
-  %4 = call i64 %2(i64 2)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  %3 = call i64 %2(i64 2)
   ret void
 }
 

@@ -112,68 +112,54 @@ _llgo_0:
   %0 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo1"(i64 1)
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %0, 0
-  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
-  %4 = call i64 %2(i64 99, i64 200)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  %3 = call i64 %2(i64 99, i64 200)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %5 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo2"()
-  %6 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %5, 1
-  %7 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %5, 0
-  %8 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
-  %9 = call i64 %7(i64 100, i64 200)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %9)
+  %4 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo2"()
+  %5 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %4, 1
+  %6 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %4, 0
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  %7 = call i64 %6(i64 100, i64 200)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %10 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo3"()
-  %11 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %10, 1
-  %12 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %10, 0
-  %13 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %11)
-  %14 = call i64 %12(i64 100, i64 200)
+  %8 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo3"()
+  %9 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %8, 1
+  %10 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %8, 0
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
+  %11 = call i64 %10(i64 100, i64 200)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %12 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4"()
+  %13 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %12, 1
+  %14 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %12, 0
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %13)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %14)
+  %15 = call i64 %14(i64 100, i64 200)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %15 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4"()
-  %16 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %15, 1
-  %17 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %15, 0
-  %18 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
-  %19 = call i64 %17(i64 100, i64 200)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %18)
+  %16 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
+  %17 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %16, 1
+  %18 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %16, 0
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %17)
+  %19 = call i64 %18(i64 99, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %19)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %20 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
-  %21 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %20, 1
-  %22 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %20, 0
-  %23 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %21)
-  %24 = call i64 %22(i64 99, i64 200)
+  %21 = alloca { ptr, ptr }, align 8
+  store %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %20, ptr %21, align 8
+  %22 = load { ptr, ptr }, ptr %21, align 8
+  %23 = extractvalue { ptr, ptr } %22, 1
+  %24 = extractvalue { ptr, ptr } %22, 0
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %23)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %24)
+  %25 = call i64 %24(i64 99, i64 200)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %25)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %25 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
-  %26 = alloca { ptr, ptr }, align 8
-  store %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %25, ptr %26, align 8
-  %27 = load { ptr, ptr }, ptr %26, align 8
-  %28 = extractvalue { ptr, ptr } %27, 1
-  %29 = extractvalue { ptr, ptr } %27, 0
-  %30 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %28)
-  %31 = call i64 %29(i64 99, i64 200)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %30)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %31)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %32 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
-  %33 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %32, 1
-  %34 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %32, 0
-  %35 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %33)
-  %36 = call i64 %34(i64 99, i64 200)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %35)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %36)
+  %26 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
+  %27 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %26, 1
+  %28 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %26, 0
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %27)
+  %29 = call i64 %28(i64 99, i64 200)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %29)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }

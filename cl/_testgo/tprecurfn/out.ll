@@ -32,10 +32,8 @@ _llgo_0:
   %7 = load { ptr, ptr }, ptr %6, align 8
   %8 = extractvalue { ptr, ptr } %7, 1
   %9 = extractvalue { ptr, ptr } %7, 0
-  %10 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
   call void %9(i64 100)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
   ret void
 }
 

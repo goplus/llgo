@@ -118,70 +118,68 @@ _llgo_0:
   br i1 %7, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_5
-  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %26)
-  %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %26, 0
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %25)
+  %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %25, 0
   %10 = getelementptr ptr, ptr %9, i64 3
   %11 = load ptr, ptr %10, align 8
   %12 = insertvalue { ptr, ptr } undef, ptr %11, 0
   %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
   %14 = extractvalue { ptr, ptr } %13, 1
   %15 = extractvalue { ptr, ptr } %13, 0
-  %16 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
   call void %15(ptr %14)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_5
-  %17 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 0
-  %18 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", ptr %17)
-  br i1 %18, label %_llgo_6, label %_llgo_7
+  %16 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 0
+  %17 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", ptr %16)
+  br i1 %17, label %_llgo_6, label %_llgo_7
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %3, 1
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", ptr %6)
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %20, 0
-  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %19, 1
-  %23 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22, 0
-  %24 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %23, i1 true, 1
+  %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %3, 1
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", ptr %6)
+  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %19, 0
+  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20, ptr %18, 1
+  %22 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, 0
+  %23 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %22, i1 true, 1
   br label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_0
   br label %_llgo_5
 
 _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
-  %25 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %24, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
-  %26 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %25, 0
-  %27 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %25, 1
+  %24 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %23, %_llgo_3 ], [ zeroinitializer, %_llgo_4 ]
+  %25 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %24, 0
+  %26 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %24, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 2 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %26)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %25)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %27)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %26)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  br i1 %27, label %_llgo_1, label %_llgo_2
+  br i1 %26, label %_llgo_1, label %_llgo_2
 
 _llgo_6:                                          ; preds = %_llgo_2
-  %28 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 1
-  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", ptr %17)
-  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %29, 0
-  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %30, ptr %28, 1
-  %32 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %31, 0
-  %33 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %32, i1 true, 1
+  %27 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, 1
+  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/interface.iface$sO8a1LvuUsjXwiwaC6sR9-L4DiYgiOnZi7iosyShJXg", ptr %16)
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %28, 0
+  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, ptr %27, 1
+  %31 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } undef, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %30, 0
+  %32 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %31, i1 true, 1
   br label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_2
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
-  %34 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %33, %_llgo_6 ], [ zeroinitializer, %_llgo_7 ]
-  %35 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %34, 0
-  %36 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %34, 1
+  %33 = phi { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } [ %32, %_llgo_6 ], [ zeroinitializer, %_llgo_7 ]
+  %34 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %33, 0
+  %35 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i1 } %33, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %35)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %34)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %36)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %35)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }

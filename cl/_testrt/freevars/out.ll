@@ -35,10 +35,8 @@ _llgo_0:
   %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1", ptr undef }, ptr %2, 1
   %5 = extractvalue { ptr, ptr } %4, 1
   %6 = extractvalue { ptr, ptr } %4, 0
-  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
   call void %6(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
   ret void
 }
 
@@ -62,21 +60,17 @@ _llgo_1:                                          ; preds = %_llgo_0
   %13 = load { ptr, ptr }, ptr %12, align 8
   %14 = extractvalue { ptr, ptr } %13, 1
   %15 = extractvalue { ptr, ptr } %13, 0
-  %16 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
   call void %15(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %17 = extractvalue { ptr } %2, 0
-  %18 = load { ptr, ptr }, ptr %17, align 8
-  %19 = extractvalue { ptr, ptr } %18, 1
-  %20 = extractvalue { ptr, ptr } %18, 0
-  %21 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %19)
-  call void %20(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %21)
+  %16 = extractvalue { ptr } %2, 0
+  %17 = load { ptr, ptr }, ptr %16, align 8
+  %18 = extractvalue { ptr, ptr } %17, 1
+  %19 = extractvalue { ptr, ptr } %17, 0
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %18)
+  call void %19(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
   ret void
 }
 

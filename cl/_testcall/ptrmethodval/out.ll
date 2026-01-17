@@ -37,10 +37,8 @@ _llgo_0:
   %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testcall/ptrmethodval.(*S).Add$bound", ptr undef }, ptr %2, 1
   %5 = extractvalue { ptr, ptr } %4, 1
   %6 = extractvalue { ptr, ptr } %4, 0
-  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
-  %8 = call i64 %6(i64 7)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
+  %7 = call i64 %6(i64 7)
   ret void
 }
 
