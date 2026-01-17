@@ -16,20 +16,80 @@
 
 package llgen
 
-import "regexp"
+import (
+	"fmt"
+	"regexp"
+
+	"github.com/goplus/llgo/internal/ctxreg"
+)
 
 var (
 	targetFeaturesRe = regexp.MustCompile(`\s*"target-features"="[^"]*"`)
-	// Normalize platform-specific ctx registers to a generic placeholder.
-	// Matches: {r12}, {x26}, {esi}, {x27} in inline asm constraints.
-	// Note: arm32 uses global fallback, not register.
-	ctxRegisterRe = regexp.MustCompile(`\{(r12|x26|esi|x27)\}`)
+
+	// Asm instruction templates per architecture family (register name is %s placeholder)
+	// These define the LLVM IR asm string format for context register operations
+	asmTemplates = map[string]struct {
+		writeFmt string // format for write asm, e.g. "mov \\$0, %%%s" -> "mov \$0, %r12"
+		readFmt  string // format for read asm, e.g. "mov %%%s, \\$0" -> "mov %r12, \$0"
+	}{
+		"amd64":   {writeFmt: "mov \\$0, %%%s", readFmt: "mov %%%s, \\$0"},
+		"386":     {writeFmt: "mov \\$0, %%%s", readFmt: "mov %%%s, \\$0"},
+		"arm64":   {writeFmt: "mov %s, \\$0", readFmt: "mov \\$0, %s"},
+		"riscv64": {writeFmt: "mv %s, \\$0", readFmt: "mv \\$0, %s"},
+	}
+
+	// Dynamically generated patterns
+	writeCtxRegPatterns []*regexp.Regexp
+	readCtxRegPatterns  []*regexp.Regexp
+
+	// Normalized replacement strings
+	normalizedWriteCtxReg = `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`
+	normalizedReadCtxReg  = `call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`
 )
 
+func init() {
+	// Generate regex patterns from ctxreg definitions
+	for goarch, tmpl := range asmTemplates {
+		info := ctxreg.Get(goarch)
+		if info.Name == "" {
+			continue
+		}
+
+		// Generate the asm strings with register name from ctxreg
+		writeAsm := fmt.Sprintf(tmpl.writeFmt, info.Name)
+		readAsm := fmt.Sprintf(tmpl.readFmt, info.Name)
+
+		// WriteCtxReg pattern: call void asm sideeffect "<write_asm>", "r,~{reg},~{memory}"(ptr %...)
+		writePattern := fmt.Sprintf(
+			`call void asm sideeffect "%s", "r,~\{%s\},~\{memory\}"\(ptr [^)]+\)`,
+			writeAsm, info.Name,
+		)
+		writeCtxRegPatterns = append(writeCtxRegPatterns, regexp.MustCompile(writePattern))
+
+		// ReadCtxReg pattern: call ptr asm sideeffect "<read_asm>", "=r,~{memory}"()
+		readPattern := fmt.Sprintf(
+			`call ptr asm sideeffect "%s", "=r,~\{memory\}"\(\)`,
+			readAsm,
+		)
+		readCtxRegPatterns = append(readCtxRegPatterns, regexp.MustCompile(readPattern))
+	}
+}
+
 // NormalizeIR strips platform-specific IR attributes that are irrelevant for
-// regression comparisons (e.g. target-features, ctx register names).
+// regression comparisons (e.g. target-features, ctx register asm instructions).
 func NormalizeIR(ir string) string {
 	ir = targetFeaturesRe.ReplaceAllString(ir, "")
-	ir = ctxRegisterRe.ReplaceAllString(ir, "{CTX_REG}")
+
+	// Normalize WriteCtxReg inline asm (precise matching)
+	// Use ReplaceAllLiteralString to avoid $0 being interpreted as backreference
+	for _, pattern := range writeCtxRegPatterns {
+		ir = pattern.ReplaceAllLiteralString(ir, normalizedWriteCtxReg)
+	}
+
+	// Normalize ReadCtxReg inline asm (precise matching)
+	for _, pattern := range readCtxRegPatterns {
+		ir = pattern.ReplaceAllLiteralString(ir, normalizedReadCtxReg)
+	}
+
 	return ir
 }

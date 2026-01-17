@@ -26,38 +26,74 @@ func TestNormalizeIR(t *testing.T) {
 		input    string
 		expected string
 	}{
+		// WriteCtxReg patterns (precise matching)
 		{
-			name:     "normalize r12 register",
-			input:    `call void asm sideeffect "", "{r12}"(ptr %0)`,
-			expected: `call void asm sideeffect "", "{CTX_REG}"(ptr %0)`,
+			name:     "normalize amd64 WriteCtxReg",
+			input:    `call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %0)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		{
-			name:     "normalize x26 register",
-			input:    `%0 = call ptr asm sideeffect "", "={x26}"()`,
-			expected: `%0 = call ptr asm sideeffect "", "={CTX_REG}"()`,
+			name:     "normalize 386 WriteCtxReg",
+			input:    `call void asm sideeffect "mov $0, %esi", "r,~{esi},~{memory}"(ptr %ctx)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		{
-			name:     "normalize esi register",
-			input:    `call void asm sideeffect "", "{esi}"(ptr %0)`,
-			expected: `call void asm sideeffect "", "{CTX_REG}"(ptr %0)`,
+			name:     "normalize arm64 WriteCtxReg",
+			input:    `call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %data)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		{
-			name:     "normalize x27 register",
-			input:    `%0 = call ptr asm sideeffect "", "={x27}"()`,
-			expected: `%0 = call ptr asm sideeffect "", "={CTX_REG}"()`,
+			name:     "normalize riscv64 WriteCtxReg",
+			input:    `call void asm sideeffect "mv x27, $0", "r,~{x27},~{memory}"(ptr %val)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
+		// ReadCtxReg patterns (precise matching)
+		{
+			name:     "normalize amd64 ReadCtxReg",
+			input:    `%1 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()`,
+			expected: `%1 = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
+			name:     "normalize 386 ReadCtxReg",
+			input:    `%ctx = call ptr asm sideeffect "mov %esi, $0", "=r,~{memory}"()`,
+			expected: `%ctx = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
+			name:     "normalize arm64 ReadCtxReg",
+			input:    `%result = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()`,
+			expected: `%result = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
+			name:     "normalize riscv64 ReadCtxReg",
+			input:    `%val = call ptr asm sideeffect "mv $0, x27", "=r,~{memory}"()`,
+			expected: `%val = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		// target-features stripping
 		{
 			name:     "strip target-features",
 			input:    `define void @foo() "target-features"="+neon,+reserve-x26" {`,
 			expected: `define void @foo() {`,
 		},
+		// Combined normalization
 		{
-			name:     "combined normalization",
-			input:    `define void @foo() "target-features"="+neon" { call void asm sideeffect "", "{r12}"(ptr null) }`,
-			expected: `define void @foo() { call void asm sideeffect "", "{CTX_REG}"(ptr null) }`,
+			name: "combined normalization",
+			input: `define void @foo() "target-features"="+neon" {
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %0)
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+}`,
+			expected: `define void @foo() {
+  call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)
+  %1 = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()
+}`,
+		},
+		// No change for unrelated inline asm
+		{
+			name:     "no change for unrelated asm",
+			input:    `call void asm sideeffect "nop", ""()`,
+			expected: `call void asm sideeffect "nop", ""()`,
 		},
 		{
-			name:     "no change for unrelated registers",
+			name:     "no change for other register constraints",
 			input:    `call void asm sideeffect "", "{rax}"(i64 %0)`,
 			expected: `call void asm sideeffect "", "{rax}"(i64 %0)`,
 		},
