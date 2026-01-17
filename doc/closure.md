@@ -4,7 +4,7 @@ This document describes the current LLGo SSA closure implementation.
 
 ## Goals
 
-- Keep function values pointing to real symbols (no global stub for every closure).
+- Keep function values pointing to real symbols (no wrapper stubs).
 - Pass closure ctx via a reserved register when available; otherwise fall back to
   a TLS/global slot.
 - Preserve a `funcval`-like layout: `{fn, data}`.
@@ -19,14 +19,13 @@ Closures are lowered to a 2-field struct:
 
 - `fn` has the original Go signature (no explicit ctx parameter).
 - `data` is:
-  - `nil` for plain functions or wrappers that ignore ctx.
+  - `nil` for plain functions.
   - a pointer to a heap-allocated context for free variables.
-  - a pointer to a heap cell that stores a function pointer (for raw function
-    pointer adaptation).
+  - a type pointer for runtime functions like `structequal`/`arrayequal`.
 
 ## Calling a Closure
 
-Calls to closure values always emit:
+Calls to closure values emit:
 
 ```
 write_ctx(data)
@@ -35,28 +34,30 @@ restore_ctx()
 ```
 
 - `write_ctx` writes to the ctx register or the fallback TLS/global slot.
-- The callee reads ctx once at function entry (if it has free vars) and caches it
-  in a local.
+- The callee reads ctx at function entry (if needed) and caches it in a local.
 - For interface method closures, the receiver is passed as the first argument;
   the ctx register is still written for uniform semantics.
 - The previous ctx value is restored after the call to avoid corrupting callers.
-  This is important for nested closures and for calls that may re-enter Go (e.g.
-  callbacks from C/ffi).
 
-## Wrappers
+## Reading Ctx in Go Code
 
-Wrappers exist only for adaptation cases:
+Runtime functions that need to read ctx use the `getClosurePtr` intrinsic:
 
-- **Legacy explicit-ctx functions**:
-  - Name: `__llgo_stub.<fn>$ctx`
-  - Signature: `func(args...)` (no explicit ctx)
-  - Body: reads ctx register and forwards it as the first argument.
-- **Raw function pointers**:
-  - Name: `__llgo_stub._llgo_func$<hash>`
-  - Signature: `func(args...)`
-  - Body: treats ctx as a pointer to a stored function pointer, loads it, calls it.
+```go
+//go:linkname getClosurePtr llgo.getClosurePtr
+func getClosurePtr() unsafe.Pointer
 
-Regular function declarations are not wrapped.
+func structequal(p, q unsafe.Pointer) bool {
+    t := getClosurePtr()
+    x := (*structtype)(t)
+    // ... use type info from t
+}
+```
+
+This allows runtime functions to:
+1. Have a clean signature matching the expected closure type
+2. Read ctx from the register at runtime
+3. Point to real symbols without wrapper stubs
 
 ## Notes / Limitations
 
@@ -69,6 +70,7 @@ Regular function declarations are not wrapped.
 - TLS/global fallback is thread-local on supported OSes; bare-metal/wasm falls
   back to a process-global slot.
 - Native builds reserve the ctx register by passing
-  `-mllvm --reserve-regs-for-regalloc=<reg>` to clang so LLVM keeps the ctx
-  register out of the allocator on all supported platforms.
-- `FuncPCABI0` points at the real symbol (wrappers only for adaptation).
+  `-mllvm --reserve-regs-for-regalloc=<reg>` to clang.
+- `FuncPCABI0` and `FuncPCABIInternal` return the real symbol address.
+
+

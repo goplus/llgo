@@ -99,9 +99,8 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 		equal = prog.Nil(prog.Type(equalFunc, InGo))
 	case "structequal", "arrayequal":
 		fn := b.Pkg.rtFunc(name)
-		wrap := b.Pkg.closureWrapCtx(fn, fn.raw.Type.(*types.Signature))
 		env := b.abiType(t)
-		equal = b.aggregateValue(prog.Type(equalFunc, InGo), wrap.impl, env.impl)
+		equal = b.aggregateValue(prog.Type(equalFunc, InGo), fn.impl, env.impl)
 	default:
 		equal = b.rtClosure(name)
 	}
@@ -279,10 +278,9 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 	case *types.Map:
 		bucket := pkg.abi.MapBucket(t)
 		flags := pkg.abi.MapFlags(t)
-		hash := b.Pkg.rtFunc("typehash")
-		wrap := b.Pkg.closureWrapCtx(hash, hash.raw.Type.(*types.Signature))
+		hash := b.Pkg.rtFunc("typehashFromCtx")
 		env := b.abiType(t.Key())
-		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), wrap.impl, env.impl)
+		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
 		fields = []llvm.Value{
 			b.abiType(t.Key()).impl,
 			b.abiType(t.Elem()).impl,
