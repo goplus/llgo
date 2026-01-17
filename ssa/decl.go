@@ -186,6 +186,7 @@ type aFunction struct {
 	paramBase   int // extra leading LLVM params (e.g. sret ptr) not present in Go signature
 	freeVars    Expr
 	ctxType     Type // closure context struct type (for register-based ctx)
+	ctxPtr      Expr // cached ctx pointer read from register at entry
 	hasFreeVars bool // true if function is a closure with free variables
 	hasVArg     bool
 
@@ -290,7 +291,8 @@ func (p Function) Param(i int) Expr {
 // InitClosureCtx initializes the closure context by reading from the context register.
 // Must be called at the very start of the function body for closures with free variables.
 // This sets the context type and immediately reads the context pointer from register,
-// caching it in freeVars for subsequent FreeVar accesses.
+// caching it in ctxPtr and freeVars for subsequent accesses.
+// The ctxPtr cache eliminates the need to restore ctx register after closure calls.
 func (p Function) InitClosureCtx(b Builder, ctxType Type) {
 	if !p.hasFreeVars {
 		panic("ssa: InitClosureCtx called on function without free variables")
@@ -302,6 +304,7 @@ func (p Function) InitClosureCtx(b Builder, ctxType Type) {
 	// Read closure context pointer from register and cast to correct type.
 	// This MUST be the first instruction in the function body.
 	rawPtr := b.ReadCtxReg()
+	p.ctxPtr = rawPtr // Cache the raw ctx pointer for callers
 	ctxPtrType := b.Prog.Pointer(p.ctxType)
 	ptr := b.Convert(ctxPtrType, rawPtr)
 	p.freeVars = b.Load(ptr)

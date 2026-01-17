@@ -242,11 +242,9 @@ define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  %4 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %2)
-  %5 = call i64 %3(i64 %1)
-  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %4)
-  ret i64 %5
+  %4 = call i64 %3(i64 %1)
+  ret i64 %4
 }
 `)
 }
@@ -379,11 +377,9 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 1
   %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %7)
-  %10 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
-  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %9)
-  ret i64 %10
+  %9 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
+  ret i64 %9
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
@@ -1313,11 +1309,9 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @iife_inner, ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %4)
-  %7 = call i64 %5(i64 5)
-  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %6)
-  ret i64 %7
+  %6 = call i64 %5(i64 5)
+  ret i64 %6
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
@@ -1353,17 +1347,13 @@ define i64 @applyTwice({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  %4 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
   call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %2)
-  %5 = call i64 %3(i64 %1)
-  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %4)
-  %6 = extractvalue { ptr, ptr } %0, 1
-  %7 = extractvalue { ptr, ptr } %0, 0
-  %8 = call ptr asm sideeffect "mov %r12, $0", "=r,~{memory}"()
-  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %6)
-  %9 = call i64 %7(i64 %5)
-  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %8)
-  ret i64 %9
+  %4 = call i64 %3(i64 %1)
+  %5 = extractvalue { ptr, ptr } %0, 1
+  %6 = extractvalue { ptr, ptr } %0, 0
+  call void asm sideeffect "mov $0, %r12", "r,~{r12},~{memory}"(ptr %5)
+  %7 = call i64 %6(i64 %4)
+  ret i64 %7
 }
 `)
 }
