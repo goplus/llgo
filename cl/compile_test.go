@@ -159,3 +159,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 `)
 }
+
+func TestFromTestcall(t *testing.T) {
+	cltest.FromDir(t, "", "./_testcall")
+}

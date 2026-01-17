@@ -1,0 +1,5 @@
+WARNING: Using LLGO root for devel: /Users/lijie/source/goplus/llgo-closure-port
+WARNING: Using LLGO root for devel: /Users/lijie/source/goplus/llgo-closure-port
+WARNING: Using LLGO root for devel: /Users/lijie/source/goplus/llgo-closure-port
+ld64.lld: warning: /opt/homebrew/Cellar/bdw-gc/8.2.10/lib/libgc.dylib has version 26.0.0, which is newer than target minimum of 16.0.0
+hello

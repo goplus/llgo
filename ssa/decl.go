@@ -182,10 +182,13 @@ type aFunction struct {
 	defer_ *aDefer
 	recov  BasicBlock
 
-	params   []Type
-	freeVars Expr
-	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+	params      []Type
+	paramBase   int // extra leading LLVM params (e.g. sret ptr) not present in Go signature
+	freeVars    Expr
+	ctxType     Type // closure context struct type (for register-based ctx)
+	ctxPtr      Expr // cached ctx pointer read from register at entry
+	hasFreeVars bool // true if function is a closure with free variables
+	hasVArg     bool
 
 	diFunc DIFunction
 }
@@ -240,22 +243,19 @@ func (p Package) FuncOf(name string) Function {
 }
 
 func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool) Function {
-	params, hasVArg := newParams(t, prog)
-	base := 0
-	if hasFreeVars {
-		base = 1
-	}
+	params, hasVArg, paramBase := newParams(t, prog)
 	return &aFunction{
-		Expr:    Expr{fn, t},
-		Pkg:     pkg,
-		Prog:    prog,
-		params:  params,
-		base:    base,
-		hasVArg: hasVArg,
+		Expr:        Expr{fn, t},
+		Pkg:         pkg,
+		Prog:        prog,
+		params:      params,
+		paramBase:   paramBase,
+		hasFreeVars: hasFreeVars,
+		hasVArg:     hasVArg,
 	}
 }
 
-func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
+func newParams(fn Type, prog Program) (params []Type, hasVArg bool, paramBase int) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
@@ -266,6 +266,13 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 		for i := 0; i < n; i++ {
 			params[i] = prog.rawType(in.At(i).Type())
 		}
+		// LLVM function type may contain extra implicit params (e.g. sret ptr).
+		// Compute offset so Param(i) maps to the correct LLVM argument.
+		if ft := fn.ll; ft.TypeKind() == llvm.FunctionTypeKind {
+			if llParams := ft.ParamTypes(); len(llParams) >= n {
+				paramBase = len(llParams) - n
+			}
+		}
 	}
 	return
 }
@@ -275,33 +282,46 @@ func (p Function) Name() string {
 	return p.impl.Name()
 }
 
-// Params returns the function's ith parameter.
+// Param returns the function's ith parameter.
 func (p Function) Param(i int) Expr {
-	i += p.base // skip if hasFreeVars
-	return Expr{p.impl.Param(i), p.params[i]}
+	llIndex := i + p.paramBase
+	return Expr{p.impl.Param(llIndex), p.params[i]}
 }
 
-func (p Function) closureCtx(b Builder) Expr {
+// InitClosureCtx initializes the closure context by reading from the context register.
+// Must be called at the very start of the function body for closures with free variables.
+// This sets the context type and immediately reads the context pointer from register,
+// caching it in ctxPtr and freeVars for subsequent accesses.
+// The ctxPtr cache eliminates the need to restore ctx register after closure calls.
+func (p Function) InitClosureCtx(b Builder, ctxType Type) {
+	if !p.hasFreeVars {
+		panic("ssa: InitClosureCtx called on function without free variables")
+	}
+	if !p.freeVars.IsNil() {
+		panic("ssa: InitClosureCtx called more than once")
+	}
+	p.ctxType = ctxType
+	// Read closure context pointer from register and cast to correct type.
+	// This MUST be the first instruction in the function body.
+	rawPtr := b.ReadCtxReg()
+	p.ctxPtr = rawPtr // Cache the raw ctx pointer for callers
+	ctxPtrType := b.Prog.Pointer(p.ctxType)
+	ptr := b.Convert(ctxPtrType, rawPtr)
+	p.freeVars = b.Load(ptr)
+}
+
+// closureCtx returns the cached closure context.
+// InitClosureCtx must have been called first.
+func (p Function) closureCtx() Expr {
 	if p.freeVars.IsNil() {
-		if p.base == 0 {
-			panic("ssa: function has no free variables")
-		}
-		ptr := Expr{p.impl.Param(0), p.params[0]}
-		if b.blk.Index() != 0 {
-			blk := b.impl.GetInsertBlock()
-			b.SetBlockEx(p.blks[0], AtStart, false)
-			p.freeVars = b.Load(ptr)
-			b.impl.SetInsertPointAtEnd(blk)
-		} else {
-			p.freeVars = b.Load(ptr)
-		}
+		panic("ssa: closureCtx called before InitClosureCtx")
 	}
 	return p.freeVars
 }
 
 // FreeVar returns the function's ith free variable.
 func (p Function) FreeVar(b Builder, i int) Expr {
-	ctx := p.closureCtx(b)
+	ctx := p.closureCtx()
 	return b.getField(ctx, i)
 }
 
@@ -322,6 +342,7 @@ func (p Function) HasBody() bool {
 
 // MakeBody creates nblk basic blocks for the function, and creates
 // a new Builder associated to #0 block.
+// For closures with free variables, caller must call InitClosureCtx after this.
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()
