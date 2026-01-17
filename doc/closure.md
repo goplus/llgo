@@ -30,14 +30,13 @@ Calls to closure values emit:
 ```
 write_ctx(data)
 fn(args...)
-restore_ctx()
 ```
 
 - `write_ctx` writes to the ctx register or the fallback TLS/global slot.
-- The callee reads ctx at function entry (if needed) and caches it in a local.
+- The callee reads ctx at function entry and caches it in a local variable (`ctxPtr`).
+- No restore is needed after the call - the caller's ctx is already cached.
 - For interface method closures, the receiver is passed as the first argument;
   the ctx register is still written for uniform semantics.
-- The previous ctx value is restored after the call to avoid corrupting callers.
 
 ## Reading Ctx in Go Code
 
@@ -72,5 +71,6 @@ This allows runtime functions to:
 - Native builds reserve the ctx register by passing
   `-mllvm --reserve-regs-for-regalloc=<reg>` to clang.
 - `FuncPCABI0` and `FuncPCABIInternal` return the real symbol address.
+
 
 

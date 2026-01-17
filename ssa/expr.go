@@ -1186,11 +1186,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		ret.Type = b.Prog.retType(sig)
 		ll = b.Prog.FuncDecl(sig, InC).ll
 		callArgs := llvmParams(0, args, sig.Params(), b)
-		prevCtx := b.ReadCtxReg()
 		b.WriteCtxReg(data)
 		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
-		// Restore previous closure context to avoid corrupting caller stack frames.
-		b.WriteCtxReg(prevCtx)
+		// No need to restore ctx - callee caches ctx at entry via InitClosureCtx.
 		return ret
 	case vkImethodClosure:
 		// Interface method closure: receiver must be passed as first parameter,
@@ -1206,11 +1204,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		ll = b.Prog.FuncDecl(sigWithCtx, InC).ll
 		// Call with receiver as first argument
 		callArgs := llvmParamsEx(data, args, sigWithCtx.Params(), b)
-		prevCtx := b.ReadCtxReg()
 		b.WriteCtxReg(data)
 		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
-		// Restore previous closure context to avoid corrupting caller stack frames.
-		b.WriteCtxReg(prevCtx)
+		// No need to restore ctx - callee caches ctx at entry via InitClosureCtx.
 		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
