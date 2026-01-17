@@ -188,6 +188,13 @@ func typehash(t *_type, p unsafe.Pointer, h uintptr) uintptr {
 	}
 }
 
+// typehashFromCtx is a wrapper for typehash that reads the type from ctx register.
+// Used as closure for map hash functions.
+func typehashFromCtx(p unsafe.Pointer, h uintptr) uintptr {
+	t := (*_type)(getClosurePtr())
+	return typehash(t, p, h)
+}
+
 func memequalptr(p, q unsafe.Pointer) bool {
 	return *(*uintptr)(p) == *(*uintptr)(q)
 }
@@ -266,7 +273,11 @@ func ifaceeq(tab *itab, x, y unsafe.Pointer) bool {
 	return eq(x, y)
 }
 
-func structequal(t, p, q unsafe.Pointer) bool {
+//go:linkname getClosurePtr llgo.getClosurePtr
+func getClosurePtr() unsafe.Pointer
+
+func structequal(p, q unsafe.Pointer) bool {
+	t := getClosurePtr()
 	x := (*structtype)(t)
 	for _, ft := range x.Fields {
 		pi := add(p, ft.Offset)
@@ -278,7 +289,8 @@ func structequal(t, p, q unsafe.Pointer) bool {
 	return true
 }
 
-func arrayequal(t, p, q unsafe.Pointer) bool {
+func arrayequal(p, q unsafe.Pointer) bool {
+	t := getClosurePtr()
 	x := (*arraytype)(t)
 	elem := x.Elem
 	for i := uintptr(0); i < x.Len; i++ {

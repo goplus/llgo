@@ -14,7 +14,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/asmfull"
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/cl/_testrt/asmfull.init$guard" = global i1 false, align 1
-@"map[_llgo_string]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.MapType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1555029873, i8 0, i8 8, i8 8, i8 53, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 23 }, ptr @"*map[_llgo_string]_llgo_any" }, ptr @_llgo_string, ptr @_llgo_any, ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U", { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.typehash$ctx", ptr @_llgo_string }, i8 16, i8 16, i16 272, i32 12 }, align 8
+@"map[_llgo_string]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.MapType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1555029873, i8 0, i8 8, i8 8, i8 53, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 23 }, ptr @"*map[_llgo_string]_llgo_any" }, ptr @_llgo_string, ptr @_llgo_any, ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U", { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.typehashFromCtx", ptr @_llgo_string }, i8 16, i8 16, i16 272, i32 12 }, align 8
 @0 = private unnamed_addr constant [23 x i8] c"map[string]interface {}", align 1
 @"*map[_llgo_string]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1247330198, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 23 }, ptr null }, ptr @"map[_llgo_string]_llgo_any" }, align 8
 @_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 }, ptr @"*_llgo_string" }, align 8
@@ -24,11 +24,11 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/asmfull"
 @2 = private unnamed_addr constant [12 x i8] c"interface {}", align 1
 @"*_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1741196194, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 12 }, ptr null }, ptr @_llgo_any }, align 8
 @3 = private unnamed_addr constant [41 x i8] c"github.com/goplus/llgo/cl/_testrt/asmfull", align 1
-@"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 272, i64 272, i32 -1892096921, i8 0, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx", ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 91 }, ptr @"*github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U$fields", i64 4, i64 4 } }, align 8
+@"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.StructType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 272, i64 272, i32 -1892096921, i8 0, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.structequal", ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 91 }, ptr @"*github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U$fields", i64 4, i64 4 } }, align 8
 @4 = private unnamed_addr constant [91 x i8] c"struct { topbits [8]uint8; keys [8]string; elems [8]interface {}; overflow unsafe.Pointer }", align 1
 @"*github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -32734550, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 91 }, ptr null }, ptr @"github.com/goplus/llgo/cl/_testrt/asmfull.struct$tpOdxrfxqAgVfHtyiqa7aoi-mhPR53wxFhkEgsJPL8U" }, align 8
 @5 = private unnamed_addr constant [7 x i8] c"topbits", align 1
-@"[8]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 307038632, i8 8, i8 1, i8 1, i8 17, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.arrayequal$ctx", ptr @"[8]_llgo_uint8" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 8 }, ptr @"*[8]_llgo_uint8" }, ptr @_llgo_uint8, ptr @"[]_llgo_uint8", i64 8 }, align 8
+@"[8]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 307038632, i8 8, i8 1, i8 1, i8 17, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal", ptr @"[8]_llgo_uint8" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 8 }, ptr @"*[8]_llgo_uint8" }, ptr @_llgo_uint8, ptr @"[]_llgo_uint8", i64 8 }, align 8
 @6 = private unnamed_addr constant [8 x i8] c"[8]uint8", align 1
 @"*[8]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -566230779, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 8 }, ptr null }, ptr @"[8]_llgo_uint8" }, align 8
 @_llgo_uint8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 269156761, i8 12, i8 1, i8 1, i8 40, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"*_llgo_uint8" }, align 8
@@ -38,14 +38,14 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/asmfull"
 @8 = private unnamed_addr constant [7 x i8] c"[]uint8", align 1
 @"*[]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -2143776929, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 7 }, ptr null }, ptr @"[]_llgo_uint8" }, align 8
 @9 = private unnamed_addr constant [4 x i8] c"keys", align 1
-@"[8]_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 128, i64 120, i32 460245566, i8 0, i8 8, i8 8, i8 17, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.arrayequal$ctx", ptr @"[8]_llgo_string" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 9 }, ptr @"*[8]_llgo_string" }, ptr @_llgo_string, ptr @"[]_llgo_string", i64 8 }, align 8
+@"[8]_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 128, i64 120, i32 460245566, i8 0, i8 8, i8 8, i8 17, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal", ptr @"[8]_llgo_string" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 9 }, ptr @"*[8]_llgo_string" }, ptr @_llgo_string, ptr @"[]_llgo_string", i64 8 }, align 8
 @10 = private unnamed_addr constant [9 x i8] c"[8]string", align 1
 @"*[8]_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 368026044, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 9 }, ptr null }, ptr @"[8]_llgo_string" }, align 8
 @"[]_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.SliceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 24, i64 8, i32 608974920, i8 0, i8 8, i8 8, i8 23, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 8 }, ptr @"*[]_llgo_string" }, ptr @_llgo_string }, align 8
 @11 = private unnamed_addr constant [8 x i8] c"[]string", align 1
 @"*[]_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -157880218, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 8 }, ptr null }, ptr @"[]_llgo_string" }, align 8
 @12 = private unnamed_addr constant [5 x i8] c"elems", align 1
-@"[8]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 128, i64 128, i32 1470789279, i8 0, i8 8, i8 8, i8 17, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.arrayequal$ctx", ptr @"[8]_llgo_any" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 15 }, ptr @"*[8]_llgo_any" }, ptr @_llgo_any, ptr @"[]_llgo_any", i64 8 }, align 8
+@"[8]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 128, i64 128, i32 1470789279, i8 0, i8 8, i8 8, i8 17, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal", ptr @"[8]_llgo_any" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 15 }, ptr @"*[8]_llgo_any" }, ptr @_llgo_any, ptr @"[]_llgo_any", i64 8 }, align 8
 @13 = private unnamed_addr constant [15 x i8] c"[8]interface {}", align 1
 @"*[8]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -281120639, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 15 }, ptr null }, ptr @"[8]_llgo_any" }, align 8
 @"[]_llgo_any" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.SliceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 24, i64 8, i32 -396233978, i8 0, i8 8, i8 8, i8 23, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 14 }, ptr @"*[]_llgo_any" }, ptr @_llgo_any }, align 8
@@ -115,36 +115,15 @@ _llgo_0:
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 
-declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.typehash"(ptr, ptr, i64)
-
-define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.typehash$ctx"(ptr %0, i64 %1) {
-_llgo_0:
-  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  %3 = tail call i64 @"github.com/goplus/llgo/runtime/internal/runtime.typehash"(ptr %2, ptr %0, i64 %1)
-  ret i64 %3
-}
+declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.typehashFromCtx"(ptr, i64)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr)
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr)
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.structequal$ctx"(ptr %0, ptr %1) {
-_llgo_0:
-  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr %2, ptr %0, ptr %1)
-  ret i1 %3
-}
-
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr)
-
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.arrayequal$ctx"(ptr %0, ptr %1) {
-_llgo_0:
-  %2 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr %2, ptr %0, ptr %1)
-  ret i1 %3
-}
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
 
