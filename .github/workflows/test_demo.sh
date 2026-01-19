@@ -93,6 +93,7 @@ ignore_esp32c3_basic=(
   "./_demo/go/gotypes"
   "./_demo/go/ifaceconv"
   "./_demo/go/issue1538"
+  "./_demo/go/issue1538-floatcvtuint-over"
   "./_demo/go/logdemo"
   "./_demo/go/maphash"
   "./_demo/go/math"
