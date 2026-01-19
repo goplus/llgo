@@ -133,10 +133,14 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 		data := (*uintptr)(c.Advance(ptr, int(itabHdrSize)))
 		mthds := u.Methods()
 		for i, m := range inter.Methods {
-			fn := findMethod(mthds, m)
-			if fn == nil {
+			matched, fn := findMethod(mthds, m)
+			if !matched {
 				ret.fun[0] = 0
 				break
+			}
+			if fn == nil {
+				// matched but no function pointer; keep itab entries with placeholder
+				fn = abi.Text(uintptr(0))
 			}
 			*c.Advance(data, i) = uintptr(fn)
 		}
@@ -147,18 +151,18 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	return ret
 }
 
-func findMethod(mthds []abi.Method, im abi.Imethod) abi.Text {
+func findMethod(mthds []abi.Method, im abi.Imethod) (bool, abi.Text) {
 	imName := im.Name_
 	for _, m := range mthds {
 		mName := m.Name_
 		if mName >= imName {
 			if mName == imName && m.Mtyp_ == im.Typ_ {
-				return m.Ifn_
+				return true, m.Ifn_
 			}
 			break
 		}
 	}
-	return nil
+	return false, nil
 }
 
 func IfaceType(i iface) *abi.Type {
