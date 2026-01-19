@@ -128,6 +128,10 @@ jobs:
           export LLGO_FULL_RPATH=true
           bash .github/workflows/test_demo.sh
 
+      - name: Test demos (embedded)
+        run: |
+          bash .github/workflows/test_demo.sh --embedded
+
       - name: Test C header generation
         run: |
           echo "Testing C header generation in different build modes..."
