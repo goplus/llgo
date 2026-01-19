@@ -20,6 +20,7 @@
 package cl_test
 
 import (
+	"os"
 	"runtime"
 	"testing"
 
@@ -31,6 +32,13 @@ import (
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
 	cltest.TestCompileEx(t, src, "foo.go", expected, false)
+}
+
+func requireESP32C3Emulator(t *testing.T) {
+	t.Helper()
+	if os.Getenv("LLGO_EMBED_TESTS") != "1" {
+		t.Skip("Skipping ESP32-C3 emulator tests; set LLGO_EMBED_TESTS=1 to run")
+	}
 }
 
 func TestFromTestgo(t *testing.T) {
@@ -89,6 +97,7 @@ Hello World!
 }
 
 func TestRunESP32C3Emulator(t *testing.T) {
+	requireESP32C3Emulator(t)
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = "esp32c3-basic"
 	conf.Emulator = true
@@ -154,6 +163,7 @@ func TestRunESP32C3Emulator(t *testing.T) {
 }
 
 func TestRunESP32C3Libc(t *testing.T) {
+	requireESP32C3Emulator(t)
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = "esp32c3-basic"
 	conf.Emulator = true
@@ -176,6 +186,7 @@ func TestRunESP32C3Libc(t *testing.T) {
 }
 
 func TestRunESP32C3Testrt(t *testing.T) {
+	requireESP32C3Emulator(t)
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = "esp32c3-basic"
 	conf.Emulator = true
@@ -227,6 +238,7 @@ func TestRunESP32C3Testrt(t *testing.T) {
 }
 
 func TestRunESP32C3Testdata(t *testing.T) {
+	requireESP32C3Emulator(t)
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = "esp32c3-basic"
 	conf.Emulator = true
