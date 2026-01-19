@@ -193,43 +193,44 @@ func TestRunESP32C3Testrt(t *testing.T) {
 	conf.ForceRebuild = true
 
 	ignore := []string{
-		"./_testrt/abinamed",    // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/any",         // output mismatch
-		"./_testrt/asm",         // QEMU hits Instruction access fault
-		"./_testrt/asmfull",     // inline asm not supported (instruction mnemonic)
-		"./_testrt/builtin",     // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/cast",        // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/closureconv", // QEMU hits Load access fault (Guru Meditation)
-		"./_testrt/complex",     // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/concat",      // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/constuptr",   // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/cvar",        // QEMU hits Instruction access fault
-		"./_testrt/eface",       // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/fprintf",     // link errors (__stderrp)
-		"./_testrt/funcdecl",    // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/gotypes",     // QEMU hits Instruction access fault
-		"./_testrt/hello",       // build constraints exclude all Go files in libc
-		"./_testrt/index",       // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/len",         // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/linkname",    // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/makemap",     // link errors (__atomic_fetch_or_4)
-		"./_testrt/map",         // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/mask",        // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/methodthunk", // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/nextblock",   // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
-		"./_testrt/qsort",       // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/qsortfn",     // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/stacksave",   // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/strlen",      // build constraints exclude all Go files
-		"./_testrt/struct",      // build constraints exclude all Go files
-		"./_testrt/tpabi",       // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/tpfunc",      // output mismatch (expected 16 8 8)
-		"./_testrt/tpmethod",    // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/tpunsafe",    // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/typalias",    // build constraints exclude all Go files
-		"./_testrt/typed",       // QEMU hits Illegal instruction (Guru Meditation)
-		"./_testrt/unreachable", // QEMU hits Instruction access fault
-		"./_testrt/vamethod",    // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/abinamed",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/any",          // output mismatch
+		"./_testrt/asm",          // QEMU hits Instruction access fault
+		"./_testrt/asmfull",      // inline asm not supported (instruction mnemonic)
+		"./_testrt/builtin",      // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/cast",         // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/closureconv",  // QEMU hits Load access fault (Guru Meditation)
+		"./_testrt/complex",      // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/concat",       // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/constuptr",    // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/cvar",         // QEMU hits Instruction access fault
+		"./_testrt/closureiface", // QEMU run hangs (no output)
+		"./_testrt/eface",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/fprintf",      // link errors (__stderrp)
+		"./_testrt/funcdecl",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/gotypes",      // QEMU hits Instruction access fault
+		"./_testrt/hello",        // build constraints exclude all Go files in libc
+		"./_testrt/index",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/len",          // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/linkname",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/makemap",      // link errors (__atomic_fetch_or_4)
+		"./_testrt/map",          // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/mask",         // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/methodthunk",  // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/nextblock",    // uses defer/recover; needs defer support, https://github.com/goplus/llgo/issues/1419
+		"./_testrt/qsort",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/qsortfn",      // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/stacksave",    // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/strlen",       // build constraints exclude all Go files
+		"./_testrt/struct",       // build constraints exclude all Go files
+		"./_testrt/tpabi",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/tpfunc",       // output mismatch (expected 16 8 8)
+		"./_testrt/tpmethod",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/tpunsafe",     // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/typalias",     // build constraints exclude all Go files
+		"./_testrt/typed",        // QEMU hits Illegal instruction (Guru Meditation)
+		"./_testrt/unreachable",  // QEMU hits Instruction access fault
+		"./_testrt/vamethod",     // QEMU hits Illegal instruction (Guru Meditation)
 	}
 	cltest.RunFromDir(t, "", "./_testrt", ignore,
 		cltest.WithRunConfig(conf),
