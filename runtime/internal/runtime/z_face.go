@@ -153,6 +153,10 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	return ret
 }
 
+// findMethod searches for an interface method in the type's method set.
+// Returns (matched, fn) where:
+//   - matched: true if a method with matching name and type signature exists
+//   - fn: the function pointer (may be nil even when matched=true for promoted unexported methods)
 func findMethod(mthds []abi.Method, im abi.Imethod) (bool, abi.Text) {
 	imName := im.Name_
 	for _, m := range mthds {
