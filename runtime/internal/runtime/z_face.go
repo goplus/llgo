@@ -133,7 +133,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 		data := (*uintptr)(c.Advance(ptr, int(itabHdrSize)))
 		mthds := u.Methods()
 		for i, m := range inter.Methods {
-			matched, fn := findMethod(mthds, m)
+			fn, matched := findMethod(mthds, m)
 			if !matched {
 				ret.fun[0] = 0
 				break
@@ -154,21 +154,21 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 }
 
 // findMethod searches for an interface method in the type's method set.
-// Returns (matched, fn) where:
-//   - matched: true if a method with matching name and type signature exists
+// Returns (fn, matched) where:
 //   - fn: the function pointer (may be nil even when matched=true for promoted unexported methods)
-func findMethod(mthds []abi.Method, im abi.Imethod) (bool, abi.Text) {
+//   - matched: true if a method with matching name and type signature exists
+func findMethod(mthds []abi.Method, im abi.Imethod) (abi.Text, bool) {
 	imName := im.Name_
 	for _, m := range mthds {
 		mName := m.Name_
 		if mName >= imName {
 			if mName == imName && m.Mtyp_ == im.Typ_ {
-				return true, m.Ifn_
+				return m.Ifn_, true
 			}
 			break
 		}
 	}
-	return false, nil
+	return nil, false
 }
 
 func IfaceType(i iface) *abi.Type {
