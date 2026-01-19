@@ -139,7 +139,9 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 				break
 			}
 			if fn == nil {
-				// matched but no function pointer; keep itab entries with placeholder
+				// matched but no function pointer (e.g. stripped/unreachable after DCE);
+				// keep itab entry with a placeholder so the itab stays intact
+				// and only panics on call, not at assertion time.
 				fn = abi.Text(uintptr(0))
 			}
 			*c.Advance(data, i) = uintptr(fn)
