@@ -862,23 +862,22 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			}
 		}
 
-		// Always compile to .o for linking
-		objFile := baseName + ".o"
-		objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
-		// If GenBC is enabled, use the emitted .bc to produce .o
+		// If GenBC is enabled, record the .bc for linking; otherwise compile to .o
 		if ctx.buildConf.GenBC {
 			bcFile := baseName + ".bc"
-			objArgs = []string{"-o", objFile, "-c", bcFile}
+			objFiles = append(objFiles, bcFile)
+		} else {
+			objFile := baseName + ".o"
+			objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(objArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
+			}
+			objFiles = append(objFiles, objFile)
 		}
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
-		}
-		cmd := ctx.compiler()
-		if err := cmd.Compile(objArgs...); err != nil {
-			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
-		}
-
-		objFiles = append(objFiles, objFile)
 		os.Remove(baseName) // Remove the temp file we created for naming
 	}
 
@@ -886,6 +885,13 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 }
 
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
+	if ctx.buildConf.GenBC {
+		for _, f := range linkInputs {
+			if !strings.HasSuffix(f, ".bc") {
+				return fmt.Errorf("gen-bcfiles enabled but non-bc input %s", f)
+			}
+		}
+	}
 	needRuntime := false
 	needPyInit := false
 	needAbiInit := false
@@ -1242,21 +1248,15 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			}
 		}
 	}
-	// Always compile to .o for linking (prefer .bc when generated)
+	// If GenBC is enabled, return the .bc for linking; otherwise compile .ll to .o
+	if ctx.buildConf.GenBC {
+		return exportFile + ".bc", nil
+	}
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err
 	}
 	objFile.Close()
-	if ctx.buildConf.GenBC {
-		bcFile := exportFile + ".bc"
-		args := []string{"-o", objFile.Name(), "-c", bcFile, "-Wno-override-module"}
-		if ctx.buildConf.Verbose {
-			fmt.Fprintln(os.Stderr, "clang", args)
-		}
-		cmd := ctx.compiler()
-		return objFile.Name(), cmd.Compile(args...)
-	}
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
@@ -1652,20 +1652,21 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		}
 	}
 
-	// Always compile to .o for linking
-	objFile := baseName + ".o"
-	objArgs := append(args, "-o", objFile, "-c", cFile)
+	// If GenBC is enabled, record .bc for linking; otherwise compile to .o
 	if ctx.buildConf.GenBC {
 		bcFile := baseName + ".bc"
-		objArgs = []string{"-o", objFile, "-c", bcFile}
+		procFile(bcFile)
+	} else {
+		objFile := baseName + ".o"
+		objArgs := append(args, "-o", objFile, "-c", cFile)
+		if verbose {
+			fmt.Fprintln(os.Stderr, "clang", objArgs)
+		}
+		cmd := ctx.compiler()
+		err := cmd.Compile(objArgs...)
+		check(err)
+		procFile(objFile)
 	}
-	if verbose {
-		fmt.Fprintln(os.Stderr, "clang", objArgs)
-	}
-	cmd := ctx.compiler()
-	err := cmd.Compile(objArgs...)
-	check(err)
-	procFile(objFile)
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
