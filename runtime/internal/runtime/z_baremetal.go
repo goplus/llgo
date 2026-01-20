@@ -2,7 +2,10 @@
 
 package runtime
 
-import c "github.com/goplus/llgo/runtime/internal/clite"
+import (
+	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/setjmp"
+)
 
 var (
 	printFormatPrefixInt  = c.Str("%ld")
@@ -11,9 +14,13 @@ var (
 )
 
 // Rethrow rethrows a panic.
+// In baremetal single-threaded environment, we use longjmp to execute defers.
+// Note: recover() will return nil for now (panic value not stored).
 func Rethrow(link *Defer) {
-	// in baremetal environment, we cannot get debug data from pthread_getspecific
-	// most of baremetal implement of pthread_getspecific returns empty result
-	c.Printf(c.Str("fatal error\n"))
-	c.Exit(2)
+	if link == nil {
+		c.Printf(c.Str("fatal error\n"))
+		c.Exit(2)
+	} else {
+		setjmp.Longjmp((*setjmp.JmpBuf)(link.Addr), 1)
+	}
 }

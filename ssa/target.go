@@ -28,6 +28,7 @@ type Target struct {
 	GOOS   string
 	GOARCH string
 	GOARM  string // "5", "6", "7" (default)
+	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
 }
 
 func (p *Target) targetData() llvm.TargetData {
