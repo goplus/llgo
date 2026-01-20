@@ -1200,15 +1200,27 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
-	// If GenLL is enabled, keep a copy of the .ll file for debugging
-	if ctx.buildConf.GenLL {
-		llFile := exportFile + ".ll"
+	// If GenLL/GenBC is enabled, keep copies of the .ll/.bc for debugging
+	if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
 		if err := os.Chmod(f.Name(), 0644); err != nil {
 			return "", err
 		}
-		// Copy instead of rename so we can still compile to .o
-		if err := copyFileAtomic(f.Name(), llFile); err != nil {
-			return "", err
+		if ctx.buildConf.GenLL {
+			llFile := exportFile + ".ll"
+			if err := copyFileAtomic(f.Name(), llFile); err != nil {
+				return "", err
+			}
+		}
+		if ctx.buildConf.GenBC {
+			bcFile := exportFile + ".bc"
+			bcArgs := []string{"-emit-llvm", "-o", bcFile, "-c", f.Name(), "-Wno-override-module"}
+			if ctx.buildConf.Verbose {
+				fmt.Fprintln(os.Stderr, "clang", bcArgs)
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(bcArgs...); err != nil {
+				return "", err
+			}
 		}
 	}
 	// Always compile .ll to .o for linking
