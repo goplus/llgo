@@ -856,7 +856,15 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		if ctx.buildConf.GenBC {
 			bcFile := baseName + ".bc"
 			if _, err := os.Stat(bcFile); err != nil {
-				return nil, fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err)
+				// try emit bc now
+				bcArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-o", bcFile, "-c", srcFile)
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Compiling extra file (bc): clang %s\n", strings.Join(bcArgs, " "))
+				}
+				cmd := ctx.compiler()
+				if err := cmd.Compile(bcArgs...); err != nil {
+					return nil, fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err)
+				}
 			}
 			objArgs = []string{"-o", objFile, "-c", bcFile}
 		}
@@ -1241,7 +1249,14 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	if ctx.buildConf.GenBC {
 		bcFile := exportFile + ".bc"
 		if _, err := os.Stat(bcFile); err != nil {
-			return "", fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err)
+			bcArgs := []string{"-emit-llvm", "-o", bcFile, "-c", f.Name(), "-Wno-override-module"}
+			if ctx.buildConf.Verbose {
+				fmt.Fprintln(os.Stderr, "clang", bcArgs)
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(bcArgs...); err != nil {
+				return "", fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err)
+			}
 		}
 		args := []string{"-o", objFile.Name(), "-c", bcFile, "-Wno-override-module"}
 		if ctx.buildConf.Verbose {
@@ -1639,7 +1654,14 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	if ctx.buildConf.GenBC {
 		bcFile := baseName + ".bc"
 		if _, err := os.Stat(bcFile); err != nil {
-			check(fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err))
+			bcArgs := append(slices.Clone(args), "-emit-llvm", "-o", bcFile, "-c", cFile)
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", bcArgs)
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(bcArgs...); err != nil {
+				check(fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err))
+			}
 		}
 		objArgs = []string{"-o", objFile, "-c", bcFile}
 	}
