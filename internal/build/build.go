@@ -885,13 +885,6 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 }
 
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
-	if ctx.buildConf.GenBC {
-		for _, f := range linkInputs {
-			if !strings.HasSuffix(f, ".bc") {
-				return fmt.Errorf("gen-bcfiles enabled but non-bc input %s", f)
-			}
-		}
-	}
 	needRuntime := false
 	needPyInit := false
 	needAbiInit := false
@@ -996,6 +989,13 @@ func isRuntimePkg(pkgPath string) bool {
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
+	if ctx.buildConf.GenBC {
+		for _, f := range objFiles {
+			if strings.HasSuffix(f, ".o") {
+				return fmt.Errorf("gen-bcfiles enabled but non-bc input %s", f)
+			}
+		}
+	}
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
 		return ctx.createArchiveFile(app, objFiles, verbose)
