@@ -1,0 +1,843 @@
+2026/01/20 10:01:58 ==> BuildSSA unsafe
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/abi
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/abi
+2026/01/20 10:01:58 ==> Patching internal/abi
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/cpu
+2026/01/20 10:01:58 ==> Patching internal/cpu
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/bdwgc
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/bitcast
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/debug
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/pthread
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/time
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/pthread/sync
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/setjmp
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/signal
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/sync/atomic
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/tls
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/runtime/goarch
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/runtime/math
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/runtime
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/bytealg
+2026/01/20 10:01:58 ==> Patching internal/bytealg
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/chacha8rand
+2026/01/20 10:01:58 ==> Patching internal/chacha8rand
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/sync/atomic
+2026/01/20 10:01:58 ==> Patching sync/atomic
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/runtime/atomic
+2026/01/20 10:01:58 ==> Patching internal/runtime/atomic
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/runtime/sys
+2026/01/20 10:01:58 ==> Patching internal/runtime/sys
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/runtime/maps
+2026/01/20 10:01:58 ==> Patching internal/runtime/maps
+2026/01/20 10:01:58 ==> BuildSSA internal/goarch
+2026/01/20 10:01:58 ==> BuildSSA internal/abi
+2026/01/20 10:01:58 ==> BuildSSA internal/cpu
+2026/01/20 10:01:58 ==> BuildSSA internal/bytealg
+2026/01/20 10:01:58 ==> BuildSSA internal/byteorder
+2026/01/20 10:01:58 ==> BuildSSA internal/chacha8rand
+2026/01/20 10:01:58 ==> BuildSSA internal/coverage/rtcov
+2026/01/20 10:01:58 ==> BuildSSA internal/godebugs
+2026/01/20 10:01:58 ==> BuildSSA internal/goexperiment
+2026/01/20 10:01:58 ==> BuildSSA internal/goos
+2026/01/20 10:01:58 ==> BuildSSA internal/profilerecord
+2026/01/20 10:01:58 ==> BuildSSA internal/runtime/atomic
+2026/01/20 10:01:58 ==> BuildSSA internal/runtime/exithook
+2026/01/20 10:01:58 ==> BuildSSA internal/asan
+2026/01/20 10:01:58 ==> BuildSSA internal/msan
+2026/01/20 10:01:58 ==> BuildSSA internal/race
+2026/01/20 10:01:58 ==> BuildSSA internal/runtime/math
+2026/01/20 10:01:58 ==> BuildSSA internal/runtime/sys
+2026/01/20 10:01:58 ==> BuildSSA internal/runtime/maps
+2026/01/20 10:01:58 ==> BuildSSA internal/runtime/syscall
+2026/01/20 10:01:58 ==> BuildSSA internal/stringslite
+2026/01/20 10:01:58 ==> BuildSSA runtime
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/runtime
+2026/01/20 10:01:58 ==> Patching runtime
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/reflectlite
+2026/01/20 10:01:58 ==> Patching internal/reflectlite
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/itoa
+2026/01/20 10:01:58 ==> Patching internal/itoa
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/math
+2026/01/20 10:01:58 ==> Patching math
+2026/01/20 10:01:58 ==> BuildSSA sync/atomic
+2026/01/20 10:01:58 ==> BuildSSA internal/sync
+2026/01/20 10:01:58 ==> BuildSSA sync
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/sync
+2026/01/20 10:01:58 ==> Patching sync
+2026/01/20 10:01:58 ==> BuildSSA internal/unsafeheader
+2026/01/20 10:01:58 ==> BuildSSA internal/reflectlite
+2026/01/20 10:01:58 ==> BuildSSA errors
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/ffi
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/ffi
+2026/01/20 10:01:58 ==> BuildSSA iter
+2026/01/20 10:01:58 ==> BuildSSA math/bits
+2026/01/20 10:01:58 ==> BuildSSA math
+2026/01/20 10:01:58 ==> BuildSSA unicode/utf8
+2026/01/20 10:01:58 ==> BuildSSA strconv
+2026/01/20 10:01:58 ==> BuildSSA unicode
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/reflect
+2026/01/20 10:01:58 ==> Patching reflect
+2026/01/20 10:01:58 ==> BuildSSA io
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/io
+2026/01/20 10:01:58 ==> Patching io
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/oserror
+2026/01/20 10:01:58 ==> Patching internal/oserror
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/godebug
+2026/01/20 10:01:58 ==> Patching internal/godebug
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/byteorder
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/goarch
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/syscall
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/os
+2026/01/20 10:01:58 ==> BuildSSA internal/itoa
+2026/01/20 10:01:58 ==> BuildSSA internal/oserror
+2026/01/20 10:01:58 ==> BuildSSA syscall
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/syscall
+2026/01/20 10:01:58 ==> Patching syscall
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/net
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/clite/libuv
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/time
+2026/01/20 10:01:58 ==> Patching time
+2026/01/20 10:01:58 ==> BuildSSA path
+2026/01/20 10:01:58 ==> BuildSSA cmp
+2026/01/20 10:01:58 ==> BuildSSA slices
+2026/01/20 10:01:58 ==> BuildSSA internal/bisect
+2026/01/20 10:01:58 ==> BuildSSA internal/godebug
+2026/01/20 10:01:58 ==> BuildSSA time
+2026/01/20 10:01:58 ==> BuildSSA io/fs
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/io/fs
+2026/01/20 10:01:58 ==> Patching io/fs
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/syscall/unix
+2026/01/20 10:01:58 ==> Patching internal/syscall/unix
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/poll
+2026/01/20 10:01:58 ==> Patching internal/poll
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/internal/syscall/execenv
+2026/01/20 10:01:58 ==> Patching internal/syscall/execenv
+2026/01/20 10:01:58 ==> BuildSSA sort
+2026/01/20 10:01:58 ==> BuildSSA github.com/goplus/llgo/runtime/internal/lib/os
+2026/01/20 10:01:58 ==> Patching os
+2026/01/20 10:01:59 ==> BuildSSA reflect
+2026/01/20 10:01:59 ==> BuildSSA internal/fmtsort
+2026/01/20 10:01:59 ==> BuildSSA internal/filepathlite
+2026/01/20 10:01:59 ==> BuildSSA internal/syscall/unix
+2026/01/20 10:01:59 ==> BuildSSA internal/poll
+2026/01/20 10:01:59 ==> BuildSSA internal/syscall/execenv
+2026/01/20 10:01:59 ==> BuildSSA internal/testlog
+2026/01/20 10:01:59 ==> BuildSSA os
+2026/01/20 10:01:59 ==> BuildSSA fmt
+2026/01/20 10:01:59 ==> BuildSSA github.com/goplus/lib/c
+2026/01/20 10:01:59 ==> BuildSSA command-line-arguments
+CACHE MISS: internal/goarch
+internal/goarch
+clang [-emit-llvm -o /root/.cache/go-build/cd/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d.bc -c /tmp/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d-3995711208.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/cd/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d.bc -c /tmp/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d-3995711208.ll -Wno-override-module
+clang [-o /tmp/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d-3114534932.o -c /root/.cache/go-build/cd/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d-3114534932.o -c /root/.cache/go-build/cd/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d.bc -Wno-override-module
+==> Export internal/goarch: /root/.cache/go-build/cd/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d
+ar rcs /tmp/pkg-3647120211.a.tmp-1963194542 /tmp/cd3119dd3cd61e981e910021247e5374592292ab09af26a2e0b1164a6fd5d310-d-3114534932.o
+CACHE MISS: internal/abi
+internal/abi
+clang [-emit-llvm -o /root/.cache/go-build/7d/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d.bc -c /tmp/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d-3589033114.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/7d/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d.bc -c /tmp/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d-3589033114.ll -Wno-override-module
+clang [-o /tmp/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d-230002524.o -c /root/.cache/go-build/7d/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d-230002524.o -c /root/.cache/go-build/7d/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d.bc -Wno-override-module
+==> Export internal/abi: /root/.cache/go-build/7d/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d
+ar rcs /tmp/pkg-1168686024.a.tmp-1974427474 /tmp/7da449cd73f7fbab462a9de180243aa82c4ba894ceb6cdd202008f287dedecf4-d-230002524.o
+CACHE MISS: internal/unsafeheader
+internal/unsafeheader
+clang [-emit-llvm -o /root/.cache/go-build/6d/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d.bc -c /tmp/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d-3817665672.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/6d/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d.bc -c /tmp/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d-3817665672.ll -Wno-override-module
+clang [-o /tmp/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d-114678130.o -c /root/.cache/go-build/6d/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d-114678130.o -c /root/.cache/go-build/6d/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d.bc -Wno-override-module
+==> Export internal/unsafeheader: /root/.cache/go-build/6d/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d
+ar rcs /tmp/pkg-2155277560.a.tmp-3015026842 /tmp/6d6810fa7deb9aa1be5e9f802aca5eed2cfb4ee36b4901952420e1e5f798dd73-d-114678130.o
+CACHE MISS: internal/cpu
+internal/cpu
+clang [-emit-llvm -o /root/.cache/go-build/9e/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d.bc -c /tmp/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d-2131413923.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/9e/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d.bc -c /tmp/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d-2131413923.ll -Wno-override-module
+clang [-o /tmp/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d-3601286737.o -c /root/.cache/go-build/9e/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d-3601286737.o -c /root/.cache/go-build/9e/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d.bc -Wno-override-module
+==> Export internal/cpu: /root/.cache/go-build/9e/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d
+ar rcs /tmp/pkg-4066685692.a.tmp-525100495 /tmp/9edca6401c8218e6b498c061b177d917e34de59f27be099b0e6b8c0eaedc5c26-d-3601286737.o
+CACHE MISS: internal/bytealg
+internal/bytealg
+clang [-emit-llvm -o /root/.cache/go-build/a9/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d.bc -c /tmp/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d-2884830549.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/a9/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d.bc -c /tmp/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d-2884830549.ll -Wno-override-module
+clang [-o /tmp/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d-3022897681.o -c /root/.cache/go-build/a9/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d-3022897681.o -c /root/.cache/go-build/a9/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d.bc -Wno-override-module
+==> Export internal/bytealg: /root/.cache/go-build/a9/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d
+ar rcs /tmp/pkg-588705422.a.tmp-1158876602 /tmp/a9eb968fea07961aa8758a648dffca719860c8972e84a4885a4b8a7e7052a2ce-d-3022897681.o
+CACHE MISS: internal/byteorder
+internal/byteorder
+clang [-emit-llvm -o /root/.cache/go-build/68/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d.bc -c /tmp/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d-2770545635.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/68/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d.bc -c /tmp/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d-2770545635.ll -Wno-override-module
+clang [-o /tmp/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d-4096982268.o -c /root/.cache/go-build/68/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d-4096982268.o -c /root/.cache/go-build/68/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d.bc -Wno-override-module
+==> Export internal/byteorder: /root/.cache/go-build/68/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d
+ar rcs /tmp/pkg-1243732049.a.tmp-3735787278 /tmp/68816292036a554e929c0ae9f849f86e266334c527216a5b662fba4c8ddf7f53-d-4096982268.o
+CACHE MISS: internal/chacha8rand
+internal/chacha8rand
+clang [-emit-llvm -o /root/.cache/go-build/e1/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d.bc -c /tmp/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d-1399617142.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/e1/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d.bc -c /tmp/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d-1399617142.ll -Wno-override-module
+clang [-o /tmp/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d-3007513767.o -c /root/.cache/go-build/e1/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d-3007513767.o -c /root/.cache/go-build/e1/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d.bc -Wno-override-module
+==> Export internal/chacha8rand: /root/.cache/go-build/e1/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d
+ar rcs /tmp/pkg-3523211185.a.tmp-1089604588 /tmp/e1d687d3e5345d7ae6a9348ad3c2da013a95ef1448568333bd98fdf5f2154b25-d-3007513767.o
+CACHE MISS: internal/coverage/rtcov
+internal/coverage/rtcov
+clang [-emit-llvm -o /root/.cache/go-build/06/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d.bc -c /tmp/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d-3143976820.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/06/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d.bc -c /tmp/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d-3143976820.ll -Wno-override-module
+clang [-o /tmp/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d-1321966141.o -c /root/.cache/go-build/06/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d-1321966141.o -c /root/.cache/go-build/06/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d.bc -Wno-override-module
+==> Export internal/coverage/rtcov: /root/.cache/go-build/06/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d
+ar rcs /tmp/pkg-3253398332.a.tmp-182709821 /tmp/06e956c8f45c8e555ec85105ba3ac76cb7f5257ea8a56b329f518dbcd5d9bfe4-d-1321966141.o
+CACHE MISS: internal/godebugs
+internal/godebugs
+clang [-emit-llvm -o /root/.cache/go-build/d3/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d.bc -c /tmp/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d-1688115436.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/d3/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d.bc -c /tmp/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d-1688115436.ll -Wno-override-module
+clang [-o /tmp/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d-3427778311.o -c /root/.cache/go-build/d3/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d-3427778311.o -c /root/.cache/go-build/d3/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d.bc -Wno-override-module
+==> Export internal/godebugs: /root/.cache/go-build/d3/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d
+ar rcs /tmp/pkg-3337788475.a.tmp-2362453493 /tmp/d3d6f9520bebba2ba0d91a01c62f3a447c3570738d4038c63481a73d0bab82f0-d-3427778311.o
+CACHE MISS: internal/goexperiment
+internal/goexperiment
+clang [-emit-llvm -o /root/.cache/go-build/58/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d.bc -c /tmp/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d-3556903288.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/58/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d.bc -c /tmp/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d-3556903288.ll -Wno-override-module
+clang [-o /tmp/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d-212005084.o -c /root/.cache/go-build/58/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d-212005084.o -c /root/.cache/go-build/58/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d.bc -Wno-override-module
+==> Export internal/goexperiment: /root/.cache/go-build/58/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d
+ar rcs /tmp/pkg-2545413326.a.tmp-470540505 /tmp/58b7edadc320ef283612442073487ddb5f573124933de03e9e418e04791e53db-d-212005084.o
+CACHE MISS: internal/goos
+internal/goos
+clang [-emit-llvm -o /root/.cache/go-build/e3/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d.bc -c /tmp/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d-2709199672.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/e3/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d.bc -c /tmp/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d-2709199672.ll -Wno-override-module
+clang [-o /tmp/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d-1789245857.o -c /root/.cache/go-build/e3/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d-1789245857.o -c /root/.cache/go-build/e3/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d.bc -Wno-override-module
+==> Export internal/goos: /root/.cache/go-build/e3/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d
+ar rcs /tmp/pkg-3229185609.a.tmp-1685810629 /tmp/e3700d2a2307429b85b25c81c3765dffe58439d26de917a179ac9608600f4d44-d-1789245857.o
+CACHE MISS: internal/profilerecord
+internal/profilerecord
+clang [-emit-llvm -o /root/.cache/go-build/0b/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d.bc -c /tmp/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d-12793250.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/0b/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d.bc -c /tmp/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d-12793250.ll -Wno-override-module
+clang [-o /tmp/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d-1378717533.o -c /root/.cache/go-build/0b/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d-1378717533.o -c /root/.cache/go-build/0b/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d.bc -Wno-override-module
+==> Export internal/profilerecord: /root/.cache/go-build/0b/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d
+ar rcs /tmp/pkg-806819795.a.tmp-356153489 /tmp/0b8aea6a5de410eb0005cfb88cbe0711a64866b6939cb182940a3e2627c1b369-d-1378717533.o
+CACHE MISS: internal/runtime/atomic
+internal/runtime/atomic
+clang [-emit-llvm -o /root/.cache/go-build/86/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d.bc -c /tmp/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d-477676179.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/86/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d.bc -c /tmp/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d-477676179.ll -Wno-override-module
+clang [-o /tmp/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d-492600424.o -c /root/.cache/go-build/86/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d-492600424.o -c /root/.cache/go-build/86/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d.bc -Wno-override-module
+==> Export internal/runtime/atomic: /root/.cache/go-build/86/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d
+ar rcs /tmp/pkg-2186450198.a.tmp-210168719 /tmp/86e828a4ec9112007470096aad5951da78a7d5fa14b7787f58197f801549097a-d-492600424.o
+CACHE MISS: internal/runtime/exithook
+internal/runtime/exithook
+clang [-emit-llvm -o /root/.cache/go-build/80/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d.bc -c /tmp/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d-998745002.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/80/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d.bc -c /tmp/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d-998745002.ll -Wno-override-module
+clang [-o /tmp/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d-3747163536.o -c /root/.cache/go-build/80/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d-3747163536.o -c /root/.cache/go-build/80/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d.bc -Wno-override-module
+==> Export internal/runtime/exithook: /root/.cache/go-build/80/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d
+ar rcs /tmp/pkg-2940414819.a.tmp-953805897 /tmp/809d5b77fe720a7cfe167c9d75f3aa921f91a9853b4c6157f2850e9718e09067-d-3747163536.o
+CACHE MISS: internal/asan
+internal/asan
+clang [-emit-llvm -o /root/.cache/go-build/f5/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d.bc -c /tmp/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d-1326838653.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/f5/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d.bc -c /tmp/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d-1326838653.ll -Wno-override-module
+clang [-o /tmp/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d-1620023074.o -c /root/.cache/go-build/f5/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d-1620023074.o -c /root/.cache/go-build/f5/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d.bc -Wno-override-module
+==> Export internal/asan: /root/.cache/go-build/f5/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d
+ar rcs /tmp/pkg-2174068204.a.tmp-1408881658 /tmp/f524db881b073f6a8b84526f14c64243499a7802aeb282f56898425f8f636d89-d-1620023074.o
+CACHE MISS: internal/msan
+internal/msan
+clang [-emit-llvm -o /root/.cache/go-build/35/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d.bc -c /tmp/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d-3841360714.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/35/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d.bc -c /tmp/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d-3841360714.ll -Wno-override-module
+clang [-o /tmp/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d-200326300.o -c /root/.cache/go-build/35/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d-200326300.o -c /root/.cache/go-build/35/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d.bc -Wno-override-module
+==> Export internal/msan: /root/.cache/go-build/35/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d
+ar rcs /tmp/pkg-3681310792.a.tmp-2467064981 /tmp/3573765f274d6dd75440cd777aad3142d25c49735df02b0b6b9f1ded0ff3cd3d-d-200326300.o
+CACHE MISS: internal/race
+internal/race
+clang [-emit-llvm -o /root/.cache/go-build/29/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d.bc -c /tmp/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d-406667944.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/29/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d.bc -c /tmp/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d-406667944.ll -Wno-override-module
+clang [-o /tmp/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d-1267780161.o -c /root/.cache/go-build/29/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d-1267780161.o -c /root/.cache/go-build/29/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d.bc -Wno-override-module
+==> Export internal/race: /root/.cache/go-build/29/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d
+ar rcs /tmp/pkg-1921056557.a.tmp-1755868845 /tmp/29c50a4547ab16105c17e9c68cb0c37d9e5bd1be496acf3251888fd20d0deaf5-d-1267780161.o
+CACHE MISS: internal/runtime/math
+internal/runtime/math
+clang [-emit-llvm -o /root/.cache/go-build/2c/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d.bc -c /tmp/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d-1220340904.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/2c/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d.bc -c /tmp/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d-1220340904.ll -Wno-override-module
+clang [-o /tmp/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d-173086989.o -c /root/.cache/go-build/2c/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d-173086989.o -c /root/.cache/go-build/2c/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d.bc -Wno-override-module
+==> Export internal/runtime/math: /root/.cache/go-build/2c/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d
+ar rcs /tmp/pkg-2798001526.a.tmp-1181386394 /tmp/2c4f4b0317778966a1abcdf3a8bbd3856458dbed1978354f0c81b3badf89fa4f-d-173086989.o
+CACHE MISS: internal/runtime/sys
+internal/runtime/sys
+clang [-emit-llvm -o /root/.cache/go-build/08/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d.bc -c /tmp/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d-1000307168.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/08/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d.bc -c /tmp/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d-1000307168.ll -Wno-override-module
+clang [-o /tmp/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d-3828284605.o -c /root/.cache/go-build/08/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d-3828284605.o -c /root/.cache/go-build/08/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d.bc -Wno-override-module
+==> Export internal/runtime/sys: /root/.cache/go-build/08/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d
+ar rcs /tmp/pkg-594249569.a.tmp-4134447387 /tmp/08648ffb89acd4ffa2a8fc3442bac576ec2be6dfa60f75840e8431ded923a15a-d-3828284605.o
+CACHE MISS: internal/runtime/maps
+internal/runtime/maps
+clang [-emit-llvm -o /root/.cache/go-build/92/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d.bc -c /tmp/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d-2218203486.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/92/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d.bc -c /tmp/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d-2218203486.ll -Wno-override-module
+clang [-o /tmp/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d-1253442729.o -c /root/.cache/go-build/92/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d-1253442729.o -c /root/.cache/go-build/92/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d.bc -Wno-override-module
+==> Export internal/runtime/maps: /root/.cache/go-build/92/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d
+ar rcs /tmp/pkg-1533949781.a.tmp-2105412187 /tmp/92b8ed2b4a8f03a315d78a44dbe380b8a1518a2e5a414d11ba1601195e29df90-d-1253442729.o
+CACHE MISS: internal/runtime/syscall
+internal/runtime/syscall
+clang [-emit-llvm -o /root/.cache/go-build/a6/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d.bc -c /tmp/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d-3726213249.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/a6/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d.bc -c /tmp/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d-3726213249.ll -Wno-override-module
+clang [-o /tmp/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d-1955160203.o -c /root/.cache/go-build/a6/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d-1955160203.o -c /root/.cache/go-build/a6/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d.bc -Wno-override-module
+==> Export internal/runtime/syscall: /root/.cache/go-build/a6/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d
+ar rcs /tmp/pkg-737485914.a.tmp-529364022 /tmp/a60533afff44cb3916b5a30b008b277fd5264472b680415fc2ae9b2749d8cd05-d-1955160203.o
+CACHE MISS: internal/stringslite
+internal/stringslite
+clang [-emit-llvm -o /root/.cache/go-build/d0/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d.bc -c /tmp/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d-4182014040.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/d0/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d.bc -c /tmp/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d-4182014040.ll -Wno-override-module
+clang [-o /tmp/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d-3880431902.o -c /root/.cache/go-build/d0/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d-3880431902.o -c /root/.cache/go-build/d0/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d.bc -Wno-override-module
+==> Export internal/stringslite: /root/.cache/go-build/d0/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d
+ar rcs /tmp/pkg-2669413033.a.tmp-3637364328 /tmp/d0e4561fb8575b09c1de0868687b30393ac1542e0a812a6b40838ba76ee8a76b-d-3880431902.o
+CACHE MISS: runtime
+runtime
+clang [-x c -o /root/.cache/go-build/45/45f31334ade3e1fef5c07c54f9e2b99f7deda96e1ae16171868f51d1b7e07557-druntime.c.o -c /root/llgo/runtime/internal/lib/runtime/_wrap/runtime.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -x c -o /root/.cache/go-build/45/45f31334ade3e1fef5c07c54f9e2b99f7deda96e1ae16171868f51d1b7e07557-druntime.c.o -c /root/llgo/runtime/internal/lib/runtime/_wrap/runtime.c
+clang [-emit-llvm -o /root/.cache/go-build/fe/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d.bc -c /tmp/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d-2554062771.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/fe/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d.bc -c /tmp/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d-2554062771.ll -Wno-override-module
+clang [-o /tmp/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d-226263630.o -c /root/.cache/go-build/fe/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d-226263630.o -c /root/.cache/go-build/fe/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d.bc -Wno-override-module
+==> Export runtime: /root/.cache/go-build/fe/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d
+ar rcs /tmp/pkg-169047024.a.tmp-2051423607 /root/.cache/go-build/45/45f31334ade3e1fef5c07c54f9e2b99f7deda96e1ae16171868f51d1b7e07557-druntime.c.o /tmp/fe62daaeb9a556cd1affd4baeac4c182c0fe877f296e5fbf2f6427f6de9b529f-d-226263630.o
+CACHE MISS: internal/reflectlite
+internal/reflectlite
+clang [-emit-llvm -o /root/.cache/go-build/e2/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d.bc -c /tmp/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d-3792015448.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/e2/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d.bc -c /tmp/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d-3792015448.ll -Wno-override-module
+clang [-o /tmp/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d-3497812032.o -c /root/.cache/go-build/e2/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d-3497812032.o -c /root/.cache/go-build/e2/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d.bc -Wno-override-module
+==> Export internal/reflectlite: /root/.cache/go-build/e2/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d
+ar rcs /tmp/pkg-700316911.a.tmp-2760945931 /tmp/e2ed9d63d84d787d08611cc01f2031bd4643d7207b0aebf4e54ca75c0a5a3217-d-3497812032.o
+CACHE MISS: errors
+errors
+clang [-emit-llvm -o /root/.cache/go-build/81/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d.bc -c /tmp/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d-617752284.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/81/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d.bc -c /tmp/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d-617752284.ll -Wno-override-module
+clang [-o /tmp/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d-2354250326.o -c /root/.cache/go-build/81/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d-2354250326.o -c /root/.cache/go-build/81/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d.bc -Wno-override-module
+==> Export errors: /root/.cache/go-build/81/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d
+ar rcs /tmp/pkg-309973074.a.tmp-3578512854 /tmp/81d02c5146d44ab8eb9e863fe9807c6ca474d0e9bac15921610a1eed57fc23d3-d-2354250326.o
+CACHE MISS: cmp
+cmp
+clang [-emit-llvm -o /root/.cache/go-build/94/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d.bc -c /tmp/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d-1135051433.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/94/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d.bc -c /tmp/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d-1135051433.ll -Wno-override-module
+clang [-o /tmp/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d-1063120959.o -c /root/.cache/go-build/94/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d-1063120959.o -c /root/.cache/go-build/94/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d.bc -Wno-override-module
+==> Export cmp: /root/.cache/go-build/94/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d
+ar rcs /tmp/pkg-1443474518.a.tmp-3460106553 /tmp/9496f1dbc13fdc9b784d1fdd03979cf381da4973b6f76ad83ffe8d72af86b955-d-1063120959.o
+CACHE MISS: internal/itoa
+internal/itoa
+clang [-emit-llvm -o /root/.cache/go-build/f8/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d.bc -c /tmp/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d-3973934164.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/f8/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d.bc -c /tmp/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d-3973934164.ll -Wno-override-module
+clang [-o /tmp/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d-1783366523.o -c /root/.cache/go-build/f8/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d-1783366523.o -c /root/.cache/go-build/f8/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d.bc -Wno-override-module
+==> Export internal/itoa: /root/.cache/go-build/f8/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d
+ar rcs /tmp/pkg-328648477.a.tmp-2178497622 /tmp/f82cdfbc87d02013516e35998573725ce1280ca8019b61ad6d70290cf0fd93da-d-1783366523.o
+CACHE MISS: iter
+iter
+clang [-emit-llvm -o /root/.cache/go-build/73/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d.bc -c /tmp/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d-1706459797.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/73/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d.bc -c /tmp/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d-1706459797.ll -Wno-override-module
+clang [-o /tmp/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d-3680641006.o -c /root/.cache/go-build/73/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d-3680641006.o -c /root/.cache/go-build/73/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d.bc -Wno-override-module
+==> Export iter: /root/.cache/go-build/73/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d
+ar rcs /tmp/pkg-2183148428.a.tmp-4266603002 /tmp/738a4669837edac2624bb90f29c316b852d2da71a74877f9fe5af748ce774418-d-3680641006.o
+CACHE MISS: math/bits
+math/bits
+clang [-emit-llvm -o /root/.cache/go-build/60/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d.bc -c /tmp/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d-3869276862.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/60/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d.bc -c /tmp/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d-3869276862.ll -Wno-override-module
+clang [-o /tmp/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d-3657772404.o -c /root/.cache/go-build/60/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d-3657772404.o -c /root/.cache/go-build/60/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d.bc -Wno-override-module
+==> Export math/bits: /root/.cache/go-build/60/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d
+ar rcs /tmp/pkg-3262252521.a.tmp-3795457118 /tmp/60dbafd6ff6db48afa5c4b9807127e3d74dd220f2c9b4563fc39eeafbfbc37e8-d-3657772404.o
+CACHE MISS: math
+math
+clang [-emit-llvm -o /root/.cache/go-build/41/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d.bc -c /tmp/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d-1464771939.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/41/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d.bc -c /tmp/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d-1464771939.ll -Wno-override-module
+clang [-o /tmp/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d-174867323.o -c /root/.cache/go-build/41/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d-174867323.o -c /root/.cache/go-build/41/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d.bc -Wno-override-module
+==> Export math: /root/.cache/go-build/41/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d
+ar rcs /tmp/pkg-3637276532.a.tmp-3402335721 /tmp/4127a98f0fbb96974295b071d49bea23cb1b72ecfd6e07734a5ad1e9810cbebd-d-174867323.o
+CACHE MISS: unicode/utf8
+unicode/utf8
+clang [-emit-llvm -o /root/.cache/go-build/f6/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d.bc -c /tmp/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d-1880440089.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/f6/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d.bc -c /tmp/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d-1880440089.ll -Wno-override-module
+clang [-o /tmp/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d-149419449.o -c /root/.cache/go-build/f6/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d-149419449.o -c /root/.cache/go-build/f6/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d.bc -Wno-override-module
+==> Export unicode/utf8: /root/.cache/go-build/f6/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d
+ar rcs /tmp/pkg-1271876629.a.tmp-1540846207 /tmp/f69180ae914f599af82dd3e9acb7e68dae75fa600f2f6bc2f65ad96a86ddd185-d-149419449.o
+CACHE MISS: strconv
+strconv
+clang [-emit-llvm -o /root/.cache/go-build/5d/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d.bc -c /tmp/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d-1375589052.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/5d/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d.bc -c /tmp/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d-1375589052.ll -Wno-override-module
+clang [-o /tmp/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d-2986059117.o -c /root/.cache/go-build/5d/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d-2986059117.o -c /root/.cache/go-build/5d/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d.bc -Wno-override-module
+==> Export strconv: /root/.cache/go-build/5d/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d
+ar rcs /tmp/pkg-1836746113.a.tmp-3574532223 /tmp/5d332668b0210fdbeac55d7022057da3afa321df2d50c9c34c8bf3a8b739fa7b-d-2986059117.o
+CACHE MISS: sync/atomic
+sync/atomic
+clang [-emit-llvm -o /root/.cache/go-build/3b/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d.bc -c /tmp/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d-2076567116.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/3b/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d.bc -c /tmp/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d-2076567116.ll -Wno-override-module
+clang [-o /tmp/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d-1214806053.o -c /root/.cache/go-build/3b/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d-1214806053.o -c /root/.cache/go-build/3b/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d.bc -Wno-override-module
+==> Export sync/atomic: /root/.cache/go-build/3b/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d
+ar rcs /tmp/pkg-3167498910.a.tmp-2927533201 /tmp/3b4164918c655361334e001c1a6ce3a918d69f1f153d85dab53793c3a935e880-d-1214806053.o
+CACHE MISS: internal/sync
+internal/sync
+clang [-emit-llvm -o /root/.cache/go-build/92/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d.bc -c /tmp/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d-1793662170.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/92/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d.bc -c /tmp/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d-1793662170.ll -Wno-override-module
+clang [-o /tmp/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d-455132067.o -c /root/.cache/go-build/92/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d-455132067.o -c /root/.cache/go-build/92/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d.bc -Wno-override-module
+==> Export internal/sync: /root/.cache/go-build/92/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d
+ar rcs /tmp/pkg-3465026841.a.tmp-1392000358 /tmp/92bbe12f3b3ace5a3338273ae2c55f3b3e75f5272f2e0aab8d6476b3411aae4e-d-455132067.o
+CACHE MISS: sync
+sync
+clang [-emit-llvm -o /root/.cache/go-build/93/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d.bc -c /tmp/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d-1036967788.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/93/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d.bc -c /tmp/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d-1036967788.ll -Wno-override-module
+clang [-o /tmp/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d-3139923413.o -c /root/.cache/go-build/93/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d-3139923413.o -c /root/.cache/go-build/93/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d.bc -Wno-override-module
+==> Export sync: /root/.cache/go-build/93/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d
+ar rcs /tmp/pkg-329711913.a.tmp-3312959725 /tmp/93de7070cb92fd0c602d5ac89341a906fffa717da8af96a1d6ea44d06fe1051c-d-3139923413.o
+CACHE MISS: unicode
+unicode
+clang [-emit-llvm -o /root/.cache/go-build/1c/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d.bc -c /tmp/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d-1197673200.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/1c/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d.bc -c /tmp/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d-1197673200.ll -Wno-override-module
+clang [-o /tmp/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d-2687875879.o -c /root/.cache/go-build/1c/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d-2687875879.o -c /root/.cache/go-build/1c/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d.bc -Wno-override-module
+==> Export unicode: /root/.cache/go-build/1c/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d
+ar rcs /tmp/pkg-2868281638.a.tmp-4105447295 /tmp/1c4dbdb41ed6385649a2be0725e5602915cc610ddcf7cc74680f73f05acbc85d-d-2687875879.o
+CACHE MISS: reflect
+reflect
+clang [-emit-llvm -o /root/.cache/go-build/40/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d.bc -c /tmp/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d-2806545456.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/40/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d.bc -c /tmp/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d-2806545456.ll -Wno-override-module
+clang [-o /tmp/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d-292946346.o -c /root/.cache/go-build/40/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d-292946346.o -c /root/.cache/go-build/40/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d.bc -Wno-override-module
+==> Export reflect: /root/.cache/go-build/40/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d
+ar rcs /tmp/pkg-3639394956.a.tmp-1628217704 /tmp/40d746bf48709829aa1ad9997f61e53efcdcf5bbd67066ca357a3c493d40738b-d-292946346.o
+CACHE MISS: slices
+slices
+clang [-emit-llvm -o /root/.cache/go-build/d0/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d.bc -c /tmp/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d-3957926986.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/d0/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d.bc -c /tmp/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d-3957926986.ll -Wno-override-module
+clang [-o /tmp/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d-1275387392.o -c /root/.cache/go-build/d0/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d-1275387392.o -c /root/.cache/go-build/d0/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d.bc -Wno-override-module
+==> Export slices: /root/.cache/go-build/d0/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d
+ar rcs /tmp/pkg-1731187492.a.tmp-3598906407 /tmp/d0b4a4e1ba7af5734ac27e14b1632de2f2f702caaa7b2f3ea4100bc3e9863514-d-1275387392.o
+CACHE MISS: internal/fmtsort
+internal/fmtsort
+clang [-emit-llvm -o /root/.cache/go-build/e8/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d.bc -c /tmp/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d-4146551272.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/e8/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d.bc -c /tmp/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d-4146551272.ll -Wno-override-module
+clang [-o /tmp/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d-1496551320.o -c /root/.cache/go-build/e8/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d-1496551320.o -c /root/.cache/go-build/e8/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d.bc -Wno-override-module
+==> Export internal/fmtsort: /root/.cache/go-build/e8/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d
+ar rcs /tmp/pkg-1834610008.a.tmp-2983570584 /tmp/e8b9c492603eb3c7baaa11b335d4be8801f24c4cbce41529e35056c462fab075-d-1496551320.o
+CACHE MISS: io
+io
+clang [-emit-llvm -o /root/.cache/go-build/68/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d.bc -c /tmp/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d-273969666.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/68/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d.bc -c /tmp/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d-273969666.ll -Wno-override-module
+clang [-o /tmp/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d-4040478160.o -c /root/.cache/go-build/68/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d-4040478160.o -c /root/.cache/go-build/68/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d.bc -Wno-override-module
+==> Export io: /root/.cache/go-build/68/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d
+ar rcs /tmp/pkg-661346703.a.tmp-2333958221 /tmp/68b24844d85dfd690afc163db13ed1c2f8c157bbd6a4cfdbe100fd90a1ec6d48-d-4040478160.o
+CACHE MISS: internal/oserror
+internal/oserror
+clang [-emit-llvm -o /root/.cache/go-build/8c/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d.bc -c /tmp/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d-4013187120.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/8c/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d.bc -c /tmp/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d-4013187120.ll -Wno-override-module
+clang [-o /tmp/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d-1991583831.o -c /root/.cache/go-build/8c/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d-1991583831.o -c /root/.cache/go-build/8c/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d.bc -Wno-override-module
+==> Export internal/oserror: /root/.cache/go-build/8c/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d
+ar rcs /tmp/pkg-3760279178.a.tmp-2425101711 /tmp/8cd3547fa308c547167a32133895efba354558334d59b2bb587b8856b5f16122-d-1991583831.o
+CACHE MISS: path
+path
+clang [-emit-llvm -o /root/.cache/go-build/75/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d.bc -c /tmp/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d-1451984027.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/75/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d.bc -c /tmp/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d-1451984027.ll -Wno-override-module
+clang [-o /tmp/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d-1104410104.o -c /root/.cache/go-build/75/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d-1104410104.o -c /root/.cache/go-build/75/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d.bc -Wno-override-module
+==> Export path: /root/.cache/go-build/75/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d
+ar rcs /tmp/pkg-1558275441.a.tmp-2268997774 /tmp/7531728aaebf5690cf8069f7b6fdefa0ff035cb0294c297635995730defd1dbb-d-1104410104.o
+CACHE MISS: internal/bisect
+internal/bisect
+clang [-emit-llvm -o /root/.cache/go-build/fe/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d.bc -c /tmp/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d-1837996094.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/fe/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d.bc -c /tmp/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d-1837996094.ll -Wno-override-module
+clang [-o /tmp/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d-1409628947.o -c /root/.cache/go-build/fe/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d-1409628947.o -c /root/.cache/go-build/fe/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d.bc -Wno-override-module
+==> Export internal/bisect: /root/.cache/go-build/fe/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d
+ar rcs /tmp/pkg-4099201558.a.tmp-3787153545 /tmp/fe67b1a92ae0053da6cc0eed48ed212d386171539b83064987f716e9a02fb817-d-1409628947.o
+CACHE MISS: internal/godebug
+internal/godebug
+clang [-emit-llvm -o /root/.cache/go-build/b0/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d.bc -c /tmp/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d-3503699895.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/b0/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d.bc -c /tmp/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d-3503699895.ll -Wno-override-module
+clang [-o /tmp/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d-3589791464.o -c /root/.cache/go-build/b0/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d-3589791464.o -c /root/.cache/go-build/b0/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d.bc -Wno-override-module
+==> Export internal/godebug: /root/.cache/go-build/b0/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d
+ar rcs /tmp/pkg-203482811.a.tmp-4111154280 /tmp/b0f889b6a8544f8c2f545c5e01ddcdf5ed98a4642b154ea36431eb36d3c9adb7-d-3589791464.o
+CACHE MISS: syscall
+syscall
+clang [-emit-llvm -o /root/.cache/go-build/47/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d.bc -c /tmp/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d-596343403.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/47/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d.bc -c /tmp/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d-596343403.ll -Wno-override-module
+clang [-o /tmp/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d-3015719849.o -c /root/.cache/go-build/47/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d-3015719849.o -c /root/.cache/go-build/47/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d.bc -Wno-override-module
+==> Export syscall: /root/.cache/go-build/47/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d
+ar rcs /tmp/pkg-1841704149.a.tmp-1598690773 /tmp/479cbd2a7df2134bcb77d3aa3fed2a185b83bea01923d2acb8fae30ee4e12116-d-3015719849.o
+CACHE MISS: time
+time
+clang [-emit-llvm -o /root/.cache/go-build/4f/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d.bc -c /tmp/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d-69508532.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/4f/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d.bc -c /tmp/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d-69508532.ll -Wno-override-module
+clang [-o /tmp/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d-1564317621.o -c /root/.cache/go-build/4f/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d-1564317621.o -c /root/.cache/go-build/4f/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d.bc -Wno-override-module
+==> Export time: /root/.cache/go-build/4f/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d
+ar rcs /tmp/pkg-4266367128.a.tmp-751163895 /tmp/4f8606991b0b4ca43cc36f0e4093dd047231508318f9271f289d6e134e69294d-d-1564317621.o
+CACHE MISS: io/fs
+io/fs
+clang [-emit-llvm -o /root/.cache/go-build/cb/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d.bc -c /tmp/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d-3914661321.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/cb/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d.bc -c /tmp/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d-3914661321.ll -Wno-override-module
+clang [-o /tmp/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d-2841048243.o -c /root/.cache/go-build/cb/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d-2841048243.o -c /root/.cache/go-build/cb/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d.bc -Wno-override-module
+==> Export io/fs: /root/.cache/go-build/cb/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d
+ar rcs /tmp/pkg-2823506461.a.tmp-2425011473 /tmp/cb327848ce4c5cd353494d363189e31d8685e4f7eea78d7a8c9a6a77868ef7f9-d-2841048243.o
+CACHE MISS: internal/filepathlite
+internal/filepathlite
+clang [-emit-llvm -o /root/.cache/go-build/67/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d.bc -c /tmp/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d-2546248819.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/67/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d.bc -c /tmp/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d-2546248819.ll -Wno-override-module
+clang [-o /tmp/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d-1549609881.o -c /root/.cache/go-build/67/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d-1549609881.o -c /root/.cache/go-build/67/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d.bc -Wno-override-module
+==> Export internal/filepathlite: /root/.cache/go-build/67/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d
+ar rcs /tmp/pkg-38320748.a.tmp-1998282674 /tmp/675e7e7c8a6918c336e3237c3ec0e035ba24be29eeaf5f2b596dca06de88f94e-d-1549609881.o
+CACHE MISS: internal/syscall/unix
+internal/syscall/unix
+clang [-x c -o /root/.cache/go-build/50/509cfd35684b13bb83f50a958d5feab1765a6e21d3b193b43f975629f1c7226e-dfcntl_unix.c.o -c /root/llgo/runtime/internal/lib/internal/syscall/unix/_unix/fcntl_unix.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -x c -o /root/.cache/go-build/50/509cfd35684b13bb83f50a958d5feab1765a6e21d3b193b43f975629f1c7226e-dfcntl_unix.c.o -c /root/llgo/runtime/internal/lib/internal/syscall/unix/_unix/fcntl_unix.c
+clang [-emit-llvm -o /root/.cache/go-build/11/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d.bc -c /tmp/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d-3818219054.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/11/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d.bc -c /tmp/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d-3818219054.ll -Wno-override-module
+clang [-o /tmp/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d-3358996835.o -c /root/.cache/go-build/11/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d-3358996835.o -c /root/.cache/go-build/11/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d.bc -Wno-override-module
+==> Export internal/syscall/unix: /root/.cache/go-build/11/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d
+ar rcs /tmp/pkg-27098381.a.tmp-4285199549 /root/.cache/go-build/50/509cfd35684b13bb83f50a958d5feab1765a6e21d3b193b43f975629f1c7226e-dfcntl_unix.c.o /tmp/114ee390417e1f61c508564e0a40deafe1cc01d51cdc589fcea7e913eefa316a-d-3358996835.o
+CACHE MISS: internal/poll
+internal/poll
+clang [-emit-llvm -o /root/.cache/go-build/53/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d.bc -c /tmp/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d-2058625327.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/53/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d.bc -c /tmp/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d-2058625327.ll -Wno-override-module
+clang [-o /tmp/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d-1899870227.o -c /root/.cache/go-build/53/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d-1899870227.o -c /root/.cache/go-build/53/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d.bc -Wno-override-module
+==> Export internal/poll: /root/.cache/go-build/53/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d
+ar rcs /tmp/pkg-4041549029.a.tmp-3097945272 /tmp/536a1c8de3829546af45ea325a8f40e0d7b267f587f75b44a454576be6b4569d-d-1899870227.o
+CACHE MISS: internal/syscall/execenv
+internal/syscall/execenv
+clang [-emit-llvm -o /root/.cache/go-build/84/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d.bc -c /tmp/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d-3945575192.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/84/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d.bc -c /tmp/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d-3945575192.ll -Wno-override-module
+clang [-o /tmp/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d-2718730917.o -c /root/.cache/go-build/84/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d-2718730917.o -c /root/.cache/go-build/84/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d.bc -Wno-override-module
+==> Export internal/syscall/execenv: /root/.cache/go-build/84/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d
+ar rcs /tmp/pkg-3772794801.a.tmp-1729540535 /tmp/841513ece839351effbf28e993fa7ffe5adb8e0a9b2449c922bb3c6c1a0e3649-d-2718730917.o
+CACHE MISS: internal/testlog
+internal/testlog
+clang [-emit-llvm -o /root/.cache/go-build/71/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d.bc -c /tmp/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d-33074440.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/71/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d.bc -c /tmp/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d-33074440.ll -Wno-override-module
+clang [-o /tmp/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d-2966181645.o -c /root/.cache/go-build/71/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d-2966181645.o -c /root/.cache/go-build/71/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d.bc -Wno-override-module
+==> Export internal/testlog: /root/.cache/go-build/71/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d
+ar rcs /tmp/pkg-2615176584.a.tmp-724365109 /tmp/7168537ab7d45eec833e62efd45d5f9959490499d5d6ef36390d987687a49d81-d-2966181645.o
+CACHE MISS: os
+os
+clang [-emit-llvm -o /root/.cache/go-build/e5/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d.bc -c /tmp/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d-697500209.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/e5/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d.bc -c /tmp/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d-697500209.ll -Wno-override-module
+clang [-o /tmp/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d-3764110599.o -c /root/.cache/go-build/e5/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d-3764110599.o -c /root/.cache/go-build/e5/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d.bc -Wno-override-module
+==> Export os: /root/.cache/go-build/e5/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d
+ar rcs /tmp/pkg-2578601877.a.tmp-3527052303 /tmp/e59411327340e532ea4b02e5edc5dd7bc04168b7cee47b38e8f8f14d04784f5c-d-3764110599.o
+CACHE MISS: fmt
+fmt
+clang [-emit-llvm -o /root/.cache/go-build/bb/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d.bc -c /tmp/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d-3250098749.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/bb/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d.bc -c /tmp/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d-3250098749.ll -Wno-override-module
+clang [-o /tmp/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d-4063206772.o -c /root/.cache/go-build/bb/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d-4063206772.o -c /root/.cache/go-build/bb/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d.bc -Wno-override-module
+==> Export fmt: /root/.cache/go-build/bb/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d
+ar rcs /tmp/pkg-365338388.a.tmp-3299947358 /tmp/bbc5e2ce80048532d47e3712cc34c5ad6938c031b5d2aef51fbb049f51834ccf-d-4063206772.o
+CACHE MISS: command-line-arguments
+command-line-arguments
+2026/01/20 10:02:05 ==> NewFunc command-line-arguments.init type: <nil> func() ftype: 1
+2026/01/20 10:02:05 NewFunc command-line-arguments.init func() hasFreeVars: false
+2026/01/20 10:02:05 ==> NewVar command-line-arguments.init$guard *bool
+2026/01/20 10:02:05 ==> NewFunc command-line-arguments.main type: <nil> func() ftype: 1
+2026/01/20 10:02:05 NewFunc command-line-arguments.main func() hasFreeVars: false
+# Name: command-line-arguments.init
+# Package: command-line-arguments
+# Synthetic: package initializer
+func init():
+0:                                                                entry P:0 S:2
+	t0 = *init$guard                                                   bool
+	if t0 goto 2 else 1
+1:                                                           init.start P:1 S:1
+	*init$guard = true:bool
+	t1 = fmt.init()                                                      ()
+	t2 = github.com/goplus/lib/c.init()                                  ()
+	jump 2
+2:                                                            init.done P:2 S:0
+	return
+
+2026/01/20 10:02:05 ==> FuncBody command-line-arguments.init
+2026/01/20 10:02:05 Block _llgo_0:
+2026/01/20 10:02:05 UnOp *, @"command-line-arguments.init$guard" = global i1 false, align 1
+2026/01/20 10:02:05 Load @"command-line-arguments.init$guard" = global i1 false, align 1
+2026/01/20 10:02:05 If   %0 = load i1, ptr @"command-line-arguments.init$guard", align 1, _llgo_2, _llgo_1
+2026/01/20 10:02:05 Block _llgo_1:
+2026/01/20 10:02:05 Store *bool, @"command-line-arguments.init$guard" = global i1 false, align 1, i1 true
+2026/01/20 10:02:05 >>> Do 0 fmt.init []
+2026/01/20 10:02:05 NewFunc fmt.init func() hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func() fmt.init
+2026/01/20 10:02:05 Jump _llgo_2
+2026/01/20 10:02:05 Block _llgo_2:
+2026/01/20 10:02:05 Return 
+# Name: command-line-arguments.main
+# Package: command-line-arguments
+# Location: /root/llgo/_demo/c/hello/hello.go:9:6
+func main():
+0:                                                                entry P:0 S:0
+	t0 = println("hello world by pr...":string)                          ()
+	t1 = new [1]any (varargs)                                       *[1]any
+	t2 = &t1[0:int]                                                    *any
+	t3 = make any <- string ("hello world by fm...":string)             any
+	*t2 = t3
+	t4 = slice t1[:]                                                  []any
+	t5 = fmt.Println(t4...)                              (n int, err error)
+	t6 = github.com/goplus/lib/c.Str("Hello world by c....":string) *github.com/goplus/lib/c.Char
+	t7 = github.com/goplus/lib/c.Printf(t6, nil:[]any...) github.com/goplus/lib/c.Int
+	return
+
+2026/01/20 10:02:05 ==> FuncBody command-line-arguments.main
+2026/01/20 10:02:05 Block _llgo_0:
+2026/01/20 10:02:05 >>> Do 0 builtin println ["hello world by pr...":string]
+2026/01/20 10:02:05 NewFunc github.com/goplus/llgo/runtime/internal/runtime.PrintString func(s github.com/goplus/llgo/runtime/internal/runtime.String) hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func(s github.com/goplus/llgo/runtime/internal/runtime.String) github.com/goplus/llgo/runtime/internal/runtime.PrintString: %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 22 }
+2026/01/20 10:02:05 NewFunc github.com/goplus/llgo/runtime/internal/runtime.PrintByte func(v byte) hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func(v byte) github.com/goplus/llgo/runtime/internal/runtime.PrintByte: i8 10
+2026/01/20 10:02:05 Alloc [1]any, true
+2026/01/20 10:02:05 NewFunc github.com/goplus/llgo/runtime/internal/runtime.AllocZ func(size uintptr) unsafe.Pointer hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func(size uintptr) unsafe.Pointer github.com/goplus/llgo/runtime/internal/runtime.AllocZ: i64 16
+2026/01/20 10:02:05 IndexAddr   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16), i64 0
+2026/01/20 10:02:05 MakeInterface interface{}, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 26 }
+2026/01/20 10:02:05 NewFunc github.com/goplus/llgo/runtime/internal/runtime.strequal func(p unsafe.Pointer, q unsafe.Pointer) bool hasFreeVars: false
+2026/01/20 10:02:05 ChangeType func(unsafe.Pointer, unsafe.Pointer) bool, declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+
+2026/01/20 10:02:05 NewFunc __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal func(__llgo_ctx unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) bool hasFreeVars: false
+2026/01/20 10:02:05 Call 9 func(unsafe.Pointer, unsafe.Pointer) bool github.com/goplus/llgo/runtime/internal/runtime.strequal: ptr %1, ptr %2
+2026/01/20 10:02:05 NewFunc github.com/goplus/llgo/runtime/internal/runtime.memequalptr func(p unsafe.Pointer, q unsafe.Pointer) bool hasFreeVars: false
+2026/01/20 10:02:05 ChangeType func(unsafe.Pointer, unsafe.Pointer) bool, declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+
+2026/01/20 10:02:05 NewFunc __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr func(__llgo_ctx unsafe.Pointer, unsafe.Pointer, unsafe.Pointer) bool hasFreeVars: false
+2026/01/20 10:02:05 Call 9 func(unsafe.Pointer, unsafe.Pointer) bool github.com/goplus/llgo/runtime/internal/runtime.memequalptr: ptr %1, ptr %2
+2026/01/20 10:02:05 NewFunc github.com/goplus/llgo/runtime/internal/runtime.AllocU func(size uintptr) unsafe.Pointer hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func(size uintptr) unsafe.Pointer github.com/goplus/llgo/runtime/internal/runtime.AllocU: i64 16
+2026/01/20 10:02:05 Store *string,   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16), %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 26 }
+2026/01/20 10:02:05 Store *any,   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 0,   %3 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %2, 1
+2026/01/20 10:02:05 Slice   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16), Printing <null> Value, Printing <null> Value
+2026/01/20 10:02:05 >>> Do 0 fmt.Println [slice t1[:]]
+2026/01/20 10:02:05 NewFunc fmt.Println func(a ...any) (n int, err error) hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func(a ...any) (n int, err error) fmt.Println:   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, i64 1, 2
+2026/01/20 10:02:05 >>> Do 0 github.com/goplus/lib/c.Str ["Hello world by c....":string]
+2026/01/20 10:02:05 >>> Do 0 github.com/goplus/lib/c.Printf [github.com/goplus/lib/c.Str("Hello world by c....":string) nil:[]any]
+2026/01/20 10:02:05 NewFunc printf func(format *github.com/goplus/lib/c.Char, __llgo_va_list ...any) github.com/goplus/lib/c.Int hasFreeVars: false
+2026/01/20 10:02:05 Call 8 func(format *github.com/goplus/lib/c.Char, __llgo_va_list ...any) github.com/goplus/lib/c.Int printf: @3 = private unnamed_addr constant [25 x i8] c"Hello world by c.Printf\0A\00", align 1
+2026/01/20 10:02:05 Return 
+clang [-emit-llvm -o /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d.bc -c /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-1648948148.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d.bc -c /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-1648948148.ll -Wno-override-module
+clang [-o /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-2610495591.o -c /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-2610495591.o -c /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d.bc -Wno-override-module
+==> Export command-line-arguments: /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d
+ar rcs /tmp/pkg-2468376149.a.tmp-2967921793 /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-2610495591.o
+CACHE MISS: sort
+sort
+clang [-emit-llvm -o /root/.cache/go-build/68/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d.bc -c /tmp/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d-3062621517.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/68/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d.bc -c /tmp/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d-3062621517.ll -Wno-override-module
+clang [-o /tmp/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d-862232242.o -c /root/.cache/go-build/68/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d-862232242.o -c /root/.cache/go-build/68/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d.bc -Wno-override-module
+==> Export sort: /root/.cache/go-build/68/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d
+ar rcs /tmp/pkg-1927044143.a.tmp-1632999164 /tmp/68148281885242f7e032b97879638a9eab30b2fe11b8d485b1a39e634870c688-d-862232242.o
+CACHE MISS: github.com/goplus/llgo/runtime/abi
+github.com/goplus/llgo/runtime/abi
+clang [-emit-llvm -o /root/.cache/go-build/8b/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d.bc -c /tmp/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d-3918972859.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/8b/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d.bc -c /tmp/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d-3918972859.ll -Wno-override-module
+clang [-o /tmp/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d-3623987050.o -c /root/.cache/go-build/8b/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d-3623987050.o -c /root/.cache/go-build/8b/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/abi: /root/.cache/go-build/8b/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d
+ar rcs /tmp/pkg-962299390.a.tmp-2434746125 /tmp/8bab41725cef0d3b385b7213bc1cc73bf18086e46e3160f8a2b0dcf9686ea7a4-d-3623987050.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite
+github.com/goplus/llgo/runtime/internal/clite
+clang [-emit-llvm -o /root/.cache/go-build/41/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d.bc -c /tmp/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d-897522486.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/41/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d.bc -c /tmp/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d-897522486.ll -Wno-override-module
+clang [-o /tmp/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d-3599612386.o -c /root/.cache/go-build/41/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d-3599612386.o -c /root/.cache/go-build/41/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite: /root/.cache/go-build/41/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d
+ar rcs /tmp/pkg-4081138068.a.tmp-4086777069 /tmp/41f8700ad7de461966c6bbe04054e76920c2694ac65fe77314743e3623afb0ff-d-3599612386.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/bdwgc
+github.com/goplus/llgo/runtime/internal/clite/bdwgc
+clang [-emit-llvm -o /root/.cache/go-build/66/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d.bc -c /tmp/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d-4135850691.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/66/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d.bc -c /tmp/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d-4135850691.ll -Wno-override-module
+clang [-o /tmp/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d-1713743627.o -c /root/.cache/go-build/66/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d-1713743627.o -c /root/.cache/go-build/66/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/bdwgc: /root/.cache/go-build/66/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d
+ar rcs /tmp/pkg-3970353195.a.tmp-3153476957 /tmp/6639ae887dd2e11056006b67d7eff441f0e7711044de4e7b9a7494843d4fd826-d-1713743627.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/bitcast
+github.com/goplus/llgo/runtime/internal/clite/bitcast
+clang [-x c -o /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-dcast.c.o -c /root/llgo/runtime/internal/clite/bitcast/_cast/cast.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -x c -o /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-dcast.c.o -c /root/llgo/runtime/internal/clite/bitcast/_cast/cast.c
+clang [-emit-llvm -o /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d.bc -c /tmp/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d-2350621618.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d.bc -c /tmp/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d-2350621618.ll -Wno-override-module
+clang [-o /tmp/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d-158503628.o -c /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d-158503628.o -c /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/bitcast: /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d
+ar rcs /tmp/pkg-571091733.a.tmp-1924903653 /root/.cache/go-build/87/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-dcast.c.o /tmp/87c2966392e76f52038400edc62494d5c180003806b4259a3a3b237d743d055f-d-158503628.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/debug
+github.com/goplus/llgo/runtime/internal/clite/debug
+clang [-I/usr/lib/llvm-19/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -x c -o /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-ddebug.c.o -c /root/llgo/runtime/internal/clite/debug/_wrap/debug.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -I/usr/lib/llvm-19/include -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -x c -o /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-ddebug.c.o -c /root/llgo/runtime/internal/clite/debug/_wrap/debug.c
+clang [-emit-llvm -o /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d.bc -c /tmp/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d-2768389461.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d.bc -c /tmp/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d-2768389461.ll -Wno-override-module
+clang [-o /tmp/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d-2812930969.o -c /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d-2812930969.o -c /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/debug: /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d
+ar rcs /tmp/pkg-4076364150.a.tmp-2930047603 /root/.cache/go-build/0e/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-ddebug.c.o /tmp/0e8c83ca57422a7cc381b56ffa97d7bd79f74a7478a6a094f3bf6d863443a964-d-2812930969.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/pthread
+github.com/goplus/llgo/runtime/internal/clite/pthread
+clang [-emit-llvm -o /root/.cache/go-build/b8/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d.bc -c /tmp/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d-1993018442.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/b8/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d.bc -c /tmp/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d-1993018442.ll -Wno-override-module
+clang [-o /tmp/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d-601718797.o -c /root/.cache/go-build/b8/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d-601718797.o -c /root/.cache/go-build/b8/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/pthread: /root/.cache/go-build/b8/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d
+ar rcs /tmp/pkg-526765867.a.tmp-4081735367 /tmp/b803d2059baefc79d6e994f4585473d73bcc0f67547738cddb5175fe3bba9853-d-601718797.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/pthread/sync
+github.com/goplus/llgo/runtime/internal/clite/pthread/sync
+clang [-emit-llvm -o /root/.cache/go-build/8a/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d.bc -c /tmp/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d-195024955.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/8a/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d.bc -c /tmp/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d-195024955.ll -Wno-override-module
+clang [-o /tmp/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d-3850517858.o -c /root/.cache/go-build/8a/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d-3850517858.o -c /root/.cache/go-build/8a/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/pthread/sync: /root/.cache/go-build/8a/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d
+ar rcs /tmp/pkg-2131073673.a.tmp-4181830252 /tmp/8ae9b1d52d586cc50f67a1f57c52dcb20ebd44d87c194ede5f5f605a5148ec84-d-3850517858.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/signal
+github.com/goplus/llgo/runtime/internal/clite/signal
+clang [-emit-llvm -o /root/.cache/go-build/7d/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d.bc -c /tmp/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d-3082451001.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/7d/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d.bc -c /tmp/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d-3082451001.ll -Wno-override-module
+clang [-o /tmp/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d-187500854.o -c /root/.cache/go-build/7d/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d-187500854.o -c /root/.cache/go-build/7d/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/signal: /root/.cache/go-build/7d/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d
+ar rcs /tmp/pkg-1487424220.a.tmp-2384519294 /tmp/7dca414d640752e734e4bc311a760f134ad695b02939d65a01ad77dc9bbc5bd0-d-187500854.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/tls
+github.com/goplus/llgo/runtime/internal/clite/tls
+clang [-emit-llvm -o /root/.cache/go-build/44/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d.bc -c /tmp/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d-3996780736.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/44/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d.bc -c /tmp/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d-3996780736.ll -Wno-override-module
+clang [-o /tmp/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d-1384533014.o -c /root/.cache/go-build/44/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d-1384533014.o -c /root/.cache/go-build/44/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/tls: /root/.cache/go-build/44/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d
+ar rcs /tmp/pkg-868271483.a.tmp-1335152853 /tmp/443d1fad397f8cd2b173cd810e23e3f1260534d52025f939a9c9e938bea90b5f-d-1384533014.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/runtime/goarch
+github.com/goplus/llgo/runtime/internal/runtime/goarch
+clang [-emit-llvm -o /root/.cache/go-build/1e/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d.bc -c /tmp/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d-3821585377.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/1e/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d.bc -c /tmp/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d-3821585377.ll -Wno-override-module
+clang [-o /tmp/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d-342021141.o -c /root/.cache/go-build/1e/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d-342021141.o -c /root/.cache/go-build/1e/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/runtime/goarch: /root/.cache/go-build/1e/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d
+ar rcs /tmp/pkg-2381426469.a.tmp-1059628768 /tmp/1e1dddeb2ea785d9471f68d319b990d6b2160b891206ece58eb0c6b78d9aa1a5-d-342021141.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/runtime/math
+github.com/goplus/llgo/runtime/internal/runtime/math
+clang [-emit-llvm -o /root/.cache/go-build/26/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d.bc -c /tmp/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d-3481474668.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/26/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d.bc -c /tmp/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d-3481474668.ll -Wno-override-module
+clang [-o /tmp/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d-1795321994.o -c /root/.cache/go-build/26/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d-1795321994.o -c /root/.cache/go-build/26/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/runtime/math: /root/.cache/go-build/26/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d
+ar rcs /tmp/pkg-3454631124.a.tmp-3897018569 /tmp/26bfccff914b2746fb0d04c4ad1786c68a376282c4db0926da0cf03dadca51c8-d-1795321994.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/runtime
+github.com/goplus/llgo/runtime/internal/runtime
+clang [-emit-llvm -o /root/.cache/go-build/2a/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d.bc -c /tmp/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d-3090446526.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/2a/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d.bc -c /tmp/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d-3090446526.ll -Wno-override-module
+clang [-o /tmp/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d-362256824.o -c /root/.cache/go-build/2a/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d-362256824.o -c /root/.cache/go-build/2a/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/runtime: /root/.cache/go-build/2a/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d
+ar rcs /tmp/pkg-3657434457.a.tmp-2430588279 /tmp/2aa5cf2dcf9fd951391c7bf6315e081926f057160b4db3fc6bb7db33f919224f-d-362256824.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/ffi
+github.com/goplus/llgo/runtime/internal/clite/ffi
+clang [-x c -o /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-dlibffi.c.o -c /root/llgo/runtime/internal/clite/ffi/_wrap/libffi.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -x c -o /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-dlibffi.c.o -c /root/llgo/runtime/internal/clite/ffi/_wrap/libffi.c
+clang [-emit-llvm -o /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d.bc -c /tmp/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d-4110176110.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d.bc -c /tmp/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d-4110176110.ll -Wno-override-module
+clang [-o /tmp/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d-3192744364.o -c /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d-3192744364.o -c /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/ffi: /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d
+ar rcs /tmp/pkg-1482304925.a.tmp-2703144363 /root/.cache/go-build/c5/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-dlibffi.c.o /tmp/c5beaaa82b12096abc3beb9e2af902e56afa7aea072d9b8a9fe17a8b9278e5e7-d-3192744364.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/ffi
+github.com/goplus/llgo/runtime/internal/ffi
+clang [-emit-llvm -o /root/.cache/go-build/5f/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d.bc -c /tmp/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d-1196723175.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/5f/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d.bc -c /tmp/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d-1196723175.ll -Wno-override-module
+clang [-o /tmp/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d-800099581.o -c /root/.cache/go-build/5f/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d-800099581.o -c /root/.cache/go-build/5f/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/ffi: /root/.cache/go-build/5f/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d
+ar rcs /tmp/pkg-2650789199.a.tmp-2209050823 /tmp/5f8adcc0b550d8acbc8552355ce8d4f8266a12b6baf3a532adcd7cf2a06afb43-d-800099581.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/byteorder
+github.com/goplus/llgo/runtime/internal/clite/byteorder
+clang [-emit-llvm -o /root/.cache/go-build/8c/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d.bc -c /tmp/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d-3285102534.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/8c/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d.bc -c /tmp/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d-3285102534.ll -Wno-override-module
+clang [-o /tmp/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d-1933791950.o -c /root/.cache/go-build/8c/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d-1933791950.o -c /root/.cache/go-build/8c/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/byteorder: /root/.cache/go-build/8c/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d
+ar rcs /tmp/pkg-4236499947.a.tmp-3506324258 /tmp/8c5b09ba5a62a0cda406e3738240a22cd80f7b25c2b8368a2dc6fae0faf13a42-d-1933791950.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/goarch
+github.com/goplus/llgo/runtime/internal/clite/goarch
+clang [-emit-llvm -o /root/.cache/go-build/f3/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d.bc -c /tmp/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d-2885345452.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/f3/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d.bc -c /tmp/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d-2885345452.ll -Wno-override-module
+clang [-o /tmp/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d-1790585795.o -c /root/.cache/go-build/f3/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d-1790585795.o -c /root/.cache/go-build/f3/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/goarch: /root/.cache/go-build/f3/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d
+ar rcs /tmp/pkg-22065529.a.tmp-3226601310 /tmp/f33f6fbf14572f076bba3f0e032980eb13b2b4295ff7b39869593380820dc285-d-1790585795.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/syscall
+github.com/goplus/llgo/runtime/internal/clite/syscall
+clang [-emit-llvm -o /root/.cache/go-build/72/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d.bc -c /tmp/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d-1698454171.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/72/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d.bc -c /tmp/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d-1698454171.ll -Wno-override-module
+clang [-o /tmp/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d-1064707438.o -c /root/.cache/go-build/72/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d-1064707438.o -c /root/.cache/go-build/72/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/syscall: /root/.cache/go-build/72/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d
+ar rcs /tmp/pkg-3268144685.a.tmp-3190772382 /tmp/72ddb5d785d8a011e3c694cf54cfb0d2f52057f6e303646813e7de618b97ee28-d-1064707438.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/os
+github.com/goplus/llgo/runtime/internal/clite/os
+clang [-x c -o /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-dos.c.o -c /root/llgo/runtime/internal/clite/os/_os/os.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -x c -o /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-dos.c.o -c /root/llgo/runtime/internal/clite/os/_os/os.c
+clang [-emit-llvm -o /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d.bc -c /tmp/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d-1344757128.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d.bc -c /tmp/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d-1344757128.ll -Wno-override-module
+clang [-o /tmp/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d-2981683653.o -c /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d-2981683653.o -c /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/os: /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d
+ar rcs /tmp/pkg-3845289089.a.tmp-2693251977 /root/.cache/go-build/17/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-dos.c.o /tmp/17ccd4f4a33d86df7e9dec9b3b76e448929e1fbfcb4216b2b85cbca2af48d446-d-2981683653.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/net
+github.com/goplus/llgo/runtime/internal/clite/net
+clang [-emit-llvm -o /root/.cache/go-build/54/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d.bc -c /tmp/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d-2854751120.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/54/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d.bc -c /tmp/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d-2854751120.ll -Wno-override-module
+clang [-o /tmp/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d-267862141.o -c /root/.cache/go-build/54/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d-267862141.o -c /root/.cache/go-build/54/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/net: /root/.cache/go-build/54/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d
+ar rcs /tmp/pkg-566829098.a.tmp-2784204059 /tmp/54bad4a671bb271d9d13133a6e078b699e4b969f717f33c13aae2add6203ea27-d-267862141.o
+CACHE MISS: github.com/goplus/llgo/runtime/internal/clite/libuv
+github.com/goplus/llgo/runtime/internal/clite/libuv
+clang [-x c -o /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-dlibuv.c.o -c /root/llgo/runtime/internal/clite/libuv/_wrap/libuv.c]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -x c -o /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-dlibuv.c.o -c /root/llgo/runtime/internal/clite/libuv/_wrap/libuv.c
+clang [-emit-llvm -o /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d.bc -c /tmp/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d-1167070805.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d.bc -c /tmp/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d-1167070805.ll -Wno-override-module
+clang [-o /tmp/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d-369208448.o -c /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d-369208448.o -c /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d.bc -Wno-override-module
+==> Export github.com/goplus/llgo/runtime/internal/clite/libuv: /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d
+ar rcs /tmp/pkg-2597205860.a.tmp-3116837816 /root/.cache/go-build/0b/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-dlibuv.c.o /tmp/0be129b5c925070cd0303d0c3c235c431271da75d4573ccc047abcdd3b11490e-d-369208448.o
+clang [-emit-llvm -o /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main.bc -c /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main-50836929.ll -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -emit-llvm -o /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main.bc -c /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main-50836929.ll -Wno-override-module
+clang [-o /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main-2186575283.o -c /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main.bc -Wno-override-module]
+/usr/lib/llvm-19/bin/clang++ -Qunused-arguments -Wno-unused-command-line-argument -fdata-sections -ffunction-sections -o /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main-2186575283.o -c /root/.cache/go-build/c3/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main.bc -Wno-override-module
+/usr/lib/llvm-19/bin/clang++ -target aarch64-unknown-linux -Qunused-arguments -Wno-unused-command-line-argument -Wl,--error-limit=0 -fuse-ld=lld -fdata-sections -ffunction-sections -Xlinker --gc-sections -lm -latomic -lpthread -ldl -o /tmp/command-line-arguments-3606422605 -lgc -lpthread -ldl -lunwind -lgc -lpthread -ldl -lffi -luv -lpthread -ldl -lrt /tmp/pkg-3647120211.a /tmp/pkg-1168686024.a /tmp/pkg-2155277560.a /tmp/pkg-4066685692.a /tmp/pkg-588705422.a /tmp/pkg-1243732049.a /tmp/pkg-3523211185.a /tmp/pkg-3253398332.a /tmp/pkg-3337788475.a /tmp/pkg-2545413326.a /tmp/pkg-3229185609.a /tmp/pkg-806819795.a /tmp/pkg-2186450198.a /tmp/pkg-2940414819.a /tmp/pkg-2174068204.a /tmp/pkg-3681310792.a /tmp/pkg-1921056557.a /tmp/pkg-2798001526.a /tmp/pkg-594249569.a /tmp/pkg-1533949781.a /tmp/pkg-737485914.a /tmp/pkg-2669413033.a /tmp/pkg-169047024.a /tmp/pkg-700316911.a /tmp/pkg-309973074.a /tmp/pkg-1443474518.a /tmp/pkg-328648477.a /tmp/pkg-2183148428.a /tmp/pkg-3262252521.a /tmp/pkg-3637276532.a /tmp/pkg-1271876629.a /tmp/pkg-1836746113.a /tmp/pkg-3167498910.a /tmp/pkg-3465026841.a /tmp/pkg-329711913.a /tmp/pkg-2868281638.a /tmp/pkg-3639394956.a /tmp/pkg-1731187492.a /tmp/pkg-1834610008.a /tmp/pkg-661346703.a /tmp/pkg-3760279178.a /tmp/pkg-1558275441.a /tmp/pkg-4099201558.a /tmp/pkg-203482811.a /tmp/pkg-1841704149.a /tmp/pkg-4266367128.a /tmp/pkg-2823506461.a /tmp/pkg-38320748.a /tmp/pkg-27098381.a /tmp/pkg-4041549029.a /tmp/pkg-3772794801.a /tmp/pkg-2615176584.a /tmp/pkg-2578601877.a /tmp/pkg-365338388.a /tmp/pkg-2468376149.a /tmp/pkg-1927044143.a /tmp/pkg-962299390.a /tmp/pkg-4081138068.a /tmp/pkg-3970353195.a /tmp/pkg-571091733.a /tmp/pkg-4076364150.a /tmp/pkg-526765867.a /tmp/pkg-2131073673.a /tmp/pkg-1487424220.a /tmp/pkg-868271483.a /tmp/pkg-2381426469.a /tmp/pkg-3454631124.a /tmp/pkg-3657434457.a /tmp/pkg-1482304925.a /tmp/pkg-2650789199.a /tmp/pkg-4236499947.a /tmp/pkg-22065529.a /tmp/pkg-3268144685.a /tmp/pkg-3845289089.a /tmp/pkg-566829098.a /tmp/pkg-2597205860.a /tmp/c37fb9c7ef24d0275da840e68af89f37f76892f9942c3f6d4190d68f9e5e7375-d-main-2186575283.o
+hello world by println
+hello world by fmt.Println
+Hello world by c.Printf
