@@ -130,6 +130,7 @@ type Config struct {
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
 	GenLL         bool // generate pkg .ll files
+	GenBC         bool // generate pkg .bc files
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
