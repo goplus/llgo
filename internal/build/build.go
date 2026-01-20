@@ -852,12 +852,13 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		// Always compile to .o for linking
 		objFile := baseName + ".o"
 		objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
-		// If GenBC is enabled and we emitted a .bc, prefer compiling the .bc to .o (if it exists)
+		// If GenBC is enabled, require .bc and use it to produce .o
 		if ctx.buildConf.GenBC {
 			bcFile := baseName + ".bc"
-			if _, err := os.Stat(bcFile); err == nil {
-				objArgs = []string{"-o", objFile, "-c", bcFile}
+			if _, err := os.Stat(bcFile); err != nil {
+				return nil, fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err)
 			}
+			objArgs = []string{"-o", objFile, "-c", bcFile}
 		}
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
@@ -1237,15 +1238,19 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		return "", err
 	}
 	objFile.Close()
-	srcForObj := f.Name()
 	if ctx.buildConf.GenBC {
 		bcFile := exportFile + ".bc"
-		// If GenBC was requested but failed to produce bc, fall back to ll
-		if _, err := os.Stat(bcFile); err == nil {
-			srcForObj = bcFile
+		if _, err := os.Stat(bcFile); err != nil {
+			return "", fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err)
 		}
+		args := []string{"-o", objFile.Name(), "-c", bcFile, "-Wno-override-module"}
+		if ctx.buildConf.Verbose {
+			fmt.Fprintln(os.Stderr, "clang", args)
+		}
+		cmd := ctx.compiler()
+		return objFile.Name(), cmd.Compile(args...)
 	}
-	args := []string{"-o", objFile.Name(), "-c", srcForObj, "-Wno-override-module"}
+	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
@@ -1633,9 +1638,10 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	objArgs := append(args, "-o", objFile, "-c", cFile)
 	if ctx.buildConf.GenBC {
 		bcFile := baseName + ".bc"
-		if _, err := os.Stat(bcFile); err == nil {
-			objArgs = []string{"-o", objFile, "-c", bcFile}
+		if _, err := os.Stat(bcFile); err != nil {
+			check(fmt.Errorf("gen-bcfiles enabled but missing %s: %w", bcFile, err))
 		}
+		objArgs = []string{"-o", objFile, "-c", bcFile}
 	}
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", objArgs)
