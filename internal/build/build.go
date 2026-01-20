@@ -565,6 +565,10 @@ func (c *context) linker() *clang.Cmd {
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
+	if ctx.buildConf.GenBC {
+		// In gen-bcfiles mode we keep raw .bc inputs for linking (no archives).
+		return nil
+	}
 	if len(aPkg.ObjFiles) == 0 {
 		return nil
 	}
@@ -916,6 +920,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
 				if aPkg.ArchiveFile != "" {
 					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
+				} else {
+					linkInputs = append(linkInputs, aPkg.ObjFiles...)
 				}
 				return
 			} else {
@@ -931,6 +937,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			if aPkg.ArchiveFile != "" {
 				linkInputs = append(linkInputs, aPkg.ArchiveFile)
+			} else {
+				linkInputs = append(linkInputs, aPkg.ObjFiles...)
 			}
 		}
 	})
