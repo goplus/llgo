@@ -116,7 +116,6 @@ func TestRunESP32C3Emulator(t *testing.T) {
 		"./_testgo/closure",       // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testgo/closure2",      // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testgo/closureall",    // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/defer-alawys",  // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testgo/defer1",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testgo/defer2",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testgo/defer3",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
