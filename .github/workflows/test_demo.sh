@@ -41,10 +41,6 @@ fi
 
 ignore_esp32c3_basic=(
   "./_demo/go/defer"
-  "./_demo/go/defer/setjmp"
-  "./_demo/go/defer/setjmp/c_standard_demo/closure_test"
-  "./_demo/go/defer/stress"
-  "./_demo/go/defer/test"
   "./_demo/go/mkdirdemo"
   "./_demo/c/asmcall"
   "./_demo/c/asmfullcall"
@@ -83,7 +79,6 @@ ignore_esp32c3_basic=(
   "./_demo/go/complex"
   "./_demo/go/export"
   "./_demo/go/failed/stacktrace"
-  "./_demo/go/funcforpc-1408"
   "./_demo/go/gobuild"
   "./_demo/go/gobuild-1389"
   "./_demo/go/goimporter-1389"
