@@ -836,23 +836,36 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// If GenLL is enabled, first emit .ll for debugging
-		if ctx.buildConf.GenLL {
-			llFile := baseName + ".ll"
-			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
+		// If GenLL/GenBC is enabled, emit .ll/.bc for debugging
+		if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
+			if ctx.buildConf.GenLL {
+				llFile := baseName + ".ll"
+				llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
+				}
+				cmd := ctx.compiler()
+				if err := cmd.Compile(llArgs...); err != nil {
+					return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
+				}
 			}
-			cmd := ctx.compiler()
-			if err := cmd.Compile(llArgs...); err != nil {
-				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
+			if ctx.buildConf.GenBC {
+				bcFile := baseName + ".bc"
+				bcArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-o", bcFile, "-c", srcFile)
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Compiling extra file (bc): clang %s\n", strings.Join(bcArgs, " "))
+				}
+				cmd := ctx.compiler()
+				if err := cmd.Compile(bcArgs...); err != nil {
+					return nil, fmt.Errorf("failed to compile extra file %s to .bc: %w", srcFile, err)
+				}
 			}
 		}
 
 		// Always compile to .o for linking
 		objFile := baseName + ".o"
 		objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
-		// If GenBC is enabled and we emitted a .bc, prefer compiling the .bc to .o
+		// If GenBC is enabled, use the emitted .bc to produce .o
 		if ctx.buildConf.GenBC {
 			bcFile := baseName + ".bc"
 			objArgs = []string{"-o", objFile, "-c", bcFile}
@@ -1235,15 +1248,16 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		return "", err
 	}
 	objFile.Close()
-	srcForObj := f.Name()
 	if ctx.buildConf.GenBC {
 		bcFile := exportFile + ".bc"
-		// If GenBC was requested but failed to produce bc, fall back to ll
-		if _, err := os.Stat(bcFile); err == nil {
-			srcForObj = bcFile
+		args := []string{"-o", objFile.Name(), "-c", bcFile, "-Wno-override-module"}
+		if ctx.buildConf.Verbose {
+			fmt.Fprintln(os.Stderr, "clang", args)
 		}
+		cmd := ctx.compiler()
+		return objFile.Name(), cmd.Compile(args...)
 	}
-	args := []string{"-o", objFile.Name(), "-c", srcForObj, "-Wno-override-module"}
+	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
 	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
@@ -1614,16 +1628,28 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		args = append(args, "-x", "c")
 	}
 
-	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
-	if ctx.buildConf.GenLL {
-		llFile := baseName + ".ll"
-		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-		if verbose {
-			fmt.Fprintln(os.Stderr, "clang", llArgs)
+	// If GenLL/GenBC is enabled, emit .ll/.bc for debugging, then compile to .o
+	if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
+		if ctx.buildConf.GenLL {
+			llFile := baseName + ".ll"
+			llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", llArgs)
+			}
+			cmd := ctx.compiler()
+			err := cmd.Compile(llArgs...)
+			check(err)
 		}
-		cmd := ctx.compiler()
-		err := cmd.Compile(llArgs...)
-		check(err)
+		if ctx.buildConf.GenBC {
+			bcFile := baseName + ".bc"
+			bcArgs := append(slices.Clone(args), "-emit-llvm", "-o", bcFile, "-c", cFile)
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", bcArgs)
+			}
+			cmd := ctx.compiler()
+			err := cmd.Compile(bcArgs...)
+			check(err)
+		}
 	}
 
 	// Always compile to .o for linking
