@@ -997,10 +997,11 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	if ctx.buildConf.GenLL {
+	if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
-			if strings.HasSuffix(objFile, ".ll") {
+			switch {
+			case strings.HasSuffix(objFile, ".ll"):
 				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
 				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
 				if verbose {
@@ -1010,7 +1011,17 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 					return fmt.Errorf("failed to compile %s: %v", objFile, err)
 				}
 				compiledObjFiles = append(compiledObjFiles, oFile)
-			} else {
+			case strings.HasSuffix(objFile, ".bc"):
+				oFile := strings.TrimSuffix(objFile, ".bc") + ".o"
+				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+				if verbose {
+					fmt.Fprintln(os.Stderr, "clang", args)
+				}
+				if err := ctx.compiler().Compile(args...); err != nil {
+					return fmt.Errorf("failed to compile %s: %v", objFile, err)
+				}
+				compiledObjFiles = append(compiledObjFiles, oFile)
+			default:
 				compiledObjFiles = append(compiledObjFiles, objFile)
 			}
 		}
