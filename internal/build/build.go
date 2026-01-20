@@ -852,10 +852,12 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		// Always compile to .o for linking
 		objFile := baseName + ".o"
 		objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
-		// If GenBC is enabled and we emitted a .bc, prefer compiling the .bc to .o
+		// If GenBC is enabled and we emitted a .bc, prefer compiling the .bc to .o (if it exists)
 		if ctx.buildConf.GenBC {
 			bcFile := baseName + ".bc"
-			objArgs = []string{"-o", objFile, "-c", bcFile}
+			if _, err := os.Stat(bcFile); err == nil {
+				objArgs = []string{"-o", objFile, "-c", bcFile}
+			}
 		}
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
@@ -1631,7 +1633,9 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	objArgs := append(args, "-o", objFile, "-c", cFile)
 	if ctx.buildConf.GenBC {
 		bcFile := baseName + ".bc"
-		objArgs = []string{"-o", objFile, "-c", bcFile}
+		if _, err := os.Stat(bcFile); err == nil {
+			objArgs = []string{"-o", objFile, "-c", bcFile}
+		}
 	}
 	if verbose {
 		fmt.Fprintln(os.Stderr, "clang", objArgs)
