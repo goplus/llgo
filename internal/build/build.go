@@ -997,13 +997,6 @@ func isRuntimePkg(pkgPath string) bool {
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
-	if ctx.buildConf.GenBC {
-		for _, f := range objFiles {
-			if strings.HasSuffix(f, ".o") {
-				return fmt.Errorf("gen-bcfiles enabled but non-bc input %s", f)
-			}
-		}
-	}
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
 		return ctx.createArchiveFile(app, objFiles, verbose)
@@ -1025,7 +1018,74 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
+	if ctx.buildConf.GenBC {
+		for _, f := range objFiles {
+			if strings.HasSuffix(f, ".o") {
+				return fmt.Errorf("gen-bcfiles enabled but non-bc input %s", f)
+			}
+		}
+
+		var bcInputs []string
+		for _, f := range objFiles {
+			switch {
+			case strings.HasSuffix(f, ".bc"):
+				bcInputs = append(bcInputs, f)
+			case strings.HasSuffix(f, ".ll"):
+				bcFile := strings.TrimSuffix(f, ".ll") + ".bc"
+				args := []string{"-emit-llvm", "-o", bcFile, "-c", f, "-Wno-override-module"}
+				if verbose {
+					fmt.Fprintln(os.Stderr, "clang", args)
+				}
+				if err := ctx.compiler().Compile(args...); err != nil {
+					return fmt.Errorf("failed to compile %s: %v", f, err)
+				}
+				bcInputs = append(bcInputs, bcFile)
+			default:
+				return fmt.Errorf("gen-bcfiles expects .bc/.ll inputs, got %s", f)
+			}
+		}
+
+		// Link all BC modules together for a whole-program view.
+		combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
+		if err != nil {
+			return err
+		}
+		combinedBcName := combinedBc.Name()
+		combinedBc.Close()
+
+		linkArgsBc := append([]string{"-o", combinedBcName}, bcInputs...)
+		if verbose {
+			fmt.Fprintln(os.Stderr, "llvm-link", strings.Join(linkArgsBc, " "))
+		}
+		if output, err := exec.Command("llvm-link", linkArgsBc...).CombinedOutput(); err != nil {
+			return fmt.Errorf("llvm-link failed: %w\n%s", err, output)
+		}
+
+		// Optional debug: dump abi.Type metadata from the merged module.
+		if verbose {
+			llDump := combinedBcName + ".ll"
+			if output, err := exec.Command("llvm-dis", "-o", llDump, combinedBcName).CombinedOutput(); err == nil {
+				fmt.Fprintf(os.Stderr, "abi.Type metadata in %s:\n", llDump)
+				if out, err := exec.Command("rg", "-n", "abi.Type", llDump).CombinedOutput(); err == nil {
+					os.Stderr.Write(out)
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "llvm-dis failed: %v\n%s", err, output)
+			}
+		}
+
+		// Compile the merged BC to a single object for final native link.
+		combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"
+		args := []string{"-o", combinedObj, "-c", combinedBcName, "-Wno-override-module"}
+		if verbose {
+			fmt.Fprintln(os.Stderr, "clang", args)
+		}
+		if err := ctx.compiler().Compile(args...); err != nil {
+			return fmt.Errorf("failed to compile combined bc: %v", err)
+		}
+
+		objFiles = []string{combinedObj}
+	} else if ctx.buildConf.GenLL {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
 			switch {
@@ -1060,6 +1120,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 
 	cmd := ctx.linker()
 	cmd.Verbose = verbose
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Linking final binary: %s\n", strings.Join(buildArgs, " "))
+	}
 	return cmd.Link(buildArgs...)
 }
 
