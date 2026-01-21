@@ -36,6 +36,7 @@ var AbiMode int
 var CheckLinkArgs bool
 var CheckLLFiles bool
 var GenLLFiles bool
+var GenRelocLL bool
 var GenBCFiles bool
 var ForceEspClang bool
 var SizeReport bool
@@ -60,6 +61,7 @@ func AddBuildFlags(fs *flag.FlagSet) {
 		fs.BoolVar(&CheckLinkArgs, "check-linkargs", false, "check link args valid")
 		fs.BoolVar(&CheckLLFiles, "check-llfiles", false, "check .ll files valid")
 		fs.BoolVar(&GenLLFiles, "gen-llfiles", false, "generate .ll files for pkg export")
+		fs.BoolVar(&GenRelocLL, "gen-relocll", false, "emit reloc metadata table in generated .ll")
 		fs.BoolVar(&GenBCFiles, "gen-bcfiles", false, "generate .bc files for pkg export")
 		fs.BoolVar(&ForceEspClang, "force-espclang", false, "force to use esp-clang")
 	}
@@ -220,6 +222,7 @@ func UpdateConfig(conf *build.Config) error {
 		conf.CheckLinkArgs = CheckLinkArgs
 		conf.CheckLLFiles = CheckLLFiles
 		conf.GenLL = GenLLFiles
+		conf.GenRelocLL = GenRelocLL
 		conf.GenBC = GenBCFiles
 		conf.ForceEspClang = ForceEspClang
 	}

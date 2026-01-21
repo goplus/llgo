@@ -17,7 +17,6 @@
 package build
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -133,6 +132,7 @@ type Config struct {
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
 	GenLL         bool // generate pkg .ll files
+	GenRelocLL    bool // generate reloc info and keep .ll
 	GenBC         bool // generate pkg .bc files
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
@@ -285,6 +285,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	prog := llssa.NewProgram(target)
+	prog.EnableRelocTable(conf.GenRelocLL)
 	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
 		if arch == "wasm" {
 			sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
@@ -999,51 +1000,70 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
-// dumpAbiTypeMetadata disassembles the merged bitcode and prints a small
-// summary of abi.Type references (only in verbose mode).
-func dumpAbiTypeMetadata(bcPath string, verbose bool) {
-	if !verbose {
-		return
-	}
-	llDump := bcPath + ".ll"
-	if output, err := exec.Command("llvm-dis", "-o", llDump, bcPath).CombinedOutput(); err != nil {
-		fmt.Fprintf(os.Stderr, "llvm-dis failed for %s: %v\n%s", bcPath, err, output)
+// dumpAbiTypeMetadata walks the merged bitcode via LLVM APIs and prints a small
+// summary of globals whose types reference runtime/abi.Type (only in verbose mode).
+func dumpAbiTypeMetadata(mod llvm.Module, bcPath string, verbose bool) {
+	if !verbose || mod.IsNil() {
 		return
 	}
 
-	f, err := os.Open(llDump)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "open %s: %v\n", llDump, err)
-		return
-	}
-	defer f.Close()
-
-	pattern := "abi.Type"
-	matchLines := make([]string, 0, 20)
-	count := 0
-	sc := bufio.NewScanner(f)
-	lineno := 0
-	for sc.Scan() {
-		lineno++
-		line := sc.Text()
-		if strings.Contains(line, pattern) {
-			count++
-			if len(matchLines) < 20 {
-				matchLines = append(matchLines, fmt.Sprintf("%d: %s", lineno, line))
+	totalGlobals := 0
+	matchedGlobals := 0
+	samples := make([]string, 0, 20)
+	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
+		totalGlobals++
+		if typeContainsAbiType(gv.Type(), make(map[uintptr]bool)) {
+			matchedGlobals++
+			if len(samples) < 20 {
+				samples = append(samples, fmt.Sprintf("%s :: %s", gv.Name(), gv.Type().String()))
 			}
 		}
 	}
-	if err := sc.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "scan %s: %v\n", llDump, err)
-		return
+
+	fmt.Fprintf(os.Stderr, "[bc-pass] abi.Type-containing globals: %d/%d in %s\n", matchedGlobals, totalGlobals, bcPath)
+	for _, s := range samples {
+		fmt.Fprintln(os.Stderr, "  ", s)
 	}
-	fmt.Fprintf(os.Stderr, "[bc-pass] abi.Type references: %d (showing up to 20) in %s\n", count, llDump)
-	for _, l := range matchLines {
-		fmt.Fprintln(os.Stderr, "  ", l)
+	if matchedGlobals > len(samples) {
+		fmt.Fprintf(os.Stderr, "  ... %d more globals omitted ...\n", matchedGlobals-len(samples))
 	}
-	if count > len(matchLines) {
-		fmt.Fprintf(os.Stderr, "  ... %d more lines omitted ...\n", count-len(matchLines))
+}
+
+// typeContainsAbiType reports whether the given LLVM type references the runtime/abi.Type
+// named struct anywhere in its shape.
+func typeContainsAbiType(t llvm.Type, seen map[uintptr]bool) bool {
+	if t.IsNil() {
+		return false
 	}
+	key := uintptr(unsafe.Pointer(t.C))
+	if seen[key] {
+		return false
+	}
+	seen[key] = true
+
+	switch t.TypeKind() {
+	case llvm.PointerTypeKind, llvm.ArrayTypeKind, llvm.VectorTypeKind:
+		return typeContainsAbiType(t.ElementType(), seen)
+	case llvm.StructTypeKind:
+		if strings.Contains(t.StructName(), "runtime/abi.Type") {
+			return true
+		}
+		for _, et := range t.StructElementTypes() {
+			if typeContainsAbiType(et, seen) {
+				return true
+			}
+		}
+	case llvm.FunctionTypeKind:
+		if typeContainsAbiType(t.ReturnType(), seen) {
+			return true
+		}
+		for _, pt := range t.ParamTypes() {
+			if typeContainsAbiType(pt, seen) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
@@ -1132,9 +1152,12 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			return fmt.Errorf("write combined bitcode: %w", err)
 		}
 		combinedBc.Close()
+		if verbose {
+			fmt.Fprintf(os.Stderr, "[bc-pass] merged bitcode written to %s\n", combinedBcName)
+		}
 
 		// Optional debug: dump abi.Type metadata from the merged module.
-		dumpAbiTypeMetadata(combinedBcName, verbose)
+		dumpAbiTypeMetadata(merged, combinedBcName, verbose)
 
 		// Compile the merged BC to a single object for final native link.
 		combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"

@@ -444,10 +444,19 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		var values []llvm.Value
 		values = append(values, name)
 		ftyp := funcType(prog, m.Type())
-		values = append(values, b.abiType(ftyp).impl)
+		mtypVal := b.abiType(ftyp).impl
+		values = append(values, mtypVal)
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+
+		// Record reloc metadata (method offsets) if enabled.
+		if b.Pkg != nil {
+			pkg := b.Pkg
+			pkg.addReloc(relocMethodOff, llvm.Value{}, mtypVal, 0)
+			pkg.addReloc(relocMethodOff, llvm.Value{}, ifn, 0)
+			pkg.addReloc(relocMethodOff, llvm.Value{}, tfn, 0)
+		}
 	}
 	return llvm.ConstArray(ft.ll, fields)
 }
