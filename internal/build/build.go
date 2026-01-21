@@ -17,6 +17,7 @@
 package build
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -37,6 +38,8 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
+	"github.com/goplus/llvm"
+
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
@@ -51,7 +54,7 @@ import (
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
-	"github.com/goplus/llgo/xtool/env/llvm"
+	envllvm "github.com/goplus/llgo/xtool/env/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -354,7 +357,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	env := llvm.New("")
+	env := envllvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
@@ -509,7 +512,7 @@ const (
 )
 
 type context struct {
-	env            *llvm.Env
+	env            *envllvm.Env
 	conf           *packages.Config
 	progSSA        *ssa.Program
 	prog           llssa.Program
@@ -996,6 +999,53 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
+// dumpAbiTypeMetadata disassembles the merged bitcode and prints a small
+// summary of abi.Type references (only in verbose mode).
+func dumpAbiTypeMetadata(bcPath string, verbose bool) {
+	if !verbose {
+		return
+	}
+	llDump := bcPath + ".ll"
+	if output, err := exec.Command("llvm-dis", "-o", llDump, bcPath).CombinedOutput(); err != nil {
+		fmt.Fprintf(os.Stderr, "llvm-dis failed for %s: %v\n%s", bcPath, err, output)
+		return
+	}
+
+	f, err := os.Open(llDump)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "open %s: %v\n", llDump, err)
+		return
+	}
+	defer f.Close()
+
+	pattern := "abi.Type"
+	matchLines := make([]string, 0, 20)
+	count := 0
+	sc := bufio.NewScanner(f)
+	lineno := 0
+	for sc.Scan() {
+		lineno++
+		line := sc.Text()
+		if strings.Contains(line, pattern) {
+			count++
+			if len(matchLines) < 20 {
+				matchLines = append(matchLines, fmt.Sprintf("%d: %s", lineno, line))
+			}
+		}
+	}
+	if err := sc.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "scan %s: %v\n", llDump, err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "[bc-pass] abi.Type references: %d (showing up to 20) in %s\n", count, llDump)
+	for _, l := range matchLines {
+		fmt.Fprintln(os.Stderr, "  ", l)
+	}
+	if count > len(matchLines) {
+		fmt.Fprintf(os.Stderr, "  ... %d more lines omitted ...\n", count-len(matchLines))
+	}
+}
+
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
@@ -1045,34 +1095,46 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			}
 		}
 
-		// Link all BC modules together for a whole-program view.
+		// Link all BC modules together for a whole-program view using LLVM bindings.
+		llctx := llvm.NewContext()
+		defer llctx.Dispose()
+		var merged llvm.Module
+		for i, f := range bcInputs {
+			m, err := llctx.ParseBitcodeFile(f)
+			if err != nil {
+				if !merged.IsNil() {
+					merged.Dispose()
+				}
+				return fmt.Errorf("parse bitcode %s: %w", f, err)
+			}
+			if i == 0 {
+				merged = m
+			} else {
+				if err := llvm.LinkModules(merged, m); err != nil {
+					merged.Dispose()
+					return fmt.Errorf("link bitcode %s: %w", f, err)
+				}
+			}
+		}
+		if merged.IsNil() {
+			return fmt.Errorf("no bitcode inputs to link")
+		}
+
 		combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
 		if err != nil {
+			merged.Dispose()
 			return err
 		}
 		combinedBcName := combinedBc.Name()
+		if err := llvm.WriteBitcodeToFile(merged, combinedBc); err != nil {
+			combinedBc.Close()
+			merged.Dispose()
+			return fmt.Errorf("write combined bitcode: %w", err)
+		}
 		combinedBc.Close()
 
-		linkArgsBc := append([]string{"-o", combinedBcName}, bcInputs...)
-		if verbose {
-			fmt.Fprintln(os.Stderr, "llvm-link", strings.Join(linkArgsBc, " "))
-		}
-		if output, err := exec.Command("llvm-link", linkArgsBc...).CombinedOutput(); err != nil {
-			return fmt.Errorf("llvm-link failed: %w\n%s", err, output)
-		}
-
 		// Optional debug: dump abi.Type metadata from the merged module.
-		if verbose {
-			llDump := combinedBcName + ".ll"
-			if output, err := exec.Command("llvm-dis", "-o", llDump, combinedBcName).CombinedOutput(); err == nil {
-				fmt.Fprintf(os.Stderr, "abi.Type metadata in %s:\n", llDump)
-				if out, err := exec.Command("rg", "-n", "abi.Type", llDump).CombinedOutput(); err == nil {
-					os.Stderr.Write(out)
-				}
-			} else {
-				fmt.Fprintf(os.Stderr, "llvm-dis failed: %v\n%s", err, output)
-			}
-		}
+		dumpAbiTypeMetadata(combinedBcName, verbose)
 
 		// Compile the merged BC to a single object for final native link.
 		combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"
@@ -1081,9 +1143,11 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			fmt.Fprintln(os.Stderr, "clang", args)
 		}
 		if err := ctx.compiler().Compile(args...); err != nil {
+			merged.Dispose()
 			return fmt.Errorf("failed to compile combined bc: %v", err)
 		}
 
+		merged.Dispose()
 		objFiles = []string{combinedObj}
 	} else if ctx.buildConf.GenLL {
 		var compiledObjFiles []string
@@ -1336,7 +1400,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	return objFile.Name(), cmd.Compile(args...)
 }
 
-func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
+func llcCheck(env *envllvm.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
