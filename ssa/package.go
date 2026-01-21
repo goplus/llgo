@@ -210,6 +210,8 @@ type aProgram struct {
 
 	printfTy *types.Signature
 
+	emitReloc bool
+
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
 	abiSymbol    map[string]Type   // abi symbol name => Type
@@ -265,6 +267,11 @@ func NewProgram(target *Target) Program {
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
+}
+
+// EnableRelocTable toggles emitting reloc metadata into the module.
+func (p Program) EnableRelocTable(enable bool) {
+	p.emitReloc = enable
 }
 
 func (p Program) Target() *Target {
@@ -694,6 +701,10 @@ type aPackage struct {
 	NeedAbiInit bool // need load all abi types for reflect make type
 
 	export map[string]string // pkgPath.nameInPkg => exportname
+
+	relocs        []llvm.Value
+	relocBuilt    bool
+	relocStrCache map[string]llvm.Value
 }
 
 type Package = *aPackage
@@ -755,6 +766,9 @@ func (p Package) Path() string {
 
 // String returns a string representation of the package.
 func (p Package) String() string {
+	if p.Prog.emitReloc && len(p.relocs) > 0 {
+		p.ensureRelocGlobal()
+	}
 	return p.mod.String()
 }
 
@@ -798,6 +812,85 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 	}
 	p.strs[v] = ret
 	return
+}
+
+// reloc helpers -------------------------------------------------------------
+
+type relocKind = int32
+
+const (
+	relocUseIface       relocKind = 1
+	relocUseIfaceMethod           = 2
+	relocUseNamedMethod           = 3
+	relocMethodOff                = 4
+)
+
+// addReloc records a reloc metadata entry if enabled.
+func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64) {
+	if !p.Prog.emitReloc {
+		return
+	}
+	vptr := p.Prog.VoidPtr().ll
+	castPtr := func(v llvm.Value) llvm.Value {
+		if v.IsNil() {
+			return llvm.ConstNull(vptr)
+		}
+		if v.Type() == vptr {
+			return v
+		}
+		return llvm.ConstBitCast(v, vptr)
+	}
+	relocTy := p.relocStructType()
+	entry := llvm.ConstNamedStruct(relocTy, []llvm.Value{
+		llvm.ConstInt(p.Prog.ctx.Int32Type(), uint64(kind), true),
+		castPtr(owner),
+		castPtr(target),
+		llvm.ConstInt(p.Prog.ctx.Int64Type(), uint64(add), true),
+	})
+	p.relocs = append(p.relocs, entry)
+}
+
+func (p Package) relocStructType() llvm.Type {
+	fields := []llvm.Type{
+		p.Prog.ctx.Int32Type(),
+		p.Prog.tyVoidPtr(),
+		p.Prog.tyVoidPtr(),
+		p.Prog.ctx.Int64Type(),
+	}
+	return p.Prog.ctx.StructType(fields, false)
+}
+
+// relocString returns a pointer to a global string for reloc targets.
+func (p Package) relocString(s string) llvm.Value {
+	if p.relocStrCache == nil {
+		p.relocStrCache = make(map[string]llvm.Value)
+	}
+	if v, ok := p.relocStrCache[s]; ok {
+		return v
+	}
+	v := p.createGlobalStr(s)
+	p.relocStrCache[s] = v
+	return v
+}
+
+func (p Package) ensureRelocGlobal() {
+	if p.relocBuilt || !p.Prog.emitReloc {
+		return
+	}
+	p.relocBuilt = true
+	if len(p.relocs) == 0 {
+		return
+	}
+	relocTy := p.relocStructType()
+	arr := llvm.ConstArray(relocTy, p.relocs)
+	global := llvm.AddGlobal(p.mod, arr.Type(), "__llgo_relocs")
+	global.SetLinkage(llvm.InternalLinkage)
+	global.SetGlobalConstant(true)
+	global.SetInitializer(arr)
+	global.SetUnnamedAddr(true)
+	if len(p.relocs) == 0 {
+		global.SetAlignment(1)
+	}
 }
 
 // -----------------------------------------------------------------------------
