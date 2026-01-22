@@ -47,6 +47,7 @@ const (
 	vkFuncDecl
 	vkFuncPtr
 	vkClosure
+	vkImethodClosure // interface method closure: receiver passed as first param, not via register
 	vkBuiltin
 	vkPyFuncRef
 	vkPyVarRef
@@ -59,6 +60,10 @@ const (
 	vkStruct
 	vkChan
 )
+
+func isClosureKind(k valueKind) bool {
+	return k == vkClosure || k == vkImethodClosure
+}
 
 // -----------------------------------------------------------------------------
 
@@ -169,6 +174,13 @@ type aType struct {
 }
 
 type Type = *aType
+
+func (t Type) withKind(kind valueKind) Type {
+	if t.kind == kind {
+		return t
+	}
+	return &aType{ll: t.ll, raw: t.raw, kind: kind}
+}
 
 // RawType returns the raw type.
 func (t Type) RawType() types.Type {
@@ -433,6 +445,12 @@ func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {
 	if n > 0 {
 		fields = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
+			// Avoid re-patching the $f field of a closure struct; it must remain
+			// a plain function pointer to prevent infinite wrapping.
+			if IsClosure(raw) && i == 0 {
+				fields[i] = p.rawType(raw.Field(i).Type()).ll
+				continue
+			}
 			fields[i] = p.rawType(p.patch(raw.Field(i).Type())).ll
 		}
 	}

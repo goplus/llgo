@@ -2287,15 +2287,16 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	)
 	if v.typ_.IsClosure() {
 		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
-		tin = append([]*abi.Type{rtypeOf(unsafe.Pointer(nil))}, ft.In...)
+		// In register-based closure ABI, context is NOT passed as a function parameter.
+		// The function signature matches the user-visible type without a leading context pointer.
+		tin = ft.In
 		tout = ft.Out
 		c := (*struct {
 			fn  unsafe.Pointer
 			env unsafe.Pointer
 		})(v.ptr)
 		fn = c.fn
-		ioff = 1
-		args = append(args, unsafe.Pointer(&c.env))
+		ioff = 0
 	} else {
 		if v.flag&flagMethod != 0 {
 			var (

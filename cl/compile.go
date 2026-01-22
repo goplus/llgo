@@ -263,6 +263,17 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
 }
 
+// makeClosureCtxType returns the struct type for closure context.
+// Used for register-based ctx passing to cast the ctx pointer correctly.
+func (p *context) makeClosureCtxType(pkg *types.Package, vars []*ssa.FreeVar) *types.Struct {
+	n := len(vars)
+	flds := make([]*types.Var, n)
+	for i, v := range vars {
+		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), p.patchType(v.Type()), false)
+	}
+	return types.NewStruct(flds, nil)
+}
+
 func isCgoExternSymbol(f *ssa.Function) bool {
 	name := f.Name()
 	return isCgoCfunc(name) || isCgoCmacro(name)
@@ -315,23 +326,26 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		return fn, nil, goFunc
 	}
 
-	var hasCtx = len(f.FreeVars) > 0
-	if hasCtx {
+	var hasFreeVars = len(f.FreeVars) > 0
+	if hasFreeVars {
 		if debugInstr {
 			log.Println("==> NewClosure", name, "type:", sig)
 		}
-		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
-		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 		}
 	}
 	if fn == nil {
-		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
+		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasFreeVars, isInstance(f))
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
+	}
+	// For closures with free variables, initialize context in the function body.
+	var ctxType *types.Struct
+	if hasFreeVars {
+		ctxType = p.makeClosureCtxType(pkgTypes, f.FreeVars)
 	}
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
@@ -366,6 +380,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
+			b.SetBlock(fn.Block(0))
+			// Initialize closure context immediately at function entry.
+			if hasFreeVars {
+				fn.InitClosureCtx(b, pkg.Prog.Type(ctxType, llssa.InGo))
+			}
 			if dbgEnabled {
 				pos := p.goProg.Fset.Position(f.Pos())
 				bodyPos := p.getFuncBodyPos(f)
