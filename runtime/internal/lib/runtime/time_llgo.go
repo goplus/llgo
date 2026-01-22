@@ -15,6 +15,7 @@ import (
 
 type runtimeTimer struct {
 	libuv.Timer
+	mu     psync.Mutex
 	when   int64
 	period int64
 	active bool
@@ -82,61 +83,87 @@ type asyncTimerEvent struct {
 
 func timerCallback(t *libuv.Timer) {
 	r := (*runtimeTimer)(unsafe.Pointer(t))
+	r.mu.Lock()
 	if !r.active {
+		r.mu.Unlock()
 		return
 	}
-	now := runtimeNano()
-	delay := int64(0)
-	if now > r.when {
-		delay = now - r.when
-	}
-	r.f(r.arg, r.seq, delay)
-	if r.period > 0 {
-		r.when += r.period
+	when := r.when
+	period := r.period
+	f := r.f
+	arg := r.arg
+	seq := r.seq
+	if period > 0 {
+		r.when = when + period
 	} else {
 		r.active = false
 	}
+	r.mu.Unlock()
+
+	now := runtimeNano()
+	delay := int64(0)
+	if now > when {
+		delay = now - when
+	}
+	f(arg, seq, delay)
 }
 
 func startTimer(r *runtimeTimer) {
 	ensureTimerLoop()
 	submitTimerWork(func() bool {
 		checkUV("uv_timer_init", int(libuv.InitTimer(timerLoop, &r.Timer)))
+		r.mu.Lock()
 		delay := timerDelayMillis(r.when)
 		repeat := timerPeriodMillis(r.period)
-		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
 		r.active = true
+		r.seq++
+		r.mu.Unlock()
+		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
 		return true
 	})
 }
 
 func stopRuntimeTimer(r *runtimeTimer) bool {
 	ensureTimerLoop()
-	return submitTimerWork(func() bool {
-		wasActive := r.active
-		if wasActive {
-			checkUV("uv_timer_stop", int(r.Stop()))
-			r.active = false
-			r.seq++
-		}
-		return wasActive
+	r.mu.Lock()
+	wasActive := r.active
+	r.active = false
+	r.seq++
+	r.mu.Unlock()
+	submitTimerWork(func() bool {
+		checkUV("uv_timer_stop", int(r.Stop()))
+		return true
 	})
+	return wasActive
 }
 
 func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
 	ensureTimerLoop()
-	return submitTimerWork(func() bool {
-		wasActive := r.active
+	r.mu.Lock()
+	wasActive := r.active
+	r.active = false
+	r.seq++
+	r.mu.Unlock()
+
+	submitTimerWork(func() bool {
 		checkUV("uv_timer_stop", int(r.Stop()))
-		r.when = when
-		r.period = period
-		r.seq++
+		return true
+	})
+
+	r.mu.Lock()
+	r.when = when
+	r.period = period
+	r.active = true
+	r.seq++
+	r.mu.Unlock()
+
+	submitTimerWork(func() bool {
 		delay := timerDelayMillis(when)
 		repeat := timerPeriodMillis(period)
 		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
-		r.active = true
-		return wasActive
+		return true
 	})
+	return wasActive
 }
 
 func timerDelayMillis(when int64) uint64 {
@@ -256,6 +283,7 @@ func timeSleep(ns int64) {
 	}
 	done := make(chan struct{}, 1)
 	var r runtimeTimer
+	r.mu.Init(nil)
 	r.when = runtimeNano() + ns
 	r.f = func(any, uintptr, int64) { done <- struct{}{} }
 	startTimer(&r)
@@ -269,6 +297,7 @@ func newTimer(when, period int64, f func(any, uintptr, int64), arg any, cp unsaf
 	t := new(timeTimer)
 	t.initTimer = true
 	t.c = cp
+	t.rt.mu.Init(nil)
 	t.rt.when = when
 	t.rt.period = period
 	t.rt.f = f
@@ -292,4 +321,3 @@ func runtimeNano() int64 {
 	ct.ClockGettime(ct.CLOCK_MONOTONIC, tv)
 	return int64(tv.Sec)*1e9 + int64(tv.Nsec)
 }
-

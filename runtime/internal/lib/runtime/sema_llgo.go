@@ -121,7 +121,7 @@ func poll_runtime_Semrelease(addr *uint32) {
 // runtime_canSpin/runtime_doSpin/runtime_nanotime are used by internal/sync.
 func runtime_canSpin(_ int) bool { return false }
 func runtime_doSpin()            {}
-func runtime_nanotime() int64    { return 0 }
+func runtime_nanotime() int64    { return runtimeNano() }
 
 // notifyList matches sync.notifyList size/layout.
 type notifyList struct {
