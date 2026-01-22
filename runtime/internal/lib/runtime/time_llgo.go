@@ -7,8 +7,9 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/libuv"
-	ct "github.com/goplus/llgo/runtime/internal/clite/time"
+	cliteos "github.com/goplus/llgo/runtime/internal/clite/os"
 	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	ct "github.com/goplus/llgo/runtime/internal/clite/time"
 	latomic "github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
 )
 
@@ -16,15 +17,15 @@ import (
 
 type runtimeTimer struct {
 	libuv.Timer
-	mu     psync.Mutex
-	sendMu psync.Mutex
-	when   int64
-	period int64
-	active bool
-	isChan bool
-	f      func(any, uintptr, int64)
-	arg    any
-	seq    uintptr
+	mu        psync.Mutex
+	sendMu    psync.Mutex
+	when      int64
+	period    int64
+	active    bool
+	isChan    bool
+	f         func(any, uintptr, int64)
+	arg       any
+	seq       uintptr
 	isSending int32
 }
 
@@ -44,6 +45,8 @@ var (
 	// reachable while libuv is still holding raw pointers to them.
 	asyncMu      psync.Mutex
 	pendingAsync map[*asyncTimerEvent]struct{}
+
+	asyncTimerChan2State uint32
 )
 
 func ensureTimerLoop() {
@@ -63,6 +66,64 @@ func ensureTimerLoop() {
 			}
 		}()
 	})
+}
+
+func isAsyncTimerChan2() bool {
+	const (
+		asyncTimerChan2Uninit uint32 = iota
+		asyncTimerChan2No
+		asyncTimerChan2Yes
+		asyncTimerChan2Busy
+	)
+	for {
+		state := latomic.LoadUint32(&asyncTimerChan2State)
+		switch state {
+		case asyncTimerChan2Yes:
+			return true
+		case asyncTimerChan2No:
+			return false
+		case asyncTimerChan2Uninit:
+			if latomic.CompareAndSwapUint32(&asyncTimerChan2State, asyncTimerChan2Uninit, asyncTimerChan2Busy) {
+				v := cliteos.Getenv(c.AllocaCStr("GODEBUG"))
+				async := v != nil && godebugHasValue(c.GoString(v), "asynctimerchan", "2")
+				if async {
+					latomic.StoreUint32(&asyncTimerChan2State, asyncTimerChan2Yes)
+					return true
+				}
+				latomic.StoreUint32(&asyncTimerChan2State, asyncTimerChan2No)
+				return false
+			}
+		}
+		c.Usleep(1)
+	}
+}
+
+func godebugHasValue(s, key, value string) bool {
+	for len(s) > 0 {
+		token := s
+		if i := indexByte(s, ','); i >= 0 {
+			token = s[:i]
+			s = s[i+1:]
+		} else {
+			s = ""
+		}
+		if len(token) == len(key)+1+len(value) &&
+			token[:len(key)] == key &&
+			token[len(key)] == '=' &&
+			token[len(key)+1:] == value {
+			return true
+		}
+	}
+	return false
+}
+
+func indexByte(s string, b byte) int {
+	for i := 0; i < len(s); i++ {
+		if s[i] == b {
+			return i
+		}
+	}
+	return -1
 }
 
 // cross thread
@@ -356,7 +417,7 @@ func newTimer(when, period int64, f func(any, uintptr, int64), arg any, cp unsaf
 	t.c = cp
 	t.rt.mu.Init(nil)
 	t.rt.sendMu.Init(nil)
-	t.rt.isChan = cp != nil
+	t.rt.isChan = cp != nil && !isAsyncTimerChan2()
 	t.rt.when = when
 	t.rt.period = period
 	t.rt.f = f
