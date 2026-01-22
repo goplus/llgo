@@ -302,10 +302,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
+	// Check if target has "baremetal" build tag (no OS, no TLS support)
+	isBaremetal := slices.Contains(export.BuildTags, "baremetal")
+
 	target := &llssa.Target{
-		GOOS:   conf.Goos,
-		GOARCH: ctxArch,
-		Target: conf.Target,
+		GOOS:      conf.Goos,
+		GOARCH:    ctxArch,
+		Target:    conf.Target,
+		Baremetal: isBaremetal,
 	}
 
 	prog := llssa.NewProgram(target)

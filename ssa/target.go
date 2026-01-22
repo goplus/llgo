@@ -25,10 +25,11 @@ import (
 // -----------------------------------------------------------------------------
 
 type Target struct {
-	GOOS   string
-	GOARCH string
-	GOARM  string // "5", "6", "7" (default)
-	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	GOOS      string
+	GOARCH    string
+	GOARM     string // "5", "6", "7" (default)
+	Target    string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	Baremetal bool   // true if target has "baremetal" build tag (no OS, no TLS)
 }
 
 // CtxRegister describes the closure context register for a target architecture.
@@ -88,10 +89,10 @@ func (t *Target) SupportsTLS() bool {
 		// Empty GOOS is treated as bare-metal (no TLS).
 		return false
 	}
-	// If a target name is specified (e.g., "esp32", "rp2040"), it's an embedded
-	// target that doesn't support TLS even if GOOS is set to "linux".
-	// Embedded targets use GOOS for compatibility but run bare-metal.
-	if t.Target != "" {
+	// If target has "baremetal" build tag, it doesn't support TLS.
+	// This allows embedded targets with threading (e.g., FreeRTOS) to still use TLS
+	// while bare-metal targets without OS support are correctly identified.
+	if t.Baremetal {
 		return false
 	}
 	// Whitelist of GOOS that support TLS
