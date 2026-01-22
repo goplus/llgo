@@ -31,10 +31,4 @@ func poll_runtime_pollUnblock(ctx uintptr) {}
 //go:linkname poll_runtime_isPollServerDescriptor internal/poll.runtime_isPollServerDescriptor
 func poll_runtime_isPollServerDescriptor(fd uintptr) bool { return false }
 
-//go:linkname poll_runtime_Semacquire internal/poll.runtime_Semacquire
-func poll_runtime_Semacquire(sema *uint32) {}
-
-//go:linkname poll_runtime_Semrelease internal/poll.runtime_Semrelease
-func poll_runtime_Semrelease(sema *uint32) {}
-
 func nanotime() int64 { return 0 }

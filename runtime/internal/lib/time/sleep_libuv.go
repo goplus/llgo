@@ -11,7 +11,7 @@ import (
 
 	"github.com/goplus/llgo/runtime/internal/clite/libuv"
 	"github.com/goplus/llgo/runtime/internal/lib/internal/itoa"
-	libsync "github.com/goplus/llgo/runtime/internal/lib/sync"
+	"sync"
 )
 
 // Interface to timers implemented in package runtime.
@@ -27,12 +27,12 @@ type runtimeTimer struct {
 
 var (
 	timerLoop *libuv.Loop
-	timerOnce libsync.Once
+	timerOnce sync.Once
 	keepAlive libuv.Async
 
 	// asyncMu guards the pendingAsync set so asyncTimerEvent objects stay
 	// reachable while libuv is still holding raw pointers to them.
-	asyncMu      libsync.Mutex
+	asyncMu      sync.Mutex
 	pendingAsync map[*asyncTimerEvent]struct{}
 )
 
