@@ -25,7 +25,6 @@ var hasAltPkg = map[string]none{
 	"internal/syscall/unix":    {},
 	"math":                     {},
 	"crypto/internal/boring/sig": {},
-	"os/signal":                {},
 	"reflect":                  {},
 	"sync/atomic":              {},
 	"syscall":                  {},
