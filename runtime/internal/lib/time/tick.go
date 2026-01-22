@@ -1,3 +1,5 @@
+//go:build (!llgo || !darwin)
+
 package time
 
 import "unsafe"
