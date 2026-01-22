@@ -16,9 +16,11 @@ import (
 type runtimeTimer struct {
 	libuv.Timer
 	mu     psync.Mutex
+	sendMu psync.Mutex
 	when   int64
 	period int64
 	active bool
+	isChan bool
 	f      func(any, uintptr, int64)
 	arg    any
 	seq    uintptr
@@ -83,6 +85,8 @@ type asyncTimerEvent struct {
 
 func timerCallback(t *libuv.Timer) {
 	r := (*runtimeTimer)(unsafe.Pointer(t))
+	now := runtimeNano()
+
 	r.mu.Lock()
 	if !r.active {
 		r.mu.Unlock()
@@ -93,17 +97,38 @@ func timerCallback(t *libuv.Timer) {
 	f := r.f
 	arg := r.arg
 	seq := r.seq
+	isChan := r.isChan
 	if period > 0 {
-		r.when = when + period
+		if now > when {
+			next := when + period*(1+(now-when)/period)
+			if next < 0 {
+				next = when + period
+			}
+			r.when = next
+		} else {
+			r.when = when + period
+		}
 	} else {
 		r.active = false
 	}
 	r.mu.Unlock()
 
-	now := runtimeNano()
 	delay := int64(0)
 	if now > when {
 		delay = now - when
+	}
+	if isChan {
+		r.sendMu.Lock()
+		r.mu.Lock()
+		if r.seq != seq {
+			r.mu.Unlock()
+			r.sendMu.Unlock()
+			return
+		}
+		r.mu.Unlock()
+		f(arg, seq, delay)
+		r.sendMu.Unlock()
+		return
 	}
 	f(arg, seq, delay)
 }
@@ -130,6 +155,10 @@ func stopRuntimeTimer(r *runtimeTimer) bool {
 	r.active = false
 	r.seq++
 	r.mu.Unlock()
+	if r.isChan {
+		r.sendMu.Lock()
+		r.sendMu.Unlock()
+	}
 	submitTimerWork(func() bool {
 		checkUV("uv_timer_stop", int(r.Stop()))
 		return true
@@ -144,6 +173,10 @@ func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
 	r.active = false
 	r.seq++
 	r.mu.Unlock()
+	if r.isChan {
+		r.sendMu.Lock()
+		r.sendMu.Unlock()
+	}
 
 	submitTimerWork(func() bool {
 		checkUV("uv_timer_stop", int(r.Stop()))
@@ -284,6 +317,7 @@ func timeSleep(ns int64) {
 	done := make(chan struct{}, 1)
 	var r runtimeTimer
 	r.mu.Init(nil)
+	r.sendMu.Init(nil)
 	r.when = runtimeNano() + ns
 	r.f = func(any, uintptr, int64) { done <- struct{}{} }
 	startTimer(&r)
@@ -298,6 +332,8 @@ func newTimer(when, period int64, f func(any, uintptr, int64), arg any, cp unsaf
 	t.initTimer = true
 	t.c = cp
 	t.rt.mu.Init(nil)
+	t.rt.sendMu.Init(nil)
+	t.rt.isChan = cp != nil
 	t.rt.when = when
 	t.rt.period = period
 	t.rt.f = f
