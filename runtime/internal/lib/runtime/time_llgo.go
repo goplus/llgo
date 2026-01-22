@@ -113,10 +113,7 @@ func timerCallback(t *libuv.Timer) {
 	}
 	r.mu.Unlock()
 
-	delay := int64(0)
-	if now > when {
-		delay = now - when
-	}
+	delay := now - when
 	if isChan {
 		r.sendMu.Lock()
 		r.mu.Lock()
@@ -150,13 +147,15 @@ func startTimer(r *runtimeTimer) {
 
 func stopRuntimeTimer(r *runtimeTimer) bool {
 	ensureTimerLoop()
+	if r.isChan {
+		r.sendMu.Lock()
+	}
 	r.mu.Lock()
 	wasActive := r.active
 	r.active = false
 	r.seq++
 	r.mu.Unlock()
 	if r.isChan {
-		r.sendMu.Lock()
 		r.sendMu.Unlock()
 	}
 	submitTimerWork(func() bool {
@@ -168,13 +167,15 @@ func stopRuntimeTimer(r *runtimeTimer) bool {
 
 func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
 	ensureTimerLoop()
+	if r.isChan {
+		r.sendMu.Lock()
+	}
 	r.mu.Lock()
 	wasActive := r.active
 	r.active = false
 	r.seq++
 	r.mu.Unlock()
 	if r.isChan {
-		r.sendMu.Lock()
 		r.sendMu.Unlock()
 	}
 
