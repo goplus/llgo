@@ -33,7 +33,6 @@ var hasAltPkg = map[string]none{
 	"sync/atomic":              {},
 	"syscall":                  {},
 	"syscall/js":               {},
-	"time":                     {},
 	"runtime":                  {},
 	"runtime/debug":            {},
 	"runtime/pprof":            {},
