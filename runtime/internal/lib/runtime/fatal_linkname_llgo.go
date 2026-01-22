@@ -22,9 +22,3 @@ func sysrand_fatal(s string) { fatal(s) }
 
 //go:linkname maps_fatal internal/runtime/maps.fatal
 func maps_fatal(s string) { fatal(s) }
-
-//go:linkname internal_sync_throw internal/sync.throw
-func internal_sync_throw(s string) { throw(s) }
-
-//go:linkname internal_sync_fatal internal/sync.fatal
-func internal_sync_fatal(s string) { fatal(s) }

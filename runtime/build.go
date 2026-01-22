@@ -30,7 +30,6 @@ var hasAltPkg = map[string]none{
 	"math":                     {},
 	"os/signal":                {},
 	"reflect":                  {},
-	"sync":                     {},
 	"sync/atomic":              {},
 	"syscall":                  {},
 	"syscall/js":               {},
