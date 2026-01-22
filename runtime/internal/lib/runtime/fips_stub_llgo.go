@@ -1,4 +1,4 @@
-//go:build llgo && darwin
+//go:build llgo
 
 package runtime
 

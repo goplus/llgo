@@ -32,7 +32,10 @@ func (f *File) Stat() (FileInfo, error) {
 func statNolog(name string) (FileInfo, error) {
 	var fs fileStat
 	err := ignoringEINTR(func() error {
-		return syscall.Stat(name, &fs.sys)
+		if e := os.Stat(c.AllocaCStr(name), &fs.sys); e != 0 {
+			return syscall.Errno(e)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, &PathError{Op: "stat", Path: name, Err: err}
@@ -45,7 +48,10 @@ func statNolog(name string) (FileInfo, error) {
 func lstatNolog(name string) (FileInfo, error) {
 	var fs fileStat
 	err := ignoringEINTR(func() error {
-		return syscall.Lstat(name, &fs.sys)
+		if e := os.Lstat(c.AllocaCStr(name), &fs.sys); e != 0 {
+			return syscall.Errno(e)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, &PathError{Op: "lstat", Path: name, Err: err}

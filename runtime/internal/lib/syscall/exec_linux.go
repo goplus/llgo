@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build (linux) && (!llgo || !darwin)
+//go:build linux && (!llgo || !darwin)
 
 package syscall
 
@@ -104,6 +104,10 @@ type SysProcAttr struct {
 	AmbientCaps                []uintptr // Ambient capabilities (Linux only)
 	UseCgroupFD                bool      // Whether to make use of the CgroupFD field.
 	CgroupFD                   int       // File descriptor of a cgroup to put the new process into.
+	// PidFD, if not nil, is used to store the pidfd of a child, if the
+	// functionality is supported by the kernel, or -1. Note *PidFD is
+	// changed only if the process starts successfully.
+	PidFD *int
 }
 
 var (
@@ -130,6 +134,9 @@ func runtime_AfterForkInChild()
 //
 // func forkAndExecInChild(argv0 *byte, argv, envv []*byte, chroot, dir *byte, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
 func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char, attr *ProcAttr, sys *SysProcAttr, pipe int) (pid int, err Errno) {
+	if sys != nil && sys.PidFD != nil {
+		*sys.PidFD = -1
+	}
 	// Set up and fork. This returns immediately in the parent or
 	// if there's an error.
 	upid, err, _, _ := forkAndExecInChild1(argv0, argv, envv, chroot, dir, attr, sys, pipe)

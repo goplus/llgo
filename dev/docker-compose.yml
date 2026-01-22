@@ -6,6 +6,9 @@ x-common-env: &llgo-common-env
   PIP_CACHE_DIR: /root/.cache/pip
   PKG_CONFIG_PATH: /opt/llgo-assets/cargs/lib/pkgconfig
   LLGO_ASSETS_DIR: /opt/llgo-assets
+  http_proxy: http://host.docker.internal:6152
+  https_proxy: http://host.docker.internal:6152
+  NO_PROXY: localhost,127.0.0.1,host.docker.internal
 
 x-common-build: &llgo-build
   context: .

@@ -28,12 +28,6 @@ var (
 )
 
 // TODO(xsw):
-// hasWaitingReaders reports whether any goroutine is waiting
-// to acquire a read lock on rw. It is defined in the sync package.
-func hasWaitingReaders(rw *sync.RWMutex) bool {
-	panic("todo: csyscall.hasWaitingReaders in sync package")
-}
-
 // acquireForkLock acquires a write lock on ForkLock.
 // ForkLock is exported and we've promised that during a fork
 // we will call ForkLock.Lock, so that no other threads create
@@ -56,32 +50,7 @@ func acquireForkLock() {
 
 	// ForkLock is currently locked for writing.
 
-	if hasWaitingReaders(&ForkLock) {
-		// ForkLock is locked for writing, and at least one
-		// goroutine is waiting to read from it.
-		// To avoid lock starvation, allow readers to proceed.
-		// The simple way to do this is for us to acquire a
-		// read lock. That will block us until all current
-		// conceptual write locks are released.
-		//
-		// Note that this case is unusual on modern systems
-		// with O_CLOEXEC and SOCK_CLOEXEC. On those systems
-		// the standard library should never take a read
-		// lock on ForkLock.
-
-		forkingLock.Unlock()
-
-		ForkLock.RLock()
-		ForkLock.RUnlock()
-
-		forkingLock.Lock()
-
-		// Readers got a chance, so now take the write lock.
-
-		if forking == 0 {
-			ForkLock.Lock()
-		}
-	}
+	// llgo: skip waiting reader check (assume no waiting readers).
 
 	forking++
 }
