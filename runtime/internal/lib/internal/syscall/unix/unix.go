@@ -20,5 +20,5 @@ import (
 	_ "unsafe"
 )
 
-// llgo:skip path_filestat_get path_create_directory path_readlink path_unlink_file path_remove_directory Fstatat Mkdirat Readlinkat Unlinkat
+// llgo:skip path_filestat_get path_create_directory path_readlink path_unlink_file path_remove_directory Fstatat Mkdirat
 type _unix struct{}

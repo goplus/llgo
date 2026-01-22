@@ -1,17 +1,17 @@
-//go:build !wasm
+//go:build (!wasm) && (!llgo || !darwin)
 
 package syscall
 
 import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
-type Rlimit syscall.Rlimit
+type Rlimit csyscall.Rlimit
 
 func Getrlimit(which int, lim *Rlimit) (err error) {
-	ret := os.Getrlimit(c.Int(which), (*syscall.Rlimit)(lim))
+	ret := os.Getrlimit(c.Int(which), (*csyscall.Rlimit)(lim))
 	if ret == 0 {
 		return nil
 	}
@@ -19,14 +19,14 @@ func Getrlimit(which int, lim *Rlimit) (err error) {
 }
 
 func setrlimit(which int, lim *Rlimit) (err error) {
-	ret := os.Setrlimit(c.Int(which), (*syscall.Rlimit)(lim))
+	ret := os.Setrlimit(c.Int(which), (*csyscall.Rlimit)(lim))
 	if ret == 0 {
 		return nil
 	}
 	return Errno(ret)
 }
 
-func wait4(pid int, wstatus *c.Int, options int, rusage *syscall.Rusage) (wpid int, err error) {
+func wait4(pid int, wstatus *c.Int, options int, rusage *csyscall.Rusage) (wpid int, err error) {
 	ret := os.Wait4(os.PidT(pid), wstatus, c.Int(options), rusage)
 	if ret >= 0 {
 		return int(ret), nil
@@ -44,7 +44,7 @@ func fork() (uintptr, Errno) {
 
 func Pipe(p []int) (err error) {
 	if len(p) != 2 {
-		return Errno(syscall.EINVAL)
+		return Errno(csyscall.EINVAL)
 	}
 	var q [2]c.Int
 	ret := os.Pipe(&q)

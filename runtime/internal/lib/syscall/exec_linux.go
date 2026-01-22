@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build linux
+//go:build (linux) && (!llgo || !darwin)
 
 package syscall
 
@@ -12,7 +12,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // Linux unshare/clone/clone2/clone3 flags, architecture-independent,
@@ -43,7 +43,7 @@ const (
 	CLONE_NEWNET         = 0x40000000 // New network namespace
 	CLONE_IO             = 0x80000000 // Clone io context
 
-	// Flags for the clone3() syscall.
+	// Flags for the clone3() csyscall.
 
 	CLONE_CLEAR_SIGHAND = 0x100000000 // Clear any signal handler and reset to SIG_DFL.
 	CLONE_INTO_CGROUP   = 0x200000000 // Clone into a specific cgroup given the right permissions.
@@ -96,7 +96,7 @@ type SysProcAttr struct {
 	Unshareflags uintptr        // Flags for unshare calls (Linux only)
 	UidMappings  []SysProcIDMap // User ID mappings for user namespaces.
 	GidMappings  []SysProcIDMap // Group ID mappings for user namespaces.
-	// GidMappingsEnableSetgroups enabling setgroups syscall.
+	// GidMappingsEnableSetgroups enabling setgroups csyscall.
 	// If false, then setgroups syscall will be disabled for the child process.
 	// This parameter is no-op if GidMappings == nil. Otherwise for unprivileged
 	// users this should be set to false for mappings work.
@@ -159,7 +159,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		RawSyscall(SYS_WRITE, uintptr(mapPipe[1]), uintptr(unsafe.Pointer(&err2)), unsafe.Sizeof(err2))
 		Close(mapPipe[1])
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.UidMappings")
+		panic("todo: csyscall.forkAndExecInChild - sys.UidMappings")
 	}
 
 	return pid, 0
@@ -188,7 +188,7 @@ func capToIndex(cap uintptr) uintptr { return cap >> 5 }
 // See CAP_TO_MASK in linux/capability.h:
 func capToMask(cap uintptr) uint32 { return 1 << uint(cap&31) }
 
-// cloneArgs holds arguments for clone3 Linux syscall.
+// cloneArgs holds arguments for clone3 Linux csyscall.
 type cloneArgs struct {
 	flags      uint64 // Flags bit mask
 	pidFD      uint64 // Where to store PID file descriptor (int *)
@@ -262,7 +262,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 			puid = []byte("/proc/self/uid_map\000")
 			uidmap = formatIDMappings(sys.UidMappings)
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.UidMappings")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.UidMappings")
 	}
 
 	if sys.GidMappings != nil {
@@ -277,7 +277,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 			}
 			gidmap = formatIDMappings(sys.GidMappings)
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.GidMappings")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.GidMappings")
 	}
 
 	// Record parent PID so child can test if it has died.
@@ -307,7 +307,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 				return
 			}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.UidMappings")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.UidMappings")
 	}
 
 	flags = sys.Cloneflags
@@ -322,13 +322,13 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	if sys.UseCgroupFD {
 		clone3 = &cloneArgs{
 			flags:      uint64(flags) | CLONE_INTO_CGROUP,
-			exitSignal: uint64(syscall.SIGCHLD),
+			exitSignal: uint64(csyscall.SIGCHLD),
 			cgroup:     uint64(sys.CgroupFD),
 		}
 	} else if flags&CLONE_NEWTIME != 0 {
 		clone3 = &cloneArgs{
 			flags:      uint64(flags),
-			exitSignal: uint64(syscall.SIGCHLD),
+			exitSignal: uint64(csyscall.SIGCHLD),
 		}
 	}
 
@@ -340,15 +340,15 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 		/**
 		pid, err1 = rawVforkSyscall(_SYS_clone3, uintptr(unsafe.Pointer(clone3)), unsafe.Sizeof(*clone3))
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - clone3 != nil")
+		panic("todo: csyscall.forkAndExecInChild1 - clone3 != nil")
 	} else {
-		flags |= uintptr(syscall.SIGCHLD)
+		flags |= uintptr(csyscall.SIGCHLD)
 		if runtime.GOARCH == "s390x" {
 			// On Linux/s390, the first two arguments of clone(2) are swapped.
-			// pid, err1 = rawVforkSyscall(syscall.SYS_CLONE, 0, flags)
-			panic("todo: syscall.forkAndExecInChild1 - GOARCH == s390x")
+			// pid, err1 = rawVforkSyscall(csyscall.SYS_CLONE, 0, flags)
+			panic("todo: csyscall.forkAndExecInChild1 - GOARCH == s390x")
 		} else {
-			ret := os.Syscall(syscall.SYS_CLONE, flags, 0)
+			ret := os.Syscall(csyscall.SYS_CLONE, flags, 0)
 			if ret >= 0 {
 				pid = uintptr(ret)
 				err1 = Errno(0)
@@ -373,26 +373,26 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// Enable the "keep capabilities" flag to set ambient capabilities later.
 	if len(sys.AmbientCaps) > 0 {
 		/**
-		_, _, err1 = RawSyscall6(syscall.SYS_PRCTL, syscall.PR_SET_KEEPCAPS, 1, 0, 0, 0, 0)
+		_, _, err1 = RawSyscall6(csyscall.SYS_PRCTL, csyscall.PR_SET_KEEPCAPS, 1, 0, 0, 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.AmbientCaps")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.AmbientCaps")
 	}
 
 	// Wait for User ID/Group ID mappings to be written.
 	if sys.UidMappings != nil || sys.GidMappings != nil {
 		/**
-		if _, _, err1 = RawSyscall(syscall.SYS_CLOSE, uintptr(mapPipe[1]), 0, 0); err1 != 0 {
+		if _, _, err1 = RawSyscall(csyscall.SYS_CLOSE, uintptr(mapPipe[1]), 0, 0); err1 != 0 {
 			goto childerror
 		}
-		pid, _, err1 = RawSyscall(syscall.SYS_READ, uintptr(mapPipe[0]), uintptr(unsafe.Pointer(&err2)), unsafe.Sizeof(err2))
+		pid, _, err1 = RawSyscall(csyscall.SYS_READ, uintptr(mapPipe[0]), uintptr(unsafe.Pointer(&err2)), unsafe.Sizeof(err2))
 		if err1 != 0 {
 			goto childerror
 		}
 		if pid != unsafe.Sizeof(err2) {
-			err1 = syscall.EINVAL
+			err1 = csyscall.EINVAL
 			goto childerror
 		}
 		if err2 != 0 {
@@ -400,48 +400,48 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.UidMappings")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.UidMappings")
 	}
 
 	// Session ID
 	if sys.Setsid {
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_SETSID, 0, 0, 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_SETSID, 0, 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Setsid")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Setsid")
 	}
 
 	// Set process group
 	if sys.Setpgid || sys.Foreground {
 		// Place child in process group.
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_SETPGID, 0, uintptr(sys.Pgid), 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_SETPGID, 0, uintptr(sys.Pgid), 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Setpgid")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Setpgid")
 	}
 
 	if sys.Foreground {
 		/**
 		pgrp = int32(sys.Pgid)
 		if pgrp == 0 {
-			pid, _ = rawSyscallNoError(syscall.SYS_GETPID, 0, 0, 0)
+			pid, _ = rawSyscallNoError(csyscall.SYS_GETPID, 0, 0, 0)
 
 			pgrp = int32(pid)
 		}
 
 		// Place process group in foreground.
-		_, _, err1 = RawSyscall(syscall.SYS_IOCTL, uintptr(sys.Ctty), uintptr(syscall.TIOCSPGRP), uintptr(unsafe.Pointer(&pgrp)))
+		_, _, err1 = RawSyscall(csyscall.SYS_IOCTL, uintptr(sys.Ctty), uintptr(csyscall.TIOCSPGRP), uintptr(unsafe.Pointer(&pgrp)))
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Foreground")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Foreground")
 	}
 
 	// Restore the signal mask. We do this after TIOCSPGRP to avoid
@@ -451,46 +451,46 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// Unshare
 	if sys.Unshareflags != 0 {
 		/**
-		 _, _, err1 = RawSyscall(syscall.SYS_UNSHARE, sys.Unshareflags, 0, 0)
+		 _, _, err1 = RawSyscall(csyscall.SYS_UNSHARE, sys.Unshareflags, 0, 0)
 		 if err1 != 0 {
 		 	goto childerror
 		 }
 
 		 if sys.Unshareflags&CLONE_NEWUSER != 0 && sys.GidMappings != nil {
-		 	dirfd = int(syscall.AT_FDCWD)
-		 	if fd1, _, err1 = RawSyscall6(syscall.SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(&psetgroups[0])), uintptr(syscall.O_WRO∂∂∂NLY), 0, 0, 0); err1 != 0 {
+		 	dirfd = int(csyscall.AT_FDCWD)
+		 	if fd1, _, err1 = RawSyscall6(csyscall.SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(&psetgroups[0])), uintptr(csyscall.O_WRO∂∂∂NLY), 0, 0, 0); err1 != 0 {
 		 		goto childerror
 		 	}
-		 	pid, _, err1 = RawSyscall(syscall.SYS_WRITE, uintptr(fd1), uintptr(unsafe.Pointer(&setgroups[0])), uintptr(len(setgroups)))
+		 	pid, _, err1 = RawSyscall(csyscall.SYS_WRITE, uintptr(fd1), uintptr(unsafe.Pointer(&setgroups[0])), uintptr(len(setgroups)))
 		 	if err1 != 0 {
 		 		goto childerror
 		 	}
-		 	if _, _, err1 = RawSyscall(syscall.SYS_CLOSE, uintptr(fd1), 0, 0); err1 != 0 {
+		 	if _, _, err1 = RawSyscall(csyscall.SYS_CLOSE, uintptr(fd1), 0, 0); err1 != 0 {
 		 		goto childerror
 		 	}
 
-		 	if fd1, _, err1 = RawSyscall6(syscall.SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(&pgid[0])), uintptr(syscall.O_WRONLY), 0, 0, 0); err1 != 0 {
+		 	if fd1, _, err1 = RawSyscall6(csyscall.SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(&pgid[0])), uintptr(csyscall.O_WRONLY), 0, 0, 0); err1 != 0 {
 		 		goto childerror
 			}
-			pid, _, err1 = RawSyscall(syscall.SYS_WRITE, uintptr(fd1), uintptr(unsafe.Pointer(&gidmap[0])), uintptr(len(gidmap)))
+			pid, _, err1 = RawSyscall(csyscall.SYS_WRITE, uintptr(fd1), uintptr(unsafe.Pointer(&gidmap[0])), uintptr(len(gidmap)))
 		 	if err1 != 0 {
 				goto childerror
 		 	}
-		 	if _, _, err1 = RawSyscall(syscall.SYS_CLOSE, uintptr(fd1), 0, 0); err1 != 0 {
+		 	if _, _, err1 = RawSyscall(csyscall.SYS_CLOSE, uintptr(fd1), 0, 0); err1 != 0 {
 		 		goto childerror
 		 	}
 		}
 
 		if sys.Unshareflags&CLONE_NEWUSER != 0 && sys.UidMappings != nil {
-			dirfd = int(syscall._AT_FDCWD)
-			if fd1, _, err1 = RawSyscall6(syscall.SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(&puid[0])), uintptr(syscall.O_WRONLY), 0, 0, 0); err1 != 0 {
+			dirfd = int(csyscall._AT_FDCWD)
+			if fd1, _, err1 = RawSyscall6(csyscall.SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(&puid[0])), uintptr(csyscall.O_WRONLY), 0, 0, 0); err1 != 0 {
 				goto childerror
 			}
-			pid, _, err1 = RawSyscall(syscall.SYS_WRITE, uintptr(fd1), uintptr(unsafe.Pointer(&uidmap[0])), uintptr(len(uidmap)))
+			pid, _, err1 = RawSyscall(csyscall.SYS_WRITE, uintptr(fd1), uintptr(unsafe.Pointer(&uidmap[0])), uintptr(len(uidmap)))
 			if err1 != 0 {
 				goto childerror
 			}
-			if _, _, err1 = RawSyscall(syscall.SYS_CLOSE, uintptr(fd1), 0, 0); err1 != 0 {
+			if _, _, err1 = RawSyscall(csyscall.SYS_CLOSE, uintptr(fd1), 0, 0); err1 != 0 {
 				goto childerror
 			}
 		}
@@ -503,24 +503,24 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 		// To make this model work we must further mark / as MS_PRIVATE.
 		// This is what the standard unshare command does.
 		if sys.Unshareflags&CLONE_NEWNS == CLONE_NEWNS {
-			_, _, err1 = RawSyscall6(syscall.SYS_MOUNT, uintptr(unsafe.Pointer(&none[0])), uintptr(unsafe.Pointer(&slash[0])), 0, syscall.MS_REC|syscall.MS_PRIVATE, 0, 0)
+			_, _, err1 = RawSyscall6(csyscall.SYS_MOUNT, uintptr(unsafe.Pointer(&none[0])), uintptr(unsafe.Pointer(&slash[0])), 0, csyscall.MS_REC|csyscall.MS_PRIVATE, 0, 0)
 			if err1 != 0 {
 				goto childerror
 			}
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Unshareflags")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Unshareflags")
 	}
 
 	// Chroot
 	if chroot != nil {
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_CHROOT, uintptr(unsafe.Pointer(chroot)), 0, 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_CHROOT, uintptr(unsafe.Pointer(chroot)), 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - chroot")
+		panic("todo: csyscall.forkAndExecInChild1 - chroot")
 	}
 
 	// User and groups
@@ -537,16 +537,16 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 				goto childerror
 			}
 		}
-		_, _, err1 = RawSyscall(syscall.SYS_SETUID, uintptr(cred.Gid), 0, 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_SETUID, uintptr(cred.Gid), 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
-		_, _, err1 = RawSyscall(syscall.SYS_SETUID, uintptr(cred.Uid), 0, 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_SETUID, uintptr(cred.Uid), 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - chroot")
+		panic("todo: csyscall.forkAndExecInChild1 - chroot")
 	}
 
 	if len(sys.AmbientCaps) != 0 {
@@ -555,7 +555,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 		/**
 		caps.hdr.version = _LINUX_CAPABILITY_VERSION_3
 
-		if _, _, err1 = RawSyscall(syscall.SYS_CAPGET, uintptr(unsafe.Pointer(&caps.hdr)), uintptr(unsafe.Pointer(&caps.data[0])), 0); err1 != 0 {
+		if _, _, err1 = RawSyscall(csyscall.SYS_CAPGET, uintptr(unsafe.Pointer(&caps.hdr)), uintptr(unsafe.Pointer(&caps.data[0])), 0); err1 != 0 {
 			goto childerror
 		}
 
@@ -566,18 +566,18 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 			caps.data[capToIndex(c)].inheritable |= capToMask(c)
 		}
 
-		if _, _, err1 = RawSyscall(syscall.SYS_CAPSET, uintptr(unsafe.Pointer(&caps.hdr)), uintptr(unsafe.Pointer(&caps.data[0])), 0); err1 != 0 {
+		if _, _, err1 = RawSyscall(csyscall.SYS_CAPSET, uintptr(unsafe.Pointer(&caps.hdr)), uintptr(unsafe.Pointer(&caps.data[0])), 0); err1 != 0 {
 			goto childerror
 		}
 
 		for _, c = range sys.AmbientCaps {
-			_, _, err1 = RawSyscall6(syscall.SYS_PRCTL, PR_CAP_AMBIENT, uintptr(PR_CAP_AMBIENT_RAISE), c, 0, 0, 0)
+			_, _, err1 = RawSyscall6(csyscall.SYS_PRCTL, PR_CAP_AMBIENT, uintptr(PR_CAP_AMBIENT_RAISE), c, 0, 0, 0)
 			if err1 != 0 {
 				goto childerror
 			}
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - chroot")
+		panic("todo: csyscall.forkAndExecInChild1 - chroot")
 	}
 
 	// Chdir
@@ -591,7 +591,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// Parent death signal
 	if sys.Pdeathsig != 0 {
 		/**
-		_, _, err1 = RawSyscall6(syscall.SYS_PRCTL, syscall.PR_SET_PDEATHSIG, uintptr(sys.Pdeathsig), 0, 0, 0, 0)
+		_, _, err1 = RawSyscall6(csyscall.SYS_PRCTL, csyscall.PR_SET_PDEATHSIG, uintptr(sys.Pdeathsig), 0, 0, 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
@@ -599,30 +599,30 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 		// Signal self if parent is already dead. This might cause a
 		// duplicate signal in rare cases, but it won't matter when
 		// using SIGKILL.
-		pid, _ = rawSyscallNoError(syscall.SYS_GETPPID, 0, 0, 0)
+		pid, _ = rawSyscallNoError(csyscall.SYS_GETPPID, 0, 0, 0)
 		if pid != ppid {
-			pid, _ = rawSyscallNoError(syscall.SYS_GETPID, 0, 0, 0)
-			_, _, err1 = RawSyscall(syscall.SYS_KILL, pid, uintptr(sys.Pdeathsig), 0)
+			pid, _ = rawSyscallNoError(csyscall.SYS_GETPID, 0, 0, 0)
+			_, _, err1 = RawSyscall(csyscall.SYS_KILL, pid, uintptr(sys.Pdeathsig), 0)
 			if err1 != 0 {
 				goto childerror
 			}
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Pdeathsig")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Pdeathsig")
 	}
 
 	// Pass 1: look for fd[i] < i and move those up above len(fd)
 	// so that pass 2 won't stomp on an fd it needs later.
 	if pipe < nextfd {
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_DUP3, uintptr(pipe), uintptr(nextfd), syscall.O_CLOEXEC)
+		_, _, err1 = RawSyscall(csyscall.SYS_DUP3, uintptr(pipe), uintptr(nextfd), csyscall.O_CLOEXEC)
 		if err1 != 0 {
 			goto childerror
 		}
 		pipe = nextfd
 		nextfd++
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - pipe < nextfd")
+		panic("todo: csyscall.forkAndExecInChild1 - pipe < nextfd")
 	}
 
 	for i = 0; i < len(fd); i++ {
@@ -630,7 +630,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 			if nextfd == pipe { // don't stomp on pipe
 				nextfd++
 			}
-			if ret := os.Dup3(c.Int(fd[i]), c.Int(nextfd), syscall.O_CLOEXEC); ret < 0 {
+			if ret := os.Dup3(c.Int(fd[i]), c.Int(nextfd), csyscall.O_CLOEXEC); ret < 0 {
 				err1 = Errno(os.Errno())
 				goto childerror
 			}
@@ -648,7 +648,7 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 		if fd[i] == i {
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
-			if ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0); ret < 0 {
+			if ret := os.Fcntl(c.Int(fd[i]), csyscall.F_SETFD, 0); ret < 0 {
 				err1 = Errno(os.Errno())
 				goto childerror
 			}
@@ -673,28 +673,28 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// Detach fd 0 from tty
 	if sys.Noctty {
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_IOCTL, 0, uintptr(syscall.TIOCNOTTY), 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_IOCTL, 0, uintptr(csyscall.TIOCNOTTY), 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Noctty")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Noctty")
 	}
 
 	// Set the controlling TTY to Ctty
 	if sys.Setctty {
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_IOCTL, uintptr(sys.Ctty), uintptr(syscall.TIOCSCTTY), 1)
+		_, _, err1 = RawSyscall(csyscall.SYS_IOCTL, uintptr(sys.Ctty), uintptr(csyscall.TIOCSCTTY), 1)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Setctty")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Setctty")
 	}
 
 	// Restore original rlimit.
 	if rlimOK && rlim.Cur != 0 {
-		os.Setrlimit(syscall.RLIMIT_NOFILE, (*syscall.Rlimit)(&rlim))
+		os.Setrlimit(csyscall.RLIMIT_NOFILE, (*csyscall.Rlimit)(&rlim))
 	}
 
 	// Enable tracing if requested.
@@ -702,12 +702,12 @@ func forkAndExecInChild1(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char
 	// setting up after the fork. See issue #21428.
 	if sys.Ptrace {
 		/**
-		_, _, err1 = RawSyscall(syscall.SYS_PTRACE, uintptr(syscall.PTRACE_TRACEME), 0, 0)
+		_, _, err1 = RawSyscall(csyscall.SYS_PTRACE, uintptr(csyscall.PTRACE_TRACEME), 0, 0)
 		if err1 != 0 {
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild1 - sys.Ptrace")
+		panic("todo: csyscall.forkAndExecInChild1 - sys.Ptrace")
 	}
 
 	// Time to exec.
@@ -735,7 +735,7 @@ func formatIDMappings(idMap []SysProcIDMap) []byte {
 	}
 	return data
 	*/
-	panic("todo: syscall.formatIDMappings")
+	panic("todo: csyscall.formatIDMappings")
 }
 
 // writeIDMappings writes the user namespace User ID or Group ID mappings to the specified path.
@@ -757,7 +757,7 @@ func writeIDMappings(path string, idMap []SysProcIDMap) error {
 
 	return nil
 	*/
-	panic("todo: syscall.writeIDMappings")
+	panic("todo: csyscall.writeIDMappings")
 }
 
 // writeSetgroups writes to /proc/PID/setgroups "deny" if enable is false
@@ -786,7 +786,7 @@ func writeSetgroups(pid int, enable bool) error {
 
 	return Close(fd)
 	*/
-	panic("todo: syscall.writeSetgroups")
+	panic("todo: csyscall.writeSetgroups")
 }
 
 // writeUidGidMappings writes User ID and Group ID mappings for user namespaces
@@ -813,5 +813,5 @@ func writeUidGidMappings(pid int, sys *SysProcAttr) error {
 
 	return nil
 	*/
-	panic("todo: syscall.writeUidGidMappings")
+	panic("todo: csyscall.writeUidGidMappings")
 }

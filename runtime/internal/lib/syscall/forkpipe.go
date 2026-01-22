@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build aix || darwin
+//go:build (aix || darwin) && (!llgo || !darwin)
 
 package syscall
 
 import (
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // forkExecPipe opens a pipe and non-atomically sets O_CLOEXEC on both file
@@ -19,11 +19,11 @@ func forkExecPipe(p []int) error {
 	if err != nil {
 		return err
 	}
-	ret := os.Fcntl(c.Int(p[0]), syscall.F_SETFD, syscall.FD_CLOEXEC)
+	ret := os.Fcntl(c.Int(p[0]), csyscall.F_SETFD, csyscall.FD_CLOEXEC)
 	if ret != 0 {
 		return Errno(ret)
 	}
-	ret = os.Fcntl(c.Int(p[1]), syscall.F_SETFD, syscall.FD_CLOEXEC)
+	ret = os.Fcntl(c.Int(p[1]), csyscall.F_SETFD, csyscall.FD_CLOEXEC)
 	if ret != 0 {
 		return Errno(ret)
 	}

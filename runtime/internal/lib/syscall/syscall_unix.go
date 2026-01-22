@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix && !wasm
+//go:build (unix && !wasm) && (!llgo || !darwin)
 
 package syscall
 
 import (
 	"errors"
 
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 	"github.com/goplus/llgo/runtime/internal/lib/internal/oserror"
 )
 
@@ -21,33 +21,33 @@ var (
 
 type Errno uintptr
 
-type Dirent = syscall.Dirent
+type Dirent = csyscall.Dirent
 
 func (e Errno) Error() string {
-	return syscall.Error(syscall.Errno(e))
+	return csyscall.Error(csyscall.Errno(e))
 }
 
 func (e Errno) Is(target error) bool {
 	switch target {
 	case oserror.ErrPermission:
-		return e == Errno(syscall.EACCES) || e == Errno(syscall.EPERM)
+		return e == Errno(csyscall.EACCES) || e == Errno(csyscall.EPERM)
 	case oserror.ErrExist:
-		return e == Errno(syscall.EEXIST) || e == Errno(syscall.ENOTEMPTY)
+		return e == Errno(csyscall.EEXIST) || e == Errno(csyscall.ENOTEMPTY)
 	case oserror.ErrNotExist:
-		return e == Errno(syscall.ENOENT)
+		return e == Errno(csyscall.ENOENT)
 	case errors.ErrUnsupported:
-		return e == Errno(syscall.ENOSYS) || e == Errno(syscall.ENOTSUP) || e == Errno(syscall.EOPNOTSUPP)
+		return e == Errno(csyscall.ENOSYS) || e == Errno(csyscall.ENOTSUP) || e == Errno(csyscall.EOPNOTSUPP)
 	}
 	return false
 }
 
 func (e Errno) Temporary() bool {
-	return e == Errno(syscall.EINTR) || e == Errno(syscall.EMFILE) ||
-		e == Errno(syscall.ENFILE) || e.Timeout()
+	return e == Errno(csyscall.EINTR) || e == Errno(csyscall.EMFILE) ||
+		e == Errno(csyscall.ENFILE) || e.Timeout()
 }
 
 func (e Errno) Timeout() bool {
-	return e == Errno(syscall.EAGAIN) || e == Errno(syscall.EWOULDBLOCK) || e == Errno(syscall.ETIMEDOUT)
+	return e == Errno(csyscall.EAGAIN) || e == Errno(csyscall.EWOULDBLOCK) || e == Errno(csyscall.ETIMEDOUT)
 }
 
 // A Signal is a number describing a process signal.
@@ -66,13 +66,13 @@ func (s Signal) String() string {
 		}
 		return "signal " + itoa.Itoa(int(s))
 	*/
-	panic("todo: syscall.Signal.String")
+	panic("todo: csyscall.Signal.String")
 }
 
 func Mmap(fd int, offset int64, length int, prot int, flags int) (data []byte, err error) {
-	panic("todo: syscall.Mmap")
+	panic("todo: csyscall.Mmap")
 }
 
 func Munmap(b []byte) (err error) {
-	panic("todo: syscall.Munmap")
+	panic("todo: csyscall.Munmap")
 }

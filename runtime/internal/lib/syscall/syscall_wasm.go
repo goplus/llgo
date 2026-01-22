@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build wasm
+//go:build (wasm) && (!llgo || !darwin)
 
 package syscall
 
@@ -12,7 +12,7 @@ import (
 
 	"github.com/goplus/llgo/runtime/internal/lib/internal/oserror"
 
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 const (
@@ -63,32 +63,32 @@ type Dirent struct {
 //	if errno != 0 {
 //		err = errno
 //	}
-type Errno syscall.Errno
+type Errno csyscall.Errno
 
 func (e Errno) Error() string {
-	return syscall.Error(syscall.Errno(e))
+	return csyscall.Error(csyscall.Errno(e))
 }
 
 func (e Errno) Is(target error) bool {
 	switch target {
 	case oserror.ErrPermission:
-		return e == Errno(syscall.EACCES) || e == Errno(syscall.EPERM)
+		return e == Errno(csyscall.EACCES) || e == Errno(csyscall.EPERM)
 	case oserror.ErrExist:
-		return e == Errno(syscall.EEXIST) || e == Errno(syscall.ENOTEMPTY)
+		return e == Errno(csyscall.EEXIST) || e == Errno(csyscall.ENOTEMPTY)
 	case oserror.ErrNotExist:
-		return e == Errno(syscall.ENOENT)
+		return e == Errno(csyscall.ENOENT)
 	case errors.ErrUnsupported:
-		return e == Errno(syscall.ENOSYS)
+		return e == Errno(csyscall.ENOSYS)
 	}
 	return false
 }
 
 func (e Errno) Temporary() bool {
-	return e == Errno(syscall.EINTR) || e == Errno(syscall.EMFILE) || e.Timeout()
+	return e == Errno(csyscall.EINTR) || e == Errno(csyscall.EMFILE) || e.Timeout()
 }
 
 func (e Errno) Timeout() bool {
-	return e == Errno(syscall.EAGAIN) || e == Errno(syscall.ETIMEDOUT)
+	return e == Errno(csyscall.EAGAIN) || e == Errno(csyscall.ETIMEDOUT)
 }
 
 // A Signal is a number describing a process signal.

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build darwin || (openbsd && !mips64)
+//go:build (darwin || (openbsd && !mips64)) && (!llgo || !darwin)
 
 package syscall
 
@@ -11,7 +11,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 type SysProcAttr struct {
@@ -108,7 +108,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Ptrace")
+		panic("todo: csyscall.forkAndExecInChild - sys.Ptrace")
 	}
 
 	// Session ID
@@ -119,7 +119,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Setsid")
+		panic("todo: csyscall.forkAndExecInChild - sys.Setsid")
 	}
 
 	// Set process group
@@ -131,7 +131,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Setpgid")
+		panic("todo: csyscall.forkAndExecInChild - sys.Setpgid")
 	}
 
 	if sys.Foreground {
@@ -153,7 +153,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Foreground")
+		panic("todo: csyscall.forkAndExecInChild - sys.Foreground")
 	}
 
 	// Restore the signal mask. We do this after TIOCSPGRP to avoid
@@ -168,7 +168,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - chroot")
+		panic("todo: csyscall.forkAndExecInChild - chroot")
 	}
 
 	// User and groups
@@ -194,7 +194,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Credential")
+		panic("todo: csyscall.forkAndExecInChild - sys.Credential")
 	}
 
 	// Chdir
@@ -224,7 +224,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		pipe = nextfd
 		nextfd++
 		*/
-		panic("todo: syscall.forkAndExecInChild - pipe < nextfd")
+		panic("todo: csyscall.forkAndExecInChild - pipe < nextfd")
 	}
 	for i = 0; i < len(fd); i++ {
 		if fd[i] >= 0 && fd[i] < i {
@@ -247,7 +247,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			fd[i] = nextfd
 			nextfd++
 			*/
-			panic("todo: syscall.forkAndExecInChild - for fd")
+			panic("todo: csyscall.forkAndExecInChild - for fd")
 		}
 	}
 
@@ -260,7 +260,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 		if fd[i] == i {
 			// dup2(i, i) won't clear close-on-exec flag on Linux,
 			// probably not elsewhere either.
-			if ret := os.Fcntl(c.Int(fd[i]), syscall.F_SETFD, 0); ret < 0 {
+			if ret := os.Fcntl(c.Int(fd[i]), csyscall.F_SETFD, 0); ret < 0 {
 				err1 = Errno(os.Errno())
 				goto childerror
 			}
@@ -289,7 +289,7 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Noctty")
+		panic("todo: csyscall.forkAndExecInChild - sys.Noctty")
 	}
 
 	// Set the controlling TTY to Ctty
@@ -300,12 +300,12 @@ func forkAndExecInChild(argv0 *c.Char, argv, envv **c.Char, chroot, dir *c.Char,
 			goto childerror
 		}
 		*/
-		panic("todo: syscall.forkAndExecInChild - sys.Setctty")
+		panic("todo: csyscall.forkAndExecInChild - sys.Setctty")
 	}
 
 	// Restore original rlimit.
 	if rlimOK && rlim.Cur != 0 {
-		os.Setrlimit(syscall.RLIMIT_NOFILE, (*syscall.Rlimit)(&rlim))
+		os.Setrlimit(csyscall.RLIMIT_NOFILE, (*csyscall.Rlimit)(&rlim))
 	}
 
 	// Time to exec.

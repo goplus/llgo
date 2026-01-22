@@ -50,6 +50,15 @@ func (b Builder) aggregateMalloc(t Type, flds ...llvm.Value) llvm.Value {
 	return ptr
 }
 
+// Aggregate constructs an aggregate value from Expr fields.
+func (b Builder) Aggregate(t Type, flds ...Expr) Expr {
+	vals := make([]llvm.Value, len(flds))
+	for i, fld := range flds {
+		vals[i] = fld.impl
+	}
+	return b.aggregateValue(t, vals...)
+}
+
 // aggregateValue yields the value of the aggregate X with the fields
 func (b Builder) aggregateValue(t Type, flds ...llvm.Value) Expr {
 	return Expr{aggregateValue(b.impl, t.ll, flds...), t}

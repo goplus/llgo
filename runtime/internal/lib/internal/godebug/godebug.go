@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 package godebug
 
 func setUpdate(update func(string, string)) {

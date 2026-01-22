@@ -2,20 +2,20 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build dragonfly || freebsd || linux || netbsd || openbsd || solaris
+//go:build (dragonfly || freebsd || linux || netbsd || openbsd || solaris) && (!llgo || !darwin)
 
 package syscall
 
 import (
 	"sync"
 
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // forkExecPipe atomically opens a pipe with O_CLOEXEC set on both file
 // descriptors.
 func forkExecPipe(p []int) error {
-	return Pipe2(p, syscall.O_CLOEXEC)
+	return Pipe2(p, csyscall.O_CLOEXEC)
 }
 
 var (
@@ -31,7 +31,7 @@ var (
 // hasWaitingReaders reports whether any goroutine is waiting
 // to acquire a read lock on rw. It is defined in the sync package.
 func hasWaitingReaders(rw *sync.RWMutex) bool {
-	panic("todo: syscall.hasWaitingReaders in sync package")
+	panic("todo: csyscall.hasWaitingReaders in sync package")
 }
 
 // acquireForkLock acquires a write lock on ForkLock.
@@ -93,7 +93,7 @@ func releaseForkLock() {
 	defer forkingLock.Unlock()
 
 	if forking <= 0 {
-		panic("syscall.releaseForkLock: negative count")
+		panic("csyscall.releaseForkLock: negative count")
 	}
 
 	forking--

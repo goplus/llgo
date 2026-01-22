@@ -779,7 +779,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				}
 			case *ssa.Call:
 				if fn, ok := ref.Call.Value.(*ssa.Function); ok {
-					if _, _, ftype := p.funcOf(fn); ftype == llgoFuncAddr { // llgo.funcAddr
+					if _, _, ftype := p.funcOf(fn); ftype == llgoFuncAddr || ftype == llgoFuncPCABI0 { // llgo.funcAddr/funcPCABI0
 						return
 					}
 				}

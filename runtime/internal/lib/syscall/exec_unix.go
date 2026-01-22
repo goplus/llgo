@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix
+//go:build (unix) && (!llgo || !darwin)
 
 // Fork, exec, wait, etc.
 
@@ -16,7 +16,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // ForkLock is used to synchronize creation of new file descriptors
@@ -68,7 +68,7 @@ import (
 var ForkLock sync.RWMutex
 
 func CloseOnExec(fd int) {
-	os.Fcntl(c.Int(fd), syscall.F_SETFD, syscall.FD_CLOEXEC)
+	os.Fcntl(c.Int(fd), csyscall.F_SETFD, csyscall.FD_CLOEXEC)
 }
 
 func SetNonblock(fd int, nonblocking bool) (err error) {
@@ -85,7 +85,7 @@ func SetNonblock(fd int, nonblocking bool) (err error) {
 	_, err = fcntl(fd, F_SETFL, flag)
 	return err
 	*/
-	panic("todo: syscall.SetNonblock")
+	panic("todo: csyscall.SetNonblock")
 }
 
 // Credential holds user and group identities to be assumed
@@ -172,7 +172,7 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 	Close(p[1])
 	for {
 		n, err = readlen(p[0], (*byte)(unsafe.Pointer(&err1)), int(unsafe.Sizeof(err1)))
-		if err != Errno(syscall.EINTR) {
+		if err != Errno(csyscall.EINTR) {
 			break
 		}
 	}
@@ -182,13 +182,13 @@ func forkExec(argv0 string, argv []string, attr *ProcAttr) (pid int, err error) 
 			err = Errno(err1)
 		}
 		if err == nil {
-			err = Errno(syscall.EPIPE)
+			err = Errno(csyscall.EPIPE)
 		}
 
 		// Child failed; wait for it to exit, to make sure
 		// the zombies don't accumulate.
 		_, err1 := Wait4(pid, &wstatus, 0, nil)
-		for err1 == Errno(syscall.EINTR) {
+		for err1 == Errno(csyscall.EINTR) {
 			_, err1 = Wait4(pid, &wstatus, 0, nil)
 		}
 		return 0, err

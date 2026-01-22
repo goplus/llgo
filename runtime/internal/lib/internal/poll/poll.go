@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 package poll
 
 func runtime_Semacquire(sema *uint32) {

@@ -139,6 +139,14 @@ func (o *Once) Do(f func()) {
 	}
 }
 
+// OnceFunc returns a function that invokes f only once.
+func OnceFunc(f func()) func() {
+	var o Once
+	return func() {
+		o.Do(f)
+	}
+}
+
 // -----------------------------------------------------------------------------
 
 type Cond struct {

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix || (js && wasm) || plan9 || wasip1
+//go:build (unix || (js && wasm) || plan9 || wasip1) && (!llgo || !darwin)
 
 // Unix environment variables.
 
@@ -14,7 +14,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 var (
@@ -45,6 +45,11 @@ func runtimeEnvs() []string {
 		ret = append(ret, c.GoString(ce))
 		i++
 	}
+}
+
+// runtime_envs is expected by the stdlib syscall package; keep it for patching.
+func runtime_envs() []string {
+	return runtimeEnvs()
 }
 
 func copyenv() {
@@ -117,18 +122,18 @@ func Getenv(key string) (value string, found bool) {
 func Setenv(key, value string) error {
 	envOnce.Do(copyenv)
 	if len(key) == 0 {
-		return Errno(syscall.EINVAL)
+		return Errno(csyscall.EINVAL)
 	}
 	for i := 0; i < len(key); i++ {
 		if key[i] == '=' || key[i] == 0 {
-			return Errno(syscall.EINVAL)
+			return Errno(csyscall.EINVAL)
 		}
 	}
 	// On Plan 9, null is used as a separator, eg in $path.
 	if runtime.GOOS != "plan9" {
 		for i := 0; i < len(value); i++ {
 			if value[i] == 0 {
-				return Errno(syscall.EINVAL)
+				return Errno(csyscall.EINVAL)
 			}
 		}
 	}

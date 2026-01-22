@@ -30,13 +30,11 @@ func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 }
 
 func FuncPCABI0(f interface{}) uintptr {
-	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
-	return *(*uintptr)(unsafe.Pointer(words[1]))
+	return funcPCABI0(f)
 }
 
 func FuncPCABIInternal(f interface{}) uintptr {
-	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
-	return *(*uintptr)(unsafe.Pointer(words[1]))
+	return funcPCABI0(f)
 }
 
 type Type = abi.Type

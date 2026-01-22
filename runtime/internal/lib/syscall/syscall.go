@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 /*
  * Copyright (c) 2024 The XGo Authors (xgo.dev). All rights reserved.
  *
@@ -22,17 +24,16 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 	"github.com/goplus/llgo/runtime/internal/lib/internal/bytealg"
 )
 
-// llgo:skipall
 type _syscall struct{}
 
-type Iovec syscall.Iovec
+type Iovec csyscall.Iovec
 
-type Timespec syscall.Timespec
-type Timeval syscall.Timeval
+type Timespec csyscall.Timespec
+type Timeval csyscall.Timeval
 
 // Unix returns the time stored in ts as seconds plus nanoseconds.
 func (ts *Timespec) Unix() (sec int64, nsec int64) {
@@ -55,7 +56,7 @@ func (tv *Timeval) Nano() int64 {
 }
 
 func Getpagesize() int {
-	panic("todo: syscall.Getpagesize")
+	panic("todo: csyscall.Getpagesize")
 }
 
 func Exit(code int) {
@@ -123,7 +124,7 @@ func Close(fd int) (err error) {
 	return Errno(ret)
 }
 
-type Stat_t = syscall.Stat_t
+type Stat_t = csyscall.Stat_t
 
 func Lstat(path string, stat *Stat_t) (err error) {
 	ret := os.Lstat(c.AllocaCStr(path), stat)
@@ -151,7 +152,7 @@ func BytePtrFromString(s string) (*byte, error) {
 
 func ByteSliceFromString(s string) ([]byte, error) {
 	if bytealg.IndexByteString(s, 0) != -1 {
-		return nil, Errno(syscall.EINVAL)
+		return nil, Errno(csyscall.EINVAL)
 	}
 	a := make([]byte, len(s)+1)
 	copy(a, s)
@@ -159,11 +160,11 @@ func ByteSliceFromString(s string) ([]byte, error) {
 }
 
 func Accept(fd int) (nfd int, sa origSyscall.Sockaddr, err error) {
-	panic("todo: syscall.Accept")
+	panic("todo: csyscall.Accept")
 }
 
 func Kill(pid int, signum Signal) error {
-	errno := syscall.Kill(pid, syscall.Signal(signum))
+	errno := csyscall.Kill(pid, csyscall.Signal(signum))
 	if errno == 0 {
 		return nil
 	}

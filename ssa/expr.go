@@ -159,6 +159,13 @@ func (p Program) Zero(t Type) Expr {
 		ret = p.Zero(p.rtType(name)).impl
 	case *types.Map:
 		ret = p.Zero(p.rtType("Map")).impl
+	case *types.Tuple:
+		n := u.Len()
+		flds := make([]llvm.Value, n)
+		for i := 0; i < n; i++ {
+			flds[i] = p.Zero(p.rawType(u.At(i).Type())).impl
+		}
+		ret = llvm.ConstStruct(flds, false)
 	default:
 		log.Panicln("todo:", u)
 	}
@@ -976,6 +983,11 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 	return llvm.CreateIntToPtr(b, x, t)
 }
 
+// PtrCast converts a pointer/integer expression to a pointer type.
+func (b Builder) PtrCast(t Type, x Expr) Expr {
+	return Expr{castPtr(b.impl, x.impl, t.ll), t}
+}
+
 // -----------------------------------------------------------------------------
 
 // The MakeClosure instruction yields a closure value whose code is
@@ -1134,6 +1146,12 @@ func (b Builder) compareSelect(op token.Token, x Expr, y ...Expr) Expr {
 		ret = Expr{sel, ret.Type}
 	}
 	return ret
+}
+
+// SelectValue chooses between two values based on the condition.
+func (b Builder) SelectValue(cond Expr, a Expr, bExpr Expr) Expr {
+	sel := llvm.CreateSelect(b.impl, cond.impl, a.impl, bExpr.impl)
+	return Expr{sel, a.Type}
 }
 
 // The SliceToArrayPointer instruction yields the conversion of slice X to
