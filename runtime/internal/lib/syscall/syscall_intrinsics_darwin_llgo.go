@@ -1,4 +1,4 @@
-//go:build llgo && darwin
+//go:build llgo
 
 package syscall
 
@@ -25,5 +25,6 @@ func rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 func rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
 // syscallX is like syscall but expects a 64-bit result.
+//
 //go:linkname syscallX llgo.syscall
 func syscallX(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
