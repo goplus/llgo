@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 package os
 
 // setStickyBit adds ModeSticky to the permission bits of path, non atomic.

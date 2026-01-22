@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix && !wasm
+//go:build (unix && !wasm) && (!llgo || !darwin)
 
 package syscall
 
 import (
 	"sync/atomic"
 
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // origRlimitNofile, if not {0, 0}, is the original soft RLIMIT_NOFILE.
@@ -33,17 +33,17 @@ var origRlimitNofile atomic.Value // of Rlimit
 // which Go of course has no choice but to respect.
 func init() {
 	var lim Rlimit
-	if err := Getrlimit(syscall.RLIMIT_NOFILE, &lim); err == nil && lim.Cur != lim.Max {
+	if err := Getrlimit(csyscall.RLIMIT_NOFILE, &lim); err == nil && lim.Cur != lim.Max {
 		origRlimitNofile.Store(lim)
 		lim.Cur = lim.Max
 		adjustFileLimit(&lim)
-		setrlimit(syscall.RLIMIT_NOFILE, &lim)
+		setrlimit(csyscall.RLIMIT_NOFILE, &lim)
 	}
 }
 
 func Setrlimit(resource int, rlim *Rlimit) error {
 	err := setrlimit(resource, rlim)
-	if err == nil && resource == syscall.RLIMIT_NOFILE {
+	if err == nil && resource == csyscall.RLIMIT_NOFILE {
 		// Store zeroes in origRlimitNofile to tell StartProcess
 		// to not adjust the rlimit in the child process.
 		origRlimitNofile.Store(Rlimit{0, 0})

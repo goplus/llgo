@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 package trace
 
 func userTaskEnd(id uint64) {

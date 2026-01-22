@@ -518,6 +518,14 @@ const (
 	llgoAsm           = llgoInstrBase + 0x40
 	llgoStackSave     = llgoInstrBase + 0x41
 	llgoGetClosurePtr = llgoInstrBase + 0x42
+	llgoFuncPCABI0    = llgoInstrBase + 0x43
+	llgoSkip          = llgoInstrBase + 0x44
+	llgoSyscall       = llgoInstrBase + 0x45
+	llgoSyscall6      = llgoInstrBase + 0x46
+	llgoSyscall6X     = llgoInstrBase + 0x47
+	llgoSyscallPtr    = llgoInstrBase + 0x48
+	llgoRawSyscall    = llgoInstrBase + 0x49
+	llgoRawSyscall6   = llgoInstrBase + 0x4a
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
@@ -534,6 +542,17 @@ retry:
 	panic(fmt.Errorf("invalid recv type: %v", typ))
 }
 
+func extractTrampolineCName(name string) string {
+	if !strings.HasSuffix(name, "_trampoline") {
+		return ""
+	}
+	base := strings.TrimSuffix(name, "_trampoline")
+	if strings.HasPrefix(base, "libc_") {
+		base = strings.TrimPrefix(base, "libc_")
+	}
+	return base
+}
+
 func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 	var pkg *types.Package
 	var orgName string
@@ -543,6 +562,11 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		orgName = funcName(pkg, origin, true)
 	} else {
 		fname := fn.Name()
+		if len(fn.Blocks) == 0 {
+			if cname := extractTrampolineCName(fname); cname != "" {
+				return nil, cname, cFunc
+			}
+		}
 		if checkCgo(fname) && !cgoIgnored(fname) {
 			return nil, fname, llgoInstr
 		}
@@ -592,6 +616,12 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 	// TODO(lijie): need a bettery way to process linkname (maybe alias)
 	if !isCgoCfpvar(v.Name()) && !isCgoVar(v.Name()) {
 		if v, ok := p.prog.Linkname(name); ok {
+			if strings.HasPrefix(v, "go:") {
+				if llssa.PathOf(pkg) == "runtime" {
+					return v, goVar, true
+				}
+				return v, goVar, false
+			}
 			if pos := strings.IndexByte(v, '.'); pos >= 0 {
 				if pos == 2 && v[0] == 'p' && v[1] == 'y' {
 					return v[3:], pyVar, false

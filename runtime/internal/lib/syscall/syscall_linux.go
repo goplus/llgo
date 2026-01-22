@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
@@ -17,7 +19,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 // -----------------------------------------------------------------------------
@@ -80,10 +82,10 @@ func (w WaitStatus) TrapCause() int {
 
 		return int(w>>shift) >> 8
 	*/
-	panic("todo: syscall.WaitStatus.TrapCause")
+	panic("todo: csyscall.WaitStatus.TrapCause")
 }
 
-func Wait4(pid int, wstatus *WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *csyscall.Rusage) (wpid int, err error) {
 	var status c.Int
 	wpid, err = wait4(pid, &status, options, rusage)
 	if wstatus != nil {
@@ -101,7 +103,7 @@ func pipe2(pipefd *[2]c.Int, flags c.Int) c.Int
 
 func Pipe2(p []int, flags int) error {
 	if len(p) != 2 {
-		return Errno(syscall.EINVAL)
+		return Errno(csyscall.EINVAL)
 	}
 	var pp [2]c.Int
 	ret := pipe2(&pp, c.Int(flags))
@@ -129,9 +131,9 @@ func faccessat(dirfd c.Int, path *c.Char, mode c.Int, flags c.Int) c.Int
 // -----------------------------------------------------------------------------
 
 func Accept4(fd int, flags int) (nfd int, sa origSyscall.Sockaddr, err error) {
-	panic("todo: syscall.Accept4")
+	panic("todo: csyscall.Accept4")
 }
 
 func Uname(buf *origSyscall.Utsname) (err error) {
-	panic("todo: syscall.Uname")
+	panic("todo: csyscall.Uname")
 }

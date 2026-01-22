@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build darwin || dragonfly || freebsd || netbsd || openbsd
+//go:build (darwin || dragonfly || freebsd || netbsd || openbsd) && (!llgo || !darwin)
 
 // BSD system call wrappers shared by *BSD based systems
 // including OS X (Darwin) and FreeBSD.  Like the other
@@ -17,7 +17,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/clite/syscall"
+	csyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 )
 
 func Getgroups() (gids []int, err error) {
@@ -46,7 +46,7 @@ func Getgroups() (gids []int, err error) {
 	}
 	return
 	*/
-	panic("todo: syscall.Getgroups")
+	panic("todo: csyscall.Getgroups")
 }
 
 func Setgroups(gids []int) (err error) {
@@ -61,7 +61,7 @@ func Setgroups(gids []int) (err error) {
 	}
 	return setgroups(len(a), &a[0])
 	*/
-	panic("todo: syscall.Setgroups")
+	panic("todo: csyscall.Setgroups")
 }
 
 func ReadDirent(fd int, buf []byte) (n int, err error) {
@@ -73,7 +73,7 @@ func ReadDirent(fd int, buf []byte) (n int, err error) {
 	var base = (*uintptr)(unsafe.Pointer(new(uint64)))
 	return Getdirentries(fd, buf, base)
 	*/
-	panic("todo: syscall.ReadDirent")
+	panic("todo: csyscall.ReadDirent")
 }
 
 // Wait status is 7 bits at bottom, either 0 (exited),
@@ -115,11 +115,11 @@ func (w WaitStatus) Signal() Signal {
 func (w WaitStatus) CoreDump() bool { return w.Signaled() && w&core != 0 }
 
 func (w WaitStatus) Stopped() bool {
-	return w&mask == stopped && Signal(w>>shift) != Signal(syscall.SIGSTOP)
+	return w&mask == stopped && Signal(w>>shift) != Signal(csyscall.SIGSTOP)
 }
 
 func (w WaitStatus) Continued() bool {
-	return w&mask == stopped && Signal(w>>shift) == Signal(syscall.SIGSTOP)
+	return w&mask == stopped && Signal(w>>shift) == Signal(csyscall.SIGSTOP)
 }
 
 func (w WaitStatus) StopSignal() Signal {
@@ -131,7 +131,7 @@ func (w WaitStatus) StopSignal() Signal {
 
 func (w WaitStatus) TrapCause() int { return -1 }
 
-func Wait4(pid int, wstatus *WaitStatus, options int, rusage *syscall.Rusage) (wpid int, err error) {
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *csyscall.Rusage) (wpid int, err error) {
 	var status c.Int
 	wpid, err = wait4(pid, &status, options, rusage)
 	if wstatus != nil {
@@ -459,7 +459,7 @@ func SysctlUint32(name string) (value uint32, err error) {
 		return 0, err
 	}
 	if n != 4 {
-		return 0, Errno(syscall.EIO)
+		return 0, Errno(csyscall.EIO)
 	}
 	return *(*uint32)(unsafe.Pointer(&buf[0])), nil
 	*/

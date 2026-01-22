@@ -2,14 +2,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix || wasm
+//go:build (unix || wasm) && (!llgo || !darwin)
 
 package os
 
 import (
+	"syscall"
+
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/os"
-	"github.com/goplus/llgo/runtime/internal/lib/syscall"
 )
 
 // Stat returns the FileInfo structure describing file.

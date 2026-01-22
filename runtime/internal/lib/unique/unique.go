@@ -1,3 +1,5 @@
+//go:build !llgo || !darwin
+
 package unique
 
 import _ "unsafe"
