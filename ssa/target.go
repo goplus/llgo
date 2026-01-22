@@ -88,6 +88,12 @@ func (t *Target) SupportsTLS() bool {
 		// Empty GOOS is treated as bare-metal (no TLS).
 		return false
 	}
+	// If a target name is specified (e.g., "esp32", "rp2040"), it's an embedded
+	// target that doesn't support TLS even if GOOS is set to "linux".
+	// Embedded targets use GOOS for compatibility but run bare-metal.
+	if t.Target != "" {
+		return false
+	}
 	// Whitelist of GOOS that support TLS
 	// These are standard OS platforms with proper thread support
 	// Empty GOOS is treated as bare-metal (no TLS)
