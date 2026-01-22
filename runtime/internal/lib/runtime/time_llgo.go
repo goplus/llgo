@@ -9,6 +9,7 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/libuv"
 	ct "github.com/goplus/llgo/runtime/internal/clite/time"
 	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	latomic "github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
 )
 
 // Minimal time/timer support for stdlib time on llgo/darwin.
@@ -24,6 +25,7 @@ type runtimeTimer struct {
 	f      func(any, uintptr, int64)
 	arg    any
 	seq    uintptr
+	isSending int32
 }
 
 // timeTimer must match the prefix layout of time.Timer.
@@ -98,6 +100,7 @@ func timerCallback(t *libuv.Timer) {
 	arg := r.arg
 	seq := r.seq
 	isChan := r.isChan
+	isSending := isChan && period == 0
 	if period > 0 {
 		if now > when {
 			next := when + period*(1+(now-when)/period)
@@ -115,15 +118,24 @@ func timerCallback(t *libuv.Timer) {
 
 	delay := now - when
 	if isChan {
+		if isSending {
+			latomic.AddInt32(&r.isSending, 1)
+		}
 		r.sendMu.Lock()
 		r.mu.Lock()
 		if r.seq != seq {
 			r.mu.Unlock()
+			if isSending {
+				latomic.AddInt32(&r.isSending, -1)
+			}
 			r.sendMu.Unlock()
 			return
 		}
 		r.mu.Unlock()
 		f(arg, seq, delay)
+		if isSending {
+			latomic.AddInt32(&r.isSending, -1)
+		}
 		r.sendMu.Unlock()
 		return
 	}
@@ -152,17 +164,22 @@ func stopRuntimeTimer(r *runtimeTimer) bool {
 	}
 	r.mu.Lock()
 	wasActive := r.active
+	period := r.period
 	r.active = false
 	r.seq++
 	r.mu.Unlock()
 	if r.isChan {
 		r.sendMu.Unlock()
 	}
+	pending := wasActive
+	if r.isChan && period == 0 && latomic.LoadInt32(&r.isSending) > 0 {
+		pending = true
+	}
 	submitTimerWork(func() bool {
 		checkUV("uv_timer_stop", int(r.Stop()))
 		return true
 	})
-	return wasActive
+	return pending
 }
 
 func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
@@ -172,11 +189,16 @@ func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
 	}
 	r.mu.Lock()
 	wasActive := r.active
+	oldPeriod := r.period
 	r.active = false
 	r.seq++
 	r.mu.Unlock()
 	if r.isChan {
 		r.sendMu.Unlock()
+	}
+	pending := wasActive
+	if r.isChan && oldPeriod == 0 && latomic.LoadInt32(&r.isSending) > 0 {
+		pending = true
 	}
 
 	submitTimerWork(func() bool {
@@ -197,7 +219,7 @@ func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
 		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
 		return true
 	})
-	return wasActive
+	return pending
 }
 
 func timerDelayMillis(when int64) uint64 {
