@@ -62,23 +62,21 @@ _llgo_1:                                          ; preds = %_llgo_3
   %4 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %3, align 8
   %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 1
   %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 0
-  %7 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
-  %8 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %0)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %8, ptr %9, align 8
+  %7 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %0)
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
+  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %7, ptr %8, align 8
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  %11 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %10, align 8
-  %12 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %11, 0
-  %13 = icmp ne ptr %12, null
-  br i1 %13, label %_llgo_1, label %_llgo_2
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
+  %10 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %9, align 8
+  %11 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %10, 0
+  %12 = icmp ne ptr %11, null
+  br i1 %12, label %_llgo_1, label %_llgo_2
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")

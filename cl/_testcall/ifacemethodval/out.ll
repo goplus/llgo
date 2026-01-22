@@ -81,17 +81,15 @@ _llgo_1:                                          ; preds = %_llgo_0
   %9 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testcall/ifacemethodval.interface{Add(int) int}.Add$bound", ptr undef }, ptr %7, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
-  %13 = call i64 %11(i64 9)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  %12 = call i64 %11(i64 9)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 72 }, ptr %14, align 8
-  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %14, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %15)
+  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 72 }, ptr %13, align 8
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %13, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %14)
   unreachable
 }
 
@@ -128,11 +126,9 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 1
   %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
-  %13 = call i64 %11(ptr %10, i64 %0)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
-  ret i64 %13
+  %12 = call i64 %11(ptr %10, i64 %0)
+  ret i64 %12
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")

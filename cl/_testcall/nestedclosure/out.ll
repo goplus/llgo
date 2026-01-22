@@ -26,16 +26,12 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testcall/nestedclosure.main$1", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
-  %7 = call { ptr, ptr } %5()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
-  %8 = extractvalue { ptr, ptr } %7, 1
-  %9 = extractvalue { ptr, ptr } %7, 0
-  %10 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
-  %11 = call i64 %9()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %10)
+  %6 = call { ptr, ptr } %5()
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
+  %9 = call i64 %8()
   ret void
 }
 

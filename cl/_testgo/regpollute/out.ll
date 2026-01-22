@@ -29,21 +29,19 @@ _llgo_0:
   %0 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/regpollute.makeOuter"(i64 42)
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  %3 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %1)
-  %4 = call i64 %2()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  %3 = call i64 %2()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %5 = icmp ne i64 %4, 42
-  br i1 %5, label %_llgo_1, label %_llgo_3
+  %4 = icmp ne i64 %3, 42
+  br i1 %4, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 22 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_2
 
@@ -101,13 +99,11 @@ _llgo_0:
   %3 = load { ptr, ptr }, ptr %2, align 8
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
-  %7 = call i64 %5()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
-  %8 = extractvalue { ptr, ptr } %1, 1
-  %9 = load i64, ptr %8, align 4
-  ret i64 %9
+  %6 = call i64 %5()
+  %7 = extractvalue { ptr, ptr } %1, 1
+  %8 = load i64, ptr %7, align 4
+  ret i64 %8
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/regpollute.noop"() {

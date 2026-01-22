@@ -33,16 +33,12 @@ _llgo_0:
   %4 = alloca %"github.com/goplus/llgo/cl/_testgo/closure.T", align 8
   store { ptr, ptr } %3, ptr %4, align 8
   %5 = load %"github.com/goplus/llgo/cl/_testgo/closure.T", ptr %4, align 8
-  %6 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testgo/closure.main$1"(i64 100)
+  %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 1
+  %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 0
   call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
-  %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 1
-  %8 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 0
-  %9 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
-  call void %8(i64 200)
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
+  call void %7(i64 200)
   ret void
 }
 
