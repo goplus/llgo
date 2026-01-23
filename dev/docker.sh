@@ -3,13 +3,14 @@ set -euo pipefail
 
 usage() {
 	cat >&2 <<'EOF'
-usage: dev/docker.sh <arch> [command...]
+usage: dev/docker.sh <arch> [--go=1.21.13] [command...]
 
 arch must be one of: amd64 arm64 i386
 
 Examples:
   ./dev/docker.sh amd64
   ./dev/docker.sh arm64 bash -lc './dev/llgo.sh test ./test/std/os/signal'
+  ./dev/docker.sh amd64 --go=1.21.13 bash -lc 'go version'
 EOF
 	exit 2
 }
@@ -21,12 +22,30 @@ fi
 arch="$1"
 shift || true
 
+go_version=""
+if [[ ${1:-} == --go=* ]]; then
+	go_version="${1#--go=}"
+	shift || true
+fi
+
 case "$arch" in
 	amd64) service="llgo-dev-amd64" ;;
 	arm64) service="llgo-dev-arm64" ;;
 	i386) service="llgo-dev-i386" ;;
 	*) usage ;;
 esac
+
+if [[ -n "$go_version" ]]; then
+	case "$go_version" in
+		1.21.13)
+			service+="-go121"
+			;;
+		*)
+			echo "error: unsupported Go version: $go_version" >&2
+			exit 2
+			;;
+	esac
+fi
 
 LLGO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 host_pwd="$(pwd -P)"
@@ -54,4 +73,3 @@ if [[ $# -eq 0 ]]; then
 else
 	"${compose[@]}" run --rm --workdir "$container_workdir" "$service" "$@"
 fi
-
