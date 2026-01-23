@@ -1,2 +1,2 @@
-//go:build llgo && 386
-// +build llgo,386
+//go:build 386
+// +build 386

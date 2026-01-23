@@ -1,3 +1,3 @@
 //go:build darwin
 
-package maps
+package syscall

@@ -1,3 +1,3 @@
-//go:build llgo && darwin
+//go:build darwin
 
 package sync
