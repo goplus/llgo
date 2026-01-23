@@ -12,7 +12,7 @@ import (
 
 // TODO(spongehah): Timer
 type Timer struct {
-	Unused [152]byte
+	Unused [uvTimerSize]byte
 }
 
 // ----------------------------------------------
