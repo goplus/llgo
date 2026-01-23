@@ -1,4 +1,4 @@
-//go:build llgo && linux
+//go:build linux
 
 package sync
 

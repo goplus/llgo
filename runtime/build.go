@@ -1,23 +1,13 @@
 package runtime
 
-import "os"
-
 func SkipToBuild(pkgPath string) bool {
-	if HasAltPkg(pkgPath) {
+	if _, ok := hasAltPkg[pkgPath]; ok {
 		return false
 	}
 	return pkgPath == "unsafe"
 }
 
 func HasAltPkg(path string) (b bool) {
-	goos := os.Getenv("GOOS")
-	if goos == "" {
-		goos = hostGOOS
-	}
-	if goos == "darwin" {
-		_, b = hasAltPkgDarwin[path]
-		return
-	}
 	_, b = hasAltPkg[path]
 	return
 }
@@ -37,31 +27,9 @@ var hasAltPkg = map[string]none{
 	"sync/atomic":                {},
 	"unique":                     {},
 	"weak":                       {},
-	// Use stdlib internal/syscall/unix and internal/poll on non-darwin.
-	"reflect":                  {},
-	"syscall/js":               {},
-	"runtime":                  {},
-	"internal/runtime/syscall": {},
-	"runtime/internal/syscall": {},
-}
-
-var hasAltPkgDarwin = map[string]none{
-	"crypto/internal/boring/sig": {},
-	"internal/abi":               {},
-	"internal/bytealg":           {},
-	"internal/cpu":               {},
-	"internal/reflectlite":       {},
-	"internal/runtime/atomic":    {},
-	"internal/runtime/maps":      {},
-	"hash/crc32":                 {},
-	"sync":                       {},
-	"sync/atomic":                {},
-	"unique":                     {},
-	"weak":                       {},
-	// Use stdlib internal/syscall/unix on darwin.
-	"reflect":                  {},
-	"syscall/js":               {},
-	"runtime":                  {},
-	"internal/runtime/syscall": {},
-	"runtime/internal/syscall": {},
+	"reflect":                    {},
+	"syscall/js":                 {},
+	"runtime":                    {},
+	"internal/runtime/syscall":   {},
+	"runtime/internal/syscall":   {},
 }

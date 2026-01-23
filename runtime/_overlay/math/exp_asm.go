@@ -1,4 +1,4 @@
-//go:build llgo && (amd64 || arm64)
+//go:build amd64 || arm64
 
 package math
 
