@@ -11,7 +11,7 @@ workdir="$repo_root"
 
 repo_goflags=""
 repo_gotoolchain=""
-goversion="$(go env GOVERSION 2>/dev/null || true)"
+goversion="$(GOTOOLCHAIN=local go env GOVERSION 2>/dev/null || true)"
 if [[ "$goversion" =~ ^go([0-9]+)\.([0-9]+)\. ]]; then
 	major="${BASH_REMATCH[1]}"
 	minor="${BASH_REMATCH[2]}"
