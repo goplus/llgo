@@ -1,4 +1,5 @@
 //go:build linux
+// +build linux
 
 package runtime
 
@@ -105,14 +106,5 @@ func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
 //go:linkname syscall_rawSyscallNoError syscall.rawSyscallNoError
 func syscall_rawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr) {
 	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
-	return uintptr(r), 0
-}
-
-//go:linkname syscall_rawVforkSyscall syscall.rawVforkSyscall
-func syscall_rawVforkSyscall(trap, a1, a2, a3 uintptr) (r1 uintptr, err uintptr) {
-	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
-	if r == -1 {
-		return uintptr(r), uintptr(cliteos.Errno())
-	}
 	return uintptr(r), 0
 }

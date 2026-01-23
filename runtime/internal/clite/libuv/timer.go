@@ -27,30 +27,44 @@ type TimerCb func(timer *Timer)
 //go:linkname InitTimer C.uv_timer_init
 func InitTimer(loop *Loop, timer *Timer) c.Int
 
-// llgo:link (*Timer).Start C.uv_timer_start
+//go:linkname uvTimerStart C.uv_timer_start
+func uvTimerStart(timer *Timer, cb TimerCb, timeoutMs uint64, repeat uint64) c.Int
+
 func (timer *Timer) Start(cb TimerCb, timeoutMs uint64, repeat uint64) c.Int {
-	return 0
+	return uvTimerStart(timer, cb, timeoutMs, repeat)
 }
 
-// llgo:link (*Timer).Stop C.uv_timer_stop
+//go:linkname uvTimerStop C.uv_timer_stop
+func uvTimerStop(timer *Timer) c.Int
+
 func (timer *Timer) Stop() c.Int {
-	return 0
+	return uvTimerStop(timer)
 }
 
-// llgo:link (*Timer).Again C.uv_timer_again
+//go:linkname uvTimerAgain C.uv_timer_again
+func uvTimerAgain(timer *Timer) c.Int
+
 func (timer *Timer) Again() c.Int {
-	return 0
+	return uvTimerAgain(timer)
 }
 
-// llgo:link (*Timer).SetRepeat C.uv_timer_set_repeat
-func (timer *Timer) SetRepeat(repeat uint64) {}
+//go:linkname uvTimerSetRepeat C.uv_timer_set_repeat
+func uvTimerSetRepeat(timer *Timer, repeat uint64)
 
-// llgo:link (*Timer).GetRepeat C.uv_timer_get_repeat
+func (timer *Timer) SetRepeat(repeat uint64) {
+	uvTimerSetRepeat(timer, repeat)
+}
+
+//go:linkname uvTimerGetRepeat C.uv_timer_get_repeat
+func uvTimerGetRepeat(timer *Timer) uint64
+
 func (timer *Timer) GetRepeat() uint64 {
-	return 0
+	return uvTimerGetRepeat(timer)
 }
 
-// llgo:link (*Timer).GetDueIn C.uv_timer_get_due_in
+//go:linkname uvTimerGetDueIn C.uv_timer_get_due_in
+func uvTimerGetDueIn(timer *Timer) uint64
+
 func (timer *Timer) GetDueIn() uint64 {
-	return 0
+	return uvTimerGetDueIn(timer)
 }
