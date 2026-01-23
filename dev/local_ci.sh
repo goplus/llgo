@@ -16,7 +16,7 @@ if [[ "$goversion" =~ ^go([0-9]+)\.([0-9]+)\. ]]; then
 	major="${BASH_REMATCH[1]}"
 	minor="${BASH_REMATCH[2]}"
 	if ((major == 1 && minor < 23)); then
-		repo_goflags="-modfile=$repo_root/dev/go.mod.1.21"
+		repo_goflags="-modfile=$repo_root/dev/go1.21.mod"
 		repo_gotoolchain="local"
 	fi
 fi
