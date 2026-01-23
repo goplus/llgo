@@ -25,13 +25,17 @@ func HasAltPkg(path string) (b bool) {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"hash/crc32":              {},
-	"internal/abi":            {},
-	"internal/cpu":            {},
-	"internal/reflectlite":    {},
-	"internal/runtime/atomic": {},
-	"sync":                    {},
-	"sync/atomic":             {},
+	"crypto/internal/boring/sig": {},
+	"hash/crc32":                 {},
+	"internal/abi":               {},
+	"internal/cpu":               {},
+	"internal/reflectlite":       {},
+	"internal/runtime/atomic":    {},
+	"internal/runtime/maps":      {},
+	"sync":                       {},
+	"sync/atomic":                {},
+	"unique":                     {},
+	"weak":                       {},
 	// Use stdlib internal/syscall/unix and internal/poll on non-darwin.
 	"reflect":                  {},
 	"syscall/js":               {},
@@ -40,13 +44,17 @@ var hasAltPkg = map[string]none{
 }
 
 var hasAltPkgDarwin = map[string]none{
-	"internal/abi":            {},
-	"internal/cpu":            {},
-	"internal/reflectlite":    {},
-	"internal/runtime/atomic": {},
-	"hash/crc32":              {},
-	"sync":                    {},
-	"sync/atomic":             {},
+	"crypto/internal/boring/sig": {},
+	"internal/abi":               {},
+	"internal/cpu":               {},
+	"internal/reflectlite":       {},
+	"internal/runtime/atomic":    {},
+	"internal/runtime/maps":      {},
+	"hash/crc32":                 {},
+	"sync":                       {},
+	"sync/atomic":                {},
+	"unique":                     {},
+	"weak":                       {},
 	// Use stdlib internal/syscall/unix on darwin.
 	"reflect":                  {},
 	"syscall/js":               {},

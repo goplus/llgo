@@ -19,6 +19,3 @@ func rand_fatal(s string) { fatal(s) }
 
 //go:linkname sysrand_fatal crypto/internal/sysrand.fatal
 func sysrand_fatal(s string) { fatal(s) }
-
-//go:linkname maps_fatal internal/runtime/maps.fatal
-func maps_fatal(s string) { fatal(s) }
