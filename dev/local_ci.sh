@@ -181,7 +181,7 @@ fi
 export PATH="$gobin:$PATH"
 
 log_section "llgo test"
-(cd "$workdir" && llgo test ./...)
+(cd "$workdir" && GOFLAGS="$repo_goflags" llgo test ./...)
 
 log_section "Demo Tests"
 demo_jobs="${LLGO_DEMO_JOBS:-}"
@@ -197,7 +197,7 @@ if [ -z "$demo_jobs" ]; then
 		demo_jobs=4
 	fi
 fi
-(cd "$workdir" && LLGO_DEMO_JOBS="$demo_jobs" bash .github/workflows/test_demo.sh)
+(cd "$workdir" && GOFLAGS="$repo_goflags" LLGO_DEMO_JOBS="$demo_jobs" bash .github/workflows/test_demo.sh)
 
 log_section "Build targets"
 (cd "$workdir/_demo/embed/targetsbuild" && bash build.sh)
