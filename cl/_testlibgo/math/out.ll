@@ -19,7 +19,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/math.main"() {
 _llgo_0:
-  %0 = call double @sqrt(double 2.000000e+00)
+  %0 = call double @math.Sqrt(double 2.000000e+00)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %1 = call double @math.Abs(double -1.200000e+00)
@@ -33,7 +33,7 @@ _llgo_0:
 
 declare void @math.init()
 
-declare double @sqrt(double)
+declare double @math.Sqrt(double)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
 
