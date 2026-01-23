@@ -28,6 +28,7 @@ var hasAltPkg = map[string]none{
 	"crypto/internal/boring/sig": {},
 	"hash/crc32":                 {},
 	"internal/abi":               {},
+	"internal/bytealg":           {},
 	"internal/cpu":               {},
 	"internal/reflectlite":       {},
 	"internal/runtime/atomic":    {},
@@ -47,6 +48,7 @@ var hasAltPkg = map[string]none{
 var hasAltPkgDarwin = map[string]none{
 	"crypto/internal/boring/sig": {},
 	"internal/abi":               {},
+	"internal/bytealg":           {},
 	"internal/cpu":               {},
 	"internal/reflectlite":       {},
 	"internal/runtime/atomic":    {},
