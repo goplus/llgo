@@ -1,5 +1,3 @@
-//go:build llgo
-
 package runtime
 
 import _ "unsafe"
