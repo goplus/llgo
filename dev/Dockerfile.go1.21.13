@@ -100,7 +100,11 @@ ENV LLGO_ASSETS_DIR="/opt/llgo-assets"
 WORKDIR /tmp/llgo-mod
 COPY go.mod go.sum ./
 COPY runtime/go.mod runtime/go.sum ./runtime/
-RUN go mod download
+RUN if [ "${GO_VERSION}" = "1.21.13" ]; then \
+      echo "skip go mod download for Go ${GO_VERSION} (go.mod requires >= 1.23)"; \
+    else \
+      go mod download; \
+    fi
 
 ARG TARGETARCH
 RUN set -eux; \
