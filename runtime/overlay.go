@@ -25,6 +25,21 @@ var math_modf_asm string
 //go:embed _overlay/math/modf_arm64.s
 var math_modf_arm64_s string
 
+//go:embed _overlay/math/hypot_asm.go
+var math_hypot_asm string
+
+//go:embed _overlay/math/hypot_amd64.s
+var math_hypot_amd64_s string
+
+//go:embed _overlay/math/hypot_386.s
+var math_hypot_386_s string
+
+//go:embed _overlay/math/log_asm.go
+var math_log_asm string
+
+//go:embed _overlay/math/log_amd64.s
+var math_log_amd64_s string
+
 //go:embed _overlay/internal/sync/runtime.go
 var internal_sync string
 
@@ -36,6 +51,11 @@ var OverlayFiles = map[string]string{
 	"math/exp_arm64.s":           math_exp_arm64_s,
 	"math/modf_asm.go":           math_modf_asm,
 	"math/modf_arm64.s":          math_modf_arm64_s,
+	"math/hypot_asm.go":          math_hypot_asm,
+	"math/hypot_amd64.s":         math_hypot_amd64_s,
+	"math/hypot_386.s":           math_hypot_386_s,
+	"math/log_asm.go":            math_log_asm,
+	"math/log_amd64.s":           math_log_amd64_s,
 	"net/textproto/textproto.go": net_textproto,
 	"internal/sync/runtime.go":   internal_sync,
 }
