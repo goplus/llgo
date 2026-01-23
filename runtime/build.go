@@ -41,6 +41,7 @@ var hasAltPkg = map[string]none{
 	"syscall/js":               {},
 	"runtime":                  {},
 	"internal/runtime/syscall": {},
+	"runtime/internal/syscall": {},
 }
 
 var hasAltPkgDarwin = map[string]none{
@@ -60,4 +61,5 @@ var hasAltPkgDarwin = map[string]none{
 	"syscall/js":               {},
 	"runtime":                  {},
 	"internal/runtime/syscall": {},
+	"runtime/internal/syscall": {},
 }
