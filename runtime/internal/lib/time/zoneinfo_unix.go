@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build (unix && !ios && !android) && (!llgo || !darwin)
+//go:build unix && !ios && !android && (!llgo || !darwin)
 
 // Parse "zoneinfo" time zone file.
 // This is a fairly standard file format used on OS X, Linux, BSD, Sun, and others.
