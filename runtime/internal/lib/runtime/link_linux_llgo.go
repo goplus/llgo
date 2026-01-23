@@ -56,6 +56,12 @@ func os_beforeExit(exitCode int) {}
 //go:linkname os_sigpipe os.sigpipe
 func os_sigpipe() {}
 
+//go:linkname os_ignoreSIGSYS os.ignoreSIGSYS
+func os_ignoreSIGSYS() {}
+
+//go:linkname os_restoreSIGSYS os.restoreSIGSYS
+func os_restoreSIGSYS() {}
+
 //go:linkname c_getpagesize C.getpagesize
 func c_getpagesize() c.Int
 
@@ -79,37 +85,11 @@ func syscall_runtime_AfterFork() {}
 //go:linkname syscall_runtime_AfterForkInChild syscall.runtime_AfterForkInChild
 func syscall_runtime_AfterForkInChild() {}
 
-//go:linkname c_syscall C.syscall
-func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
+//go:linkname syscall_runtime_BeforeExec syscall.runtime_BeforeExec
+func syscall_runtime_BeforeExec() {}
 
-//go:linkname syscall_rawSyscallNoError syscall.rawSyscallNoError
-//go:nosplit
-func syscall_rawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr) {
-	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
-	return uintptr(r), 0
-}
-
-//go:linkname syscall_rawVforkSyscall syscall.rawVforkSyscall
-//go:nosplit
-func syscall_rawVforkSyscall(trap, a1, a2, a3 uintptr) (r1 uintptr, err uintptr) {
-	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
-	if r == -1 {
-		return uintptr(r), uintptr(cliteos.Errno())
-	}
-	return uintptr(r), 0
-}
-
-//go:linkname ignoreSIGSYS os.ignoreSIGSYS
-func ignoreSIGSYS() {}
-
-//go:linkname restoreSIGSYS os.restoreSIGSYS
-func restoreSIGSYS() {}
-
-//go:nosplit
-func entersyscall() {}
-
-//go:nosplit
-func exitsyscall() {}
+//go:linkname syscall_runtime_AfterExec syscall.runtime_AfterExec
+func syscall_runtime_AfterExec() {}
 
 func fcntl(fd int32, cmd int32, arg int32) (int32, int32) {
 	r := cliteos.Fcntl(c.Int(fd), c.Int(cmd), c.Int(arg))
@@ -117,4 +97,22 @@ func fcntl(fd int32, cmd int32, arg int32) (int32, int32) {
 		return -1, int32(cliteos.Errno())
 	}
 	return int32(r), 0
+}
+
+//go:linkname c_syscall C.syscall
+func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
+
+//go:linkname syscall_rawSyscallNoError syscall.rawSyscallNoError
+func syscall_rawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr) {
+	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
+	return uintptr(r), 0
+}
+
+//go:linkname syscall_rawVforkSyscall syscall.rawVforkSyscall
+func syscall_rawVforkSyscall(trap, a1, a2, a3 uintptr) (r1 uintptr, err uintptr) {
+	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
+	if r == -1 {
+		return uintptr(r), uintptr(cliteos.Errno())
+	}
+	return uintptr(r), 0
 }
