@@ -3,11 +3,16 @@ package runtime
 import (
 	_ "unsafe"
 
+	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/runtime/math"
 )
 
-//go:linkname fastrand C.rand
-func fastrand() uint32
+//go:linkname c_rand C.rand
+func c_rand() c.Int
+
+func fastrand() uint32 {
+	return uint32(c_rand())
+}
 
 func rand() uint64 {
 	n := uint64(fastrand())
@@ -20,4 +25,14 @@ func rand() uint64 {
 // Do not change signature: used via linkname from other packages.
 func randn(n uint32) uint32 {
 	return uint32((uint64(uint32(rand())) * uint64(n)) >> 32)
+}
+
+//go:linkname os_fastrand os.fastrand
+func os_fastrand() uint32 {
+	return fastrand()
+}
+
+//go:linkname rand_fastrand64 math/rand.fastrand64
+func rand_fastrand64() uint64 {
+	return rand()
 }
