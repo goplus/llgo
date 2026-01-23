@@ -1,29 +1,24 @@
 package sync
 
-func runtime_canSpin(i int) bool {
-	panic("not implemented")
-}
+import _ "unsafe"
 
-func runtime_doSpin() {
-	panic("not implemented")
-}
+//go:linkname runtime_canSpin runtime.runtime_canSpin
+func runtime_canSpin(i int) bool
 
-func throw(string) {
-	panic("not implemented")
-}
+//go:linkname runtime_doSpin runtime.runtime_doSpin
+func runtime_doSpin()
 
-func fatal(string) {
-	panic("not implemented")
-}
+//go:linkname throw runtime.throw
+func throw(string)
 
-func runtime_nanotime() int64 {
-	panic("not implemented")
-}
+//go:linkname fatal runtime.fatal
+func fatal(string)
 
-func runtime_SemacquireMutex(s *uint32, lifo bool, skipframes int) {
-	panic("not implemented")
-}
+//go:linkname runtime_nanotime runtime.runtime_nanotime
+func runtime_nanotime() int64
 
-func runtime_Semrelease(s *uint32, handoff bool, skipframes int) {
-	panic("not implemented")
-}
+//go:linkname runtime_SemacquireMutex runtime.runtime_SemacquireMutex
+func runtime_SemacquireMutex(s *uint32, lifo bool, skipframes int)
+
+//go:linkname runtime_Semrelease runtime.runtime_Semrelease
+func runtime_Semrelease(s *uint32, handoff bool, skipframes int)

@@ -23,4 +23,3 @@ func synctest_disassociate(_ unsafe.Pointer) {}
 func synctest_isAssociated(_ unsafe.Pointer) bool {
 	return false
 }
-

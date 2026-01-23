@@ -1,4 +1,4 @@
-//go:build llgo && darwin
+//go:build llgo && (darwin || linux)
 
 package runtime
 
@@ -73,6 +73,7 @@ func semaRelease(addr *uint32) {
 }
 
 // sync_runtime_Semacquire should be an internal detail, but is linknamed.
+//
 //go:linkname sync_runtime_Semacquire sync.runtime_Semacquire
 func sync_runtime_Semacquire(addr *uint32) {
 	semaAcquire(addr)
