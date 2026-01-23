@@ -9,6 +9,16 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp_root="$(mktemp -d)"
 workdir="$repo_root"
 
+repo_goflags=""
+goversion="$(go env GOVERSION 2>/dev/null || true)"
+if [[ "$goversion" =~ ^go([0-9]+)\.([0-9]+)\. ]]; then
+	major="${BASH_REMATCH[1]}"
+	minor="${BASH_REMATCH[2]}"
+	if ((major == 1 && minor < 23)); then
+		repo_goflags="-modfile=$repo_root/dev/go.mod.1.21"
+	fi
+fi
+
 cleanup() {
 	rm -rf "$tmp_root"
 }
@@ -156,13 +166,13 @@ for dir in . runtime; do
 done
 
 log_section "Go Build"
-(cd "$workdir" && go build ./...)
+(cd "$workdir" && GOFLAGS="$repo_goflags" go build ./...)
 
 log_section "Go Test"
-(cd "$workdir" && go test ./...)
+(cd "$workdir" && GOFLAGS="$repo_goflags" go test ./...)
 
 log_section "Install llgo"
-(cd "$workdir" && go install ./cmd/llgo)
+(cd "$workdir" && GOFLAGS="$repo_goflags" go install ./cmd/llgo)
 gobin="$(cd "$workdir" && go env GOBIN)"
 if [ -z "$gobin" ]; then
 	gopath_raw="$(cd "$workdir" && go env GOPATH)"
