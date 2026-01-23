@@ -1,4 +1,4 @@
-//go:build (!wasm) && (!llgo || !darwin)
+//go:build !wasm && (!llgo || !darwin)
 
 package syscall
 
