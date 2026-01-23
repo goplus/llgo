@@ -1,4 +1,6 @@
-//go:build llgo
+//go:build llgo && (arm64 || ppc64 || ppc64le)
+// +build llgo
+// +build arm64 ppc64 ppc64le
 
 package math
 
