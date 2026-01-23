@@ -34,6 +34,19 @@ services:
       - go_cache_amd64:/root/.cache/go-build
       - pip_cache_amd64:/root/.cache/pip
 
+  llgo-dev-amd64-go121:
+    <<: *llgo-service
+    build:
+      <<: *llgo-build
+      dockerfile: dev/Dockerfile.go1.21.13
+      target: pydeps
+    platform: linux/amd64
+    volumes:
+      - .:/repo:delegated
+      - go_mod_amd64_go121:/go/pkg/mod
+      - go_cache_amd64_go121:/root/.cache/go-build
+      - pip_cache_amd64_go121:/root/.cache/pip
+
   llgo-dev-arm64:
     <<: *llgo-service
     build:
@@ -64,6 +77,9 @@ volumes:
   go_mod_amd64: {}
   go_cache_amd64: {}
   pip_cache_amd64: {}
+  go_mod_amd64_go121: {}
+  go_cache_amd64_go121: {}
+  pip_cache_amd64_go121: {}
   go_mod_arm64: {}
   go_cache_arm64: {}
   pip_cache_arm64: {}
