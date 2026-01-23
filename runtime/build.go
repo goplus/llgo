@@ -30,6 +30,7 @@ var hasAltPkg = map[string]none{
 	"internal/cpu":            {},
 	"internal/reflectlite":    {},
 	"internal/runtime/atomic": {},
+	"sync":                    {},
 	"sync/atomic":             {},
 	// Use stdlib internal/syscall/unix and internal/poll on non-darwin.
 	"reflect":                  {},
@@ -44,6 +45,7 @@ var hasAltPkgDarwin = map[string]none{
 	"internal/reflectlite":    {},
 	"internal/runtime/atomic": {},
 	"hash/crc32":              {},
+	"sync":                    {},
 	"sync/atomic":             {},
 	// Use stdlib internal/syscall/unix on darwin.
 	"reflect":                  {},
