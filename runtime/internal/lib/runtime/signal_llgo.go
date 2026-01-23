@@ -52,6 +52,11 @@ func ensureSignalInit() {
 	}
 }
 
+//export llgo_runtime_signalCallback
+func llgo_runtime_signalCallback(handle *libuv.Signal, signum c.Int) {
+	signalCallback(handle, signum)
+}
+
 func signalCallback(handle *libuv.Signal, signum c.Int) {
 	sig := uint32(signum)
 	sigMu.Lock()
@@ -83,7 +88,7 @@ func startSignalWatcher(sig uint32, st *sigState) {
 		st.inited = true
 	}
 	submitTimerWork(func() bool {
-		checkUV("uv_signal_start", int(st.handle.Start(signalCallback, c.Int(sig))))
+		checkUV("uv_signal_start", int(libuv.SignalStartRuntime(&st.handle, c.Int(sig))))
 		return true
 	})
 }

@@ -1,4 +1,4 @@
-//go:build llgo && darwin
+//go:build llgo && linux
 
 package runtime
 
@@ -78,6 +78,38 @@ func syscall_runtime_AfterFork() {}
 
 //go:linkname syscall_runtime_AfterForkInChild syscall.runtime_AfterForkInChild
 func syscall_runtime_AfterForkInChild() {}
+
+//go:linkname c_syscall C.syscall
+func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
+
+//go:linkname syscall_rawSyscallNoError syscall.rawSyscallNoError
+//go:nosplit
+func syscall_rawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr) {
+	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
+	return uintptr(r), 0
+}
+
+//go:linkname syscall_rawVforkSyscall syscall.rawVforkSyscall
+//go:nosplit
+func syscall_rawVforkSyscall(trap, a1, a2, a3 uintptr) (r1 uintptr, err uintptr) {
+	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
+	if r == -1 {
+		return uintptr(r), uintptr(cliteos.Errno())
+	}
+	return uintptr(r), 0
+}
+
+//go:linkname ignoreSIGSYS os.ignoreSIGSYS
+func ignoreSIGSYS() {}
+
+//go:linkname restoreSIGSYS os.restoreSIGSYS
+func restoreSIGSYS() {}
+
+//go:nosplit
+func entersyscall() {}
+
+//go:nosplit
+func exitsyscall() {}
 
 func fcntl(fd int32, cmd int32, arg int32) (int32, int32) {
 	r := cliteos.Fcntl(c.Int(fd), c.Int(cmd), c.Int(arg))

@@ -1,4 +1,4 @@
-//go:build llgo && darwin
+//go:build llgo && (darwin || linux)
 
 package runtime
 
@@ -18,4 +18,3 @@ func sync_runtime_procPin() int {
 
 //go:linkname sync_runtime_procUnpin sync.runtime_procUnpin
 func sync_runtime_procUnpin() {}
-

@@ -37,35 +37,114 @@ type timeTimer struct {
 }
 
 var (
-	timerLoop *libuv.Loop
-	timerOnce psync.Once
-	keepAlive libuv.Async
+	timerLoop  *libuv.Loop
+	timerOnce  psync.Once
+	keepAlive  libuv.Async
+	timerAsync libuv.Async
 
-	// asyncMu guards the pendingAsync set so asyncTimerEvent objects stay
-	// reachable while libuv is still holding raw pointers to them.
-	asyncMu      psync.Mutex
-	pendingAsync map[*asyncTimerEvent]struct{}
+	// asyncMu guards asyncQueue so asyncTimerEvent objects stay reachable
+	// until the libuv loop drains them.
+	asyncMu    psync.Mutex
+	asyncQueue []*asyncTimerEvent
 
 	asyncTimerChan2State uint32
+
+	timerDebugOnce    psync.Once
+	timerDebugEnabled bool
 )
 
 func ensureTimerLoop() {
 	timerOnce.Do(func() {
 		asyncMu.Init(nil)
-		timerLoop = libuv.LoopNew()
+		timerLoop = initTimerLoop()
 		if timerLoop == nil {
 			panic("time: failed to create libuv loop")
 		}
-		pendingAsync = make(map[*asyncTimerEvent]struct{})
-		if code := timerLoop.Async(&keepAlive, func(a *libuv.Async) {}); code != 0 {
+		asyncQueue = nil
+		timerDebugMsg("AsyncInit keepAlive begin")
+		if code := libuv.AsyncInitNoop(timerLoop, &keepAlive); code != 0 {
 			panic(uvError("keepAlive uv_async_init", int(code)))
 		}
+		timerDebugMsg("AsyncInit keepAlive ok")
+		timerDebugMsg("AsyncInit timerEvent begin")
+		if code := libuv.AsyncInitRuntime(timerLoop, &timerAsync); code != 0 {
+			panic(uvError("timerEvent uv_async_init", int(code)))
+		}
+		timerDebugMsg("AsyncInit timerEvent ok")
 		go func() {
+			timerDebugMsg("Loop.Run begin")
 			if code := timerLoop.Run(libuv.RUN_DEFAULT); code != 0 {
 				panic(uvError("libuv loop", int(code)))
 			}
+			timerDebugMsg("Loop.Run end")
 		}()
 	})
+}
+
+func timerDebug() bool {
+	timerDebugOnce.Do(func() {
+		timerDebugEnabled = cliteos.Getenv(c.AllocaCStr("LLGO_TIMER_DEBUG")) != nil
+	})
+	return timerDebugEnabled
+}
+
+func timerDebugLoop(label string, loop *libuv.Loop) {
+	if !timerDebug() {
+		return
+	}
+	c.Fprintf(c.Stderr, c.Str("timer: %s=%p\n"), c.AllocaCStr(label), loop)
+}
+
+func timerDebugUint(label string, v uintptr) {
+	if !timerDebug() {
+		return
+	}
+	c.Fprintf(c.Stderr, c.Str("timer: %s=%u\n"), c.AllocaCStr(label), c.Uint(v))
+}
+
+func timerDebugInt(label string, v int) {
+	if !timerDebug() {
+		return
+	}
+	c.Fprintf(c.Stderr, c.Str("timer: %s=%d\n"), c.AllocaCStr(label), c.Int(v))
+}
+
+func timerDebugMsg(label string) {
+	if !timerDebug() {
+		return
+	}
+	c.Fprintf(c.Stderr, c.Str("timer: %s\n"), c.AllocaCStr(label))
+}
+
+func initTimerLoop() *libuv.Loop {
+	loop := libuv.LoopNew()
+	timerDebugLoop("LoopNew", loop)
+	if loop != nil {
+		return loop
+	}
+	loop = libuv.LoopDefault()
+	timerDebugLoop("LoopDefault", loop)
+	if loop != nil {
+		return loop
+	}
+	size := libuv.LoopSize()
+	timerDebugUint("LoopSize", size)
+	if size == 0 {
+		return nil
+	}
+	mem := c.Malloc(size)
+	timerDebugLoop("LoopAlloc", (*libuv.Loop)(mem))
+	if mem == nil {
+		return nil
+	}
+	loop = (*libuv.Loop)(mem)
+	if code := loop.Init(); code != 0 {
+		timerDebugInt("LoopInit", int(code))
+		c.Free(mem)
+		return nil
+	}
+	timerDebugInt("LoopInit", 0)
+	return loop
 }
 
 func isAsyncTimerChan2() bool {
@@ -126,34 +205,60 @@ func indexByte(s string, b byte) int {
 	return -1
 }
 
-// cross thread
-func timerEvent(async *libuv.Async) {
-	if async == nil {
-		panic("time: timerEvent called with nil async")
-	}
-	a := (*asyncTimerEvent)(unsafe.Pointer(async))
-	res := a.cb()
-	a.done <- res
-	releaseAsyncEvent(a)
-	defer a.Close(nil)
+//export llgo_runtime_timerEvent
+func llgo_runtime_timerEvent(async *libuv.Async) {
+	timerEvent(async)
 }
 
-// asyncTimerEvent embeds libuv.Async as the first field, ensuring
-// memory layout compatibility for unsafe pointer casts in timerEvent.
+// cross thread
+func timerEvent(async *libuv.Async) {
+	timerDebugMsg("timerEvent")
+	for {
+		asyncMu.Lock()
+		if len(asyncQueue) == 0 {
+			asyncMu.Unlock()
+			return
+		}
+		a := asyncQueue[0]
+		asyncQueue[0] = nil
+		asyncQueue = asyncQueue[1:]
+		asyncMu.Unlock()
+		if a == nil {
+			timerDebugMsg("timerEvent nil event")
+			continue
+		}
+		if a.cb == nil {
+			timerDebugMsg("timerEvent nil cb")
+			a.done <- false
+			continue
+		}
+		res := a.cb()
+		a.done <- res
+	}
+}
+
 type asyncTimerEvent struct {
-	libuv.Async // MUST be first field
-	cb          func() bool
-	done        chan bool
+	cb   func() bool
+	done chan bool
+}
+
+//export llgo_runtime_timerCallback
+func llgo_runtime_timerCallback(t *libuv.Timer) {
+	timerCallback(t)
 }
 
 func timerCallback(t *libuv.Timer) {
+	timerDebugMsg("timerCallback")
 	r := (*runtimeTimer)(unsafe.Pointer(t))
-	now := runtimeNano()
+	fireRuntimeTimer(r, runtimeNano(), 0)
+}
 
+func fireRuntimeTimer(r *runtimeTimer, now int64, expectSeq uintptr) bool {
+	timerDebugMsg("fireRuntimeTimer")
 	r.mu.Lock()
-	if !r.active {
+	if !r.active || (expectSeq != 0 && r.seq != expectSeq) {
 		r.mu.Unlock()
-		return
+		return false
 	}
 	when := r.when
 	period := r.period
@@ -190,7 +295,7 @@ func timerCallback(t *libuv.Timer) {
 				latomic.AddInt32(&r.isSending, -1)
 			}
 			r.sendMu.Unlock()
-			return
+			return false
 		}
 		r.mu.Unlock()
 		f(arg, seq, delay)
@@ -198,9 +303,10 @@ func timerCallback(t *libuv.Timer) {
 			latomic.AddInt32(&r.isSending, -1)
 		}
 		r.sendMu.Unlock()
-		return
+		return period > 0
 	}
 	f(arg, seq, delay)
+	return period > 0
 }
 
 func startTimer(r *runtimeTimer) {
@@ -213,7 +319,7 @@ func startTimer(r *runtimeTimer) {
 		r.active = true
 		r.seq++
 		r.mu.Unlock()
-		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
+		checkUV("uv_timer_start", int(libuv.TimerStartRuntime(&r.Timer, delay, repeat)))
 		return true
 	})
 }
@@ -277,7 +383,7 @@ func resetRuntimeTimer(r *runtimeTimer, when, period int64) bool {
 	submitTimerWork(func() bool {
 		delay := timerDelayMillis(when)
 		repeat := timerPeriodMillis(period)
-		checkUV("uv_timer_start", int(r.Start(timerCallback, delay, repeat)))
+		checkUV("uv_timer_start", int(libuv.TimerStartRuntime(&r.Timer, delay, repeat)))
 		return true
 	})
 	return pending
@@ -312,28 +418,13 @@ func timerPeriodMillis(period int64) uint64 {
 
 func submitTimerWork(cb func() bool) bool {
 	a := &asyncTimerEvent{cb: cb, done: make(chan bool, 1)}
-	trackAsyncEvent(a)
-	if code := timerLoop.Async(&a.Async, timerEvent); code != 0 {
-		releaseAsyncEvent(a)
-		panic(uvError("uv_async_init", int(code)))
-	}
-	if code := a.Send(); code != 0 {
-		releaseAsyncEvent(a)
+	asyncMu.Lock()
+	asyncQueue = append(asyncQueue, a)
+	asyncMu.Unlock()
+	if code := timerAsync.Send(); code != 0 {
 		panic(uvError("uv_async_send", int(code)))
 	}
 	return <-a.done
-}
-
-func trackAsyncEvent(a *asyncTimerEvent) {
-	asyncMu.Lock()
-	pendingAsync[a] = struct{}{}
-	asyncMu.Unlock()
-}
-
-func releaseAsyncEvent(a *asyncTimerEvent) {
-	asyncMu.Lock()
-	delete(pendingAsync, a)
-	asyncMu.Unlock()
 }
 
 func checkUV(op string, code int) {
@@ -399,14 +490,20 @@ func timeSleep(ns int64) {
 		return
 	}
 	done := make(chan struct{}, 1)
-	var r runtimeTimer
+	r := new(runtimeTimer)
 	r.mu.Init(nil)
 	r.sendMu.Init(nil)
 	r.when = runtimeNano() + ns
-	r.f = func(any, uintptr, int64) { done <- struct{}{} }
-	startTimer(&r)
+	r.f = timeSleepWake
+	r.arg = done
+	startTimer(r)
 	<-done
-	stopRuntimeTimer(&r)
+	stopRuntimeTimer(r)
+}
+
+func timeSleepWake(arg any, _ uintptr, _ int64) {
+	ch := arg.(chan struct{})
+	ch <- struct{}{}
 }
 
 //go:linkname newTimer time.newTimer

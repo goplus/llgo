@@ -16,6 +16,12 @@ func llgo_syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 //go:linkname llgo_syscallPtr llgo.syscallPtr
 func llgo_syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
+//go:linkname llgo_rawSyscall llgo.rawSyscall
+func llgo_rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
+
+//go:linkname llgo_rawSyscall6 llgo.rawSyscall6
+func llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
+
 //go:linkname syscall_syscall syscall.syscall
 func syscall_syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
 	return llgo_syscall(fn, a1, a2, a3)
@@ -36,7 +42,22 @@ func syscall_syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
 	return llgo_syscallPtr(fn, a1, a2, a3)
 }
 
+//go:linkname syscall_syscallX syscall.syscallX
+func syscall_syscallX(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
+	return llgo_syscall(fn, a1, a2, a3)
+}
+
 //go:linkname syscall_syscall9 syscall.syscall9
 func syscall_syscall9(fn, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2, err uintptr) {
 	panic("syscall.syscall9 not implemented for llgo")
+}
+
+//go:linkname syscall_rawSyscall syscall.rawSyscall
+func syscall_rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
+	return llgo_rawSyscall(fn, a1, a2, a3)
+}
+
+//go:linkname syscall_rawSyscall6 syscall.rawSyscall6
+func syscall_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr) {
+	return llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6)
 }
