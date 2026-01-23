@@ -1,5 +1,5 @@
-//go:build !go1.23
-// +build !go1.23
+//go:build go1.23
+// +build go1.23
 
 package runtime
 
@@ -16,16 +16,25 @@ import (
 
 // Minimal time/timer support for stdlib time on llgo.
 
-// runtimeTimer must match time.runtimeTimer (and runtime.timer) layout.
+// runtimeTimer is internal timer state for llgo. It is not required to match
+// the Go runtime timer layout for go1.23+.
 type runtimeTimer struct {
 	pp       uintptr
 	when     int64
 	period   int64
-	f        func(any, uintptr)
+	f        func(any, uintptr, int64)
 	arg      any
 	seq      uintptr
 	nextwhen int64
 	status   uint32
+}
+
+// timeTimer matches the beginning of time.Timer/time.Ticker for go1.23+.
+// The runtime stores additional state after the first two fields.
+type timeTimer struct {
+	c    unsafe.Pointer
+	init bool
+	r    runtimeTimer
 }
 
 type timerState struct {
@@ -325,7 +334,11 @@ func fireRuntimeTimer(st *timerState, r *runtimeTimer, now int64) bool {
 	}
 	st.mu.Unlock()
 
-	f(arg, seq)
+	delta := now - when
+	if delta < 0 {
+		delta = 0
+	}
+	f(arg, seq, delta)
 
 	st.mu.Lock()
 	st.running = false
@@ -333,7 +346,7 @@ func fireRuntimeTimer(st *timerState, r *runtimeTimer, now int64) bool {
 	return period > 0
 }
 
-func startTimer(r *runtimeTimer) {
+func startRuntimeTimer(r *runtimeTimer) {
 	ensureTimerLoop()
 	st := getTimerState(r)
 	if st == nil {
@@ -358,7 +371,7 @@ func startTimer(r *runtimeTimer) {
 	})
 }
 
-func stopTimer(r *runtimeTimer) bool {
+func stopRuntimeTimer(r *runtimeTimer) bool {
 	ensureTimerLoop()
 	st := getTimerState(r)
 	if st == nil {
@@ -378,15 +391,7 @@ func stopTimer(r *runtimeTimer) bool {
 	return wasActive
 }
 
-func resetTimer(r *runtimeTimer, when int64) bool {
-	return resetRuntimeTimer(r, when, r.period, r.f, r.arg, r.seq)
-}
-
-func modTimer(r *runtimeTimer, when, period int64, f func(any, uintptr), arg any, seq uintptr) {
-	_ = resetRuntimeTimer(r, when, period, f, arg, seq)
-}
-
-func resetRuntimeTimer(r *runtimeTimer, when, period int64, f func(any, uintptr), arg any, seq uintptr) bool {
+func resetRuntimeTimer(r *runtimeTimer, when, period int64, f func(any, uintptr, int64), arg any, seq uintptr) bool {
 	ensureTimerLoop()
 	st := getTimerState(r)
 	if st == nil {
@@ -536,14 +541,43 @@ func timeSleep(ns int64) {
 		f:    timeSleepWake,
 		arg:  done,
 	}
-	startTimer(r)
+	startRuntimeTimer(r)
 	<-done
-	stopTimer(r)
+	stopRuntimeTimer(r)
 }
 
-func timeSleepWake(arg any, _ uintptr) {
+func timeSleepWake(arg any, _ uintptr, _ int64) {
 	ch := arg.(chan struct{})
 	ch <- struct{}{}
+}
+
+//go:linkname newTimer time.newTimer
+func newTimer(when, period int64, f func(any, uintptr, int64), arg any, cp unsafe.Pointer) *timeTimer {
+	t := &timeTimer{c: cp, init: true}
+	t.r.when = when
+	t.r.period = period
+	t.r.f = f
+	t.r.arg = arg
+	t.r.seq = 0
+	startRuntimeTimer(&t.r)
+	return t
+}
+
+//go:linkname stopTimer time.stopTimer
+func stopTimer(t *timeTimer) bool {
+	if t == nil {
+		return false
+	}
+	return stopRuntimeTimer(&t.r)
+}
+
+//go:linkname resetTimer time.resetTimer
+func resetTimer(t *timeTimer, when, period int64) bool {
+	if t == nil {
+		return false
+	}
+	r := &t.r
+	return resetRuntimeTimer(r, when, period, r.f, r.arg, r.seq)
 }
 
 func runtimeNano() int64 {

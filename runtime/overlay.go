@@ -49,6 +49,24 @@ var crypto_md5_block_decl string
 //go:embed _overlay/crypto/md5/md5block_generic.go
 var crypto_md5_block_generic string
 
+//go:embed _overlay/crypto/md5/md5block_386.s
+var crypto_md5_block_386_s string
+
+//go:embed _overlay/crypto/md5/md5block_amd64.s
+var crypto_md5_block_amd64_s string
+
+//go:embed _overlay/crypto/md5/md5block_arm.s
+var crypto_md5_block_arm_s string
+
+//go:embed _overlay/crypto/md5/md5block_arm64.s
+var crypto_md5_block_arm64_s string
+
+//go:embed _overlay/crypto/md5/md5block_ppc64x.s
+var crypto_md5_block_ppc64x_s string
+
+//go:embed _overlay/crypto/md5/md5block_s390x.s
+var crypto_md5_block_s390x_s string
+
 var OverlayFiles = map[string]string{
 	"math/exp_amd64.go":              "package math;",
 	"math/exp_asm.go":                math_exp_asm,
@@ -66,4 +84,10 @@ var OverlayFiles = map[string]string{
 	"internal/sync/runtime.go":       internal_sync,
 	"crypto/md5/md5block_decl.go":    crypto_md5_block_decl,
 	"crypto/md5/md5block_generic.go": crypto_md5_block_generic,
+	"crypto/md5/md5block_386.s":      crypto_md5_block_386_s,
+	"crypto/md5/md5block_amd64.s":    crypto_md5_block_amd64_s,
+	"crypto/md5/md5block_arm.s":      crypto_md5_block_arm_s,
+	"crypto/md5/md5block_arm64.s":    crypto_md5_block_arm64_s,
+	"crypto/md5/md5block_ppc64x.s":   crypto_md5_block_ppc64x_s,
+	"crypto/md5/md5block_s390x.s":    crypto_md5_block_s390x_s,
 }
