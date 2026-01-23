@@ -79,6 +79,12 @@ func syscall_runtime_AfterFork() {}
 //go:linkname syscall_runtime_AfterForkInChild syscall.runtime_AfterForkInChild
 func syscall_runtime_AfterForkInChild() {}
 
+//go:linkname syscall_runtime_BeforeExec syscall.runtime_BeforeExec
+func syscall_runtime_BeforeExec() {}
+
+//go:linkname syscall_runtime_AfterExec syscall.runtime_AfterExec
+func syscall_runtime_AfterExec() {}
+
 func fcntl(fd int32, cmd int32, arg int32) (int32, int32) {
 	r := cliteos.Fcntl(c.Int(fd), c.Int(cmd), c.Int(arg))
 	if r == -1 {

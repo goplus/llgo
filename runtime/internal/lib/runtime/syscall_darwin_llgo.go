@@ -24,27 +24,32 @@ func llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
 //go:linkname syscall_syscall syscall.syscall
 func syscall_syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
-	return llgo_syscall(fn, a1, a2, a3)
+	r1, r2, err = llgo_syscall(fn, a1, a2, a3)
+	return normalizeSyscallErr(r1, r2, err)
 }
 
 //go:linkname syscall_syscall6 syscall.syscall6
 func syscall_syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr) {
-	return llgo_syscall6(fn, a1, a2, a3, a4, a5, a6)
+	r1, r2, err = llgo_syscall6(fn, a1, a2, a3, a4, a5, a6)
+	return normalizeSyscallErr(r1, r2, err)
 }
 
 //go:linkname syscall_syscall6X syscall.syscall6X
 func syscall_syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr) {
-	return llgo_syscall6X(fn, a1, a2, a3, a4, a5, a6)
+	r1, r2, err = llgo_syscall6X(fn, a1, a2, a3, a4, a5, a6)
+	return normalizeSyscallErr(r1, r2, err)
 }
 
 //go:linkname syscall_syscallPtr syscall.syscallPtr
 func syscall_syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
-	return llgo_syscallPtr(fn, a1, a2, a3)
+	r1, r2, err = llgo_syscallPtr(fn, a1, a2, a3)
+	return normalizeSyscallErr(r1, r2, err)
 }
 
 //go:linkname syscall_syscallX syscall.syscallX
 func syscall_syscallX(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
-	return llgo_syscall(fn, a1, a2, a3)
+	r1, r2, err = llgo_syscall(fn, a1, a2, a3)
+	return normalizeSyscallErr(r1, r2, err)
 }
 
 //go:linkname syscall_syscall9 syscall.syscall9
@@ -54,10 +59,29 @@ func syscall_syscall9(fn, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2, e
 
 //go:linkname syscall_rawSyscall syscall.rawSyscall
 func syscall_rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr) {
-	return llgo_rawSyscall(fn, a1, a2, a3)
+	r1, r2, err = llgo_rawSyscall(fn, a1, a2, a3)
+	return normalizeSyscallErr(r1, r2, err)
+}
+
+//go:linkname syscall_RawSyscall syscall.RawSyscall
+func syscall_RawSyscall(trap, a1, a2, a3 uintptr) (r1, r2 uintptr, err uintptr) {
+	return syscall_rawSyscall(trap, a1, a2, a3)
 }
 
 //go:linkname syscall_rawSyscall6 syscall.rawSyscall6
 func syscall_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr) {
-	return llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6)
+	r1, r2, err = llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6)
+	return normalizeSyscallErr(r1, r2, err)
+}
+
+func normalizeSyscallErr(r1, r2, err uintptr) (uintptr, uintptr, uintptr) {
+	if r1 != ^uintptr(0) {
+		return r1, r2, 0
+	}
+	return r1, r2, err
+}
+
+//go:linkname syscall_RawSyscall6 syscall.RawSyscall6
+func syscall_RawSyscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err uintptr) {
+	return syscall_rawSyscall6(trap, a1, a2, a3, a4, a5, a6)
 }
