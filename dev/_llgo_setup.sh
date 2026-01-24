@@ -54,7 +54,7 @@ _llgo_ensure_llgo_cli() {
 
 	(
 		cd "${LLGO_ROOT}"
-		"${LLGO_GO}" install ./cmd/llgo
+		"${LLGO_GO}" install -tags=dev ./cmd/llgo
 	)
 }
 
