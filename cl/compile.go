@@ -1181,6 +1181,9 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		member := m.val
 		switch member := member.(type) {
 		case *ssa.Function:
+			if strings.HasSuffix(member.Name(), "_trampoline") && isTrampolineStub(member) {
+				continue
+			}
 			if member.TypeParams() != nil || member.TypeArgs() != nil {
 				// TODO(xsw): don't compile generic functions
 				// Do not try to build generic (non-instantiated) functions.
