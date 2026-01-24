@@ -36,9 +36,22 @@ const (
 
 // -----------------------------------------------------------------------------
 
+type align4 struct {
+	_ [0]uint32
+}
+
+type align8 struct {
+	_ [0]uint64
+}
+
+type alignPtr struct {
+	_ [0]uintptr
+}
+
 // Once is an object that will perform exactly one action.
 // pthread_once_t
 type Once struct {
+	_      alignOnce
 	Unused [PthreadOnceSize]c.Char
 }
 
@@ -62,6 +75,7 @@ const (
 // MutexAttr is a mutex attribute object.
 // pthread_mutexattr_t
 type MutexAttr struct {
+	_      alignMutexAttr
 	Unused [PthreadMutexAttrSize]c.Char
 }
 
@@ -94,6 +108,7 @@ func c_pthread_mutex_trylock(m *Mutex) c.Int
 // Mutex is a mutual exclusion lock.
 // pthread_mutex_t
 type Mutex struct {
+	_      alignMutex
 	Unused [PthreadMutexSize]c.Char
 }
 
@@ -122,6 +137,7 @@ func (m *Mutex) Unlock() {
 // RWLockAttr is a read-write lock attribute object.
 // pthread_rwlockattr_t
 type RWLockAttr struct {
+	_      alignRWLockAttr
 	Unused [PthreadRWLockAttrSize]c.Char
 }
 
@@ -163,6 +179,7 @@ func c_pthread_rwlock_trywrlock(rw *RWLock) c.Int
 // RWLock is a read-write lock.
 // pthread_rwlock_t
 type RWLock struct {
+	_      alignRWLock
 	Unused [PthreadRWLockSize]c.Char
 }
 
@@ -200,6 +217,7 @@ func (rw *RWLock) Unlock() {
 // CondAttr is a condition variable attribute object.
 // pthread_condattr_t
 type CondAttr struct {
+	_      alignCondAttr
 	Unused [PthreadCondAttrSize]c.Char
 }
 
@@ -238,6 +256,7 @@ func c_pthread_cond_timedwait(c *Cond, m *Mutex, abstime *time.Timespec) c.Int
 // Cond is a condition variable.
 // pthread_cond_t
 type Cond struct {
+	_      alignCond
 	Unused [PthreadCondSize]c.Char
 }
 

@@ -5,7 +5,7 @@
 package runtime
 
 import (
-	"github.com/goplus/llgo/runtime/internal/clite/debug"
+	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
 )
 
 func Caller(skip int) (pc uintptr, file string, line int, ok bool) {
@@ -17,7 +17,7 @@ func Callers(skip int, pc []uintptr) int {
 		return 0
 	}
 	n := 0
-	debug.StackTrace(skip, func(fr *debug.Frame) bool {
+	clitedebug.StackTrace(skip, func(fr *clitedebug.Frame) bool {
 		if n >= len(pc) {
 			return false
 		}

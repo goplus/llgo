@@ -1,7 +1,7 @@
 package libuv
 
 import (
-	_ "unsafe"
+	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/net"
@@ -68,7 +68,7 @@ type UdpFlags c.Int
 // TODO(spongehah): Handle
 type Handle struct {
 	Data   c.Pointer
-	Unused [88]byte
+	Unused [uvHandleSize - int(unsafe.Sizeof(uintptr(0)))]byte
 }
 
 // TODO(spongehah): Stream

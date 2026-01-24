@@ -19,6 +19,7 @@ package cl
 import (
 	"fmt"
 	"go/constant"
+	"go/token"
 	"go/types"
 	"log"
 	"regexp"
@@ -305,21 +306,178 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 // func funcAddr(fn any) unsafe.Pointer
 func (p *context) funcAddr(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	if len(args) == 1 {
-		if fn, ok := args[0].(*ssa.MakeInterface); ok {
-			switch f := fn.X.(type) {
-			case *ssa.Function:
-				if aFn, _, _ := p.compileFunction(f); aFn != nil {
-					return aFn.Expr
-				}
-			default:
-				v := p.compileValue(b, f)
-				if _, ok := v.Type.RawType().Underlying().(*types.Signature); ok {
-					return v
-				}
+		return p.funcAddrValue(b, args[0])
+	}
+	panic("funcAddr(<func>): invalid arguments")
+}
+
+func (p *context) funcAddrValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+	switch v := v.(type) {
+	case *ssa.MakeInterface:
+		return p.funcAddrValue(b, v.X)
+	case *ssa.Function:
+		if cname := extractTrampolineCName(v.Name()); cname != "" && isTrampolineStub(v) {
+			cname = p.remapTrampolineCName(cname)
+			fnSig := p.syscallFnSig(0)
+			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
+			return b.Convert(p.prog.VoidPtr(), cfn.Expr)
+		}
+		if aFn, _, _ := p.compileFunction(v); aFn != nil {
+			return aFn.Expr
+		}
+	case *ssa.MakeClosure:
+		return p.funcAddrValue(b, v.Fn)
+	default:
+		if t := v.Type(); t != nil {
+			if _, ok := t.Underlying().(*types.Interface); ok {
+				data := b.InterfaceData(p.compileValue(b, v))
+				uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+				uptrPtr := p.prog.Pointer(uptr)
+				codePtr := b.Convert(uptrPtr, data)
+				code := b.Load(codePtr)
+				return b.Convert(p.prog.VoidPtr(), code)
 			}
+		}
+		ev := p.compileValue(b, v)
+		if _, ok := ev.Type.RawType().Underlying().(*types.Signature); ok {
+			return ev
 		}
 	}
 	panic("funcAddr(<func>): invalid arguments")
+}
+
+// func funcPCABI0(fn any) uintptr
+func (p *context) funcPCABI0(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	if len(args) == 1 {
+		return p.funcPCABI0Value(b, args[0])
+	}
+	panic("funcPCABI0(<func>): invalid arguments")
+}
+
+func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
+	switch v := v.(type) {
+	case *ssa.MakeInterface:
+		return p.funcPCABI0Value(b, v.X)
+	case *ssa.Function:
+		if cname := extractTrampolineCName(v.Name()); cname != "" && isTrampolineStub(v) {
+			cname = p.remapTrampolineCName(cname)
+			fnSig := p.syscallFnSig(0)
+			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
+		}
+		if aFn, _, _ := p.compileFunction(v); aFn != nil {
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), aFn.Expr)
+		}
+	case *ssa.MakeClosure:
+		return p.funcPCABI0Value(b, v.Fn)
+	default:
+		if t := v.Type(); t != nil {
+			if _, ok := t.Underlying().(*types.Interface); ok {
+				data := b.InterfaceData(p.compileValue(b, v))
+				uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+				uptrPtr := p.prog.Pointer(uptr)
+				codePtr := b.Convert(uptrPtr, data)
+				return b.Load(codePtr)
+			}
+		}
+		ev := p.compileValue(b, v)
+		if _, ok := ev.Type.RawType().Underlying().(*types.Signature); ok {
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), ev)
+		}
+	}
+	panic("funcPCABI0(<func>): invalid arguments")
+}
+
+func (p *context) zeroResult(results *types.Tuple) llssa.Expr {
+	if results.Len() == 1 {
+		return p.prog.Zero(p.type_(results.At(0).Type(), llssa.InGo))
+	}
+	return p.prog.Zero(p.type_(results, llssa.InGo))
+}
+
+func (p *context) syscallFnSig(argc int) *types.Signature {
+	params := make([]*types.Var, 0, argc+1)
+	for i := 0; i < argc; i++ {
+		params = append(params, types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+	}
+	params = append(params, llssa.VArg())
+	ret := types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])
+	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(ret), true)
+}
+
+func (p *context) syscallFnSigFixed(argc int) *types.Signature {
+	params := make([]*types.Var, 0, argc)
+	for i := 0; i < argc; i++ {
+		params = append(params, types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+	}
+	ret := types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])
+	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(ret), false)
+}
+
+func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
+	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	minus1 := p.prog.IntVal(^uint64(0), uptr)
+	cond := b.BinOp(token.EQL, r1, minus1)
+	errnoSig := types.NewSignatureType(nil, nil, nil, nil,
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])), false)
+	errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
+	errno := b.Call(errnoFn.Expr)
+	errno = b.Convert(uptr, errno)
+	zero := p.prog.Zero(uptr)
+	return b.SelectValue(cond, errno, zero)
+}
+
+func isTrampolineStub(fn *ssa.Function) bool {
+	if len(fn.Blocks) == 0 {
+		return true
+	}
+	for _, blk := range fn.Blocks {
+		for _, ins := range blk.Instrs {
+			switch ins.(type) {
+			case *ssa.Return, *ssa.DebugRef:
+				// allow empty stub
+			default:
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *types.Tuple) llssa.Expr {
+	if len(args) < 1 {
+		panic("syscall: missing arguments")
+	}
+	callArgs := make([]llssa.Expr, 0, len(args)-1)
+	for _, arg := range args[1:] {
+		callArgs = append(callArgs, p.compileValue(b, arg))
+	}
+	fnSig := p.syscallFnSigFixed(len(callArgs))
+	fnArg := p.compileValue(b, args[0])
+	fnType := p.type_(fnSig, llssa.InC)
+	fnPtr := b.PtrCast(fnType, b.Convert(p.type_(types.Typ[types.UnsafePointer], llssa.InGo), fnArg))
+	r1 := b.Call(fnPtr, callArgs...)
+	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	r2 := p.prog.Zero(uptr)
+	err := p.syscallErrno(b, r1)
+	tuple := p.type_(results, llssa.InGo)
+	return b.Aggregate(tuple, r1, r2, err)
+}
+
+var darwinTrampolineCNameMap = map[string]string{
+	"open":   "llgo_open",
+	"openat": "llgo_openat",
+	"fcntl":  "llgo_fcntl",
+	"ioctl":  "llgo_ioctl",
+}
+
+func (p *context) remapTrampolineCName(name string) string {
+	if p.prog.Target().GOOS == "darwin" {
+		if v, ok := darwinTrampolineCNameMap[name]; ok {
+			return v
+		}
+	}
+	return name
 }
 
 func (p *context) sigsetjmp(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
@@ -391,6 +549,14 @@ var llgoInstrs = map[string]int{
 	"string":      llgoString,
 	"stringData":  llgoStringData,
 	"funcAddr":    llgoFuncAddr,
+	"funcPCABI0":  llgoFuncPCABI0,
+	"skip":        llgoSkip,
+	"syscall":     llgoSyscall,
+	"syscall6":    llgoSyscall,
+	"syscall6X":   llgoSyscall,
+	"syscallPtr":  llgoSyscall,
+	"rawSyscall":  llgoSyscall,
+	"rawSyscall6": llgoSyscall,
 	"pystr":       llgoPyStr,
 	"pyList":      llgoPyList,
 	"pyTuple":     llgoPyTuple,
@@ -425,8 +591,9 @@ var llgoInstrs = map[string]int{
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
 
-	"asm":       llgoAsm,
-	"stackSave": llgoStackSave,
+	"asm":           llgoAsm,
+	"stackSave":     llgoStackSave,
+	"getClosurePtr": llgoGetClosurePtr,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -450,6 +617,16 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 		}
 	default:
 		pkg := p.pkg
+		if ftype == cFunc {
+			if cname := extractTrampolineCName(fn.Name()); cname != "" && isTrampolineStub(fn) {
+				sig := p.syscallFnSig(0)
+				aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, fn.Origin() != nil)
+				if disableInline {
+					aFn.Inline(llssa.NoInline)
+				}
+				return
+			}
+		}
 		if aFn = pkg.FuncOf(name); aFn == nil {
 			if len(fn.FreeVars) > 0 {
 				return nil, nil, ignoredFunc
@@ -604,12 +781,22 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.siglongjmp(b, args)
 		case llgoStackSave:
 			ret = b.StackSave()
+		case llgoGetClosurePtr:
+			ret = b.ReadCtxReg()
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer
 			ret = b.DeferData()
 		case llgoFuncAddr:
 			ret = p.funcAddr(b, args)
+		case llgoFuncPCABI0:
+			ret = p.funcPCABI0(b, args)
+		case llgoSkip:
+			if results := call.Signature().Results(); results.Len() != 0 {
+				ret = p.zeroResult(results)
+			}
+		case llgoSyscall:
+			ret = p.syscallIntrinsic(b, args, call.Signature().Results())
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		default:

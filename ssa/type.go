@@ -47,6 +47,7 @@ const (
 	vkFuncDecl
 	vkFuncPtr
 	vkClosure
+	vkImethodClosure // interface method closure: receiver passed as first param, not via register
 	vkBuiltin
 	vkPyFuncRef
 	vkPyVarRef
@@ -59,6 +60,10 @@ const (
 	vkStruct
 	vkChan
 )
+
+func isClosureKind(k valueKind) bool {
+	return k == vkClosure || k == vkImethodClosure
+}
 
 // -----------------------------------------------------------------------------
 
@@ -170,6 +175,13 @@ type aType struct {
 
 type Type = *aType
 
+func (t Type) withKind(kind valueKind) Type {
+	if t.kind == kind {
+		return t
+	}
+	return &aType{ll: t.ll, raw: t.raw, kind: kind}
+}
+
 // RawType returns the raw type.
 func (t Type) RawType() types.Type {
 	return t.raw.Type
@@ -246,9 +258,23 @@ func (p Program) Field(typ Type, i int) Type {
 		}
 		panic("Field: basic type doesn't have fields")
 	default:
-		fld = t.(*types.Struct).Field(i)
+		st := t.(*types.Struct)
+		if i < 0 || i >= st.NumFields() {
+			panic(fmt.Sprintf("Field: struct index out of range: idx=%d fields=%d type=%s",
+				i, st.NumFields(), typeStringWithPkg(typ.raw.Type)))
+		}
+		fld = st.Field(i)
 	}
 	return p.rawType(fld.Type())
+}
+
+func typeStringWithPkg(t types.Type) string {
+	return types.TypeString(t, func(p *types.Package) string {
+		if p == nil {
+			return ""
+		}
+		return p.Path()
+	})
 }
 
 func (p Program) rawType(raw types.Type) Type {
@@ -433,6 +459,12 @@ func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {
 	if n > 0 {
 		fields = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
+			// Avoid re-patching the $f field of a closure struct; it must remain
+			// a plain function pointer to prevent infinite wrapping.
+			if IsClosure(raw) && i == 0 {
+				fields[i] = p.rawType(raw.Field(i).Type()).ll
+				continue
+			}
 			fields[i] = p.rawType(p.patch(raw.Field(i).Type())).ll
 		}
 	}

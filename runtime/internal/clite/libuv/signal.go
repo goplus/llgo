@@ -9,7 +9,7 @@ import (
 /* Handle types. */
 
 type Signal struct {
-	Unused [152]byte
+	Unused [uvSignalSize]byte
 }
 
 // ----------------------------------------------
@@ -26,17 +26,23 @@ type SignalCb func(handle *Signal, sigNum c.Int)
 //go:linkname SignalInit C.uv_signal_init
 func SignalInit(loop *Loop, handle *Signal) c.Int
 
-// llgo:link (*Signal).Start C.uv_signal_start
+//go:linkname uvSignalStart C.uv_signal_start
+func uvSignalStart(handle *Signal, cb SignalCb, signum c.Int) c.Int
+
 func (handle *Signal) Start(cb SignalCb, signum c.Int) c.Int {
-	return 0
+	return uvSignalStart(handle, cb, signum)
 }
 
-// llgo:link (*Signal).StartOneshot C.uv_signal_start_oneshot
+//go:linkname uvSignalStartOneshot C.uv_signal_start_oneshot
+func uvSignalStartOneshot(handle *Signal, cb SignalCb, signum c.Int) c.Int
+
 func (handle *Signal) StartOneshot(cb SignalCb, signum c.Int) c.Int {
-	return 0
+	return uvSignalStartOneshot(handle, cb, signum)
 }
 
-// llgo:link (*Signal).Stop C.uv_signal_stop
+//go:linkname uvSignalStop C.uv_signal_stop
+func uvSignalStop(handle *Signal) c.Int
+
 func (handle *Signal) Stop() c.Int {
-	return 0
+	return uvSignalStop(handle)
 }

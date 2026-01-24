@@ -1,3 +1,5 @@
+//go:build !llgo
+
 // Package main implements check_std_symbols, a tool that verifies test coverage
 // for all exported symbols in Go standard library packages.
 //
