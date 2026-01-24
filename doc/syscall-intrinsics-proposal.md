@@ -41,33 +41,25 @@ Go uses multiple syscall mechanisms depending on platform:
 
 ### 2. Syscall Intrinsics by Platform Category
 
-#### Category A: `llgo.syscall` (Darwin, OpenBSD)
+#### Category A: `llgo.syscall` (single intrinsic, variadic)
 
-**Purpose:** Implement `syscall.syscall`, `syscall.syscall6`, etc. as libc calls
-with errno handling. Uses function pointer from `abi.FuncPCABI0`.
+**Purpose:** Implement all libc-trampoline-based syscall wrappers (`syscall`,
+`syscall6`, `syscall6X`, `syscallPtr`, `rawSyscall`, `rawSyscall6`) via a single
+intrinsic. Uses function pointer from `abi.FuncPCABI0`.
 
 ```go
 //go:linkname syscall llgo.syscall
-func syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
-
-//go:linkname syscall6 llgo.syscall6
-func syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
-
-//go:linkname syscall6X llgo.syscall6X
-func syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
-
-//go:linkname syscallPtr llgo.syscallPtr
-func syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
-
-//go:linkname rawSyscall llgo.rawSyscall
-func rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
-
-//go:linkname rawSyscall6 llgo.rawSyscall6
-func rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
+func syscall(fn uintptr, args ...uintptr) (r1, r2, err uintptr)
 ```
 
+**Wrapper policy:** The standard library wrapper symbols (e.g.
+`syscall.syscall`, `syscall.syscall6`, `syscall.syscall6X`, `syscall.syscallPtr`,
+`syscall.rawSyscall`, `syscall.rawSyscall6`) should be **Go wrappers** in
+`runtime/internal/lib` that call `llgo.syscall` with the appropriate argument
+count. No additional syscall intrinsics are required.
+
 Behavior:
-- Cast `fn` to function pointer and call directly.
+- Cast `fn` to function pointer and call directly with N arguments.
 - Check result == -1 and fetch errno via `__error()` (Darwin/FreeBSD) or `__errno()` (OpenBSD).
 - Return `(r1, r2, err)` as required by Go's `syscall` package.
 
@@ -112,21 +104,19 @@ The first argument is a pointer to `libcFunc` variable. LLGo should:
 2. Call with the given arguments
 3. Fetch errno via `___errno()`
 
-#### Category D: `llgo.syscall6` for AIX
+#### Category D: AIX (wrapper around `llgo.syscall`)
 
-**Purpose:** Similar to Solaris but with AIX-specific errno handling.
-
-```go
-//go:linkname syscall6 llgo.syscall6AIX
-func syscall6(trap, nargs, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
-```
+**Purpose:** AIX uses libc function pointers plus an explicit `nargs` parameter.
+We can implement the standard wrapper in Go and call `llgo.syscall` with the
+appropriate number of arguments. No new intrinsic is required.
 
 Pattern in `zsyscall_aix_ppc64.go`:
 ```go
 _, _, e1 := syscall6(uintptr(unsafe.Pointer(&libc_Dup2)), 2, uintptr(old), uintptr(new), 0, 0, 0, 0)
 ```
 
-Fetch errno via `_Errno()`.
+`syscall6` should be a Go wrapper that forwards the first `nargs` arguments to
+`llgo.syscall` and fetches errno via `_Errno()`.
 
 #### Category E: `llgo.SyscallWindows` (Windows)
 
@@ -222,7 +212,7 @@ Behavior:
 | `zsyscall_netbsd_*.go` | NetBSD | ✅ 100% | Same as Linux |
 | `zsyscall_dragonfly_*.go` | DragonFly | ✅ 100% | Same as Linux |
 | `zsyscall_solaris_*.go` | Solaris | ✅ 100% | `llgo.sysvicall6` |
-| `zsyscall_aix_*.go` | AIX | ✅ 100% | `llgo.syscall6AIX` |
+| `zsyscall_aix_*.go` | AIX | ✅ 100% | `llgo.syscall` (Go wrapper) |
 | `zsyscall_windows.go` | Windows | ✅ 100% | `llgo.SyscallWindows` + runtime |
 | `fs_wasip1.go` | WASI | ✅ 100% | `//go:wasmimport` |
 | `syscall_js.go` | JS/WASM | N/A | Uses `syscall/js` package |
@@ -278,7 +268,7 @@ func write(fd int32, p unsafe.Pointer, n int32) int32
 | `llgo.syscall` | Darwin, OpenBSD | Function pointer | `__error()` / `__errno()` |
 | `llgo.Syscall` | Linux, FreeBSD, NetBSD, DragonFly | Syscall number | `__errno_location()` / `__error()` / `__errno()` |
 | `llgo.sysvicall6` | Solaris, Illumos | `*libcFunc` | `___errno()` |
-| `llgo.syscall6AIX` | AIX | `*libcFunc` | `_Errno()` |
+| `llgo.syscall` | AIX | `*libcFunc` (via wrapper) | `_Errno()` |
 | `llgo.SyscallWindows` | Windows | Proc address | `GetLastError()` |
 | `llgo.SyscallPlan9` | Plan 9 | Syscall number | `errstr()` → ErrorString |
 | `llgo.skip` | All | N/A | No-op call site + skip declaration |
@@ -302,7 +292,7 @@ func write(fd int32, p unsafe.Pointer, n int32) int32
 ### Phase 3: Other Unix-like
 1. FreeBSD, NetBSD, DragonFly - reuse Linux intrinsics with platform-specific errno
 2. Solaris - implement `llgo.sysvicall6`
-3. AIX - implement `llgo.syscall6AIX`
+3. AIX - implement Go wrapper around `llgo.syscall`
 
 ### Phase 4: Windows
 1. Implement `LazyDLL`/`LazyProc` in LLGo runtime
@@ -334,7 +324,7 @@ func write(fd int32, p unsafe.Pointer, n int32) int32
 | Android | raw syscall numbers | `syscall/syscall_linux.go` | Same as Linux, prefer libc for SECCOMP |
 | FreeBSD / NetBSD / DragonFly | raw syscall numbers | `syscall/zsyscall_*bsd_*.go` | Same as Linux strategy |
 | Solaris / illumos | sysvicall → libc | `syscall/zsyscall_solaris_*.go` | `llgo.sysvicall6` |
-| AIX | syscall6 via libc | `syscall/zsyscall_aix_*.go` | `llgo.syscall6AIX` |
+| AIX | syscall6 via libc | `syscall/zsyscall_aix_*.go` | `llgo.syscall` (wrapper) |
 | Windows | DLL proc calls | `syscall/zsyscall_windows.go` | `llgo.SyscallWindows` + LazyDLL |
 | WASI | wasm imports | `syscall/fs_wasip1.go` | `//go:wasmimport` |
 | JS (GOOS=js/wasm) | no syscall | `syscall/js` | No syscall reuse |
