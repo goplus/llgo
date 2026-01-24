@@ -29,12 +29,11 @@ func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Pointer(x ^ 0)
 }
 
-func FuncPCABI0(f interface{}) uintptr {
-	return funcPCABI0(f)
-}
+//go:linkname FuncPCABI0 llgo.funcPCABI0
+func FuncPCABI0(f interface{}) uintptr
 
 func FuncPCABIInternal(f interface{}) uintptr {
-	return funcPCABI0(f)
+	return FuncPCABI0(f)
 }
 
 type Type = abi.Type
