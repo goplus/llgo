@@ -86,7 +86,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 		}
 	}
 	for _, cfile := range cfiles {
-		clFile(ctx, cflags, cfile, pkg.ExportFile, func(linkFile string) {
+		clFile(ctx, cflags, cfile, pkg.ExportFile, pkg.PkgPath, func(linkFile string) {
 			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
@@ -122,14 +122,14 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 		tmpName := tmpFile.Name()
 		defer os.Remove(tmpName)
 		code := cgoHeader + "\n\n" + preamble.src
-		externDecls, err := genExternDeclsByClang(pkg, code, cflags, cgoSymbols)
+		externDecls, err := genExternDeclsByClang(pkg, code, cflags, cgoSymbols, verbose)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to generate extern decls: %v", err)
 		}
 		if err = os.WriteFile(tmpName, []byte(code+"\n\n"+externDecls), 0644); err != nil {
 			return nil, nil, fmt.Errorf("failed to write temp file: %v", err)
 		}
-		clFile(ctx, cflags, tmpName, pkg.ExportFile, func(linkFile string) {
+		clFile(ctx, cflags, tmpName, pkg.ExportFile, pkg.PkgPath, func(linkFile string) {
 			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
@@ -146,7 +146,7 @@ type clangASTNode struct {
 	Inner []clangASTNode `json:"inner,omitempty"`
 }
 
-func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbols map[string]string) (string, error) {
+func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbols map[string]string, verbose bool) (string, error) {
 	tmpSrc, err := os.CreateTemp("", "cgo-src-*.c")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %v", err)
@@ -156,11 +156,11 @@ func genExternDeclsByClang(pkg *aPackage, src string, cflags []string, cgoSymbol
 		return "", fmt.Errorf("failed to write temp file: %v", err)
 	}
 	symbolNames := make(map[string]bool)
-	if err := getFuncNames(tmpSrc.Name(), cflags, symbolNames); err != nil {
+	if err := getFuncNames(tmpSrc.Name(), cflags, symbolNames, verbose); err != nil {
 		return "", fmt.Errorf("failed to get func names: %v", err)
 	}
 	macroNames := make(map[string]bool)
-	if err := getMacroNames(tmpSrc.Name(), cflags, macroNames); err != nil {
+	if err := getMacroNames(tmpSrc.Name(), cflags, macroNames, verbose); err != nil {
 		return "", fmt.Errorf("failed to get macro names: %v", err)
 	}
 
@@ -213,9 +213,12 @@ static void _init_%s() {
 	return b.String(), nil
 }
 
-func getMacroNames(file string, cflags []string, macroNames map[string]bool) error {
+func getMacroNames(file string, cflags []string, macroNames map[string]bool, verbose bool) error {
 	args := append([]string{"-dM", "-E"}, cflags...)
 	args = append(args, file)
+	if verbose {
+		fmt.Fprintf(os.Stderr, "clang %s\n", strings.Join(args, " "))
+	}
 	cmd := exec.Command("clang", args...)
 	output, err := cmd.Output()
 	if err != nil {
@@ -233,9 +236,12 @@ func getMacroNames(file string, cflags []string, macroNames map[string]bool) err
 	return nil
 }
 
-func getFuncNames(file string, cflags []string, symbolNames map[string]bool) error {
+func getFuncNames(file string, cflags []string, symbolNames map[string]bool, verbose bool) error {
 	args := append([]string{"-Xclang", "-ast-dump=json", "-fsyntax-only"}, cflags...)
 	args = append(args, file)
+	if verbose {
+		fmt.Fprintf(os.Stderr, "clang %s\n", strings.Join(args, " "))
+	}
 	cmd := exec.Command("clang", args...)
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()

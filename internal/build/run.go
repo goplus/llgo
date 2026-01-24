@@ -56,6 +56,9 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 		} else {
 			args = conf.RunArgs
 		}
+		if conf.PrintCommands {
+			fmt.Fprintf(os.Stderr, "%s %s\n", app, strings.Join(args, " "))
+		}
 		cmd := exec.Command(app, args...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
@@ -68,6 +71,9 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 			mockable.Exit(s.ExitCode())
 		}
 	case ModeTest:
+		if conf.PrintCommands {
+			fmt.Fprintf(os.Stderr, "%s %s\n", app, strings.Join(conf.RunArgs, " "))
+		}
 		cmd := exec.Command(app, conf.RunArgs...)
 		cmd.Dir = pkgDir
 		cmd.Stdout = os.Stdout
@@ -106,9 +112,9 @@ func runInEmulator(emulator string, envMap map[string]string, pkgDir, pkgName st
 
 	switch mode {
 	case ModeRun:
-		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose)
+		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose, conf.PrintCommands)
 	case ModeTest:
-		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose)
+		return runEmuCmd(envMap, emulator, conf.RunArgs, verbose, conf.PrintCommands)
 	case ModeCmpTest:
 		cmpTest(pkgDir, pkgName, envMap["out"], conf.GenExpect, conf.RunArgs)
 		return nil
@@ -117,7 +123,7 @@ func runInEmulator(emulator string, envMap map[string]string, pkgDir, pkgName st
 }
 
 // runEmuCmd runs the application in emulator by formatting the emulator command template
-func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []string, verbose bool) error {
+func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []string, verbose bool, printCmds bool) error {
 	// Expand the emulator command template
 	emulatorCmd := emulatorTemplate
 	for placeholder, path := range envMap {
@@ -145,6 +151,9 @@ func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []stri
 
 	// Add run arguments to the end
 	cmdParts = append(cmdParts, runArgs...)
+	if printCmds {
+		fmt.Fprintf(os.Stderr, "%s %s\n", cmdParts[0], strings.Join(cmdParts[1:], " "))
+	}
 
 	// Execute the emulator command
 	cmd := exec.Command(cmdParts[0], cmdParts[1:]...)
