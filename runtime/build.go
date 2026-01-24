@@ -23,6 +23,7 @@ var hasAltPkg = map[string]none{
 	"internal/reflectlite":       {},
 	"internal/runtime/atomic":    {},
 	"internal/runtime/maps":      {},
+	"internal/weak":              {},
 	"sync":                       {},
 	"sync/atomic":                {},
 	"unique":                     {},
