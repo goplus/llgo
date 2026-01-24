@@ -41,22 +41,35 @@ Go uses multiple syscall mechanisms depending on platform:
 
 ### 2. Syscall Intrinsics by Platform Category
 
-#### Category A: `llgo.syscall` (single intrinsic, variadic)
+#### Category A: `llgo.syscall` (single intrinsic logic with aliases)
 
 **Purpose:** Implement all libc-trampoline-based syscall wrappers (`syscall`,
-`syscall6`, `syscall6X`, `syscallPtr`, `rawSyscall`, `rawSyscall6`) via a single
-intrinsic. Uses function pointer from `abi.FuncPCABI0`.
+`syscall6`, `syscall6X`, `syscallPtr`, `rawSyscall`, `rawSyscall6`). Uses
+function pointer from `abi.FuncPCABI0`.
 
 ```go
 //go:linkname syscall llgo.syscall
-func syscall(fn uintptr, args ...uintptr) (r1, r2, err uintptr)
+func syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
+
+//go:linkname syscall6 llgo.syscall6
+func syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
+
+//go:linkname syscall6X llgo.syscall6X
+func syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
+
+//go:linkname syscallPtr llgo.syscallPtr
+func syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
+
+//go:linkname rawSyscall llgo.rawSyscall
+func rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
+
+//go:linkname rawSyscall6 llgo.rawSyscall6
+func rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 ```
 
-**Wrapper policy:** The standard library wrapper symbols (e.g.
-`syscall.syscall`, `syscall.syscall6`, `syscall.syscall6X`, `syscall.syscallPtr`,
-`syscall.rawSyscall`, `syscall.rawSyscall6`) should be **Go wrappers** in
-`runtime/internal/lib` that call `llgo.syscall` with the appropriate argument
-count. No additional syscall intrinsics are required.
+**Compiler policy:** All of the above linknames are treated as a **single
+intrinsic** in the compiler (same lowering logic). This avoids Go-variadic
+lowering into slices while still keeping the standard library signatures.
 
 Behavior:
 - Cast `fn` to function pointer and call directly with N arguments.
