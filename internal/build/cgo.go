@@ -216,10 +216,7 @@ static void _init_%s() {
 func getMacroNames(file string, cflags []string, macroNames map[string]bool, verbose bool) error {
 	args := append([]string{"-dM", "-E"}, cflags...)
 	args = append(args, file)
-	if verbose {
-		fmt.Fprintf(os.Stderr, "clang %s\n", strings.Join(args, " "))
-	}
-	cmd := exec.Command("clang", args...)
+	cmd := execCommandVerbose(verbose, "clang", args...)
 	output, err := cmd.Output()
 	if err != nil {
 		return err
@@ -239,10 +236,7 @@ func getMacroNames(file string, cflags []string, macroNames map[string]bool, ver
 func getFuncNames(file string, cflags []string, symbolNames map[string]bool, verbose bool) error {
 	args := append([]string{"-Xclang", "-ast-dump=json", "-fsyntax-only"}, cflags...)
 	args = append(args, file)
-	if verbose {
-		fmt.Fprintf(os.Stderr, "clang %s\n", strings.Join(args, " "))
-	}
-	cmd := exec.Command("clang", args...)
+	cmd := execCommandVerbose(verbose, "clang", args...)
 	cmd.Stderr = os.Stderr
 	output, err := cmd.Output()
 	if err != nil {
@@ -267,6 +261,13 @@ func getFuncNames(file string, cflags []string, symbolNames map[string]bool, ver
 
 	extractFuncNames(&astRoot, symbolNames)
 	return nil
+}
+
+func execCommandVerbose(verbose bool, name string, arg ...string) *exec.Cmd {
+	if verbose {
+		fmt.Fprintf(os.Stderr, "%s %s\n", name, strings.Join(arg, " "))
+	}
+	return exec.Command(name, arg...)
 }
 
 func extractFuncNames(node *clangASTNode, funcNames map[string]bool) {
