@@ -31,6 +31,6 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-declare void @bar()
+declare i64 @bar(...)
 
-declare void @foo()
+declare i64 @foo(...)

@@ -561,11 +561,6 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		orgName = funcName(pkg, origin, true)
 	} else {
 		fname := fn.Name()
-		if len(fn.Blocks) == 0 {
-			if cname := extractTrampolineCName(fname); cname != "" {
-				return nil, cname, cFunc
-			}
-		}
 		if checkCgo(fname) && !cgoIgnored(fname) {
 			return nil, fname, llgoInstr
 		}
@@ -589,6 +584,9 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		orgName = funcName(pkg, fn, false)
 	}
 	if v, ok := p.prog.Linkname(orgName); ok {
+		if strings.HasPrefix(v, "trampoline.") && len(fn.Blocks) == 0 {
+			return nil, "", ignoredFunc
+		}
 		if strings.HasPrefix(v, "C.") {
 			return nil, v[2:], cFunc
 		}

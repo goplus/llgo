@@ -316,6 +316,12 @@ func (p *context) funcAddrValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	case *ssa.MakeInterface:
 		return p.funcAddrValue(b, v.X)
 	case *ssa.Function:
+		if cname := extractTrampolineCName(v.Name()); cname != "" && isTrampolineStub(v) {
+			cname = p.remapTrampolineCName(cname)
+			fnSig := p.syscallFnSig(0)
+			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
+			return b.Convert(p.prog.VoidPtr(), cfn.Expr)
+		}
 		if aFn, _, _ := p.compileFunction(v); aFn != nil {
 			return aFn.Expr
 		}
@@ -353,6 +359,12 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 	case *ssa.MakeInterface:
 		return p.funcPCABI0Value(b, v.X)
 	case *ssa.Function:
+		if cname := extractTrampolineCName(v.Name()); cname != "" && isTrampolineStub(v) {
+			cname = p.remapTrampolineCName(cname)
+			fnSig := p.syscallFnSig(0)
+			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
+			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
+		}
 		if aFn, _, _ := p.compileFunction(v); aFn != nil {
 			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), aFn.Expr)
 		}
@@ -384,9 +396,19 @@ func (p *context) zeroResult(results *types.Tuple) llssa.Expr {
 }
 
 func (p *context) syscallFnSig(argc int) *types.Signature {
-	params := make([]*types.Var, argc)
-	for i := range params {
-		params[i] = types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr])
+	params := make([]*types.Var, 0, argc+1)
+	for i := 0; i < argc; i++ {
+		params = append(params, types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+	}
+	params = append(params, llssa.VArg())
+	ret := types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])
+	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(ret), true)
+}
+
+func (p *context) syscallFnSigFixed(argc int) *types.Signature {
+	params := make([]*types.Var, 0, argc)
+	for i := 0; i < argc; i++ {
+		params = append(params, types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
 	}
 	ret := types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])
 	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(ret), false)
@@ -405,16 +427,33 @@ func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
 	return b.SelectValue(cond, errno, zero)
 }
 
+func isTrampolineStub(fn *ssa.Function) bool {
+	if len(fn.Blocks) == 0 {
+		return true
+	}
+	for _, blk := range fn.Blocks {
+		for _, ins := range blk.Instrs {
+			switch ins.(type) {
+			case *ssa.Return, *ssa.DebugRef:
+				// allow empty stub
+			default:
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *types.Tuple) llssa.Expr {
 	if len(args) < 1 {
 		panic("syscall: missing arguments")
 	}
-	fnArg := p.compileValue(b, args[0])
 	callArgs := make([]llssa.Expr, 0, len(args)-1)
 	for _, arg := range args[1:] {
 		callArgs = append(callArgs, p.compileValue(b, arg))
 	}
-	fnSig := p.syscallFnSig(len(callArgs))
+	fnSig := p.syscallFnSigFixed(len(callArgs))
+	fnArg := p.compileValue(b, args[0])
 	fnType := p.type_(fnSig, llssa.InC)
 	fnPtr := b.PtrCast(fnType, b.Convert(p.type_(types.Typ[types.UnsafePointer], llssa.InGo), fnArg))
 	r1 := b.Call(fnPtr, callArgs...)
@@ -423,6 +462,22 @@ func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *t
 	err := p.syscallErrno(b, r1)
 	tuple := p.type_(results, llssa.InGo)
 	return b.Aggregate(tuple, r1, r2, err)
+}
+
+var darwinTrampolineCNameMap = map[string]string{
+	"open":   "llgo_open",
+	"openat": "llgo_openat",
+	"fcntl":  "llgo_fcntl",
+	"ioctl":  "llgo_ioctl",
+}
+
+func (p *context) remapTrampolineCName(name string) string {
+	if p.prog.Target().GOOS == "darwin" {
+		if v, ok := darwinTrampolineCNameMap[name]; ok {
+			return v
+		}
+	}
+	return name
 }
 
 func (p *context) sigsetjmp(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
@@ -561,6 +616,16 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 		}
 	default:
 		pkg := p.pkg
+		if ftype == cFunc {
+			if cname := extractTrampolineCName(fn.Name()); cname != "" && isTrampolineStub(fn) {
+				sig := p.syscallFnSig(0)
+				aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, fn.Origin() != nil)
+				if disableInline {
+					aFn.Inline(llssa.NoInline)
+				}
+				return
+			}
+		}
 		if aFn = pkg.FuncOf(name); aFn == nil {
 			if len(fn.FreeVars) > 0 {
 				return nil, nil, ignoredFunc
