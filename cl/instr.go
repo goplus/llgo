@@ -552,11 +552,6 @@ var llgoInstrs = map[string]int{
 	"funcPCABI0":  llgoFuncPCABI0,
 	"skip":        llgoSkip,
 	"syscall":     llgoSyscall,
-	"syscall6":    llgoSyscall6,
-	"syscall6X":   llgoSyscall6X,
-	"syscallPtr":  llgoSyscallPtr,
-	"rawSyscall":  llgoRawSyscall,
-	"rawSyscall6": llgoRawSyscall6,
 	"pystr":       llgoPyStr,
 	"pyList":      llgoPyList,
 	"pyTuple":     llgoPyTuple,
@@ -792,7 +787,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			if results := call.Signature().Results(); results.Len() != 0 {
 				ret = p.zeroResult(results)
 			}
-		case llgoSyscall, llgoSyscall6, llgoSyscall6X, llgoSyscallPtr, llgoRawSyscall, llgoRawSyscall6:
+		case llgoSyscall:
 			ret = p.syscallIntrinsic(b, args, call.Signature().Results())
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
