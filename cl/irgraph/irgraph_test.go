@@ -34,10 +34,10 @@ import (
 	"testing"
 
 	"github.com/goplus/gogen/packages"
-	"github.com/goplus/llvm"
 	"github.com/goplus/llgo/cl"
 	llssa "github.com/goplus/llgo/ssa"
 	"github.com/goplus/llgo/ssa/ssatest"
+	"github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
