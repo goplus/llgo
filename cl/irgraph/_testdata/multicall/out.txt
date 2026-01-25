@@ -1,0 +1,2 @@
+call multicall.A -> multicall.B
+call multicall.A -> multicall.C
