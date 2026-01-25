@@ -1,0 +1,2 @@
+call crosspkg.A -> github.com/goplus/llgo/cl/irgraph/_testdata/crosspkg/foo.B
+call crosspkg.init -> github.com/goplus/llgo/cl/irgraph/_testdata/crosspkg/foo.init
