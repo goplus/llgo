@@ -73,4 +73,7 @@ func A() { B() }
 	if !g.HasEdge("foo.A", "foo.B", EdgeCall) {
 		t.Fatalf("missing edge foo.A -> foo.B")
 	}
+	if edges, ok := g.Edges["foo.B"]; ok && len(edges) != 0 {
+		t.Fatalf("unexpected outgoing edges from foo.B: %v", edges)
+	}
 }
