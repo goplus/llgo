@@ -1,0 +1,2 @@
+call ptrrecv.(*T).M -> ptrrecv.B
+call ptrrecv.A -> ptrrecv.(*T).M
