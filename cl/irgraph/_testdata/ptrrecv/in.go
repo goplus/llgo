@@ -8,8 +8,7 @@ func (t *T) M() {
 
 func B() {}
 
-var t T
-
 func A() {
+	var t T
 	t.M()
 }
