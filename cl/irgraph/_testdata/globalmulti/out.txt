@@ -1,0 +1,2 @@
+call globalmulti.init -> globalmulti.A
+call globalmulti.init -> globalmulti.B

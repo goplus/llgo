@@ -1,0 +1,4 @@
+call initmulti.init -> initmulti.init#1
+call initmulti.init -> initmulti.init#2
+call initmulti.init#1 -> initmulti.A
+call initmulti.init#2 -> initmulti.B
