@@ -1,0 +1,1 @@
+call funcvalue.A -> funcvalue.B

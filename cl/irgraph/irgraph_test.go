@@ -69,6 +69,9 @@ func TestGraphFromTestdata(t *testing.T) {
 		}
 		pkgDir := filepath.Join(dir, entry.Name())
 		t.Run(entry.Name(), func(t *testing.T) {
+			if !hasGoFiles(pkgDir) {
+				t.Skip("no go files")
+			}
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod := compileModuleFromDir(t, pkgDir)
 			graph := Build(mod, Options{})
@@ -88,6 +91,23 @@ func TestGraphFromTestdata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func hasGoFiles(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.HasSuffix(name, ".go") && !strings.HasPrefix(name, "_") && !strings.HasSuffix(name, "_test.go") {
+			return true
+		}
+	}
+	return false
 }
 
 func compileModuleFromDir(t *testing.T, dir string) llvm.Module {

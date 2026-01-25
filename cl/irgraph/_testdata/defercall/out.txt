@@ -1,0 +1,6 @@
+call defercall.A -> __sigsetjmp
+call defercall.A -> defercall.B
+call defercall.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+call defercall.A -> github.com/goplus/llgo/runtime/internal/runtime.GetThreadDefer
+call defercall.A -> github.com/goplus/llgo/runtime/internal/runtime.Rethrow
+call defercall.A -> github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer
