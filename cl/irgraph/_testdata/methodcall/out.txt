@@ -1,0 +1,3 @@
+call methodcall.(*T).M -> methodcall.T.M
+call methodcall.A -> methodcall.T.M
+call methodcall.T.M -> methodcall.B
