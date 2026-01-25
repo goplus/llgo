@@ -69,9 +69,8 @@ func TestGraphFromTestdata(t *testing.T) {
 		}
 		pkgDir := filepath.Join(dir, entry.Name())
 		t.Run(entry.Name(), func(t *testing.T) {
-			inPath := filepath.Join(pkgDir, "in.go")
 			outPath := filepath.Join(pkgDir, "out.txt")
-			mod := compileModuleFromFile(t, inPath)
+			mod := compileModuleFromDir(t, pkgDir)
 			graph := Build(mod, Options{})
 			got := formatGraph(graph)
 			if updateTestdata {
@@ -91,19 +90,41 @@ func TestGraphFromTestdata(t *testing.T) {
 	}
 }
 
-func compileModuleFromFile(t *testing.T, path string) llvm.Module {
+func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
 	t.Helper()
-	src, err := os.ReadFile(path)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		t.Fatal("ReadFile failed:", err)
+		t.Fatal("ReadDir failed:", err)
 	}
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, filepath.Base(path), src, parser.ParseComments)
-	if err != nil {
-		t.Fatal("ParseFile failed:", err)
+	var files []*ast.File
+	var fileNames []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".go") || strings.HasPrefix(name, "_") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		fileNames = append(fileNames, name)
 	}
-	files := []*ast.File{f}
-	name := f.Name.Name
+	sort.Strings(fileNames)
+	for _, name := range fileNames {
+		src, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal("ReadFile failed:", err)
+		}
+		f, err := parser.ParseFile(fset, name, src, parser.ParseComments)
+		if err != nil {
+			t.Fatal("ParseFile failed:", err)
+		}
+		files = append(files, f)
+	}
+	if len(files) == 0 {
+		t.Fatalf("no go files found in %s", dir)
+	}
+	name := files[0].Name.Name
 	pkg := types.NewPackage(name, name)
 	imp := packages.NewImporter(fset)
 	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
