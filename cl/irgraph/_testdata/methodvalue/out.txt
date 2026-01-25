@@ -1,0 +1,4 @@
+call methodvalue.(*T).M -> methodvalue.T.M
+call methodvalue.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+call methodvalue.T.M -> methodvalue.B
+call methodvalue.T.M$bound -> methodvalue.T.M

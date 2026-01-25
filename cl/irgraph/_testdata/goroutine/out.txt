@@ -1,0 +1,4 @@
+call __llgo_stub.goroutine._llgo_routine$1 -> goroutine._llgo_routine$1
+call goroutine.A -> github.com/goplus/llgo/runtime/internal/runtime.CreateThread
+call goroutine.A -> malloc
+call goroutine._llgo_routine$1 -> free

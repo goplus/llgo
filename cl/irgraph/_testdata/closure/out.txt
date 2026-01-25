@@ -1,0 +1,2 @@
+call closure.A -> closure.A$1
+call closure.A$1 -> closure.B
