@@ -1,0 +1,2 @@
+call mutual.A -> mutual.B
+call mutual.B -> mutual.A
