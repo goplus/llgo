@@ -9,7 +9,7 @@ reach github.com/goplus/llgo/cl/deadcode/_testdata/call.main
 pkg github.com/goplus/llgo/cl/deadcode/_testdata/call.main
 reach __llgo_argc
 reach __llgo_argv
-dead _start
+reach _start
 reach main
 reach runtime.init
 dead syscall.init
