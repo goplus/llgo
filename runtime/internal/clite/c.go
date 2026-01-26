@@ -20,11 +20,6 @@ import (
 	"unsafe"
 )
 
-const (
-	// we want to execute init(), link / decl skips executing init()
-	LLGoPackage = true
-)
-
 type (
 	Void    = [0]byte
 	Char    = int8
