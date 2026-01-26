@@ -1,0 +1,4 @@
+reach main.B
+dead main.C
+reach main.main
+reach main.takes
