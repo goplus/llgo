@@ -1,0 +1,1 @@
+@__llgo_relocs = internal unnamed_addr constant [1 x { i32, ptr, ptr, i64 }] [{ i32, ptr, ptr, i64 } { i32 2, ptr @useifacemethod.Use, ptr @"_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88", i64 0 }]

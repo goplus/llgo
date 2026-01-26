@@ -1,7 +1,0 @@
-reloc methodoff *_llgo_useiface.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc methodoff *_llgo_useiface.T -> useiface.(*T).M
-reloc methodoff *_llgo_useiface.T -> useiface.(*T).M
-reloc methodoff _llgo_useiface.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc methodoff _llgo_useiface.T -> useiface.(*T).M
-reloc methodoff _llgo_useiface.T -> useiface.T.M
-reloc useiface useiface.A -> _llgo_useiface.T

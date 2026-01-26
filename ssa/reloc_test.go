@@ -20,8 +20,6 @@
 package ssa_test
 
 import (
-	"bytes"
-	"fmt"
 	"go/ast"
 	"go/importer"
 	"go/parser"
@@ -44,7 +42,7 @@ import (
 	"golang.org/x/tools/go/ssa/ssautil"
 )
 
-// Set to true to update out.txt files from in.go.
+// Set to true to update reloc.ll files from in.go.
 var updateRelocTestdata = false
 
 func TestRelocTableFromTestdata(t *testing.T) {
@@ -69,9 +67,12 @@ func TestRelocTableFromTestdata(t *testing.T) {
 			if !hasGoFiles(pkgDir) {
 				t.Skip("no go files")
 			}
-			outPath := filepath.Join(pkgDir, "out.txt")
+			outPath := filepath.Join(pkgDir, "reloc.ll")
 			mod := compileModuleFromDir(t, pkgDir)
-			got := formatRelocTable(mod)
+			got := extractRelocBlock(mod)
+			if len(got) == 0 {
+				t.Fatalf("missing __llgo_relocs block")
+			}
 			if updateRelocTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)
@@ -182,95 +183,29 @@ func (i *testImporter) ImportFrom(path, dir string, mode types.ImportMode) (*typ
 	return i.base.ImportFrom(path, dir, mode)
 }
 
-func formatRelocTable(mod llvm.Module) []byte {
-	type relocLine struct {
-		kind   string
-		owner  string
-		target string
-		add    int64
-	}
-	var lines []relocLine
-	relocs := mod.NamedGlobal("__llgo_relocs")
-	if relocs.IsNil() {
-		return nil
-	}
-	init := relocs.Initializer()
-	if init.IsNil() {
-		return nil
-	}
-	for i := 0; i < init.OperandsCount(); i++ {
-		entry := init.Operand(i)
-		if entry.IsNil() || entry.OperandsCount() < 4 {
-			continue
-		}
-		kind := entry.Operand(0).SExtValue()
-		kindName := relocKindName(kind)
-		if kindName == "" {
-			continue
-		}
-		owner := resolveSymbolValue(entry.Operand(1))
-		target := resolveSymbolValue(entry.Operand(2))
-		if owner.IsNil() || target.IsNil() {
-			continue
-		}
-		add := entry.Operand(3).SExtValue()
-		lines = append(lines, relocLine{
-			kind:   kindName,
-			owner:  owner.Name(),
-			target: target.Name(),
-			add:    add,
-		})
-	}
-	sort.Slice(lines, func(i, j int) bool {
-		if lines[i].kind != lines[j].kind {
-			return lines[i].kind < lines[j].kind
-		}
-		if lines[i].owner != lines[j].owner {
-			return lines[i].owner < lines[j].owner
-		}
-		if lines[i].target != lines[j].target {
-			return lines[i].target < lines[j].target
-		}
-		return lines[i].add < lines[j].add
-	})
-	var buf bytes.Buffer
+func extractRelocBlock(mod llvm.Module) []byte {
+	ir := mod.String()
+	lines := strings.Split(ir, "\n")
+	var out []string
+	found := false
 	for _, line := range lines {
-		if line.add != 0 {
-			fmt.Fprintf(&buf, "reloc %s %s -> %s add=%d\n", line.kind, line.owner, line.target, line.add)
+		if !found {
+			if strings.Contains(line, "@__llgo_relocs") {
+				found = true
+				out = append(out, line)
+			}
 			continue
 		}
-		fmt.Fprintf(&buf, "reloc %s %s -> %s\n", line.kind, line.owner, line.target)
-	}
-	return buf.Bytes()
-}
-
-func relocKindName(kind int64) string {
-	switch kind {
-	case 1:
-		return "useiface"
-	case 2:
-		return "useifacemethod"
-	case 3:
-		return "usenamedmethod"
-	case 4:
-		return "methodoff"
-	default:
-		return ""
-	}
-}
-
-func resolveSymbolValue(v llvm.Value) llvm.Value {
-	if v.IsNil() {
-		return llvm.Value{}
-	}
-	if gv := v.IsAGlobalValue(); !gv.IsNil() {
-		return gv
-	}
-	if ce := v.IsAConstantExpr(); !ce.IsNil() {
-		switch ce.Opcode() {
-		case llvm.BitCast, llvm.PtrToInt, llvm.IntToPtr, llvm.GetElementPtr:
-			return resolveSymbolValue(ce.Operand(0))
+		if strings.TrimSpace(line) == "" {
+			break
 		}
+		if len(line) > 0 && line[0] != ' ' && line[0] != '\t' {
+			break
+		}
+		out = append(out, line)
 	}
-	return llvm.Value{}
+	if !found || len(out) == 0 {
+		return nil
+	}
+	return []byte(strings.Join(out, "\n") + "\n")
 }
