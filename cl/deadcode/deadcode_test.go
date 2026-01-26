@@ -130,7 +130,7 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 }
 
 func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
-	entryCandidates := []string{"main", "__main_argc_argv", "_start"}
+	entryCandidates := []string{"main", "_start"}
 	var roots []irgraph.SymID
 	for _, cand := range entryCandidates {
 		var defs []irgraph.SymID
