@@ -23,26 +23,16 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/importer"
-	"go/parser"
-	"go/token"
-	"go/types"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/goplus/gogen/packages"
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/irgraph"
-	llssa "github.com/goplus/llgo/ssa"
-	"github.com/goplus/llgo/ssa/ssatest"
+	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
-	"golang.org/x/tools/go/ssa"
-	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 // Set to true to update out.txt files from in.go.
@@ -79,8 +69,7 @@ func TestReachabilityFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			mod, pkgName, funcNames := compileModuleFromDir(t, pkgDir)
-			graph := irgraph.Build(mod, irgraph.Options{})
+			graph, pkgName, funcNames := loadPackageGraph(t, pkgDir)
 			roots := rootSymbols(pkgName, funcNames)
 			if len(roots) == 0 {
 				t.Fatalf("no roots found for package %s", pkgName)
@@ -121,55 +110,19 @@ func hasGoFiles(dir string) bool {
 	return false
 }
 
-func compileModuleFromDir(t *testing.T, dir string) (llvm.Module, string, []string) {
+func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, string, []string) {
 	t.Helper()
-	entries, err := os.ReadDir(dir)
+	conf := build.NewDefaultConf(build.ModeGen)
+	conf.CollectIRGraph = true
+	pkgs, err := build.Do([]string{dir}, conf)
 	if err != nil {
-		t.Fatal("ReadDir failed:", err)
+		t.Fatalf("build.Do failed: %v", err)
 	}
-	fset := token.NewFileSet()
-	var files []*ast.File
-	var fileNames []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if !strings.HasSuffix(name, ".go") || strings.HasPrefix(name, "_") || strings.HasSuffix(name, "_test.go") {
-			continue
-		}
-		fileNames = append(fileNames, name)
+	if len(pkgs) == 0 || pkgs[0].IRGraph == nil {
+		t.Fatal("missing irgraph output")
 	}
-	sort.Strings(fileNames)
-	for _, name := range fileNames {
-		src, err := os.ReadFile(filepath.Join(dir, name))
-		if err != nil {
-			t.Fatal("ReadFile failed:", err)
-		}
-		f, err := parser.ParseFile(fset, name, src, parser.ParseComments)
-		if err != nil {
-			t.Fatal("ParseFile failed:", err)
-		}
-		files = append(files, f)
-	}
-	if len(files) == 0 {
-		t.Fatalf("no go files found in %s", dir)
-	}
-	pkgName := files[0].Name.Name
-	pkg := types.NewPackage(pkgName, pkgName)
-	imp := newTestImporter(fset)
-	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
-	foo, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, mode)
-	if err != nil {
-		t.Fatal("BuildPackage failed:", err)
-	}
-	prog := ssatest.NewProgramEx(t, nil, imp)
-	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
-	ret, err := cl.NewPackage(prog, foo, files)
-	if err != nil {
-		t.Fatal("cl.NewPackage failed:", err)
-	}
-	return ret.Module(), pkgName, topLevelFuncNames(files)
+	pkg := pkgs[0].Package
+	return pkgs[0].IRGraph, pkg.Name, topLevelFuncNames(pkg.Syntax)
 }
 
 func topLevelFuncNames(files []*ast.File) []string {
@@ -215,27 +168,4 @@ func formatReachability(pkgName string, funcNames []string, res Result) []byte {
 		buf.WriteString(fmt.Sprintf("%s %s\n", status, sym))
 	}
 	return buf.Bytes()
-}
-
-type testImporter struct {
-	base *packages.Importer
-	rt   types.Importer
-}
-
-func newTestImporter(fset *token.FileSet) *testImporter {
-	return &testImporter{
-		base: packages.NewImporter(fset),
-		rt:   importer.For("source", nil),
-	}
-}
-
-func (i *testImporter) Import(path string) (*types.Package, error) {
-	return i.ImportFrom(path, "", 0)
-}
-
-func (i *testImporter) ImportFrom(path, dir string, mode types.ImportMode) (*types.Package, error) {
-	if path == llssa.PkgRuntime {
-		return i.rt.Import(path)
-	}
-	return i.base.ImportFrom(path, dir, mode)
 }

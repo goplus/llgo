@@ -40,6 +40,7 @@ import (
 	"github.com/goplus/llvm"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
@@ -114,36 +115,37 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos          string
-	Goarch        string
-	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath       string
-	AppExt        string  // ".exe" on Windows, empty on Unix
-	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts       OutFmts // Output format specifications (only for Target != "")
-	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
-	Emulator      bool    // run in emulator mode
-	Port          string  // target port for flashing
-	BaudRate      int     // baudrate for serial communication
-	RunArgs       []string
-	Mode          Mode
-	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode       AbiMode
-	GenExpect     bool // only valid for ModeCmpTest
-	Verbose       bool
-	PrintCommands bool // print executed commands
-	GenLL         bool // generate pkg .ll files
-	GenRelocLL    bool // generate reloc info and keep .ll
-	GenBC         bool // generate pkg .bc files
-	CheckLLFiles  bool // check .ll files valid
-	CheckLinkArgs bool // check linkargs valid
-	ForceEspClang bool // force to use esp-clang
-	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
-	Tags          string
-	SizeReport    bool   // print size report after successful build
-	SizeFormat    string // size report format: text,json (default text)
-	SizeLevel     string // size aggregation level: full,module,package (default module)
-	CompilerHash  string // metadata hash for the running compiler (development builds only)
+	Goos           string
+	Goarch         string
+	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath        string
+	AppExt         string  // ".exe" on Windows, empty on Unix
+	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts        OutFmts // Output format specifications (only for Target != "")
+	CompileOnly    bool    // compile test binary but do not run it (only valid for ModeTest)
+	Emulator       bool    // run in emulator mode
+	Port           string  // target port for flashing
+	BaudRate       int     // baudrate for serial communication
+	RunArgs        []string
+	Mode           Mode
+	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode        AbiMode
+	GenExpect      bool // only valid for ModeCmpTest
+	Verbose        bool
+	PrintCommands  bool // print executed commands
+	GenLL          bool // generate pkg .ll files
+	GenRelocLL     bool // generate reloc info and keep .ll
+	CollectIRGraph bool // collect per-package IR dependency graphs
+	GenBC          bool // generate pkg .bc files
+	CheckLLFiles   bool // check .ll files valid
+	CheckLinkArgs  bool // check linkargs valid
+	ForceEspClang  bool // force to use esp-clang
+	ForceRebuild   bool // force rebuilding of packages that are already up-to-date
+	Tags           string
+	SizeReport     bool   // print size report after successful build
+	SizeFormat     string // size report format: text,json (default text)
+	SizeLevel      string // size aggregation level: full,module,package (default module)
+	CompilerHash   string // metadata hash for the running compiler (development builds only)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -1336,6 +1338,13 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
+	if ctx.buildConf.CollectIRGraph {
+		if ctx.buildConf.GenRelocLL {
+			_ = ret.String() // ensure __llgo_relocs is materialized
+		}
+		aPkg.IRGraph = irgraph.Build(ret.Module(), irgraph.Options{})
+	}
+
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
@@ -1471,9 +1480,10 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 
 type aPackage struct {
 	*packages.Package
-	SSA    *ssa.Package
-	AltPkg *packages.Cached
-	LPkg   llssa.Package
+	SSA     *ssa.Package
+	AltPkg  *packages.Cached
+	LPkg    llssa.Package
+	IRGraph *irgraph.Graph
 
 	NeedRt     bool
 	NeedPyInit bool
