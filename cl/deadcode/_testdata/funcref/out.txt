@@ -1,4 +1,4 @@
-dead main.B
-dead main.C
-reach main.main
-dead main.takes
+reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.B
+dead github.com/goplus/llgo/cl/deadcode/_testdata/funcref.C
+reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.main
+reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.takes
