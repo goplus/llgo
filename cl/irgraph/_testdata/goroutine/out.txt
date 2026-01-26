@@ -6,3 +6,4 @@ ref goroutine.A -> goroutine.B
 call goroutine.A -> malloc
 ref goroutine.A -> malloc
 call goroutine._llgo_routine$1 -> free
+ref goroutine.init -> goroutine.init$guard

@@ -68,13 +68,13 @@ func TestReachabilityFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			graph, pkgs := loadPackageGraph(t, pkgDir)
-			roots := rootSymbols(pkgs)
+			graph, pkgs, rootPrefix := loadPackageGraph(t, pkgDir)
+			roots := rootSymbols(pkgs, rootPrefix)
 			if len(roots) == 0 {
 				t.Fatalf("no roots found for %s", pkgDir)
 			}
 			res := Analyze(graph, roots, irgraph.EdgeCall|irgraph.EdgeRef)
-			got := formatReachability(pkgs, res)
+			got := formatReachability(pkgs, rootPrefix, res)
 			if updateDeadcodeTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)
@@ -109,10 +109,11 @@ func hasGoFiles(dir string) bool {
 	return false
 }
 
-func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package) {
+func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package, string) {
 	t.Helper()
-	conf := build.NewDefaultConf(build.ModeGen)
+	conf := build.NewDefaultConf(build.ModeBuild)
 	conf.CollectIRGraph = true
+	conf.OutFile = filepath.Join(t.TempDir(), "deadcode-test-bin")
 	pkgs, err := build.Do([]string{dir}, conf)
 	if err != nil {
 		t.Fatalf("build.Do failed: %v", err)
@@ -127,19 +128,36 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 	if graph == nil {
 		t.Fatal("missing irgraph output")
 	}
-	return graph, pkgs
+	rootPrefix := rootPackagePrefix(pkgs, dir)
+	return graph, pkgs, rootPrefix
 }
 
-func rootSymbols(pkgs []build.Package) []irgraph.SymID {
+func rootSymbols(pkgs []build.Package, rootPrefix string) []irgraph.SymID {
+	entryCandidates := []string{"main", "__main_argc_argv", "_start"}
+	for _, cand := range entryCandidates {
+		for _, pkg := range pkgs {
+			if pkg.Package == nil || pkg.IRGraph == nil {
+				continue
+			}
+			if rootPrefix != "" && !strings.HasPrefix(pkg.Package.PkgPath, rootPrefix) {
+				continue
+			}
+			if _, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
+				return []irgraph.SymID{irgraph.SymID(cand)}
+			}
+		}
+	}
 	for _, pkg := range pkgs {
 		if pkg.Package == nil || pkg.IRGraph == nil {
 			continue
 		}
-		if pkg.Package.Name != "main" {
+		if rootPrefix != "" && !strings.HasPrefix(pkg.Package.PkgPath, rootPrefix) {
 			continue
 		}
-		pkgPath := pkg.Package.PkgPath
-		candidates := []string{pkgPath + ".main", "main.main"}
+		candidates := []string{"main.main"}
+		if pkg.Package.PkgPath != "" {
+			candidates = append(candidates, pkg.Package.PkgPath+".main")
+		}
 		for _, cand := range candidates {
 			if _, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
 				return []irgraph.SymID{irgraph.SymID(cand)}
@@ -157,7 +175,7 @@ func rootSymbols(pkgs []build.Package) []irgraph.SymID {
 	return nil
 }
 
-func formatReachability(pkgs []build.Package, res Result) []byte {
+func formatReachability(pkgs []build.Package, rootPrefix string, res Result) []byte {
 	pkgPaths := make([]string, 0, len(pkgs))
 	pkgMap := make(map[string]build.Package, len(pkgs))
 	for _, pkg := range pkgs {
@@ -166,6 +184,9 @@ func formatReachability(pkgs []build.Package, res Result) []byte {
 		}
 		pkgPath := pkg.Package.PkgPath
 		if pkgPath == "" {
+			continue
+		}
+		if rootPrefix != "" && !strings.HasPrefix(pkgPath, rootPrefix) {
 			continue
 		}
 		if _, ok := pkgMap[pkgPath]; ok {
@@ -197,16 +218,35 @@ func formatReachability(pkgs []build.Package, res Result) []byte {
 	return buf.Bytes()
 }
 
+func rootPackagePrefix(pkgs []build.Package, dir string) string {
+	base := filepath.Base(dir)
+	targetSuffix := filepath.ToSlash(filepath.Join("cl/deadcode/_testdata", base))
+	for _, pkg := range pkgs {
+		if pkg.Package == nil {
+			continue
+		}
+		pkgPath := pkg.Package.PkgPath
+		if pkgPath == "" {
+			continue
+		}
+		if strings.HasSuffix(pkgPath, targetSuffix) {
+			return pkgPath
+		}
+	}
+	for _, pkg := range pkgs {
+		if pkg.Package == nil {
+			continue
+		}
+		if pkg.Package.Name == "main" && pkg.Package.PkgPath != "" {
+			return pkg.Package.PkgPath
+		}
+	}
+	return ""
+}
+
 func symbolsForPackage(pkg build.Package) []string {
 	g := pkg.IRGraph
 	if g == nil {
-		return nil
-	}
-	pkgPath := ""
-	if pkg.Package != nil {
-		pkgPath = pkg.Package.PkgPath
-	}
-	if pkgPath == "" {
 		return nil
 	}
 	var syms []string
@@ -215,9 +255,7 @@ func symbolsForPackage(pkg build.Package) []string {
 			continue
 		}
 		name := string(id)
-		if strings.HasPrefix(name, pkgPath+".") || strings.HasPrefix(name, "_llgo_"+pkgPath) {
-			syms = append(syms, name)
-		}
+		syms = append(syms, name)
 	}
 	sort.Strings(syms)
 	return syms

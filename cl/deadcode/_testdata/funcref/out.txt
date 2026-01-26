@@ -1,7 +1,16 @@
 pkg github.com/goplus/llgo/cl/deadcode/_testdata/funcref
+reach __llgo_stub.github.com/goplus/llgo/cl/deadcode/_testdata/funcref.B
 reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.B
 dead github.com/goplus/llgo/cl/deadcode/_testdata/funcref.C
-dead github.com/goplus/llgo/cl/deadcode/_testdata/funcref.init
-dead github.com/goplus/llgo/cl/deadcode/_testdata/funcref.init$guard
+reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.init
+reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.init$guard
 reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.main
 reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.takes
+
+pkg github.com/goplus/llgo/cl/deadcode/_testdata/funcref.main
+reach __llgo_argc
+reach __llgo_argv
+dead _start
+reach main
+reach runtime.init
+dead syscall.init

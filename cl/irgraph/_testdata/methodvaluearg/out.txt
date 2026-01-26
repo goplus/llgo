@@ -4,3 +4,4 @@ ref methodvaluearg.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
 ref methodvaluearg.A -> methodvaluearg.T.M$bound
 call methodvaluearg.A -> methodvaluearg.takes
 call methodvaluearg.T.M$bound -> methodvaluearg.T.M
+ref methodvaluearg.init -> methodvaluearg.init$guard

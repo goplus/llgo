@@ -2,3 +2,4 @@ call ptrrecv.(*T).M -> ptrrecv.B
 call ptrrecv.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
 ref ptrrecv.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
 call ptrrecv.A -> ptrrecv.(*T).M
+ref ptrrecv.init -> ptrrecv.init$guard

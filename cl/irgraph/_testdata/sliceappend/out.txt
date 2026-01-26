@@ -1,3 +1,4 @@
 call sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
 ref sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
 call sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.SliceAppend
+ref sliceappend.init -> sliceappend.init$guard

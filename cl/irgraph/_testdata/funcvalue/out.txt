@@ -1,1 +1,2 @@
 call funcvalue.A -> funcvalue.B
+ref funcvalue.init -> funcvalue.init$guard

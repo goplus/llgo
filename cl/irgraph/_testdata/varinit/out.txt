@@ -1,2 +1,4 @@
 call varinit.init -> varinit.B
 ref varinit.init -> varinit.B
+ref varinit.init -> varinit.X
+ref varinit.init -> varinit.init$guard
