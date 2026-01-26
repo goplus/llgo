@@ -1,0 +1,6 @@
+call methodvaluearg.(*T).M -> methodvaluearg.T.M
+call methodvaluearg.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+ref methodvaluearg.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+ref methodvaluearg.A -> methodvaluearg.T.M$bound
+call methodvaluearg.A -> methodvaluearg.takes
+call methodvaluearg.T.M$bound -> methodvaluearg.T.M
