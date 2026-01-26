@@ -131,6 +131,7 @@ type Config struct {
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
+	PrintCommands bool // print executed commands
 	GenLL         bool // generate pkg .ll files
 	GenRelocLL    bool // generate reloc info and keep .ll
 	GenBC         bool // generate pkg .bc files
