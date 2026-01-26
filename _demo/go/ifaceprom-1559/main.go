@@ -1,6 +1,6 @@
 package main
 
-import "github.com/goplus/llgo/_demo/go/ifaceprom-1599/foo"
+import "github.com/goplus/llgo/_demo/go/ifaceprom-1559/foo"
 
 type Game1 struct {
 	*foo.Game
