@@ -1,4 +1,7 @@
+pkg github.com/goplus/llgo/cl/deadcode/_testdata/call
 reach github.com/goplus/llgo/cl/deadcode/_testdata/call.A
 reach github.com/goplus/llgo/cl/deadcode/_testdata/call.B
 dead github.com/goplus/llgo/cl/deadcode/_testdata/call.C
+dead github.com/goplus/llgo/cl/deadcode/_testdata/call.init
+dead github.com/goplus/llgo/cl/deadcode/_testdata/call.init$guard
 reach github.com/goplus/llgo/cl/deadcode/_testdata/call.main
