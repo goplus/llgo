@@ -40,6 +40,8 @@ import (
 	"github.com/goplus/llvm"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/cl/dcepass"
+	"github.com/goplus/llgo/cl/deadcode"
 	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
@@ -137,6 +139,7 @@ type Config struct {
 	GenRelocLL     bool // generate reloc info and keep .ll
 	CollectIRGraph bool // collect per-package IR dependency graphs
 	GenBC          bool // generate pkg .bc files
+	DCE            bool // enable experimental Go-like link-time DCE (build/run only)
 	CheckLLFiles   bool // check .ll files valid
 	CheckLinkArgs  bool // check linkargs valid
 	ForceEspClang  bool // force to use esp-clang
@@ -228,6 +231,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err := ensureSizeReporting(conf); err != nil {
 		return nil, err
 	}
+	if conf.DCE {
+		if conf.Mode != ModeBuild && conf.Mode != ModeRun {
+			return nil, fmt.Errorf("dce only supports build/run modes")
+		}
+		if conf.BuildMode != BuildModeExe {
+			return nil, fmt.Errorf("dce only supports buildmode=exe")
+		}
+	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)
@@ -246,6 +257,16 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
 		cl.EnableExportRename(true)
+	}
+
+	if conf.DCE {
+		if isWasmTarget(conf.Goos) || strings.HasPrefix(conf.Target, "wasi") {
+			return nil, fmt.Errorf("dce does not support wasm targets")
+		}
+		conf.GenBC = true
+		conf.GenRelocLL = true
+		conf.CollectIRGraph = true
+		conf.ForceRebuild = true
 	}
 
 	verbose := conf.Verbose
@@ -1081,6 +1102,47 @@ func typeContainsAbiType(t llvm.Type, seen map[uintptr]bool) bool {
 	return false
 }
 
+func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
+	candidates := []string{"main", "_start"}
+	var roots []irgraph.SymID
+	for _, name := range candidates {
+		fn := mod.NamedFunction(name)
+		if fn.IsNil() {
+			continue
+		}
+		if fn.IsDeclaration() {
+			return nil, fmt.Errorf("dce root %q is declaration only", name)
+		}
+		roots = append(roots, irgraph.SymID(name))
+	}
+	if len(roots) == 0 {
+		return nil, fmt.Errorf("dce requires at least one entry root (main/_start)")
+	}
+	return roots, nil
+}
+
+func graphSummary(g *irgraph.Graph) (nodes, edges, call, ref, reloc int) {
+	if g == nil {
+		return 0, 0, 0, 0, 0
+	}
+	nodes = len(g.Nodes)
+	for _, tos := range g.Edges {
+		edges += len(tos)
+		for _, kind := range tos {
+			if kind&irgraph.EdgeCall != 0 {
+				call++
+			}
+			if kind&irgraph.EdgeRef != 0 {
+				ref++
+			}
+			if kind&irgraph.EdgeRelocMask != 0 {
+				reloc++
+			}
+		}
+	}
+	return nodes, edges, call, ref, reloc
+}
+
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
@@ -1153,6 +1215,35 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		}
 		if merged.IsNil() {
 			return fmt.Errorf("no bitcode inputs to link")
+		}
+
+		if ctx.buildConf.DCE {
+			roots, err := dceEntryRoots(merged)
+			if err != nil {
+				merged.Dispose()
+				return err
+			}
+			if verbose {
+				rootNames := make([]string, 0, len(roots))
+				for _, r := range roots {
+					rootNames = append(rootNames, string(r))
+				}
+				fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
+			}
+			graph := irgraph.Build(merged, irgraph.Options{})
+			if verbose {
+				nodes, edges, call, ref, reloc := graphSummary(graph)
+				fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
+			}
+			res := deadcode.Analyze(graph, roots, irgraph.EdgeCall|irgraph.EdgeRef)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
+				fmt.Fprintln(os.Stderr, "[dce] pass begin")
+			}
+			stats := dcepass.Apply(merged, res, dcepass.Options{})
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d)\n", stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal)
+			}
 		}
 
 		combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
