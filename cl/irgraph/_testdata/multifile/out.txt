@@ -1,1 +1,2 @@
 call multifile.A -> multifile.B
+ref multifile.init -> multifile.init$guard

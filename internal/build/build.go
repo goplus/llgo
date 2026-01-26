@@ -490,6 +490,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		mockable.Exit(1)
 	}
 
+	if conf.CollectIRGraph && len(ctx.entryPkgs) > 0 {
+		allPkgs = append(allPkgs, ctx.entryPkgs...)
+	}
+
 	return allPkgs, nil
 }
 
@@ -527,6 +531,7 @@ type context struct {
 	initial        []*packages.Package
 	pkgs           map[*packages.Package]Package // cache for lookup
 	pkgByID        map[string]Package            // cache for lookup by pkg.ID
+	entryPkgs      []*aPackage
 	mode           Mode
 	nLibdir        int32
 	output         bool
@@ -959,6 +964,13 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
+	if ctx.buildConf.CollectIRGraph {
+		if ctx.buildConf.GenRelocLL {
+			_ = entryPkg.LPkg.String() // ensure __llgo_relocs is materialized
+		}
+		entryPkg.IRGraph = irgraph.Build(entryPkg.LPkg.Module(), irgraph.Options{})
+		ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
+	}
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err

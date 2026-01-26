@@ -1,2 +1,4 @@
 call __llgo_stub.funcptrglobal.B -> funcptrglobal.B
 ref funcptrglobal.init -> __llgo_stub.funcptrglobal.B
+ref funcptrglobal.init -> funcptrglobal.F
+ref funcptrglobal.init -> funcptrglobal.init$guard

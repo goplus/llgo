@@ -1,1 +1,2 @@
 call foo.A -> foo.B
+ref foo.init -> foo.init$guard

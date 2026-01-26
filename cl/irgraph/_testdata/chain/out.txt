@@ -1,2 +1,3 @@
 call chain.A -> chain.B
 call chain.B -> chain.C
+ref chain.init -> chain.init$guard

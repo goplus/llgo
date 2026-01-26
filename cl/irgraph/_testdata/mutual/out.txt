@@ -1,2 +1,3 @@
 call mutual.A -> mutual.B
 call mutual.B -> mutual.A
+ref mutual.init -> mutual.init$guard

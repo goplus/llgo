@@ -1,2 +1,4 @@
 call __llgo_stub.funcptrstruct.B -> funcptrstruct.B
 ref funcptrstruct.init -> __llgo_stub.funcptrstruct.B
+ref funcptrstruct.init -> funcptrstruct.G
+ref funcptrstruct.init -> funcptrstruct.init$guard

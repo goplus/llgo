@@ -1,1 +1,2 @@
 call recursion.A -> recursion.A
+ref recursion.init -> recursion.init$guard

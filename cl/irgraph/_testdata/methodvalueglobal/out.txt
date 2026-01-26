@@ -2,4 +2,7 @@ call methodvalueglobal.(*T).M -> methodvalueglobal.T.M
 call methodvalueglobal.T.M$bound -> methodvalueglobal.T.M
 call methodvalueglobal.init -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
 ref methodvalueglobal.init -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+ref methodvalueglobal.init -> methodvalueglobal.G
 ref methodvalueglobal.init -> methodvalueglobal.T.M$bound
+ref methodvalueglobal.init -> methodvalueglobal.init$guard
+ref methodvalueglobal.init -> methodvalueglobal.t
