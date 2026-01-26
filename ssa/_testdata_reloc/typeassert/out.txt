@@ -1,8 +1,0 @@
-reloc methodoff *_llgo_typeassert.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc methodoff *_llgo_typeassert.T -> typeassert.(*T).M
-reloc methodoff *_llgo_typeassert.T -> typeassert.(*T).M
-reloc methodoff _llgo_typeassert.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc methodoff _llgo_typeassert.T -> typeassert.(*T).M
-reloc methodoff _llgo_typeassert.T -> typeassert.T.M
-reloc useiface typeassert.Use -> _llgo_string
-reloc useiface typeassert.Use -> _llgo_typeassert.T
