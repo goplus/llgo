@@ -1,0 +1,2 @@
+call __llgo_stub.funcptrglobal.B -> funcptrglobal.B
+ref funcptrglobal.init -> __llgo_stub.funcptrglobal.B

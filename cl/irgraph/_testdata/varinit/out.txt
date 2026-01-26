@@ -1,1 +1,2 @@
 call varinit.init -> varinit.B
+ref varinit.init -> varinit.B
