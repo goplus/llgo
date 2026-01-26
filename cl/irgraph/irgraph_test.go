@@ -50,6 +50,7 @@ func init() {
 
 // Set to true to update out.txt files from in.go.
 var updateTestdata = false
+var updateRelocTestdata = false
 
 func TestGraphFromTestdata(t *testing.T) {
 	root, err := os.Getwd()
@@ -94,6 +95,49 @@ func TestGraphFromTestdata(t *testing.T) {
 	}
 }
 
+func TestRelocGraphFromTestdata(t *testing.T) {
+	root, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	dir := filepath.Join(root, "_testdata_reloc")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			t.Skip("no _testdata_reloc")
+		}
+		t.Fatal("ReadDir failed:", err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+			continue
+		}
+		pkgDir := filepath.Join(dir, entry.Name())
+		t.Run(entry.Name(), func(t *testing.T) {
+			if !hasGoFiles(pkgDir) {
+				t.Skip("no go files")
+			}
+			outPath := filepath.Join(pkgDir, "out.txt")
+			mod := compileModuleFromDirWithReloc(t, pkgDir, true)
+			graph := Build(mod, Options{})
+			got := formatGraphWithMask(graph, EdgeReloc)
+			if updateRelocTestdata {
+				if err := os.WriteFile(outPath, got, 0644); err != nil {
+					t.Fatalf("WriteFile failed: %v", err)
+				}
+				return
+			}
+			want, err := os.ReadFile(outPath)
+			if err != nil {
+				t.Fatalf("ReadFile failed: %v", err)
+			}
+			if test.Diff(t, outPath+".new", got, want) {
+				t.Fatal("unexpected graph output")
+			}
+		})
+	}
+}
+
 func hasGoFiles(dir string) bool {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -112,6 +156,10 @@ func hasGoFiles(dir string) bool {
 }
 
 func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
+	return compileModuleFromDirWithReloc(t, dir, false)
+}
+
+func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) llvm.Module {
 	t.Helper()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -155,9 +203,13 @@ func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
 	}
 	prog := ssatest.NewProgramEx(t, nil, imp)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	prog.EnableRelocTable(enableReloc)
 	ret, err := cl.NewPackage(prog, foo, files)
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
+	}
+	if enableReloc {
+		_ = ret.String()
 	}
 	return ret.Module()
 }
@@ -186,6 +238,10 @@ func (i *testImporter) ImportFrom(path, dir string, mode types.ImportMode) (*typ
 }
 
 func formatGraph(g *Graph) []byte {
+	return formatGraphWithMask(g, EdgeCall|EdgeRef|EdgeReloc)
+}
+
+func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 	type edgeLine struct {
 		from string
 		to   string
@@ -194,13 +250,13 @@ func formatGraph(g *Graph) []byte {
 	var lines []edgeLine
 	for from, tos := range g.Edges {
 		for to, kind := range tos {
-			if kind&EdgeCall != 0 {
+			if kind&EdgeCall != 0 && mask&EdgeCall != 0 {
 				lines = append(lines, edgeLine{from: string(from), to: string(to), kind: EdgeCall})
 			}
-			if kind&EdgeRef != 0 {
+			if kind&EdgeRef != 0 && mask&EdgeRef != 0 {
 				lines = append(lines, edgeLine{from: string(from), to: string(to), kind: EdgeRef})
 			}
-			if kind&EdgeReloc != 0 {
+			if kind&EdgeReloc != 0 && mask&EdgeReloc != 0 {
 				lines = append(lines, edgeLine{from: string(from), to: string(to), kind: EdgeReloc})
 			}
 		}

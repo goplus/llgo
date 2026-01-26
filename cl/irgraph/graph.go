@@ -108,6 +108,7 @@ func Build(mod llvm.Module, opts Options) *Graph {
 			}
 		}
 	}
+	g.addRelocEdges(mod, opts)
 	return g
 }
 
@@ -220,6 +221,65 @@ func resolveFuncValue(v llvm.Value) llvm.Value {
 			if fn := operand.IsAFunction(); !fn.IsNil() {
 				return fn
 			}
+		}
+	}
+	return llvm.Value{}
+}
+
+const (
+	relocUseIface       = 1
+	relocUseIfaceMethod = 2
+	relocUseNamedMethod = 3
+	relocMethodOff      = 4
+)
+
+func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
+	relocs := mod.NamedGlobal("__llgo_relocs")
+	if relocs.IsNil() {
+		return
+	}
+	init := relocs.Initializer()
+	if init.IsNil() {
+		return
+	}
+	n := init.OperandsCount()
+	for i := 0; i < n; i++ {
+		entry := init.Operand(i)
+		if entry.IsNil() || entry.OperandsCount() < 4 {
+			continue
+		}
+		kind := entry.Operand(0).SExtValue()
+		switch kind {
+		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff:
+		default:
+			continue
+		}
+		owner := resolveSymbolValue(entry.Operand(1))
+		target := resolveSymbolValue(entry.Operand(2))
+		if owner.IsNil() || target.IsNil() {
+			continue
+		}
+		if strings.HasPrefix(owner.Name(), "llvm.") && !opts.IncludeIntrinsics {
+			continue
+		}
+		if strings.HasPrefix(target.Name(), "llvm.") && !opts.IncludeIntrinsics {
+			continue
+		}
+		g.AddEdge(SymID(owner.Name()), SymID(target.Name()), EdgeReloc)
+	}
+}
+
+func resolveSymbolValue(v llvm.Value) llvm.Value {
+	if v.IsNil() {
+		return llvm.Value{}
+	}
+	if gv := v.IsAGlobalValue(); !gv.IsNil() {
+		return gv
+	}
+	if ce := v.IsAConstantExpr(); !ce.IsNil() {
+		switch ce.Opcode() {
+		case llvm.BitCast, llvm.PtrToInt, llvm.IntToPtr, llvm.GetElementPtr:
+			return resolveSymbolValue(ce.Operand(0))
 		}
 	}
 	return llvm.Value{}
