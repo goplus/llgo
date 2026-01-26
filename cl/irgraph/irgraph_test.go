@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -146,7 +147,7 @@ func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
 	}
 	name := files[0].Name.Name
 	pkg := types.NewPackage(name, name)
-	imp := packages.NewImporter(fset)
+	imp := newTestImporter(fset)
 	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
 	foo, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, mode)
 	if err != nil {
@@ -159,6 +160,29 @@ func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
 	return ret.Module()
+}
+
+type testImporter struct {
+	base *packages.Importer
+	rt   types.Importer
+}
+
+func newTestImporter(fset *token.FileSet) *testImporter {
+	return &testImporter{
+		base: packages.NewImporter(fset),
+		rt:   importer.For("source", nil),
+	}
+}
+
+func (i *testImporter) Import(path string) (*types.Package, error) {
+	return i.ImportFrom(path, "", 0)
+}
+
+func (i *testImporter) ImportFrom(path, dir string, mode types.ImportMode) (*types.Package, error) {
+	if path == llssa.PkgRuntime {
+		return i.rt.Import(path)
+	}
+	return i.base.ImportFrom(path, dir, mode)
 }
 
 func formatGraph(g *Graph) []byte {
