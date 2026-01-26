@@ -47,6 +47,7 @@ func init() {
 }
 
 func TestReachabilityFromTestdata(t *testing.T) {
+	verbose := os.Getenv("LLGO_DEADCODE_VERBOSE") != ""
 	root, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -69,13 +70,14 @@ func TestReachabilityFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			graph, pkgName, funcNames := loadPackageGraph(t, pkgDir)
-			roots := rootSymbols(pkgName, funcNames)
+			graph, pkgPath, pkgName, funcNames := loadPackageGraph(t, pkgDir, verbose)
+			symMap := resolveFuncSymbols(graph, pkgPath, pkgName, funcNames)
+			roots := rootSymbols(symMap)
 			if len(roots) == 0 {
 				t.Fatalf("no roots found for package %s", pkgName)
 			}
 			res := Analyze(graph, roots, irgraph.EdgeCall|irgraph.EdgeRef)
-			got := formatReachability(pkgName, funcNames, res)
+			got := formatReachability(funcNames, symMap, res)
 			if updateDeadcodeTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)
@@ -110,7 +112,7 @@ func hasGoFiles(dir string) bool {
 	return false
 }
 
-func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, string, []string) {
+func loadPackageGraph(t *testing.T, dir string, verbose bool) (*irgraph.Graph, string, string, []string) {
 	t.Helper()
 	conf := build.NewDefaultConf(build.ModeGen)
 	conf.CollectIRGraph = true
@@ -118,11 +120,20 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, string, []strin
 	if err != nil {
 		t.Fatalf("build.Do failed: %v", err)
 	}
-	if len(pkgs) == 0 || pkgs[0].IRGraph == nil {
+	if len(pkgs) == 0 {
+		t.Fatal("no packages returned")
+	}
+	if verbose {
+		for _, pkg := range pkgs {
+			dumpGraphSummary(t, pkg, verbose)
+		}
+	}
+	graph := mergeGraphs(pkgs)
+	if graph == nil {
 		t.Fatal("missing irgraph output")
 	}
 	pkg := pkgs[0].Package
-	return pkgs[0].IRGraph, pkg.Name, topLevelFuncNames(pkg.Syntax)
+	return graph, pkg.PkgPath, pkg.Name, topLevelFuncNames(pkg.Syntax)
 }
 
 func topLevelFuncNames(files []*ast.File) []string {
@@ -144,19 +155,21 @@ func topLevelFuncNames(files []*ast.File) []string {
 	return names
 }
 
-func rootSymbols(pkgName string, funcNames []string) []irgraph.SymID {
-	for _, name := range funcNames {
-		if name == "main" {
-			return []irgraph.SymID{irgraph.SymID(pkgName + "." + name)}
-		}
+func rootSymbols(symMap map[string]irgraph.SymID) []irgraph.SymID {
+	if sym, ok := symMap["main"]; ok && sym != "" {
+		return []irgraph.SymID{sym}
 	}
 	return nil
 }
 
-func formatReachability(pkgName string, funcNames []string, res Result) []byte {
+func formatReachability(funcNames []string, symMap map[string]irgraph.SymID, res Result) []byte {
 	syms := make([]string, 0, len(funcNames))
 	for _, name := range funcNames {
-		syms = append(syms, pkgName+"."+name)
+		sym := symMap[name]
+		if sym == "" {
+			continue
+		}
+		syms = append(syms, string(sym))
 	}
 	sort.Strings(syms)
 	var buf bytes.Buffer
@@ -168,4 +181,99 @@ func formatReachability(pkgName string, funcNames []string, res Result) []byte {
 		buf.WriteString(fmt.Sprintf("%s %s\n", status, sym))
 	}
 	return buf.Bytes()
+}
+
+func resolveFuncSymbols(g *irgraph.Graph, pkgPath, pkgName string, funcNames []string) map[string]irgraph.SymID {
+	symMap := make(map[string]irgraph.SymID, len(funcNames))
+	pathPrefix := pkgPath + "."
+	namePrefix := pkgName + "."
+	for _, fn := range funcNames {
+		candidates := []string{pathPrefix + fn, namePrefix + fn}
+		for _, cand := range candidates {
+			if _, ok := g.Nodes[irgraph.SymID(cand)]; ok {
+				symMap[fn] = irgraph.SymID(cand)
+				break
+			}
+		}
+		if symMap[fn] != "" {
+			continue
+		}
+		suffix := "." + fn
+		for id := range g.Nodes {
+			name := string(id)
+			if strings.HasSuffix(name, suffix) {
+				symMap[fn] = id
+				break
+			}
+		}
+	}
+	return symMap
+}
+
+func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
+	var merged *irgraph.Graph
+	for _, pkg := range pkgs {
+		if pkg.IRGraph == nil {
+			continue
+		}
+		if merged == nil {
+			merged = &irgraph.Graph{
+				Nodes: make(map[irgraph.SymID]*irgraph.NodeInfo),
+				Edges: make(map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind),
+			}
+		}
+		for id, node := range pkg.IRGraph.Nodes {
+			if _, ok := merged.Nodes[id]; ok {
+				continue
+			}
+			merged.Nodes[id] = node
+		}
+		for from, tos := range pkg.IRGraph.Edges {
+			if merged.Edges[from] == nil {
+				merged.Edges[from] = make(map[irgraph.SymID]irgraph.EdgeKind)
+			}
+			for to, kind := range tos {
+				merged.Edges[from][to] |= kind
+			}
+		}
+	}
+	return merged
+}
+
+func dumpGraphSummary(t *testing.T, pkg build.Package, verbose bool) {
+	if !verbose {
+		return
+	}
+	name := "<nil>"
+	if pkg.Package != nil {
+		name = pkg.Package.PkgPath
+	}
+	g := pkg.IRGraph
+	if g == nil {
+		t.Logf("[deadcode] pkg %s: no graph", name)
+		return
+	}
+	var callCnt, refCnt, relocCnt int
+	for _, tos := range g.Edges {
+		for _, kind := range tos {
+			if kind&irgraph.EdgeCall != 0 {
+				callCnt++
+			}
+			if kind&irgraph.EdgeRef != 0 {
+				refCnt++
+			}
+			if kind&irgraph.EdgeRelocMask != 0 {
+				relocCnt++
+			}
+		}
+	}
+	t.Logf("[deadcode] pkg %s: nodes=%d edges=%d call=%d ref=%d reloc=%d", name, len(g.Nodes), countEdges(g), callCnt, refCnt, relocCnt)
+}
+
+func countEdges(g *irgraph.Graph) int {
+	total := 0
+	for _, tos := range g.Edges {
+		total += len(tos)
+	}
+	return total
 }

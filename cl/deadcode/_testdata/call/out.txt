@@ -1,4 +1,4 @@
-dead main.A
-dead main.B
-dead main.C
-reach main.main
+reach github.com/goplus/llgo/cl/deadcode/_testdata/call.A
+reach github.com/goplus/llgo/cl/deadcode/_testdata/call.B
+dead github.com/goplus/llgo/cl/deadcode/_testdata/call.C
+reach github.com/goplus/llgo/cl/deadcode/_testdata/call.main
