@@ -401,7 +401,7 @@ type Method struct {
 }
 */
 
-func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Value {
+func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner llvm.Value) llvm.Value {
 	prog := b.Prog
 	ft := prog.rtType("Method")
 	n := mset.Len()
@@ -453,9 +453,9 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		// Record reloc metadata (method offsets) if enabled.
 		if b.Pkg != nil {
 			pkg := b.Pkg
-			pkg.addReloc(relocMethodOff, llvm.Value{}, mtypVal, 0)
-			pkg.addReloc(relocMethodOff, llvm.Value{}, ifn, 0)
-			pkg.addReloc(relocMethodOff, llvm.Value{}, tfn, 0)
+			pkg.addReloc(relocMethodOff, owner, mtypVal, 0)
+			pkg.addReloc(relocMethodOff, owner, ifn, 0)
+			pkg.addReloc(relocMethodOff, owner, tfn, 0)
 		}
 	}
 	return llvm.ConstArray(ft.ll, fields)
@@ -525,7 +525,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			fields = []llvm.Value{
 				llvm.ConstNamedStruct(prog.Type(rt, InGo).ll, fields),
 				b.abiUncommonType(t, mset),
-				b.abiUncommonMethods(t, mset),
+				b.abiUncommonMethods(t, mset, g.impl),
 			}
 		}
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
