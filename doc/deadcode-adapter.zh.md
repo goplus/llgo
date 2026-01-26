@@ -10,7 +10,7 @@ LLGo 的可达性分析需要具备**全局视角**，但工程实际编译流�
 新增 `cl/deadcode`，实现最小版 flood 可达性：
 
 - 输入：`irgraph.Graph`
-- Roots：外部传入（当前测试取 `main.main`）
+- Roots：外部传入（当前测试以 entry 符号为根：`main`/`_start`）
 - 边：暂时只使用 `call/ref`（接口/反射后续再加）
 - 输出：`Result{Reachable map[SymID]bool}`
 
@@ -22,7 +22,20 @@ LLGo 的可达性分析需要具备**全局视角**，但工程实际编译流�
 
 - **call 边**：直接调用关系；
 - **ref 边**：函数值/全局初始化等的“间接引用”；
-- **roots**：由调用方提供（当前策略是从 `main.main` 开始）。
+- **roots**：由调用方提供（当前策略是以 entry 符号 `main`/`_start` 作为根）。
+
+## 入口 root 适配说明
+
+当前测试是 **build 模式下的可执行入口分析**，root 取值为：
+
+- `main`：entry 模块里的入口函数（默认）
+- `_start`：当需要生成启动桩时存在
+
+**注意：** 目前仍是测试层拼 roots，尚未嵌入到真正的 build/link 过程中。  
+后续如果把 deadcode 集成到 build 流程，需要区分：
+
+- **entry 模块**（`pkgPath.main`）：roots 应来自 `main`/`_start`
+- **普通包模块**：不应提供 entry roots，只参与依赖图合并
 
 输出仅包含：
 
