@@ -1,0 +1,5 @@
+call methodvaluereturn.(*T).M -> methodvaluereturn.T.M
+call methodvaluereturn.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+ref methodvaluereturn.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+ref methodvaluereturn.A -> methodvaluereturn.T.M$bound
+call methodvaluereturn.T.M$bound -> methodvaluereturn.T.M

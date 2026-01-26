@@ -1,0 +1,4 @@
+call __llgo_stub.funcptrslice.B -> funcptrslice.B
+ref funcptrslice.init -> __llgo_stub.funcptrslice.B
+call funcptrslice.init -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+ref funcptrslice.init -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ

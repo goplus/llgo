@@ -119,6 +119,34 @@ ref  <holder> -> <callee>
   - `A -> runtime.AllocU`（方法值闭包环境分配）  
   说明：方法值会生成 `T.M$bound` wrapper，且可能分配闭包环境。
 
+### methodvalueglobal
+- 目的：全局方法值（`var G = t.M`）。
+- 预期：  
+  - `T.M$bound -> T.M`  
+  - `init -> runtime.AllocU`  
+  - `ref init -> T.M$bound`  
+  说明：全局方法值在 `init` 里初始化，并为绑定环境分配内存。  
+  对应源码：`var G = t.M`。
+
+### methodvaluereturn
+- 目的：返回方法值（`return t.M`）。
+- 预期：  
+  - `T.M$bound -> T.M`  
+  - `A -> runtime.AllocU`  
+  - `ref A -> T.M$bound`  
+  说明：返回方法值会构造绑定 wrapper，并在函数内分配环境。  
+  对应源码：`func A() func() { var t T; return t.M }`。
+
+### methodvaluearg
+- 目的：方法值作为参数（`takes(t.M)`）。
+- 预期：  
+  - `T.M$bound -> T.M`  
+  - `A -> runtime.AllocU`  
+  - `ref A -> T.M$bound`  
+  - `call A -> takes`  
+  说明：参数传递会以 `ref` 记录方法值引用，同时保留对 `takes` 的直接调用边。  
+  对应源码：`func A(){ var t T; takes(t.M) }`。
+
 ### ifacecall
 - 目的：接口方法调用触发 itab 与接口相关运行时逻辑。
 - 预期：  
@@ -179,6 +207,33 @@ ref  <holder> -> <callee>
   - `__llgo_stub.B -> B`  
  说明：参数传递是“引用边”，调用 `takes` 是普通 direct call 边。  
   对应源码：`func A() { takes(B) }`。
+
+### funcptrstruct
+- 目的：函数指针嵌入到结构体字面量（`var G = Holder{F: B}`）。
+- 预期：  
+  - `ref init -> __llgo_stub.B`  
+  - `__llgo_stub.B -> B`  
+  说明：全局复合字面量会在 `init` 中完成初始化，因此以 `ref init -> stub` 表现。  
+  对应源码：`var G = Holder{F: B}`。
+
+### funcptrslice
+- 目的：函数指针嵌入到切片字面量（`var G = []func(){B}`）。
+- 预期：  
+  - `ref init -> __llgo_stub.B`  
+  - `__llgo_stub.B -> B`  
+  - `call/ref init -> runtime.AllocZ`  
+  说明：切片字面量需要分配 backing array，因此会出现 `AllocZ` 的调用与引用。  
+  对应源码：`var G = []func(){B}`。
+
+### funcptrmap
+- 目的：函数指针嵌入到 map 字面量（`var G = map[string]func(){"x": B}`）。
+- 预期：  
+  - `ref init -> __llgo_stub.B`  
+  - `__llgo_stub.B -> B`  
+  - `call/ref init -> runtime.MakeMap / MapAssign / AllocU`  
+  - 可能出现大量 `ref ... -> memequal/strequal/typehash/arrayequal`  
+  说明：map 字面量会走运行时构建路径，并引入键比较/哈希函数的类型元数据引用，所以输出较“噪”。  
+  对应源码：`var G = map[string]func(){"x": B}`。
 
 ### closure
 - 目的：闭包函数生成与调用。

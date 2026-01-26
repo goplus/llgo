@@ -1,0 +1,2 @@
+call __llgo_stub.funcptrstruct.B -> funcptrstruct.B
+ref funcptrstruct.init -> __llgo_stub.funcptrstruct.B
