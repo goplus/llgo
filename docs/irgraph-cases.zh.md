@@ -242,14 +242,6 @@ ref  <holder> -> <callee>
   - `A$1 -> B`  
   说明：闭包被拆成独立函数 `$1`，调用链应体现为 direct call。
 
-### defercall
-- 目的：defer 语义带来的 runtime helper。
-- 预期：  
-  - `A -> B`  
-  - `A -> runtime.SetThreadDefer / GetThreadDefer / Rethrow / AllocU`  
-  - `A -> __sigsetjmp`  
-  说明：LLGo 的 defer 实现依赖运行时链与 setjmp，出现这些边属预期。
-
 ### goroutine
 - 目的：go 语句生成新的执行入口。
 - 预期：  
