@@ -131,6 +131,7 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 
 func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 	entryCandidates := []string{"main", "__main_argc_argv", "_start"}
+	var roots []irgraph.SymID
 	for _, cand := range entryCandidates {
 		var defs []irgraph.SymID
 		foundDecl := false
@@ -147,7 +148,8 @@ func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 			}
 		}
 		if len(defs) == 1 {
-			return defs, nil
+			roots = append(roots, defs[0])
+			continue
 		}
 		if len(defs) > 1 {
 			return nil, fmt.Errorf("multiple definitions for root symbol %q", cand)
@@ -156,7 +158,7 @@ func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 			return nil, fmt.Errorf("root symbol %q only has declarations", cand)
 		}
 	}
-	return nil, nil
+	return roots, nil
 }
 
 func formatReachability(pkgs []build.Package, rootPrefix string, res Result) []byte {
