@@ -1,0 +1,7 @@
+call __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64 -> github.com/goplus/llgo/runtime/internal/runtime.memequal64
+call __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8 -> github.com/goplus/llgo/runtime/internal/runtime.memequal8
+call __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr -> github.com/goplus/llgo/runtime/internal/runtime.memequalptr
+call mapops.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+call mapops.A -> github.com/goplus/llgo/runtime/internal/runtime.MakeMap
+call mapops.A -> github.com/goplus/llgo/runtime/internal/runtime.MapAccess1
+call mapops.A -> github.com/goplus/llgo/runtime/internal/runtime.MapAssign

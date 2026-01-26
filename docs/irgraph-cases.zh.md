@@ -67,6 +67,23 @@ call <caller> -> <callee>
 - 目的：多个全局变量初始化。
 - 预期：`init -> A` 与 `init -> B` 两条边。
 
+### chanops
+- 目的：通道相关运行时路径。
+- 预期：`A -> runtime.NewChan`、`A -> runtime.ChanSend`、`A -> runtime.ChanRecv`。  
+  说明：通道操作由运行时实现，出现这些边属预期行为。
+
+### mapops
+- 目的：map 操作触发运行时调用。
+- 预期：  
+  - `A -> runtime.MakeMap / MapAssign / MapAccess1 / AllocU`  
+  - 可能出现 `__llgo_stub.runtime.memequal*` 的 wrapper 边  
+  说明：map 需要键比较函数与运行时 map 实现，出现 memequal stub 属预期。
+
+### sliceappend
+- 目的：slice append 的运行时路径。
+- 预期：`A -> runtime.SliceAppend`，可能伴随 `AllocZ`。  
+  说明：append 会走运行时扩容逻辑。
+
 ### runtimealloc
 - 目的：显式分配触发 runtime helper。
 - 预期：`Use -> runtime.AllocZ`。  
@@ -94,6 +111,37 @@ call <caller> -> <callee>
   - `T.M -> B`  
   - `A -> runtime.AllocU`（方法值闭包环境分配）  
   说明：方法值会生成 `T.M$bound` wrapper，且可能分配闭包环境。
+
+### ifacecall
+- 目的：接口方法调用触发 itab 与接口相关运行时逻辑。
+- 预期：  
+  - `A -> runtime.IfacePtrData / NewItab / AllocU`  
+  - `__llgo_stub.runtime.interequal / memequal*`  
+  - `(*T).M -> T.M -> B`  
+  说明：接口值构造与调用会触发 itab 构建和接口比较 helper，出现 stub 边属预期。
+
+### ifaceassert
+- 目的：类型断言触发接口判定与 itab 逻辑。
+- 预期：  
+  - `A -> runtime.Implements / NewItab / IfacePtrData`  
+  - `__llgo_stub.runtime.interequal / memequal*`  
+  - `T.M -> B`  
+  说明：断言路径会调用接口实现检测，属于预期运行时边。
+
+### typeswitch
+- 目的：type switch 触发类型比较与方法调用。
+- 预期：  
+  - `A -> T.M`、`T.M -> B`  
+  - `__llgo_stub.runtime.memequal*`  
+  说明：类型判定与等值比较使用 memequal helper。
+
+### reflectcall
+- 目的：反射调用路径。
+- 预期：  
+  - `A -> reflect.ValueOf / reflect.Value.Kind`  
+  - `reflect.init`  
+  - `__llgo_stub.runtime.memequal*`  
+  说明：反射包初始化与反射调用路径会引入对应运行时依赖。
 
 ### funcvalue
 - 目的：函数值调用（`f := B; f()`）。
@@ -129,3 +177,4 @@ call <caller> -> <callee>
 ## 备注与已知限制
 - **接口调用/反射调用** 属于间接调用，当前直连图不会显示真实目标方法边。  
 - 若后续需要覆盖接口/反射场景，应引入 `__llgo_relocs` 的语义边并在图中标注 `EdgeReloc`，再补充对应测试。
+- 运行这些测试时，建议在命令行设置 `LLGO_ROOT=/path/to/llgo`，确保运行时包可从源码导入。

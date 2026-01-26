@@ -1,0 +1,3 @@
+call chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.ChanRecv
+call chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.ChanSend
+call chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.NewChan

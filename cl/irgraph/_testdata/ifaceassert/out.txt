@@ -1,0 +1,7 @@
+call __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal -> github.com/goplus/llgo/runtime/internal/runtime.interequal
+call __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr -> github.com/goplus/llgo/runtime/internal/runtime.memequalptr
+call ifaceassert.(*T).M -> ifaceassert.T.M
+call ifaceassert.A -> github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData
+call ifaceassert.A -> github.com/goplus/llgo/runtime/internal/runtime.Implements
+call ifaceassert.A -> github.com/goplus/llgo/runtime/internal/runtime.NewItab
+call ifaceassert.T.M -> ifaceassert.B

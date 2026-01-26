@@ -1,0 +1,2 @@
+call sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+call sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.SliceAppend
