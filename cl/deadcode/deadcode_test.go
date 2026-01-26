@@ -30,20 +30,11 @@ import (
 
 	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/build"
-	"github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
 )
 
 // Set to true to update out.txt files from in.go.
 var updateDeadcodeTestdata = false
-
-func init() {
-	llvm.InitializeAllTargets()
-	llvm.InitializeAllTargetMCs()
-	llvm.InitializeAllTargetInfos()
-	llvm.InitializeAllAsmParsers()
-	llvm.InitializeAllAsmPrinters()
-}
 
 func TestReachabilityFromTestdata(t *testing.T) {
 	root, err := os.Getwd()
