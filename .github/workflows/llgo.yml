@@ -51,6 +51,8 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+      - name: Install embedded dependencies
+        uses: ./.github/actions/setup-embed-deps
       - name: Download model artifact
         uses: actions/download-artifact@v7
         with:
@@ -125,6 +127,10 @@ jobs:
           export PKG_CONFIG_PATH=$pcdir:${PKG_CONFIG_PATH}
           export LLGO_FULL_RPATH=true
           bash .github/workflows/test_demo.sh
+
+      - name: Test demos (embedded)
+        run: |
+          bash .github/workflows/test_demo.sh --embedded
 
       - name: Test C header generation
         run: |
