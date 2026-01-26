@@ -1,4 +1,4 @@
-reach main.A
-reach main.B
+dead main.A
+dead main.B
 dead main.C
 reach main.main
