@@ -47,7 +47,6 @@ func init() {
 }
 
 func TestReachabilityFromTestdata(t *testing.T) {
-	verbose := os.Getenv("LLGO_DEADCODE_VERBOSE") != ""
 	root, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -70,7 +69,7 @@ func TestReachabilityFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			graph, pkgPath, pkgName, funcNames := loadPackageGraph(t, pkgDir, verbose)
+			graph, pkgPath, pkgName, funcNames := loadPackageGraph(t, pkgDir)
 			symMap := resolveFuncSymbols(graph, pkgPath, pkgName, funcNames)
 			roots := rootSymbols(symMap)
 			if len(roots) == 0 {
@@ -112,7 +111,7 @@ func hasGoFiles(dir string) bool {
 	return false
 }
 
-func loadPackageGraph(t *testing.T, dir string, verbose bool) (*irgraph.Graph, string, string, []string) {
+func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, string, string, []string) {
 	t.Helper()
 	conf := build.NewDefaultConf(build.ModeGen)
 	conf.CollectIRGraph = true
@@ -123,10 +122,8 @@ func loadPackageGraph(t *testing.T, dir string, verbose bool) (*irgraph.Graph, s
 	if len(pkgs) == 0 {
 		t.Fatal("no packages returned")
 	}
-	if verbose {
-		for _, pkg := range pkgs {
-			dumpGraphSummary(t, pkg, verbose)
-		}
+	for _, pkg := range pkgs {
+		dumpGraphSummary(t, pkg)
 	}
 	graph := mergeGraphs(pkgs)
 	if graph == nil {
@@ -240,10 +237,7 @@ func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
 	return merged
 }
 
-func dumpGraphSummary(t *testing.T, pkg build.Package, verbose bool) {
-	if !verbose {
-		return
-	}
+func dumpGraphSummary(t *testing.T, pkg build.Package) {
 	name := "<nil>"
 	if pkg.Package != nil {
 		name = pkg.Package.PkgPath
