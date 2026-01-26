@@ -33,9 +33,17 @@ const (
 	// EdgeRef captures non-call references to a function, such as function
 	// values stored in globals or passed as arguments.
 	EdgeRef
-	// EdgeReloc is reserved for future explicit relocation-style edges.
-	EdgeReloc
+	// EdgeRelocUseIface marks interface conversions recorded via __llgo_relocs.
+	EdgeRelocUseIface
+	// EdgeRelocUseIfaceMethod marks interface method calls recorded via __llgo_relocs.
+	EdgeRelocUseIfaceMethod
+	// EdgeRelocUseNamedMethod marks named method usage recorded via __llgo_relocs.
+	EdgeRelocUseNamedMethod
+	// EdgeRelocMethodOff marks method table entries recorded via __llgo_relocs.
+	EdgeRelocMethodOff
 )
+
+const EdgeRelocMask = EdgeRelocUseIface | EdgeRelocUseIfaceMethod | EdgeRelocUseNamedMethod | EdgeRelocMethodOff
 
 // NodeInfo holds metadata about a symbol.
 type NodeInfo struct {
@@ -249,8 +257,19 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 			continue
 		}
 		kind := entry.Operand(0).SExtValue()
+		var edgeKind EdgeKind
 		switch kind {
 		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff:
+			switch kind {
+			case relocUseIface:
+				edgeKind = EdgeRelocUseIface
+			case relocUseIfaceMethod:
+				edgeKind = EdgeRelocUseIfaceMethod
+			case relocUseNamedMethod:
+				edgeKind = EdgeRelocUseNamedMethod
+			case relocMethodOff:
+				edgeKind = EdgeRelocMethodOff
+			}
 		default:
 			continue
 		}
@@ -265,7 +284,7 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		if strings.HasPrefix(target.Name(), "llvm.") && !opts.IncludeIntrinsics {
 			continue
 		}
-		g.AddEdge(SymID(owner.Name()), SymID(target.Name()), EdgeReloc)
+		g.AddEdge(SymID(owner.Name()), SymID(target.Name()), edgeKind)
 	}
 }
 

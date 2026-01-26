@@ -255,5 +255,5 @@ ref  <holder> -> <callee>
 
 ## 备注与已知限制
 - **接口调用/反射调用** 属于间接调用，当前直连图不会显示真实目标方法边。  
-- 若后续需要覆盖接口/反射场景，应引入 `__llgo_relocs` 的语义边并在图中标注 `EdgeReloc`，再补充对应测试。
+- 若后续需要覆盖接口/反射场景，应引入 `__llgo_relocs` 的语义边并在图中标注 `reloc(useiface/useifacemethod/methodoff)`，再补充对应测试。
 - 运行这些测试时，建议在命令行设置 `LLGO_ROOT=/path/to/llgo`，确保运行时包可从源码导入。

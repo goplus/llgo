@@ -1,1 +1,1 @@
-reloc useifacemethod.Use -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(useifacemethod) useifacemethod.Use -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88

@@ -120,7 +120,7 @@ func TestRelocGraphFromTestdata(t *testing.T) {
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod := compileModuleFromDirWithReloc(t, pkgDir, true)
 			graph := Build(mod, Options{})
-			got := formatGraphWithMask(graph, EdgeReloc)
+			got := formatGraphWithMask(graph, EdgeRelocMask)
 			if updateRelocTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)
@@ -238,7 +238,7 @@ func (i *testImporter) ImportFrom(path, dir string, mode types.ImportMode) (*typ
 }
 
 func formatGraph(g *Graph) []byte {
-	return formatGraphWithMask(g, EdgeCall|EdgeRef|EdgeReloc)
+	return formatGraphWithMask(g, EdgeCall|EdgeRef|EdgeRelocMask)
 }
 
 func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
@@ -248,16 +248,20 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 		kind EdgeKind
 	}
 	var lines []edgeLine
+	kinds := []EdgeKind{
+		EdgeCall,
+		EdgeRef,
+		EdgeRelocUseIface,
+		EdgeRelocUseIfaceMethod,
+		EdgeRelocUseNamedMethod,
+		EdgeRelocMethodOff,
+	}
 	for from, tos := range g.Edges {
 		for to, kind := range tos {
-			if kind&EdgeCall != 0 && mask&EdgeCall != 0 {
-				lines = append(lines, edgeLine{from: string(from), to: string(to), kind: EdgeCall})
-			}
-			if kind&EdgeRef != 0 && mask&EdgeRef != 0 {
-				lines = append(lines, edgeLine{from: string(from), to: string(to), kind: EdgeRef})
-			}
-			if kind&EdgeReloc != 0 && mask&EdgeReloc != 0 {
-				lines = append(lines, edgeLine{from: string(from), to: string(to), kind: EdgeReloc})
+			for _, k := range kinds {
+				if kind&k != 0 && mask&k != 0 {
+					lines = append(lines, edgeLine{from: string(from), to: string(to), kind: k})
+				}
 			}
 		}
 	}
@@ -283,8 +287,14 @@ func kindLabel(kind EdgeKind) string {
 		return "call"
 	case EdgeRef:
 		return "ref"
-	case EdgeReloc:
-		return "reloc"
+	case EdgeRelocUseIface:
+		return "reloc(useiface)"
+	case EdgeRelocUseIfaceMethod:
+		return "reloc(useifacemethod)"
+	case EdgeRelocUseNamedMethod:
+		return "reloc(usenamedmethod)"
+	case EdgeRelocMethodOff:
+		return "reloc(methodoff)"
 	default:
 		return fmt.Sprintf("kind(%d)", kind)
 	}
