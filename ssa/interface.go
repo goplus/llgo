@@ -53,7 +53,7 @@ func (b Builder) unsafeInterface(rawIntf *types.Interface, t Expr, data llvm.Val
 }
 
 func (b Builder) markUseIface(t Type) {
-	if b.Pkg == nil || b.Func == nil {
+	if !b.canEmitReloc() {
 		return
 	}
 	tabi := b.abiType(t.raw.Type)
@@ -61,12 +61,28 @@ func (b Builder) markUseIface(t Type) {
 }
 
 func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
-	if b.Pkg == nil || b.Func == nil || idx < 0 {
+	if !b.canEmitReloc() || idx < 0 {
 		return
 	}
 	tintf := b.abiType(rawIntf)
 	// Store method index in addend; later passes can map it to the method entry.
 	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx))
+}
+
+func (b Builder) canEmitReloc() bool {
+	if b.Pkg == nil || b.Func == nil {
+		return false
+	}
+	if !b.Prog.emitReloc {
+		return false
+	}
+	rt := b.Prog.runtime()
+	if rt == nil || rt.Scope() == nil {
+		return false
+	}
+	// Export data importers do not include unexported runtime symbols.
+	// Skip reloc emission in that case to avoid triggering missing runtime lookups.
+	return rt.Scope().Lookup("interequal") != nil
 }
 
 func iMethodOf(rawIntf *types.Interface, name string) int {
