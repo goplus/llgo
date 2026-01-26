@@ -48,8 +48,8 @@ run_case() {
       flock 200
       echo "$dir $size" >> "$size_report"
     ) 200>"$size_report.lock"
-    # Run the binary
-    if "$bin_path"; then
+    # Run the binary from the demo directory (preserves working directory for relative paths)
+    if (cd "$dir" && "$bin_path"); then
       echo "PASS"
     else
       echo "FAIL"
