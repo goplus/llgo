@@ -1,0 +1,2 @@
+call __llgo_stub.funcptrlocal.B -> funcptrlocal.B
+ref funcptrlocal.A -> __llgo_stub.funcptrlocal.B

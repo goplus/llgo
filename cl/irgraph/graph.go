@@ -30,7 +30,10 @@ type EdgeKind uint8
 
 const (
 	EdgeCall EdgeKind = 1 << iota
+	// EdgeRef captures non-call references to a function, such as function
+	// values stored in globals or passed as arguments.
 	EdgeRef
+	// EdgeReloc is reserved for future explicit relocation-style edges.
 	EdgeReloc
 )
 
@@ -59,6 +62,20 @@ func Build(mod llvm.Module, opts Options) *Graph {
 		Nodes: make(map[SymID]*NodeInfo),
 		Edges: make(map[SymID]map[SymID]EdgeKind),
 	}
+	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
+		name := SymID(gv.Name())
+		isIntrinsic := strings.HasPrefix(gv.Name(), "llvm.")
+		g.ensureNode(name, gv.IsDeclaration(), isIntrinsic)
+		if isIntrinsic && !opts.IncludeIntrinsics {
+			continue
+		}
+		// Global initializers can embed function pointers (e.g. func values stored
+		// in globals). Record them as reference edges so they are visible to later
+		// reachability logic even when no direct call exists.
+		if init := gv.Initializer(); !init.IsNil() {
+			g.addRefEdgesFromValue(name, init, opts)
+		}
+	}
 	for fn := mod.FirstFunction(); !fn.IsNil(); fn = llvm.NextFunction(fn) {
 		name := SymID(fn.Name())
 		isIntrinsic := strings.HasPrefix(fn.Name(), "llvm.")
@@ -69,15 +86,25 @@ func Build(mod llvm.Module, opts Options) *Graph {
 		if isIntrinsic && !opts.IncludeIntrinsics {
 			continue
 		}
+		callerID := SymID(fn.Name())
 		for bb := fn.FirstBasicBlock(); !bb.IsNil(); bb = llvm.NextBasicBlock(bb) {
 			for instr := bb.FirstInstruction(); !instr.IsNil(); instr = llvm.NextInstruction(instr) {
 				if call := instr.IsACallInst(); !call.IsNil() {
 					g.addCallEdge(fn, call.CalledValue(), opts)
+					// Scan operands except the callee to capture function pointers
+					// passed as arguments or stored in temporaries.
+					g.addRefEdgesFromOperands(callerID, call, call.CalledValue(), opts)
 					continue
 				}
 				if inv := instr.IsAInvokeInst(); !inv.IsNil() {
 					g.addCallEdge(fn, inv.CalledValue(), opts)
+					// Same as call: track non-callee operands as ref edges.
+					g.addRefEdgesFromOperands(callerID, inv, inv.CalledValue(), opts)
+					continue
 				}
+				// For other instructions, any operand that resolves to a function
+				// value is treated as a reference edge.
+				g.addRefEdgesFromOperands(callerID, instr, llvm.Value{}, opts)
 			}
 		}
 	}
@@ -120,7 +147,7 @@ func (g *Graph) ensureNode(id SymID, isDecl, isIntrinsic bool) {
 }
 
 func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) {
-	fn := resolveCallee(callee)
+	fn := resolveFuncValue(callee)
 	if fn.IsNil() {
 		return
 	}
@@ -134,7 +161,55 @@ func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) 
 	g.AddEdge(SymID(caller.Name()), SymID(name), EdgeCall)
 }
 
-func resolveCallee(v llvm.Value) llvm.Value {
+func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
+	// Walk a value tree (constants + constant expressions) and record any
+	// function pointer it embeds. This captures func values stored in globals,
+	// composite literals, or casted constants.
+	visited := make(map[llvm.Value]bool)
+	var walk func(llvm.Value)
+	walk = func(val llvm.Value) {
+		if val.IsNil() {
+			return
+		}
+		if visited[val] {
+			return
+		}
+		visited[val] = true
+		if fn := resolveFuncValue(val); !fn.IsNil() {
+			name := fn.Name()
+			if name == "" {
+				return
+			}
+			if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
+				return
+			}
+			g.AddEdge(caller, SymID(name), EdgeRef)
+			return
+		}
+		// Recurse through operands to find nested function pointers.
+		n := val.OperandsCount()
+		for i := 0; i < n; i++ {
+			walk(val.Operand(i))
+		}
+	}
+	walk(v)
+}
+
+func (g *Graph) addRefEdgesFromOperands(caller SymID, v llvm.Value, skip llvm.Value, opts Options) {
+	// Scan each operand for function pointers and emit EdgeRef. The "skip"
+	// operand is typically the direct callee, already covered by EdgeCall.
+	n := v.OperandsCount()
+	for i := 0; i < n; i++ {
+		op := v.Operand(i)
+		if !skip.IsNil() && op.C == skip.C {
+			continue
+		}
+		g.addRefEdgesFromValue(caller, op, opts)
+	}
+}
+
+func resolveFuncValue(v llvm.Value) llvm.Value {
+	// Resolve a function symbol from common constant expressions that wrap it.
 	if fn := v.IsAFunction(); !fn.IsNil() {
 		return fn
 	}

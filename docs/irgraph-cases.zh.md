@@ -12,8 +12,15 @@
 每行一条边：
 ```
 call <caller> -> <callee>
+ref  <holder> -> <callee>
 ```
-当前仅收集 **直接调用**（direct call）。函数指针/接口分派的“间接调用”不会形成边，除非编译器生成了显式的 wrapper 调用。
+`call` 表示直接调用边；`ref` 表示函数值/全局初始化中对函数的引用（等价于常规重定位引用）。  
+当前仍以 **直接调用**为主，函数指针/接口分派的“间接调用”本身不会形成 `call` 边，除非编译器生成了显式的 wrapper。
+
+补充说明（`ref` 的来源）：
+- **全局初始化**：`var F = B` 这类全局函数值会在 `init` 中写入 stub，因此会出现 `ref init -> __llgo_stub.*`。
+- **指令操作数**：如 `f := B`、`takes(B)` 等将函数值作为操作数传递，会出现 `ref A -> __llgo_stub.*`。
+- **类型元数据**：某些用例会出现 `ref` 指向 `memequal/structequal/typehash` 等 runtime helper，这是类型描述符中的函数指针引用，属预期行为。
 
 ---
 
@@ -147,6 +154,31 @@ call <caller> -> <callee>
 - 目的：函数值调用（`f := B; f()`）。
 - 预期：`A -> B`。  
   说明：在 LLGo 当前实现中，该场景会被降为直接调用，因此出现 direct call 边。
+
+### funcptrglobal
+- 目的：全局函数指针引用（`var F = B`）。
+- 预期：  
+  - `ref init -> __llgo_stub.B`  
+  - `__llgo_stub.B -> B`  
+ 说明：函数值会被降为 `code+data` 形式，`init` 中把 stub 写入全局变量，因此出现 `ref` 边。  
+  对应源码：`var F = B`。
+
+### funcptrlocal
+- 目的：局部函数指针返回（`f := B; return f`）。
+- 预期：  
+  - `ref A -> __llgo_stub.B`  
+  - `__llgo_stub.B -> B`  
+ 说明：返回函数值时会引用 stub，形成 `ref` 边。  
+  对应源码：`func A() func() { f := B; return f }`。
+
+### funcptrarg
+- 目的：函数指针作为参数传递（`takes(B)`）。
+- 预期：  
+  - `call A -> takes`  
+  - `ref A -> __llgo_stub.B`  
+  - `__llgo_stub.B -> B`  
+ 说明：参数传递是“引用边”，调用 `takes` 是普通 direct call 边。  
+  对应源码：`func A() { takes(B) }`。
 
 ### closure
 - 目的：闭包函数生成与调用。

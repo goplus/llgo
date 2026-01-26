@@ -1,1 +1,2 @@
 call runtimealloc.Use -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+ref runtimealloc.Use -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
