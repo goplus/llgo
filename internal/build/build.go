@@ -129,6 +129,7 @@ type Config struct {
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
+	PrintCommands bool
 	GenLL         bool // generate pkg .ll files
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
@@ -544,7 +545,7 @@ func (c *context) compiler() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewCompiler(config)
-	cmd.Verbose = c.buildConf.Verbose
+	cmd.Verbose = c.shouldPrintCommands(false)
 	return cmd
 }
 
@@ -557,8 +558,13 @@ func (c *context) linker() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewLinker(config)
-	cmd.Verbose = c.buildConf.Verbose
+	cmd.Verbose = c.shouldPrintCommands(false)
 	return cmd
+}
+
+// shouldPrintCommands reports whether command tracing should be enabled.
+func (c *context) shouldPrintCommands(verbose bool) bool {
+	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
 }
 
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
@@ -802,6 +808,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		return nil, nil
 	}
 
+	printCmds := ctx.shouldPrintCommands(verbose)
 	var objFiles []string
 	llgoRoot := env.LLGoROOT()
 
@@ -839,7 +846,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		if ctx.buildConf.GenLL {
 			llFile := baseName + ".ll"
 			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
-			if verbose {
+			if printCmds {
 				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
 			}
 			cmd := ctx.compiler()
@@ -851,7 +858,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		// Always compile to .o for linking
 		objFile := baseName + ".o"
 		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
-		if verbose {
+		if printCmds {
 			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
 		cmd := ctx.compiler()
@@ -925,8 +932,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
+	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
-	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
@@ -971,9 +979,10 @@ func isRuntimePkg(pkgPath string) bool {
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
+	printCmds := ctx.shouldPrintCommands(verbose)
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return ctx.createArchiveFile(app, objFiles, verbose)
+		return ctx.createArchiveFile(app, objFiles, printCmds)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -998,7 +1007,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			if strings.HasSuffix(objFile, ".ll") {
 				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
 				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-				if verbose {
+				if printCmds {
 					fmt.Fprintln(os.Stderr, "clang", args)
 				}
 				if err := ctx.compiler().Compile(args...); err != nil {
@@ -1015,7 +1024,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()
-	cmd.Verbose = verbose
+	cmd.Verbose = printCmds
 	return cmd.Link(buildArgs...)
 }
 
@@ -1069,7 +1078,8 @@ func (c *context) createArchiveFile(archivePath string, objFiles []string, verbo
 	args := append([]string{"rcs", tmpName}, objFiles...)
 	arCmd := c.archiver()
 	cmd := exec.Command(arCmd, args...)
-	if len(verbose) > 0 && verbose[0] {
+	printCmds := c.shouldPrintCommands(len(verbose) > 0 && verbose[0])
+	if printCmds {
 		fmt.Fprintf(os.Stderr, "%s %s\n", filepath.Base(arCmd), strings.Join(args, " "))
 	}
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -1141,20 +1151,21 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
-	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
+	printCmds := ctx.shouldPrintCommands(verbose)
+	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, printCmds)
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
-	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
 	if aPkg.AltPkg != nil {
-		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, verbose)
+		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
-		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
@@ -1207,7 +1218,8 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	objFile.Close()
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
-	if ctx.buildConf.Verbose {
+	if ctx.shouldPrintCommands(false) {
+		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
@@ -1564,11 +1576,11 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	}
 	for _, file := range strings.Split(files, ";") {
 		cFile := filepath.Join(dir, strings.TrimSpace(file))
-		clFile(ctx, args, cFile, expFile, procFile, verbose)
+		clFile(ctx, args, cFile, expFile, pkg.PkgPath, procFile, verbose)
 	}
 }
 
-func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
+func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFile func(linkFile string), verbose bool) {
 	baseName := expFile + filepath.Base(cFile)
 	ext := filepath.Ext(cFile)
 
@@ -1578,10 +1590,12 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	}
 
 	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
+	printCmds := ctx.shouldPrintCommands(verbose)
 	if ctx.buildConf.GenLL {
 		llFile := baseName + ".ll"
 		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-		if verbose {
+		if printCmds {
+			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
 			fmt.Fprintln(os.Stderr, "clang", llArgs)
 		}
 		cmd := ctx.compiler()
@@ -1592,7 +1606,8 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 	// Always compile to .o for linking
 	objFile := baseName + ".o"
 	objArgs := append(args, "-o", objFile, "-c", cFile)
-	if verbose {
+	if printCmds {
+		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", objArgs)
 	}
 	cmd := ctx.compiler()
