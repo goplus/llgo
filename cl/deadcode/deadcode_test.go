@@ -180,19 +180,21 @@ func formatReachability(pkgs []build.Package, res Result) []byte {
 	for i, pkgPath := range pkgPaths {
 		pkg := pkgMap[pkgPath]
 		syms := symbolsForPackage(pkg)
-		if len(syms) == 0 {
+		var reachable []string
+		for _, sym := range syms {
+			if res.Reachable[irgraph.SymID(sym)] {
+				reachable = append(reachable, sym)
+			}
+		}
+		if len(reachable) == 0 {
 			continue
 		}
 		if i > 0 {
 			buf.WriteString("\n")
 		}
 		buf.WriteString(fmt.Sprintf("pkg %s\n", pkgPath))
-		for _, sym := range syms {
-			status := "dead"
-			if res.Reachable[irgraph.SymID(sym)] {
-				status = "reach"
-			}
-			buf.WriteString(fmt.Sprintf("%s %s\n", status, sym))
+		for _, sym := range reachable {
+			buf.WriteString(fmt.Sprintf("reach %s\n", sym))
 		}
 	}
 	return buf.Bytes()
