@@ -1,19 +1,25 @@
-pkg github.com/goplus/llgo/cl/deadcode/_testdata/funcref
-reach __llgo_stub.github.com/goplus/llgo/cl/deadcode/_testdata/funcref.B
-reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.B
-dead github.com/goplus/llgo/cl/deadcode/_testdata/funcref.C
-reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.init
-reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.init$guard
-reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.main
-reach github.com/goplus/llgo/cl/deadcode/_testdata/funcref.takes
+pkg github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.init
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.init$guard
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.main
+dead github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.unused
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.A
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.init
 
-pkg github.com/goplus/llgo/cl/deadcode/_testdata/funcref.main
+pkg github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.main
 reach __llgo_argc
 reach __llgo_argv
 reach _start
 reach main
 reach runtime.init
 dead syscall.init
+
+pkg github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.A
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.B
+dead github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.C
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.init
+reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.init$guard
 
 pkg github.com/goplus/llgo/runtime/abi
 dead github.com/goplus/llgo/runtime/abi.(*ArrayType).Align
