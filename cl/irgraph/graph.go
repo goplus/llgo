@@ -184,28 +184,28 @@ func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
 			return
 		}
 		visited[val] = true
-	if fn := resolveFuncValue(val); !fn.IsNil() {
-		name := fn.Name()
-		if name == "" {
+		if fn := resolveFuncValue(val); !fn.IsNil() {
+			name := fn.Name()
+			if name == "" {
+				return
+			}
+			if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
+				return
+			}
+			g.AddEdge(caller, SymID(name), EdgeRef)
 			return
 		}
-		if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
+		if gv := resolveGlobalValue(val); !gv.IsNil() {
+			name := gv.Name()
+			if name == "" {
+				return
+			}
+			if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
+				return
+			}
+			g.AddEdge(caller, SymID(name), EdgeRef)
 			return
 		}
-		g.AddEdge(caller, SymID(name), EdgeRef)
-		return
-	}
-	if gv := resolveGlobalValue(val); !gv.IsNil() {
-		name := gv.Name()
-		if name == "" {
-			return
-		}
-		if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
-			return
-		}
-		g.AddEdge(caller, SymID(name), EdgeRef)
-		return
-	}
 		// Recurse through operands to find nested function pointers.
 		n := val.OperandsCount()
 		for i := 0; i < n; i++ {
