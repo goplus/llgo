@@ -59,7 +59,7 @@ func TestReachabilityFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			graph, pkgs, rootPrefix := loadPackageGraph(t, pkgDir)
+			graph, pkgs := loadPackageGraph(t, pkgDir)
 			roots, err := rootSymbols(pkgs)
 			if err != nil {
 				t.Fatal(err)
@@ -68,7 +68,7 @@ func TestReachabilityFromTestdata(t *testing.T) {
 				t.Fatalf("no roots found for %s", pkgDir)
 			}
 			res := Analyze(graph, roots, irgraph.EdgeCall|irgraph.EdgeRef)
-			got := formatReachability(pkgs, rootPrefix, res)
+			got := formatReachability(pkgs, res)
 			if updateDeadcodeTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)
@@ -103,7 +103,7 @@ func hasGoFiles(dir string) bool {
 	return false
 }
 
-func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package, string) {
+func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package) {
 	t.Helper()
 	conf := build.NewDefaultConf(build.ModeBuild)
 	conf.CollectIRGraph = true
@@ -122,11 +122,7 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 	if graph == nil {
 		t.Fatal("missing irgraph output")
 	}
-	rootPrefix := rootPackagePrefix(pkgs, dir)
-	if rootPrefix == "" {
-		t.Fatalf("failed to identify root package for %s", dir)
-	}
-	return graph, pkgs, rootPrefix
+	return graph, pkgs
 }
 
 func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
@@ -161,7 +157,7 @@ func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 	return roots, nil
 }
 
-func formatReachability(pkgs []build.Package, rootPrefix string, res Result) []byte {
+func formatReachability(pkgs []build.Package, res Result) []byte {
 	pkgPaths := make([]string, 0, len(pkgs))
 	pkgMap := make(map[string]build.Package, len(pkgs))
 	for _, pkg := range pkgs {
@@ -170,9 +166,6 @@ func formatReachability(pkgs []build.Package, rootPrefix string, res Result) []b
 		}
 		pkgPath := pkg.Package.PkgPath
 		if pkgPath == "" {
-			continue
-		}
-		if rootPrefix != "" && !strings.HasPrefix(pkgPath, rootPrefix) {
 			continue
 		}
 		if _, ok := pkgMap[pkgPath]; ok {
@@ -202,24 +195,6 @@ func formatReachability(pkgs []build.Package, rootPrefix string, res Result) []b
 		}
 	}
 	return buf.Bytes()
-}
-
-func rootPackagePrefix(pkgs []build.Package, dir string) string {
-	base := filepath.Base(dir)
-	targetSuffix := filepath.ToSlash(filepath.Join("cl/deadcode/_testdata", base))
-	for _, pkg := range pkgs {
-		if pkg.Package == nil {
-			continue
-		}
-		pkgPath := pkg.Package.PkgPath
-		if pkgPath == "" {
-			continue
-		}
-		if strings.HasSuffix(pkgPath, targetSuffix) {
-			return pkgPath
-		}
-	}
-	return ""
 }
 
 func symbolsForPackage(pkg build.Package) []string {
