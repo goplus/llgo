@@ -60,7 +60,10 @@ func TestReachabilityFromTestdata(t *testing.T) {
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
 			graph, pkgs, rootPrefix := loadPackageGraph(t, pkgDir)
-			roots := rootSymbols(pkgs, rootPrefix)
+			roots, err := rootSymbols(pkgs)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if len(roots) == 0 {
 				t.Fatalf("no roots found for %s", pkgDir)
 			}
@@ -126,22 +129,34 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 	return graph, pkgs, rootPrefix
 }
 
-func rootSymbols(pkgs []build.Package, rootPrefix string) []irgraph.SymID {
+func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 	entryCandidates := []string{"main", "__main_argc_argv", "_start"}
 	for _, cand := range entryCandidates {
+		var defs []irgraph.SymID
+		foundDecl := false
 		for _, pkg := range pkgs {
 			if pkg.Package == nil || pkg.IRGraph == nil {
 				continue
 			}
-			if rootPrefix != "" && !strings.HasPrefix(pkg.Package.PkgPath, rootPrefix) {
-				continue
-			}
-			if _, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
-				return []irgraph.SymID{irgraph.SymID(cand)}
+			if node, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
+				if node.IsDecl {
+					foundDecl = true
+					continue
+				}
+				defs = append(defs, irgraph.SymID(cand))
 			}
 		}
+		if len(defs) == 1 {
+			return defs, nil
+		}
+		if len(defs) > 1 {
+			return nil, fmt.Errorf("multiple definitions for root symbol %q", cand)
+		}
+		if foundDecl {
+			return nil, fmt.Errorf("root symbol %q only has declarations", cand)
+		}
 	}
-	return nil
+	return nil, nil
 }
 
 func formatReachability(pkgs []build.Package, rootPrefix string, res Result) []byte {
