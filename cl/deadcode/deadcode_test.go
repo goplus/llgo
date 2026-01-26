@@ -129,6 +129,9 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 		t.Fatal("missing irgraph output")
 	}
 	rootPrefix := rootPackagePrefix(pkgs, dir)
+	if rootPrefix == "" {
+		t.Fatalf("failed to identify root package for %s", dir)
+	}
 	return graph, pkgs, rootPrefix
 }
 
@@ -144,31 +147,6 @@ func rootSymbols(pkgs []build.Package, rootPrefix string) []irgraph.SymID {
 			}
 			if _, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
 				return []irgraph.SymID{irgraph.SymID(cand)}
-			}
-		}
-	}
-	for _, pkg := range pkgs {
-		if pkg.Package == nil || pkg.IRGraph == nil {
-			continue
-		}
-		if rootPrefix != "" && !strings.HasPrefix(pkg.Package.PkgPath, rootPrefix) {
-			continue
-		}
-		candidates := []string{"main.main"}
-		if pkg.Package.PkgPath != "" {
-			candidates = append(candidates, pkg.Package.PkgPath+".main")
-		}
-		for _, cand := range candidates {
-			if _, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
-				return []irgraph.SymID{irgraph.SymID(cand)}
-			}
-		}
-		for id, node := range pkg.IRGraph.Nodes {
-			if node.IsDecl || node.IsIntrinsic {
-				continue
-			}
-			if strings.HasSuffix(string(id), ".main") {
-				return []irgraph.SymID{id}
 			}
 		}
 	}
@@ -231,14 +209,6 @@ func rootPackagePrefix(pkgs []build.Package, dir string) string {
 		}
 		if strings.HasSuffix(pkgPath, targetSuffix) {
 			return pkgPath
-		}
-	}
-	for _, pkg := range pkgs {
-		if pkg.Package == nil {
-			continue
-		}
-		if pkg.Package.Name == "main" && pkg.Package.PkgPath != "" {
-			return pkg.Package.PkgPath
 		}
 	}
 	return ""
