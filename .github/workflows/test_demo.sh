@@ -70,6 +70,9 @@ if [ "$demo_mode" = "deadcode" ]; then
       cases+=("$d")
     fi
   done
+  if [ -d "./_demo/go/logdemo" ] && [ -n "$(ls ./_demo/go/logdemo/*.go 2>/dev/null)" ]; then
+    cases+=("./_demo/go/logdemo")
+  fi
   total="${#cases[@]}"
   failed=0
   failed_cases=""
