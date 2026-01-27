@@ -5,4 +5,3 @@ reloc(methodoff) _llgo_reflectmethod.T -> reflectmethod.(*T).Foo
 reloc(methodoff) _llgo_reflectmethod.T -> reflectmethod.T.Foo
 reloc(usenamedmethod) reflectmethod.A -> __llgo_relocstr$1cbec737f863e492
 reloc(useiface) reflectmethod.A -> _llgo_reflectmethod.T
-reloc(reflectmethod) reflectmethod.A -> reflectmethod.A
