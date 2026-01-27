@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -38,6 +39,9 @@ import (
 var updateDeadcodeTestdata = false
 
 func TestReachabilityFromTestdata(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("deadcode testdata is linux-only due to platform-specific symbols")
+	}
 	root, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
