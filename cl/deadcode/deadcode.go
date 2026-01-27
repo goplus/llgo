@@ -20,14 +20,17 @@ import "github.com/goplus/llgo/cl/irgraph"
 
 // Result holds the reachability outcome.
 type Result struct {
-	Reachable map[irgraph.SymID]bool
+	Reachable   map[irgraph.SymID]bool
+	UsedInIface map[irgraph.SymID]bool
 }
 
 type deadcodePass struct {
-	graph     *irgraph.Graph
-	reachable map[irgraph.SymID]bool
-	queue     []irgraph.SymID
-	edgeMask  irgraph.EdgeKind
+	graph         *irgraph.Graph
+	reachable     map[irgraph.SymID]bool
+	queue         []irgraph.SymID
+	edgeMask      irgraph.EdgeKind
+	usedInIface   map[irgraph.SymID]bool
+	relocsByOwner map[irgraph.SymID][]irgraph.RelocEdge
 }
 
 // Analyze computes reachability from roots using edges masked by edgeMask.
@@ -36,19 +39,27 @@ func Analyze(g *irgraph.Graph, roots []irgraph.SymID, edgeMask irgraph.EdgeKind)
 	pass := newDeadcodePass(g, edgeMask, len(roots))
 	pass.markRoots(roots)
 	pass.flood()
-	return Result{Reachable: pass.reachable}
+	return Result{Reachable: pass.reachable, UsedInIface: pass.usedInIface}
 }
 
 func newDeadcodePass(g *irgraph.Graph, edgeMask irgraph.EdgeKind, rootCount int) *deadcodePass {
 	if edgeMask == 0 {
 		edgeMask = irgraph.EdgeCall | irgraph.EdgeRef
 	}
-	return &deadcodePass{
-		graph:     g,
-		reachable: make(map[irgraph.SymID]bool),
-		queue:     make([]irgraph.SymID, 0, rootCount),
-		edgeMask:  edgeMask,
+	d := &deadcodePass{
+		graph:         g,
+		reachable:     make(map[irgraph.SymID]bool),
+		queue:         make([]irgraph.SymID, 0, rootCount),
+		edgeMask:      edgeMask,
+		usedInIface:   make(map[irgraph.SymID]bool),
+		relocsByOwner: make(map[irgraph.SymID][]irgraph.RelocEdge),
 	}
+	if g != nil {
+		for _, r := range g.Relocs {
+			d.relocsByOwner[r.Owner] = append(d.relocsByOwner[r.Owner], r)
+		}
+	}
+	return d
 }
 
 func (d *deadcodePass) markRoots(roots []irgraph.SymID) {
@@ -81,5 +92,37 @@ func (d *deadcodePass) flood() {
 			}
 			d.mark(to)
 		}
+		d.processRelocs(cur)
+	}
+}
+
+func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
+	relocs := d.relocsByOwner[owner]
+	if len(relocs) == 0 {
+		return
+	}
+	for _, r := range relocs {
+		switch r.Kind {
+		case irgraph.EdgeRelocUseIface:
+			d.markUsedInIface(r.Target)
+		case irgraph.EdgeRelocTypeRef:
+			if d.usedInIface[owner] {
+				d.markUsedInIface(r.Target)
+			}
+		}
+	}
+}
+
+func (d *deadcodePass) markUsedInIface(sym irgraph.SymID) {
+	if sym == "" {
+		return
+	}
+	if d.usedInIface[sym] {
+		return
+	}
+	d.usedInIface[sym] = true
+	if d.reachable[sym] {
+		d.reachable[sym] = false
+		d.mark(sym)
 	}
 }
