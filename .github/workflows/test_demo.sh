@@ -12,6 +12,87 @@ fi
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 
+demo_mode="${LLGO_DEMO_MODE:-demo}"
+
+file_size() {
+  if stat --version >/dev/null 2>&1; then
+    stat -c%s "$1"
+  else
+    stat -f%z "$1"
+  fi
+}
+
+run_deadcode_case() {
+  local dir="$1"
+  local name
+  local normal_bin
+  local dce_bin
+  local size_normal
+  local size_dce
+  local delta
+  local kb
+
+  name="$(basename "$dir")"
+  normal_bin="$tmp_root/${name}-normal"
+  dce_bin="$tmp_root/${name}-dce"
+
+  echo "Testing $dir (normal)"
+  if (cd "$dir" && llgo build -o "$normal_bin" . && "$normal_bin"); then
+    echo "PASS"
+  else
+    echo "FAIL"
+    return 1
+  fi
+
+  echo "Testing $dir (-dce)"
+  if (cd "$dir" && llgo build -dce -o "$dce_bin" . && "$dce_bin"); then
+    echo "PASS"
+  else
+    echo "FAIL"
+    return 1
+  fi
+
+  size_normal="$(file_size "$normal_bin")"
+  size_dce="$(file_size "$dce_bin")"
+  delta=$((size_normal - size_dce))
+  kb=$((delta / 1024))
+  if [ "$delta" -ge 0 ]; then
+    echo "DCE savings: ${delta}B(${kb}KB)"
+  else
+    echo "DCE savings: ${delta}B(${kb}KB) (dce larger)"
+  fi
+}
+
+if [ "$demo_mode" = "deadcode" ]; then
+  cases=()
+  for d in ./cl/deadcode/_testdata/*; do
+    if [ -d "$d" ] && [ -n "$(ls "$d"/*.go 2>/dev/null)" ]; then
+      cases+=("$d")
+    fi
+  done
+  total="${#cases[@]}"
+  failed=0
+  failed_cases=""
+
+  for d in "${cases[@]}"; do
+    if ! run_deadcode_case "$d"; then
+      failed=$((failed+1))
+      failed_cases="$failed_cases\n* :x: $d"
+    fi
+  done
+
+  echo "=== Done"
+  echo "$((total-failed))/$total tests passed"
+  if [ "$failed" -ne 0 ]; then
+    echo ":bangbang: Failed demo cases:" | tee -a result.md
+    echo -e "$failed_cases" | tee -a result.md
+    exit 1
+  else
+    echo ":white_check_mark: All demo tests passed" | tee -a result.md
+  fi
+  exit 0
+fi
+
 cases=()
 for d in ./_demo/go/* ./_demo/py/* ./_demo/c/*; do
   if [ -d "$d" ] && [ -n "$(ls "$d"/*.go 2>/dev/null)" ]; then
