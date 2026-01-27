@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"go/token"
 	"go/types"
@@ -823,6 +824,7 @@ const (
 	relocUseIfaceMethod           = 2
 	relocUseNamedMethod           = 3
 	relocMethodOff                = 4
+	relocReflectMethod            = 5
 )
 
 // addReloc records a reloc metadata entry if enabled.
@@ -868,7 +870,17 @@ func (p Package) relocString(s string) llvm.Value {
 	if v, ok := p.relocStrCache[s]; ok {
 		return v
 	}
-	v := p.createGlobalStr(s)
+	prog := p.Prog
+	hash := sha256.Sum256([]byte(s))
+	name := fmt.Sprintf("__llgo_relocstr$%x", hash[:8])
+	typ := llvm.ArrayType(prog.tyInt8(), len(s))
+	global := llvm.AddGlobal(p.mod, typ, name)
+	global.SetInitializer(prog.ctx.ConstString(s, false))
+	global.SetLinkage(llvm.PrivateLinkage)
+	global.SetGlobalConstant(true)
+	global.SetUnnamedAddr(true)
+	global.SetAlignment(1)
+	v := llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
 	p.relocStrCache[s] = v
 	return v
 }

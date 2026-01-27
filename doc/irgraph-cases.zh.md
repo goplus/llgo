@@ -7,15 +7,24 @@
 - 测试入口：`cl/irgraph/irgraph_test.go`  
 - 每个子目录包含源码与期望输出：`in.go` / `out.txt`  
 - 更新方式：将 `updateTestdata` 临时置 `true`，执行 `go test ./cl/irgraph` 后自动写回 `out.txt`，再改回 `false`。
+  - Reloc 用例位于 `cl/irgraph/_testdata_reloc/*`，更新时需将 `updateRelocTestdata` 置 `true`。
 
 ## 输出格式
 每行一条边：
 ```
 call <caller> -> <callee>
 ref  <holder> -> <callee>
+reloc(<kind>) <owner> -> <target>
 ```
 `call` 表示直接调用边；`ref` 表示函数值/全局初始化中对函数的引用（等价于常规重定位引用）。  
 当前仍以 **直接调用**为主，函数指针/接口分派的“间接调用”本身不会形成 `call` 边，除非编译器生成了显式的 wrapper。
+
+`reloc(<kind>)` 表示 **SSA 阶段记录的隐式依赖**，由 `__llgo_relocs` 生成，常见 kind：
+- `useiface`：类型被转换为接口
+- `useifacemethod`：接口方法调用
+- `usenamedmethod`：通过名称查找的方法（如 `MethodByName("Foo")`）
+- `reflectmethod`：反射方法访问（保守保活导出方法）
+- `methodoff`：类型方法表中的方法项（Ifn/Tfn/Mtyp）
 
 补充说明（`ref` 的来源）：
 - **全局初始化**：`var F = B` 这类全局函数值会在 `init` 中写入 stub，因此会出现 `ref init -> __llgo_stub.*`。
@@ -253,7 +262,35 @@ ref  <holder> -> <callee>
 
 ---
 
+# Reloc 用例说明（隐式依赖）
+
+以下用例来自 `cl/irgraph/_testdata_reloc/*`，用于验证 **SSA 记录的 reloc 元信息** 是否正确进入 IRGraph。
+
+### useiface
+- 目的：类型被转换为接口（UsedInIface）。
+- 预期：  
+  - `reloc(useiface) useiface.A -> _llgo_useiface.T`  
+  - 一组 `reloc(methodoff) _llgo_useiface.T -> <method>`  
+  说明：`A` 中 `sink = t` 触发接口转换；类型元数据携带方法表指针属于预期。
+
+### useifacemethod
+- 目的：接口方法调用（记录方法索引/接口类型）。
+- 预期：  
+  - `reloc(useifacemethod) useifacemethod.Use -> _llgo_iface$...`  
+  说明：接口类型符号是编译器生成的匿名接口描述符，名称带 hash 属预期行为。
+
+### reflectmethod
+- 目的：反射方法访问（常量名与非常量名两种路径）。
+- 预期：  
+  - `reloc(usenamedmethod) reflectmethod.A -> __llgo_relocstr$...`（常量 `"Foo"`）  
+  - `reloc(reflectmethod) reflectmethod.A -> reflectmethod.A`（非静态名称/Method 索引）  
+  - `reloc(useiface) reflectmethod.A -> _llgo_reflectmethod.T`  
+  - 若干 `reloc(methodoff)` 指向 `T` 的方法表  
+  说明：反射访问需要保守保活导出方法，因此会出现 `reflectmethod` 标记；`MethodByName` 的常量参数会落为 `usenamedmethod`。
+
+---
+
 ## 备注与已知限制
-- **接口调用/反射调用** 属于间接调用，当前直连图不会显示真实目标方法边。  
-- 若后续需要覆盖接口/反射场景，应引入 `__llgo_relocs` 的语义边并在图中标注 `reloc(useiface/useifacemethod/methodoff)`，再补充对应测试。
+- **接口调用/反射调用** 属于间接调用，直连图不会显示真实目标方法边。  
+- 若只看 direct call/ref，需结合 `reloc(useiface/useifacemethod/methodoff/reflectmethod)` 才能理解隐式依赖。
 - 运行这些测试时，建议在命令行设置 `LLGO_ROOT=/path/to/llgo`，确保运行时包可从源码导入。
