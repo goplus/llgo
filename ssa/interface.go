@@ -69,6 +69,24 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx))
 }
 
+// MarkUseNamedMethod records a named method usage for reachability analysis.
+// This corresponds to Go's R_USENAMEDMETHOD reloc.
+func (b Builder) MarkUseNamedMethod(name string) {
+	if !b.canEmitReloc() {
+		return
+	}
+	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, b.Pkg.relocString(name), 0)
+}
+
+// MarkReflectMethod records a reflect-driven method lookup.
+// This corresponds to Go's ReflectMethod attribute (conservatively keep exported methods).
+func (b Builder) MarkReflectMethod() {
+	if !b.canEmitReloc() {
+		return
+	}
+	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0)
+}
+
 func (b Builder) canEmitReloc() bool {
 	if b.Pkg == nil || b.Func == nil {
 		return false

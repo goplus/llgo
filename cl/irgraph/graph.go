@@ -41,9 +41,11 @@ const (
 	EdgeRelocUseNamedMethod
 	// EdgeRelocMethodOff marks method table entries recorded via __llgo_relocs.
 	EdgeRelocMethodOff
+	// EdgeRelocReflectMethod marks reflect-based method lookups recorded via __llgo_relocs.
+	EdgeRelocReflectMethod
 )
 
-const EdgeRelocMask = EdgeRelocUseIface | EdgeRelocUseIfaceMethod | EdgeRelocUseNamedMethod | EdgeRelocMethodOff
+const EdgeRelocMask = EdgeRelocUseIface | EdgeRelocUseIfaceMethod | EdgeRelocUseNamedMethod | EdgeRelocMethodOff | EdgeRelocReflectMethod
 
 // NodeInfo holds metadata about a symbol.
 type NodeInfo struct {
@@ -261,6 +263,7 @@ const (
 	relocUseIfaceMethod = 2
 	relocUseNamedMethod = 3
 	relocMethodOff      = 4
+	relocReflectMethod  = 5
 )
 
 func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
@@ -281,7 +284,7 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		kind := entry.Operand(0).SExtValue()
 		var edgeKind EdgeKind
 		switch kind {
-		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff:
+		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff, relocReflectMethod:
 			switch kind {
 			case relocUseIface:
 				edgeKind = EdgeRelocUseIface
@@ -291,6 +294,8 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 				edgeKind = EdgeRelocUseNamedMethod
 			case relocMethodOff:
 				edgeKind = EdgeRelocMethodOff
+			case relocReflectMethod:
+				edgeKind = EdgeRelocReflectMethod
 			}
 		default:
 			continue
