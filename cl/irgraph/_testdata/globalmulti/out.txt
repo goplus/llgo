@@ -1,6 +1,6 @@
 call globalmulti.init -> globalmulti.A
-ref globalmulti.init -> globalmulti.A
 call globalmulti.init -> globalmulti.B
+ref globalmulti.init -> globalmulti.A
 ref globalmulti.init -> globalmulti.B
 ref globalmulti.init -> globalmulti.X
 ref globalmulti.init -> globalmulti.Y

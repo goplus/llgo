@@ -1,4 +1,4 @@
 call initcall.A -> initcall.B
 call initcall.init -> initcall.init#1
-ref initcall.init -> initcall.init$guard
 call initcall.init#1 -> initcall.A
+ref initcall.init -> initcall.init$guard
