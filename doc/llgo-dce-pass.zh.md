@@ -8,30 +8,9 @@
 
 ---
 
-## 一、整体流程（两阶段）
+## 一、当前 DCE Pass 的输入/输出
 
-1) **生成 IR + reloc 元信息**
-   - SSA 阶段收集“隐式依赖”的标记信息。
-   - 在 IR 中生成 `__llgo_relocs` 这样的元数据表，用于后续可达性分析。
-   - 典型标记包括：方法表偏移（MethodOff）等。
-
-2) **合并模块**
-   - 所有包先产出 `.bc`，最终在 link 阶段合并成一个 **全局 LLVM Module**。
-
-3) **构图 + 可达性分析**
-   - 从合并后的 Module 读取：
-     - 直接调用边（call）
-     - 函数引用边（ref）
-     - reloc 元信息边（reloc）
-   - 构建 `irgraph`，用 `deadcode.Analyze` 做可达性 flood。
-
-4) **DCE Pass 执行删除**
-   - 在全局 Module 上执行 DCE Pass。
-   - 这一步只处理“可达/不可达”的结果，不再修改 SSA/IR 上游逻辑。
-
----
-
-## 二、当前 DCE Pass 的输入/输出
+> 整体两阶段流程已迁移到 `doc/go-link-dce.zh.md` 的 LLGo 适配部分。
 
 **输入**
 - 一个已经合并完成的 **全局 LLVM Module**（包含所有包的 IR）。
@@ -43,7 +22,7 @@
 
 ---
 
-## 三、当前删除规则（已实现）
+## 二、当前删除规则（已实现）
 
 当前 DCE Pass **只处理函数**，不处理全局变量和元数据。
 
@@ -63,7 +42,7 @@
 
 ---
 
-## 四、当前未做（后续计划）
+## 三、当前未做（后续计划）
 
 1) **全局变量 / 常量 / 元数据裁剪**
    - 目前 `DroppedGlobals = 0`，还未实现。
@@ -78,7 +57,7 @@
 
 ---
 
-## 五、运行与观测
+## 四、运行与观测
 
 使用：
 
@@ -98,11 +77,10 @@ llgo build -dce -v ...
 
 ---
 
-## 六、当前实现位置（代码指引）
+## 五、当前实现位置（代码指引）
 
 - DCE 主流程：`internal/build/build.go`
 - DCE Pass：`cl/dcepass/dcepass.go`
 - 可达性分析：`cl/deadcode`
 - 图构建：`cl/irgraph`
 - reloc 元信息：`ssa/` + `doc/ssa-reloc.zh.md`
-
