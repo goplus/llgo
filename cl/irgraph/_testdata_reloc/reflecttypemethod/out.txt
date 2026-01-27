@@ -907,6 +907,6 @@ reloc(methodoff) _llgo_reflect.flag -> reflect.flag.ro
 reloc(methodoff) _llgo_reflecttypemethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(methodoff) _llgo_reflecttypemethod.T -> reflecttypemethod.(*T).Foo
 reloc(methodoff) _llgo_reflecttypemethod.T -> reflecttypemethod.T.Foo
-reloc(usenamedmethod) reflecttypemethod.A -> __llgo_relocstr$1cbec737f863e492
 reloc(useiface) reflecttypemethod.A -> _llgo_reflecttypemethod.T
+reloc(usenamedmethod) reflecttypemethod.A -> methodname:Foo
 reloc(useifacemethod) reflecttypemethod.A -> reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790

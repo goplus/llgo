@@ -266,6 +266,8 @@ const (
 	relocReflectMethod  = 5
 )
 
+const methodNamePrefix = "methodname:"
+
 func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 	relocs := mod.NamedGlobal("__llgo_relocs")
 	if relocs.IsNil() {
@@ -302,6 +304,14 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		}
 		owner := resolveSymbolValue(entry.Operand(1))
 		target := resolveSymbolValue(entry.Operand(2))
+		if edgeKind == EdgeRelocUseNamedMethod {
+			name, ok := decodeRelocString(target)
+			if !ok {
+				panic("reloc(usenamedmethod) expects constant string target")
+			}
+			g.AddEdge(SymID(owner.Name()), SymID(methodNamePrefix+name), edgeKind)
+			continue
+		}
 		if owner.IsNil() || target.IsNil() {
 			continue
 		}
@@ -329,4 +339,19 @@ func resolveSymbolValue(v llvm.Value) llvm.Value {
 		}
 	}
 	return llvm.Value{}
+}
+
+func decodeRelocString(target llvm.Value) (string, bool) {
+	if target.IsNil() {
+		return "", false
+	}
+	gv := resolveSymbolValue(target)
+	if gv.IsNil() {
+		return "", false
+	}
+	init := gv.Initializer()
+	if init.IsNil() || !init.IsConstantString() {
+		return "", false
+	}
+	return init.ConstGetAsString(), true
 }
