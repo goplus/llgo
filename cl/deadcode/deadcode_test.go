@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package deadcode
+package deadcode_test
 
 import (
 	"bytes"
@@ -28,6 +28,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/goplus/llgo/cl/deadcode"
 	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/qiniu/x/test"
@@ -67,7 +68,7 @@ func TestReachabilityFromTestdata(t *testing.T) {
 			if len(roots) == 0 {
 				t.Fatalf("no roots found for %s", pkgDir)
 			}
-			res := Analyze(graph, roots, irgraph.EdgeCall|irgraph.EdgeRef)
+			res := deadcode.Analyze(graph, roots, irgraph.EdgeCall|irgraph.EdgeRef)
 			got := formatReachability(pkgs, res)
 			if updateDeadcodeTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
@@ -158,7 +159,7 @@ func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 	return roots, nil
 }
 
-func formatReachability(pkgs []build.Package, res Result) []byte {
+func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 	pkgPaths := make([]string, 0, len(pkgs))
 	pkgMap := make(map[string]build.Package, len(pkgs))
 	for _, pkg := range pkgs {
