@@ -2,12 +2,10 @@ reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_
 reloc(methodoff) *_llgo_reflectmethodindex.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(typeref) *_llgo_reflectmethodindex.T -> _llgo_reflectmethodindex.T
 reloc(methodoff) *_llgo_reflectmethodindex.T -> reflectmethodindex.(*T).Foo
-reloc(typeref) *_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw -> _llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw
 reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc(typeref) _llgo_reflectmethodindex.T -> *_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw
+reloc(typeref) _llgo_reflectmethodindex.T -> *_llgo_reflectmethodindex.T
 reloc(methodoff) _llgo_reflectmethodindex.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(methodoff) _llgo_reflectmethodindex.T -> reflectmethodindex.(*T).Foo
 reloc(methodoff) _llgo_reflectmethodindex.T -> reflectmethodindex.T.Foo
-reloc(typeref) _llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw -> *_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw
 reloc(useiface) reflectmethodindex.A -> _llgo_reflectmethodindex.T
 reloc(reflectmethod) reflectmethodindex.A -> reflectmethodindex.A

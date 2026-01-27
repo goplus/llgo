@@ -138,6 +138,21 @@ func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
 		return
 	}
 	ut := types.Unalias(t)
+	if named, ok := ut.(*types.Named); ok {
+		// Named types record PtrToThis of the named type itself, but should
+		// only record direct child types from the underlying form.
+		b.recordTypeRef(owner, types.NewPointer(named))
+		b.recordTypeRefsDirect(owner, named.Underlying())
+		return
+	}
+	b.recordTypeRefsDirect(owner, ut)
+	if _, ok := ut.(*types.Pointer); !ok {
+		b.recordTypeRef(owner, types.NewPointer(t))
+	}
+}
+
+func (b Builder) recordTypeRefsDirect(owner llvm.Value, t types.Type) {
+	ut := types.Unalias(t)
 	switch typ := ut.(type) {
 	case *types.Pointer:
 		b.recordTypeRef(owner, typ.Elem())
@@ -147,12 +162,9 @@ func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
 		b.recordTypeRef(owner, typ.Elem())
 	case *types.Array:
 		b.recordTypeRef(owner, typ.Elem())
-		b.recordTypeRef(owner, types.NewSlice(typ.Elem()))
 	case *types.Map:
 		b.recordTypeRef(owner, typ.Key())
 		b.recordTypeRef(owner, typ.Elem())
-		bucket := b.Pkg.abi.MapBucket(typ)
-		b.recordTypeRef(owner, bucket)
 	case *types.Signature:
 		for i := 0; i < typ.Params().Len(); i++ {
 			b.recordTypeRef(owner, typ.Params().At(i).Type())
@@ -171,12 +183,6 @@ func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
 			ftyp := funcType(b.Prog, f.Type())
 			b.recordTypeRef(owner, ftyp)
 		}
-	case *types.Named:
-		b.recordTypeRefs(owner, typ.Underlying())
-		return
-	}
-	if _, ok := ut.(*types.Pointer); !ok {
-		b.recordTypeRef(owner, types.NewPointer(t))
 	}
 }
 
