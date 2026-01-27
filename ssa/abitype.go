@@ -514,9 +514,9 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 		// Record reloc metadata (method offsets) if enabled.
 		if b.Pkg != nil {
 			pkg := b.Pkg
-			pkg.addReloc(relocMethodOff, owner, mtypVal, 0)
-			pkg.addReloc(relocMethodOff, owner, ifn, 0)
-			pkg.addReloc(relocMethodOff, owner, tfn, 0)
+			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i))
+			pkg.addReloc(relocMethodOff, owner, ifn, int64(i))
+			pkg.addReloc(relocMethodOff, owner, tfn, int64(i))
 		}
 	}
 	return llvm.ConstArray(ft.ll, fields)
