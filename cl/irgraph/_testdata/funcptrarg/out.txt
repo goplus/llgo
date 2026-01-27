@@ -1,4 +1,4 @@
 call __llgo_stub.funcptrarg.B -> funcptrarg.B
-ref funcptrarg.A -> __llgo_stub.funcptrarg.B
 call funcptrarg.A -> funcptrarg.takes
+ref funcptrarg.A -> __llgo_stub.funcptrarg.B
 ref funcptrarg.init -> funcptrarg.init$guard

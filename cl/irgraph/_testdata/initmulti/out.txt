@@ -1,5 +1,5 @@
 call initmulti.init -> initmulti.init#1
 call initmulti.init -> initmulti.init#2
-ref initmulti.init -> initmulti.init$guard
 call initmulti.init#1 -> initmulti.A
 call initmulti.init#2 -> initmulti.B
+ref initmulti.init -> initmulti.init$guard
