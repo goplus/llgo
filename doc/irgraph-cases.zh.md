@@ -328,6 +328,14 @@ reloc(<kind>) <owner> -> <target>
   - 以及 map/array 相关的子类型引用  
   说明：该用例用于确认 abiType 生成时已显式记录子类型关系。
 
+### typeref_simple
+- 目的：最小化的类型引用关系（struct + 一个字段）。
+- 预期：  
+  - `reloc(typeref) _llgo_typeref_simple.T -> _llgo_int`  
+  - `reloc(typeref) _llgo_typeref_simple.T -> *...`（PtrToThis）  
+  - `reloc(useiface) typeref_simple.Use -> _llgo_typeref_simple.T`  
+  说明：用于验证最小 case 下 typeref 也能生成。
+
 ---
 
 ## 备注与已知限制
