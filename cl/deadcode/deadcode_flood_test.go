@@ -158,6 +158,9 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 	if res.UsedInIface["MethodBIfn"] || res.UsedInIface["MethodBTfn"] {
 		t.Fatalf("expected method function pointers to stay out of UsedInIface")
 	}
+	assertMarkableMethods(t, res, map[string][]int{
+		"TypeA": {0, 1},
+	})
 }
 
 func assertReachable(t *testing.T, res Result, syms ...string) {
@@ -181,6 +184,32 @@ func assertReachable(t *testing.T, res Result, syms ...string) {
 	for i := range got {
 		if got[i] != want[i] {
 			t.Fatalf("reachable mismatch: got %v want %v", got, want)
+		}
+	}
+}
+
+func assertMarkableMethods(t *testing.T, res Result, want map[string][]int) {
+	t.Helper()
+	got := make(map[string]map[int]bool)
+	for _, ref := range res.MarkableMethods {
+		typ := string(ref.Type)
+		if got[typ] == nil {
+			got[typ] = make(map[int]bool)
+		}
+		got[typ][ref.Index] = true
+	}
+	if len(got) != len(want) {
+		t.Fatalf("markable methods mismatch: got %v want %v", got, want)
+	}
+	for typ, idxs := range want {
+		gotIdxs, ok := got[typ]
+		if !ok {
+			t.Fatalf("markable methods missing type %q", typ)
+		}
+		for _, idx := range idxs {
+			if !gotIdxs[idx] {
+				t.Fatalf("markable methods missing %q idx=%d", typ, idx)
+			}
 		}
 	}
 }

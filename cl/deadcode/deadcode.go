@@ -20,16 +20,31 @@ import "github.com/goplus/llgo/cl/irgraph"
 
 // Result holds the reachability outcome.
 type Result struct {
-	Reachable   map[irgraph.SymID]bool
-	UsedInIface map[irgraph.SymID]bool
+	Reachable       map[irgraph.SymID]bool
+	UsedInIface     map[irgraph.SymID]bool
+	MarkableMethods []MethodRef
+}
+
+// MethodSig identifies a method by name and signature type descriptor.
+type MethodSig struct {
+	Name string
+	Typ  irgraph.SymID
+}
+
+// MethodRef identifies a receiver's method entry by index.
+type MethodRef struct {
+	Type  irgraph.SymID
+	Index int
+	Sig   MethodSig
 }
 
 type deadcodePass struct {
-	graph         *irgraph.Graph
-	reachable     map[irgraph.SymID]bool
-	queue         []irgraph.SymID
-	usedInIface   map[irgraph.SymID]bool
-	relocsByOwner map[irgraph.SymID][]irgraph.RelocEdge
+	graph           *irgraph.Graph
+	reachable       map[irgraph.SymID]bool
+	queue           []irgraph.SymID
+	usedInIface     map[irgraph.SymID]bool
+	relocsByOwner   map[irgraph.SymID][]irgraph.RelocEdge
+	markableMethods []MethodRef
 }
 
 // Analyze computes reachability from roots using call+ref edges.
@@ -37,16 +52,21 @@ func Analyze(g *irgraph.Graph, roots []irgraph.SymID) Result {
 	pass := newDeadcodePass(g, len(roots))
 	pass.markRoots(roots)
 	pass.flood()
-	return Result{Reachable: pass.reachable, UsedInIface: pass.usedInIface}
+	return Result{
+		Reachable:       pass.reachable,
+		UsedInIface:     pass.usedInIface,
+		MarkableMethods: pass.markableMethods,
+	}
 }
 
 func newDeadcodePass(g *irgraph.Graph, rootCount int) *deadcodePass {
 	d := &deadcodePass{
-		graph:         g,
-		reachable:     make(map[irgraph.SymID]bool),
-		queue:         make([]irgraph.SymID, 0, rootCount),
-		usedInIface:   make(map[irgraph.SymID]bool),
-		relocsByOwner: make(map[irgraph.SymID][]irgraph.RelocEdge),
+		graph:           g,
+		reachable:       make(map[irgraph.SymID]bool),
+		queue:           make([]irgraph.SymID, 0, rootCount),
+		usedInIface:     make(map[irgraph.SymID]bool),
+		relocsByOwner:   make(map[irgraph.SymID][]irgraph.RelocEdge),
+		markableMethods: nil,
 	}
 	if g != nil {
 		for _, r := range g.Relocs {
@@ -113,6 +133,10 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 			}
 			// The first reloc(methodoff) in each triple points to the method
 			// type descriptor; mark it as UsedInIface so its child types are visited.
+			d.markableMethods = append(d.markableMethods, MethodRef{
+				Type:  owner,
+				Index: int(r.Addend),
+			})
 			d.markUsedInIface(r.Target)
 			i += 2
 		}
