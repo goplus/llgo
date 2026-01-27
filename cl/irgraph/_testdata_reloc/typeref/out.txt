@@ -43,9 +43,9 @@ reloc(typeref) _llgo_uint8 -> *_llgo_uint8
 reloc(typeref) map[_llgo_string]*_llgo_typeref.Inner -> *_llgo_typeref.Inner
 reloc(typeref) map[_llgo_string]*_llgo_typeref.Inner -> *map[_llgo_string]*_llgo_typeref.Inner
 reloc(typeref) map[_llgo_string]*_llgo_typeref.Inner -> _llgo_string
-reloc(useiface) typeref.Use -> _llgo_typeref.Outer
 reloc(typeref) typeref.struct$hPoucIse19-kH9DFebjqXPkkoj2gTPyBUJYId5X-SjU -> *typeref.struct$hPoucIse19-kH9DFebjqXPkkoj2gTPyBUJYId5X-SjU
 reloc(typeref) typeref.struct$hPoucIse19-kH9DFebjqXPkkoj2gTPyBUJYId5X-SjU -> [8]*_llgo_typeref.Inner
 reloc(typeref) typeref.struct$hPoucIse19-kH9DFebjqXPkkoj2gTPyBUJYId5X-SjU -> [8]_llgo_string
 reloc(typeref) typeref.struct$hPoucIse19-kH9DFebjqXPkkoj2gTPyBUJYId5X-SjU -> [8]_llgo_uint8
 reloc(typeref) typeref.struct$hPoucIse19-kH9DFebjqXPkkoj2gTPyBUJYId5X-SjU -> _llgo_Pointer
+reloc(useiface) typeref.Use -> _llgo_typeref.Outer

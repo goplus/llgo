@@ -58,8 +58,9 @@ type NodeInfo struct {
 
 // Graph is a directed dependency graph.
 type Graph struct {
-	Nodes map[SymID]*NodeInfo
-	Edges map[SymID]map[SymID]EdgeKind
+	Nodes  map[SymID]*NodeInfo
+	Edges  map[SymID]map[SymID]EdgeKind
+	Relocs []RelocEdge
 }
 
 // Options controls graph construction.
@@ -71,8 +72,9 @@ type Options struct {
 // Build constructs a dependency graph from an LLVM module.
 func Build(mod llvm.Module, opts Options) *Graph {
 	g := &Graph{
-		Nodes: make(map[SymID]*NodeInfo),
-		Edges: make(map[SymID]map[SymID]EdgeKind),
+		Nodes:  make(map[SymID]*NodeInfo),
+		Edges:  make(map[SymID]map[SymID]EdgeKind),
+		Relocs: nil,
 	}
 	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
 		name := SymID(gv.Name())
@@ -122,6 +124,14 @@ func Build(mod llvm.Module, opts Options) *Graph {
 	}
 	g.addRelocEdges(mod, opts)
 	return g
+}
+
+// RelocEdge records a relocation-style edge with its addend.
+type RelocEdge struct {
+	Owner  SymID
+	Target SymID
+	Kind   EdgeKind
+	Addend int64
 }
 
 // AddEdge inserts or updates an edge in the graph.
@@ -287,6 +297,7 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 			continue
 		}
 		kind := entry.Operand(0).SExtValue()
+		addend := entry.Operand(3).SExtValue()
 		var edgeKind EdgeKind
 		switch kind {
 		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff, relocReflectMethod, relocTypeRef:
@@ -314,7 +325,15 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 			if !ok {
 				panic("reloc(usenamedmethod) expects constant string target")
 			}
-			g.AddEdge(SymID(owner.Name()), SymID(methodNamePrefix+name), edgeKind)
+			ownerID := SymID(owner.Name())
+			targetID := SymID(methodNamePrefix + name)
+			g.AddEdge(ownerID, targetID, edgeKind)
+			g.Relocs = append(g.Relocs, RelocEdge{
+				Owner:  ownerID,
+				Target: targetID,
+				Kind:   edgeKind,
+				Addend: addend,
+			})
 			continue
 		}
 		if owner.IsNil() || target.IsNil() {
@@ -326,7 +345,15 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		if strings.HasPrefix(target.Name(), "llvm.") && !opts.IncludeIntrinsics {
 			continue
 		}
-		g.AddEdge(SymID(owner.Name()), SymID(target.Name()), edgeKind)
+		ownerID := SymID(owner.Name())
+		targetID := SymID(target.Name())
+		g.AddEdge(ownerID, targetID, edgeKind)
+		g.Relocs = append(g.Relocs, RelocEdge{
+			Owner:  ownerID,
+			Target: targetID,
+			Kind:   edgeKind,
+			Addend: addend,
+		})
 	}
 }
 

@@ -1,11 +1,11 @@
+reloc(methodoff idx=0) *_llgo_reflectmethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) *_llgo_reflectmethod.T -> reflectmethod.(*T).Foo
+reloc(methodoff idx=0) _llgo_reflectmethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) _llgo_reflectmethod.T -> reflectmethod.(*T).Foo
+reloc(methodoff idx=0) _llgo_reflectmethod.T -> reflectmethod.T.Foo
 reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc(methodoff) *_llgo_reflectmethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(typeref) *_llgo_reflectmethod.T -> _llgo_reflectmethod.T
-reloc(methodoff) *_llgo_reflectmethod.T -> reflectmethod.(*T).Foo
 reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(typeref) _llgo_reflectmethod.T -> *_llgo_reflectmethod.T
-reloc(methodoff) _llgo_reflectmethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc(methodoff) _llgo_reflectmethod.T -> reflectmethod.(*T).Foo
-reloc(methodoff) _llgo_reflectmethod.T -> reflectmethod.T.Foo
 reloc(useiface) reflectmethod.A -> _llgo_reflectmethod.T
 reloc(usenamedmethod) reflectmethod.A -> _mname:Foo
