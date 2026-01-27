@@ -12,11 +12,9 @@ reloc(typeref) *_llgo_Pointer -> _llgo_Pointer
 reloc(typeref) *_llgo_any -> _llgo_any
 reloc(typeref) *_llgo_bool -> _llgo_bool
 reloc(typeref) *_llgo_closure$3FbpiYSS_pTsPYSSnCvLYAKhXktdkPNOgx2ccRJS30Q -> _llgo_closure$3FbpiYSS_pTsPYSSnCvLYAKhXktdkPNOgx2ccRJS30Q
-reloc(typeref) *_llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM -> _llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM
 reloc(typeref) *_llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU -> _llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU
 reloc(typeref) *_llgo_closure$K86zYLAZMqCQ35qbFlAYTH2Z8Ly2ZO1eySstcJK36jY -> _llgo_closure$K86zYLAZMqCQ35qbFlAYTH2Z8Ly2ZO1eySstcJK36jY
 reloc(typeref) *_llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc -> _llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc
-reloc(typeref) *_llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg -> _llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg
 reloc(typeref) *_llgo_closure$vph1nQv8pjmhmIIwWOTU2RO6DAx5xDlf0x97duSZXAY -> _llgo_closure$vph1nQv8pjmhmIIwWOTU2RO6DAx5xDlf0x97duSZXAY
 reloc(typeref) *_llgo_complex128 -> _llgo_complex128
 reloc(typeref) *_llgo_error -> _llgo_error
@@ -146,9 +144,7 @@ reloc(typeref) *_llgo_func$yhYfjpP5aTS-yzLtW83zeu34R6cMVVvp_eSlUSC42Ws -> _llgo_
 reloc(typeref) *_llgo_func$ynnWjPVnQirD6x3tN2oQja8fMOtD7AgL7mT5fYHhLlM -> _llgo_func$ynnWjPVnQirD6x3tN2oQja8fMOtD7AgL7mT5fYHhLlM
 reloc(typeref) *_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(typeref) *_llgo_func$zZ5pZdd7gZHYbqs4K9Ak5nMIOjo5-cCX_DAeheDUWRA -> _llgo_func$zZ5pZdd7gZHYbqs4K9Ak5nMIOjo5-cCX_DAeheDUWRA
-reloc(typeref) *_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU -> _llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU
 reloc(typeref) *_llgo_int -> _llgo_int
-reloc(typeref) *_llgo_int32 -> _llgo_int32
 reloc(typeref) *_llgo_int64 -> _llgo_int64
 reloc(methodoff) *_llgo_internal/abi.ArrayType -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
 reloc(methodoff) *_llgo_internal/abi.ArrayType -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
@@ -743,216 +739,13 @@ reloc(typeref) *_llgo_reflecttypemethod.T -> _llgo_reflecttypemethod.T
 reloc(methodoff) *_llgo_reflecttypemethod.T -> reflecttypemethod.(*T).Foo
 reloc(typeref) *_llgo_rune -> _llgo_rune
 reloc(typeref) *_llgo_string -> _llgo_string
-reloc(typeref) *_llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE
-reloc(typeref) *_llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk -> _llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$2nkaPgxW0n5-10R0l6Q3Zwwfc1t9nffTbhlVOLQm-mQ
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$8u3DSh_eWqQgJK430WDS7aaoRUkO6VbrgAYj8k2RxRY
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$9wTXqjTvsuEYqTCPX1YEK6zW-zPLnPN80F7hIvB1ZSc
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$Bq7ttl95jXzH0VRlufkDK6537i_54_jVdqj-y7FZ3W4
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$H4u_e1xZ394ETlzbsQGN55pRauPSNrA_99STd9kKG74
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$O77f4xQd5z6sIB06XXRTkFNVTDxfIM48ZqBvJ61XR48
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$_ptOODLL1rDvQ2x2CnxK01C-FXjVEda-pBMVyBa1vL8
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$fD82BX0jNILrWVs1oAtswev8UgHEtzAbiNyZPnI65To
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_func$wRBtKvdLxMlPI2XopsZApk8Cuawben_3ctrD7vA-k08
-reloc(typeref) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Align
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.ArrayType
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.ChanDir
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Common
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.ExportedMethods
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.FieldAlign
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.FuncType
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.GcSlice
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.HasName
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.IfaceIndir
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.InterfaceType
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.IsDirectIface
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Key
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Kind
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.MapType
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.NumMethod
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Pointers
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Size
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.StructType
-reloc(methodoff) *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> reflecttypemethod.*struct{internal/abi.Type; Elem *internal/abi.Type; Slice *internal/abi.Type; Len uintptr}.Uncommon
-reloc(typeref) *_llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo -> _llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$2nkaPgxW0n5-10R0l6Q3Zwwfc1t9nffTbhlVOLQm-mQ
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$8u3DSh_eWqQgJK430WDS7aaoRUkO6VbrgAYj8k2RxRY
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$9wTXqjTvsuEYqTCPX1YEK6zW-zPLnPN80F7hIvB1ZSc
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$Bq7ttl95jXzH0VRlufkDK6537i_54_jVdqj-y7FZ3W4
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$H4u_e1xZ394ETlzbsQGN55pRauPSNrA_99STd9kKG74
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$O77f4xQd5z6sIB06XXRTkFNVTDxfIM48ZqBvJ61XR48
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$_ptOODLL1rDvQ2x2CnxK01C-FXjVEda-pBMVyBa1vL8
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$fD82BX0jNILrWVs1oAtswev8UgHEtzAbiNyZPnI65To
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_func$wRBtKvdLxMlPI2XopsZApk8Cuawben_3ctrD7vA-k08
-reloc(typeref) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Align
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.ArrayType
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.ChanDir
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Common
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Elem
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.ExportedMethods
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.FieldAlign
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.FuncType
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.GcSlice
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.HasName
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.IfaceIndir
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.InterfaceType
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.IsDirectIface
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Key
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Kind
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Len
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.MapType
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.NumMethod
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Pointers
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Size
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.StructType
-reloc(methodoff) *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Fields []internal/abi.StructField}.Uncommon
-reloc(typeref) *_llgo_struct$IFuc1TnfUELvbCrEVUKKm3eNS0myCBWF9ii_hLPkPko -> _llgo_struct$IFuc1TnfUELvbCrEVUKKm3eNS0myCBWF9ii_hLPkPko
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$2nkaPgxW0n5-10R0l6Q3Zwwfc1t9nffTbhlVOLQm-mQ
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$8u3DSh_eWqQgJK430WDS7aaoRUkO6VbrgAYj8k2RxRY
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$9wTXqjTvsuEYqTCPX1YEK6zW-zPLnPN80F7hIvB1ZSc
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$Bq7ttl95jXzH0VRlufkDK6537i_54_jVdqj-y7FZ3W4
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$H4u_e1xZ394ETlzbsQGN55pRauPSNrA_99STd9kKG74
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$O77f4xQd5z6sIB06XXRTkFNVTDxfIM48ZqBvJ61XR48
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$_ptOODLL1rDvQ2x2CnxK01C-FXjVEda-pBMVyBa1vL8
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$fD82BX0jNILrWVs1oAtswev8UgHEtzAbiNyZPnI65To
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_func$wRBtKvdLxMlPI2XopsZApk8Cuawben_3ctrD7vA-k08
-reloc(typeref) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Align
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.ArrayType
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.ChanDir
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Common
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.ExportedMethods
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.FieldAlign
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.FuncType
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.GcSlice
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.HasName
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.IfaceIndir
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.InterfaceType
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.IsDirectIface
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Kind
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Len
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.MapType
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.NumMethod
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Pointers
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Size
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.StructType
-reloc(methodoff) *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> reflecttypemethod.*struct{internal/abi.Type; Key *internal/abi.Type; Elem *internal/abi.Type; Group *internal/abi.Type; Hasher struct{$f func(unsafe.Pointer, uintptr) uintptr; $data unsafe.Pointer}; GroupSize uintptr; SlotSize uintptr; ElemOff uintptr; Flags uint32}.Uncommon
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$2nkaPgxW0n5-10R0l6Q3Zwwfc1t9nffTbhlVOLQm-mQ
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$8u3DSh_eWqQgJK430WDS7aaoRUkO6VbrgAYj8k2RxRY
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$9wTXqjTvsuEYqTCPX1YEK6zW-zPLnPN80F7hIvB1ZSc
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$Bq7ttl95jXzH0VRlufkDK6537i_54_jVdqj-y7FZ3W4
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$H4u_e1xZ394ETlzbsQGN55pRauPSNrA_99STd9kKG74
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$O77f4xQd5z6sIB06XXRTkFNVTDxfIM48ZqBvJ61XR48
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$_ptOODLL1rDvQ2x2CnxK01C-FXjVEda-pBMVyBa1vL8
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$fD82BX0jNILrWVs1oAtswev8UgHEtzAbiNyZPnI65To
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_func$wRBtKvdLxMlPI2XopsZApk8Cuawben_3ctrD7vA-k08
-reloc(typeref) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Align
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.ArrayType
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.ChanDir
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Common
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Elem
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.ExportedMethods
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.FieldAlign
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.FuncType
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.GcSlice
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.HasName
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.IfaceIndir
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.InterfaceType
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.IsDirectIface
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Key
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Kind
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Len
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.MapType
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.NumMethod
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Pointers
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Size
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.StructType
-reloc(methodoff) *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> reflecttypemethod.*struct{internal/abi.Type; PkgPath internal/abi.Name; Methods []internal/abi.Imethod}.Uncommon
-reloc(typeref) *_llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY
-reloc(typeref) *_llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo -> _llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo
-reloc(typeref) *_llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs -> _llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs
-reloc(typeref) *_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw -> _llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$2nkaPgxW0n5-10R0l6Q3Zwwfc1t9nffTbhlVOLQm-mQ
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$8u3DSh_eWqQgJK430WDS7aaoRUkO6VbrgAYj8k2RxRY
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$9wTXqjTvsuEYqTCPX1YEK6zW-zPLnPN80F7hIvB1ZSc
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$Bq7ttl95jXzH0VRlufkDK6537i_54_jVdqj-y7FZ3W4
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$H4u_e1xZ394ETlzbsQGN55pRauPSNrA_99STd9kKG74
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$O77f4xQd5z6sIB06XXRTkFNVTDxfIM48ZqBvJ61XR48
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$_ptOODLL1rDvQ2x2CnxK01C-FXjVEda-pBMVyBa1vL8
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$fD82BX0jNILrWVs1oAtswev8UgHEtzAbiNyZPnI65To
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_func$wRBtKvdLxMlPI2XopsZApk8Cuawben_3ctrD7vA-k08
-reloc(typeref) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Align
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.ArrayType
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.ChanDir
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Common
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Elem
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.ExportedMethods
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.FieldAlign
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.FuncType
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.GcSlice
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.HasName
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.IfaceIndir
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.InterfaceType
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.IsDirectIface
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Key
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Kind
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Len
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.MapType
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.NumMethod
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Pointers
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Size
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.StructType
-reloc(methodoff) *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> reflecttypemethod.*struct{internal/abi.Type; InCount uint16; OutCount uint16}.Uncommon
-reloc(typeref) *_llgo_uint -> _llgo_uint
 reloc(typeref) *_llgo_uint16 -> _llgo_uint16
 reloc(typeref) *_llgo_uint32 -> _llgo_uint32
 reloc(typeref) *_llgo_uint64 -> _llgo_uint64
 reloc(typeref) *_llgo_uint8 -> _llgo_uint8
 reloc(typeref) *_llgo_uintptr -> _llgo_uintptr
 reloc(typeref) *reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790 -> reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
-reloc(methodoff) *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc(methodoff) *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$L2TfVUN6F-_dM1KHIPUpF8sob68HjKGlbIxKnpFjdXA
-reloc(methodoff) *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$w8Mj2LK8G5p7MIiGWR6MYjyXy3L8SVVzYlT1bb6KNXk
-reloc(methodoff) *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$yWnpCSK6prqCzXPOoG7F4_u7NYHSV-ZHa-4C1jUzAj0
-reloc(typeref) *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8
-reloc(typeref) *reflecttypemethod.struct$Cj8jOLzRXDT3yaFc1IXZDAHMxBTk2CbNGq3xKHQMhC4 -> reflecttypemethod.struct$Cj8jOLzRXDT3yaFc1IXZDAHMxBTk2CbNGq3xKHQMhC4
-reloc(typeref) *reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA
-reloc(typeref) *reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE
-reloc(typeref) *reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI -> reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI
-reloc(typeref) *reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8 -> reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8
-reloc(typeref) *reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg -> reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg
-reloc(typeref) *reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY -> reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY
 reloc(typeref) [2]_llgo_uintptr -> *[2]_llgo_uintptr
-reloc(typeref) [2]_llgo_uintptr -> []_llgo_uintptr
 reloc(typeref) [2]_llgo_uintptr -> _llgo_uintptr
 reloc(typeref) []*_llgo_internal/abi.Type -> *[]*_llgo_internal/abi.Type
 reloc(typeref) []*_llgo_internal/abi.Type -> *_llgo_internal/abi.Type
@@ -978,9 +771,6 @@ reloc(typeref) _llgo_bool -> *_llgo_bool
 reloc(typeref) _llgo_closure$3FbpiYSS_pTsPYSSnCvLYAKhXktdkPNOgx2ccRJS30Q -> *_llgo_closure$3FbpiYSS_pTsPYSSnCvLYAKhXktdkPNOgx2ccRJS30Q
 reloc(typeref) _llgo_closure$3FbpiYSS_pTsPYSSnCvLYAKhXktdkPNOgx2ccRJS30Q -> _llgo_Pointer
 reloc(typeref) _llgo_closure$3FbpiYSS_pTsPYSSnCvLYAKhXktdkPNOgx2ccRJS30Q -> _llgo_func$3_vg_JaYNArU0OGjPqfZ9Dm_5Mi5nufX44cnyxhW6fI
-reloc(typeref) _llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM -> *_llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM
-reloc(typeref) _llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM -> _llgo_Pointer
-reloc(typeref) _llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM -> _llgo_func$lmtnZUjEyaL8UFW41iDU4Xl94pHW9nJCJLhzxVAr-mQ
 reloc(typeref) _llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU -> *_llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU
 reloc(typeref) _llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU -> _llgo_Pointer
 reloc(typeref) _llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU -> _llgo_func$fC75jGwF1nV5TF91gEeTF_JCtbG9Z7_yOawHBxqBh6E
@@ -990,14 +780,11 @@ reloc(typeref) _llgo_closure$K86zYLAZMqCQ35qbFlAYTH2Z8Ly2ZO1eySstcJK36jY -> _llg
 reloc(typeref) _llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc -> *_llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc
 reloc(typeref) _llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc -> _llgo_Pointer
 reloc(typeref) _llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc -> _llgo_func$ahHMZCcDhfW-lrs446sPkiW0NoVa2vpmK_wKarVa_20
-reloc(typeref) _llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg -> *_llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg
-reloc(typeref) _llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg -> _llgo_Pointer
-reloc(typeref) _llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg -> _llgo_func$XM7vTgzPp36QbT8-qPuxFFvhYM3wt-S9WQqzXfZcVTQ
 reloc(typeref) _llgo_closure$vph1nQv8pjmhmIIwWOTU2RO6DAx5xDlf0x97duSZXAY -> *_llgo_closure$vph1nQv8pjmhmIIwWOTU2RO6DAx5xDlf0x97duSZXAY
 reloc(typeref) _llgo_closure$vph1nQv8pjmhmIIwWOTU2RO6DAx5xDlf0x97duSZXAY -> _llgo_Pointer
 reloc(typeref) _llgo_closure$vph1nQv8pjmhmIIwWOTU2RO6DAx5xDlf0x97duSZXAY -> _llgo_func$51IB0PDiHUkv0aJutLKNM6_vs4c8OMbG0xvMBOdlD80
 reloc(typeref) _llgo_complex128 -> *_llgo_complex128
-reloc(typeref) _llgo_error -> *_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU
+reloc(typeref) _llgo_error -> *_llgo_error
 reloc(typeref) _llgo_error -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(typeref) _llgo_float64 -> *_llgo_float64
 reloc(typeref) _llgo_func$-Q5FEpJP3kuBgLa_ArriRGYn1UGcAgzCVYkWD8jEqBM -> *_llgo_func$-Q5FEpJP3kuBgLa_ArriRGYn1UGcAgzCVYkWD8jEqBM
@@ -1346,35 +1133,32 @@ reloc(typeref) _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to -> *_llgo_
 reloc(typeref) _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to -> _llgo_string
 reloc(typeref) _llgo_func$zZ5pZdd7gZHYbqs4K9Ak5nMIOjo5-cCX_DAeheDUWRA -> *_llgo_func$zZ5pZdd7gZHYbqs4K9Ak5nMIOjo5-cCX_DAeheDUWRA
 reloc(typeref) _llgo_func$zZ5pZdd7gZHYbqs4K9Ak5nMIOjo5-cCX_DAeheDUWRA -> _llgo_reflect.Value
-reloc(typeref) _llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU -> *_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU
-reloc(typeref) _llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(typeref) _llgo_int -> *_llgo_int
-reloc(typeref) _llgo_int32 -> *_llgo_int32
 reloc(typeref) _llgo_int64 -> *_llgo_int64
+reloc(typeref) _llgo_internal/abi.ArrayType -> *_llgo_internal/abi.ArrayType
 reloc(typeref) _llgo_internal/abi.ArrayType -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_internal/abi.ArrayType -> *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo
 reloc(typeref) _llgo_internal/abi.ArrayType -> _llgo_internal/abi.Type
 reloc(typeref) _llgo_internal/abi.ArrayType -> _llgo_uintptr
-reloc(typeref) _llgo_internal/abi.ChanDir -> *_llgo_int
-reloc(typeref) _llgo_internal/abi.FuncType -> *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU
+reloc(typeref) _llgo_internal/abi.ChanDir -> *_llgo_internal/abi.ChanDir
+reloc(typeref) _llgo_internal/abi.FuncType -> *_llgo_internal/abi.FuncType
 reloc(typeref) _llgo_internal/abi.FuncType -> _llgo_internal/abi.Type
 reloc(typeref) _llgo_internal/abi.FuncType -> _llgo_uint16
-reloc(typeref) _llgo_internal/abi.Imethod -> *_llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo
+reloc(typeref) _llgo_internal/abi.Imethod -> *_llgo_internal/abi.Imethod
 reloc(typeref) _llgo_internal/abi.Imethod -> _llgo_internal/abi.NameOff
 reloc(typeref) _llgo_internal/abi.Imethod -> _llgo_internal/abi.TypeOff
-reloc(typeref) _llgo_internal/abi.InterfaceType -> *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc
+reloc(typeref) _llgo_internal/abi.InterfaceType -> *_llgo_internal/abi.InterfaceType
 reloc(typeref) _llgo_internal/abi.InterfaceType -> []_llgo_internal/abi.Imethod
 reloc(typeref) _llgo_internal/abi.InterfaceType -> _llgo_internal/abi.Name
 reloc(typeref) _llgo_internal/abi.InterfaceType -> _llgo_internal/abi.Type
-reloc(typeref) _llgo_internal/abi.Kind -> *_llgo_uint8
+reloc(typeref) _llgo_internal/abi.Kind -> *_llgo_internal/abi.Kind
 reloc(methodoff) _llgo_internal/abi.Kind -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(methodoff) _llgo_internal/abi.Kind -> internal/abi.(*Kind).String
 reloc(methodoff) _llgo_internal/abi.Kind -> internal/abi.Kind.String
-reloc(typeref) _llgo_internal/abi.Method -> *_llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk
+reloc(typeref) _llgo_internal/abi.Method -> *_llgo_internal/abi.Method
 reloc(typeref) _llgo_internal/abi.Method -> _llgo_internal/abi.NameOff
 reloc(typeref) _llgo_internal/abi.Method -> _llgo_internal/abi.TextOff
 reloc(typeref) _llgo_internal/abi.Method -> _llgo_internal/abi.TypeOff
-reloc(typeref) _llgo_internal/abi.Name -> *_llgo_struct$IFuc1TnfUELvbCrEVUKKm3eNS0myCBWF9ii_hLPkPko
+reloc(typeref) _llgo_internal/abi.Name -> *_llgo_internal/abi.Name
 reloc(typeref) _llgo_internal/abi.Name -> *_llgo_uint8
 reloc(methodoff) _llgo_internal/abi.Name -> _llgo_func$BpUWqf2R0RQf1nbkypJm0CAgXDdZKK8CneHJ1cEKmeU
 reloc(methodoff) _llgo_internal/abi.Name -> _llgo_func$K-En4ydo-D1RNbFH5kpb_rWGwcvt3l3ZGed3K9K--b4
@@ -1399,24 +1183,24 @@ reloc(methodoff) _llgo_internal/abi.Name -> internal/abi.Name.IsExported
 reloc(methodoff) _llgo_internal/abi.Name -> internal/abi.Name.Name
 reloc(methodoff) _llgo_internal/abi.Name -> internal/abi.Name.ReadVarint
 reloc(methodoff) _llgo_internal/abi.Name -> internal/abi.Name.Tag
-reloc(typeref) _llgo_internal/abi.NameOff -> *_llgo_int32
+reloc(typeref) _llgo_internal/abi.NameOff -> *_llgo_internal/abi.NameOff
+reloc(typeref) _llgo_internal/abi.StructField -> *_llgo_internal/abi.StructField
 reloc(typeref) _llgo_internal/abi.StructField -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_internal/abi.StructField -> *_llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo
 reloc(typeref) _llgo_internal/abi.StructField -> _llgo_internal/abi.Name
 reloc(typeref) _llgo_internal/abi.StructField -> _llgo_uintptr
-reloc(typeref) _llgo_internal/abi.StructType -> *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI
+reloc(typeref) _llgo_internal/abi.StructType -> *_llgo_internal/abi.StructType
 reloc(typeref) _llgo_internal/abi.StructType -> []_llgo_internal/abi.StructField
 reloc(typeref) _llgo_internal/abi.StructType -> _llgo_internal/abi.Name
 reloc(typeref) _llgo_internal/abi.StructType -> _llgo_internal/abi.Type
+reloc(typeref) _llgo_internal/abi.SwissMapType -> *_llgo_internal/abi.SwissMapType
 reloc(typeref) _llgo_internal/abi.SwissMapType -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_internal/abi.SwissMapType -> *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4
 reloc(typeref) _llgo_internal/abi.SwissMapType -> _llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc
 reloc(typeref) _llgo_internal/abi.SwissMapType -> _llgo_internal/abi.Type
 reloc(typeref) _llgo_internal/abi.SwissMapType -> _llgo_uint32
 reloc(typeref) _llgo_internal/abi.SwissMapType -> _llgo_uintptr
-reloc(typeref) _llgo_internal/abi.TFlag -> *_llgo_uint8
-reloc(typeref) _llgo_internal/abi.TextOff -> *_llgo_int32
-reloc(typeref) _llgo_internal/abi.Type -> *_llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY
+reloc(typeref) _llgo_internal/abi.TFlag -> *_llgo_internal/abi.TFlag
+reloc(typeref) _llgo_internal/abi.TextOff -> *_llgo_internal/abi.TextOff
+reloc(typeref) _llgo_internal/abi.Type -> *_llgo_internal/abi.Type
 reloc(typeref) _llgo_internal/abi.Type -> *_llgo_uint8
 reloc(typeref) _llgo_internal/abi.Type -> _llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU
 reloc(typeref) _llgo_internal/abi.Type -> _llgo_internal/abi.Kind
@@ -1426,27 +1210,27 @@ reloc(typeref) _llgo_internal/abi.Type -> _llgo_internal/abi.TypeOff
 reloc(typeref) _llgo_internal/abi.Type -> _llgo_uint32
 reloc(typeref) _llgo_internal/abi.Type -> _llgo_uint8
 reloc(typeref) _llgo_internal/abi.Type -> _llgo_uintptr
-reloc(typeref) _llgo_internal/abi.TypeOff -> *_llgo_int32
-reloc(typeref) _llgo_internal/abi.UncommonType -> *reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8
+reloc(typeref) _llgo_internal/abi.TypeOff -> *_llgo_internal/abi.TypeOff
+reloc(typeref) _llgo_internal/abi.UncommonType -> *_llgo_internal/abi.UncommonType
 reloc(typeref) _llgo_internal/abi.UncommonType -> _llgo_internal/abi.NameOff
 reloc(typeref) _llgo_internal/abi.UncommonType -> _llgo_uint16
 reloc(typeref) _llgo_internal/abi.UncommonType -> _llgo_uint32
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> *_llgo_internal/abi.SwissMapType
+reloc(typeref) _llgo_internal/runtime/maps.Iter -> *_llgo_internal/runtime/maps.Iter
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> *_llgo_internal/runtime/maps.Map
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> *_llgo_internal/runtime/maps.table
-reloc(typeref) _llgo_internal/runtime/maps.Iter -> *reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> _llgo_Pointer
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> _llgo_int
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> _llgo_internal/runtime/maps.groupReference
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> _llgo_uint64
 reloc(typeref) _llgo_internal/runtime/maps.Iter -> _llgo_uint8
-reloc(typeref) _llgo_internal/runtime/maps.Map -> *reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA
+reloc(typeref) _llgo_internal/runtime/maps.Map -> *_llgo_internal/runtime/maps.Map
 reloc(typeref) _llgo_internal/runtime/maps.Map -> _llgo_Pointer
 reloc(typeref) _llgo_internal/runtime/maps.Map -> _llgo_int
 reloc(typeref) _llgo_internal/runtime/maps.Map -> _llgo_uint64
 reloc(typeref) _llgo_internal/runtime/maps.Map -> _llgo_uint8
 reloc(typeref) _llgo_internal/runtime/maps.Map -> _llgo_uintptr
-reloc(typeref) _llgo_internal/runtime/maps.bitset -> *_llgo_uint64
+reloc(typeref) _llgo_internal/runtime/maps.bitset -> *_llgo_internal/runtime/maps.bitset
 reloc(methodoff) _llgo_internal/runtime/maps.bitset -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
 reloc(methodoff) _llgo_internal/runtime/maps.bitset -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
 reloc(methodoff) _llgo_internal/runtime/maps.bitset -> _llgo_func$_Pbc0aSIfpsj7UMYi9CbWmhpyiWTV-_NBHfwaOys38M
@@ -1461,8 +1245,8 @@ reloc(methodoff) _llgo_internal/runtime/maps.bitset -> internal/runtime/maps.bit
 reloc(methodoff) _llgo_internal/runtime/maps.bitset -> internal/runtime/maps.bitset.removeBelow
 reloc(methodoff) _llgo_internal/runtime/maps.bitset -> internal/runtime/maps.bitset.removeFirst
 reloc(methodoff) _llgo_internal/runtime/maps.bitset -> internal/runtime/maps.bitset.shiftOutLowest
-reloc(typeref) _llgo_internal/runtime/maps.ctrl -> *_llgo_uint8
-reloc(typeref) _llgo_internal/runtime/maps.ctrlGroup -> *_llgo_uint64
+reloc(typeref) _llgo_internal/runtime/maps.ctrl -> *_llgo_internal/runtime/maps.ctrl
+reloc(typeref) _llgo_internal/runtime/maps.ctrlGroup -> *_llgo_internal/runtime/maps.ctrlGroup
 reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> _llgo_func$_Pbc0aSIfpsj7UMYi9CbWmhpyiWTV-_NBHfwaOys38M
 reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> _llgo_func$boqysGqZj_SuplkpY7JvYb6zThY-mi21K75JMNXdZ6c
 reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> internal/runtime/maps.(*ctrlGroup).matchEmpty
@@ -1473,34 +1257,34 @@ reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> internal/runtime/maps.
 reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> internal/runtime/maps.ctrlGroup.matchEmptyOrDeleted
 reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> internal/runtime/maps.ctrlGroup.matchFull
 reloc(methodoff) _llgo_internal/runtime/maps.ctrlGroup -> internal/runtime/maps.ctrlGroup.matchH2
-reloc(typeref) _llgo_internal/runtime/maps.groupReference -> *reflecttypemethod.struct$Cj8jOLzRXDT3yaFc1IXZDAHMxBTk2CbNGq3xKHQMhC4
+reloc(typeref) _llgo_internal/runtime/maps.groupReference -> *_llgo_internal/runtime/maps.groupReference
 reloc(typeref) _llgo_internal/runtime/maps.groupReference -> _llgo_Pointer
-reloc(typeref) _llgo_internal/runtime/maps.groupsReference -> *reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI
+reloc(typeref) _llgo_internal/runtime/maps.groupsReference -> *_llgo_internal/runtime/maps.groupsReference
 reloc(typeref) _llgo_internal/runtime/maps.groupsReference -> _llgo_Pointer
 reloc(typeref) _llgo_internal/runtime/maps.groupsReference -> _llgo_uint64
-reloc(typeref) _llgo_internal/runtime/maps.table -> *reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY
+reloc(typeref) _llgo_internal/runtime/maps.table -> *_llgo_internal/runtime/maps.table
 reloc(typeref) _llgo_internal/runtime/maps.table -> _llgo_int
 reloc(typeref) _llgo_internal/runtime/maps.table -> _llgo_internal/runtime/maps.groupsReference
 reloc(typeref) _llgo_internal/runtime/maps.table -> _llgo_uint16
 reloc(typeref) _llgo_internal/runtime/maps.table -> _llgo_uint8
-reloc(typeref) _llgo_iter.Seq2[reflect.Value,reflect.Value] -> *_llgo_closure$5260B-5-8aw9rKXM41lRYEADZjUyvQqja04kP7NvuaM
+reloc(typeref) _llgo_iter.Seq2[reflect.Value,reflect.Value] -> *_llgo_iter.Seq2[reflect.Value,reflect.Value]
 reloc(typeref) _llgo_iter.Seq2[reflect.Value,reflect.Value] -> _llgo_Pointer
 reloc(typeref) _llgo_iter.Seq2[reflect.Value,reflect.Value] -> _llgo_func$lmtnZUjEyaL8UFW41iDU4Xl94pHW9nJCJLhzxVAr-mQ
-reloc(typeref) _llgo_iter.Seq[reflect.Value] -> *_llgo_closure$TJjW6CPP1hTZet4CIBUi5w7lbnCtUXz559QKe6g-kYg
+reloc(typeref) _llgo_iter.Seq[reflect.Value] -> *_llgo_iter.Seq[reflect.Value]
 reloc(typeref) _llgo_iter.Seq[reflect.Value] -> _llgo_Pointer
 reloc(typeref) _llgo_iter.Seq[reflect.Value] -> _llgo_func$XM7vTgzPp36QbT8-qPuxFFvhYM3wt-S9WQqzXfZcVTQ
-reloc(typeref) _llgo_reflect.ChanDir -> *_llgo_int
+reloc(typeref) _llgo_reflect.ChanDir -> *_llgo_reflect.ChanDir
 reloc(methodoff) _llgo_reflect.ChanDir -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(methodoff) _llgo_reflect.ChanDir -> reflect.(*ChanDir).String
 reloc(methodoff) _llgo_reflect.ChanDir -> reflect.ChanDir.String
-reloc(typeref) _llgo_reflect.Kind -> *_llgo_uint
+reloc(typeref) _llgo_reflect.Kind -> *_llgo_reflect.Kind
 reloc(methodoff) _llgo_reflect.Kind -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(methodoff) _llgo_reflect.Kind -> reflect.(*Kind).String
 reloc(methodoff) _llgo_reflect.Kind -> reflect.Kind.String
-reloc(typeref) _llgo_reflect.MapIter -> *reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg
+reloc(typeref) _llgo_reflect.MapIter -> *_llgo_reflect.MapIter
 reloc(typeref) _llgo_reflect.MapIter -> _llgo_internal/runtime/maps.Iter
 reloc(typeref) _llgo_reflect.MapIter -> _llgo_reflect.Value
-reloc(typeref) _llgo_reflect.Method -> *_llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs
+reloc(typeref) _llgo_reflect.Method -> *_llgo_reflect.Method
 reloc(methodoff) _llgo_reflect.Method -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
 reloc(typeref) _llgo_reflect.Method -> _llgo_int
 reloc(typeref) _llgo_reflect.Method -> _llgo_reflect.Type
@@ -1508,7 +1292,7 @@ reloc(typeref) _llgo_reflect.Method -> _llgo_reflect.Value
 reloc(typeref) _llgo_reflect.Method -> _llgo_string
 reloc(methodoff) _llgo_reflect.Method -> reflect.(*Method).IsExported
 reloc(methodoff) _llgo_reflect.Method -> reflect.Method.IsExported
-reloc(typeref) _llgo_reflect.StructField -> *_llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE
+reloc(typeref) _llgo_reflect.StructField -> *_llgo_reflect.StructField
 reloc(typeref) _llgo_reflect.StructField -> []_llgo_int
 reloc(typeref) _llgo_reflect.StructField -> _llgo_bool
 reloc(methodoff) _llgo_reflect.StructField -> _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk
@@ -1518,14 +1302,14 @@ reloc(typeref) _llgo_reflect.StructField -> _llgo_string
 reloc(typeref) _llgo_reflect.StructField -> _llgo_uintptr
 reloc(methodoff) _llgo_reflect.StructField -> reflect.(*StructField).IsExported
 reloc(methodoff) _llgo_reflect.StructField -> reflect.StructField.IsExported
-reloc(typeref) _llgo_reflect.StructTag -> *_llgo_string
+reloc(typeref) _llgo_reflect.StructTag -> *_llgo_reflect.StructTag
 reloc(methodoff) _llgo_reflect.StructTag -> _llgo_func$Pvo2o9vNznrzBT2bQDkquHfQkQ5WVec7L68eDV5EfsQ
 reloc(methodoff) _llgo_reflect.StructTag -> _llgo_func$sIA7mhiv4s5h8HFYuUaZueN5PQ49I7V9E-OPPtuqSsw
 reloc(methodoff) _llgo_reflect.StructTag -> reflect.(*StructTag).Get
 reloc(methodoff) _llgo_reflect.StructTag -> reflect.(*StructTag).Lookup
 reloc(methodoff) _llgo_reflect.StructTag -> reflect.StructTag.Get
 reloc(methodoff) _llgo_reflect.StructTag -> reflect.StructTag.Lookup
-reloc(typeref) _llgo_reflect.Type -> *reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
+reloc(typeref) _llgo_reflect.Type -> *_llgo_reflect.Type
 reloc(typeref) _llgo_reflect.Type -> _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s
 reloc(typeref) _llgo_reflect.Type -> _llgo_func$2KmEA53bmSMqFwMk5-SjB6NXQl3r5QsUDpTpNUxyMWQ
 reloc(typeref) _llgo_reflect.Type -> _llgo_func$2nkaPgxW0n5-10R0l6Q3Zwwfc1t9nffTbhlVOLQm-mQ
@@ -1548,7 +1332,7 @@ reloc(typeref) _llgo_reflect.Type -> _llgo_func$uk7PgUVap9GZdvS8R_mZCDbAbqnAbcNr
 reloc(typeref) _llgo_reflect.Type -> _llgo_func$w8Mj2LK8G5p7MIiGWR6MYjyXy3L8SVVzYlT1bb6KNXk
 reloc(typeref) _llgo_reflect.Type -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(typeref) _llgo_reflect.Value -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_reflect.Value -> *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8
+reloc(typeref) _llgo_reflect.Value -> *_llgo_reflect.Value
 reloc(typeref) _llgo_reflect.Value -> _llgo_Pointer
 reloc(methodoff) _llgo_reflect.Value -> _llgo_func$-Q5FEpJP3kuBgLa_ArriRGYn1UGcAgzCVYkWD8jEqBM
 reloc(methodoff) _llgo_reflect.Value -> _llgo_func$0XE5J6liAcOwXXb2rFXptQgPgtsfOidVwZ3jNZEKlQg
@@ -1815,7 +1599,7 @@ reloc(methodoff) _llgo_reflect.Value -> reflect.Value.setRunes
 reloc(methodoff) _llgo_reflect.Value -> reflect.Value.stringNonString
 reloc(methodoff) _llgo_reflect.Value -> reflect.Value.typ
 reloc(methodoff) _llgo_reflect.Value -> reflect.Value.typeSlow
-reloc(typeref) _llgo_reflect.flag -> *_llgo_uintptr
+reloc(typeref) _llgo_reflect.flag -> *_llgo_reflect.flag
 reloc(methodoff) _llgo_reflect.flag -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(methodoff) _llgo_reflect.flag -> _llgo_func$L2TfVUN6F-_dM1KHIPUpF8sob68HjKGlbIxKnpFjdXA
 reloc(methodoff) _llgo_reflect.flag -> _llgo_func$w8Mj2LK8G5p7MIiGWR6MYjyXy3L8SVVzYlT1bb6KNXk
@@ -1836,70 +1620,12 @@ reloc(methodoff) _llgo_reflect.flag -> reflect.flag.mustBeExported
 reloc(methodoff) _llgo_reflect.flag -> reflect.flag.mustBeExportedSlow
 reloc(methodoff) _llgo_reflect.flag -> reflect.flag.panicNotMap
 reloc(methodoff) _llgo_reflect.flag -> reflect.flag.ro
-reloc(typeref) _llgo_reflecttypemethod.T -> *_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw
+reloc(typeref) _llgo_reflecttypemethod.T -> *_llgo_reflecttypemethod.T
 reloc(methodoff) _llgo_reflecttypemethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 reloc(methodoff) _llgo_reflecttypemethod.T -> reflecttypemethod.(*T).Foo
 reloc(methodoff) _llgo_reflecttypemethod.T -> reflecttypemethod.T.Foo
 reloc(typeref) _llgo_rune -> *_llgo_rune
 reloc(typeref) _llgo_string -> *_llgo_string
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> *_llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> []_llgo_int
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> _llgo_bool
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> _llgo_reflect.StructTag
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> _llgo_reflect.Type
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> _llgo_string
-reloc(typeref) _llgo_struct$0rYkQqcjN8y4BT83k7OKiF560LHzsC-yiJTwqJnr-iE -> _llgo_uintptr
-reloc(typeref) _llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk -> *_llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk
-reloc(typeref) _llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk -> _llgo_internal/abi.NameOff
-reloc(typeref) _llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk -> _llgo_internal/abi.TextOff
-reloc(typeref) _llgo_struct$1cLyWx1PJxQ2KDc9Iqvk1o4cH2UscSgPacL-qrmANNk -> _llgo_internal/abi.TypeOff
-reloc(typeref) _llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> *_llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo
-reloc(typeref) _llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$9EiDNIh2jGDPYSoOP6VY9vbM5D8P_GphTubm7HryGPo -> _llgo_uintptr
-reloc(typeref) _llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo -> *_llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo
-reloc(typeref) _llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo -> _llgo_internal/abi.Name
-reloc(typeref) _llgo_struct$9Mk7JXcOoMDKmNG-UUw66iNOU0lFNlzkUYeyn17Iylo -> _llgo_uintptr
-reloc(typeref) _llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> *_llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI
-reloc(typeref) _llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> []_llgo_internal/abi.StructField
-reloc(typeref) _llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_internal/abi.Name
-reloc(typeref) _llgo_struct$ClaytO8IAmXXau5ZGHZJvTG1VQm9QinqsFr_UrWSqTI -> _llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$IFuc1TnfUELvbCrEVUKKm3eNS0myCBWF9ii_hLPkPko -> *_llgo_struct$IFuc1TnfUELvbCrEVUKKm3eNS0myCBWF9ii_hLPkPko
-reloc(typeref) _llgo_struct$IFuc1TnfUELvbCrEVUKKm3eNS0myCBWF9ii_hLPkPko -> *_llgo_uint8
-reloc(typeref) _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> *_llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> *_llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4
-reloc(typeref) _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_closure$Oy3XhjARgY_pH1HU6oBj0nSC2Qs1A6CU4bRajpBttZc
-reloc(typeref) _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_uint32
-reloc(typeref) _llgo_struct$S78XkZMOWpkFu7vS0FetWuBSKfemDgyhslV8YM4SrW4 -> _llgo_uintptr
-reloc(typeref) _llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> *_llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc
-reloc(typeref) _llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> []_llgo_internal/abi.Imethod
-reloc(typeref) _llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_internal/abi.Name
-reloc(typeref) _llgo_struct$_ASj5jQkgqH818EBw6D_W2ZzXGn7dgXbQ4zh96QbYJc -> _llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> *_llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> *_llgo_uint8
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_closure$6Ehc6TOqEXOG056rtIWcVOuWzJK8QENYOqW7yQ1sEPU
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_internal/abi.Kind
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_internal/abi.NameOff
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_internal/abi.TFlag
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_internal/abi.TypeOff
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_uint32
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_uint8
-reloc(typeref) _llgo_struct$clctHSw4G8wTjLfkn8vZYk3VZk687ZdDWEPUmWBplKY -> _llgo_uintptr
-reloc(typeref) _llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo -> *_llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo
-reloc(typeref) _llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo -> _llgo_internal/abi.NameOff
-reloc(typeref) _llgo_struct$dir7Omrxof1H0Qqpwgq17PKiA8bQ28AEH4FribCKIRo -> _llgo_internal/abi.TypeOff
-reloc(typeref) _llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs -> *_llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs
-reloc(typeref) _llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs -> _llgo_int
-reloc(typeref) _llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs -> _llgo_reflect.Type
-reloc(typeref) _llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs -> _llgo_reflect.Value
-reloc(typeref) _llgo_struct$lGQf024IzM__F4uC8EmguscR2GkCCAaFkT1KSQ-2hhs -> _llgo_string
-reloc(typeref) _llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw -> *_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw
-reloc(typeref) _llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> *_llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU
-reloc(typeref) _llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_internal/abi.Type
-reloc(typeref) _llgo_struct$uTeLZnyVYWk5hwtHRUgwSpw3Bqd2FgdSCsodEF0S7gU -> _llgo_uint16
-reloc(typeref) _llgo_uint -> *_llgo_uint
 reloc(typeref) _llgo_uint16 -> *_llgo_uint16
 reloc(typeref) _llgo_uint32 -> *_llgo_uint32
 reloc(typeref) _llgo_uint64 -> *_llgo_uint64
@@ -1930,43 +1656,3 @@ reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr7
 reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790 -> _llgo_func$uk7PgUVap9GZdvS8R_mZCDbAbqnAbcNryqybtDogUNI
 reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790 -> _llgo_func$w8Mj2LK8G5p7MIiGWR6MYjyXy3L8SVVzYlT1bb6KNXk
 reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790 -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
-reloc(typeref) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> *_llgo_internal/abi.Type
-reloc(typeref) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> *reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8
-reloc(typeref) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_Pointer
-reloc(methodoff) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
-reloc(methodoff) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$L2TfVUN6F-_dM1KHIPUpF8sob68HjKGlbIxKnpFjdXA
-reloc(methodoff) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$w8Mj2LK8G5p7MIiGWR6MYjyXy3L8SVVzYlT1bb6KNXk
-reloc(methodoff) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_func$yWnpCSK6prqCzXPOoG7F4_u7NYHSV-ZHa-4C1jUzAj0
-reloc(typeref) reflecttypemethod.struct$Atr6Lp-WRvnodt01-N5mfy2tMyH3slrTjSlLm2ezvd8 -> _llgo_reflect.flag
-reloc(typeref) reflecttypemethod.struct$Cj8jOLzRXDT3yaFc1IXZDAHMxBTk2CbNGq3xKHQMhC4 -> *reflecttypemethod.struct$Cj8jOLzRXDT3yaFc1IXZDAHMxBTk2CbNGq3xKHQMhC4
-reloc(typeref) reflecttypemethod.struct$Cj8jOLzRXDT3yaFc1IXZDAHMxBTk2CbNGq3xKHQMhC4 -> _llgo_Pointer
-reloc(typeref) reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> *reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA
-reloc(typeref) reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> _llgo_Pointer
-reloc(typeref) reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> _llgo_int
-reloc(typeref) reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> _llgo_uint64
-reloc(typeref) reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> _llgo_uint8
-reloc(typeref) reflecttypemethod.struct$_XsAGJVJ9CpiLERme6oiUkCWZm-eqX9OeocK-mKziaA -> _llgo_uintptr
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> *_llgo_internal/abi.SwissMapType
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> *_llgo_internal/runtime/maps.Map
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> *_llgo_internal/runtime/maps.table
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> *reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> _llgo_Pointer
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> _llgo_int
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> _llgo_internal/runtime/maps.groupReference
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> _llgo_uint64
-reloc(typeref) reflecttypemethod.struct$b827ImKJDucHAFaX0VQKUxRhyAl_jWDuayjiwY9l8jE -> _llgo_uint8
-reloc(typeref) reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI -> *reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI
-reloc(typeref) reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI -> _llgo_Pointer
-reloc(typeref) reflecttypemethod.struct$lQsUYWLp63aAOY-tlqNlTTcQnbIuY0DRmOfDroEV7WI -> _llgo_uint64
-reloc(typeref) reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8 -> *reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8
-reloc(typeref) reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8 -> _llgo_internal/abi.NameOff
-reloc(typeref) reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8 -> _llgo_uint16
-reloc(typeref) reflecttypemethod.struct$qiSTP7_Sjy5UCBbkj_vW8louRNt_r3yfy6vdO3W17E8 -> _llgo_uint32
-reloc(typeref) reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg -> *reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg
-reloc(typeref) reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg -> _llgo_internal/runtime/maps.Iter
-reloc(typeref) reflecttypemethod.struct$wRP4_ODnWeFduTGCzA-xy7fiJHFYKhAsr-xL9JsQXdg -> _llgo_reflect.Value
-reloc(typeref) reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY -> *reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY
-reloc(typeref) reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY -> _llgo_int
-reloc(typeref) reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY -> _llgo_internal/runtime/maps.groupsReference
-reloc(typeref) reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY -> _llgo_uint16
-reloc(typeref) reflecttypemethod.struct$wzBCdTdFxNpnVFWFIciGvXInNuG-idHdA1AyOGrvtSY -> _llgo_uint8
