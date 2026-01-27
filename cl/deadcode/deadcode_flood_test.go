@@ -31,7 +31,7 @@ func TestFloodReachability(t *testing.T) {
 		"A": {"B": irgraph.EdgeCall},
 		"B": {"C": irgraph.EdgeRef},
 	}}
-	res := Analyze(g, []irgraph.SymID{"A"}, 0)
+	res := Analyze(g, []irgraph.SymID{"A"})
 	assertReachable(t, res, "A", "B", "C")
 }
 
@@ -43,11 +43,11 @@ func TestFloodMultipleRoots(t *testing.T) {
 		"pkgA.Entry":  {"pkgA.Helper": irgraph.EdgeCall},
 		"plugin.Init": {"plugin.Hook": irgraph.EdgeRef},
 	}}
-	res := Analyze(g, []irgraph.SymID{"pkgA.Entry", "plugin.Init"}, 0)
+	res := Analyze(g, []irgraph.SymID{"pkgA.Entry", "plugin.Init"})
 	assertReachable(t, res, "pkgA.Entry", "pkgA.Helper", "plugin.Init", "plugin.Hook")
 }
 
-func TestFloodEdgeMask(t *testing.T) {
+func TestFloodUsesCallAndRef(t *testing.T) {
 	// Simulated shape:
 	//   main.A -> lib.DoWork (call)
 	//   main.A -> lib.Config (ref)
@@ -57,11 +57,8 @@ func TestFloodEdgeMask(t *testing.T) {
 			"lib.Config": irgraph.EdgeRef,
 		},
 	}}
-	resCall := Analyze(g, []irgraph.SymID{"main.A"}, irgraph.EdgeCall)
-	assertReachable(t, resCall, "main.A", "lib.DoWork")
-
-	resRef := Analyze(g, []irgraph.SymID{"main.A"}, irgraph.EdgeRef)
-	assertReachable(t, resRef, "main.A", "lib.Config")
+	res := Analyze(g, []irgraph.SymID{"main.A"})
+	assertReachable(t, res, "main.A", "lib.DoWork", "lib.Config")
 }
 
 func TestFloodCycle(t *testing.T) {
@@ -72,16 +69,16 @@ func TestFloodCycle(t *testing.T) {
 		"pkg.Step1": {"pkg.Step2": irgraph.EdgeCall},
 		"pkg.Step2": {"pkg.Init": irgraph.EdgeCall},
 	}}
-	res := Analyze(g, []irgraph.SymID{"pkg.Init"}, 0)
+	res := Analyze(g, []irgraph.SymID{"pkg.Init"})
 	assertReachable(t, res, "pkg.Init", "pkg.Step1", "pkg.Step2")
 }
 
 func TestFloodEmptyInputs(t *testing.T) {
-	res := Analyze(nil, nil, 0)
+	res := Analyze(nil, nil)
 	if len(res.Reachable) != 0 {
 		t.Fatalf("expected empty reachability, got %v", res.Reachable)
 	}
-	res = Analyze(&irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{}}, nil, 0)
+	res = Analyze(&irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{}}, nil)
 	if len(res.Reachable) != 0 {
 		t.Fatalf("expected empty reachability, got %v", res.Reachable)
 	}
@@ -108,7 +105,7 @@ func TestUsedInIfacePropagation(t *testing.T) {
 			{Owner: "TypeA", Target: "MethodBType", Kind: irgraph.EdgeRelocTypeRef},
 		},
 	}
-	res := Analyze(g, []irgraph.SymID{"main"}, 0)
+	res := Analyze(g, []irgraph.SymID{"main"})
 	if !res.UsedInIface["TypeA"] {
 		t.Fatalf("expected UsedInIface to include TypeA")
 	}

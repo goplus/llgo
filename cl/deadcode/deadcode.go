@@ -28,29 +28,23 @@ type deadcodePass struct {
 	graph         *irgraph.Graph
 	reachable     map[irgraph.SymID]bool
 	queue         []irgraph.SymID
-	edgeMask      irgraph.EdgeKind
 	usedInIface   map[irgraph.SymID]bool
 	relocsByOwner map[irgraph.SymID][]irgraph.RelocEdge
 }
 
-// Analyze computes reachability from roots using edges masked by edgeMask.
-// If edgeMask is zero, it defaults to call+ref edges.
-func Analyze(g *irgraph.Graph, roots []irgraph.SymID, edgeMask irgraph.EdgeKind) Result {
-	pass := newDeadcodePass(g, edgeMask, len(roots))
+// Analyze computes reachability from roots using call+ref edges.
+func Analyze(g *irgraph.Graph, roots []irgraph.SymID) Result {
+	pass := newDeadcodePass(g, len(roots))
 	pass.markRoots(roots)
 	pass.flood()
 	return Result{Reachable: pass.reachable, UsedInIface: pass.usedInIface}
 }
 
-func newDeadcodePass(g *irgraph.Graph, edgeMask irgraph.EdgeKind, rootCount int) *deadcodePass {
-	if edgeMask == 0 {
-		edgeMask = irgraph.EdgeCall | irgraph.EdgeRef
-	}
+func newDeadcodePass(g *irgraph.Graph, rootCount int) *deadcodePass {
 	d := &deadcodePass{
 		graph:         g,
 		reachable:     make(map[irgraph.SymID]bool),
 		queue:         make([]irgraph.SymID, 0, rootCount),
-		edgeMask:      edgeMask,
 		usedInIface:   make(map[irgraph.SymID]bool),
 		relocsByOwner: make(map[irgraph.SymID][]irgraph.RelocEdge),
 	}
@@ -87,7 +81,7 @@ func (d *deadcodePass) flood() {
 		cur := d.queue[0]
 		d.queue = d.queue[1:]
 		for to, kind := range d.graph.Edges[cur] {
-			if kind&d.edgeMask == 0 {
+			if kind&(irgraph.EdgeCall|irgraph.EdgeRef) == 0 {
 				continue
 			}
 			d.mark(to)
