@@ -2,6 +2,19 @@
 set -e
 
 # llgo run subdirectories under _demo that contain *.go files
+mode="demo"
+for arg in "$@"; do
+  case "$arg" in
+    -dce)
+      mode="deadcode"
+      ;;
+    *)
+      echo "unknown argument: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
+
 jobs="${LLGO_DEMO_JOBS:-1}"
 if [ "${jobs}" -gt 1 ]; then
   if [ "${BASH_VERSINFO[0]}" -lt 5 ] || { [ "${BASH_VERSINFO[0]}" -eq 5 ] && [ "${BASH_VERSINFO[1]}" -lt 1 ]; }; then
@@ -11,8 +24,6 @@ if [ "${jobs}" -gt 1 ]; then
 fi
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
-
-demo_mode="${LLGO_DEMO_MODE:-demo}"
 
 file_size() {
   if stat --version >/dev/null 2>&1; then
@@ -63,7 +74,7 @@ run_deadcode_case() {
   fi
 }
 
-if [ "$demo_mode" = "deadcode" ]; then
+if [ "$mode" = "deadcode" ]; then
   cases=()
   for d in ./cl/deadcode/_testdata/*; do
     if [ -d "$d" ] && [ -n "$(ls "$d"/*.go 2>/dev/null)" ]; then
