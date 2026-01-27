@@ -34,6 +34,11 @@ import (
 	llvm "github.com/goplus/llvm"
 
 	llssa "github.com/goplus/llgo/ssa"
+	"golang.org/x/tools/go/callgraph"
+	"golang.org/x/tools/go/callgraph/cha"
+	"golang.org/x/tools/go/callgraph/vta"
+	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 // genMainModule generates the main entry module for an llgo program.
@@ -82,6 +87,22 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
+	if !needAbiInit {
+		// vta callgraph
+		progSSA := ctx.progSSA
+		cg := vta.CallGraph(ssautil.AllFunctions(progSSA), cha.CallGraph(progSSA))
+		invoked := buildInvokeIndex(cg)
+		mainPkg.PruneAbiTypes(progSSA, func(sel *types.Selection, toPtr bool) bool {
+			var method *ssa.Function
+			if toPtr {
+				method = progSSA.LookupMethod(types.NewPointer(sel.Recv()), sel.Obj().Pkg(), sel.Obj().Name())
+			} else {
+				method = progSSA.MethodValue(sel)
+			}
+			return invoked[method]
+		})
+	}
+
 	var abiInit llssa.Function
 	if needAbiInit {
 		abiInit = mainPkg.InitAbiTypes("init$abitypes")
@@ -97,6 +118,20 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	return mainAPkg
+}
+
+func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
+	invoked := make(map[*ssa.Function]bool)
+	for _, node := range cg.Nodes {
+		for _, out := range node.Out {
+			if out.Callee != nil && out.Callee.Func != nil {
+				if out.Site == nil || out.Site.Common().IsInvoke() {
+					invoked[out.Callee.Func] = true
+				}
+			}
+		}
+	}
+	return invoked
 }
 
 // defineEntryFunction creates the program's entry function. The name is

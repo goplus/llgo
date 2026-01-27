@@ -210,9 +210,11 @@ type aProgram struct {
 
 	printfTy *types.Signature
 
-	paramObjPtr_ *types.Var
-	linkname     map[string]string // pkgPath.nameInPkg => linkname
-	abiSymbol    map[string]Type   // abi symbol name => Type
+	paramObjPtr_   *types.Var
+	linkname       map[string]string     // pkgPath.nameInPkg => linkname
+	abiSymbol      map[string]*AbiSymbol // abi symbol name => Type
+	abiTypePruning bool
+	methodIsInvoke func(method *types.Selection, toPtr bool) bool
 
 	ptrSize int
 
@@ -263,7 +265,7 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
+		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
 	}
 }
 
