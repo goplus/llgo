@@ -256,6 +256,7 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 		EdgeRelocUseNamedMethod,
 		EdgeRelocMethodOff,
 		EdgeRelocReflectMethod,
+		EdgeRelocTypeRef,
 	}
 	for from, tos := range g.Edges {
 		for to, kind := range tos {
@@ -298,6 +299,8 @@ func kindLabel(kind EdgeKind) string {
 		return "reloc(methodoff)"
 	case EdgeRelocReflectMethod:
 		return "reloc(reflectmethod)"
+	case EdgeRelocTypeRef:
+		return "reloc(typeref)"
 	default:
 		return fmt.Sprintf("kind(%d)", kind)
 	}

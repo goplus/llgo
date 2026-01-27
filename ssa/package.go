@@ -825,6 +825,7 @@ const (
 	relocUseNamedMethod           = 3
 	relocMethodOff                = 4
 	relocReflectMethod            = 5
+	relocTypeRef                  = 6
 )
 
 // addReloc records a reloc metadata entry if enabled.
