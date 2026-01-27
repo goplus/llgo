@@ -111,6 +111,7 @@ func hasGoFiles(dir string) bool {
 func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package) {
 	t.Helper()
 	conf := build.NewDefaultConf(build.ModeBuild)
+	conf.DCE = true
 	conf.CollectIRGraph = true
 	conf.ForceRebuild = true
 	conf.OutFile = filepath.Join(t.TempDir(), "deadcode-test-bin")
@@ -185,6 +186,10 @@ func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 	for i, pkgPath := range pkgPaths {
 		pkg := pkgMap[pkgPath]
 		syms := symbolsForPackage(pkg)
+		symSet := make(map[string]struct{}, len(syms))
+		for _, sym := range syms {
+			symSet[sym] = struct{}{}
+		}
 		var reachable []string
 		for _, sym := range syms {
 			if res.Reachable[irgraph.SymID(sym)] {
@@ -230,8 +235,9 @@ func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
 		}
 		if merged == nil {
 			merged = &irgraph.Graph{
-				Nodes: make(map[irgraph.SymID]*irgraph.NodeInfo),
-				Edges: make(map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind),
+				Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
+				Edges:  make(map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind),
+				Relocs: nil,
 			}
 		}
 		for id, node := range pkg.IRGraph.Nodes {
@@ -247,6 +253,9 @@ func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
 			for to, kind := range tos {
 				merged.Edges[from][to] |= kind
 			}
+		}
+		if len(pkg.IRGraph.Relocs) != 0 {
+			merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
 		}
 	}
 	return merged
