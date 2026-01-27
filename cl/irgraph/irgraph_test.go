@@ -242,43 +242,43 @@ func formatGraph(g *Graph) []byte {
 }
 
 func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
-	type edgeLine struct {
-		from string
-		to   string
-		kind EdgeKind
-	}
-	var lines []edgeLine
-	kinds := []EdgeKind{
-		EdgeCall,
-		EdgeRef,
-		EdgeRelocUseIface,
-		EdgeRelocUseIfaceMethod,
-		EdgeRelocUseNamedMethod,
-		EdgeRelocMethodOff,
-		EdgeRelocReflectMethod,
-		EdgeRelocTypeRef,
+	seen := make(map[string]struct{})
+	var lines []string
+	addLine := func(label, from, to string) {
+		line := fmt.Sprintf("%s %s -> %s", label, from, to)
+		if _, ok := seen[line]; ok {
+			return
+		}
+		seen[line] = struct{}{}
+		lines = append(lines, line)
 	}
 	for from, tos := range g.Edges {
 		for to, kind := range tos {
-			for _, k := range kinds {
-				if kind&k != 0 && mask&k != 0 {
-					lines = append(lines, edgeLine{from: string(from), to: string(to), kind: k})
-				}
+			if kind&EdgeCall != 0 && mask&EdgeCall != 0 {
+				addLine(kindLabel(EdgeCall), string(from), string(to))
+			}
+			if kind&EdgeRef != 0 && mask&EdgeRef != 0 {
+				addLine(kindLabel(EdgeRef), string(from), string(to))
 			}
 		}
 	}
-	sort.Slice(lines, func(i, j int) bool {
-		if lines[i].from != lines[j].from {
-			return lines[i].from < lines[j].from
+	if mask&EdgeRelocMask != 0 {
+		for _, r := range g.Relocs {
+			if r.Kind&mask == 0 {
+				continue
+			}
+			label := kindLabel(r.Kind)
+			if r.Kind == EdgeRelocMethodOff {
+				label = fmt.Sprintf("reloc(methodoff idx=%d)", r.Addend)
+			}
+			addLine(label, string(r.Owner), string(r.Target))
 		}
-		if lines[i].to != lines[j].to {
-			return lines[i].to < lines[j].to
-		}
-		return lines[i].kind < lines[j].kind
-	})
+	}
+	sort.Strings(lines)
 	var buf bytes.Buffer
 	for _, line := range lines {
-		buf.WriteString(fmt.Sprintf("%s %s -> %s\n", kindLabel(line.kind), line.from, line.to))
+		buf.WriteString(line)
+		buf.WriteString("\n")
 	}
 	return buf.Bytes()
 }
