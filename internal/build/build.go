@@ -1217,6 +1217,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			return fmt.Errorf("no bitcode inputs to link")
 		}
 
+		dceLLName := ""
 		if ctx.buildConf.DCE {
 			roots, err := dceEntryRoots(merged)
 			if err != nil {
@@ -1244,40 +1245,78 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			if verbose {
 				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d)\n", stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal)
 			}
+			llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
+			if err != nil {
+				merged.Dispose()
+				return err
+			}
+			if _, err := llFile.WriteString(merged.String()); err != nil {
+				llFile.Close()
+				merged.Dispose()
+				return err
+			}
+			if err := llFile.Close(); err != nil {
+				merged.Dispose()
+				return err
+			}
+			dceLLName = llFile.Name()
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[dce] module ll: %s\n", dceLLName)
+			}
 		}
 
-		combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
-		if err != nil {
+		if ctx.buildConf.DCE {
+			if dceLLName == "" {
+				merged.Dispose()
+				return fmt.Errorf("missing DCE module .ll output")
+			}
+			dumpAbiTypeMetadata(merged, dceLLName, verbose)
+
+			combinedObj := strings.TrimSuffix(dceLLName, ".ll") + ".o"
+			args := []string{"-o", combinedObj, "-c", dceLLName, "-Wno-override-module"}
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", args)
+			}
+			if err := ctx.compiler().Compile(args...); err != nil {
+				merged.Dispose()
+				return fmt.Errorf("failed to compile DCE ll: %v", err)
+			}
 			merged.Dispose()
-			return err
-		}
-		combinedBcName := combinedBc.Name()
-		if err := llvm.WriteBitcodeToFile(merged, combinedBc); err != nil {
+			objFiles = []string{combinedObj}
+		} else {
+			combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
+			if err != nil {
+				merged.Dispose()
+				return err
+			}
+			combinedBcName := combinedBc.Name()
+			if err := llvm.WriteBitcodeToFile(merged, combinedBc); err != nil {
+				combinedBc.Close()
+				merged.Dispose()
+				return fmt.Errorf("write combined bitcode: %w", err)
+			}
 			combinedBc.Close()
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[bc-pass] merged bitcode written to %s\n", combinedBcName)
+			}
+
+			// Optional debug: dump abi.Type metadata from the merged module.
+			dumpAbiTypeMetadata(merged, combinedBcName, verbose)
+
+			// Compile the merged BC to a single object for final native link.
+			combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"
+			args := []string{"-o", combinedObj, "-c", combinedBcName, "-Wno-override-module"}
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", args)
+			}
+			if err := ctx.compiler().Compile(args...); err != nil {
+				merged.Dispose()
+				return fmt.Errorf("failed to compile combined bc: %v", err)
+			}
+
 			merged.Dispose()
-			return fmt.Errorf("write combined bitcode: %w", err)
+			objFiles = []string{combinedObj}
 		}
-		combinedBc.Close()
-		if verbose {
-			fmt.Fprintf(os.Stderr, "[bc-pass] merged bitcode written to %s\n", combinedBcName)
-		}
-
-		// Optional debug: dump abi.Type metadata from the merged module.
-		dumpAbiTypeMetadata(merged, combinedBcName, verbose)
-
-		// Compile the merged BC to a single object for final native link.
-		combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"
-		args := []string{"-o", combinedObj, "-c", combinedBcName, "-Wno-override-module"}
-		if verbose {
-			fmt.Fprintln(os.Stderr, "clang", args)
-		}
-		if err := ctx.compiler().Compile(args...); err != nil {
-			merged.Dispose()
-			return fmt.Errorf("failed to compile combined bc: %v", err)
-		}
-
-		merged.Dispose()
-		objFiles = []string{combinedObj}
 	} else if ctx.buildConf.GenLL {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
