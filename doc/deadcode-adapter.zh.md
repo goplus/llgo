@@ -76,6 +76,12 @@ LLGo 的可达性分析需要具备**全局视角**，但工程实际编译流�
   在 irgraph 中该类边的 target 会以 `_mname:` 前缀表示（如 `_mname:Foo`），
   deadcode 解析时需要去掉前缀后再写入该集合。
 
+- `MarkableMethods []MethodRef`  
+  记录“**可能被接口动态调用**”的候选方法条目。  
+  只有当类型已 `UsedInIface`，并且扫描到 `reloc(methodoff)`（Mtyp/Ifn/Tfn 三连）时，
+  才会把该方法条目加入候选列表。随后会从类型元数据中解码出方法签名，
+  填入 `MethodRef.m`，供后续与 `IfaceMethod` / `GenericIfaceMethod` 匹配。
+
 **MethodSig 结构（接口方法签名）**：
 
 ```
@@ -88,6 +94,19 @@ type MethodSig struct {
 它不包含“具体接口”的信息，只描述 **方法名 + 方法类型**，用于与具体类型的方法集做匹配。
 
 > 备注：在 Go 实现中这是 loader 的 Attr；在 LLGo 里建议直接放到 `deadcode.Result`，便于测试输出与 debug。
+
+**MethodRef 结构（候选方法条目）**：
+
+```
+type MethodRef struct {
+    Src   SymID     // 类型描述符符号
+    Reloc int       // methodoff 在 reloc 列表中的起始位置（Mtyp/Ifn/Tfn 三连）
+    M     MethodSig // 解码后的方法签名
+}
+```
+
+它对应 Go 中 `markableMethods` 的概念：  
+“**这个类型的方法，理论上可能被接口调用，但是否保活要看是否真的被调用**”。
 
 ## 计划中的 USEIFACE 处理（说明）
 
