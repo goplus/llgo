@@ -163,6 +163,54 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 	})
 }
 
+func TestMethodOffIgnoredWithoutUseIface(t *testing.T) {
+	// Simulated shape:
+	//   TypeA is referenced, but never converted to an interface.
+	// Relocs:
+	// - methodoff triples exist, but no useiface marker is present.
+	g := &irgraph.Graph{
+		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
+			"main":     {"CallSite": irgraph.EdgeCall},
+			"CallSite": {"TypeA": irgraph.EdgeRef},
+		},
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodATfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	if len(res.UsedInIface) != 0 {
+		t.Fatalf("expected UsedInIface empty, got %v", res.UsedInIface)
+	}
+	if len(res.MarkableMethods) != 0 {
+		t.Fatalf("expected no markable methods, got %v", res.MarkableMethods)
+	}
+}
+
+func TestMethodOffIgnoredWhenCallsiteUnreachable(t *testing.T) {
+	// Simulated shape:
+	//   useiface exists on CallSite, but CallSite is not reachable from roots.
+	g := &irgraph.Graph{
+		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
+			"main": {"Other": irgraph.EdgeCall},
+		},
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodATfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	if len(res.UsedInIface) != 0 {
+		t.Fatalf("expected UsedInIface empty, got %v", res.UsedInIface)
+	}
+	if len(res.MarkableMethods) != 0 {
+		t.Fatalf("expected no markable methods, got %v", res.MarkableMethods)
+	}
+}
+
 func assertReachable(t *testing.T, res Result, syms ...string) {
 	t.Helper()
 	want := make([]string, 0, len(syms))

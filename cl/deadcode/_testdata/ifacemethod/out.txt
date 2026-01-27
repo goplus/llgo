@@ -38,7 +38,6 @@ reach github.com/goplus/llgo/runtime/abi.init
 reach github.com/goplus/llgo/runtime/abi.init$guard
 reach github.com/goplus/llgo/runtime/abi.kindNames
 reach github.com/goplus/llgo/runtime/internal/runtime.AllocZ
-reach github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange
 reach github.com/goplus/llgo/runtime/internal/runtime.MakeSlice
 reach github.com/goplus/llgo/runtime/internal/runtime.NewSlice3
 reach github.com/goplus/llgo/runtime/internal/runtime.StringCat
@@ -61,7 +60,6 @@ reach github.com/goplus/llgo/runtime/internal/clite/debug.StackTrace$1
 reach github.com/goplus/llgo/runtime/internal/runtime.AllocZ
 reach github.com/goplus/llgo/runtime/internal/runtime.StringFromCStr
 reach llgo_addrinfo
-reach llgo_stacktrace
 
 pkg github.com/goplus/llgo/runtime/internal/clite/pthread
 reach github.com/goplus/llgo/runtime/internal/clite.init
@@ -156,7 +154,6 @@ reach exit
 reach fprintf
 reach fputc
 reach free
-reach fwrite
 reach github.com/goplus/llgo/runtime/abi.(*Type).Kind
 reach github.com/goplus/llgo/runtime/abi.(*Type).String
 reach github.com/goplus/llgo/runtime/abi.(*Type).Uncommon
@@ -180,7 +177,6 @@ reach github.com/goplus/llgo/runtime/internal/runtime.(*mutex).Lock
 reach github.com/goplus/llgo/runtime/internal/runtime.(*mutex).Unlock
 reach github.com/goplus/llgo/runtime/internal/runtime.AllocU
 reach github.com/goplus/llgo/runtime/internal/runtime.AllocZ
-reach github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange
 reach github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual
 reach github.com/goplus/llgo/runtime/internal/runtime.GetThreadDefer
 reach github.com/goplus/llgo/runtime/internal/runtime.GrowSlice
@@ -258,9 +254,6 @@ reach github.com/goplus/llgo/runtime/internal/runtime.strequal
 reach github.com/goplus/llgo/runtime/internal/runtime/goarch.init
 reach github.com/goplus/llgo/runtime/internal/runtime/math.MulUintptr
 reach github.com/goplus/llgo/runtime/internal/runtime/math.init
-reach llgoToFloat32
-reach llgoToFloat64
-reach malloc
 reach memcpy
 reach memset
 reach pthread_equal
@@ -272,7 +265,6 @@ reach pthread_setspecific
 reach rand
 reach siglongjmp
 reach srand
-reach strlen
 reach time
 
 pkg github.com/goplus/llgo/runtime/internal/runtime/goarch
