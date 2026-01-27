@@ -280,13 +280,43 @@ reloc(<kind>) <owner> -> <target>
   说明：接口类型符号是编译器生成的匿名接口描述符，名称带 hash 属预期行为。
 
 ### reflectmethod
-- 目的：反射方法访问（常量名与非常量名两种路径）。
+- 目的：最小的 `Value.MethodByName("Foo")` 常量路径。
 - 预期：  
-  - `reloc(usenamedmethod) reflectmethod.A -> __llgo_relocstr$...`（常量 `"Foo"`）  
-  - `reloc(reflectmethod) reflectmethod.A -> reflectmethod.A`（非静态名称/Method 索引）  
+  - `reloc(usenamedmethod) reflectmethod.A -> __llgo_relocstr$...`  
   - `reloc(useiface) reflectmethod.A -> _llgo_reflectmethod.T`  
   - 若干 `reloc(methodoff)` 指向 `T` 的方法表  
-  说明：反射访问需要保守保活导出方法，因此会出现 `reflectmethod` 标记；`MethodByName` 的常量参数会落为 `usenamedmethod`。
+  说明：常量字符串走 `usenamedmethod`，不需要 `reflectmethod` 标记。
+
+### reflectmethodvar
+- 目的：`Value.MethodByName(name)`（非静态字符串）。
+- 预期：  
+  - `reloc(reflectmethod) reflectmethodvar.A -> reflectmethodvar.A`  
+  - `reloc(useiface) reflectmethodvar.A -> _llgo_reflectmethodvar.T`  
+  - 若干 `reloc(methodoff)`  
+  说明：无法静态确定方法名时，保守用 `reflectmethod` 标记。
+
+### reflectmethodindex
+- 目的：`Value.Method(0)` 索引访问。
+- 预期：  
+  - `reloc(reflectmethod) reflectmethodindex.A -> reflectmethodindex.A`  
+  - `reloc(useiface) reflectmethodindex.A -> _llgo_reflectmethodindex.T`  
+  - 若干 `reloc(methodoff)`  
+  说明：索引访问同样需要保守保活导出方法。
+
+### reflecttypemethod
+- 目的：`Type.MethodByName("Foo")` 常量路径。
+- 预期：  
+  - `reloc(usenamedmethod) reflecttypemethod.A -> __llgo_relocstr$...`  
+  - `reloc(useiface) reflecttypemethod.A -> _llgo_reflecttypemethod.T`  
+  - 若干 `reloc(methodoff)`  
+  说明：`reflect.Type` 版本的 MethodByName 也应触发 `usenamedmethod`。
+
+### reflectcombo
+- 目的：混合 Value/Type + 常量/非常量 + 索引访问的组合场景。
+- 预期：  
+  - 同时出现 `reloc(reflectmethod)` 与 `reloc(usenamedmethod)`  
+  - 以及 `reloc(useiface)` 与若干 `reloc(methodoff)`  
+  说明：用于验证多条标记在同一函数内共存的情况。
 
 ---
 

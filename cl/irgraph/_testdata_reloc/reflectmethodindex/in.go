@@ -1,4 +1,4 @@
-package reflectmethod
+package reflectmethodindex
 
 import "reflect"
 
@@ -7,5 +7,5 @@ type T struct{}
 func (T) Foo() {}
 
 func A() {
-	_ = reflect.ValueOf(T{}).MethodByName("Foo")
+	_ = reflect.ValueOf(T{}).Method(0)
 }
