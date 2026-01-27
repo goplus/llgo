@@ -58,11 +58,11 @@ LLGo 的可达性分析需要具备**全局视角**，但工程实际编译流�
 - `Reachable map[SymID]bool`  
   可达性结果（当前已有）。
 
-- `DropMethods map[SymID]map[int]bool`  
-  记录“应当删除的类型方法条目”。  
+- `ReachableMethods map[SymID]map[int]bool`  
+  记录“需要保留的类型方法条目”。  
   key 为类型描述符符号（`_llgo_pkg.T`/`*_llgo_pkg.T`），  
-  value 为该类型 `abi.Method[]` 中需要清空的索引集合。  
-  IR 回写阶段将对这些条目执行：
+  value 为该类型 `abi.Method[]` 中可达的索引集合。  
+  IR 回写阶段可以反算删除集合（不在该集合里的方法条目），并执行：
   `Mtyp/Ifn/Tfn = null`，从而解除对函数的引用以便 DCE 生效。
 
 - `UsedInIface map[SymID]bool`  
