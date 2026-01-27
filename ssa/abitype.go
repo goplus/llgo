@@ -125,6 +125,61 @@ func (b Builder) rtClosure(name string) Expr {
 	return fn
 }
 
+func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
+	if b.Pkg == nil || !b.Prog.emitReloc || owner.IsNil() {
+		return
+	}
+	childVal := b.abiType(child).impl
+	b.Pkg.addReloc(relocTypeRef, owner, childVal, 0)
+}
+
+func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
+	if b.Pkg == nil || !b.Prog.emitReloc || owner.IsNil() {
+		return
+	}
+	ut := types.Unalias(t)
+	switch typ := ut.(type) {
+	case *types.Pointer:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Chan:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Slice:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Array:
+		b.recordTypeRef(owner, typ.Elem())
+		b.recordTypeRef(owner, types.NewSlice(typ.Elem()))
+	case *types.Map:
+		b.recordTypeRef(owner, typ.Key())
+		b.recordTypeRef(owner, typ.Elem())
+		bucket := b.Pkg.abi.MapBucket(typ)
+		b.recordTypeRef(owner, bucket)
+	case *types.Signature:
+		for i := 0; i < typ.Params().Len(); i++ {
+			b.recordTypeRef(owner, typ.Params().At(i).Type())
+		}
+		for i := 0; i < typ.Results().Len(); i++ {
+			b.recordTypeRef(owner, typ.Results().At(i).Type())
+		}
+	case *types.Struct:
+		for i := 0; i < typ.NumFields(); i++ {
+			b.recordTypeRef(owner, typ.Field(i).Type())
+		}
+	case *types.Interface:
+		n := typ.NumMethods()
+		for i := 0; i < n; i++ {
+			f := typ.Method(i)
+			ftyp := funcType(b.Prog, f.Type())
+			b.recordTypeRef(owner, ftyp)
+		}
+	case *types.Named:
+		b.recordTypeRefs(owner, typ.Underlying())
+		return
+	}
+	if _, ok := ut.(*types.Pointer); !ok {
+		b.recordTypeRef(owner, types.NewPointer(t))
+	}
+}
+
 /*
 type StructField struct {
 	Name_  string  // name is always non-empty
@@ -515,6 +570,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			typ = types.NewStruct(fields, nil)
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
+		b.recordTypeRefs(g.impl, t)
 		fields := b.abiCommonFields(t, name, hasUncommon)
 		if exts := b.abiExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{

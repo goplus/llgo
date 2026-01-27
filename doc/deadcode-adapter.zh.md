@@ -61,6 +61,10 @@ LLGo 的可达性分析需要具备**全局视角**，但工程实际编译流�
 - `UsedInIface map[SymID]bool`  
   标记“类型被用于接口转换”的集合。  
   当 flood 遇到 `reloc(useiface)` 时，需要写入该集合，并触发对该类型的重新扫描。
+  同时，方法表中的 **方法类型描述符（Mtyp）** 也可能被标记为 `UsedInIface`：
+  当遇到 `reloc(methodoff)` 且当前类型已 `UsedInIface` 时，
+  会把 Mtyp 视作“可经由反射继续访问的类型”，同样进入该集合并重新扫描。
+  也就是说：**类型符号与方法类型符号都会作为 UsedInIface 的 key**。
 
 - `IfaceMethod map[MethodSig]bool`  
   记录“被调用过的接口方法签名”（方法名 + 方法类型）。  
@@ -69,6 +73,8 @@ LLGo 的可达性分析需要具备**全局视角**，但工程实际编译流�
 - `GenericIfaceMethod map[string]bool`  
   记录“按名字调用的接口方法”（泛型接口/MethodByName 场景）。  
   对应 `reloc(usenamedmethod)`：只保存方法名字符串，用于后续按名字保活导出方法。
+  在 irgraph 中该类边的 target 会以 `_mname:` 前缀表示（如 `_mname:Foo`），
+  deadcode 解析时需要去掉前缀后再写入该集合。
 
 **MethodSig 结构（接口方法签名）**：
 
@@ -93,5 +99,23 @@ type MethodSig struct {
 
 这一步的意义：  
 **“类型在可达的情况下，被用作接口”**，必须触发一次“按接口语义”的重新遍历。
+
+## UsedInIface 的“子类型”传播（说明）
+
+当一个类型被标记为 `UsedInIface` 时，还需要把它的**子类型**也带着该标记重新扫描。  
+这里的“子类型”不是继承关系，而是 **类型描述符里直接引用的类型**：
+
+- `[]T` 的子类型：`T`
+- `chan T` 的子类型：`T`
+- `map[K]V` 的子类型：`K`、`V`
+- `struct{F T}` 的子类型：`T`
+- 方法签名里的参数/返回类型（可通过反射继续访问）
+
+这些关系在二进制里表现为 **类型元数据中的指针/重定位**（A 类型描述符里指向 B 类型描述符）。  
+因此 deadcode 在扫描类型符号时，可以沿这些 reloc 继续遍历，并给子类型也打上 `UsedInIface`。
+
+这样做的原因是：  
+通过反射可以从“父类型”继续拿到子类型（例如从 `[]chan T` 得到 `chan T` 再到 `T`），  
+所以必须保证子类型也进入接口语义的可达性分析。
 
 > 调试建议：deadcode 的结果结构体可额外保存 `UsedInIface` 集合（以及可选的 parent 依赖），用于输出/诊断。

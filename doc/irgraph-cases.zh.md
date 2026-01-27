@@ -24,6 +24,7 @@ reloc(<kind>) <owner> -> <target>
 - `useifacemethod`：接口方法调用
 - `usenamedmethod`：通过名称查找的方法（如 `MethodByName("Foo")`）
 - `reflectmethod`：反射方法访问（保守保活导出方法）
+- `typeref`：类型描述符中的子类型引用（如 slice/array/map/struct 等）
 - `methodoff`：类型方法表中的方法项（Ifn/Tfn/Mtyp）
 
 补充说明（`ref` 的来源）：
@@ -317,6 +318,15 @@ reloc(<kind>) <owner> -> <target>
   - 同时出现 `reloc(reflectmethod)` 与 `reloc(usenamedmethod)`  
   - 以及 `reloc(useiface)` 与若干 `reloc(methodoff)`  
   说明：用于验证多条标记在同一函数内共存的情况。
+
+### typeref
+- 目的：验证类型描述符中“父类型 → 子类型”的引用关系。
+- 预期：  
+  - `reloc(typeref) _llgo_typeref.Outer -> _llgo_typeref.Inner`  
+  - `reloc(typeref) _llgo_typeref.Outer -> []_llgo_typeref.Inner`  
+  - `reloc(typeref) _llgo_typeref.Outer -> *_llgo_typeref.Inner`  
+  - 以及 map/array 相关的子类型引用  
+  说明：该用例用于确认 abiType 生成时已显式记录子类型关系。
 
 ---
 
