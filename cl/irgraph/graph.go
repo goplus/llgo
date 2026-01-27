@@ -266,7 +266,7 @@ const (
 	relocReflectMethod  = 5
 )
 
-const methodNamePrefix = "methodname:"
+const methodNamePrefix = "_mname:"
 
 func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 	relocs := mod.NamedGlobal("__llgo_relocs")
