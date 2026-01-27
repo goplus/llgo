@@ -282,7 +282,7 @@ reloc(<kind>) <owner> -> <target>
 ### reflectmethod
 - 目的：最小的 `Value.MethodByName("Foo")` 常量路径。
 - 预期：  
-  - `reloc(usenamedmethod) reflectmethod.A -> methodname:Foo`  
+  - `reloc(usenamedmethod) reflectmethod.A -> _mname:Foo`  
   - `reloc(useiface) reflectmethod.A -> _llgo_reflectmethod.T`  
   - 若干 `reloc(methodoff)` 指向 `T` 的方法表  
   说明：常量字符串走 `usenamedmethod`，不需要 `reflectmethod` 标记。
@@ -306,7 +306,7 @@ reloc(<kind>) <owner> -> <target>
 ### reflecttypemethod
 - 目的：`Type.MethodByName("Foo")` 常量路径。
 - 预期：  
-  - `reloc(usenamedmethod) reflecttypemethod.A -> methodname:Foo`  
+  - `reloc(usenamedmethod) reflecttypemethod.A -> _mname:Foo`  
   - `reloc(useiface) reflecttypemethod.A -> _llgo_reflecttypemethod.T`  
   - 若干 `reloc(methodoff)`  
   说明：`reflect.Type` 版本的 MethodByName 也应触发 `usenamedmethod`。

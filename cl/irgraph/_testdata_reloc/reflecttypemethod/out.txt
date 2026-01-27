@@ -908,5 +908,5 @@ reloc(methodoff) _llgo_reflecttypemethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0Iv
 reloc(methodoff) _llgo_reflecttypemethod.T -> reflecttypemethod.(*T).Foo
 reloc(methodoff) _llgo_reflecttypemethod.T -> reflecttypemethod.T.Foo
 reloc(useiface) reflecttypemethod.A -> _llgo_reflecttypemethod.T
-reloc(usenamedmethod) reflecttypemethod.A -> methodname:Foo
+reloc(usenamedmethod) reflecttypemethod.A -> _mname:Foo
 reloc(useifacemethod) reflecttypemethod.A -> reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790

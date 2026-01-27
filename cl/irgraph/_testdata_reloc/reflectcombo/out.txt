@@ -908,6 +908,6 @@ reloc(methodoff) _llgo_reflectcombo.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9Hv
 reloc(methodoff) _llgo_reflectcombo.T -> reflectcombo.(*T).Foo
 reloc(methodoff) _llgo_reflectcombo.T -> reflectcombo.T.Foo
 reloc(useiface) reflectcombo.A -> _llgo_reflectcombo.T
-reloc(usenamedmethod) reflectcombo.A -> methodname:Foo
+reloc(usenamedmethod) reflectcombo.A -> _mname:Foo
 reloc(reflectmethod) reflectcombo.A -> reflectcombo.A
 reloc(useifacemethod) reflectcombo.A -> reflectcombo.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790

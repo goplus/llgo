@@ -4,4 +4,4 @@ reloc(methodoff) _llgo_reflectmethod.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9H
 reloc(methodoff) _llgo_reflectmethod.T -> reflectmethod.(*T).Foo
 reloc(methodoff) _llgo_reflectmethod.T -> reflectmethod.T.Foo
 reloc(useiface) reflectmethod.A -> _llgo_reflectmethod.T
-reloc(usenamedmethod) reflectmethod.A -> methodname:Foo
+reloc(usenamedmethod) reflectmethod.A -> _mname:Foo
