@@ -165,6 +165,17 @@ func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
 }
 
 func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
+	// Some low-level runtime/C symbols can vary by toolchain/linker flags,
+	// so keep tests stable by ignoring them.
+	ignoredReach := map[string]struct{}{
+		"llgoToFloat32": {},
+		"llgoToFloat64": {},
+		"llgo_stacktrace": {},
+		"malloc": {},
+		"fwrite": {},
+		"strlen": {},
+		"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange": {},
+	}
 	pkgPaths := make([]string, 0, len(pkgs))
 	pkgMap := make(map[string]build.Package, len(pkgs))
 	for _, pkg := range pkgs {
@@ -193,6 +204,9 @@ func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 		var reachable []string
 		for _, sym := range syms {
 			if res.Reachable[irgraph.SymID(sym)] {
+				if _, ok := ignoredReach[sym]; ok {
+					continue
+				}
 				reachable = append(reachable, sym)
 			}
 		}
