@@ -23,34 +23,63 @@ type Result struct {
 	Reachable map[irgraph.SymID]bool
 }
 
+type deadcodePass struct {
+	graph     *irgraph.Graph
+	reachable map[irgraph.SymID]bool
+	queue     []irgraph.SymID
+	edgeMask  irgraph.EdgeKind
+}
+
 // Analyze computes reachability from roots using edges masked by edgeMask.
 // If edgeMask is zero, it defaults to call+ref edges.
 func Analyze(g *irgraph.Graph, roots []irgraph.SymID, edgeMask irgraph.EdgeKind) Result {
+	pass := newDeadcodePass(g, edgeMask, len(roots))
+	pass.markRoots(roots)
+	pass.flood()
+	return Result{Reachable: pass.reachable}
+}
+
+func newDeadcodePass(g *irgraph.Graph, edgeMask irgraph.EdgeKind, rootCount int) *deadcodePass {
 	if edgeMask == 0 {
 		edgeMask = irgraph.EdgeCall | irgraph.EdgeRef
 	}
-	reachable := make(map[irgraph.SymID]bool)
-	queue := make([]irgraph.SymID, 0, len(roots))
+	return &deadcodePass{
+		graph:     g,
+		reachable: make(map[irgraph.SymID]bool),
+		queue:     make([]irgraph.SymID, 0, rootCount),
+		edgeMask:  edgeMask,
+	}
+}
+
+func (d *deadcodePass) markRoots(roots []irgraph.SymID) {
 	for _, root := range roots {
-		if root == "" || reachable[root] {
+		if root == "" {
 			continue
 		}
-		reachable[root] = true
-		queue = append(queue, root)
+		d.mark(root)
 	}
-	for len(queue) > 0 {
-		cur := queue[0]
-		queue = queue[1:]
-		for to, kind := range g.Edges[cur] {
-			if kind&edgeMask == 0 {
+}
+
+func (d *deadcodePass) mark(sym irgraph.SymID) {
+	if sym == "" {
+		return
+	}
+	if d.reachable[sym] {
+		return
+	}
+	d.reachable[sym] = true
+	d.queue = append(d.queue, sym)
+}
+
+func (d *deadcodePass) flood() {
+	for len(d.queue) > 0 {
+		cur := d.queue[0]
+		d.queue = d.queue[1:]
+		for to, kind := range d.graph.Edges[cur] {
+			if kind&d.edgeMask == 0 {
 				continue
 			}
-			if reachable[to] {
-				continue
-			}
-			reachable[to] = true
-			queue = append(queue, to)
+			d.mark(to)
 		}
 	}
-	return Result{Reachable: reachable}
 }
