@@ -95,7 +95,8 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 	if len(relocs) == 0 {
 		return
 	}
-	for _, r := range relocs {
+	for i := 0; i < len(relocs); i++ {
+		r := relocs[i]
 		switch r.Kind {
 		case irgraph.EdgeRelocUseIface:
 			d.markUsedInIface(r.Target)
@@ -103,6 +104,17 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 			if d.usedInIface[owner] {
 				d.markUsedInIface(r.Target)
 			}
+		case irgraph.EdgeRelocMethodOff:
+			if !d.usedInIface[owner] {
+				continue
+			}
+			if i+2 >= len(relocs) {
+				panic("expect three consecutive reloc(methodoff) entries")
+			}
+			// The first reloc(methodoff) in each triple points to the method
+			// type descriptor; mark it as UsedInIface so its child types are visited.
+			d.markUsedInIface(r.Target)
+			i += 2
 		}
 	}
 }
