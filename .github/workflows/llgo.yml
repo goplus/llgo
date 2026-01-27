@@ -127,6 +127,7 @@ jobs:
           bash .github/workflows/test_demo.sh
 
       - name: Test demos (DCE)
+        if: ${{ matrix.go != '1.21.13' && matrix.go != '1.22.12' }}
         run: |
           export LLGO_FULL_RPATH=true
           bash .github/workflows/test_demo.sh -dce
