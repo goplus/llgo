@@ -117,6 +117,49 @@ func TestUsedInIfacePropagation(t *testing.T) {
 	}
 }
 
+func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
+	// Simulated shape:
+	//   type InterfaceX interface { MethodA(); MethodB() }
+	//   type TypeA struct{ /* ... */ }
+	//   func CallSite() { var a TypeA; var i InterfaceX = a }
+	//
+	// Relocs:
+	// - useiface: CallSite -> TypeA
+	// - methodoff (triples): TypeA -> MethodAType/MethodAIfn/MethodATfn
+	//                         TypeA -> MethodBType/MethodBIfn/MethodBTfn
+	g := &irgraph.Graph{
+		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
+			"main":     {"CallSite": irgraph.EdgeCall},
+			"CallSite": {"TypeA": irgraph.EdgeRef},
+		},
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodATfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodBType", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeA", Target: "MethodBIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeA", Target: "MethodBTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	if !res.UsedInIface["TypeA"] {
+		t.Fatalf("expected UsedInIface to include TypeA")
+	}
+	if !res.UsedInIface["MethodAType"] {
+		t.Fatalf("expected UsedInIface to include MethodAType")
+	}
+	if !res.UsedInIface["MethodBType"] {
+		t.Fatalf("expected UsedInIface to include MethodBType")
+	}
+	if res.UsedInIface["MethodAIfn"] || res.UsedInIface["MethodATfn"] {
+		t.Fatalf("expected method function pointers to stay out of UsedInIface")
+	}
+	if res.UsedInIface["MethodBIfn"] || res.UsedInIface["MethodBTfn"] {
+		t.Fatalf("expected method function pointers to stay out of UsedInIface")
+	}
+}
+
 func assertReachable(t *testing.T, res Result, syms ...string) {
 	t.Helper()
 	want := make([]string, 0, len(syms))
