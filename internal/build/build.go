@@ -1042,6 +1042,11 @@ func dumpAbiTypeMetadata(mod llvm.Module, bcPath string, verbose bool) {
 	if !verbose || mod.IsNil() {
 		return
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(os.Stderr, "[bc-pass] skip abi.Type scan (panic: %v) on %s\n", r, bcPath)
+		}
+	}()
 
 	totalGlobals := 0
 	matchedGlobals := 0
