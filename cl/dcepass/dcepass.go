@@ -83,6 +83,10 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 		if init.IsNil() {
 			continue
 		}
+		// Skip runtime/reflect/iface-related metadata to avoid breaking core paths.
+		if strings.Contains(g.Name(), "runtime/") || strings.Contains(g.Name(), "reflect/") || strings.Contains(g.Name(), "_llgo_iface$") {
+			continue
+		}
 		methodsVal, elemTy, ok := methodArray(init)
 		if !ok {
 			continue
