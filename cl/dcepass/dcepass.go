@@ -17,8 +17,6 @@
 package dcepass
 
 import (
-	"strings"
-
 	"github.com/goplus/llgo/cl/deadcode"
 	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llvm"
@@ -26,10 +24,10 @@ import (
 
 // Stats reports basic DCE pass metrics.
 type Stats struct {
-	Reachable     int
-	DroppedFuncs  int
-	DroppedGlobal int
-	DroppedMethod int
+	Reachable           int
+	DroppedFuncs        int
+	DroppedGlobal       int
+	DroppedMethod       int
 	DroppedMethodDetail map[irgraph.SymID][]int
 }
 
@@ -42,36 +40,13 @@ type Options struct{}
 // Method table/reloc-aware pruning is handled in later stages.
 func Apply(mod llvm.Module, res deadcode.Result, _ Options) Stats {
 	stats := Stats{
-		Reachable:            len(res.Reachable),
-		DroppedMethodDetail:  make(map[irgraph.SymID][]int),
+		Reachable:           len(res.Reachable),
+		DroppedMethodDetail: make(map[irgraph.SymID][]int),
 	}
 	if mod.IsNil() {
 		return stats
 	}
 	stats.DroppedMethod, stats.DroppedMethodDetail = clearUnreachableMethods(mod, res.ReachableMethods)
-	for fn := mod.FirstFunction(); !fn.IsNil(); {
-		next := llvm.NextFunction(fn)
-		name := fn.Name()
-		if name == "" {
-			fn = next
-			continue
-		}
-		if fn.IsDeclaration() {
-			fn = next
-			continue
-		}
-		if fn.IntrinsicID() != 0 || strings.HasPrefix(name, "llvm.") {
-			fn = next
-			continue
-		}
-		if res.Reachable[irgraph.SymID(name)] {
-			fn = next
-			continue
-		}
-		demoteToDecl(mod, fn)
-		stats.DroppedFuncs++
-		fn = next
-	}
 	return stats
 }
 
