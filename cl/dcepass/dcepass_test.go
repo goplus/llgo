@@ -69,6 +69,44 @@ func TestClearUnreachableMethods(t *testing.T) {
 	}
 }
 
+func TestApplyIfacemethodDCE(t *testing.T) {
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	in := filepath.Join("testll", "ifacemethoddce", "test.ll")
+	raw, err := os.ReadFile(in)
+	if err != nil {
+		t.Fatalf("read ll: %v", err)
+	}
+	buf, err := llvm.NewMemoryBufferFromFile(in)
+	if err != nil {
+		t.Fatalf("memory buffer: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("parse ll: %v", err)
+	}
+
+	res := deadcode.Result{
+		Reachable: make(map[irgraph.SymID]bool),
+		ReachableMethods: map[irgraph.SymID]map[int]bool{
+			"_llgo_github.com/goplus/llgo/cl/deadcode/_testdata/ifacemethod.T":  {0: true},
+			"*_llgo_github.com/goplus/llgo/cl/deadcode/_testdata/ifacemethod.T": {0: true},
+		},
+	}
+	stats := Apply(mod, res, Options{})
+	if stats.DroppedMethod == 0 {
+		t.Fatalf("expected some methods to be dropped")
+	}
+
+	origLine := firstModuleLine(string(raw))
+	outText := fixModuleID(mod.String(), origLine)
+	out := filepath.Join("testll", "ifacemethoddce", "out.ll")
+	if err := os.WriteFile(out, []byte(outText), 0o644); err != nil {
+		t.Fatalf("write out.ll: %v", err)
+	}
+}
+
 func firstModuleLine(s string) string {
 	for _, line := range strings.SplitN(s, "\n", 3) {
 		if strings.HasPrefix(line, "; ModuleID =") {
