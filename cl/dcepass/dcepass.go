@@ -30,6 +30,7 @@ type Stats struct {
 	DroppedFuncs  int
 	DroppedGlobal int
 	DroppedMethod int
+	DroppedMethodDetail map[irgraph.SymID][]int
 }
 
 // Options controls the DCE pass behavior.
@@ -40,11 +41,14 @@ type Options struct{}
 // Note: This removes bodies of unreachable functions and marks them external.
 // Method table/reloc-aware pruning is handled in later stages.
 func Apply(mod llvm.Module, res deadcode.Result, _ Options) Stats {
-	stats := Stats{Reachable: len(res.Reachable)}
+	stats := Stats{
+		Reachable:            len(res.Reachable),
+		DroppedMethodDetail:  make(map[irgraph.SymID][]int),
+	}
 	if mod.IsNil() {
 		return stats
 	}
-	stats.DroppedMethod = clearUnreachableMethods(mod, res.ReachableMethods)
+	stats.DroppedMethod, stats.DroppedMethodDetail = clearUnreachableMethods(mod, res.ReachableMethods)
 	for fn := mod.FirstFunction(); !fn.IsNil(); {
 		next := llvm.NextFunction(fn)
 		name := fn.Name()
@@ -94,11 +98,12 @@ func demoteToDecl(mod llvm.Module, fn llvm.Value) {
 // clearUnreachableMethods zeros Mtyp/Ifn/Tfn for unreachable methods in type
 // metadata constants based on reach.Methods. It returns the number of cleared
 // method entries.
-func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map[int]bool) int {
+func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map[int]bool) (int, map[irgraph.SymID][]int) {
 	if len(reachMethods) == 0 {
-		return 0
+		return 0, nil
 	}
 	dropped := 0
+	detail := make(map[irgraph.SymID][]int)
 	for sym, keepIdx := range reachMethods {
 		g := mod.NamedGlobal(string(sym))
 		if g.IsNil() {
@@ -134,6 +139,7 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 			newMethods[i] = zeroed
 			changed = true
 			dropped++
+			detail[sym] = append(detail[sym], i)
 		}
 		if !changed {
 			continue
@@ -147,5 +153,5 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 		newInit := llvm.ConstStruct(fields, false)
 		g.SetInitializer(newInit)
 	}
-	return dropped
+	return dropped, detail
 }

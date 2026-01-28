@@ -1263,6 +1263,16 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 						fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
 					}
 				}
+				if len(stats.DroppedMethodDetail) > 0 {
+					for typ, idxs := range stats.DroppedMethodDetail {
+						list := make([]string, len(idxs))
+						for i, v := range idxs {
+							list[i] = fmt.Sprintf("%d", v)
+						}
+						sort.Strings(list)
+						fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
+					}
+				}
 			}
 			llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
 			if err != nil {
