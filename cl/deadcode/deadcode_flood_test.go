@@ -211,6 +211,55 @@ func TestMethodOffIgnoredWhenCallsiteUnreachable(t *testing.T) {
 	}
 }
 
+func TestMarkableMethodsMultipleTypes(t *testing.T) {
+	// Simulated shape:
+	//   type InterfaceX interface { MethodA(); MethodB() }
+	//   type InterfaceY interface { MethodC() }
+	//   type TypeA struct{ /* ... */ }
+	//   type TypeB struct{ /* ... */ } // also has MethodD not in InterfaceY
+	//   func CallSiteA() { var a TypeA; var i InterfaceX = a }
+	//   func CallSiteB() { var b TypeB; var j InterfaceY = b }
+	//
+	// Method index mapping (from methodoff addend):
+	//   TypeA idx=0 -> MethodA
+	//   TypeA idx=1 -> MethodB
+	//   TypeB idx=0 -> MethodC
+	//   TypeB idx=1 -> MethodD (not required by InterfaceY)
+	//
+	// This mirrors Go's deadcode strategy: once a type is seen to be
+	// used-in-interface, we collect its full method list as "markable"
+	// candidates. Filtering down to only the interface-used methods
+	// happens in later phases.
+	g := &irgraph.Graph{
+		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
+			"main":      {"CallSiteA": irgraph.EdgeCall, "CallSiteB": irgraph.EdgeCall},
+			"CallSiteA": {"TypeA": irgraph.EdgeRef},
+			"CallSiteB": {"TypeB": irgraph.EdgeRef},
+		},
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "CallSiteA", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "CallSiteB", Target: "TypeB", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodATfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodBType", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeA", Target: "MethodBIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeA", Target: "MethodBTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeB", Target: "MethodCType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeB", Target: "MethodCIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeB", Target: "MethodCTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeB", Target: "MethodDType", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeB", Target: "MethodDIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeB", Target: "MethodDTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	assertMarkableMethods(t, res, map[string][]int{
+		"TypeA": {0, 1},
+		"TypeB": {0, 1},
+	})
+}
+
 func assertReachable(t *testing.T, res Result, syms ...string) {
 	t.Helper()
 	want := make([]string, 0, len(syms))
