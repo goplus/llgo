@@ -125,9 +125,9 @@ func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
 	for _, node := range cg.Nodes {
 		for _, out := range node.Out {
 			if out.Callee != nil && out.Callee.Func != nil {
-				if out.Site == nil || out.Site.Common().IsInvoke() {
-					invoked[out.Callee.Func] = true
-				}
+				//if out.Site == nil || out.Site.Common().IsInvoke() {
+				invoked[out.Callee.Func] = true
+				//}
 			}
 		}
 	}

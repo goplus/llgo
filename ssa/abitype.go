@@ -431,6 +431,8 @@ func (b Builder) abiUncommonMethods(t types.Type, name string, mset *types.Metho
 		if !token.IsExported(mName) {
 			name = b.Str(abi.FullName(mPkg, mName)).impl
 			skipfn = PathOf(mPkg) != pkgPath
+		} else if prog.abiTypePruning {
+			skipfn = !prog.methodIsInvoke(m, false)
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
@@ -439,22 +441,9 @@ func (b Builder) abiUncommonMethods(t types.Type, name string, mset *types.Metho
 			ifn = tfn
 		} else {
 			_, isPointerRecv := m.Recv().Underlying().(*types.Pointer)
-			var skiptfn, skipifn bool
-			if prog.abiTypePruning {
-				if !prog.methodIsInvoke(m, false) {
-					skiptfn = true
-				}
-				if !isPointerRecv && prog.methodIsInvoke(m, true) {
-					skipifn = true
-				}
-			}
-			if skiptfn {
-				tfn = prog.Nil(prog.VoidPtr()).impl
-			} else {
-				tfn = b.abiMethodFunc(anonymous, pkg, mPkg, mName, mSig)
-			}
+			tfn = b.abiMethodFunc(anonymous, pkg, mPkg, mName, mSig)
 			ifn = tfn
-			if !isPointerRecv && !skipifn {
+			if !isPointerRecv {
 				pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
 				pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
 				ifn = b.abiMethodFunc(anonymous, pkg, mPkg, mName, pSig)
@@ -485,9 +474,7 @@ func (b Builder) abiMethodFunc(anonymous bool, pkg, mPkg *types.Package, mName s
 	} else {
 		fullName = FuncName(mPkg, mName, mSig.Recv(), false)
 	}
-	if b.Pkg.fnlink != nil {
-		fullName = b.Pkg.fnlink(fullName)
-	}
+	fullName = b.Prog.resolveLinkname(fullName)
 	return b.Pkg.NewFunc(fullName, mSig, InGo).impl // TODO(xsw): use rawType to speed up
 }
 

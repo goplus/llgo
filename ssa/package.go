@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
@@ -314,6 +315,17 @@ func (p Program) SetLinkname(name, link string) {
 func (p Program) Linkname(name string) (link string, ok bool) {
 	link, ok = p.linkname[name]
 	return
+}
+
+func (p Program) resolveLinkname(name string) string {
+	if link, ok := p.linkname[name]; ok {
+		prefix, ltarget, _ := strings.Cut(link, ".")
+		if prefix != "C" {
+			panic("resolveLinkname: invalid link: " + link)
+		}
+		return ltarget
+	}
+	return name
 }
 
 func (p Program) runtime() *types.Package {
@@ -687,7 +699,6 @@ type aPackage struct {
 	pymods map[string]Global
 	strs   map[string]llvm.Value
 	goStrs map[string]llvm.Value
-	fnlink func(string) string
 
 	iRoutine int
 
@@ -758,11 +769,6 @@ func (p Package) Path() string {
 // String returns a string representation of the package.
 func (p Package) String() string {
 	return p.mod.String()
-}
-
-// SetResolveLinkname sets a function to resolve linkname.
-func (p Package) SetResolveLinkname(fn func(string) string) {
-	p.fnlink = fn
 }
 
 // -----------------------------------------------------------------------------
