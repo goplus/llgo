@@ -1241,7 +1241,12 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			}
 			stats := dcepass.Apply(merged, res, dcepass.Options{})
 			if verbose {
-				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d)\n", stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal)
+				rmCount := 0
+				for _, m := range res.ReachableMethods {
+					rmCount += len(m)
+				}
+				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d reachable_methods=%d dropped_methods=%d)\n",
+					stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal, rmCount, stats.DroppedMethod)
 			}
 			llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
 			if err != nil {
