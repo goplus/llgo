@@ -252,27 +252,15 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 		seen[line] = struct{}{}
 		lines = append(lines, line)
 	}
-	for from, tos := range g.Edges {
-		for to, kind := range tos {
-			if kind&EdgeCall != 0 && mask&EdgeCall != 0 {
-				addLine(kindLabel(EdgeCall), string(from), string(to))
-			}
-			if kind&EdgeRef != 0 && mask&EdgeRef != 0 {
-				addLine(kindLabel(EdgeRef), string(from), string(to))
-			}
+	for _, r := range g.Relocs {
+		if r.Kind&mask == 0 {
+			continue
 		}
-	}
-	if mask&EdgeRelocMask != 0 {
-		for _, r := range g.Relocs {
-			if r.Kind&mask == 0 {
-				continue
-			}
-			label := kindLabel(r.Kind)
-			if r.Kind == EdgeRelocMethodOff {
-				label = fmt.Sprintf("reloc(methodoff idx=%d)", r.Addend)
-			}
-			addLine(label, string(r.Owner), string(r.Target))
+		label := kindLabel(r.Kind)
+		if r.Kind == EdgeRelocMethodOff {
+			label = fmt.Sprintf("reloc(methodoff idx=%d)", r.Addend)
 		}
+		addLine(label, string(r.Owner), string(r.Target))
 	}
 	sort.Strings(lines)
 	var buf bytes.Buffer
@@ -286,9 +274,9 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 func kindLabel(kind EdgeKind) string {
 	switch kind {
 	case EdgeCall:
-		return "call"
+		return "reloc(directcall)"
 	case EdgeRef:
-		return "ref"
+		return "reloc(directref)"
 	case EdgeRelocUseIface:
 		return "reloc(useiface)"
 	case EdgeRelocUseIfaceMethod:

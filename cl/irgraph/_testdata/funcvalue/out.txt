@@ -1,2 +1,2 @@
-call funcvalue.A -> funcvalue.B
-ref funcvalue.init -> funcvalue.init$guard
+reloc(directcall) funcvalue.A -> funcvalue.B
+reloc(directref) funcvalue.init -> funcvalue.init$guard

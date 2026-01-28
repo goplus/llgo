@@ -168,12 +168,12 @@ func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 	// Some low-level runtime/C symbols can vary by toolchain/linker flags,
 	// so keep tests stable by ignoring them.
 	ignoredReach := map[string]struct{}{
-		"llgoToFloat32": {},
-		"llgoToFloat64": {},
+		"llgoToFloat32":   {},
+		"llgoToFloat64":   {},
 		"llgo_stacktrace": {},
-		"malloc": {},
-		"fwrite": {},
-		"strlen": {},
+		"malloc":          {},
+		"fwrite":          {},
+		"strlen":          {},
 		"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange": {},
 	}
 	pkgPaths := make([]string, 0, len(pkgs))
@@ -250,7 +250,6 @@ func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
 		if merged == nil {
 			merged = &irgraph.Graph{
 				Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
-				Edges:  make(map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind),
 				Relocs: nil,
 			}
 		}
@@ -259,14 +258,6 @@ func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
 				continue
 			}
 			merged.Nodes[id] = node
-		}
-		for from, tos := range pkg.IRGraph.Edges {
-			if merged.Edges[from] == nil {
-				merged.Edges[from] = make(map[irgraph.SymID]irgraph.EdgeKind)
-			}
-			for to, kind := range tos {
-				merged.Edges[from][to] |= kind
-			}
 		}
 		if len(pkg.IRGraph.Relocs) != 0 {
 			merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
@@ -286,26 +277,20 @@ func dumpGraphSummary(t *testing.T, pkg build.Package) {
 		return
 	}
 	var callCnt, refCnt, relocCnt int
-	for _, tos := range g.Edges {
-		for _, kind := range tos {
-			if kind&irgraph.EdgeCall != 0 {
-				callCnt++
-			}
-			if kind&irgraph.EdgeRef != 0 {
-				refCnt++
-			}
-			if kind&irgraph.EdgeRelocMask != 0 {
-				relocCnt++
-			}
+	for _, r := range g.Relocs {
+		if r.Kind&irgraph.EdgeCall != 0 {
+			callCnt++
+		}
+		if r.Kind&irgraph.EdgeRef != 0 {
+			refCnt++
+		}
+		if r.Kind&irgraph.EdgeRelocMask != 0 {
+			relocCnt++
 		}
 	}
 	t.Logf("[deadcode] pkg %s: nodes=%d edges=%d call=%d ref=%d reloc=%d", name, len(g.Nodes), countEdges(g), callCnt, refCnt, relocCnt)
 }
 
 func countEdges(g *irgraph.Graph) int {
-	total := 0
-	for _, tos := range g.Edges {
-		total += len(tos)
-	}
-	return total
+	return len(g.Relocs)
 }
