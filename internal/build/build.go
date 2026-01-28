@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"unsafe"
@@ -1252,6 +1253,16 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				}
 				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d reachable_methods=%d dropped_methods=%d)\n",
 					stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal, rmCount, stats.DroppedMethod)
+				if rmCount > 0 {
+					for typ, idxs := range res.ReachableMethods {
+						var list []string
+						for idx := range idxs {
+							list = append(list, fmt.Sprintf("%d", idx))
+						}
+						sort.Strings(list)
+						fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
+					}
+				}
 			}
 			llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
 			if err != nil {
