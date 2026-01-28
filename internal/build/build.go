@@ -1299,7 +1299,12 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				merged.Dispose()
 				return fmt.Errorf("missing DCE module .ll output")
 			}
-			dumpAbiTypeMetadata(merged, dceLLName, verbose)
+			// NOTE: after the DCE pass the merged module may contain mutated
+			// constants that occasionally trip LLVM type walkers. Skip the
+			// ABI metadata dump in DCE mode to avoid crashes during verbose runs.
+			if !ctx.buildConf.DCE {
+				dumpAbiTypeMetadata(merged, dceLLName, verbose)
+			}
 
 			combinedObj := strings.TrimSuffix(dceLLName, ".ll") + ".o"
 			args := []string{"-o", combinedObj, "-c", dceLLName, "-Wno-override-module"}
