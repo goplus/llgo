@@ -107,7 +107,8 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 				continue
 			}
 			nameField := orig.Operand(0)
-			zeroed := llvm.ConstStruct([]llvm.Value{nameField, zeroPtr, zeroPtr, zeroPtr}, false)
+			mtypField := orig.Operand(1) // keep signature for matching
+			zeroed := llvm.ConstStruct([]llvm.Value{nameField, mtypField, zeroPtr, zeroPtr}, false)
 			newMethods[i] = zeroed
 			changed = true
 			dropped++

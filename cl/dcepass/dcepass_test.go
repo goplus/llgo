@@ -57,7 +57,7 @@ func TestClearUnreachableMethods(t *testing.T) {
 	if m0.Operand(1).IsNull() || m0.Operand(2).IsNull() || m0.Operand(3).IsNull() {
 		t.Fatalf("reachable method cleared unexpectedly")
 	}
-	if !m1.Operand(1).IsNull() || !m1.Operand(2).IsNull() || !m1.Operand(3).IsNull() {
+	if m1.Operand(1).IsNull() || !m1.Operand(2).IsNull() || !m1.Operand(3).IsNull() {
 		t.Fatalf("unreachable method not cleared")
 	}
 
