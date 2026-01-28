@@ -1,19 +1,12 @@
-pkg github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg
+reach __llgo_argc
+reach __llgo_argv
+reach _start
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.init
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.init$guard
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.main
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.A
-reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.init
-
-pkg github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg.main
-reach __llgo_argc
-reach __llgo_argv
-reach _start
-reach main
-reach runtime.init
-
-pkg github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo
-reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.A
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.B
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.init
 reach github.com/goplus/llgo/cl/deadcode/_testdata/crosspkg/foo.init$guard
+reach main
+reach runtime.init
