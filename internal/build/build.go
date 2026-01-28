@@ -1245,6 +1245,17 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
 				fmt.Fprintln(os.Stderr, "[dce] pass begin")
 			}
+
+			prePassLL := ""
+			if verbose {
+				if f, err := os.CreateTemp("", "llgo-dce-pre-*.ll"); err == nil {
+					_, _ = f.WriteString(merged.String())
+					f.Close()
+					prePassLL = f.Name()
+					fmt.Fprintf(os.Stderr, "[dce] module ll (pre): %s\n", prePassLL)
+				}
+			}
+
 			stats := dcepass.Apply(merged, res, dcepass.Options{})
 			if verbose {
 				rmCount := 0
@@ -1290,7 +1301,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			}
 			dceLLName = llFile.Name()
 			if verbose {
-				fmt.Fprintf(os.Stderr, "[dce] module ll: %s\n", dceLLName)
+				fmt.Fprintf(os.Stderr, "[dce] module ll (post): %s\n", dceLLName)
 			}
 		}
 
