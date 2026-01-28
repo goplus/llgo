@@ -1,2 +1,2 @@
-call recursion.A -> recursion.A
-ref recursion.init -> recursion.init$guard
+reloc(directcall) recursion.A -> recursion.A
+reloc(directref) recursion.init -> recursion.init$guard

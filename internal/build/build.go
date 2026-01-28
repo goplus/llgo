@@ -1126,18 +1126,16 @@ func graphSummary(g *irgraph.Graph) (nodes, edges, call, ref, reloc int) {
 		return 0, 0, 0, 0, 0
 	}
 	nodes = len(g.Nodes)
-	for _, tos := range g.Edges {
-		edges += len(tos)
-		for _, kind := range tos {
-			if kind&irgraph.EdgeCall != 0 {
-				call++
-			}
-			if kind&irgraph.EdgeRef != 0 {
-				ref++
-			}
-			if kind&irgraph.EdgeRelocMask != 0 {
-				reloc++
-			}
+	edges = len(g.Relocs)
+	for _, r := range g.Relocs {
+		if r.Kind&irgraph.EdgeCall != 0 {
+			call++
+		}
+		if r.Kind&irgraph.EdgeRef != 0 {
+			ref++
+		}
+		if r.Kind&irgraph.EdgeRelocMask != 0 {
+			reloc++
 		}
 	}
 	return nodes, edges, call, ref, reloc

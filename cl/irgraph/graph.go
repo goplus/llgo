@@ -59,7 +59,6 @@ type NodeInfo struct {
 // Graph is a directed dependency graph.
 type Graph struct {
 	Nodes  map[SymID]*NodeInfo
-	Edges  map[SymID]map[SymID]EdgeKind
 	Relocs []RelocEdge
 }
 
@@ -73,7 +72,6 @@ type Options struct {
 func Build(mod llvm.Module, opts Options) *Graph {
 	g := &Graph{
 		Nodes:  make(map[SymID]*NodeInfo),
-		Edges:  make(map[SymID]map[SymID]EdgeKind),
 		Relocs: nil,
 	}
 	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
@@ -141,18 +139,12 @@ func (g *Graph) AddEdge(from, to SymID, kind EdgeKind) {
 	}
 	g.ensureNode(from, false, strings.HasPrefix(string(from), "llvm."))
 	g.ensureNode(to, false, strings.HasPrefix(string(to), "llvm."))
-	if g.Edges[from] == nil {
-		g.Edges[from] = make(map[SymID]EdgeKind)
-	}
-	g.Edges[from][to] |= kind
-}
-
-// HasEdge reports whether an edge of the given kind exists.
-func (g *Graph) HasEdge(from, to SymID, kind EdgeKind) bool {
-	if g.Edges[from] == nil {
-		return false
-	}
-	return g.Edges[from][to]&kind != 0
+	g.Relocs = append(g.Relocs, RelocEdge{
+		Owner:  from,
+		Target: to,
+		Kind:   kind,
+		Addend: 0,
+	})
 }
 
 func (g *Graph) ensureNode(id SymID, isDecl, isIntrinsic bool) {
@@ -182,6 +174,20 @@ func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) 
 		return
 	}
 	g.AddEdge(SymID(caller.Name()), SymID(name), EdgeCall)
+}
+
+func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64) {
+	if owner == "" || target == "" {
+		return
+	}
+	g.ensureNode(owner, false, strings.HasPrefix(string(owner), "llvm."))
+	g.ensureNode(target, false, strings.HasPrefix(string(target), "llvm."))
+	g.Relocs = append(g.Relocs, RelocEdge{
+		Owner:  owner,
+		Target: target,
+		Kind:   kind,
+		Addend: addend,
+	})
 }
 
 func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
@@ -327,13 +333,7 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 			}
 			ownerID := SymID(owner.Name())
 			targetID := SymID(methodNamePrefix + name)
-			g.AddEdge(ownerID, targetID, edgeKind)
-			g.Relocs = append(g.Relocs, RelocEdge{
-				Owner:  ownerID,
-				Target: targetID,
-				Kind:   edgeKind,
-				Addend: addend,
-			})
+			g.addRelocEdge(ownerID, targetID, edgeKind, addend)
 			continue
 		}
 		if owner.IsNil() || target.IsNil() {
@@ -347,13 +347,7 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		}
 		ownerID := SymID(owner.Name())
 		targetID := SymID(target.Name())
-		g.AddEdge(ownerID, targetID, edgeKind)
-		g.Relocs = append(g.Relocs, RelocEdge{
-			Owner:  ownerID,
-			Target: targetID,
-			Kind:   edgeKind,
-			Addend: addend,
-		})
+		g.addRelocEdge(ownerID, targetID, edgeKind, addend)
 	}
 }
 

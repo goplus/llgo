@@ -1,3 +1,3 @@
-call closure.A -> closure.A$1
-call closure.A$1 -> closure.B
-ref closure.init -> closure.init$guard
+reloc(directcall) closure.A -> closure.A$1
+reloc(directcall) closure.A$1 -> closure.B
+reloc(directref) closure.init -> closure.init$guard

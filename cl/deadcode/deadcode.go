@@ -100,12 +100,6 @@ func (d *deadcodePass) flood() {
 	for len(d.queue) > 0 {
 		cur := d.queue[0]
 		d.queue = d.queue[1:]
-		for to, kind := range d.graph.Edges[cur] {
-			if kind&(irgraph.EdgeCall|irgraph.EdgeRef) == 0 {
-				continue
-			}
-			d.mark(to)
-		}
 		d.processRelocs(cur)
 	}
 }
@@ -118,6 +112,8 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 	for i := 0; i < len(relocs); i++ {
 		r := relocs[i]
 		switch r.Kind {
+		case irgraph.EdgeCall, irgraph.EdgeRef:
+			d.mark(r.Target)
 		case irgraph.EdgeRelocUseIface:
 			d.markUsedInIface(r.Target)
 		case irgraph.EdgeRelocTypeRef:

@@ -27,9 +27,9 @@ import (
 )
 
 func TestFloodReachability(t *testing.T) {
-	g := &irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-		"A": {"B": irgraph.EdgeCall},
-		"B": {"C": irgraph.EdgeRef},
+	g := &irgraph.Graph{Relocs: []irgraph.RelocEdge{
+		{Owner: "A", Target: "B", Kind: irgraph.EdgeCall},
+		{Owner: "B", Target: "C", Kind: irgraph.EdgeRef},
 	}}
 	res := Analyze(g, []irgraph.SymID{"A"})
 	assertReachable(t, res, "A", "B", "C")
@@ -39,9 +39,9 @@ func TestFloodMultipleRoots(t *testing.T) {
 	// Simulated shape:
 	//   main.main -> pkgA.Entry -> pkgA.Helper (call)
 	//   plugin.Init -> plugin.Hook (ref)
-	g := &irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-		"pkgA.Entry":  {"pkgA.Helper": irgraph.EdgeCall},
-		"plugin.Init": {"plugin.Hook": irgraph.EdgeRef},
+	g := &irgraph.Graph{Relocs: []irgraph.RelocEdge{
+		{Owner: "pkgA.Entry", Target: "pkgA.Helper", Kind: irgraph.EdgeCall},
+		{Owner: "plugin.Init", Target: "plugin.Hook", Kind: irgraph.EdgeRef},
 	}}
 	res := Analyze(g, []irgraph.SymID{"pkgA.Entry", "plugin.Init"})
 	assertReachable(t, res, "pkgA.Entry", "pkgA.Helper", "plugin.Init", "plugin.Hook")
@@ -51,11 +51,9 @@ func TestFloodUsesCallAndRef(t *testing.T) {
 	// Simulated shape:
 	//   main.A -> lib.DoWork (call)
 	//   main.A -> lib.Config (ref)
-	g := &irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-		"main.A": {
-			"lib.DoWork": irgraph.EdgeCall,
-			"lib.Config": irgraph.EdgeRef,
-		},
+	g := &irgraph.Graph{Relocs: []irgraph.RelocEdge{
+		{Owner: "main.A", Target: "lib.DoWork", Kind: irgraph.EdgeCall},
+		{Owner: "main.A", Target: "lib.Config", Kind: irgraph.EdgeRef},
 	}}
 	res := Analyze(g, []irgraph.SymID{"main.A"})
 	assertReachable(t, res, "main.A", "lib.DoWork", "lib.Config")
@@ -64,10 +62,10 @@ func TestFloodUsesCallAndRef(t *testing.T) {
 func TestFloodCycle(t *testing.T) {
 	// Simulated shape:
 	//   pkg.Init -> pkg.Step1 -> pkg.Step2 -> pkg.Init (cycle)
-	g := &irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-		"pkg.Init":  {"pkg.Step1": irgraph.EdgeCall},
-		"pkg.Step1": {"pkg.Step2": irgraph.EdgeCall},
-		"pkg.Step2": {"pkg.Init": irgraph.EdgeCall},
+	g := &irgraph.Graph{Relocs: []irgraph.RelocEdge{
+		{Owner: "pkg.Init", Target: "pkg.Step1", Kind: irgraph.EdgeCall},
+		{Owner: "pkg.Step1", Target: "pkg.Step2", Kind: irgraph.EdgeCall},
+		{Owner: "pkg.Step2", Target: "pkg.Init", Kind: irgraph.EdgeCall},
 	}}
 	res := Analyze(g, []irgraph.SymID{"pkg.Init"})
 	assertReachable(t, res, "pkg.Init", "pkg.Step1", "pkg.Step2")
@@ -78,7 +76,7 @@ func TestFloodEmptyInputs(t *testing.T) {
 	if len(res.Reachable) != 0 {
 		t.Fatalf("expected empty reachability, got %v", res.Reachable)
 	}
-	res = Analyze(&irgraph.Graph{Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{}}, nil)
+	res = Analyze(&irgraph.Graph{Relocs: nil}, nil)
 	if len(res.Reachable) != 0 {
 		t.Fatalf("expected empty reachability, got %v", res.Reachable)
 	}
@@ -95,11 +93,9 @@ func TestUsedInIfacePropagation(t *testing.T) {
 	// - useiface: CallSite -> TypeA (TypeA converted to InterfaceX)
 	// - typeref:  TypeA -> MethodAType / MethodBType (child types to propagate)
 	g := &irgraph.Graph{
-		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-			"main":     {"CallSite": irgraph.EdgeCall},
-			"CallSite": {"TypeA": irgraph.EdgeRef},
-		},
 		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "CallSite", Kind: irgraph.EdgeCall},
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRef},
 			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
 			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocTypeRef},
 			{Owner: "TypeA", Target: "MethodBType", Kind: irgraph.EdgeRelocTypeRef},
@@ -128,11 +124,9 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 	// - methodoff (triples): TypeA -> MethodAType/MethodAIfn/MethodATfn
 	//                         TypeA -> MethodBType/MethodBIfn/MethodBTfn
 	g := &irgraph.Graph{
-		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-			"main":     {"CallSite": irgraph.EdgeCall},
-			"CallSite": {"TypeA": irgraph.EdgeRef},
-		},
 		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "CallSite", Kind: irgraph.EdgeCall},
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRef},
 			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
 			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
 			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
@@ -163,17 +157,52 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 	})
 }
 
+func TestMarkableMethodsFromChildTypes(t *testing.T) {
+	// Simulated shape:
+	//   type InterfaceX interface { MethodA() }
+	//   type TypeA struct{ Child ChildType }
+	//   type ChildType struct{ /* ... */ }
+	//   func CallSite() { var a TypeA; var i InterfaceX = a }
+	//
+	// Relocs:
+	// - useiface: CallSite -> TypeA
+	// - typeref:  TypeA -> ChildType (type descriptor references child type)
+	// - methodoff triples for TypeA and ChildType
+	//
+	// Expectation: once TypeA is used in an interface, we collect markable
+	// methods for TypeA and also for ChildType because it is a child type
+	// reachable from TypeA's type descriptor.
+	g := &irgraph.Graph{
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "CallSite", Kind: irgraph.EdgeCall},
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRef},
+			{Owner: "TypeA", Target: "ChildType", Kind: irgraph.EdgeRef},
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "TypeA", Target: "ChildType", Kind: irgraph.EdgeRelocTypeRef},
+			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeA", Target: "MethodATfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "ChildType", Target: "ChildMethodType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "ChildType", Target: "ChildMethodIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "ChildType", Target: "ChildMethodTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	assertMarkableMethods(t, res, map[string][]int{
+		"TypeA":     {0},
+		"ChildType": {0},
+	})
+}
+
 func TestMethodOffIgnoredWithoutUseIface(t *testing.T) {
 	// Simulated shape:
 	//   TypeA is referenced, but never converted to an interface.
 	// Relocs:
 	// - methodoff triples exist, but no useiface marker is present.
 	g := &irgraph.Graph{
-		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-			"main":     {"CallSite": irgraph.EdgeCall},
-			"CallSite": {"TypeA": irgraph.EdgeRef},
-		},
 		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "CallSite", Kind: irgraph.EdgeCall},
+			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRef},
 			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
 			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
 			{Owner: "TypeA", Target: "MethodATfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
@@ -192,10 +221,8 @@ func TestMethodOffIgnoredWhenCallsiteUnreachable(t *testing.T) {
 	// Simulated shape:
 	//   useiface exists on CallSite, but CallSite is not reachable from roots.
 	g := &irgraph.Graph{
-		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-			"main": {"Other": irgraph.EdgeCall},
-		},
 		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "Other", Kind: irgraph.EdgeCall},
 			{Owner: "CallSite", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
 			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
 			{Owner: "TypeA", Target: "MethodAIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
@@ -231,12 +258,11 @@ func TestMarkableMethodsMultipleTypes(t *testing.T) {
 	// candidates. Filtering down to only the interface-used methods
 	// happens in later phases.
 	g := &irgraph.Graph{
-		Edges: map[irgraph.SymID]map[irgraph.SymID]irgraph.EdgeKind{
-			"main":      {"CallSiteA": irgraph.EdgeCall, "CallSiteB": irgraph.EdgeCall},
-			"CallSiteA": {"TypeA": irgraph.EdgeRef},
-			"CallSiteB": {"TypeB": irgraph.EdgeRef},
-		},
 		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "CallSiteA", Kind: irgraph.EdgeCall},
+			{Owner: "main", Target: "CallSiteB", Kind: irgraph.EdgeCall},
+			{Owner: "CallSiteA", Target: "TypeA", Kind: irgraph.EdgeRef},
+			{Owner: "CallSiteB", Target: "TypeB", Kind: irgraph.EdgeRef},
 			{Owner: "CallSiteA", Target: "TypeA", Kind: irgraph.EdgeRelocUseIface},
 			{Owner: "CallSiteB", Target: "TypeB", Kind: irgraph.EdgeRelocUseIface},
 			{Owner: "TypeA", Target: "MethodAType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
