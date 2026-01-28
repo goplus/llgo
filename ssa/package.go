@@ -829,7 +829,11 @@ const (
 )
 
 // addReloc records a reloc metadata entry if enabled.
-func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64) {
+// The 5th field "info" is used to carry optional string data
+// (e.g. interface method name for useifacemethod reloc).
+// The 6th field "fnType" is used to carry an optional function type symbol
+// (e.g. interface method func type for useifacemethod reloc).
+func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, info llvm.Value, fnType llvm.Value) {
 	if !p.Prog.emitReloc {
 		return
 	}
@@ -849,6 +853,8 @@ func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64) {
 		castPtr(owner),
 		castPtr(target),
 		llvm.ConstInt(p.Prog.ctx.Int64Type(), uint64(add), true),
+		castPtr(info),
+		castPtr(fnType),
 	})
 	p.relocs = append(p.relocs, entry)
 }
@@ -859,6 +865,8 @@ func (p Package) relocStructType() llvm.Type {
 		p.Prog.tyVoidPtr(),
 		p.Prog.tyVoidPtr(),
 		p.Prog.ctx.Int64Type(),
+		p.Prog.tyVoidPtr(), // optional string/info
+		p.Prog.tyVoidPtr(), // optional fn type symbol
 	}
 	return p.Prog.ctx.StructType(fields, false)
 }

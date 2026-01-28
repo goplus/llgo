@@ -57,7 +57,8 @@ func (b Builder) markUseIface(t Type) {
 		return
 	}
 	tabi := b.abiType(t.raw.Type)
-	b.Pkg.addReloc(relocUseIface, b.Func.impl, tabi.impl, 0)
+	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
+	b.Pkg.addReloc(relocUseIface, b.Func.impl, tabi.impl, 0, nilPtr, nilPtr)
 }
 
 func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
@@ -66,7 +67,20 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 	}
 	tintf := b.abiType(rawIntf)
 	// Store method index in addend; later passes can map it to the method entry.
-	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx))
+	var nameVal, fnTypeVal llvm.Value
+	if idx < rawIntf.NumMethods() {
+		m := rawIntf.Method(idx)
+		name := m.Name()
+		if !token.IsExported(name) {
+			if pkg := m.Pkg(); pkg != nil {
+				name = abi.FullName(pkg, name)
+			}
+		}
+		nameVal = b.Pkg.relocString(name)
+		ftyp := funcType(b.Prog, m.Type())
+		fnTypeVal = b.abiType(ftyp).impl
+	}
+	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx), nameVal, fnTypeVal)
 }
 
 // MarkUseNamedMethod records a named method usage for reachability analysis.
@@ -75,7 +89,7 @@ func (b Builder) MarkUseNamedMethod(name string) {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, b.Pkg.relocString(name), 0)
+	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, b.Pkg.relocString(name), 0, llvm.ConstNull(b.Prog.tyVoidPtr()), llvm.ConstNull(b.Prog.tyVoidPtr()))
 }
 
 // MarkReflectMethod records a reflect-driven method lookup.
@@ -84,7 +98,8 @@ func (b Builder) MarkReflectMethod() {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0)
+	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
+	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0, nilPtr, nilPtr)
 }
 
 func (b Builder) canEmitReloc() bool {

@@ -1,0 +1,7 @@
+reloc(methodoff idx=0) name=m *_llgo_useifacemethod_unexported.T -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
+reloc(methodoff idx=0) *_llgo_useifacemethod_unexported.T -> useifacemethod_unexported.(*T).m
+reloc(methodoff idx=0) *_llgo_useifacemethod_unexported.T -> useifacemethod_unexported.T.m
+reloc(methodoff idx=1) name=useifacemethod_unexported.m *_llgo_useifacemethod_unexported.T -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
+reloc(methodoff idx=1) *_llgo_useifacemethod_unexported.T -> useifacemethod_unexported.(*T).m
+reloc(methodoff idx=1) *_llgo_useifacemethod_unexported.T -> useifacemethod_unexported.T.m
+reloc(useifacemethod) name=useifacemethod_unexported.m fntype=_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to useifacemethod_unexported.A -> _llgo_iface$1KzHlvpU1qkdkKdpXXP9zP5G8T1rjXt4mBNTS8-6F68

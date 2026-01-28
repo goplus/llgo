@@ -16,13 +16,19 @@
 
 package deadcode
 
-import "github.com/goplus/llgo/cl/irgraph"
+import (
+	"fmt"
+
+	"github.com/goplus/llgo/cl/irgraph"
+)
 
 // Result holds the reachability outcome.
 type Result struct {
-	Reachable       map[irgraph.SymID]bool
-	UsedInIface     map[irgraph.SymID]bool
-	MarkableMethods []MethodRef
+	Reachable        map[irgraph.SymID]bool
+	UsedInIface      map[irgraph.SymID]bool
+	MarkableMethods  []MethodRef
+	IfaceMethods     map[MethodSig]bool             // interface methods observed via useifacemethod
+	ReachableMethods map[irgraph.SymID]map[int]bool // methods confirmed reachable by iface calls
 }
 
 // MethodSig identifies a method by name and signature type descriptor.
@@ -39,12 +45,14 @@ type MethodRef struct {
 }
 
 type deadcodePass struct {
-	graph           *irgraph.Graph
-	reachable       map[irgraph.SymID]bool
-	queue           []irgraph.SymID
-	usedInIface     map[irgraph.SymID]bool
-	relocsByOwner   map[irgraph.SymID][]irgraph.RelocEdge
-	markableMethods []MethodRef
+	graph            *irgraph.Graph
+	reachable        map[irgraph.SymID]bool
+	queue            []irgraph.SymID
+	usedInIface      map[irgraph.SymID]bool
+	relocsByOwner    map[irgraph.SymID][]irgraph.RelocEdge
+	markableMethods  []MethodRef
+	ifaceMethods     map[MethodSig]bool
+	reachableMethods map[irgraph.SymID]map[int]bool
 }
 
 // Analyze computes reachability from roots using call+ref edges.
@@ -52,21 +60,26 @@ func Analyze(g *irgraph.Graph, roots []irgraph.SymID) Result {
 	pass := newDeadcodePass(g, len(roots))
 	pass.markRoots(roots)
 	pass.flood()
+	pass.markIfaceMethods()
 	return Result{
-		Reachable:       pass.reachable,
-		UsedInIface:     pass.usedInIface,
-		MarkableMethods: pass.markableMethods,
+		Reachable:        pass.reachable,
+		UsedInIface:      pass.usedInIface,
+		MarkableMethods:  pass.markableMethods,
+		IfaceMethods:     pass.ifaceMethods,
+		ReachableMethods: pass.reachableMethods,
 	}
 }
 
 func newDeadcodePass(g *irgraph.Graph, rootCount int) *deadcodePass {
 	d := &deadcodePass{
-		graph:           g,
-		reachable:       make(map[irgraph.SymID]bool),
-		queue:           make([]irgraph.SymID, 0, rootCount),
-		usedInIface:     make(map[irgraph.SymID]bool),
-		relocsByOwner:   make(map[irgraph.SymID][]irgraph.RelocEdge),
-		markableMethods: nil,
+		graph:            g,
+		reachable:        make(map[irgraph.SymID]bool),
+		queue:            make([]irgraph.SymID, 0, rootCount),
+		usedInIface:      make(map[irgraph.SymID]bool),
+		relocsByOwner:    make(map[irgraph.SymID][]irgraph.RelocEdge),
+		markableMethods:  nil,
+		ifaceMethods:     make(map[MethodSig]bool),
+		reachableMethods: make(map[irgraph.SymID]map[int]bool),
 	}
 	if g != nil {
 		for _, r := range g.Relocs {
@@ -116,6 +129,16 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 			d.mark(r.Target)
 		case irgraph.EdgeRelocUseIface:
 			d.markUsedInIface(r.Target)
+		case irgraph.EdgeRelocUseIfaceMethod:
+			name := string(r.Target)
+			if r.Name != "" {
+				name = r.Name
+			}
+			fnTyp := r.FnType
+			if fnTyp == "" {
+				panic("useifacemethod missing fnType")
+			}
+			d.ifaceMethods[MethodSig{Name: name, Typ: fnTyp}] = true
 		case irgraph.EdgeRelocTypeRef:
 			if d.usedInIface[owner] {
 				d.markUsedInIface(r.Target)
@@ -132,6 +155,10 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 			d.markableMethods = append(d.markableMethods, MethodRef{
 				Type:  owner,
 				Index: int(r.Addend),
+				Sig: MethodSig{
+					Name: r.Name,
+					Typ:  r.Target,
+				},
 			})
 			d.markUsedInIface(r.Target)
 			i += 2
@@ -151,5 +178,65 @@ func (d *deadcodePass) markUsedInIface(sym irgraph.SymID) {
 	if d.reachable[sym] {
 		d.reachable[sym] = false
 		d.mark(sym)
+	}
+}
+
+func (d *deadcodePass) markIfaceMethods() {
+	fmt.Println("markableMethods:", d.markableMethods)
+	fmt.Println("ifaceMethods:", d.ifaceMethods)
+	for {
+		if len(d.markableMethods) == 0 {
+			break
+		}
+		rem := d.markableMethods[:0]
+		for _, m := range d.markableMethods {
+			if d.shouldKeepMethod(m) {
+				d.markMethod(m)
+			} else {
+				rem = append(rem, m)
+			}
+		}
+		d.markableMethods = rem
+		if len(d.queue) == 0 {
+			break
+		}
+		d.flood()
+	}
+}
+
+func (d *deadcodePass) addReachableMethod(typ irgraph.SymID, idx int) {
+	if d.reachableMethods[typ] == nil {
+		d.reachableMethods[typ] = make(map[int]bool)
+	}
+	d.reachableMethods[typ][idx] = true
+}
+
+func (d *deadcodePass) shouldKeepMethod(m MethodRef) bool {
+	if d.ifaceMethods[m.Sig] {
+		return true
+	}
+	return false
+}
+
+func (d *deadcodePass) markMethod(m MethodRef) {
+	// Avoid re-processing the same method entry.
+	if d.reachableMethods[m.Type] != nil && d.reachableMethods[m.Type][m.Index] {
+		return
+	}
+	d.addReachableMethod(m.Type, m.Index)
+	relocs := d.relocsByOwner[m.Type]
+	for i := 0; i < len(relocs); i++ {
+		r := relocs[i]
+		if r.Kind != irgraph.EdgeRelocMethodOff || int(r.Addend) != m.Index {
+			continue
+		}
+		d.mark(r.Target)
+		if i+1 < len(relocs) && relocs[i+1].Kind == irgraph.EdgeRelocMethodOff {
+			d.mark(relocs[i+1].Target)
+		}
+		if i+2 < len(relocs) && relocs[i+2].Kind == irgraph.EdgeRelocMethodOff {
+			d.mark(relocs[i+2].Target)
+		}
+		break
 	}
 }

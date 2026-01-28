@@ -259,6 +259,13 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 		label := kindLabel(r.Kind)
 		if r.Kind == EdgeRelocMethodOff {
 			label = fmt.Sprintf("reloc(methodoff idx=%d)", r.Addend)
+		} else if r.Kind == EdgeRelocUseIfaceMethod && r.Name != "" {
+			label = fmt.Sprintf("%s name=%s", label, r.Name)
+			if r.FnType != "" {
+				label = fmt.Sprintf("%s fntype=%s", label, r.FnType)
+			}
+		} else if r.Kind == EdgeRelocMethodOff && r.Name != "" {
+			label = fmt.Sprintf("%s name=%s", label, r.Name)
 		}
 		addLine(label, string(r.Owner), string(r.Target))
 	}
