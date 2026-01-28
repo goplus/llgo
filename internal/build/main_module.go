@@ -90,8 +90,12 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	if !needAbiInit {
 		// vta callgraph
 		progSSA := ctx.progSSA
-		cg := vta.CallGraph(ssautil.AllFunctions(progSSA), cha.CallGraph(progSSA))
-		invoked := buildInvokeIndex(cg)
+
+		chaGraph := cha.CallGraph(progSSA)
+		vtaGraph := vta.CallGraph(ssautil.AllFunctions(progSSA), chaGraph)
+		_ = vtaGraph
+		invoked := buildInvokeIndex(chaGraph)
+
 		mainPkg.PruneAbiTypes(progSSA, func(sel *types.Selection, toPtr bool) bool {
 			var method *ssa.Function
 			if toPtr {

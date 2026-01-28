@@ -470,7 +470,7 @@ func funcType(prog Program, typ types.Type) types.Type {
 func (b Builder) abiMethodFunc(anonymous bool, pkg, mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
 	var fullName string
 	if anonymous {
-		fullName = b.Pkg.Path() + "." + mSig.Recv().Type().String() + "." + mName
+		fullName = pkg.Path() + "." + mSig.Recv().Type().String() + "." + mName
 	} else {
 		fullName = FuncName(mPkg, mName, mSig.Recv(), false)
 	}
@@ -491,14 +491,29 @@ func (b Builder) abiMethodFunc(anonymous bool, pkg, mPkg *types.Package, mName s
 	}
 */
 func (b Builder) abiType(t types.Type) Expr {
-	name, _ := b.Pkg.abi.TypeName(t)
-	g := b.Pkg.VarOf(name)
 	prog := b.Prog
+	var name string
+	if v, ok := prog.abiTypeName[t]; ok {
+		name = v
+	} else {
+		name, _ = b.Pkg.abi.TypeName(t)
+	}
+	g := b.Pkg.VarOf(name)
 	pkg := b.Pkg
 	if g == nil {
+		raw := t
+		prog.abiTypeName[raw] = name
 		if prog.patchType != nil {
 			t = prog.patchType(t)
 		}
+		if sym, ok := prog.abiSymbol[name]; ok {
+			pkgPath := pkg.abi.Pkg
+			pkg.abi.Pkg = sym.pkgPath
+			defer func() {
+				pkg.abi.Pkg = pkgPath
+			}()
+		}
+
 		mset, hasUncommon := b.abiUncommonMethodSet(t)
 		rt := prog.rtNamed(pkg.abi.RuntimeName(t))
 		var typ types.Type = rt
@@ -519,7 +534,7 @@ func (b Builder) abiType(t types.Type) Expr {
 				llvm.ConstNamedStruct(prog.AbiType().ll, fields),
 			}, exts...)
 		}
-		asym := &AbiSymbol{raw: t, typ: g.Type, pkgPath: pkg.Path()}
+		asym := &AbiSymbol{raw: raw, typ: g.Type, pkgPath: pkg.Path()}
 		if hasUncommon {
 			commonTyp := llvm.ConstNamedStruct(prog.Type(rt, InGo).ll, fields)
 			uncommonTyp, xcount := b.abiUncommonType(t, mset)
