@@ -176,63 +176,31 @@ func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 		"strlen":          {},
 		"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange": {},
 	}
-	pkgPaths := make([]string, 0, len(pkgs))
-	pkgMap := make(map[string]build.Package, len(pkgs))
-	for _, pkg := range pkgs {
-		if pkg.Package == nil || pkg.IRGraph == nil {
+	var reachLines []string
+	for sym := range res.Reachable {
+		if _, ok := ignoredReach[string(sym)]; ok {
 			continue
 		}
-		pkgPath := pkg.Package.PkgPath
-		if pkgPath == "" {
-			continue
-		}
-		if _, ok := pkgMap[pkgPath]; ok {
-			continue
-		}
-		pkgMap[pkgPath] = pkg
-		pkgPaths = append(pkgPaths, pkgPath)
+		reachLines = append(reachLines, fmt.Sprintf("reach %s", sym))
 	}
-	sort.Strings(pkgPaths)
+	sort.Strings(reachLines)
+
+	var reachMethodLines []string
+	for typ, idxs := range res.ReachableMethods {
+		for idx := range idxs {
+			reachMethodLines = append(reachMethodLines, fmt.Sprintf("reachmethod %s[%d]", typ, idx))
+		}
+	}
+	sort.Strings(reachMethodLines)
+
 	var buf bytes.Buffer
-	for i, pkgPath := range pkgPaths {
-		pkg := pkgMap[pkgPath]
-		syms := symbolsForPackage(pkg)
-		symSet := make(map[string]struct{}, len(syms))
-		for _, sym := range syms {
-			symSet[sym] = struct{}{}
-		}
-		var reachable []string
-		for _, sym := range syms {
-			if res.Reachable[irgraph.SymID(sym)] {
-				if _, ok := ignoredReach[sym]; ok {
-					continue
-				}
-				reachable = append(reachable, sym)
-			}
-		}
-		var reachMethods []string
-		for typ, idxs := range res.ReachableMethods {
-			if !strings.HasPrefix(string(typ), pkgPath) {
-				continue
-			}
-			for idx := range idxs {
-				reachMethods = append(reachMethods, fmt.Sprintf("%s[%d]", typ, idx))
-			}
-		}
-		if len(reachable) == 0 {
-			continue
-		}
-		if i > 0 {
-			buf.WriteString("\n")
-		}
-		buf.WriteString(fmt.Sprintf("pkg %s\n", pkgPath))
-		for _, sym := range reachable {
-			buf.WriteString(fmt.Sprintf("reach %s\n", sym))
-		}
-		sort.Strings(reachMethods)
-		for _, line := range reachMethods {
-			buf.WriteString(fmt.Sprintf("reachmethod %s\n", line))
-		}
+	for _, line := range reachLines {
+		buf.WriteString(line)
+		buf.WriteByte('\n')
+	}
+	for _, line := range reachMethodLines {
+		buf.WriteString(line)
+		buf.WriteByte('\n')
 	}
 	return buf.Bytes()
 }

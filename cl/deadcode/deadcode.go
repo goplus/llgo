@@ -16,11 +16,7 @@
 
 package deadcode
 
-import (
-	"fmt"
-
-	"github.com/goplus/llgo/cl/irgraph"
-)
+import "github.com/goplus/llgo/cl/irgraph"
 
 // Result holds the reachability outcome.
 type Result struct {
@@ -182,8 +178,6 @@ func (d *deadcodePass) markUsedInIface(sym irgraph.SymID) {
 }
 
 func (d *deadcodePass) markIfaceMethods() {
-	fmt.Println("markableMethods:", d.markableMethods)
-	fmt.Println("ifaceMethods:", d.ifaceMethods)
 	for {
 		if len(d.markableMethods) == 0 {
 			break
