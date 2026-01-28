@@ -48,7 +48,7 @@ func Apply(mod llvm.Module, res deadcode.Result, _ Options) Stats {
 	if mod.IsNil() {
 		return stats
 	}
-	stats.DroppedMethod, stats.DroppedMethodDetail = clearUnreachableMethods(mod, res.ReachableMethods, res.UsedInIface)
+	stats.DroppedMethod, stats.DroppedMethodDetail = clearUnreachableMethods(mod, res.ReachableMethods)
 	return stats
 }
 
@@ -75,7 +75,7 @@ func demoteToDecl(mod llvm.Module, fn llvm.Value) {
 // clearUnreachableMethods zeros Mtyp/Ifn/Tfn for unreachable methods in type
 // metadata constants. All method slots are cleared by default; the whitelist
 // reachMethods marks which (type,index) to keep.
-func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map[int]bool, usedInIface map[irgraph.SymID]bool) (int, map[irgraph.SymID][]int) {
+func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map[int]bool) (int, map[irgraph.SymID][]int) {
 	dropped := 0
 	detail := make(map[irgraph.SymID][]int)
 	for g := mod.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
