@@ -17,6 +17,8 @@
 package dcepass
 
 import (
+	"strings"
+
 	"github.com/goplus/llgo/cl/deadcode"
 	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llvm"
@@ -71,62 +73,78 @@ func demoteToDecl(mod llvm.Module, fn llvm.Value) {
 }
 
 // clearUnreachableMethods zeros Mtyp/Ifn/Tfn for unreachable methods in type
-// metadata constants based on reach.Methods. It returns the number of cleared
-// method entries.
+// metadata constants. All method slots are cleared by default; the whitelist
+// reachMethods marks which (type,index) to keep.
 func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map[int]bool) (int, map[irgraph.SymID][]int) {
-	if len(reachMethods) == 0 {
-		return 0, nil
-	}
 	dropped := 0
 	detail := make(map[irgraph.SymID][]int)
-	for sym, keepIdx := range reachMethods {
-		g := mod.NamedGlobal(string(sym))
-		if g.IsNil() {
-			continue
-		}
+	for g := mod.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
 		init := g.Initializer()
 		if init.IsNil() {
 			continue
 		}
-		fieldCount := init.OperandsCount()
-		if fieldCount == 0 {
+		methodsVal, elemTy, ok := methodArray(init)
+		if !ok {
 			continue
 		}
-		methodsVal := init.Operand(fieldCount - 1)
-		if methodsVal.Type().TypeKind() != llvm.ArrayTypeKind {
-			continue
-		}
-		elemTy := methodsVal.Type().ElementType()
 		methodCount := methodsVal.OperandsCount()
+		if methodCount == 0 {
+			continue
+		}
+		keepIdx := reachMethods[irgraph.SymID(g.Name())]
 		zeroPtr := llvm.ConstPointerNull(elemTy.StructElementTypes()[1]) // ptr type
 
 		changed := false
 		newMethods := make([]llvm.Value, methodCount)
 		for i := 0; i < methodCount; i++ {
 			orig := methodsVal.Operand(i)
-			if keepIdx[i] {
+			if keepIdx != nil && keepIdx[i] {
 				newMethods[i] = orig
 				continue
 			}
-			// Preserve name (field 0), clear Mtyp/Ifn/Tfn.
 			nameField := orig.Operand(0)
 			zeroed := llvm.ConstStruct([]llvm.Value{nameField, zeroPtr, zeroPtr, zeroPtr}, false)
 			newMethods[i] = zeroed
 			changed = true
 			dropped++
-			detail[sym] = append(detail[sym], i)
+			detail[irgraph.SymID(g.Name())] = append(detail[irgraph.SymID(g.Name())], i)
 		}
 		if !changed {
 			continue
 		}
 		newArray := llvm.ConstArray(elemTy, newMethods)
-		fields := make([]llvm.Value, fieldCount)
-		for i := 0; i < fieldCount-1; i++ {
+		fields := make([]llvm.Value, init.OperandsCount())
+		for i := 0; i < len(fields)-1; i++ {
 			fields[i] = init.Operand(i)
 		}
-		fields[fieldCount-1] = newArray
+		fields[len(fields)-1] = newArray
 		newInit := llvm.ConstStruct(fields, false)
 		g.SetInitializer(newInit)
 	}
 	return dropped, detail
+}
+
+// methodArray returns the method array value and element type if init's last
+// field is an array of abi.Method.
+func methodArray(init llvm.Value) (llvm.Value, llvm.Type, bool) {
+	fieldCount := init.OperandsCount()
+	if fieldCount == 0 {
+		return llvm.Value{}, llvm.Type{}, false
+	}
+	methodsVal := init.Operand(fieldCount - 1)
+	if methodsVal.Type().TypeKind() != llvm.ArrayTypeKind {
+		return llvm.Value{}, llvm.Type{}, false
+	}
+	elemTy := methodsVal.Type().ElementType()
+	if elemTy.TypeKind() != llvm.StructTypeKind {
+		return llvm.Value{}, llvm.Type{}, false
+	}
+	// Heuristic: abi.Method has 4 fields and name contains "runtime/abi.Method".
+	if elemTy.StructElementTypesCount() != 4 {
+		return llvm.Value{}, llvm.Type{}, false
+	}
+	if !strings.Contains(elemTy.StructName(), "runtime/abi.Method") {
+		return llvm.Value{}, llvm.Type{}, false
+	}
+	return methodsVal, elemTy, true
 }
