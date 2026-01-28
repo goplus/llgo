@@ -6,6 +6,7 @@ package dcepass
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/cl/deadcode"
@@ -18,14 +19,19 @@ func TestClearUnreachableMethods(t *testing.T) {
 	defer ctx.Dispose()
 
 	in := filepath.Join("testll", "constclear", "test.ll")
-	buf, err := llvm.NewMemoryBufferFromFile(in)
+	raw, err := os.ReadFile(in)
 	if err != nil {
 		t.Fatalf("read ll: %v", err)
+	}
+	buf, err := llvm.NewMemoryBufferFromFile(in)
+	if err != nil {
+		t.Fatalf("memory buffer: %v", err)
 	}
 	mod, err := ctx.ParseIR(buf)
 	if err != nil {
 		t.Fatalf("parse ll: %v", err)
 	}
+	origModLine := firstModuleLine(string(raw))
 
 	res := deadcode.Result{
 		Reachable: map[irgraph.SymID]bool{},
@@ -55,8 +61,33 @@ func TestClearUnreachableMethods(t *testing.T) {
 		t.Fatalf("unreachable method not cleared")
 	}
 
+	// Keep original module identifier when emitting updated IR.
+	outText := fixModuleID(mod.String(), origModLine)
 	out := filepath.Join("testll", "constclear", "out.ll")
-	if err := os.WriteFile(out, []byte(mod.String()), 0o644); err != nil {
+	if err := os.WriteFile(out, []byte(outText), 0o644); err != nil {
 		t.Fatalf("write out.ll: %v", err)
 	}
+}
+
+func firstModuleLine(s string) string {
+	for _, line := range strings.SplitN(s, "\n", 3) {
+		if strings.HasPrefix(line, "; ModuleID =") {
+			return line
+		}
+	}
+	return ""
+}
+
+func fixModuleID(ir, origLine string) string {
+	if origLine == "" {
+		return ir
+	}
+	lines := strings.Split(ir, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "; ModuleID =") {
+			lines[i] = origLine
+			break
+		}
+	}
+	return strings.Join(lines, "\n")
 }
