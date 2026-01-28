@@ -1832,5 +1832,5 @@ reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr7
 reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790 -> _llgo_func$w8Mj2LK8G5p7MIiGWR6MYjyXy3L8SVVzYlT1bb6KNXk
 reloc(typeref) reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790 -> _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 reloc(useiface) reflecttypemethod.A -> _llgo_reflecttypemethod.T
-reloc(useifacemethod) reflecttypemethod.A -> reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
+reloc(useifacemethod) name=MethodByName fntype=_llgo_func$aM2cVUtLQbPq1YHtnabQiM7XJ5Cg5RyV6BIDWrqey7E reflecttypemethod.A -> reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
 reloc(usenamedmethod) reflecttypemethod.A -> _mname:Foo

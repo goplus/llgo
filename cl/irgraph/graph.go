@@ -130,6 +130,8 @@ type RelocEdge struct {
 	Target SymID
 	Kind   EdgeKind
 	Addend int64
+	Name   string // optional info (e.g., iface method name)
+	FnType SymID  // optional func type symbol (e.g., iface method func type)
 }
 
 // AddEdge inserts or updates an edge in the graph.
@@ -176,7 +178,7 @@ func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) 
 	g.AddEdge(SymID(caller.Name()), SymID(name), EdgeCall)
 }
 
-func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64) {
+func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64, name string) {
 	if owner == "" || target == "" {
 		return
 	}
@@ -187,6 +189,7 @@ func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64) {
 		Target: target,
 		Kind:   kind,
 		Addend: addend,
+		Name:   name,
 	})
 }
 
@@ -304,6 +307,10 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		}
 		kind := entry.Operand(0).SExtValue()
 		addend := entry.Operand(3).SExtValue()
+		var fnTypeVal llvm.Value
+		if entry.OperandsCount() >= 6 {
+			fnTypeVal = entry.Operand(5)
+		}
 		var edgeKind EdgeKind
 		switch kind {
 		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff, relocReflectMethod, relocTypeRef:
@@ -333,7 +340,7 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 			}
 			ownerID := SymID(owner.Name())
 			targetID := SymID(methodNamePrefix + name)
-			g.addRelocEdge(ownerID, targetID, edgeKind, addend)
+			g.addRelocEdge(ownerID, targetID, edgeKind, addend, "")
 			continue
 		}
 		if owner.IsNil() || target.IsNil() {
@@ -347,7 +354,30 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 		}
 		ownerID := SymID(owner.Name())
 		targetID := SymID(target.Name())
-		g.addRelocEdge(ownerID, targetID, edgeKind, addend)
+		nameStr := ""
+		if edgeKind == EdgeRelocUseIfaceMethod {
+			if s, ok := decodeRelocString(entry.Operand(4)); ok {
+				nameStr = s
+			}
+		} else if edgeKind == EdgeRelocMethodOff {
+			if s, ok := decodeRelocString(entry.Operand(4)); ok {
+				nameStr = s
+			}
+		}
+		fnTypeID := SymID("")
+		if !fnTypeVal.IsNil() {
+			if sym := resolveSymbolValue(fnTypeVal); !sym.IsNil() {
+				fnTypeID = SymID(sym.Name())
+			}
+		}
+		g.Relocs = append(g.Relocs, RelocEdge{
+			Owner:  ownerID,
+			Target: targetID,
+			Kind:   edgeKind,
+			Addend: addend,
+			Name:   nameStr,
+			FnType: fnTypeID,
+		})
 	}
 }
 

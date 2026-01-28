@@ -157,6 +157,55 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 	})
 }
 
+func TestUseIfaceMethodRecorded(t *testing.T) {
+	const ftype = "_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"
+	g := &irgraph.Graph{
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "CallSite", Kind: irgraph.EdgeCall},
+			{Owner: "CallSite", Target: ftype, Kind: irgraph.EdgeRelocUseIfaceMethod, Addend: 1, Name: "IfaceSym", FnType: ftype},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	key := MethodSig{Name: "IfaceSym", Typ: ftype}
+	if !res.IfaceMethods[key] {
+		t.Fatalf("expected iface method usage recorded for IfaceSym")
+	}
+}
+
+func TestUseIfaceMethodMarksConcreteMethod(t *testing.T) {
+	// Shape:
+	//   type I interface{ M() }
+	//   type T struct{}
+	//   func Use(i I) { i.M() }
+	// Relocs (simplified):
+	//   useiface: Use -> T
+	//   useifacemethod: Use -> I, name=M
+	//   methodoff triple on T at index 0 (name=M) -> Mtyp/Mifn/Mtfn
+	//   another method (idx=1) should stay unreachable
+	g := &irgraph.Graph{
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "Use", Kind: irgraph.EdgeCall},
+			{Owner: "Use", Target: "T", Kind: irgraph.EdgeRef},
+			{Owner: "Use", Target: "T", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "Use", Target: "I", Kind: irgraph.EdgeRelocUseIfaceMethod, Addend: 0, Name: "M", FnType: "T.M$type"},
+			{Owner: "T", Target: "T.M$type", Kind: irgraph.EdgeRelocMethodOff, Addend: 0, Name: "M"},
+			{Owner: "T", Target: "T.M$ifn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "T", Target: "T.M$tfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "T", Target: "T.N$type", Kind: irgraph.EdgeRelocMethodOff, Addend: 1, Name: "N"},
+			{Owner: "T", Target: "T.N$ifn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "T", Target: "T.N$tfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	assertReachable(t, res, "main", "Use", "T", "T.M$type", "T.M$ifn", "T.M$tfn")
+	assertReachableMethods(t, res, map[string][]int{
+		"T": {0},
+	})
+	if res.Reachable[irgraph.SymID("T.N$type")] || res.Reachable[irgraph.SymID("T.N$ifn")] || res.Reachable[irgraph.SymID("T.N$tfn")] {
+		t.Fatalf("unexpected reachability for unused method N")
+	}
+}
+
 func TestMarkableMethodsFromChildTypes(t *testing.T) {
 	// Simulated shape:
 	//   type InterfaceX interface { MethodA() }
@@ -192,6 +241,60 @@ func TestMarkableMethodsFromChildTypes(t *testing.T) {
 		"TypeA":     {0},
 		"ChildType": {0},
 	})
+}
+
+func TestIfaceChainCrossPackage(t *testing.T) {
+	// Package A:
+	//   interface IA { M() }
+	//   type T implements IA.M; inside M it converts a bpkg.K to bpkg.U and calls N().
+	//
+	// Package B (simulated by symbols with prefix bpkg.):
+	//   interface U { N() }
+	//   type K implements N() and N2(); only N is used via iface, N2 should stay unreachable.
+	//
+	// Reloc graph (simplified):
+	//   useiface: Use -> T
+	//   useifacemethod: Use -> IA (name=M, idx=0)
+	//   methodoff(T): idx=0 -> Mtyp/Mifn/Mtfn
+	//   inside T.M: useiface: T.M -> bpkg.K; useifacemethod: T.M -> bpkg.U (name=N, idx=0)
+	//   methodoff(bpkg.K): idx=0 -> N typ/ifn/tfn, idx=1 -> N2 typ/ifn/tfn
+	g := &irgraph.Graph{
+		Relocs: []irgraph.RelocEdge{
+			// roots
+			{Owner: "main", Target: "Use", Kind: irgraph.EdgeCall},
+			// IA.M
+			{Owner: "Use", Target: "T", Kind: irgraph.EdgeRef},
+			{Owner: "Use", Target: "T", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "Use", Target: "IA", Kind: irgraph.EdgeRelocUseIfaceMethod, Addend: 0, Name: "M", FnType: "T.M$type"},
+			{Owner: "T", Target: "T.M$type", Kind: irgraph.EdgeRelocMethodOff, Addend: 0, Name: "M"},
+			{Owner: "T", Target: "T.M$ifn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "T", Target: "T.M$tfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			// inside T.M: assign K to U and call N
+			{Owner: "T.M$ifn", Target: "bpkg.K", Kind: irgraph.EdgeRef},
+			{Owner: "T.M$ifn", Target: "bpkg.K", Kind: irgraph.EdgeRelocUseIface},
+			{Owner: "T.M$ifn", Target: "bpkg.U", Kind: irgraph.EdgeRelocUseIfaceMethod, Addend: 0, Name: "bpkg.N", FnType: "bpkg.K.N$type"},
+			// bpkg.K methodoff entries
+			{Owner: "bpkg.K", Target: "bpkg.K.N$type", Kind: irgraph.EdgeRelocMethodOff, Addend: 0, Name: "bpkg.N"},
+			{Owner: "bpkg.K", Target: "bpkg.K.N$ifn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "bpkg.K", Target: "bpkg.K.N$tfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "bpkg.K", Target: "bpkg.K.N2$type", Kind: irgraph.EdgeRelocMethodOff, Addend: 1, Name: "bpkg.N2"},
+			{Owner: "bpkg.K", Target: "bpkg.K.N2$ifn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "bpkg.K", Target: "bpkg.K.N2$tfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	assertReachable(t, res,
+		"main", "Use", "T", "T.M$type", "T.M$ifn", "T.M$tfn",
+		"bpkg.K", "bpkg.K.N$type", "bpkg.K.N$ifn", "bpkg.K.N$tfn")
+	assertReachableMethods(t, res, map[string][]int{
+		"T":      {0},
+		"bpkg.K": {0},
+	})
+	if res.Reachable[irgraph.SymID("bpkg.K.N2$type")] ||
+		res.Reachable[irgraph.SymID("bpkg.K.N2$ifn")] ||
+		res.Reachable[irgraph.SymID("bpkg.K.N2$tfn")] {
+		t.Fatalf("unexpected reachability for bpkg.K.N2")
+	}
 }
 
 func TestMethodOffIgnoredWithoutUseIface(t *testing.T) {
@@ -332,6 +435,28 @@ func assertMarkableMethods(t *testing.T, res Result, want map[string][]int) {
 		for _, idx := range idxs {
 			if !gotIdxs[idx] {
 				t.Fatalf("markable methods missing %q idx=%d", typ, idx)
+			}
+		}
+	}
+}
+
+func assertReachableMethods(t *testing.T, res Result, want map[string][]int) {
+	t.Helper()
+	got := make(map[string]map[int]bool)
+	for typ, idxs := range res.ReachableMethods {
+		for idx := range idxs {
+			typStr := string(typ)
+			if got[typStr] == nil {
+				got[typStr] = make(map[int]bool)
+			}
+			got[typStr][idx] = true
+		}
+	}
+	for typ, idxs := range want {
+		gotIdxs := got[typ]
+		for _, idx := range idxs {
+			if !gotIdxs[idx] {
+				t.Fatalf("reachable methods missing %q idx=%d", typ, idx)
 			}
 		}
 	}

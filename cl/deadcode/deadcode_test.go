@@ -210,6 +210,15 @@ func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 				reachable = append(reachable, sym)
 			}
 		}
+		var reachMethods []string
+		for typ, idxs := range res.ReachableMethods {
+			if !strings.HasPrefix(string(typ), pkgPath) {
+				continue
+			}
+			for idx := range idxs {
+				reachMethods = append(reachMethods, fmt.Sprintf("%s[%d]", typ, idx))
+			}
+		}
 		if len(reachable) == 0 {
 			continue
 		}
@@ -219,6 +228,10 @@ func formatReachability(pkgs []build.Package, res deadcode.Result) []byte {
 		buf.WriteString(fmt.Sprintf("pkg %s\n", pkgPath))
 		for _, sym := range reachable {
 			buf.WriteString(fmt.Sprintf("reach %s\n", sym))
+		}
+		sort.Strings(reachMethods)
+		for _, line := range reachMethods {
+			buf.WriteString(fmt.Sprintf("reachmethod %s\n", line))
 		}
 	}
 	return buf.Bytes()
