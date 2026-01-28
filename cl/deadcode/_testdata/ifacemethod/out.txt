@@ -213,7 +213,7 @@ reach siglongjmp
 reach srand
 reach stderr
 reach time
-reachmethod *_llgo_github.com/goplus/llgo/cl/deadcode/_testdata/ifacemethod.T[0]
+reachmethod *_llgo_github.com/goplus/llgo/cl/deadcode/_testdata/ifacemethod.T[1]
 reachmethod *_llgo_github.com/goplus/llgo/runtime/internal/runtime.errorString[0]
-reachmethod _llgo_github.com/goplus/llgo/cl/deadcode/_testdata/ifacemethod.T[0]
+reachmethod _llgo_github.com/goplus/llgo/cl/deadcode/_testdata/ifacemethod.T[1]
 reachmethod _llgo_github.com/goplus/llgo/runtime/internal/runtime.errorString[0]
