@@ -1125,7 +1125,7 @@ func (v Value) Pointer() uintptr {
 		p := v.pointer()
 		// Non-nil func value points at data block.
 		// First word of data block is actual code.
-		if p != nil {
+		if p != nil && v.typ_.IsClosure() {
 			p = *(*unsafe.Pointer)(p)
 		}
 		return uintptr(p)
@@ -1732,7 +1732,7 @@ func (v Value) UnsafePointer() unsafe.Pointer {
 		p := v.pointer()
 		// Non-nil func value points at data block.
 		// First word of data block is actual code.
-		if p != nil {
+		if p != nil && v.typ_.IsClosure() {
 			p = *(*unsafe.Pointer)(p)
 		}
 		return p
@@ -2171,7 +2171,7 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
 		abi.Float32, abi.Float64:
-		if v.flag&flagAddr != 0 {
+		if v.flag&flagIndir != 0 {
 			return v.ptr
 		} else {
 			return unsafe.Pointer(&v.ptr)
@@ -2392,16 +2392,51 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	switch n := len(tout); n {
 	case 0:
 	case 1:
-		return []Value{NewAt(toType(tout[0]), ret).Elem()}
+		out := NewAt(toType(tout[0]), ret).Elem()
+		resolveIndirectValue(&out, tout[0])
+		return []Value{out}
 	default:
 		out = make([]Value, n)
+		alignment := uintptr(sig.RType.Alignment)
 		var off uintptr
 		for i, tout := range tout {
 			out[i] = NewAt(toType(tout), add(ret, off, "")).Elem()
-			off += tout.Size()
+			resolveIndirectValue(&out[i], tout)
+			off += (tout.Size_ + alignment - 1) &^ (alignment - 1)
 		}
 	}
 	return
+}
+
+// resolveIndirectValue converts Value's indirect reference to direct based on abi.Type, clears flagIndir
+// It adjusts the Value's ptr (dereferences or truncates) and removes the flagIndir flag.
+func resolveIndirectValue(v *Value, typ *abi.Type) {
+	if !typ.IsDirectIface() || v.flag&flagIndir == 0 {
+		return
+	}
+	k := typ.Kind()
+	switch {
+	case k == abi.Float32:
+		fv := *(*float32)(v.ptr)
+		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat32(fv)))
+	case k == abi.Float64:
+		fv := *(*float64)(v.ptr)
+		v.ptr = unsafe.Pointer(uintptr(bitcast.FromFloat64(fv)))
+	default:
+		// convert abi.Bool~abi.Uintptr and abi.Struct/abi.Array themselves.
+		// struct/array elem conversion by caller func.
+		if typ.Size_ < unsafe.Sizeof(0) {
+			v.ptr = truncate(*(*unsafe.Pointer)(v.ptr), typ.Size_*8)
+		} else {
+			v.ptr = *(*unsafe.Pointer)(v.ptr)
+		}
+	}
+	v.flag &= ^flagIndir
+}
+
+func truncate(addr unsafe.Pointer, bits uintptr) unsafe.Pointer {
+	mask := uintptr(1<<bits) - 1
+	return unsafe.Pointer(uintptr(addr) & mask)
 }
 
 // v is a method receiver. Store at p the word which is used to
@@ -2413,12 +2448,21 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 	if t.Kind() == abi.Interface {
 		// the interface data word becomes the receiver word
 		iface := (*nonEmptyInterface)(v.ptr)
-		*(*unsafe.Pointer)(p) = iface.word
+		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
+	} else if v.flag&flagIndir == 0 && runtime.DirectIfaceData(t) {
+		*(*unsafe.Pointer)(p) = unsafe.Pointer(&v.ptr)
 	} else {
 		*(*unsafe.Pointer)(p) = v.ptr
 	}
+}
+
+func ifacePtrData(i *nonEmptyInterface) unsafe.Pointer {
+	if runtime.DirectIfaceData(i.itab.typ) {
+		return unsafe.Pointer(&i.word)
+	}
+	return i.word
 }
 
 var stringType = rtypeOf("")
@@ -2728,9 +2772,12 @@ func methodReceiver(op string, v Value, methodIndex int) (rcvrtype *abi.Type, t 
 		if !abi.IsExported(m.Name()) {
 			panic("reflect: " + op + " of unexported method")
 		}
-		ifn := m.Ifn_
-		fn = unsafe.Pointer(ifn)
+		fn = unsafe.Pointer(m.Ifn_)
 		t = (*funcType)(unsafe.Pointer(m.Mtyp_))
+	}
+	if rcvrtype.Kind() != abi.Pointer {
+		// convert rcvrtype to abi.Pointer to match ifn call
+		rcvrtype = toRType(rcvrtype).ptrTo()
 	}
 	return
 }
