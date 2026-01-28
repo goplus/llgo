@@ -1,4 +1,4 @@
-; ModuleID = 'testll/constclear/test.ll'
+; ModuleID = 'github.com/goplus/llgo/_demo/a'
 source_filename = "github.com/goplus/llgo/_demo/a"
 
 %"github.com/goplus/llgo/runtime/abi.PtrType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr }
