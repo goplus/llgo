@@ -16,7 +16,11 @@
 
 package deadcode
 
-import "github.com/goplus/llgo/cl/irgraph"
+import (
+	"strings"
+
+	"github.com/goplus/llgo/cl/irgraph"
+)
 
 // Result holds the reachability outcome.
 type Result struct {
@@ -206,6 +210,9 @@ func (d *deadcodePass) addReachableMethod(typ irgraph.SymID, idx int) {
 }
 
 func (d *deadcodePass) shouldKeepMethod(m MethodRef) bool {
+	if m.Sig.Name == "Error" || strings.HasSuffix(m.Sig.Name, ".Error") {
+		return true
+	}
 	if d.ifaceMethods[m.Sig] {
 		return true
 	}
