@@ -139,6 +139,7 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 			})
 			d.markUsedInIface(r.Target)
 			i += 2
+			continue
 		}
 	}
 }
