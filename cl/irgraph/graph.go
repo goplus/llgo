@@ -343,7 +343,19 @@ func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
 			g.addRelocEdge(ownerID, targetID, edgeKind, addend, "")
 			continue
 		}
-		if owner.IsNil() || target.IsNil() {
+		if owner.IsNil() {
+			continue
+		}
+		if target.IsNil() {
+			// methodoff relocs must preserve three-entry-per-method grouping
+			// even when target is null (skipped methods from other packages).
+			if edgeKind == EdgeRelocMethodOff {
+				g.Relocs = append(g.Relocs, RelocEdge{
+					Owner:  SymID(owner.Name()),
+					Kind:   edgeKind,
+					Addend: addend,
+				})
+			}
 			continue
 		}
 		if strings.HasPrefix(owner.Name(), "llvm.") && !opts.IncludeIntrinsics {
