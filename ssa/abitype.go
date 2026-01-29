@@ -517,7 +517,12 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 			pkg := b.Pkg
 			nilPtr := llvm.ConstNull(pkg.Prog.tyVoidPtr())
 			// Use relocString for a stable pointer to the method name (avoid casting runtime.String).
-			infoVal := pkg.relocString(mName)
+			// For unexported methods, use fully qualified name to match useifacemethod relocs.
+			infoName := mName
+			if !token.IsExported(mName) && mPkg != nil {
+				infoName = abi.FullName(mPkg, mName)
+			}
+			infoVal := pkg.relocString(infoName)
 			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i), infoVal, nilPtr)
 			pkg.addReloc(relocMethodOff, owner, ifn, int64(i), nilPtr, nilPtr)
 			pkg.addReloc(relocMethodOff, owner, tfn, int64(i), nilPtr, nilPtr)
