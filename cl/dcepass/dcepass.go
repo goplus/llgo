@@ -142,9 +142,12 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 			continue
 		}
 		// Skip core runtime/reflect metadata to avoid breaking fundamental operations.
+		// Note: llgo uses "_llgo_reflect" naming convention (e.g., *_llgo_reflect.rtype)
+		// instead of "reflect/" paths, so we must check for both patterns.
 		name := g.Name()
 		if strings.Contains(name, "runtime/") ||
 			strings.Contains(name, "reflect/") ||
+			strings.Contains(name, "_llgo_reflect") ||
 			strings.Contains(name, "internal/reflectlite") ||
 			strings.Contains(name, "internal/abi") ||
 			strings.Contains(name, "_llgo_iface$") {

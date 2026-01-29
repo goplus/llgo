@@ -239,6 +239,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		if conf.BuildMode != BuildModeExe {
 			return nil, fmt.Errorf("dce only supports buildmode=exe")
 		}
+		conf.GenRelocLL = true
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
@@ -1127,6 +1128,42 @@ func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
 	return roots, nil
 }
 
+// mergePackageGraphs merges IRGraphs from all packages in ctx.
+// This is used instead of building a graph from the merged LLVM module,
+// because LLVM renames duplicate @__llgo_relocs globals when linking,
+// causing irgraph.Build to miss most reloc information.
+func mergePackageGraphs(ctx *context) *irgraph.Graph {
+	merged := &irgraph.Graph{
+		Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
+		Relocs: nil,
+	}
+	// Merge from all cached packages
+	for _, pkg := range ctx.pkgs {
+		if pkg == nil || pkg.IRGraph == nil {
+			continue
+		}
+		for id, node := range pkg.IRGraph.Nodes {
+			if _, ok := merged.Nodes[id]; !ok {
+				merged.Nodes[id] = node
+			}
+		}
+		merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
+	}
+	// Merge from entry packages (generated main module, etc.)
+	for _, pkg := range ctx.entryPkgs {
+		if pkg == nil || pkg.IRGraph == nil {
+			continue
+		}
+		for id, node := range pkg.IRGraph.Nodes {
+			if _, ok := merged.Nodes[id]; !ok {
+				merged.Nodes[id] = node
+			}
+		}
+		merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
+	}
+	return merged
+}
+
 func graphSummary(g *irgraph.Graph) (nodes, edges, call, ref, reloc int) {
 	if g == nil {
 		return 0, 0, 0, 0, 0
@@ -1235,11 +1272,15 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				}
 				fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
 			}
-			graph := irgraph.Build(merged, irgraph.Options{})
+			// Merge IRGraphs from all packages instead of building from merged module.
+			// This avoids the issue where LLVM renames duplicate __llgo_relocs globals
+			// to __llgo_relocs.2, __llgo_relocs.4, etc. when linking modules.
+			graph := mergePackageGraphs(ctx)
 			if verbose {
 				nodes, edges, call, ref, reloc := graphSummary(graph)
 				fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
 			}
+			deadcode.SetVerbose(verbose)
 			res := deadcode.Analyze(graph, roots)
 			if verbose {
 				fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
