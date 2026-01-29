@@ -216,11 +216,23 @@ type aProgram struct {
 	abiSymbol      map[string]*AbiSymbol // abi symbol name => Type
 	abiTypeName    map[types.Type]string
 	abiTypePruning bool
-	methodIsInvoke func(method *types.Selection, toPtr bool) bool
+	methodIsInvoke func(method *types.Selection) bool
+
+	invokeMethods map[string]map[types.Type]none
 
 	ptrSize int
 
 	is32Bits bool
+}
+
+func (p Program) AddInvoke(fn *types.Func) {
+	name := fn.Name()
+	m, ok := p.invokeMethods[name]
+	if !ok {
+		m = make(map[types.Type]none)
+		p.invokeMethods[name] = m
+	}
+	m[p.patch(fn.Type())] = none{}
 }
 
 // A Program presents a program.
@@ -268,7 +280,7 @@ func NewProgram(target *Target) Program {
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
-		abiTypeName: make(map[types.Type]string),
+		abiTypeName: make(map[types.Type]string), invokeMethods: make(map[string]map[types.Type]none),
 	}
 }
 
@@ -701,6 +713,7 @@ type aPackage struct {
 	pymods map[string]Global
 	strs   map[string]llvm.Value
 	goStrs map[string]llvm.Value
+	fnlink func(string) string
 
 	iRoutine int
 
@@ -771,6 +784,11 @@ func (p Package) Path() string {
 // String returns a string representation of the package.
 func (p Package) String() string {
 	return p.mod.String()
+}
+
+// SetResolveLinkname sets a function to resolve linkname.
+func (p Package) SetResolveLinkname(fn func(string) string) {
+	p.fnlink = fn
 }
 
 // -----------------------------------------------------------------------------

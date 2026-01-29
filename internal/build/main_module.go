@@ -34,11 +34,6 @@ import (
 	llvm "github.com/goplus/llvm"
 
 	llssa "github.com/goplus/llgo/ssa"
-	"golang.org/x/tools/go/callgraph"
-	"golang.org/x/tools/go/callgraph/cha"
-	"golang.org/x/tools/go/callgraph/vta"
-	"golang.org/x/tools/go/ssa"
-	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 // genMainModule generates the main entry module for an llgo program.
@@ -88,23 +83,17 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	if !needAbiInit {
-		// vta callgraph
-		progSSA := ctx.progSSA
+		mainPkg.PruneAbiTypes(nil)
+		// the VTA callgraph needs to support patches to work
+		// progSSA := ctx.progSSA
+		// chaGraph := cha.CallGraph(progSSA)
+		// vtaGraph := vta.CallGraph(ssautil.AllFunctions(progSSA), chaGraph)
+		// invoked := buildInvokeIndex(vtaGraph)
 
-		chaGraph := cha.CallGraph(progSSA)
-		vtaGraph := vta.CallGraph(ssautil.AllFunctions(progSSA), chaGraph)
-		_ = vtaGraph
-		invoked := buildInvokeIndex(chaGraph)
-
-		mainPkg.PruneAbiTypes(progSSA, func(sel *types.Selection, toPtr bool) bool {
-			var method *ssa.Function
-			if toPtr {
-				method = progSSA.LookupMethod(types.NewPointer(sel.Recv()), sel.Obj().Pkg(), sel.Obj().Name())
-			} else {
-				method = progSSA.MethodValue(sel)
-			}
-			return invoked[method]
-		})
+		// mainPkg.PruneAbiTypes(progSSA, func(sel *types.Selection) bool {
+		// 	method := progSSA.MethodValue(sel)
+		// 	return invoked[method]
+		// })
 	}
 
 	var abiInit llssa.Function
@@ -124,19 +113,19 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	return mainAPkg
 }
 
-func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
-	invoked := make(map[*ssa.Function]bool)
-	for _, node := range cg.Nodes {
-		for _, out := range node.Out {
-			if out.Callee != nil && out.Callee.Func != nil {
-				//if out.Site == nil || out.Site.Common().IsInvoke() {
-				invoked[out.Callee.Func] = true
-				//}
-			}
-		}
-	}
-	return invoked
-}
+// func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
+// 	invoked := make(map[*ssa.Function]bool)
+// 	for _, node := range cg.Nodes {
+// 		for _, out := range node.Out {
+// 			if out.Callee != nil && out.Callee.Func != nil {
+// 				if out.Site == nil || out.Site.Common().IsInvoke() {
+// 					invoked[out.Callee.Func] = true
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return invoked
+// }
 
 // defineEntryFunction creates the program's entry function. The name is
 // "main" for standard targets, or "__main_argc_argv" with hidden visibility
