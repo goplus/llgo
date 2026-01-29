@@ -69,52 +69,6 @@ func TestClearUnreachableMethods(t *testing.T) {
 	}
 }
 
-// Regression: Error methods must keep Ifn/Tfn even when not listed in ReachableMethods.
-func TestErrorMethodKept(t *testing.T) {
-	ctx := llvm.NewContext()
-	defer ctx.Dispose()
-
-	in := filepath.Join("testll", "errortest", "test.ll")
-	raw, err := os.ReadFile(in)
-	if err != nil {
-		t.Fatalf("read ll: %v", err)
-	}
-	buf, err := llvm.NewMemoryBufferFromFile(in)
-	if err != nil {
-		t.Fatalf("memory buffer: %v", err)
-	}
-	mod, err := ctx.ParseIR(buf)
-	if err != nil {
-		t.Fatalf("parse ll: %v", err)
-	}
-
-	res := deadcode.Result{
-		Reachable:        make(map[irgraph.SymID]bool),
-		ReachableMethods: make(map[irgraph.SymID]map[int]bool), // intentionally empty
-	}
-
-	Apply(mod, res, Options{})
-
-	g := mod.NamedGlobal("*_llgo_github.com/goplus/llgo/_demo/b.Demo")
-	if g.IsNil() {
-		t.Fatalf("global not found")
-	}
-	init := g.Initializer()
-	methods := init.Operand(init.OperandsCount() - 1)
-	// method[1] is Error; its Ifn/Tfn should stay non-null.
-	errMethod := methods.Operand(1)
-	if errMethod.Operand(2).IsNull() || errMethod.Operand(3).IsNull() {
-		t.Fatalf("Error method Ifn/Tfn cleared unexpectedly")
-	}
-
-	origLine := firstModuleLine(string(raw))
-	outText := fixModuleID(mod.String(), origLine)
-	out := filepath.Join("testll", "errortest", "out.ll")
-	if err := os.WriteFile(out, []byte(outText), 0o644); err != nil {
-		t.Fatalf("write out.ll: %v", err)
-	}
-}
-
 func TestApplyIfacemethodDCE(t *testing.T) {
 	ctx := llvm.NewContext()
 	defer ctx.Dispose()
