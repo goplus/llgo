@@ -1,0 +1,3 @@
+reloc(directcall) closure.A -> closure.A$1
+reloc(directcall) closure.A$1 -> closure.B
+reloc(directref) closure.init -> closure.init$guard

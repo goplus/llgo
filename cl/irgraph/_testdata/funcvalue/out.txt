@@ -1,0 +1,2 @@
+reloc(directcall) funcvalue.A -> funcvalue.B
+reloc(directref) funcvalue.init -> funcvalue.init$guard

@@ -1,0 +1,3 @@
+reloc(directcall) runtimealloc.Use -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directref) runtimealloc.Use -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directref) runtimealloc.init -> runtimealloc.init$guard

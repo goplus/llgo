@@ -36,12 +36,15 @@ var AbiMode int
 var CheckLinkArgs bool
 var CheckLLFiles bool
 var GenLLFiles bool
+var GenRelocLL bool
+var GenBCFiles bool
 var ForceEspClang bool
 var SizeReport bool
 var SizeFormat string
 var SizeLevel string
 var ForceRebuild bool
 var PrintCommands bool
+var DCE bool
 
 const DefaultTestTimeout = "10m" // Matches Go's default test timeout
 
@@ -52,6 +55,7 @@ func AddCommonFlags(fs *flag.FlagSet) {
 func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&ForceRebuild, "a", false, "Force rebuilding of packages that are already up-to-date")
 	fs.BoolVar(&PrintCommands, "x", false, "Print the commands")
+	fs.BoolVar(&DCE, "dce", false, "Enable experimental Go-style link-time DCE (build/run only)")
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	if buildenv.Dev {
@@ -59,6 +63,8 @@ func AddBuildFlags(fs *flag.FlagSet) {
 		fs.BoolVar(&CheckLinkArgs, "check-linkargs", false, "check link args valid")
 		fs.BoolVar(&CheckLLFiles, "check-llfiles", false, "check .ll files valid")
 		fs.BoolVar(&GenLLFiles, "gen-llfiles", false, "generate .ll files for pkg export")
+		fs.BoolVar(&GenRelocLL, "gen-relocll", false, "emit reloc metadata table in generated .ll")
+		fs.BoolVar(&GenBCFiles, "gen-bcfiles", false, "generate .bc files for pkg export")
 		fs.BoolVar(&ForceEspClang, "force-espclang", false, "force to use esp-clang")
 	}
 
@@ -177,6 +183,7 @@ func UpdateConfig(conf *build.Config) error {
 	conf.Tags = Tags
 	conf.Verbose = Verbose
 	conf.PrintCommands = PrintCommands
+	conf.DCE = DCE
 	conf.Target = Target
 	conf.Port = Port
 	conf.BaudRate = BaudRate
@@ -218,6 +225,8 @@ func UpdateConfig(conf *build.Config) error {
 		conf.CheckLinkArgs = CheckLinkArgs
 		conf.CheckLLFiles = CheckLLFiles
 		conf.GenLL = GenLLFiles
+		conf.GenRelocLL = GenRelocLL
+		conf.GenBC = GenBCFiles
 		conf.ForceEspClang = ForceEspClang
 	}
 	return nil

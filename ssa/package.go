@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"go/token"
 	"go/types"
@@ -210,6 +211,8 @@ type aProgram struct {
 
 	printfTy *types.Signature
 
+	emitReloc bool
+
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
 	abiSymbol    map[string]Type   // abi symbol name => Type
@@ -265,6 +268,11 @@ func NewProgram(target *Target) Program {
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
+}
+
+// EnableRelocTable toggles emitting reloc metadata into the module.
+func (p Program) EnableRelocTable(enable bool) {
+	p.emitReloc = enable
 }
 
 func (p Program) Target() *Target {
@@ -694,6 +702,10 @@ type aPackage struct {
 	NeedAbiInit bool // need load all abi types for reflect make type
 
 	export map[string]string // pkgPath.nameInPkg => exportname
+
+	relocs        []llvm.Value
+	relocBuilt    bool
+	relocStrCache map[string]llvm.Value
 }
 
 type Package = *aPackage
@@ -755,6 +767,9 @@ func (p Package) Path() string {
 
 // String returns a string representation of the package.
 func (p Package) String() string {
+	if p.Prog.emitReloc && len(p.relocs) > 0 {
+		p.ensureRelocGlobal()
+	}
 	return p.mod.String()
 }
 
@@ -798,6 +813,116 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 	}
 	p.strs[v] = ret
 	return
+}
+
+// reloc helpers -------------------------------------------------------------
+
+type relocKind = int32
+
+const (
+	relocUseIface       relocKind = 1
+	relocUseIfaceMethod           = 2
+	relocUseNamedMethod           = 3
+	relocMethodOff                = 4
+	relocReflectMethod            = 5
+	relocTypeRef                  = 6
+)
+
+// addReloc records a reloc metadata entry if enabled.
+// The 5th field "info" is used to carry optional string data
+// (e.g. interface method name for useifacemethod reloc).
+// The 6th field "fnType" is used to carry an optional function type symbol
+// (e.g. interface method func type for useifacemethod reloc).
+func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, info llvm.Value, fnType llvm.Value) {
+	if !p.Prog.emitReloc {
+		return
+	}
+	vptr := p.Prog.VoidPtr().ll
+	castPtr := func(v llvm.Value) llvm.Value {
+		if v.IsNil() {
+			return llvm.ConstNull(vptr)
+		}
+		if v.Type() == vptr {
+			return v
+		}
+		return llvm.ConstBitCast(v, vptr)
+	}
+	relocTy := p.relocStructType()
+	entry := llvm.ConstNamedStruct(relocTy, []llvm.Value{
+		llvm.ConstInt(p.Prog.ctx.Int32Type(), uint64(kind), true),
+		castPtr(owner),
+		castPtr(target),
+		llvm.ConstInt(p.Prog.ctx.Int64Type(), uint64(add), true),
+		castPtr(info),
+		castPtr(fnType),
+	})
+	p.relocs = append(p.relocs, entry)
+}
+
+func (p Package) relocStructType() llvm.Type {
+	fields := []llvm.Type{
+		p.Prog.ctx.Int32Type(),
+		p.Prog.tyVoidPtr(),
+		p.Prog.tyVoidPtr(),
+		p.Prog.ctx.Int64Type(),
+		p.Prog.tyVoidPtr(), // optional string/info
+		p.Prog.tyVoidPtr(), // optional fn type symbol
+	}
+	return p.Prog.ctx.StructType(fields, false)
+}
+
+// relocString returns a pointer to a global string for reloc targets.
+func (p Package) relocString(s string) llvm.Value {
+	if p.relocStrCache == nil {
+		p.relocStrCache = make(map[string]llvm.Value)
+	}
+	if v, ok := p.relocStrCache[s]; ok {
+		return v
+	}
+	prog := p.Prog
+	hash := sha256.Sum256([]byte(s))
+	name := fmt.Sprintf("__llgo_relocstr$%x", hash[:8])
+	typ := llvm.ArrayType(prog.tyInt8(), len(s))
+	global := llvm.AddGlobal(p.mod, typ, name)
+	global.SetInitializer(prog.ctx.ConstString(s, false))
+	global.SetLinkage(llvm.PrivateLinkage)
+	global.SetGlobalConstant(true)
+	global.SetUnnamedAddr(true)
+	global.SetAlignment(1)
+	v := llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
+	p.relocStrCache[s] = v
+	return v
+}
+
+func (p Package) ensureRelocGlobal() {
+	if p.relocBuilt || !p.Prog.emitReloc {
+		return
+	}
+	p.relocBuilt = true
+	if len(p.relocs) == 0 {
+		return
+	}
+	relocTy := p.relocStructType()
+	arr := llvm.ConstArray(relocTy, p.relocs)
+	global := llvm.AddGlobal(p.mod, arr.Type(), "__llgo_relocs")
+	global.SetLinkage(llvm.InternalLinkage)
+	global.SetGlobalConstant(true)
+	global.SetInitializer(arr)
+	global.SetUnnamedAddr(true)
+	if len(p.relocs) == 0 {
+		global.SetAlignment(1)
+	}
+
+	// Keep reloc table from being dropped by optimizers.
+	usedTy := llvm.ArrayType(p.Prog.tyVoidPtr(), 1)
+	used := llvm.AddGlobal(p.mod, usedTy, "llvm.used")
+	used.SetLinkage(llvm.AppendingLinkage)
+	used.SetGlobalConstant(true)
+	used.SetUnnamedAddr(true)
+	used.SetSection("llvm.metadata")
+	used.SetInitializer(llvm.ConstArray(p.Prog.tyVoidPtr(), []llvm.Value{
+		llvm.ConstBitCast(global, p.Prog.tyVoidPtr()),
+	}))
 }
 
 // -----------------------------------------------------------------------------
