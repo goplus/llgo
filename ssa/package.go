@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
@@ -210,13 +211,28 @@ type aProgram struct {
 
 	printfTy *types.Signature
 
-	paramObjPtr_ *types.Var
-	linkname     map[string]string // pkgPath.nameInPkg => linkname
-	abiSymbol    map[string]Type   // abi symbol name => Type
+	paramObjPtr_   *types.Var
+	linkname       map[string]string     // pkgPath.nameInPkg => linkname
+	abiSymbol      map[string]*AbiSymbol // abi symbol name => Type
+	abiTypeName    map[types.Type]string
+	abiTypePruning bool
+	methodIsInvoke func(method *types.Selection) bool
+
+	invokeMethods map[string]map[types.Type]none
 
 	ptrSize int
 
 	is32Bits bool
+}
+
+func (p Program) AddInvoke(fn *types.Func) {
+	name := fn.Name()
+	m, ok := p.invokeMethods[name]
+	if !ok {
+		m = make(map[types.Type]none)
+		p.invokeMethods[name] = m
+	}
+	m[p.patch(fn.Type())] = none{}
 }
 
 // A Program presents a program.
@@ -263,7 +279,8 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
+		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
+		abiTypeName: make(map[types.Type]string), invokeMethods: make(map[string]map[types.Type]none),
 	}
 }
 
@@ -312,6 +329,17 @@ func (p Program) SetLinkname(name, link string) {
 func (p Program) Linkname(name string) (link string, ok bool) {
 	link, ok = p.linkname[name]
 	return
+}
+
+func (p Program) resolveLinkname(name string) string {
+	if link, ok := p.linkname[name]; ok {
+		prefix, ltarget, _ := strings.Cut(link, ".")
+		if prefix != "C" {
+			panic("resolveLinkname: invalid link: " + link)
+		}
+		return ltarget
+	}
+	return name
 }
 
 func (p Program) runtime() *types.Package {

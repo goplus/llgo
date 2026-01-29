@@ -82,6 +82,20 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
+	if !needAbiInit {
+		mainPkg.PruneAbiTypes(nil)
+		// the VTA callgraph needs to support patches to work
+		// progSSA := ctx.progSSA
+		// chaGraph := cha.CallGraph(progSSA)
+		// vtaGraph := vta.CallGraph(ssautil.AllFunctions(progSSA), chaGraph)
+		// invoked := buildInvokeIndex(vtaGraph)
+
+		// mainPkg.PruneAbiTypes(progSSA, func(sel *types.Selection) bool {
+		// 	method := progSSA.MethodValue(sel)
+		// 	return invoked[method]
+		// })
+	}
+
 	var abiInit llssa.Function
 	if needAbiInit {
 		abiInit = mainPkg.InitAbiTypes("init$abitypes")
@@ -98,6 +112,20 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 
 	return mainAPkg
 }
+
+// func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
+// 	invoked := make(map[*ssa.Function]bool)
+// 	for _, node := range cg.Nodes {
+// 		for _, out := range node.Out {
+// 			if out.Callee != nil && out.Callee.Func != nil {
+// 				if out.Site == nil || out.Site.Common().IsInvoke() {
+// 					invoked[out.Callee.Func] = true
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return invoked
+// }
 
 // defineEntryFunction creates the program's entry function. The name is
 // "main" for standard targets, or "__main_argc_argv" with hidden visibility
