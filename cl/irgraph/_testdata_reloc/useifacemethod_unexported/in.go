@@ -1,6 +1,9 @@
 package useifacemethod_unexported
 
-type I interface{ m(); M() }
+type I interface {
+	m()
+	M()
+}
 
 type T struct{}
 
