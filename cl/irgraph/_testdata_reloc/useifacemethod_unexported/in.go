@@ -14,3 +14,8 @@ func Use(i I) {
 	// call unexported method to trigger useifacemethod reloc with a package-qualified name
 	i.m()
 }
+
+func Convert() I {
+	var t T
+	return t // triggers useiface + methodoff relocs
+}
