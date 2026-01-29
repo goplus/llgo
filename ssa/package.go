@@ -912,6 +912,17 @@ func (p Package) ensureRelocGlobal() {
 	if len(p.relocs) == 0 {
 		global.SetAlignment(1)
 	}
+
+	// Keep reloc table from being dropped by optimizers.
+	usedTy := llvm.ArrayType(p.Prog.tyVoidPtr(), 1)
+	used := llvm.AddGlobal(p.mod, usedTy, "llvm.used")
+	used.SetLinkage(llvm.AppendingLinkage)
+	used.SetGlobalConstant(true)
+	used.SetUnnamedAddr(true)
+	used.SetSection("llvm.metadata")
+	used.SetInitializer(llvm.ConstArray(p.Prog.tyVoidPtr(), []llvm.Value{
+		llvm.ConstBitCast(global, p.Prog.tyVoidPtr()),
+	}))
 }
 
 // -----------------------------------------------------------------------------
