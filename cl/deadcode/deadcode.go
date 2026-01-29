@@ -17,6 +17,9 @@
 package deadcode
 
 import (
+	"fmt"
+	"os"
+	"sort"
 	"strings"
 
 	"github.com/goplus/llgo/cl/irgraph"
@@ -29,6 +32,13 @@ type Result struct {
 	MarkableMethods  []MethodRef
 	IfaceMethods     map[MethodSig]bool             // interface methods observed via useifacemethod
 	ReachableMethods map[irgraph.SymID]map[int]bool // methods confirmed reachable by iface calls
+}
+
+var verbose bool
+
+// SetVerbose enables verbose debugging output during Analyze.
+func SetVerbose(v bool) {
+	verbose = v
 }
 
 // MethodSig identifies a method by name and signature type descriptor.
@@ -53,6 +63,8 @@ type deadcodePass struct {
 	markableMethods  []MethodRef
 	ifaceMethods     map[MethodSig]bool
 	reachableMethods map[irgraph.SymID]map[int]bool
+	reflectSeen      bool            // true if dynamic reflect method lookup seen
+	namedMethods     map[string]bool // method names from MethodByName("constant")
 }
 
 // Analyze computes reachability from roots using call+ref edges.
@@ -61,13 +73,17 @@ func Analyze(g *irgraph.Graph, roots []irgraph.SymID) Result {
 	pass.markRoots(roots)
 	pass.flood()
 	pass.markIfaceMethods()
-	return Result{
+	res := Result{
 		Reachable:        pass.reachable,
 		UsedInIface:      pass.usedInIface,
 		MarkableMethods:  pass.markableMethods,
 		IfaceMethods:     pass.ifaceMethods,
 		ReachableMethods: pass.reachableMethods,
 	}
+	if verbose {
+		logResult(res, roots)
+	}
+	return res
 }
 
 func newDeadcodePass(g *irgraph.Graph, rootCount int) *deadcodePass {
@@ -80,6 +96,8 @@ func newDeadcodePass(g *irgraph.Graph, rootCount int) *deadcodePass {
 		markableMethods:  nil,
 		ifaceMethods:     make(map[MethodSig]bool),
 		reachableMethods: make(map[irgraph.SymID]map[int]bool),
+		reflectSeen:      false,
+		namedMethods:     make(map[string]bool),
 	}
 	if g != nil {
 		for _, r := range g.Relocs {
@@ -139,6 +157,17 @@ func (d *deadcodePass) processRelocs(owner irgraph.SymID) {
 				panic("useifacemethod missing fnType")
 			}
 			d.ifaceMethods[MethodSig{Name: name, Typ: fnTyp}] = true
+		case irgraph.EdgeRelocUseNamedMethod:
+			// MethodByName("constant") - record the specific method name
+			name := r.Name
+			if name == "" {
+				name = string(r.Target)
+			}
+			d.namedMethods[name] = true
+		case irgraph.EdgeRelocReflectMethod:
+			// Dynamic reflect method lookup (MethodByName with non-constant arg)
+			// Give up on static analysis for methods - keep all exported methods
+			d.reflectSeen = true
 		case irgraph.EdgeRelocTypeRef:
 			if d.usedInIface[owner] {
 				d.markUsedInIface(r.Target)
@@ -210,10 +239,20 @@ func (d *deadcodePass) addReachableMethod(typ irgraph.SymID, idx int) {
 }
 
 func (d *deadcodePass) shouldKeepMethod(m MethodRef) bool {
+	// Always keep Error methods for error interface
 	if m.Sig.Name == "Error" || strings.HasSuffix(m.Sig.Name, ".Error") {
 		return true
 	}
+	// Keep methods matching interface method signatures
 	if d.ifaceMethods[m.Sig] {
+		return true
+	}
+	// Keep methods matching MethodByName("constant") calls
+	if d.namedMethods[m.Sig.Name] {
+		return true
+	}
+	// If dynamic reflect method lookup seen, keep all methods
+	if d.reflectSeen {
 		return true
 	}
 	return false
@@ -239,5 +278,45 @@ func (d *deadcodePass) markMethod(m MethodRef) {
 			d.mark(relocs[i+2].Target)
 		}
 		break
+	}
+}
+
+func logResult(res Result, roots []irgraph.SymID) {
+	fmt.Fprintln(os.Stderr, "[deadcode] roots:", roots)
+	fmt.Fprintf(os.Stderr, "[deadcode] reachable=%d usedInIface=%d ifaceMethods=%d markable=%d reachableMethods=%d\n",
+		len(res.Reachable), len(res.UsedInIface), len(res.IfaceMethods), len(res.MarkableMethods), len(res.ReachableMethods))
+
+	if len(res.ReachableMethods) > 0 {
+		fmt.Fprintln(os.Stderr, "[deadcode] reachable methods:")
+		types := make([]string, 0, len(res.ReachableMethods))
+		for t := range res.ReachableMethods {
+			types = append(types, string(t))
+		}
+		sort.Strings(types)
+		for _, t := range types {
+			idxs := res.ReachableMethods[irgraph.SymID(t)]
+			var list []int
+			for i := range idxs {
+				list = append(list, i)
+			}
+			sort.Ints(list)
+			fmt.Fprintf(os.Stderr, "  %s -> %v\n", t, list)
+		}
+	}
+	if len(res.IfaceMethods) > 0 {
+		fmt.Fprintln(os.Stderr, "[deadcode] iface method demands:")
+		var ms []MethodSig
+		for m := range res.IfaceMethods {
+			ms = append(ms, m)
+		}
+		sort.Slice(ms, func(i, j int) bool {
+			if ms[i].Name == ms[j].Name {
+				return ms[i].Typ < ms[j].Typ
+			}
+			return ms[i].Name < ms[j].Name
+		})
+		for _, m := range ms {
+			fmt.Fprintf(os.Stderr, "  %s :: %s\n", m.Name, m.Typ)
+		}
 	}
 }

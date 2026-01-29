@@ -461,3 +461,59 @@ func assertReachableMethods(t *testing.T, res Result, want map[string][]int) {
 		}
 	}
 }
+
+// TestReflectMethodKeepsAllMethods verifies that when EdgeRelocReflectMethod is seen,
+// all methods of UsedInIface types are kept (reflectSeen = true).
+func TestReflectMethodKeepsAllMethods(t *testing.T) {
+	g := &irgraph.Graph{
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "caller", Kind: irgraph.EdgeCall},
+			{Owner: "caller", Target: "TypeT", Kind: irgraph.EdgeRef},
+			{Owner: "caller", Target: "TypeT", Kind: irgraph.EdgeRelocUseIface},
+			// Dynamic reflect method lookup - should keep all methods
+			{Owner: "caller", Target: "caller", Kind: irgraph.EdgeRelocReflectMethod},
+			// TypeT has two methods
+			{Owner: "TypeT", Target: "FooType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0, Name: "Foo"},
+			{Owner: "TypeT", Target: "FooIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeT", Target: "FooTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeT", Target: "BarType", Kind: irgraph.EdgeRelocMethodOff, Addend: 1, Name: "Bar"},
+			{Owner: "TypeT", Target: "BarIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeT", Target: "BarTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	// With reflectSeen=true, all methods should be reachable
+	assertReachableMethods(t, res, map[string][]int{
+		"TypeT": {0, 1},
+	})
+}
+
+// TestNamedMethodKeepsSpecificMethod verifies that EdgeRelocUseNamedMethod
+// keeps only the method with the matching name.
+func TestNamedMethodKeepsSpecificMethod(t *testing.T) {
+	g := &irgraph.Graph{
+		Relocs: []irgraph.RelocEdge{
+			{Owner: "main", Target: "caller", Kind: irgraph.EdgeCall},
+			{Owner: "caller", Target: "TypeT", Kind: irgraph.EdgeRef},
+			{Owner: "caller", Target: "TypeT", Kind: irgraph.EdgeRelocUseIface},
+			// MethodByName("Foo") - should only keep Foo
+			{Owner: "caller", Target: "_mname:Foo", Kind: irgraph.EdgeRelocUseNamedMethod, Name: "Foo"},
+			// TypeT has two methods: Foo and Bar
+			{Owner: "TypeT", Target: "FooType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0, Name: "Foo"},
+			{Owner: "TypeT", Target: "FooIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeT", Target: "FooTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},
+			{Owner: "TypeT", Target: "BarType", Kind: irgraph.EdgeRelocMethodOff, Addend: 1, Name: "Bar"},
+			{Owner: "TypeT", Target: "BarIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+			{Owner: "TypeT", Target: "BarTfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 1},
+		},
+	}
+	res := Analyze(g, []irgraph.SymID{"main"})
+	// Only Foo should be reachable (index 0), not Bar (index 1)
+	assertReachableMethods(t, res, map[string][]int{
+		"TypeT": {0},
+	})
+	// Bar should not be in reachable methods
+	if res.ReachableMethods["TypeT"][1] {
+		t.Fatal("Bar method should not be reachable")
+	}
+}
