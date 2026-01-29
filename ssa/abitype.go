@@ -513,7 +513,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 
 		// Record reloc metadata (method offsets) if enabled.
-		if b.Pkg != nil {
+		if b.Pkg != nil && b.Prog.emitReloc {
 			pkg := b.Pkg
 			nilPtr := llvm.ConstNull(pkg.Prog.tyVoidPtr())
 			// Use relocString for a stable pointer to the method name (avoid casting runtime.String).
