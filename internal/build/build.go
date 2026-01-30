@@ -118,38 +118,35 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos           string
-	Goarch         string
-	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath        string
-	AppExt         string  // ".exe" on Windows, empty on Unix
-	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts        OutFmts // Output format specifications (only for Target != "")
-	CompileOnly    bool    // compile test binary but do not run it (only valid for ModeTest)
-	Emulator       bool    // run in emulator mode
-	Port           string  // target port for flashing
-	BaudRate       int     // baudrate for serial communication
-	RunArgs        []string
-	Mode           Mode
-	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode        AbiMode
-	GenExpect      bool // only valid for ModeCmpTest
-	Verbose        bool
-	PrintCommands  bool // print executed commands
-	GenLL          bool // generate pkg .ll files
-	GenRelocLL     bool // generate reloc info and keep .ll
-	CollectIRGraph bool // collect per-package IR dependency graphs
-	GenBC          bool // generate pkg .bc files
-	DCE            bool // enable experimental Go-like link-time DCE (build/run only)
-	CheckLLFiles   bool // check .ll files valid
-	CheckLinkArgs  bool // check linkargs valid
-	ForceEspClang  bool // force to use esp-clang
-	ForceRebuild   bool // force rebuilding of packages that are already up-to-date
-	Tags           string
-	SizeReport     bool   // print size report after successful build
-	SizeFormat     string // size report format: text,json (default text)
-	SizeLevel      string // size aggregation level: full,module,package (default module)
-	CompilerHash   string // metadata hash for the running compiler (development builds only)
+	Goos          string
+	Goarch        string
+	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath       string
+	AppExt        string  // ".exe" on Windows, empty on Unix
+	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts       OutFmts // Output format specifications (only for Target != "")
+	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
+	Emulator      bool    // run in emulator mode
+	Port          string  // target port for flashing
+	BaudRate      int     // baudrate for serial communication
+	RunArgs       []string
+	Mode          Mode
+	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode       AbiMode
+	GenExpect     bool // only valid for ModeCmpTest
+	Verbose       bool
+	PrintCommands bool // print executed commands
+	GenLL         bool // generate pkg .ll files
+	DCE           bool // enable experimental Go-like link-time DCE (build/run only)
+	CheckLLFiles  bool // check .ll files valid
+	CheckLinkArgs bool // check linkargs valid
+	ForceEspClang bool // force to use esp-clang
+	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
+	Tags          string
+	SizeReport    bool   // print size report after successful build
+	SizeFormat    string // size report format: text,json (default text)
+	SizeLevel     string // size aggregation level: full,module,package (default module)
+	CompilerHash  string // metadata hash for the running compiler (development builds only)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -239,7 +236,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		if conf.BuildMode != BuildModeExe {
 			return nil, fmt.Errorf("dce only supports buildmode=exe")
 		}
-		conf.GenRelocLL = true
 	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
@@ -265,9 +261,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		if isWasmTarget(conf.Goos) || strings.HasPrefix(conf.Target, "wasi") {
 			return nil, fmt.Errorf("dce does not support wasm targets")
 		}
-		conf.GenBC = true
-		conf.GenRelocLL = true
-		conf.CollectIRGraph = true
 		conf.ForceRebuild = true
 	}
 
@@ -311,7 +304,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	prog := llssa.NewProgram(target)
-	prog.EnableRelocTable(conf.GenRelocLL)
+	prog.EnableRelocTable(conf.DCE)
 	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
 		if arch == "wasm" {
 			sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
@@ -513,7 +506,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		mockable.Exit(1)
 	}
 
-	if conf.CollectIRGraph && len(ctx.entryPkgs) > 0 {
+	if conf.DCE && len(ctx.entryPkgs) > 0 {
 		allPkgs = append(allPkgs, ctx.entryPkgs...)
 	}
 
@@ -600,8 +593,8 @@ func (c *context) linker() *clang.Cmd {
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
-	if ctx.buildConf.GenBC {
-		// In gen-bcfiles mode we keep raw .bc inputs for linking (no archives).
+	if ctx.buildConf.DCE {
+		// In DCE mode we keep raw .bc inputs for linking (no archives).
 		return nil
 	}
 	if len(aPkg.ObjFiles) == 0 {
@@ -875,8 +868,8 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// If GenLL/GenBC is enabled, emit .ll/.bc for debugging
-		if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
+		// If GenLL/DCE is enabled, emit .ll/.bc for debugging
+		if ctx.buildConf.GenLL || ctx.buildConf.DCE {
 			if ctx.buildConf.GenLL {
 				llFile := baseName + ".ll"
 				llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
@@ -888,7 +881,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 					return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
 				}
 			}
-			if ctx.buildConf.GenBC {
+			if ctx.buildConf.DCE {
 				bcFile := baseName + ".bc"
 				bcArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-o", bcFile, "-c", srcFile)
 				if verbose {
@@ -901,8 +894,8 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			}
 		}
 
-		// If GenBC is enabled, record the .bc for linking; otherwise compile to .o
-		if ctx.buildConf.GenBC {
+		// If DCE is enabled, record the .bc for linking; otherwise compile to .o
+		if ctx.buildConf.DCE {
 			bcFile := baseName + ".bc"
 			objFiles = append(objFiles, bcFile)
 		} else {
@@ -987,8 +980,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
-	if ctx.buildConf.CollectIRGraph {
-		if ctx.buildConf.GenRelocLL {
+	if ctx.buildConf.DCE {
+		if ctx.buildConf.DCE {
 			_ = entryPkg.LPkg.String() // ensure __llgo_relocs is materialized
 		}
 		entryPkg.IRGraph = irgraph.Build(entryPkg.LPkg.Module(), irgraph.Options{})
@@ -1206,10 +1199,10 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	if ctx.buildConf.GenBC {
+	if ctx.buildConf.DCE {
 		for _, f := range objFiles {
 			if strings.HasSuffix(f, ".o") {
-				return fmt.Errorf("gen-bcfiles enabled but non-bc input %s", f)
+				return fmt.Errorf("DCE enabled but non-bc input %s", f)
 			}
 		}
 
@@ -1229,7 +1222,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				}
 				bcInputs = append(bcInputs, bcFile)
 			default:
-				return fmt.Errorf("gen-bcfiles expects .bc/.ll inputs, got %s", f)
+				return fmt.Errorf("DCE expects .bc/.ll inputs, got %s", f)
 			}
 		}
 
@@ -1566,8 +1559,8 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
-	if ctx.buildConf.CollectIRGraph {
-		if ctx.buildConf.GenRelocLL {
+	if ctx.buildConf.DCE {
+		if ctx.buildConf.DCE {
 			_ = ret.String() // ensure __llgo_relocs is materialized
 		}
 		aPkg.IRGraph = irgraph.Build(ret.Module(), irgraph.Options{})
@@ -1621,8 +1614,8 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
-	// If GenLL/GenBC is enabled, keep copies of the .ll/.bc for debugging
-	if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
+	// If GenLL/DCE is enabled, keep copies of the .ll/.bc for debugging
+	if ctx.buildConf.GenLL || ctx.buildConf.DCE {
 		if err := os.Chmod(f.Name(), 0644); err != nil {
 			return "", err
 		}
@@ -1632,7 +1625,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 				return "", err
 			}
 		}
-		if ctx.buildConf.GenBC {
+		if ctx.buildConf.DCE {
 			bcFile := exportFile + ".bc"
 			bcArgs := []string{"-emit-llvm", "-o", bcFile, "-c", f.Name(), "-Wno-override-module"}
 			if ctx.buildConf.Verbose {
@@ -1644,8 +1637,8 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			}
 		}
 	}
-	// If GenBC is enabled, return the .bc for linking; otherwise compile .ll to .o
-	if ctx.buildConf.GenBC {
+	// If DCE is enabled, return the .bc for linking; otherwise compile .ll to .o
+	if ctx.buildConf.DCE {
 		return exportFile + ".bc", nil
 	}
 	objFile, err := os.CreateTemp("", base+"-*.o")
@@ -2025,8 +2018,8 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		args = append(args, "-x", "c")
 	}
 
-	// If GenLL/GenBC is enabled, emit .ll/.bc for debugging, then compile to .o
-	if ctx.buildConf.GenLL || ctx.buildConf.GenBC {
+	// If GenLL/DCE is enabled, emit .ll/.bc for debugging, then compile to .o
+	if ctx.buildConf.GenLL || ctx.buildConf.DCE {
 		if ctx.buildConf.GenLL {
 			llFile := baseName + ".ll"
 			llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
@@ -2037,7 +2030,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 			err := cmd.Compile(llArgs...)
 			check(err)
 		}
-		if ctx.buildConf.GenBC {
+		if ctx.buildConf.DCE {
 			bcFile := baseName + ".bc"
 			bcArgs := append(slices.Clone(args), "-emit-llvm", "-o", bcFile, "-c", cFile)
 			if verbose {
@@ -2049,8 +2042,8 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		}
 	}
 
-	// If GenBC is enabled, record .bc for linking; otherwise compile to .o
-	if ctx.buildConf.GenBC {
+	// If DCE is enabled, record .bc for linking; otherwise compile to .o
+	if ctx.buildConf.DCE {
 		bcFile := baseName + ".bc"
 		procFile(bcFile)
 	} else {
