@@ -37,9 +37,8 @@ type Stats struct {
 type Options struct{}
 
 // Apply runs the DCE pass over mod using the reachability result.
-//
-// Note: This removes bodies of unreachable functions and marks them external.
-// Method table/reloc-aware pruning is handled in later stages.
+// It clears unreachable method pointers in type metadata and removes
+// reloc tables to allow LLVM DCE to eliminate unused functions.
 func Apply(mod llvm.Module, res deadcode.Result, _ Options) Stats {
 	stats := Stats{
 		Reachable:           len(res.Reachable),
@@ -110,26 +109,6 @@ func removeRelocTables(mod llvm.Module) {
 	}
 }
 
-func demoteToDecl(mod llvm.Module, fn llvm.Value) {
-	name := fn.Name()
-	ft := fn.GlobalValueType()
-	fn.SetName("")
-	decl := llvm.AddFunction(mod, name, ft)
-	decl.SetLinkage(llvm.ExternalLinkage)
-	decl.SetFunctionCallConv(fn.FunctionCallConv())
-	for _, attr := range fn.GetFunctionAttributes() {
-		decl.AddAttributeAtIndex(-1, attr)
-	}
-	if gc := fn.GC(); gc != "" {
-		decl.SetGC(gc)
-	}
-	if sp := fn.Subprogram(); !sp.IsNil() {
-		decl.SetSubprogram(sp)
-	}
-	fn.ReplaceAllUsesWith(decl)
-	fn.EraseFromParentAsFunction()
-}
-
 // clearUnreachableMethods zeros Mtyp/Ifn/Tfn for unreachable methods in type
 // metadata constants. All method slots are cleared by default; the whitelist
 // reachMethods marks which (type,index) to keep.
@@ -139,18 +118,6 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 	for g := mod.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
 		init := g.Initializer()
 		if init.IsNil() {
-			continue
-		}
-		// Skip core runtime/reflect metadata to avoid breaking fundamental operations.
-		// Note: llgo uses "_llgo_reflect" naming convention (e.g., *_llgo_reflect.rtype)
-		// instead of "reflect/" paths, so we must check for both patterns.
-		name := g.Name()
-		if strings.Contains(name, "runtime/") ||
-			strings.Contains(name, "reflect/") ||
-			strings.Contains(name, "_llgo_reflect") ||
-			strings.Contains(name, "internal/reflectlite") ||
-			strings.Contains(name, "internal/abi") ||
-			strings.Contains(name, "_llgo_iface$") {
 			continue
 		}
 		methodsVal, elemTy, ok := methodArray(init)
