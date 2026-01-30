@@ -135,15 +135,12 @@ func clearUnreachableMethods(mod llvm.Module, reachMethods map[irgraph.SymID]map
 		newMethods := make([]llvm.Value, methodCount)
 		for i := 0; i < methodCount; i++ {
 			orig := methodsVal.Operand(i)
-			keepByIdx := keepIdx != nil && keepIdx[i]
-			keepByName := isErrorLike(orig)
-			if keepByIdx || keepByName {
+			if keepIdx != nil && keepIdx[i] {
 				newMethods[i] = orig
 				continue
 			}
 			nameField := orig.Operand(0)
 			mtypField := orig.Operand(1) // keep signature for matching
-			// Keep Error methods intact to avoid crashing error interface calls.
 			zeroed := llvm.ConstStruct([]llvm.Value{nameField, mtypField, zeroPtr, zeroPtr}, false)
 			newMethods[i] = zeroed
 			changed = true
@@ -188,74 +185,4 @@ func methodArray(init llvm.Value) (llvm.Value, llvm.Type, bool) {
 		return llvm.Value{}, llvm.Type{}, false
 	}
 	return methodsVal, elemTy, true
-}
-
-// methodName best-effort extracts the method name from the abi.Method constant.
-func methodName(method llvm.Value) (string, bool) {
-	if method.IsNil() || method.OperandsCount() < 1 {
-		return "", false
-	}
-	nameField := method.Operand(0)
-	if nameField.IsNil() || nameField.OperandsCount() < 2 {
-		return "", false
-	}
-	ptrVal := nameField.Operand(0)
-	lenVal := nameField.Operand(1)
-	if lenVal.IsNil() || !lenVal.IsConstant() {
-		return "", false
-	}
-	length := int(lenVal.ZExtValue())
-	// Unwrap simple const-expr wrappers (bitcast/gep).
-	for !ptrVal.IsAConstantExpr().IsNil() {
-		switch ptrVal.Opcode() {
-		case llvm.BitCast, llvm.GetElementPtr:
-			ptrVal = ptrVal.Operand(0)
-		default:
-			goto DONE_UNWRAP
-		}
-	}
-DONE_UNWRAP:
-	if ptrVal.IsAGlobalVariable().IsNil() {
-		return "", false
-	}
-	ginit := ptrVal.Initializer()
-	if ginit.IsNil() || ginit.Type().TypeKind() != llvm.ArrayTypeKind {
-		return "", false
-	}
-	elemCount := ginit.OperandsCount()
-	n := length
-	if n > elemCount {
-		n = elemCount
-	}
-	buf := make([]byte, n)
-	for i := 0; i < n; i++ {
-		c := ginit.Operand(i)
-		if c.IsNil() || !c.IsConstant() {
-			return "", false
-		}
-		buf[i] = byte(c.ZExtValue())
-	}
-	return string(buf), true
-}
-
-// isErrorLike reports whether the method appears to be an Error method by name,
-// using multiple fallbacks to accommodate stripped/opaque constants.
-func isErrorLike(method llvm.Value) bool {
-	if name, ok := methodName(method); ok && (name == "Error" || strings.HasSuffix(name, ".Error")) {
-		return true
-	}
-	// Fallback: check symbol names of Ifn/Tfn for ".Error".
-	for _, idx := range []int{2, 3} {
-		if method.OperandsCount() <= idx {
-			continue
-		}
-		op := method.Operand(idx)
-		if op.IsNil() {
-			continue
-		}
-		if gn := op.Name(); gn != "" && strings.Contains(gn, ".Error") {
-			return true
-		}
-	}
-	return false
 }
