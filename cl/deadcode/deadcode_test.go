@@ -112,7 +112,6 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 	t.Helper()
 	conf := build.NewDefaultConf(build.ModeBuild)
 	conf.DCE = true
-	conf.CollectIRGraph = true
 	conf.ForceRebuild = true
 	conf.OutFile = filepath.Join(t.TempDir(), "deadcode-test-bin")
 	pkgs, err := build.Do([]string{dir}, conf)

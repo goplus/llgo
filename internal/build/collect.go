@@ -307,7 +307,7 @@ func (c *context) ensureCacheManager() *cacheManager {
 // tryLoadFromCache attempts to load a package from cache.
 // Returns true if cache hit, false otherwise.
 func (c *context) tryLoadFromCache(pkg *aPackage) bool {
-	if c.buildConf.GenBC {
+	if c.buildConf.DCE {
 		return false
 	}
 	if !cacheEnabled() {
@@ -420,7 +420,7 @@ type cacheArchiveMetadata struct {
 
 // saveToCache saves a built package to cache.
 func (c *context) saveToCache(pkg *aPackage) error {
-	if c.buildConf.GenBC {
+	if c.buildConf.DCE {
 		return nil
 	}
 	if !cacheEnabled() {
