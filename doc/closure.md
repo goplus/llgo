@@ -90,15 +90,30 @@ Semantics:
 |----------|----------|-------|
 | amd64    | mm0      | Use `-msse2` to keep MMX free |
 | 386      | mm0      | Use `-msse2` to keep MMX free |
-| arm64    | x26      | Reserved via clang flag |
-| riscv64  | x27      | Reserved via clang flag |
+| arm64    | x26      | Reserved via target-feature |
+| riscv64  | x27      | Reserved via target-feature |
 | wasm     | -        | Uses conditional ctx param |
 | arm      | -        | Uses conditional ctx param |
 
+## Register Access Semantics
+
+- `llvm.read_register`/`llvm.write_register` are used on targets that support
+  reserving a general register via target-feature (arm64/riscv64). This lets
+  the backend use the reserved register directly without extra moves.
+- The read is intentionally performed once at function entry and cached.
+  LLVM may legally move the read across calls because it has no side effects.
+  This is safe on callee-saved targets (arm64/riscv64) since the ABI requires
+  callees to preserve the register value.
+- On x86/x86_64, MMX regs are caller-saved and LLVM intrinsic support is
+  limited. The x86 path is treated as a separate special case and keeps
+  inline asm with side effects (and memory clobber) to prevent reordering
+  across calls, since caller-saved regs may be clobbered by C calls.
+
 ## Notes
 
-- Native builds reserve the ctx register by passing
-  `-mllvm --reserve-regs-for-regalloc=<reg>` to clang.
+- Native builds reserve the ctx register using target features
+  (`+reserve-<reg>`) on platforms that support it (arm64/riscv64). For x86/x86_64,
+  `-msse2` is used to keep MMX regs free for the ctx register.
 - `FuncPCABI0` and `FuncPCABIInternal` return the real symbol address.
 - Interface method closures pass receiver as first argument; ctx register
   is still written for uniform semantics.
