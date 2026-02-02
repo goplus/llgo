@@ -33,6 +33,10 @@ func (b *Builder) Str(t types.Type) string {
 		switch t.Kind() {
 		case types.UnsafePointer:
 			return "unsafe.Pointer"
+		case types.Byte:
+			return "uint8"
+		case types.Rune:
+			return "int32"
 		}
 		return t.String()
 	case *types.Pointer:

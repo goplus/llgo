@@ -12,6 +12,7 @@ func main() {
 	testNamed1()
 	testNamed2()
 	testNamed3()
+	testNamed4()
 	testAnonymous1()
 	testAnonymous2()
 	testAnonymous3()
@@ -39,6 +40,19 @@ func testNamed2() {
 
 func testNamed3() {
 	var a I2 = &T{100}
+	if a.Demo2() != 100 {
+		panic("testNamed3 error")
+	}
+}
+
+func testNamed4() {
+	type M struct {
+		T
+	}
+	v := &M{T{100}}
+	v.Demo1()
+	v.Demo2()
+	var a I2 = v
 	if a.Demo2() != 100 {
 		panic("testNamed4 error")
 	}
