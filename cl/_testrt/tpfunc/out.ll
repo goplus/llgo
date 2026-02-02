@@ -51,12 +51,6 @@ _llgo_0:
   ret void
 }
 
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpfunc.main$1"(ptr %0, ptr %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/tpfunc.main$1"(ptr %1)
-  ret void
-}
-
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)

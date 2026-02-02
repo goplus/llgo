@@ -12,12 +12,12 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tpnamed"
 
 define %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[error]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[error]" { ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1", ptr null }
 }
 
 define %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"() {
 _llgo_0:
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" { ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1", ptr null }
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"() {
@@ -40,13 +40,13 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/tpnamed.main"() {
 _llgo_0:
-  %0 = call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1", ptr null })
+  %0 = call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" { ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1", ptr null })
   ret void
 }
 
 define %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"() {
 _llgo_0:
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" { ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1", ptr null }
 }
 
 define [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"() {
@@ -54,37 +54,15 @@ _llgo_0:
   ret [0 x i8] zeroinitializer
 }
 
-define linkonce %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"(ptr %0) {
-_llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"()
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" %1
-}
-
-define linkonce %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"(ptr %0) {
-_llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"()
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1
-}
-
-define linkonce %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"(ptr %0) {
-_llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"()
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %1
-}
-
 define linkonce [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %0, 0
-  %3 = call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %2(ptr %1)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %1)
+  %3 = call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %2()
   %4 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %3, 1
   %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[github.com/goplus/llgo/cl/_testgo/tpnamed.Void]" %3, 0
-  %6 = call [0 x i8] %5(ptr %4)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %4)
+  %6 = call [0 x i8] %5()
   ret [0 x i8] %6
-}
-
-define linkonce [0 x i8] @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"(ptr %0) {
-_llgo_0:
-  %1 = tail call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"()
-  ret [0 x i8] %1
 }

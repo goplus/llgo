@@ -24,7 +24,7 @@ _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %0, i32 0, i32 1
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %2, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1", ptr null }, ptr %3, align 8
+  store { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1", ptr null }, ptr %3, align 8
   store ptr %2, ptr %1, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %0, i32 0, i32 1
   %5 = load ptr, ptr %4, align 8
@@ -32,7 +32,8 @@ _llgo_0:
   %7 = load { ptr, ptr }, ptr %6, align 8
   %8 = extractvalue { ptr, ptr } %7, 1
   %9 = extractvalue { ptr, ptr } %7, 0
-  call void %9(ptr %8, i64 100)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %8)
+  call void %9(i64 100)
   ret void
 }
 
@@ -44,12 +45,6 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1"(ptr %0, i64 %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1"(i64 %1)
-  ret void
-}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
