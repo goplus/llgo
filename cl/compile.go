@@ -1361,7 +1361,11 @@ retry:
 	switch t := nt.(type) {
 	case *types.Named:
 		if t.TypeArgs() == nil {
-			return
+			obj := t.Obj()
+			// skip package-level type
+			if obj.Parent() == obj.Pkg().Scope() {
+				return
+			}
 		}
 		p.compileMethods(pkg, typ)
 	case *types.Struct:
