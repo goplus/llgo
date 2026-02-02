@@ -339,6 +339,15 @@ func ctxAsmStrings(goarch, reg string) (write string, read string, dialect llvm.
 	return write, read, tmpl.dialect, true
 }
 
+func ctxRegCallerSaved(goarch string) bool {
+	switch goarch {
+	case "amd64", "386":
+		return true
+	default:
+		return false
+	}
+}
+
 // WriteCtxReg writes a pointer value to the closure context register.
 func (b Builder) WriteCtxReg(val Expr) {
 	ptrType := b.Prog.VoidPtr()
@@ -359,7 +368,9 @@ func (b Builder) WriteCtxReg(val Expr) {
 	if reg.Constraint != "" {
 		parts = append(parts, "~"+reg.Constraint)
 	}
-	parts = append(parts, "~{memory}")
+	if ctxRegCallerSaved(b.Prog.target.GOARCH) {
+		parts = append(parts, "~{memory}")
+	}
 	constraints := strings.Join(parts, ",")
 	asm := llvm.InlineAsm(ftype, writeAsm, constraints, true, false, dialect, false)
 	b.impl.CreateCall(ftype, asm, []llvm.Value{casted.impl}, "")
@@ -380,7 +391,10 @@ func (b Builder) ReadCtxReg() Expr {
 		panic("ssa: ReadCtxReg called without ctx register asm template")
 	}
 	ftype := llvm.FunctionType(ptrType.ll, nil, false)
-	constraints := "=r,~{memory}"
+	constraints := "=r"
+	if ctxRegCallerSaved(b.Prog.target.GOARCH) {
+		constraints += ",~{memory}"
+	}
 	asm := llvm.InlineAsm(ftype, readAsm, constraints, true, false, dialect, false)
 	ret := b.impl.CreateCall(ftype, asm, nil, "")
 	return Expr{ret, ptrType}

@@ -90,7 +90,23 @@ func reserveRegisterFlags(goarch string) []string {
 }
 
 func appendMissingFlags(dst []string, flags []string) []string {
-	for _, flag := range flags {
+	for i := 0; i < len(flags); i++ {
+		flag := flags[i]
+		if flag == "-Xclang" && i+1 < len(flags) {
+			arg := flags[i+1]
+			found := false
+			for j := 0; j+1 < len(dst); j++ {
+				if dst[j] == "-Xclang" && dst[j+1] == arg {
+					found = true
+					break
+				}
+			}
+			if !found {
+				dst = append(dst, flag, arg)
+			}
+			i++
+			continue
+		}
 		if !slices.Contains(dst, flag) {
 			dst = append(dst, flag)
 		}

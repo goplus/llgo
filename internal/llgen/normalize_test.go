@@ -43,8 +43,18 @@ func TestNormalizeIR(t *testing.T) {
 			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		{
+			name:     "normalize arm64 WriteCtxReg without memory",
+			input:    `call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %data)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
+		},
+		{
 			name:     "normalize riscv64 WriteCtxReg",
 			input:    `call void asm sideeffect "mv x27, $0", "r,~{x27},~{memory}"(ptr %val)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
+		},
+		{
+			name:     "normalize riscv64 WriteCtxReg without memory",
+			input:    `call void asm sideeffect "mv x27, $0", "r,~{x27}"(ptr %val)`,
 			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		// ReadCtxReg patterns (precise matching)
@@ -64,9 +74,40 @@ func TestNormalizeIR(t *testing.T) {
 			expected: `%result = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
 		},
 		{
+			name:     "normalize arm64 ReadCtxReg without memory",
+			input:    `%result = call ptr asm sideeffect "mov $0, x26", "=r"()`,
+			expected: `%result = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
 			name:     "normalize riscv64 ReadCtxReg",
 			input:    `%val = call ptr asm sideeffect "mv $0, x27", "=r,~{memory}"()`,
 			expected: `%val = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
+			name:     "normalize riscv64 ReadCtxReg without memory",
+			input:    `%val = call ptr asm sideeffect "mv $0, x27", "=r"()`,
+			expected: `%val = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		// Read/Write register intrinsics
+		{
+			name:     "normalize read_register intrinsic i64",
+			input:    `%1 = call i64 @llvm.read_register.i64(metadata !0)`,
+			expected: `%1 = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
+			name:     "normalize read_volatile_register intrinsic i32",
+			input:    `%ctx = call i32 @llvm.read_volatile_register.i32(metadata !7)`,
+			expected: `%ctx = call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`,
+		},
+		{
+			name:     "normalize write_register intrinsic",
+			input:    `call void @llvm.write_register.i64(metadata !0, i64 %v)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
+		},
+		{
+			name:     "normalize register metadata node",
+			input:    `!0 = !{!"x26"}`,
+			expected: ``,
 		},
 		// target-features stripping
 		{

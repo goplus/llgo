@@ -19,12 +19,16 @@ package llgen
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/goplus/llgo/internal/ctxreg"
 )
 
 var (
-	targetFeaturesRe = regexp.MustCompile(`\s*"target-features"="[^"]*"`)
+	targetFeaturesRe    = regexp.MustCompile(`\s*"target-features"="[^"]*"`)
+	readRegisterCallRe  = regexp.MustCompile(`(?m)^(\s*%[\w.]+\s*=\s*)call\s+[^@]*@llvm\.read_(?:volatile_)?register\.[^(]+\(\s*metadata\s+![^)]+\)`)
+	writeRegisterCallRe = regexp.MustCompile(`(?m)^\s*call\s+void\s+@llvm\.write_(?:volatile_)?register\.[^(]+\(\s*metadata\s+![^,]+,\s*[^)]+\)`)
+	regMetadataRe       = regexp.MustCompile(`(?m)^!\d+\s*=\s*!\{!"(?:x26|x27|mm0|w26)"\}\s*$`)
 
 	// Asm instruction templates per architecture family (register name is %s placeholder)
 	// These define the LLVM IR asm string format for context register operations
@@ -59,16 +63,16 @@ func init() {
 		writeAsm := fmt.Sprintf(tmpl.writeFmt, info.Name)
 		readAsm := fmt.Sprintf(tmpl.readFmt, info.Name)
 
-		// WriteCtxReg pattern: call void asm sideeffect "<write_asm>", "r,~{reg},~{memory}"(ptr %...)
+		// WriteCtxReg pattern: call void asm sideeffect "<write_asm>", "r,~{reg}[,~{memory}]"(ptr %...)
 		writePattern := fmt.Sprintf(
-			`call void asm sideeffect "%s", "r,~\{%s\},~\{memory\}"\(ptr [^)]+\)`,
+			`call void asm sideeffect "%s", "r,~\{%s\}(?:,~\{memory\})?"\(ptr [^)]+\)`,
 			writeAsm, info.Name,
 		)
 		writeCtxRegPatterns = append(writeCtxRegPatterns, regexp.MustCompile(writePattern))
 
-		// ReadCtxReg pattern: call ptr asm sideeffect "<read_asm>", "=r,~{memory}"()
+		// ReadCtxReg pattern: call ptr asm sideeffect "<read_asm>", "=r[,~{memory}]"()
 		readPattern := fmt.Sprintf(
-			`call ptr asm sideeffect "%s", "=r,~\{memory\}"\(\)`,
+			`call ptr asm sideeffect "%s", "=r(?:,~\{memory\})?"\(\)`,
 			readAsm,
 		)
 		readCtxRegPatterns = append(readCtxRegPatterns, regexp.MustCompile(readPattern))
@@ -79,6 +83,13 @@ func init() {
 // regression comparisons (e.g. target-features, ctx register asm instructions).
 func NormalizeIR(ir string) string {
 	ir = targetFeaturesRe.ReplaceAllString(ir, "")
+
+	// Normalize read/write register intrinsics to the same placeholder as inline asm.
+	readRepl := strings.ReplaceAll(normalizedReadCtxReg, "$", "$$")
+	writeRepl := strings.ReplaceAll(normalizedWriteCtxReg, "$", "$$")
+	ir = readRegisterCallRe.ReplaceAllString(ir, `${1}`+readRepl)
+	ir = writeRegisterCallRe.ReplaceAllString(ir, writeRepl)
+	ir = regMetadataRe.ReplaceAllString(ir, "")
 
 	// Normalize WriteCtxReg inline asm (precise matching)
 	// Use ReplaceAllLiteralString to avoid $0 being interpreted as backreference

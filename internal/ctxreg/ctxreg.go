@@ -30,6 +30,7 @@ func ReserveFlags(goarch string) []string {
 		// Ensure floating point uses XMM so MMX regs remain free for ctx.
 		return []string{"-msse2"}
 	default:
-		return []string{"-mllvm", "--reserve-regs-for-regalloc=" + info.Name}
+		// Use target-feature to reserve the register across backends.
+		return []string{"-Xclang", "-target-feature", "-Xclang", "+reserve-" + info.Name}
 	}
 }

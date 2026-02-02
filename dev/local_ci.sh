@@ -23,6 +23,15 @@ log_section() {
 setup_python3_embed_pc() {
 	# Some packages expect `python3-embed.pc`; create a shim that
 	# points at whichever python-X.Y-embed pkg-config file exists.
+	if pkg-config --exists python-3.12-embed; then
+		local pcdir="$tmp_root/pc"
+		mkdir -p "$pcdir"
+		local libdir
+		libdir=$(pkg-config --variable=libdir python-3.12-embed)
+		ln -sf "$libdir/pkgconfig/python-3.12-embed.pc" "$pcdir/python3-embed.pc"
+		export PKG_CONFIG_PATH="$pcdir${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+		return
+	fi
 	if pkg-config --exists python3-embed; then
 		return
 	fi
@@ -56,6 +65,77 @@ setup_python3_embed_pc() {
 }
 
 setup_python3_embed_pc
+
+install_python_demo_deps() {
+	local pkgs=("numpy" "torch")
+	local pip_cmd=""
+	if command -v pip3.12 >/dev/null 2>&1; then
+		pip_cmd="pip3.12"
+	elif command -v python3.12 >/dev/null 2>&1; then
+		pip_cmd="python3.12 -m pip"
+	elif command -v python3 >/dev/null 2>&1; then
+		pip_cmd="python3 -m pip"
+	else
+		echo "warning: python3 not available; skipping python demo deps" >&2
+		return
+	fi
+	local extra_flags=()
+	if $pip_cmd --help 2>/dev/null | grep -q break-system-packages; then
+		extra_flags+=("--break-system-packages")
+	fi
+	$pip_cmd install "${extra_flags[@]}" "${pkgs[@]}"
+}
+
+ensure_cargs_libs() {
+	local cargs_dir="$workdir/_demo/c/cargs/libs"
+	if [ -d "$cargs_dir/lib/pkgconfig" ]; then
+		export PKG_CONFIG_PATH="$cargs_dir/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+		return
+	fi
+
+	if [ -n "${LLGO_ASSETS_DIR:-}" ] && [ -d "$LLGO_ASSETS_DIR/cargs/lib/pkgconfig" ]; then
+		mkdir -p "$cargs_dir"
+		rsync -a "$LLGO_ASSETS_DIR/cargs/" "$cargs_dir/"
+	else
+		local goos goarch demo_pkg url
+		goos=$(go env GOOS)
+		goarch=$(go env GOARCH)
+		case "${goos}-${goarch}" in
+		darwin-arm64) demo_pkg="cargs_darwin_arm64.zip" ;;
+		darwin-amd64) demo_pkg="cargs_darwin_amd64.zip" ;;
+		linux-amd64) demo_pkg="cargs_linux_amd64.zip" ;;
+		linux-arm64) demo_pkg="cargs_linux_arm64.zip" ;;
+		linux-386) demo_pkg="cargs_linux_386.zip" ;;
+		*) demo_pkg="" ;;
+		esac
+		if [ -z "$demo_pkg" ]; then
+			echo "warning: unsupported platform for cargs demo: ${goos}-${goarch}" >&2
+			return
+		fi
+		mkdir -p "$cargs_dir"
+		url="https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/${demo_pkg}"
+		if command -v curl >/dev/null 2>&1; then
+			curl -fL "$url" -o "$cargs_dir/$demo_pkg"
+		elif command -v wget >/dev/null 2>&1; then
+			wget -O "$cargs_dir/$demo_pkg" "$url"
+		else
+			echo "error: missing curl/wget for cargs demo download" >&2
+			exit 1
+		fi
+		( cd "$cargs_dir" && unzip -q "$demo_pkg" && rm -f "$demo_pkg" )
+	fi
+
+	local prefix
+	prefix=$(cd "$cargs_dir" && pwd)
+	if [ -d "$prefix/lib/pkgconfig" ]; then
+		for tmpl in "$prefix"/lib/pkgconfig/*.pc.tmpl; do
+			[ -f "$tmpl" ] || continue
+			pc_file="${tmpl%.tmpl}"
+			sed "s|{{.Prefix}}|${prefix}|g" "$tmpl" > "$pc_file"
+		done
+		export PKG_CONFIG_PATH="$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+	fi
+}
 
 ensure_llama2_model() {
 	local dst="$workdir/_demo/c/llama2-c/stories15M.bin"
@@ -174,6 +254,9 @@ log_section "llgo test"
 (cd "$workdir" && llgo test ./...)
 
 log_section "Demo Tests"
+install_python_demo_deps
+ensure_cargs_libs
+export LLGO_FULL_RPATH=true
 demo_jobs="${LLGO_DEMO_JOBS:-}"
 if [ -z "$demo_jobs" ]; then
 	if command -v nproc >/dev/null 2>&1; then
