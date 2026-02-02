@@ -54,3 +54,4 @@ go.work*
 *.uf2
 *.img
 *.zip
+expect.txt.new

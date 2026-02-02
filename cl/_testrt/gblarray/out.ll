@@ -1,7 +1,7 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testrt/gblarray'
 source_filename = "github.com/goplus/llgo/cl/_testrt/gblarray"
 
-%"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
+%"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 
 @"github.com/goplus/llgo/cl/_testrt/gblarray.basicTypes" = global [25 x ptr] zeroinitializer, align 8
@@ -20,7 +20,7 @@ _llgo_0:
 
 define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.basicType"(i64 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 72)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 64)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 0
   %3 = icmp sge i64 %0, 25
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %3)

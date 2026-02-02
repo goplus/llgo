@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
@@ -16,6 +17,8 @@ import (
 	"github.com/goplus/llgo/internal/targets"
 	"github.com/goplus/llgo/internal/xtool/llvm"
 	envllvm "github.com/goplus/llgo/xtool/env/llvm"
+
+	"github.com/goplus/llgo/internal/ctxreg"
 )
 
 type Export struct {
@@ -78,6 +81,21 @@ func buildEnvMap(llgoRoot string) map[string]string {
 	// envs["zip"] = ""      // Path to zip file
 
 	return envs
+}
+
+// reserveRegisterFlags returns clang flags to reserve the closure ctx register.
+// It keeps the register out of the allocator so inline asm reads/writes are stable.
+func reserveRegisterFlags(goarch string) []string {
+	return ctxreg.ReserveFlags(goarch)
+}
+
+func appendMissingFlags(dst []string, flags []string) []string {
+	for _, flag := range flags {
+		if !slices.Contains(dst, flag) {
+			dst = append(dst, flag)
+		}
+	}
+	return dst
 }
 
 // getCanonicalArchName returns the canonical architecture name for a target triple
@@ -247,6 +265,10 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
 		}
+		if reserve := reserveRegisterFlags(goarch); len(reserve) > 0 {
+			export.CCFLAGS = appendMissingFlags(export.CCFLAGS, reserve)
+			export.CFLAGS = appendMissingFlags(export.CFLAGS, reserve)
+		}
 
 		// Add sysroot for macOS only
 		if goos == "darwin" {
@@ -289,7 +311,11 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 		}
 		return
 	}
+	// For non-wasm cross-compilation, set basic export fields
 	if goarch != "wasm" {
+		export.LLVMTarget = targetTriple
+		export.GOOS = goos
+		export.GOARCH = goarch
 		return
 	}
 
@@ -491,6 +517,10 @@ func UseTarget(targetName string) (export Export, err error) {
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
+	}
+	if reserve := reserveRegisterFlags(config.GOARCH); len(reserve) > 0 {
+		cflags = appendMissingFlags(cflags, reserve)
+		ccflags = appendMissingFlags(ccflags, reserve)
 	}
 	// Expand template variables in cflags
 	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)

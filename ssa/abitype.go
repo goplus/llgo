@@ -98,9 +98,9 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 	case "":
 		equal = prog.Nil(prog.Type(equalFunc, InGo))
 	case "structequal", "arrayequal":
-		equal = b.Pkg.rtFunc(name)
+		fn := b.Pkg.rtFunc(name)
 		env := b.abiType(t)
-		equal = b.aggregateValue(prog.Type(equalFunc, InGo), equal.impl, env.impl)
+		equal = b.closureConst(fn, []Expr{env})
 	default:
 		equal = b.rtClosure(name)
 	}
@@ -120,9 +120,7 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 
 func (b Builder) rtClosure(name string) Expr {
 	fn := b.Pkg.rtFunc(name)
-	typ := b.Prog.Type(fn.raw.Type, InGo)
-	fn = checkExpr(fn, typ.raw.Type, b)
-	return fn
+	return b.closureConst(fn, nil)
 }
 
 /*
@@ -152,7 +150,13 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 			var values []llvm.Value
 			values = append(values, b.Str(f.Name()).impl)
 			values = append(values, b.abiType(f.Type()).impl)
-			values = append(values, prog.IntVal(prog.OffsetOf(typ, i), prog.Uintptr()).impl)
+			var offset uint64
+			if IsClosure(t) {
+				offset = 0
+			} else {
+				offset = prog.OffsetOf(typ, i)
+			}
+			values = append(values, prog.IntVal(offset, prog.Uintptr()).impl)
 			values = append(values, b.Str(t.Tag(i)).impl)
 			values = append(values, prog.BoolVal(f.Embedded()).impl)
 			fields[i] = llvm.ConstNamedStruct(ft.ll, values)
@@ -278,9 +282,9 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 	case *types.Map:
 		bucket := pkg.abi.MapBucket(t)
 		flags := pkg.abi.MapFlags(t)
-		hash := b.Pkg.rtFunc("typehash")
+		hash := b.Pkg.rtFunc("typehashFromCtx")
 		env := b.abiType(t.Key())
-		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
+		hasher := b.closureConst(hash, []Expr{env})
 		fields = []llvm.Value{
 			b.abiType(t.Key()).impl,
 			b.abiType(t.Elem()).impl,

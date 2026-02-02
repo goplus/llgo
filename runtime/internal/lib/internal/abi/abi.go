@@ -31,11 +31,17 @@ func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 
 func FuncPCABI0(f interface{}) uintptr {
 	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
+	if words[1] == nil {
+		return 0
+	}
 	return *(*uintptr)(unsafe.Pointer(words[1]))
 }
 
 func FuncPCABIInternal(f interface{}) uintptr {
 	words := (*[2]unsafe.Pointer)(unsafe.Pointer(&f))
+	if words[1] == nil {
+		return 0
+	}
 	return *(*uintptr)(unsafe.Pointer(words[1]))
 }
 

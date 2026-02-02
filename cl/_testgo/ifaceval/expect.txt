@@ -1,0 +1,4 @@
+starting test
+calling f()
+MyPrinter: test
+done

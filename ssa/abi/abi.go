@@ -114,6 +114,9 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 	case *types.Pointer, *types.Signature, *types.Map, *types.Chan:
 		return Pointer, raw, lvl
 	case *types.Struct:
+		if IsClosure(t) {
+			return Pointer, raw, lvl
+		}
 		if t.NumFields() == 1 {
 			return DataKindOf(t.Field(0).Type(), lvl+1, is32Bits)
 		}
@@ -317,24 +320,27 @@ func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
 }
 
 func IsClosure(raw *types.Struct) bool {
-	n := raw.NumFields()
-	if n == 2 {
-		f1, f2 := raw.Field(0), raw.Field(1)
-		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
-			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
-		}
+	if raw.NumFields() == 0 {
+		return false
 	}
-	return false
+	f0 := raw.Field(0)
+	if f0.Name() != "$f" {
+		return false
+	}
+	_, ok := f0.Type().(*types.Signature)
+	return ok
 }
 
 func IsClosureFields(fields []*types.Var) bool {
-	if len(fields) == 2 {
-		f1, f2 := fields[0], fields[1]
-		if _, ok := f1.Type().(*types.Signature); ok && f1.Name() == "$f" {
-			return f2.Type() == types.Typ[types.UnsafePointer] && f2.Name() == "$data"
-		}
+	if len(fields) == 0 {
+		return false
 	}
-	return false
+	f0 := fields[0]
+	if f0.Name() != "$f" {
+		return false
+	}
+	_, ok := f0.Type().(*types.Signature)
+	return ok
 }
 
 func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {

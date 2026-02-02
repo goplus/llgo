@@ -1,0 +1,4 @@
+starting test
+result: 42
+PASS
+before reading x

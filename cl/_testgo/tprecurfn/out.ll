@@ -1,9 +1,10 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testgo/tprecurfn'
 source_filename = "github.com/goplus/llgo/cl/_testgo/tprecurfn"
 
-%"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]" = type { { ptr, ptr }, ptr }
+%"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/cl/_testgo/tprecurfn.init$guard" = global i1 false, align 1
+@"__llgo_closure_const$github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1", i64 0 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/tprecurfn.init"() {
 _llgo_0:
@@ -20,19 +21,20 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/tprecurfn.main"() {
 _llgo_0:
-  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %0, i32 0, i32 1
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %2, i32 0, i32 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1", ptr null }, ptr %3, align 8
+  store ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1", ptr %3, align 8
   store ptr %2, ptr %1, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %0, i32 0, i32 1
   %5 = load ptr, ptr %4, align 8
   %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %5, i32 0, i32 0
-  %7 = load { ptr, ptr }, ptr %6, align 8
-  %8 = extractvalue { ptr, ptr } %7, 1
-  %9 = extractvalue { ptr, ptr } %7, 0
-  call void %9(ptr %8, i64 100)
+  %7 = load ptr, ptr %6, align 8
+  %8 = load ptr, ptr %7, align 8
+  %9 = getelementptr i8, ptr %7, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
+  call void %8(i64 100)
   ret void
 }
 
@@ -44,12 +46,6 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1"(ptr %0, i64 %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1"(i64 %1)
-  ret void
-}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

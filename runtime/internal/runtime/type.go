@@ -18,6 +18,16 @@ type chantype = abi.ChanType
 type structfield = abi.StructField
 type uncommonType = abi.UncommonType
 
+// Exported aliases ensure the compiler can reference runtime types via export data.
+type PtrType = abi.PtrType
+type SliceType = abi.SliceType
+type ChanType = abi.ChanType
+type StructType = abi.StructType
+type ArrayType = abi.ArrayType
+type MapType = abi.MapType
+type StructField = abi.StructField
+type UncommonType = abi.UncommonType
+
 /*
 type maptype = abi.MapType
 

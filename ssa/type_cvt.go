@@ -184,7 +184,8 @@ func (p goTypes) cvtClosure(sig *types.Signature) *types.Struct {
 	raw := p.cvtFunc(sig, nil)
 	flds := []*types.Var{
 		types.NewField(token.NoPos, nil, "$f", raw, false),
-		types.NewField(token.NoPos, nil, "$data", types.Typ[types.UnsafePointer], false),
+		// Use uintptr to keep a fixed-size header (fn + hasCtx) across targets.
+		types.NewField(token.NoPos, nil, "$h", types.Typ[types.Uintptr], false),
 	}
 	return types.NewStruct(flds, nil)
 }

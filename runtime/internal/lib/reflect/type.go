@@ -2135,19 +2135,21 @@ var closureLookupCache struct {
 	m sync.Map
 }
 
+var uintptrType = rtypeOf(uintptr(0))
+
 // Struct returns a struct type.
 func closureOf(ftyp *abi.FuncType) *abi.Type {
 	fields := []abi.StructField{
 		abi.StructField{
 			Name_: "$f",
 			Typ:   &ftyp.Type,
-		}, abi.StructField{
-			Name_:  "$data",
-			Typ:    unsafePointerType,
-			Offset: pointerSize,
+		},
+		abi.StructField{
+			Name_: "$h",
+			Typ:   uintptrType,
 		},
 	}
-	size := 2 * pointerSize
+	size := pointerSize * 2
 
 	repr := make([]byte, 0, 64)
 	hash := fnv1(0, []byte("struct {")...)
@@ -2175,7 +2177,7 @@ func closureOf(ftyp *abi.FuncType) *abi.Type {
 			Kind_:       uint8(abi.Struct),
 			Str_:        str,
 			TFlag:       abi.TFlagClosure,
-			PtrBytes:    2 * pointerSize,
+			PtrBytes:    pointerSize,
 			Align_:      pointerAlign,
 			FieldAlign_: pointerAlign,
 			Hash:        hash,

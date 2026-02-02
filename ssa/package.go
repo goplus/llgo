@@ -248,19 +248,15 @@ func NewProgram(target *Target) Program {
 	}
 	ctx := llvm.NewContext()
 	td := target.targetData() // TODO(xsw): target config
-	/*
-		arch := target.GOARCH
-		if arch == "" {
-			arch = runtime.GOARCH
-		}
-		sizes := types.SizesFor("gc", arch)
-
-		// TODO(xsw): Finalize may cause panic, so comment it.
-		ctx.Finalize()
-	*/
+	arch := target.GOARCH
+	if arch == "" {
+		arch = runtime.GOARCH
+	}
+	sizes := types.SizesFor("gc", arch)
 	is32Bits := (td.PointerSize() == 4 || is32Bits(target.GOARCH))
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(),
+		sizes:  sizes,
 		target: target, td: td, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
@@ -335,6 +331,20 @@ func (p Program) rtNamed(name string) *types.Named {
 				}
 				t, _ = p.gocvt.cvtNamed(t.(*types.Named))
 				return t.(*types.Named)
+			}
+			if alt := rtFallbackType(name); alt != "" {
+				if obj := rtScope.Lookup(alt); obj != nil {
+					t := obj.Type()
+					for {
+						if alias, ok := t.(*types.Alias); ok {
+							t = types.Unalias(alias)
+						} else {
+							break
+						}
+					}
+					t, _ = p.gocvt.cvtNamed(t.(*types.Named))
+					return t.(*types.Named)
+				}
 			}
 		}
 	}
@@ -428,7 +438,8 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		mod: mod, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
-		export: make(map[string]string),
+		closureConsts: make(map[string]llvm.Value),
+		export:        make(map[string]string),
 	}
 	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
@@ -687,11 +698,14 @@ type aPackage struct {
 	goStrs map[string]llvm.Value
 	fnlink func(string) string
 
-	iRoutine int
+	iRoutine      int
+	iClosureConst int
 
 	NeedRuntime bool
 	NeedPyInit  bool
 	NeedAbiInit bool // need load all abi types for reflect make type
+
+	closureConsts map[string]llvm.Value
 
 	export map[string]string // pkgPath.nameInPkg => exportname
 }
@@ -712,38 +726,75 @@ func (p Package) ExportFuncs() map[string]string {
 
 func (p Package) rtFunc(fnName string) Expr {
 	p.NeedRuntime = true
-	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
+	rt := p.Prog.runtime()
+	if rt == nil {
+		panic("ssa: runtime package not set")
+	}
+	obj := rt.Scope().Lookup(fnName)
+	if obj == nil {
+		if sig := rtFallbackSig(fnName); sig != nil {
+			name := FullName(rt, fnName)
+			return p.NewFunc(name, sig, InGo).Expr
+		}
+		panic("ssa: runtime symbol not found: " + fnName)
+	}
+	fn := obj.(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr
 }
 
-func (p Package) cFunc(fullName string, sig *types.Signature) Expr {
-	return p.NewFunc(fullName, sig, InC).Expr
+func rtFallbackSig(fnName string) *types.Signature {
+	switch fnName {
+	case "memequal0", "memequal8", "memequal16", "memequal32", "memequal64",
+		"memequalptr", "strequal", "f32equal", "f64equal", "c64equal", "c128equal",
+		"interequal", "nilinterequal":
+		p0 := types.NewParam(0, nil, "", types.Typ[types.UnsafePointer])
+		p1 := types.NewParam(0, nil, "", types.Typ[types.UnsafePointer])
+		params := types.NewTuple(p0, p1)
+		results := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool]))
+		return types.NewSignatureType(nil, nil, nil, params, results, false)
+	case "structequal", "arrayequal":
+		p0 := types.NewParam(0, nil, "", types.Typ[types.UnsafePointer])
+		p1 := types.NewParam(0, nil, "", types.Typ[types.UnsafePointer])
+		p2 := types.NewParam(0, nil, "", types.Typ[types.UnsafePointer])
+		params := types.NewTuple(p0, p1, p2)
+		results := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Bool]))
+		return types.NewSignatureType(nil, nil, nil, params, results, false)
+	default:
+		return nil
+	}
 }
 
-const (
-	closureCtx  = "__llgo_ctx"
-	closureStub = "__llgo_stub."
-)
-
-// closureStub creates or reuses a wrapper for function values that lack closure ctx.
-// It stays on Package to match the original placement of closure stubs.
-func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind valueKind) (Expr, Expr) {
-	prog := b.Prog
-	switch origKind {
-	case vkFuncDecl:
-		wrap := p.closureWrapDecl(fn, sig)
-		return wrap.Expr, prog.Nil(prog.VoidPtr())
-	case vkFuncPtr:
-		wrap := p.closureWrapPtr(sig)
-		ptr := b.AllocU(prog.rawType(sig))
-		b.Store(ptr, fn)
-		data := b.Convert(prog.VoidPtr(), ptr)
-		return wrap.Expr, data
+func rtFallbackType(name string) string {
+	switch name {
+	case "ptrtype":
+		return "PtrType"
+	case "slicetype":
+		return "SliceType"
+	case "chantype":
+		return "ChanType"
+	case "structtype":
+		return "StructType"
+	case "arraytype":
+		return "ArrayType"
+	case "maptype":
+		return "MapType"
+	case "functype":
+		return "FuncType"
+	case "interfacetype":
+		return "InterfaceType"
+	case "structfield":
+		return "StructField"
+	case "uncommonType":
+		return "UncommonType"
 	default:
-		return fn, prog.Nil(prog.VoidPtr())
+		return ""
 	}
+}
+
+func (p Package) cFunc(fullName string, sig *types.Signature) Expr {
+	return p.NewFunc(fullName, sig, InC).Expr
 }
 
 // -----------------------------------------------------------------------------

@@ -23,6 +23,8 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -296,6 +298,92 @@ func (b Builder) InlineAsmFull(instruction, constraints string, retType Type, ex
 	ftype := llvm.FunctionType(retType.ll, typs, false)
 	asm := llvm.InlineAsm(ftype, instruction, constraints, true, false, llvm.InlineAsmDialectATT, false)
 	return Expr{b.impl.CreateCall(ftype, asm, vals, ""), retType}
+}
+
+type ctxAsmTemplate struct {
+	write   string
+	read    string
+	dialect llvm.InlineAsmDialect
+}
+
+var ctxAsmTemplates = map[string]ctxAsmTemplate{
+	"amd64": {
+		write:   "movq $0, %%%s",
+		read:    "movq %%%s, $0",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+	"386": {
+		write:   "movd $0, %%%s",
+		read:    "movd %%%s, $0",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+	"arm64": {
+		write:   "mov %s, $0",
+		read:    "mov $0, %s",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+	"riscv64": {
+		write:   "mv %s, $0",
+		read:    "mv $0, %s",
+		dialect: llvm.InlineAsmDialectATT,
+	},
+}
+
+func ctxAsmStrings(goarch, reg string) (write string, read string, dialect llvm.InlineAsmDialect, ok bool) {
+	tmpl, ok := ctxAsmTemplates[goarch]
+	if !ok {
+		return "", "", llvm.InlineAsmDialectATT, false
+	}
+	write = fmt.Sprintf(tmpl.write, reg)
+	read = fmt.Sprintf(tmpl.read, reg)
+	return write, read, tmpl.dialect, true
+}
+
+// WriteCtxReg writes a pointer value to the closure context register.
+func (b Builder) WriteCtxReg(val Expr) {
+	ptrType := b.Prog.VoidPtr()
+	casted := b.Convert(ptrType, val)
+	reg := b.Prog.target.CtxRegister()
+	if debugInstr {
+		log.Printf("WriteCtxReg %v to %s\n", casted.impl, reg.Name)
+	}
+	if reg.Name == "" {
+		panic("ssa: WriteCtxReg called without ctx register support")
+	}
+	writeAsm, _, dialect, ok := ctxAsmStrings(b.Prog.target.GOARCH, reg.Name)
+	if !ok {
+		panic("ssa: WriteCtxReg called without ctx register asm template")
+	}
+	ftype := llvm.FunctionType(b.Prog.tyVoid(), []llvm.Type{ptrType.ll}, false)
+	parts := []string{"r"}
+	if reg.Constraint != "" {
+		parts = append(parts, "~"+reg.Constraint)
+	}
+	parts = append(parts, "~{memory}")
+	constraints := strings.Join(parts, ",")
+	asm := llvm.InlineAsm(ftype, writeAsm, constraints, true, false, dialect, false)
+	b.impl.CreateCall(ftype, asm, []llvm.Value{casted.impl}, "")
+}
+
+// ReadCtxReg reads the closure context pointer from the context register.
+func (b Builder) ReadCtxReg() Expr {
+	reg := b.Prog.target.CtxRegister()
+	if debugInstr {
+		log.Printf("ReadCtxReg from %s\n", reg.Name)
+	}
+	if reg.Name == "" {
+		panic("ssa: ReadCtxReg called without ctx register support")
+	}
+	ptrType := b.Prog.VoidPtr()
+	_, readAsm, dialect, ok := ctxAsmStrings(b.Prog.target.GOARCH, reg.Name)
+	if !ok {
+		panic("ssa: ReadCtxReg called without ctx register asm template")
+	}
+	ftype := llvm.FunctionType(ptrType.ll, nil, false)
+	constraints := "=r,~{memory}"
+	asm := llvm.InlineAsm(ftype, readAsm, constraints, true, false, dialect, false)
+	ret := b.impl.CreateCall(ftype, asm, nil, "")
+	return Expr{ret, ptrType}
 }
 
 // GoString returns a Go string
@@ -598,10 +686,11 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
-		case vkClosure:
-			x = b.Field(x, 0)
-			if y.kind == vkClosure {
-				y = b.Field(y, 0)
+		case vkClosure, vkImethodClosure:
+			switch op {
+			case token.EQL, token.NEQ:
+				pred := uintPredOpToLLVM[op-predOpBase]
+				return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 			}
 			fallthrough
 		case vkFuncPtr, vkFuncDecl, vkChan, vkMap:
@@ -978,6 +1067,88 @@ func castPtr(b llvm.Builder, x llvm.Value, t llvm.Type) llvm.Value {
 
 // -----------------------------------------------------------------------------
 
+func (b Builder) closureObjStruct(sig *types.Signature, bindings []Expr) *types.Struct {
+	fields := make([]*types.Var, len(bindings)+2)
+	fields[0] = types.NewField(token.NoPos, nil, "fn", sig, false)
+	fields[1] = types.NewField(token.NoPos, nil, "hasCtx", types.Typ[types.Uintptr], false)
+	for i, binding := range bindings {
+		fieldName := "$" + strconv.Itoa(i)
+		fields[i+2] = types.NewField(token.NoPos, nil, fieldName, binding.RawType(), false)
+	}
+	return types.NewStruct(fields, nil)
+}
+
+func (b Builder) closureConst(fn Expr, bindings []Expr) Expr {
+	prog := b.Prog
+	sig := fn.raw.Type.(*types.Signature)
+	tclosure := prog.Closure(sig)
+	objStruct := b.closureObjStruct(sig, bindings)
+	objType := prog.rawType(objStruct)
+
+	name := fn.impl.Name()
+	key := name
+	if key == "" || len(bindings) > 0 {
+		b.Pkg.iClosureConst++
+		key = fmt.Sprintf("%s.%d", name, b.Pkg.iClosureConst)
+	}
+	gname := "__llgo_closure_const$" + key
+	if g, ok := b.Pkg.closureConsts[gname]; ok {
+		return b.ChangeType(tclosure, Expr{g, prog.Pointer(objType)})
+	}
+	g := b.Pkg.mod.NamedGlobal(gname)
+	if g.IsNil() {
+		g = llvm.AddGlobal(b.Pkg.mod, objType.ll, gname)
+		g.SetLinkage(llvm.PrivateLinkage)
+		g.SetGlobalConstant(true)
+	}
+	vals := make([]llvm.Value, len(bindings)+2)
+	vals[0] = fn.impl
+	if len(bindings) > 0 {
+		vals[1] = prog.IntVal(1, prog.Uintptr()).impl
+	} else {
+		vals[1] = prog.IntVal(0, prog.Uintptr()).impl
+	}
+	for i, binding := range bindings {
+		vals[i+2] = binding.impl
+	}
+	g.SetInitializer(llvm.ConstNamedStruct(objType.ll, vals))
+	b.Pkg.closureConsts[gname] = g
+	return b.ChangeType(tclosure, Expr{g, prog.Pointer(objType)})
+}
+
+func (b Builder) closureAlloc(fn Expr, bindings []Expr) Expr {
+	prog := b.Prog
+	sig := fn.raw.Type.(*types.Signature)
+	tclosure := prog.Closure(sig)
+	objStruct := b.closureObjStruct(sig, bindings)
+	objType := prog.rawType(objStruct)
+
+	values := make([]Expr, len(bindings)+2)
+	values[0] = fn
+	if len(bindings) > 0 {
+		values[1] = prog.IntVal(1, prog.Uintptr())
+	} else {
+		values[1] = prog.IntVal(0, prog.Uintptr())
+	}
+	copy(values[2:], bindings)
+	ptr := b.aggregateAllocU(objType, llvmFields(values, objStruct, b)...)
+	objPtr := Expr{ptr, prog.Pointer(objType)}
+	return b.ChangeType(tclosure, objPtr)
+}
+
+func (b Builder) closureEnvPtr(closure Expr) Expr {
+	prog := b.Prog
+	ptr := b.Convert(prog.VoidPtr(), closure)
+	off := prog.IntVal(uint64(prog.PointerSize()*2), prog.Int())
+	return b.Advance(ptr, off)
+}
+
+func (b Builder) closureHasCtx(closure Expr) Expr {
+	has := b.Field(closure, 1)
+	zero := llvm.ConstNull(has.ll)
+	return Expr{b.impl.CreateICmp(llvm.IntNE, has.impl, zero, ""), b.Prog.Bool()}
+}
+
 // The MakeClosure instruction yields a closure value whose code is
 // Fn and whose free variables' values are supplied by Bindings.
 //
@@ -991,16 +1162,7 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	if debugInstr {
 		log.Printf("MakeClosure %v, %v\n", fn, bindings)
 	}
-	prog := b.Prog
-	tfn := fn.Type
-	sig := tfn.raw.Type.(*types.Signature)
-	data := prog.Nil(prog.VoidPtr()).impl
-	if ctxParam := closureCtxParam(sig); ctxParam != nil {
-		tctx := ctxParam.Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
-		ptr := b.aggregateAllocU(prog.rawType(tctx), llvmFields(bindings, tctx, b)...)
-		data = ptr
-	}
-	return b.aggregateValue(prog.Closure(removeCtx(sig)), fn.impl, data)
+	return b.closureAlloc(fn, bindings)
 }
 
 // -----------------------------------------------------------------------------
@@ -1024,7 +1186,27 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	if debugInstr {
 		logCall("Call", fn, args)
 	}
+	stripClosureCtxParam := func(sig *types.Signature, argsLen int) *types.Signature {
+		if sig.Params().Len() != argsLen+1 {
+			return sig
+		}
+		first := sig.Params().At(0).Type().Underlying()
+		if b, ok := first.(*types.Basic); !ok || b.Kind() != types.UnsafePointer {
+			return sig
+		}
+		n := sig.Params().Len()
+		vars := make([]*types.Var, n-1)
+		for i := 1; i < n; i++ {
+			vars[i-1] = sig.Params().At(i)
+		}
+		return types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
+	}
 	var kind = fn.kind
+	// Fallback: if the static type is a closure struct but kind wasn't set,
+	// treat it as a closure call so we still wire up the context register.
+	if kind != vkClosure && fn.Type.kind == vkClosure {
+		kind = vkClosure
+	}
 	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
 	}
@@ -1034,17 +1216,55 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	var raw = fn.raw.Type
 	switch kind {
 	case vkClosure:
-		data = b.Field(fn, 1)
-		fn = b.Field(fn, 0)
+		closure := fn
+		fn = b.Field(closure, 0)
 		sig = fn.raw.Type.(*types.Signature)
-		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-		sigCtx := FuncAddCtx(ctx, sig)
+		// If the stored function type still has an explicit ctx param
+		// (legacy closure ABI), drop it and pass ctx via reg/conditional call.
+		sig = stripClosureCtxParam(sig, len(args))
 		ret.Type = b.Prog.retType(sig)
-		ll = b.Prog.FuncDecl(sigCtx, InC).ll
-		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sigCtx.Params(), b))
+		if b.Prog.target.CtxRegister().Name == "" {
+			// No ctx register: conditionally call with/without ctx param.
+			hasCtx := b.closureHasCtx(closure)
+			env := b.closureEnvPtr(closure)
+			return b.callClosureIndirect(fn, env, hasCtx, sig, args)
+		}
+		ll = b.Prog.FuncDecl(sig, InC).ll
+		callArgs := llvmParams(0, args, sig.Params(), b)
+		b.WriteCtxReg(b.closureEnvPtr(closure))
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
+		// No need to restore ctx - callee caches ctx at entry via InitClosureCtx.
+		return ret
+	case vkImethodClosure:
+		// Interface method closure: receiver is passed as the first parameter.
+		// Still write ctx register for uniform closure-call semantics.
+		closure := fn
+		fn = b.Field(closure, 0)
+		sig = fn.raw.Type.(*types.Signature)
+		ret.Type = b.Prog.retType(sig)
+		// Build signature with receiver as first param
+		ctx := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+		sigWithCtx := FuncAddCtx(ctx, sig)
+		ll = b.Prog.FuncDecl(sigWithCtx, InC).ll
+		// Load receiver (unsafe.Pointer) from the first env slot.
+		envPtr := b.closureEnvPtr(closure)
+		dataPtrType := b.Prog.Pointer(b.Prog.VoidPtr())
+		dataPtr := b.Convert(dataPtrType, envPtr)
+		data := b.Load(dataPtr)
+		// Call with receiver as first argument
+		callArgs := llvmParamsEx(data, args, sigWithCtx.Params(), b)
+		if b.Prog.target.CtxRegister().Name != "" {
+			b.WriteCtxReg(b.closureEnvPtr(closure))
+		}
+		fnWithCtx := b.ChangeType(b.Prog.rawType(sigWithCtx), fn)
+		ret.impl = llvm.CreateCall(b.impl, ll, fnWithCtx.impl, callArgs)
+		// No need to restore ctx - callee caches ctx at entry via InitClosureCtx.
 		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
+		// If the caller provided fewer args but the function type still has
+		// a leading unsafe.Pointer (legacy closure ctx), strip it.
+		sig = stripClosureCtxParam(sig, len(args))
 		ll = b.Prog.FuncDecl(sig, InC).ll
 	case vkFuncDecl:
 		sig = raw.(*types.Signature)
@@ -1056,7 +1276,8 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
 	ret.Type = b.Prog.retType(sig)
-	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
+	callArgs := llvmParamsEx(data, args, sig.Params(), b)
+	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
 	return
 }
 
@@ -1076,6 +1297,68 @@ func logCall(da string, fn Expr, args []Expr) {
 		sep = ", "
 	}
 	log.Println(b.String())
+}
+
+// callClosureIndirect handles indirect closure calls for platforms without
+// ctx register support. It generates a conditional branch based on hasCtx
+// to call with or without env parameter. Uses alloca+store/load pattern to
+// avoid manual PHI construction.
+func (b Builder) callClosureIndirect(fn, data, hasCtx Expr, sig *types.Signature, args []Expr) (ret Expr) {
+	prog := b.Prog
+	retType := prog.retType(sig)
+	ret.Type = retType
+
+	// Build function types: one with env param, one without
+	ctx := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+	sigWithEnv := FuncAddCtx(ctx, sig)
+	llWithEnv := prog.FuncDecl(sigWithEnv, InC).ll
+	llPlain := prog.FuncDecl(sig, InC).ll
+
+	// Check if env is needed
+	isNil := llvm.CreateICmp(b.impl, llvm.IntEQ, hasCtx.impl, llvm.ConstNull(hasCtx.ll))
+
+	// Create blocks for conditional call
+	withEnvBlk := b.Func.MakeBlock()
+	plainBlk := b.Func.MakeBlock()
+	doneBlk := b.Func.MakeBlock()
+
+	// For non-void returns, alloca a result slot
+	var resultSlot llvm.Value
+	isVoid := retType.ll.TypeKind() == llvm.VoidTypeKind
+	if !isVoid {
+		resultSlot = llvm.CreateAlloca(b.impl, retType.ll)
+	}
+
+	// Conditional branch: if data == nil, go to plain; else go to withEnv
+	b.impl.CreateCondBr(isNil, plainBlk.first, withEnvBlk.first)
+
+	// with_env block: call fn(env, args...)
+	b.impl.SetInsertPointAtEnd(withEnvBlk.last)
+	callArgsWithEnv := llvmParamsEx(data, args, sigWithEnv.Params(), b)
+	fnWithEnv := b.ChangeType(b.Prog.rawType(sigWithEnv), fn)
+	r1 := llvm.CreateCall(b.impl, llWithEnv, fnWithEnv.impl, callArgsWithEnv)
+	if !isVoid {
+		b.impl.CreateStore(r1, resultSlot)
+	}
+	b.impl.CreateBr(doneBlk.first)
+
+	// plain block: call fn(args...)
+	b.impl.SetInsertPointAtEnd(plainBlk.last)
+	callArgsPlain := llvmParams(0, args, sig.Params(), b)
+	r2 := llvm.CreateCall(b.impl, llPlain, fn.impl, callArgsPlain)
+	if !isVoid {
+		b.impl.CreateStore(r2, resultSlot)
+	}
+	b.impl.CreateBr(doneBlk.first)
+
+	// done block: load result from slot
+	b.impl.SetInsertPointAtEnd(doneBlk.last)
+	if !isVoid {
+		ret.impl = b.impl.CreateLoad(retType.ll, resultSlot, "")
+	}
+	b.blk.last = doneBlk.last
+
+	return ret
 }
 
 type DoAction int
@@ -1385,12 +1668,15 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if st, ok := t.Underlying().(*types.Struct); ok && IsClosure(st) {
-		if v.kind == vkClosure {
+		prog := b.Prog
+		tclosure := prog.rawType(t)
+		isFuncDecl := v.kind == vkFuncDecl
+		if v.Type == tclosure || isClosureKind(v.kind) {
+			if v.Type != tclosure {
+				v.Type = tclosure
+			}
 			return v
 		}
-		prog := b.Prog
-		origKind := v.kind
-		tclosure := prog.rawType(t)
 		fnType := prog.Field(tclosure, 0)
 		if v.Type != fnType {
 			// Signature conversions are representationally identical.
@@ -1400,13 +1686,12 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 				v = b.Convert(fnType, v)
 			}
 		}
-		data := prog.Nil(prog.VoidPtr())
-		if origKind == vkFuncDecl || origKind == vkFuncPtr {
-			if sig, ok := fnType.raw.Type.(*types.Signature); ok && closureCtxParam(sig) == nil {
-				v, data = b.Pkg.closureStub(b, v, sig, origKind)
-			}
+		// In register-based ctx mode, no stub wrapper needed.
+		// The caller writes ctx to register before call, callee reads if needed.
+		if isFuncDecl || !v.impl.IsAFunction().IsNil() {
+			return b.closureConst(v, nil)
 		}
-		return b.aggregateValue(tclosure, v.impl, data.impl)
+		return b.closureAlloc(v, nil)
 	}
 	return v
 }

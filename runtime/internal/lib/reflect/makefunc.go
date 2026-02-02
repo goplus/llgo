@@ -43,10 +43,13 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 
 	t := typ.common()
 	ftyp := (*funcType)(unsafe.Pointer(t))
-	sig, err := toFFISig(append([]*abi.Type{unsafePointerType}, ftyp.In...), ftyp.Out)
+	// In register-based closure ABI, context is NOT passed as a leading parameter.
+	// The FFI signature matches the user-visible function type.
+	sig, err := toFFISig(ftyp.In, ftyp.Out)
 	if err != nil {
 		panic(err)
 	}
+	fd := &funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}
 	closure := ffi.NewClosure()
 
 	switch len(ftyp.Out) {
@@ -55,16 +58,16 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			fd := (*funcData)(userdata)
 			ins := make([]Value, fd.nin)
 			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+				ins[i] = ffiToValue(ffi.Index(args, uintptr(i)), fd.ftyp.In[i])
 			}
 			fd.fn(ins)
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		}, unsafe.Pointer(fd))
 	case 1:
 		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 			fd := (*funcData)(userdata)
 			ins := make([]Value, fd.nin)
 			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+				ins[i] = ffiToValue(ffi.Index(args, uintptr(i)), fd.ftyp.In[i])
 			}
 			out := fd.fn(ins)
 			if fd.ftyp.Out[0].IfaceIndir() {
@@ -72,13 +75,13 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			} else {
 				*(*unsafe.Pointer)(ret) = unsafe.Pointer(out[0].ptr)
 			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		}, unsafe.Pointer(fd))
 	default:
 		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 			fd := (*funcData)(userdata)
 			ins := make([]Value, fd.nin)
 			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+				ins[i] = ffiToValue(ffi.Index(args, uintptr(i)), fd.ftyp.In[i])
 			}
 			outs := fd.fn(ins)
 			var offset uintptr = 0
@@ -90,7 +93,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 				}
 				offset += fd.ftyp.Out[i].Size_
 			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		}, unsafe.Pointer(fd))
 	}
 	if err != nil {
 		panic("libffi error: " + err.Error())
@@ -104,10 +107,11 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	// })
 	styp := closureOf(ftyp)
 	fv := &struct {
-		fn  unsafe.Pointer
-		env unsafe.Pointer
-	}{closure.Fn, unsafe.Pointer(&fn)}
-	return Value{styp, unsafe.Pointer(fv), flagIndir | flag(Func)}
+		fn     unsafe.Pointer
+		hasCtx uintptr
+		env    unsafe.Pointer
+	}{closure.Fn, 0, unsafe.Pointer(fd)}
+	return Value{styp, unsafe.Pointer(fv), flag(Func)}
 }
 
 func ffiToValue(ptr unsafe.Pointer, typ *abi.Type) (v Value) {
@@ -234,9 +238,10 @@ func makeMethodValue(op string, v Value) Value {
 	typ.TFlag |= abi.TFlagClosure
 	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
 	fv := &struct {
-		fn  unsafe.Pointer
-		env unsafe.Pointer
-	}{fn, v.ptr}
+		fn     unsafe.Pointer
+		hasCtx uintptr
+		env    unsafe.Pointer
+	}{fn, 1, v.ptr}
 	// Cause panic if method is not appropriate.
 	// The panic would still happen during the call if we omit this,
 	// but we want Interface() and other operations to fail early.

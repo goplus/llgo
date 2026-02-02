@@ -2,6 +2,7 @@
 source_filename = "github.com/goplus/llgo/cl/_testrt/tpfunc"
 
 @"github.com/goplus/llgo/cl/_testrt/tpfunc.init$guard" = global i1 false, align 1
+@"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/tpfunc.main$1" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/cl/_testrt/tpfunc.main$1", i64 0 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpfunc.init"() {
 _llgo_0:
@@ -18,7 +19,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpfunc.main"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 16)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -48,12 +49,6 @@ _llgo_0:
   %1 = load i64, ptr %0, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  ret void
-}
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpfunc.main$1"(ptr %0, ptr %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/tpfunc.main$1"(ptr %1)
   ret void
 }
 

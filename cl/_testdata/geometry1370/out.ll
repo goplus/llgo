@@ -64,11 +64,19 @@ _llgo_0:
   %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
   %4 = getelementptr ptr, ptr %3, i64 4
   %5 = load ptr, ptr %4, align 8
-  %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
-  %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
-  %8 = extractvalue { ptr, ptr } %7, 1
-  %9 = extractvalue { ptr, ptr } %7, 0
-  call void %9(ptr %8, i64 %1)
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
+  %7 = getelementptr inbounds { ptr, i64, ptr }, ptr %6, i32 0, i32 0
+  store ptr %5, ptr %7, align 8
+  %8 = getelementptr inbounds { ptr, i64, ptr }, ptr %6, i32 0, i32 1
+  store i64 1, ptr %8, align 4
+  %9 = getelementptr inbounds { ptr, i64, ptr }, ptr %6, i32 0, i32 2
+  store ptr %2, ptr %9, align 8
+  %10 = load ptr, ptr %6, align 8
+  %11 = getelementptr i8, ptr %6, i64 16
+  %12 = load ptr, ptr %11, align 8
+  %13 = getelementptr i8, ptr %6, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %13)
+  call void %10(ptr %12, i64 %1)
   ret void
 }
 
@@ -88,3 +96,5 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)

@@ -2161,8 +2161,19 @@ func (v Value) CallSlice(in []Value) []Value {
 }
 
 type closure struct {
-	fn  unsafe.Pointer
-	env unsafe.Pointer
+	fn     unsafe.Pointer
+	hasCtx uintptr
+}
+
+//go:linkname setClosurePtr llgo.setClosurePtr
+func setClosurePtr(ptr unsafe.Pointer)
+
+func closureHasCtx(ptr unsafe.Pointer) bool {
+	return *(*uintptr)(add(ptr, pointerSize, "")) != 0
+}
+
+func closureEnvPtr(ptr unsafe.Pointer) unsafe.Pointer {
+	return add(ptr, pointerSize*2, "")
 }
 
 func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
@@ -2210,7 +2221,7 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 }
 
 var (
-	ffiTypeClosure = ffi.StructOf(ffi.TypePointer, ffi.TypePointer)
+	ffiTypeClosure = ffi.TypePointer
 )
 
 func toFFIType(typ *abi.Type) *ffi.Type {
@@ -2287,15 +2298,22 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	)
 	if v.typ_.IsClosure() {
 		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
-		tin = append([]*abi.Type{rtypeOf(unsafe.Pointer(nil))}, ft.In...)
+		tin = ft.In
 		tout = ft.Out
-		c := (*struct {
-			fn  unsafe.Pointer
-			env unsafe.Pointer
-		})(v.ptr)
-		fn = c.fn
-		ioff = 1
-		args = append(args, unsafe.Pointer(&c.env))
+		fn = *(*unsafe.Pointer)(v.ptr)
+		ioff = 0
+		if closureHasCtx(v.ptr) {
+			env := closureEnvPtr(v.ptr)
+			if ctxRegSupported {
+				setClosurePtr(env)
+			} else {
+				// No ctx register: prepend env pointer as implicit first argument.
+				tin = append([]*abi.Type{unsafePointerType}, tin...)
+				envArg := env
+				args = append(args, unsafe.Pointer(&envArg))
+				ioff = 1
+			}
+		}
 	} else {
 		if v.flag&flagMethod != 0 {
 			var (

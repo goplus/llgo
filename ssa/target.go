@@ -25,10 +25,85 @@ import (
 // -----------------------------------------------------------------------------
 
 type Target struct {
-	GOOS   string
-	GOARCH string
-	GOARM  string // "5", "6", "7" (default)
-	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	GOOS      string
+	GOARCH    string
+	GOARM     string // "5", "6", "7" (default)
+	Target    string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	Baremetal bool   // true if target has "baremetal" build tag (no OS, no TLS)
+}
+
+// CtxRegister describes the closure context register for a target architecture.
+// Requirements for a ctx register:
+//  1. Must survive the call boundary long enough for the callee to read it
+//     (caller writes immediately before call; callee reads at entry).
+//  2. Not used for C ABI parameters/returns.
+//  3. Must be usable in LLVM inline asm constraints.
+//
+// Supported platforms:
+//   - amd64: MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
+//   - 386:   MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
+//   - arm64: X26 - callee-saved, reservable via +reserve-x26
+//   - riscv64: X27 (s11) - callee-saved register
+//
+// Platforms without a ctx register:
+//   - arm: r8-r15 are "high registers", LLVM can't use {rN} constraint in ARM mode
+//   - wasm: no registers available
+type CtxRegister struct {
+	Name       string // LLVM register name for inline asm, e.g., "r12", "x26"
+	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x26}"
+}
+
+// CtxRegister returns the closure context register for the target architecture.
+func (t *Target) CtxRegister() CtxRegister {
+	goarch := t.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	switch goarch {
+	case "amd64":
+		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
+	case "arm64":
+		return CtxRegister{Name: "x26", Constraint: "{x26}"}
+	case "386":
+		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
+	case "riscv64":
+		return CtxRegister{Name: "x27", Constraint: "{x27}"}
+	default:
+		// arm, wasm, and other platforms do not use a ctx register
+		return CtxRegister{}
+	}
+}
+
+// SupportsTLS returns whether the target platform supports thread-local storage.
+// TLS is supported on standard OS platforms (linux, darwin, windows, etc.)
+// but NOT on:
+//   - wasm/js/wasip1 (WebAssembly environments with limited threading)
+//   - bare metal / embedded (no OS, typically single-threaded)
+//   - empty GOOS (treated as bare-metal)
+func (t *Target) SupportsTLS() bool {
+	goos := t.GOOS
+	if goos == "" {
+		// Empty GOOS is treated as bare-metal (no TLS).
+		return false
+	}
+	// If target has "baremetal" build tag, it doesn't support TLS.
+	// This allows embedded targets with threading (e.g., FreeRTOS) to still use TLS
+	// while bare-metal targets without OS support are correctly identified.
+	if t.Baremetal {
+		return false
+	}
+	// Whitelist of GOOS that support TLS
+	// These are standard OS platforms with proper thread support
+	// Empty GOOS is treated as bare-metal (no TLS)
+	switch goos {
+	case "linux", "darwin", "windows", "freebsd", "netbsd", "openbsd",
+		"dragonfly", "solaris", "illumos", "aix", "android", "ios":
+		return true
+	default:
+		// wasm, js, wasip1, bare-metal, empty, or unknown platforms
+		// Default to no TLS for safety
+		return false
+	}
 }
 
 func (p *Target) targetData() llvm.TargetData {

@@ -1,0 +1,3 @@
+starting test
+result: 42
+PASS

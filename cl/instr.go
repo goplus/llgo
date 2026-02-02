@@ -425,8 +425,10 @@ var llgoInstrs = map[string]int{
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
 
-	"asm":       llgoAsm,
-	"stackSave": llgoStackSave,
+	"asm":           llgoAsm,
+	"stackSave":     llgoStackSave,
+	"getClosurePtr": llgoGetClosurePtr,
+	"setClosurePtr": llgoSetClosurePtr,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -604,6 +606,22 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.siglongjmp(b, args)
 		case llgoStackSave:
 			ret = b.StackSave()
+		case llgoGetClosurePtr:
+			if b.Func.HasEnvParam() {
+				ret = b.Func.EnvParam()
+			} else {
+				ret = b.ReadCtxReg()
+			}
+			// getClosurePtr returns the first env slot (pointer value), not the env base address.
+			ptrType := b.Prog.VoidPtr()
+			envPtr := b.Convert(b.Prog.Pointer(ptrType), ret)
+			ret = b.Load(envPtr)
+		case llgoSetClosurePtr:
+			if len(args) != 1 {
+				panic("setClosurePtr(ptr): invalid arguments")
+			}
+			ptr := p.compileValue(b, args[0])
+			b.WriteCtxReg(ptr)
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer

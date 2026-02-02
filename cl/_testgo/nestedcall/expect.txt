@@ -1,0 +1,8 @@
+callFunc: before f()
+outer closure: counter = 1
+callFuncInner: before g()
+inner closure: counter = 2
+callFuncInner: after g()
+outer closure: after inner call, counter = 2
+callFunc: after f()
+main: after callFunc, counter = 2

@@ -25,8 +25,8 @@ func closurePtr(a any) unsafe.Pointer {
 type rtype struct {
 	typ unsafe.Pointer
 	ptr *struct {
-		fn  unsafe.Pointer
-		env unsafe.Pointer
+		fn     unsafe.Pointer
+		hasCtx uintptr
 	}
 }
 

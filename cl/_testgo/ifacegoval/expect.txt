@@ -1,0 +1,4 @@
+starting test
+MyPrinter: 
+after wait
+done

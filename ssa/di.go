@@ -439,14 +439,25 @@ func (b diBuilder) createMemberType(name string, tyStruct, tyField Type, idxFiel
 	return b.createMemberTypeEx(name, tyStruct, tyField, idxField, token.Position{}, 0)
 }
 
+func (b diBuilder) structLayoutType(ty Type) Type {
+	if ty.kind == vkClosure && ty.ll.TypeKind() == llvm.PointerTypeKind {
+		if st, ok := ty.RawType().Underlying().(*types.Struct); ok {
+			ll, _ := b.prog.toLLVMStruct(st)
+			return &aType{ll: ll, raw: rawType{st}, kind: vkStruct}
+		}
+	}
+	return ty
+}
+
 func (b diBuilder) createMemberTypeEx(name string, tyStruct, tyField Type, idxField int, pos token.Position, flags int) llvm.Metadata {
+	layoutTy := b.structLayoutType(tyStruct)
 	return b.di.CreateMemberType(
 		b.diType(tyStruct, pos).ll,
 		llvm.DIMemberType{
 			Name:         name,
 			SizeInBits:   b.prog.SizeOf(tyField) * 8,
 			AlignInBits:  uint32(b.prog.sizes.Alignof(tyField.RawType()) * 8),
-			OffsetInBits: b.prog.OffsetOf(tyStruct, idxField) * 8,
+			OffsetInBits: b.prog.OffsetOf(layoutTy, idxField) * 8,
 			Type:         b.diType(tyField, pos).ll,
 			Flags:        flags,
 		},
@@ -500,7 +511,8 @@ func (b diBuilder) createPointerType(name string, ty Type, pos token.Position) D
 }
 
 func (b diBuilder) doCreateStructType(name string, ty Type, pos token.Position, fn func(ty DIType) []llvm.Metadata) (ret DIType) {
-	structType := ty.RawType().Underlying()
+	layoutTy := b.structLayoutType(ty)
+	structType := layoutTy.RawType().Underlying()
 
 	scope := b.file(pos.Filename)
 	ret = &aDIType{b.di.CreateReplaceableCompositeType(
@@ -510,7 +522,7 @@ func (b diBuilder) doCreateStructType(name string, ty Type, pos token.Position, 
 			Name:        name,
 			File:        b.file(pos.Filename).ll,
 			Line:        pos.Line,
-			SizeInBits:  b.prog.SizeOf(ty) * 8,
+			SizeInBits:  b.prog.SizeOf(layoutTy) * 8,
 			AlignInBits: uint32(b.prog.sizes.Alignof(structType) * 8),
 		},
 	)}

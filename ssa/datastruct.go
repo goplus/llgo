@@ -60,6 +60,26 @@ func (b Builder) Field(x Expr, idx int) Expr {
 
 func (b Builder) getField(x Expr, idx int) Expr {
 	tfld := b.Prog.Field(x.Type, idx)
+	if x.impl.Type().TypeKind() == llvm.PointerTypeKind {
+		if isClosureKind(x.Type.kind) {
+			switch idx {
+			case 0:
+				ptr := b.Convert(b.Prog.Pointer(tfld), x)
+				return b.Load(ptr)
+			case 1:
+				ptr := b.Convert(b.Prog.VoidPtr(), x)
+				off := b.Prog.IntVal(uint64(b.Prog.PointerSize()), b.Prog.Int())
+				ptr = b.Advance(ptr, off)
+				ptr = b.Convert(b.Prog.Pointer(tfld), ptr)
+				return b.Load(ptr)
+			default:
+				panic("closure field index out of range")
+			}
+		}
+		tstruc := b.Prog.Elem(x.Type)
+		ptr := llvm.CreateStructGEP(b.impl, tstruc.ll, x.impl, idx)
+		return Expr{b.impl.CreateLoad(tfld.ll, ptr, ""), tfld}
+	}
 	fld := llvm.CreateExtractValue(b.impl, x.impl, idx)
 	return Expr{fld, tfld}
 }

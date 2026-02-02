@@ -3,13 +3,15 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/callback"
 
 @"github.com/goplus/llgo/cl/_testrt/callback.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [7 x i8] c"Hello\0A\00", align 1
+@"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/callback.print" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/cl/_testrt/callback.print", i64 0 }
 @1 = private unnamed_addr constant [10 x i8] c"callback\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, { ptr, ptr } %1) {
+define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = extractvalue { ptr, ptr } %1, 1
-  %3 = extractvalue { ptr, ptr } %1, 0
-  call void %3(ptr %2, ptr %0)
+  %2 = load ptr, ptr %1, align 8
+  %3 = getelementptr i8, ptr %1, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  call void %2(ptr %0)
   ret void
 }
 
@@ -28,20 +30,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/callback.main"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @0, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
-  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @1, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print", ptr null })
+  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @0, ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/callback.print")
+  call void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr @1, ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/callback.print")
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %0) {
 _llgo_0:
   %1 = call i32 (ptr, ...) @printf(ptr %0)
-  ret void
-}
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %0, ptr %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/callback.print"(ptr %1)
   ret void
 }
 

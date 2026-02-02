@@ -182,6 +182,9 @@ func IfacePtrData(i iface) unsafe.Pointer {
 	if i.tab == nil {
 		panic(errorString("invalid memory address or nil pointer dereference").Error())
 	}
+	if i.tab._type.IsClosure() {
+		return i.data
+	}
 	switch i.tab._type.Kind() {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,

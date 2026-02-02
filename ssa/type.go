@@ -47,6 +47,7 @@ const (
 	vkFuncDecl
 	vkFuncPtr
 	vkClosure
+	vkImethodClosure // interface method closure: receiver passed as first param, not via register
 	vkBuiltin
 	vkPyFuncRef
 	vkPyVarRef
@@ -59,6 +60,10 @@ const (
 	vkStruct
 	vkChan
 )
+
+func isClosureKind(k valueKind) bool {
+	return k == vkClosure || k == vkImethodClosure
+}
 
 // -----------------------------------------------------------------------------
 
@@ -135,7 +140,7 @@ retry:
 		typ = t.Underlying()
 		goto retry
 	case *types.Signature:
-		return ptrSize
+		return 0
 	case *types.Struct:
 		if IsClosure(t) {
 			return
@@ -169,6 +174,13 @@ type aType struct {
 }
 
 type Type = *aType
+
+func (t Type) withKind(kind valueKind) Type {
+	if t.kind == kind {
+		return t
+	}
+	return &aType{ll: t.ll, raw: t.raw, kind: kind}
+}
 
 // RawType returns the raw type.
 func (t Type) RawType() types.Type {
@@ -383,6 +395,9 @@ func (p Program) toType(raw types.Type) Type {
 		return &aType{llvm.PointerType(p.rtMap(), 0), typ, vkMap}
 	case *types.Struct:
 		ll, kind := p.toLLVMStruct(t)
+		if IsClosure(t) {
+			return &aType{llvm.PointerType(ll, 0), typ, vkClosure}
+		}
 		return &aType{ll, typ, kind}
 	case *types.Named:
 		return p.toNamed(t)
@@ -433,6 +448,12 @@ func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {
 	if n > 0 {
 		fields = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
+			// Avoid re-patching the $f field of a closure struct; it must remain
+			// a plain function pointer to prevent infinite wrapping.
+			if IsClosure(raw) && i == 0 {
+				fields[i] = p.rawType(raw.Field(i).Type()).ll
+				continue
+			}
 			fields[i] = p.rawType(p.patch(raw.Field(i).Type())).ll
 		}
 	}
@@ -508,14 +529,27 @@ func (p Program) toNamed(raw *types.Named) Type {
 	}
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
-		kind := vkStruct
 		if IsClosure(t) {
-			kind = vkClosure
+			// Closure values are represented as pointers to their struct headers.
+			st := p.ctx.StructCreateNamed(name)
+			fields := p.toLLVMFields(t)
+			st.StructSetBody(fields, false)
+			ptr := llvm.PointerType(st, 0)
+			typ := &aType{ptr, rawType{raw}, vkClosure}
+			p.named[name] = typ
+			p.typs.Set(raw, typ)
+			return typ
 		}
-		return p.toLLVMNamedStruct(name, raw, t, kind)
+		return p.toLLVMNamedStruct(name, raw, t, vkStruct)
 	default:
+		// For non-struct named types, pre-register a placeholder to break recursion.
+		placeholder := &aType{p.tyVoidPtr(), rawType{raw}, vkPtr}
+		p.named[name] = placeholder
+		p.typs.Set(raw, placeholder)
 		typ := p.rawType(t)
-		return &aType{typ.ll, rawType{raw}, typ.kind}
+		placeholder.ll = typ.ll
+		placeholder.kind = typ.kind
+		return placeholder
 	}
 }
 

@@ -40,6 +40,9 @@ func buildConf(mode cabi.Mode, arch string) (conf *build.Config, targetAbi strin
 	conf.AbiMode = mode
 	conf.Goarch = arch
 	conf.Goos = "linux"
+	// Enable NativeCCompile for cross-compilation tests to avoid sysroot issues
+	// C files will compile for host OS, while Go code uses correct target for ABI/registers
+	conf.NativeCCompile = true
 	switch arch {
 	case "wasm32":
 		conf.Goarch = "wasm"

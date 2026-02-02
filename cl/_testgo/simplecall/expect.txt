@@ -1,0 +1,2 @@
+closure called, counter: 1
+after callFunc

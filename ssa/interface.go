@@ -65,6 +65,8 @@ func iMethodOf(rawIntf *types.Interface, name string) int {
 }
 
 // Imethod returns closure of an interface method.
+// The returned closure has kind vkImethodClosure, meaning the receiver (data)
+// must be passed as the first parameter, not via the context register.
 func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	prog := b.Prog
 	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
@@ -80,14 +82,19 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 			sig = types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
 		}
 	}
-	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
-	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
+	// Cast raw itab entry to the method signature.
+	fn = b.ChangeType(prog.rawType(sig), fn)
+	// Return closure marked as vkImethodClosure.
+	// The raw method expects receiver as first param, not via context register.
+	ret := b.closureAlloc(fn, []Expr{data})
+	// Do not mutate shared closure types; tag only this Expr as imethod closure.
+	ret.Type = ret.Type.withKind(vkImethodClosure)
 	return ret
 }
 

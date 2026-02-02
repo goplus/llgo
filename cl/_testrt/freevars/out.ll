@@ -5,6 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/freevars"
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/cl/_testrt/freevars.init$guard" = global i1 false, align 1
+@"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/freevars.main$2" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/cl/_testrt/freevars.main$2", i64 0 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/freevars.init"() {
 _llgo_0:
@@ -21,29 +22,34 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/freevars.main"() {
 _llgo_0:
-  call void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"({ ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/freevars.main$2", ptr null })
+  call void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"(ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/freevars.main$2")
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"({ ptr, ptr } %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"(ptr %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  store { ptr, ptr } %0, ptr %1, align 8
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
-  store ptr %1, ptr %3, align 8
-  %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1", ptr undef }, ptr %2, 1
-  %5 = extractvalue { ptr, ptr } %4, 1
-  %6 = extractvalue { ptr, ptr } %4, 0
-  call void %6(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  store ptr %0, ptr %1, align 8
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
+  %3 = getelementptr inbounds { ptr, i64, ptr }, ptr %2, i32 0, i32 0
+  store ptr @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1", ptr %3, align 8
+  %4 = getelementptr inbounds { ptr, i64, ptr }, ptr %2, i32 0, i32 1
+  store i64 1, ptr %4, align 4
+  %5 = getelementptr inbounds { ptr, i64, ptr }, ptr %2, i32 0, i32 2
+  store ptr %1, ptr %5, align 8
+  %6 = load ptr, ptr %2, align 8
+  %7 = getelementptr i8, ptr %2, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
+  call void %6(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
-  %4 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, 1
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %2 = load { ptr }, ptr %1, align 8
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %4 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %3, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5, ptr %4, 1
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
@@ -55,29 +61,25 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   %12 = extractvalue { ptr } %2, 0
-  %13 = load { ptr, ptr }, ptr %12, align 8
-  %14 = extractvalue { ptr, ptr } %13, 1
-  %15 = extractvalue { ptr, ptr } %13, 0
-  call void %15(ptr %14, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  %13 = load ptr, ptr %12, align 8
+  %14 = load ptr, ptr %13, align 8
+  %15 = getelementptr i8, ptr %13, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void %14(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
   %16 = extractvalue { ptr } %2, 0
-  %17 = load { ptr, ptr }, ptr %16, align 8
-  %18 = extractvalue { ptr, ptr } %17, 1
-  %19 = extractvalue { ptr, ptr } %17, 0
-  call void %19(ptr %18, %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
+  %17 = load ptr, ptr %16, align 8
+  %18 = load ptr, ptr %17, align 8
+  %19 = getelementptr i8, ptr %17, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %19)
+  call void %18(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$2"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
-  ret void
-}
-
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/freevars.main$2"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
-_llgo_0:
-  tail call void @"github.com/goplus/llgo/cl/_testrt/freevars.main$2"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
   ret void
 }
 

@@ -17,6 +17,7 @@
 package ssa
 
 import (
+	"go/token"
 	"go/types"
 	"log"
 	"strconv"
@@ -182,10 +183,14 @@ type aFunction struct {
 	defer_ *aDefer
 	recov  BasicBlock
 
-	params   []Type
-	freeVars Expr
-	base     int // base = 1 if hasFreeVars; base = 0 otherwise
-	hasVArg  bool
+	params      []Type
+	paramBase   int // extra leading LLVM params (e.g. sret ptr) not present in Go signature
+	freeVars    Expr
+	ctxType     Type // closure context struct type (for register-based ctx)
+	ctxPtr      Expr // cached ctx pointer read from register at entry
+	hasFreeVars bool // true if function is a closure with free variables
+	hasEnvParam bool // true if closure has implicit env param (no-register platforms)
+	hasVArg     bool
 
 	diFunc DIFunction
 }
@@ -221,7 +226,23 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 			p.NeedAbiInit = true
 		}
 	}
-	t := p.Prog.FuncDecl(sig, bg)
+
+	prog := p.Prog
+
+	hasEnvParam := hasFreeVars && prog.target.CtxRegister().Name == ""
+	t := prog.FuncDecl(sig, bg)
+	if hasEnvParam {
+		recv := sig.Recv()
+		sigConv := sig
+		if bg == InGo {
+			sigConv = prog.gocvt.cvtFunc(sig, recv)
+		} else if recv != nil { // even in C, we need to add ctx for method
+			sigConv = FuncAddCtx(recv, sig)
+		}
+		ctx := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+		sigWithCtx := FuncAddCtx(ctx, sigConv)
+		t = &aType{prog.toLLVMFunc(sigWithCtx), rawType{sigConv}, vkFuncDecl}
+	}
 	if debugInstr {
 		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
 	}
@@ -229,7 +250,7 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 	if instantiated {
 		fn.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
-	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
+	ret := newFunction(fn, t, p, prog, hasFreeVars, hasEnvParam)
 	p.fns[name] = ret
 	return ret
 }
@@ -239,23 +260,21 @@ func (p Package) FuncOf(name string) Function {
 	return p.fns[name]
 }
 
-func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool) Function {
-	params, hasVArg := newParams(t, prog)
-	base := 0
-	if hasFreeVars {
-		base = 1
-	}
+func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars bool, hasEnvParam bool) Function {
+	params, hasVArg, paramBase := newParams(t, prog, hasEnvParam)
 	return &aFunction{
-		Expr:    Expr{fn, t},
-		Pkg:     pkg,
-		Prog:    prog,
-		params:  params,
-		base:    base,
-		hasVArg: hasVArg,
+		Expr:        Expr{fn, t},
+		Pkg:         pkg,
+		Prog:        prog,
+		params:      params,
+		paramBase:   paramBase,
+		hasFreeVars: hasFreeVars,
+		hasEnvParam: hasEnvParam,
+		hasVArg:     hasVArg,
 	}
 }
 
-func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
+func newParams(fn Type, prog Program, hasEnvParam bool) (params []Type, hasVArg bool, paramBase int) {
 	sig := fn.raw.Type.(*types.Signature)
 	in := sig.Params()
 	if n := in.Len(); n > 0 {
@@ -266,6 +285,16 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 		for i := 0; i < n; i++ {
 			params[i] = prog.rawType(in.At(i).Type())
 		}
+		// LLVM function type may contain extra implicit params (e.g. sret ptr).
+		// Compute offset so Param(i) maps to the correct LLVM argument.
+		if ft := fn.ll; ft.TypeKind() == llvm.FunctionTypeKind {
+			if llParams := ft.ParamTypes(); len(llParams) >= n {
+				paramBase = len(llParams) - n
+				if hasEnvParam && paramBase > 0 {
+					paramBase--
+				}
+			}
+		}
 	}
 	return
 }
@@ -275,33 +304,73 @@ func (p Function) Name() string {
 	return p.impl.Name()
 }
 
-// Params returns the function's ith parameter.
+// Param returns the function's ith parameter.
+// For closures with hasEnvParam, the env param is at index 0 in LLVM,
+// so user-visible params start at index 1.
 func (p Function) Param(i int) Expr {
-	i += p.base // skip if hasFreeVars
-	return Expr{p.impl.Param(i), p.params[i]}
+	llIndex := i + p.paramBase
+	if p.hasEnvParam {
+		// Skip over the env param (which is at LLVM index 0)
+		llIndex++
+	}
+	return Expr{p.impl.Param(llIndex), p.params[i]}
 }
 
-func (p Function) closureCtx(b Builder) Expr {
+// HasEnvParam reports whether the function has an implicit env parameter.
+func (p Function) HasEnvParam() bool {
+	return p.hasEnvParam
+}
+
+// EnvParam returns the implicit env parameter (unsafe.Pointer).
+func (p Function) EnvParam() Expr {
+	if !p.hasEnvParam {
+		panic("ssa: EnvParam called on function without env param")
+	}
+	llIndex := p.paramBase
+	return Expr{p.impl.Param(llIndex), p.Prog.VoidPtr()}
+}
+
+// InitClosureCtx initializes the closure context by reading from the context register.
+// Must be called at the very start of the function body for closures with free variables.
+// This sets the context type and immediately reads the context pointer from register,
+// caching it in ctxPtr and freeVars for subsequent accesses.
+// The ctxPtr cache eliminates the need to restore ctx register after closure calls.
+func (p Function) InitClosureCtx(b Builder, ctxType Type) {
+	if !p.hasFreeVars {
+		panic("ssa: InitClosureCtx called on function without free variables")
+	}
+	if !p.freeVars.IsNil() {
+		panic("ssa: InitClosureCtx called more than once")
+	}
+	p.ctxType = ctxType
+
+	var rawPtr Expr
+	// Read closure context pointer from register or implicit env param.
+	// This MUST be the first instruction in the function body.
+	if p.hasEnvParam {
+		rawPtr = p.EnvParam()
+	} else {
+		rawPtr = b.ReadCtxReg()
+	}
+
+	p.ctxPtr = rawPtr // Cache the raw ctx pointer for callers
+	ctxPtrType := b.Prog.Pointer(p.ctxType)
+	ptr := b.Convert(ctxPtrType, rawPtr)
+	p.freeVars = b.Load(ptr)
+}
+
+// closureCtx returns the cached closure context.
+// InitClosureCtx must have been called first.
+func (p Function) closureCtx() Expr {
 	if p.freeVars.IsNil() {
-		if p.base == 0 {
-			panic("ssa: function has no free variables")
-		}
-		ptr := Expr{p.impl.Param(0), p.params[0]}
-		if b.blk.Index() != 0 {
-			blk := b.impl.GetInsertBlock()
-			b.SetBlockEx(p.blks[0], AtStart, false)
-			p.freeVars = b.Load(ptr)
-			b.impl.SetInsertPointAtEnd(blk)
-		} else {
-			p.freeVars = b.Load(ptr)
-		}
+		panic("ssa: closureCtx called before InitClosureCtx")
 	}
 	return p.freeVars
 }
 
 // FreeVar returns the function's ith free variable.
 func (p Function) FreeVar(b Builder, i int) Expr {
-	ctx := p.closureCtx(b)
+	ctx := p.closureCtx()
 	return b.getField(ctx, i)
 }
 
@@ -322,6 +391,7 @@ func (p Function) HasBody() bool {
 
 // MakeBody creates nblk basic blocks for the function, and creates
 // a new Builder associated to #0 block.
+// For closures with free variables, caller must call InitClosureCtx after this.
 func (p Function) MakeBody(nblk int) Builder {
 	p.MakeBlocks(nblk)
 	b := p.NewBuilder()

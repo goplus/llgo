@@ -1,7 +1,7 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testgo/selects'
 source_filename = "github.com/goplus/llgo/cl/_testgo/selects"
 
-%"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
+%"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, ptr, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/abi.PtrType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" = type { ptr, ptr, i32, i1 }
@@ -13,9 +13,11 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/selects"
 @1 = private unnamed_addr constant [4 x i8] c"<-c2", align 1
 @2 = private unnamed_addr constant [4 x i8] c"<-c4", align 1
 @3 = private unnamed_addr constant [31 x i8] c"blocking select matched no case", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr @"*_llgo_string" }, align 8
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, ptr @"__llgo_closure_const$github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr @"*_llgo_string" }, align 8
+@"__llgo_closure_const$github.com/goplus/llgo/runtime/internal/runtime.strequal" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.strequal", i64 0 }
 @4 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, ptr @"__llgo_closure_const$github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@"__llgo_closure_const$github.com/goplus/llgo/runtime/internal/runtime.memequalptr" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", i64 0 }
 @5 = private unnamed_addr constant [4 x i8] c"<-c1", align 1
 @6 = private unnamed_addr constant [4 x i8] c"c2<-", align 1
 @7 = private unnamed_addr constant [4 x i8] c"<-c3", align 1
@@ -45,61 +47,64 @@ _llgo_0:
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewChan"(i64 0, i64 1)
   store ptr %5, ptr %4, align 8
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewChan"(i64 0, i64 1)
-  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 24)
-  %8 = getelementptr inbounds { ptr, ptr, ptr }, ptr %7, i32 0, i32 0
-  store ptr %0, ptr %8, align 8
-  %9 = getelementptr inbounds { ptr, ptr, ptr }, ptr %7, i32 0, i32 1
-  store ptr %2, ptr %9, align 8
-  %10 = getelementptr inbounds { ptr, ptr, ptr }, ptr %7, i32 0, i32 2
-  store ptr %4, ptr %10, align 8
-  %11 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/selects.main$1", ptr undef }, ptr %7, 1
-  %12 = call ptr @malloc(i64 16)
-  %13 = getelementptr inbounds { { ptr, ptr } }, ptr %12, i32 0, i32 0
-  store { ptr, ptr } %11, ptr %13, align 8
-  %14 = alloca i8, i64 8, align 1
-  %15 = call i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr %14, ptr null, ptr @"github.com/goplus/llgo/cl/_testgo/selects._llgo_routine$1", ptr %12)
-  %16 = load ptr, ptr %0, align 8
-  %17 = alloca {}, align 8
-  call void @llvm.memset(ptr %17, i8 0, i64 0, i1 false)
-  store {} zeroinitializer, ptr %17, align 1
-  %18 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.ChanSend"(ptr %16, ptr %17, i64 0)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 40)
+  %8 = getelementptr inbounds { ptr, i64, ptr, ptr, ptr }, ptr %7, i32 0, i32 0
+  store ptr @"github.com/goplus/llgo/cl/_testgo/selects.main$1", ptr %8, align 8
+  %9 = getelementptr inbounds { ptr, i64, ptr, ptr, ptr }, ptr %7, i32 0, i32 1
+  store i64 1, ptr %9, align 4
+  %10 = getelementptr inbounds { ptr, i64, ptr, ptr, ptr }, ptr %7, i32 0, i32 2
+  store ptr %0, ptr %10, align 8
+  %11 = getelementptr inbounds { ptr, i64, ptr, ptr, ptr }, ptr %7, i32 0, i32 3
+  store ptr %2, ptr %11, align 8
+  %12 = getelementptr inbounds { ptr, i64, ptr, ptr, ptr }, ptr %7, i32 0, i32 4
+  store ptr %4, ptr %12, align 8
+  %13 = call ptr @malloc(i64 8)
+  %14 = getelementptr inbounds { ptr }, ptr %13, i32 0, i32 0
+  store ptr %7, ptr %14, align 8
+  %15 = alloca i8, i64 8, align 1
+  %16 = call i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr %15, ptr null, ptr @"github.com/goplus/llgo/cl/_testgo/selects._llgo_routine$1", ptr %13)
+  %17 = load ptr, ptr %0, align 8
+  %18 = alloca {}, align 8
+  call void @llvm.memset(ptr %18, i8 0, i64 0, i1 false)
+  store {} zeroinitializer, ptr %18, align 1
+  %19 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.ChanSend"(ptr %17, ptr %18, i64 0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %19 = load ptr, ptr %2, align 8
-  %20 = alloca {}, align 8
-  call void @llvm.memset(ptr %20, i8 0, i64 0, i1 false)
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" undef, ptr %19, 0
-  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %21, ptr %20, 1
-  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %22, i32 0, 2
-  %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %23, i1 false, 3
-  %25 = alloca {}, align 8
-  call void @llvm.memset(ptr %25, i8 0, i64 0, i1 false)
-  %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" undef, ptr %6, 0
-  %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %26, ptr %25, 1
-  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %27, i32 0, 2
-  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %28, i1 false, 3
-  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
-  %31 = getelementptr %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp", ptr %30, i64 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %24, ptr %31, align 8
-  %32 = getelementptr %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp", ptr %30, i64 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %29, ptr %32, align 8
-  %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %30, 0
-  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %33, i64 2, 1
-  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %34, i64 2, 2
-  %36 = call { i64, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.Select"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35)
-  %37 = extractvalue { i64, i1 } %36, 0
-  %38 = extractvalue { i64, i1 } %36, 1
-  %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %24, 1
-  %40 = load {}, ptr %39, align 1
-  %41 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %29, 1
-  %42 = load {}, ptr %41, align 1
-  %43 = insertvalue { i64, i1, {}, {} } undef, i64 %37, 0
-  %44 = insertvalue { i64, i1, {}, {} } %43, i1 %38, 1
-  %45 = insertvalue { i64, i1, {}, {} } %44, {} %40, 2
-  %46 = insertvalue { i64, i1, {}, {} } %45, {} %42, 3
-  %47 = extractvalue { i64, i1, {}, {} } %46, 0
-  %48 = icmp eq i64 %47, 0
-  br i1 %48, label %_llgo_2, label %_llgo_3
+  %20 = load ptr, ptr %2, align 8
+  %21 = alloca {}, align 8
+  call void @llvm.memset(ptr %21, i8 0, i64 0, i1 false)
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" undef, ptr %20, 0
+  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %22, ptr %21, 1
+  %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %23, i32 0, 2
+  %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %24, i1 false, 3
+  %26 = alloca {}, align 8
+  call void @llvm.memset(ptr %26, i8 0, i64 0, i1 false)
+  %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" undef, ptr %6, 0
+  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %27, ptr %26, 1
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %28, i32 0, 2
+  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %29, i1 false, 3
+  %31 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
+  %32 = getelementptr %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp", ptr %31, i64 0
+  store %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %25, ptr %32, align 8
+  %33 = getelementptr %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp", ptr %31, i64 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %30, ptr %33, align 8
+  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %31, 0
+  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %34, i64 2, 1
+  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, i64 2, 2
+  %37 = call { i64, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.Select"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %36)
+  %38 = extractvalue { i64, i1 } %37, 0
+  %39 = extractvalue { i64, i1 } %37, 1
+  %40 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %25, 1
+  %41 = load {}, ptr %40, align 1
+  %42 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.ChanOp" %30, 1
+  %43 = load {}, ptr %42, align 1
+  %44 = insertvalue { i64, i1, {}, {} } undef, i64 %38, 0
+  %45 = insertvalue { i64, i1, {}, {} } %44, i1 %39, 1
+  %46 = insertvalue { i64, i1, {}, {} } %45, {} %41, 2
+  %47 = insertvalue { i64, i1, {}, {} } %46, {} %43, 3
+  %48 = extractvalue { i64, i1, {}, {} } %47, 0
+  %49 = icmp eq i64 %48, 0
+  br i1 %49, label %_llgo_2, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_4, %_llgo_2
   ret void
@@ -110,8 +115,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %49 = icmp eq i64 %47, 1
-  br i1 %49, label %_llgo_4, label %_llgo_5
+  %50 = icmp eq i64 %48, 1
+  br i1 %50, label %_llgo_4, label %_llgo_5
 
 _llgo_4:                                          ; preds = %_llgo_3
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 4 })
@@ -119,15 +124,16 @@ _llgo_4:                                          ; preds = %_llgo_3
   br label %_llgo_1
 
 _llgo_5:                                          ; preds = %_llgo_3
-  %50 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 31 }, ptr %50, align 8
-  %51 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %50, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %51)
+  %51 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 31 }, ptr %51, align 8
+  %52 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %51, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %52)
   unreachable
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/selects.main$1"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testgo/selects.main$1"() {
 _llgo_0:
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
   %1 = load { ptr, ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr, ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
@@ -209,11 +215,12 @@ declare ptr @malloc(i64)
 
 define ptr @"github.com/goplus/llgo/cl/_testgo/selects._llgo_routine$1"(ptr %0) {
 _llgo_0:
-  %1 = load { { ptr, ptr } }, ptr %0, align 8
-  %2 = extractvalue { { ptr, ptr } } %1, 0
-  %3 = extractvalue { ptr, ptr } %2, 1
-  %4 = extractvalue { ptr, ptr } %2, 0
-  call void %4(ptr %3)
+  %1 = load { ptr }, ptr %0, align 8
+  %2 = extractvalue { ptr } %1, 0
+  %3 = load ptr, ptr %2, align 8
+  %4 = getelementptr i8, ptr %2, i64 16
+  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  call void %3()
   call void @free(ptr %0)
   ret ptr null
 }
@@ -235,19 +242,7 @@ declare { i64, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.Select"(%"
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
-  ret i1 %3
-}
-
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
-
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
-  ret i1 %3
-}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

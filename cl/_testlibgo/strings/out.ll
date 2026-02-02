@@ -12,6 +12,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/strings"
 @3 = private unnamed_addr constant [4 x i8] c"cap:", align 1
 @4 = private unnamed_addr constant [7 x i8] c"string:", align 1
 @5 = private unnamed_addr constant [13 x i8] c"Hello, \E4\B8\96\E7\95\8C", align 1
+@"__llgo_closure_const$github.com/goplus/llgo/cl/_testlibgo/strings.main$1" = private constant { ptr, i64 } { ptr @"github.com/goplus/llgo/cl/_testlibgo/strings.main$1", i64 0 }
 @6 = private unnamed_addr constant [12 x i8] c"Hello, world", align 1
 @unicode.Han = external global ptr, align 8
 
@@ -51,10 +52,10 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %7 = call i64 @strings.IndexFunc(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 13 }, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testlibgo/strings.main$1", ptr null })
+  %7 = call i64 @strings.IndexFunc(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 13 }, ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testlibgo/strings.main$1")
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %8 = call i64 @strings.IndexFunc(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 12 }, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testlibgo/strings.main$1", ptr null })
+  %8 = call i64 @strings.IndexFunc(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 12 }, ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testlibgo/strings.main$1")
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
@@ -91,12 +92,6 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
-declare i64 @strings.IndexFunc(%"github.com/goplus/llgo/runtime/internal/runtime.String", { ptr, ptr })
-
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/cl/_testlibgo/strings.main$1"(ptr %0, i32 %1) {
-_llgo_0:
-  %2 = tail call i1 @"github.com/goplus/llgo/cl/_testlibgo/strings.main$1"(i32 %1)
-  ret i1 %2
-}
+declare i64 @strings.IndexFunc(%"github.com/goplus/llgo/runtime/internal/runtime.String", ptr)
 
 declare i1 @unicode.Is(ptr, i32)

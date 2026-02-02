@@ -40,17 +40,17 @@ func NewTransformer(prog ssa.Program, llvmTarget string, targetAbi string, mode 
 		tr.sys = &TypeInfoEsp32{tr}
 	case "riscv32":
 		tr.sys = &TypeInfoRiscv32{tr, targetAbi}
-	case "amd64":
+	case "amd64", "x86_64":
 		tr.sys = &TypeInfoAmd64{tr}
-	case "arm64":
+	case "arm64", "aarch64":
 		tr.sys = &TypeInfoArm64{tr}
-	case "arm":
+	case "arm", "armv5", "armv6", "armv7":
 		tr.sys = &TypeInfoArm{tr}
-	case "wasm":
+	case "wasm", "wasm32":
 		tr.sys = &TypeInfoWasm{tr}
 	case "riscv64":
 		tr.sys = &TypeInfoRiscv64{tr, targetAbi}
-	case "386":
+	case "386", "i386", "i686":
 		tr.sys = &TypeInfo386{tr}
 	}
 	return tr

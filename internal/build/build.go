@@ -41,6 +41,7 @@ import (
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
@@ -49,6 +50,7 @@ import (
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
+	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
@@ -135,11 +137,15 @@ type Config struct {
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
 	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
-	Tags          string
-	SizeReport    bool   // print size report after successful build
-	SizeFormat    string // size report format: text,json (default text)
-	SizeLevel     string // size aggregation level: full,module,package (default module)
-	CompilerHash  string // metadata hash for the running compiler (development builds only)
+	// NativeCCompile compiles C files for host OS during cross-compilation.
+	// This is ONLY used by cabi_test to avoid sysroot issues when testing ABI
+	// compatibility across architectures. Do not enable for normal builds.
+	NativeCCompile bool
+	Tags           string
+	SizeReport     bool   // print size report after successful build
+	SizeFormat     string // size report format: text,json (default text)
+	SizeLevel      string // size aggregation level: full,module,package (default module)
+	CompilerHash   string // metadata hash for the running compiler (development builds only)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -236,6 +242,24 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Target != "" && export.GOARCH != "" {
 		conf.Goarch = export.GOARCH
 	}
+	// explicitTargetTriple is true when:
+	// 1. User explicitly specified a target (via -target flag or TARGET env), or
+	// 2. Crosscompile configured a complete target triple (e.g., wasm, embedded devices), or
+	// 3. GOOS/GOARCH differs from host (cross-compilation by environment).
+	// This ensures --target flag is added so clang compiles for the correct architecture.
+	isCrossCompiling := conf.Goos != runtime.GOOS || conf.Goarch != runtime.GOARCH
+	explicitTargetTriple := conf.Target != "" || (export.LLVMTarget != "" && export.GOOS == "") || isCrossCompiling
+	if export.LLVMTarget == "" {
+		export.LLVMTarget = intllvm.GetTargetTriple(conf.Goos, conf.Goarch)
+	}
+	// Determine the effective GOARCH for ctx register + LLVM backend.
+	// This keeps ctx register selection aligned with the actual target triple.
+	ctxArch := ctxGoarch(conf.Goarch, export.LLVMTarget)
+	passCtxByReg := (&llssa.Target{GOOS: conf.Goos, GOARCH: ctxArch}).CtxRegister().Name != ""
+
+	// Reserve the closure context register in clang so it won't be allocated
+	// for unrelated values (required for register-based ctx passing).
+	// Added per-compile in compiler() so NativeCCompile can skip it for C sources.
 
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
@@ -250,6 +274,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if len(export.BuildTags) > 0 {
 		tags += "," + strings.Join(export.BuildTags, ",")
+	}
+	if passCtxByReg {
+		tags += ",llgo_pass_ctx_by_reg"
 	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -275,10 +302,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
+	// Check if target has "baremetal" build tag (no OS, no TLS support)
+	isBaremetal := slices.Contains(export.BuildTags, "baremetal")
+
 	target := &llssa.Target{
-		GOOS:   conf.Goos,
-		GOARCH: conf.Goarch,
-		Target: conf.Target,
+		GOOS:      conf.Goos,
+		GOARCH:    ctxArch,
+		Target:    conf.Target,
+		Baremetal: isBaremetal,
 	}
 
 	prog := llssa.NewProgram(target)
@@ -302,6 +333,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	check(err)
 	mode := conf.Mode
+	if len(initial) == 0 {
+		return nil, fmt.Errorf("no packages loaded for GOOS=%s GOARCH=%s (patterns=%v)", conf.Goos, conf.Goarch, patterns)
+	}
 	if len(initial) > 1 {
 		switch mode {
 		case ModeBuild:
@@ -367,6 +401,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		buildConf:      conf,
 		crossCompile:   export,
 		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
+		explicitTarget: explicitTargetTriple,
 	}
 
 	// default runtime globals must be registered before packages are built
@@ -534,13 +569,53 @@ type context struct {
 	// Cache related fields
 	cacheManager *cacheManager
 	llvmVersion  string
+
+	explicitTarget bool
 }
 
-func (c *context) compiler() *clang.Cmd {
+// shouldAddTargetFlag returns true if we need to explicitly add --target flag.
+// This is needed when cross-compiling with an explicit target triple.
+func (c *context) shouldAddTargetFlag() bool {
+	if !c.explicitTarget {
+		return false
+	}
+	if c.crossCompile.LLVMTarget == "" {
+		return false
+	}
+	if hasTargetFlag(c.crossCompile.CCFLAGS) || hasTargetFlag(c.crossCompile.CFLAGS) {
+		return false
+	}
+	return true
+}
+
+// compiler returns a clang compiler command.
+// When compilingCSource is true and NativeCCompile is enabled, C files are
+// compiled for the host OS (without --target) to avoid needing target OS sysroot.
+// Go code and LLVM IR always compile for the target architecture.
+func (c *context) compiler(compilingCSource bool) *clang.Cmd {
+	// Clone slices to avoid modifying the original crossCompile flags
+	ccflags := slices.Clone(c.crossCompile.CCFLAGS)
+	cflags := slices.Clone(c.crossCompile.CFLAGS)
+
+	if !(compilingCSource && c.buildConf.NativeCCompile) {
+		ctxArch := ctxGoarch(c.buildConf.Goarch, c.crossCompile.LLVMTarget)
+		if reserve := ctxreg.ReserveFlags(ctxArch); len(reserve) > 0 {
+			ccflags = appendMissingFlags(ccflags, reserve)
+			cflags = appendMissingFlags(cflags, reserve)
+		}
+	}
+
+	// Add --target if needed
+	// Skip for C files in NativeCCompile mode (compile for host OS)
+	if c.shouldAddTargetFlag() && !(compilingCSource && c.buildConf.NativeCCompile) {
+		ccflags = append(ccflags, "--target="+c.crossCompile.LLVMTarget)
+		cflags = append(cflags, "--target="+c.crossCompile.LLVMTarget)
+	}
+
 	config := clang.NewConfig(
 		c.crossCompile.CC,
-		c.crossCompile.CCFLAGS,
-		c.crossCompile.CFLAGS,
+		ccflags,
+		cflags,
 		c.crossCompile.LDFLAGS,
 		c.crossCompile.Linker,
 	)
@@ -736,7 +811,7 @@ func appendExternalLinkArgs(ctx *context, aPkg *aPackage, spec string) {
 		}
 	}
 	if ctx.buildConf.CheckLinkArgs {
-		if err := ctx.compiler().CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
+		if err := ctx.compiler(false).CheckLinkArgs(pkgLinkArgs, isWasmTarget(ctx.buildConf.Goos)); err != nil {
 			panic(fmt.Sprintf("test link args '%s' failed\n\texpanded to: %v\n\tresolved to: %v\n\terror: %v", spec, expdArgs, pkgLinkArgs, err))
 		}
 	}
@@ -849,7 +924,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			if printCmds {
 				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
 			}
-			cmd := ctx.compiler()
+			cmd := ctx.compiler(false)
 			if err := cmd.Compile(llArgs...); err != nil {
 				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
 			}
@@ -861,7 +936,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		if printCmds {
 			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
-		cmd := ctx.compiler()
+		cmd := ctx.compiler(false)
 		if err := cmd.Compile(objArgs...); err != nil {
 			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
 		}
@@ -1010,7 +1085,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				if printCmds {
 					fmt.Fprintln(os.Stderr, "clang", args)
 				}
-				if err := ctx.compiler().Compile(args...); err != nil {
+				if err := ctx.compiler(false).Compile(args...); err != nil {
 					return fmt.Errorf("failed to compile %s: %v", objFile, err)
 				}
 				compiledObjFiles = append(compiledObjFiles, oFile)
@@ -1222,7 +1297,7 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
-	cmd := ctx.compiler()
+	cmd := ctx.compiler(false)
 	return objFile.Name(), cmd.Compile(args...)
 }
 
@@ -1588,7 +1663,6 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 	if ext == ".c" {
 		args = append(args, "-x", "c")
 	}
-
 	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
 	printCmds := ctx.shouldPrintCommands(verbose)
 	if ctx.buildConf.GenLL {
@@ -1598,7 +1672,7 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
 			fmt.Fprintln(os.Stderr, "clang", llArgs)
 		}
-		cmd := ctx.compiler()
+		cmd := ctx.compiler(true) // forCFile=true
 		err := cmd.Compile(llArgs...)
 		check(err)
 	}
@@ -1610,7 +1684,7 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", objArgs)
 	}
-	cmd := ctx.compiler()
+	cmd := ctx.compiler(true) // forCFile=true
 	err := cmd.Compile(objArgs...)
 	check(err)
 	procFile(objFile)

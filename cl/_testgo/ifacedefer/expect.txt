@@ -1,0 +1,4 @@
+starting test
+before return
+MyPrinter: test
+done
