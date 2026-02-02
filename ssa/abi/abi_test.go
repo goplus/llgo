@@ -44,6 +44,15 @@ func TestBasic(t *testing.T) {
 	}
 }
 
+func TestBasicAlias(t *testing.T) {
+	if abi.BasicName(types.Universe.Lookup("byte").Type().(*types.Basic)) != "_llgo_uint8" {
+		t.Fatal("abi byte error")
+	}
+	if abi.BasicName(types.Universe.Lookup("rune").Type().(*types.Basic)) != "_llgo_int32" {
+		t.Fatal("abi rune error")
+	}
+}
+
 func TestPointer(t *testing.T) {
 	b := newBuilder("main")
 	var v int
