@@ -1055,10 +1055,29 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	default:
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
+	pkg := b.Pkg
+	if !pkg.NeedAbiInit && pkg.Path() != "reflect" {
+		if _, ok := reflectFunc[fn.Name()]; ok {
+			pkg.NeedAbiInit = true
+		}
+	}
 	ret.Type = b.Prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
 }
+
+var (
+	reflectFunc = map[string]struct{}{
+		"reflect.ArrayOf":            {},
+		"reflect.ChanOf":             {},
+		"reflect.FuncOf":             {},
+		"reflect.MapOf":              {},
+		"reflect.SliceOf":            {},
+		"reflect.StructOf":           {},
+		"reflect.Value.Method":       {},
+		"reflect.Value.MethodByName": {},
+	}
+)
 
 func logCall(da string, fn Expr, args []Expr) {
 	if fn.kind == vkBuiltin {
