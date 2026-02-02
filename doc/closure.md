@@ -1,84 +1,132 @@
 # Closure Implementation Notes
 
-This document describes the current LLGo SSA closure implementation.
+This document describes the LLGo SSA closure implementation.
 
 ## Goals
 
-- Keep function values pointing to **real symbols** (no global stub for every
-  closure). For non-ctx functions, a thin `__llgo_stub` wrapper is used as the
-  callable symbol.
-- Preserve a `funcval`-like layout: `{fn, data}`.
-- Use an explicit `ctx` parameter in the call ABI (no runtime branching);
-  adaptation happens at conversion time via wrappers.
+- Keep function values pointing to real symbols (no wrapper stubs).
+- Pass closure ctx via a reserved register when available; otherwise pass
+  it as an implicit first parameter with conditional call sites.
+- Represent closures as pointers to objects with inline env fields.
 
 ## Representation
 
-Closures are lowered to a 2-field struct:
+Closures are lowered to a pointer to a heap/const object:
 
 ```
-{ fn: *func, data: unsafe.Pointer }
+type funcval struct {
+    fn     *func
+    hasCtx uintptr
+    env    // inline, variadic
+}
+
+type closure = *funcval
 ```
 
-- `fn` is always a function whose signature **includes** a `__llgo_ctx`
-  parameter.
-- `data` is:
-  - `nil` for plain functions or wrappers that ignore ctx.
-  - a pointer to a heap-allocated context for free variables.
-  - a pointer to a heap cell that stores a function pointer (for `func` values
-    represented as raw function pointers).
+- The runtime/ABI only sees `*funcval` (a pointer), never the struct value.
+- `fn` always has the original Go signature (no explicit ctx parameter).
+- `hasCtx` is a fixed-size flag word (0/1) to keep a stable header size and to
+  support conditional calling on targets without a ctx register.
+- `env` is stored inline immediately after the header.
+- For plain functions, there are no env fields (object size == 2 pointers).
+- For runtime helpers (e.g. `structequal`/`arrayequal`/`typehashFromCtx`), `env`
+  typically contains a single type pointer.
 
-## Calling a Closure
+**Nil/Equality:** a closure value is a pointer. `nil` is a null pointer, and
+comparisons (`==`/`!=`) compare the closure pointer directly (not the `fn`
+field). This avoids dereferencing nil closures.
 
-Calls to **closure values** always emit:
+## Calling Convention
+
+Calls to closure values emit (when a ctx register is available):
 
 ```
-fn(ctx, args...)
+write_ctx(env_ptr)
+fn(args...)
 ```
 
-There is no runtime `ctx==nil` check and no sentinel. Any function value that
-does not naturally accept a ctx is adapted at conversion time (see below).
+- `env_ptr` is computed as `closure_ptr + 2*ptrSize` (skip `fn` + `hasCtx`).
+- `write_ctx` writes to the ctx register.
+- The callee reads ctx at function entry (register or implicit param)
+  and caches it.
+- No restore is needed after the call.
 
-## Function Value -> Closure Wrappers
+On targets without a ctx register, closure calls use a conditional call based
+on `hasCtx`:
 
-To keep the explicit-ctx ABI while avoiding mismatched calls:
+```
+if hasCtx {
+    fn(ctx, args...)
+} else {
+    fn(args...)
+}
+```
 
-- **Function declarations** without ctx are wrapped by a thin adapter:
-  - Name: `__llgo_stub.<fn>`
-  - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
-  - Body: ignores ctx, calls the original function.
-  - Linkage: `linkonce`
-- **Function pointers** use a generic wrapper:
-  - Name: `__llgo_stub._llgo_func$<hash>`
-  - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
-  - Body: treats `__llgo_ctx` as a pointer to a stored function pointer, loads
-    it, and calls it.
-  - Linkage: `linkonce`
-  - Note: the ctx pointer is guaranteed non-nil for this wrapper; we do not
-    emit runtime null checks.
+## Reading Ctx in Go Code
 
-This is the only remaining use of the `__llgo_stub.` prefix; it is no longer
-used to generate a global stub for every closure.
+Runtime functions that need to read ctx use the `getClosurePtr` intrinsic:
 
-## Interface Method Values
+```go
+//go:linkname getClosurePtr llgo.getClosurePtr
+func getClosurePtr() unsafe.Pointer
 
-Interface method signatures in `go/types` include a receiver. When turning an
-interface method into a closure:
+func structequal(p, q unsafe.Pointer) bool {
+    t := getClosurePtr() // returns env[0] (the first env slot value)
+    x := (*structtype)(t)
+    // ... use type info from t
+}
+```
 
-- The receiver parameter is dropped from the closure signature.
-- The resulting closure is built with `{fn, data}` and will be wrapped if it
-  does not already accept `__llgo_ctx`.
+Semantics:
 
-## Covered Scenarios
+- On ctx-register targets, `getClosurePtr` reads the ctx register, treats it as
+  a pointer to the env slot area, **loads env[0]**, and returns that value.
+- On no-register targets, runtime helpers use an explicit `ctx` parameter and
+  read `*(**T)(ctx)` (env[0] is passed as the first slot).
 
-- Plain functions (no free variables).
-- Closures with captured variables (`__llgo_ctx`).
-- Method values / method expressions.
-- Interface method values (receiver dropped).
-- Variadic functions (`__llgo_va_list`).
-- `go:linkname` to C (`C.xxx`) and `llgo:type C` callback parameters.
-- `defer` / `go` invocation of closure values.
-- `FuncPCABI0` points at the real symbol (wrappers only for ctx adaptation).
+## Context Register by Architecture
 
-## Notes / Limitations
+| GOARCH   | Register | Notes |
+|----------|----------|-------|
+| amd64    | mm0      | Use `-msse2` to keep MMX free |
+| 386      | mm0      | Use `-msse2` to keep MMX free |
+| arm64    | x26      | Reserved via clang flag |
+| riscv64  | x27      | Reserved via clang flag |
+| wasm     | -        | Uses conditional ctx param |
+| arm      | -        | Uses conditional ctx param |
 
-- Python closures are intentionally out of scope for now.
+## Notes
+
+- Native builds reserve the ctx register by passing
+  `-mllvm --reserve-regs-for-regalloc=<reg>` to clang.
+- `FuncPCABI0` and `FuncPCABIInternal` return the real symbol address.
+- Interface method closures pass receiver as first argument; ctx register
+  is still written for uniform semantics.
+- Targets without a ctx register use a conditional call based on `hasCtx` to
+  decide whether to pass an implicit env parameter.
+
+## `__llgo_closure_const$...` Constants
+
+You will see many globals like:
+
+```
+@"__llgo_closure_const$github.com/goplus/llgo/runtime/internal/runtime.memequalptr"
+    = private constant { ptr, i64 }
+      { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", i64 0 }
+```
+
+These are **constant closure objects** (funcval) emitted into read‑only data.
+They serve two purposes:
+
+1. **Carry env without allocation.** The closure ABI requires a pointer to a
+   `funcval` with inline env. For helpers like `typehashFromCtx`,
+   `structequal`, `arrayequal`, or `memequal*`, the env is usually a single
+   type pointer. Emitting a constant `funcval` avoids heap allocation and keeps
+   startup deterministic.
+2. **Dedup/identity.** Each unique `(fn, env...)` pair gets its own constant
+   symbol, so the closure pointer is stable and can be reused by type metadata
+   (e.g. map hashers and equal funcs) across the program.
+
+The suffix `.<n>` appears when multiple distinct closure values are derived
+from the same function (different env types/instances). This is an intentional
+optimization and part of the ABI representation.
