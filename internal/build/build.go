@@ -49,6 +49,7 @@ import (
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
+	llvmTarget "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
@@ -1223,6 +1224,13 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	objFile.Close()
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
+	targetTriple := ctx.crossCompile.LLVMTarget
+	if targetTriple == "" {
+		targetTriple = llvmTarget.GetTargetTriple(ctx.buildConf.Goos, ctx.buildConf.Goarch)
+	}
+	if targetTriple != "" && !hasTargetFlag(ctx.crossCompile.CCFLAGS) && !hasTargetFlag(ctx.crossCompile.CFLAGS) {
+		args = append(args, "--target="+targetTriple)
+	}
 	if ctx.shouldPrintCommands(false) {
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)
