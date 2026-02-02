@@ -29,10 +29,6 @@ type closure struct {
   according to the target’s calling convention (see below).
 - There is **no `hasCtx` field**; `env == nil` is the sole indicator.
 
-**Constant closures:** both `closure` and `env` can be emitted as constants
-(e.g. `@__llgo_closure_const$...` referring to an `env` constant), so no heap
-allocation is required for static closures.
-
 ## Calling Convention
 
 ### Targets with a ctx register

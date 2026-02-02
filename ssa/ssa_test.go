@@ -163,7 +163,7 @@ func TestClosureNoCtxValue(t *testing.T) {
 	hb.Store(ptr, fn.Expr)
 	hb.Return()
 
-	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0) {
@@ -222,11 +222,11 @@ _llgo_0:
   ret void
 }
 `
-	assertPkg(t, pkg, expected)
+	assertPkgRaw(t, pkg, expected)
 }
 
 func TestCallClosureDynamic(t *testing.T) {
-	prog := NewProgram(nil)
+	prog := NewProgram(&Target{GOARCH: "amd64"})
 	pkg := prog.NewPackage("bar", "foo/bar")
 
 	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
@@ -241,14 +241,14 @@ func TestCallClosureDynamic(t *testing.T) {
 	b := caller.MakeBody(1)
 	b.Return(b.Call(caller.Param(0), caller.Param(1)))
 
-	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %2)
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %2)
   %4 = call i64 %3(i64 %1)
   ret i64 %4
 }
@@ -286,7 +286,7 @@ func TestMakeClosureWithCtx(t *testing.T) {
 	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
 	ob.Return(closure)
 
-	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @inner(ptr %0, i64 %1) {
@@ -338,7 +338,7 @@ func TestCvtClosureDropsRecv(t *testing.T) {
 }
 
 func TestIfaceMethodClosureCallIR(t *testing.T) {
-	prog := NewProgram(nil)
+	prog := NewProgram(&Target{GOARCH: "amd64"})
 	prog.SetRuntime(func() *types.Package {
 		fset := token.NewFileSet()
 		imp := packages.NewImporter(fset)
@@ -367,7 +367,7 @@ func TestIfaceMethodClosureCallIR(t *testing.T) {
 	ret := b.Call(closure, prog.Val(100), prog.Val(200))
 	b.Return(ret)
 
-	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
@@ -382,7 +382,7 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 0
   %8 = extractvalue { ptr, ptr } %6, 1
-  call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %8)
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %8)
   %9 = call i64 (ptr, ...) %7(ptr %8, i64 100, i64 200)
   ret i64 %9
 }
@@ -494,13 +494,18 @@ func TestCallClosureViaRegister(t *testing.T) {
 	b := caller.MakeBody(1)
 	b.Return(b.Call(caller.Param(0), caller.Param(1)))
 
-	ir := pkg.String()
-	if !strings.Contains(ir, `asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"`) {
-		t.Errorf("expected ctx register write before closure call:\n%s", ir)
-	}
-	if strings.Contains(ir, "__llgo_ctx") {
-		t.Errorf("expected no __llgo_ctx in closure call:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @caller({ ptr, ptr } %0, i64 %1) {
+_llgo_0:
+  %2 = extractvalue { ptr, ptr } %0, 1
+  %3 = extractvalue { ptr, ptr } %0, 0
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %2)
+  %4 = call i64 %3(i64 %1)
+  ret i64 %4
+}
+`)
 }
 
 func TestClosureFunctionReadsCtxFromReg(t *testing.T) {
@@ -527,13 +532,18 @@ func TestClosureFunctionReadsCtxFromReg(t *testing.T) {
 	result := ib.BinOp(token.ADD, freeVar, inner.Param(0))
 	ib.Return(result)
 
-	ir := pkg.String()
-	if !strings.Contains(ir, `asm sideeffect "movq %mm0, $0", "=r,~{memory}"`) {
-		t.Errorf("expected ctx register read in closure function:\n%s", ir)
-	}
-	if strings.Contains(ir, "define i64 @inner(ptr") {
-		t.Errorf("expected no ctx parameter in function signature:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @inner(i64 %0) {
+_llgo_0:
+  %1 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %2 = load { i64 }, ptr %1, align 4
+  %3 = extractvalue { i64 } %2, 0
+  %4 = add i64 %3, %0
+  ret i64 %4
+}
+`)
 }
 
 // TestCallClosureConditional verifies that platforms without ctx register
@@ -555,16 +565,32 @@ func TestCallClosureConditional(t *testing.T) {
 	b := caller.MakeBody(1)
 	b.Return(b.Call(caller.Param(0), caller.Param(1)))
 
-	ir := pkg.String()
-	if strings.Contains(ir, "asm sideeffect") {
-		t.Errorf("expected no inline asm for fallback calling:\n%s", ir)
-	}
-	if !strings.Contains(ir, "br i1") {
-		t.Errorf("expected conditional branch for env check:\n%s", ir)
-	}
-	if !strings.Contains(ir, "call i64 %") || !strings.Contains(ir, "ptr") {
-		t.Errorf("expected call with env param for hasCtx:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i32 @caller({ ptr, ptr } %0, i32 %1) {
+_llgo_0:
+  %2 = extractvalue { ptr, ptr } %0, 1
+  %3 = extractvalue { ptr, ptr } %0, 0
+  %4 = icmp eq ptr %2, null
+  %5 = alloca i32, align 4
+  br i1 %4, label %_llgo_2, label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %6 = call i32 %3(ptr %2, i32 %1)
+  store i32 %6, ptr %5, align 4
+  br label %_llgo_3
+
+_llgo_2:                                          ; preds = %_llgo_0
+  %7 = call i32 %3(i32 %1)
+  store i32 %7, ptr %5, align 4
+  br label %_llgo_3
+
+_llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
+  %8 = load i32, ptr %5, align 4
+  ret i32 %8
+}
+`)
 }
 
 func TestMakeClosureWithBindings(t *testing.T) {
@@ -602,25 +628,29 @@ func TestMakeClosureWithBindings(t *testing.T) {
 	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
 	ob.Return(closure)
 
-	ir := normalizeIR(pkg.String())
-	if !strings.Contains(ir, `define i64 @inner(i64`) {
-		t.Errorf("expected inner closure without ctx param:\n%s", ir)
-	}
-	if strings.Contains(ir, "define i64 @inner(ptr") {
-		t.Errorf("expected no ctx parameter in closure signature:\n%s", ir)
-	}
-	if !strings.Contains(ir, "read_ctx_reg") {
-		t.Errorf("expected ctx register read in closure body:\n%s", ir)
-	}
-	if !strings.Contains(ir, "define { ptr, ptr } @outer") {
-		t.Errorf("expected closure value in outer:\n%s", ir)
-	}
-	if !strings.Contains(ir, "AllocU") {
-		t.Errorf("expected env allocation in outer:\n%s", ir)
-	}
-	if !strings.Contains(ir, "insertvalue { ptr, ptr }") {
-		t.Errorf("expected closure aggregate assembly:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define i64 @inner(i64 %0) {
+_llgo_0:
+  %1 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %2 = load { i64 }, ptr %1, align 4
+  %3 = extractvalue { i64 } %2, 0
+  %4 = add i64 %3, %0
+  ret i64 %4
+}
+
+define { ptr, ptr } @outer(i64 %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
+  store i64 %0, ptr %2, align 4
+  %3 = insertvalue { ptr, ptr } { ptr @inner, ptr undef }, ptr %1, 1
+  ret { ptr, ptr } %3
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+`)
 }
 
 // TestClosureIIFEIR verifies IR for immediately invoked function expression (IIFE).
@@ -657,22 +687,33 @@ func TestClosureIIFEIR(t *testing.T) {
 	ret := cb.Call(closure, prog.Val(5))
 	cb.Return(ret)
 
-	ir := normalizeIR(pkg.String())
-	if !strings.Contains(ir, "define i64 @iife_inner") {
-		t.Errorf("expected inner closure definition:\n%s", ir)
-	}
-	if strings.Contains(ir, "define i64 @iife_inner(ptr") {
-		t.Errorf("expected no ctx parameter in IIFE closure:\n%s", ir)
-	}
-	if !strings.Contains(ir, "read_ctx_reg") {
-		t.Errorf("expected ctx register read in IIFE closure:\n%s", ir)
-	}
-	if !strings.Contains(ir, "define i64 @test_iife") {
-		t.Errorf("expected IIFE caller definition:\n%s", ir)
-	}
-	if !strings.Contains(ir, "write_ctx_reg") {
-		t.Errorf("expected ctx register write before IIFE call:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'test'
+source_filename = "test"
+
+define i64 @iife_inner(i64 %0) {
+_llgo_0:
+  %1 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %2 = load { i64 }, ptr %1, align 4
+  %3 = extractvalue { i64 } %2, 0
+  %4 = add i64 %3, %0
+  ret i64 %4
+}
+
+define i64 @test_iife(i64 %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
+  store i64 %0, ptr %2, align 4
+  %3 = insertvalue { ptr, ptr } { ptr @iife_inner, ptr undef }, ptr %1, 1
+  %4 = extractvalue { ptr, ptr } %3, 1
+  %5 = extractvalue { ptr, ptr } %3, 0
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %4)
+  %6 = call i64 %5(i64 5)
+  ret i64 %6
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+`)
 }
 
 // TestClosureAsParamIR verifies IR for closure passed as function parameter.
@@ -695,10 +736,22 @@ func TestClosureAsParamIR(t *testing.T) {
 	second := b.Call(fn.Param(0), first)
 	b.Return(second)
 
-	ir := normalizeIR(pkg.String())
-	if strings.Count(ir, "write_ctx_reg") != 2 {
-		t.Errorf("expected two ctx register writes for applyTwice:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'test'
+source_filename = "test"
+
+define i64 @applyTwice({ ptr, ptr } %0, i64 %1) {
+_llgo_0:
+  %2 = extractvalue { ptr, ptr } %0, 1
+  %3 = extractvalue { ptr, ptr } %0, 0
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %2)
+  %4 = call i64 %3(i64 %1)
+  %5 = extractvalue { ptr, ptr } %0, 1
+  %6 = extractvalue { ptr, ptr } %0, 0
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %5)
+  %7 = call i64 %6(i64 %4)
+  ret i64 %7
+}
+`)
 }
 
 // TestDeferClosureIR verifies that closure body reads ctx from register.
@@ -722,16 +775,17 @@ func TestDeferClosureIR(t *testing.T) {
 	_ = inner.FreeVar(ib, 0)
 	ib.Return()
 
-	ir := normalizeIR(pkg.String())
-	if !strings.Contains(ir, "define void @defer_body") {
-		t.Errorf("expected defer closure definition:\n%s", ir)
-	}
-	if !strings.Contains(ir, "read_ctx_reg") {
-		t.Errorf("expected ctx register read in defer closure:\n%s", ir)
-	}
-	if strings.Contains(ir, "define void @defer_body(ptr") {
-		t.Errorf("expected no ctx parameter in defer closure:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'test'
+source_filename = "test"
+
+define void @defer_body() {
+_llgo_0:
+  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = load { i64 }, ptr %0, align 4
+  %2 = extractvalue { i64 } %1, 0
+  ret void
+}
+`)
 }
 
 // TestGoClosureIR verifies that closure body reads ctx from register.
@@ -755,16 +809,17 @@ func TestGoClosureIR(t *testing.T) {
 	_ = inner.FreeVar(ib, 0)
 	ib.Return()
 
-	ir := normalizeIR(pkg.String())
-	if !strings.Contains(ir, "define void @goroutine_body") {
-		t.Errorf("expected goroutine closure definition:\n%s", ir)
-	}
-	if !strings.Contains(ir, "read_ctx_reg") {
-		t.Errorf("expected ctx register read in goroutine closure:\n%s", ir)
-	}
-	if strings.Contains(ir, "define void @goroutine_body(ptr") {
-		t.Errorf("expected no ctx parameter in goroutine closure:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'test'
+source_filename = "test"
+
+define void @goroutine_body() {
+_llgo_0:
+  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = load { i64 }, ptr %0, align 4
+  %2 = extractvalue { i64 } %1, 0
+  ret void
+}
+`)
 }
 
 // TestGoRoutineWrapperCtxIR verifies goroutine wrapper sets ctx register before calling closure.
@@ -798,18 +853,53 @@ func TestGoRoutineWrapperCtxIR(t *testing.T) {
 	cb.Go(closure)
 	cb.Return()
 
-	ir := normalizeIR(pkg.String())
-	start := strings.Index(ir, `define ptr @"test._llgo_routine$`)
-	if start == -1 {
-		t.Fatalf("goroutine wrapper not found in IR:\n%s", ir)
-	}
-	block := ir[start:]
-	if end := strings.Index(block, "\n}\n"); end != -1 {
-		block = block[:end]
-	}
-	if !strings.Contains(block, "write_ctx_reg") {
-		t.Fatalf("expected ctx register write in goroutine wrapper:\n%s", block)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'test'
+source_filename = "test"
+
+%"github.com/goplus/llgo/runtime/internal/clite/pthread.RoutineFunc" = type { ptr, ptr }
+
+define void @goroutine_body2() {
+_llgo_0:
+  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = load { i64 }, ptr %0, align 4
+  %2 = extractvalue { i64 } %1, 0
+  ret void
+}
+
+define void @test_go_routine(i64 %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
+  store i64 %0, ptr %2, align 4
+  %3 = insertvalue { ptr, ptr } { ptr @goroutine_body2, ptr undef }, ptr %1, 1
+  %4 = call ptr @malloc(i64 16)
+  %5 = getelementptr inbounds { { ptr, ptr } }, ptr %4, i32 0, i32 0
+  store { ptr, ptr } %3, ptr %5, align 8
+  %6 = alloca i8, i64 8, align 1
+  %7 = call i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr %6, ptr null, %"github.com/goplus/llgo/runtime/internal/clite/pthread.RoutineFunc" { ptr @"test._llgo_routine$1", ptr null }, ptr %4)
+  ret void
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
+declare ptr @malloc(i64)
+
+define ptr @"test._llgo_routine$1"(ptr %0) {
+_llgo_0:
+  %1 = load { { ptr, ptr } }, ptr %0, align 8
+  %2 = extractvalue { { ptr, ptr } } %1, 0
+  %3 = extractvalue { ptr, ptr } %2, 1
+  %4 = extractvalue { ptr, ptr } %2, 0
+  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %3)
+  call void %4()
+  call void @free(ptr %0)
+  ret ptr null
+}
+
+declare void @free(ptr)
+
+declare i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/clite/pthread.RoutineFunc", ptr)
+`)
 }
 
 // TestNestedClosureIR verifies IR for closure with multi-field capture (nested scenario).
@@ -839,16 +929,19 @@ func TestNestedClosureIR(t *testing.T) {
 	result := ib.BinOp(token.ADD, a, b)
 	ib.Return(result)
 
-	ir := normalizeIR(pkg.String())
-	if !strings.Contains(ir, "define i64 @nested_inner") {
-		t.Errorf("expected nested closure definition:\n%s", ir)
-	}
-	if !strings.Contains(ir, "read_ctx_reg") {
-		t.Errorf("expected ctx register read in nested closure:\n%s", ir)
-	}
-	if !strings.Contains(ir, "load { i64, i64 }") {
-		t.Errorf("expected load of multi-field ctx in nested closure:\n%s", ir)
-	}
+	assertPkgRaw(t, pkg, `; ModuleID = 'test'
+source_filename = "test"
+
+define i64 @nested_inner() {
+_llgo_0:
+  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = load { i64, i64 }, ptr %0, align 4
+  %2 = extractvalue { i64, i64 } %1, 0
+  %3 = extractvalue { i64, i64 } %1, 1
+  %4 = add i64 %2, %3
+  ret i64 %4
+}
+`)
 }
 
 func TestClosureCtxHelpers(t *testing.T) {
@@ -1108,6 +1201,14 @@ func normalizeIR(ir string) string {
 	ir = writeCtxRegRe.ReplaceAllString(ir, `${1}call void asm sideeffect "write_ctx_reg $$0", "r,~{CTX_REG},~{memory}"(ptr ${2})`)
 	ir = readCtxRegRe.ReplaceAllString(ir, `${1}call ptr asm sideeffect "read_ctx_reg $$0", "=r,~{memory}"()`)
 	return ir
+}
+
+func assertPkgRaw(t *testing.T, p Package, expected string) {
+	t.Helper()
+	got := p.String()
+	if got != expected {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", got, expected)
+	}
 }
 
 func assertPkg(t *testing.T, p Package, expected string) {

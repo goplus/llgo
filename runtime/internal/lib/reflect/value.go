@@ -2287,15 +2287,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	)
 	if v.typ_.IsClosure() {
 		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
-		tin = append([]*abi.Type{rtypeOf(unsafe.Pointer(nil))}, ft.In...)
-		tout = ft.Out
-		c := (*struct {
-			fn  unsafe.Pointer
-			env unsafe.Pointer
-		})(v.ptr)
-		fn = c.fn
-		ioff = 1
-		args = append(args, unsafe.Pointer(&c.env))
+		fn, tin, tout, ioff, args = closureCallInfo(v, ft, args)
 	} else {
 		if v.flag&flagMethod != 0 {
 			var (

@@ -183,13 +183,13 @@ type aFunction struct {
 	defer_ *aDefer
 	recov  BasicBlock
 
-	params   []Type
-	paramBase int // extra leading LLVM params (e.g. sret ptr) not present in Go signature
-	freeVars  Expr
-	ctxType   Type // closure context struct type (for register-based ctx)
+	params      []Type
+	paramBase   int // extra leading LLVM params (e.g. sret ptr) not present in Go signature
+	freeVars    Expr
+	ctxType     Type // closure context struct type (for register-based ctx)
 	hasFreeVars bool
 	hasEnvParam bool // true if closure has implicit env param (no-register platforms)
-	hasVArg  bool
+	hasVArg     bool
 
 	diFunc DIFunction
 }

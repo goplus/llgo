@@ -428,6 +428,7 @@ var llgoInstrs = map[string]int{
 	"asm":           llgoAsm,
 	"stackSave":     llgoStackSave,
 	"getClosurePtr": llgoGetClosurePtr,
+	"setClosurePtr": llgoSetClosurePtr,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -611,6 +612,11 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			} else {
 				ret = b.ReadCtxReg()
 			}
+		case llgoSetClosurePtr:
+			if len(args) != 1 {
+				panic("setClosurePtr(ptr): invalid arguments")
+			}
+			b.WriteCtxReg(p.compileValue(b, args[0]))
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer
