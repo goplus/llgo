@@ -48,6 +48,11 @@ func TestNormalizeIR(t *testing.T) {
 			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		{
+			name:     "normalize arm64 WriteCtxReg minimal constraints",
+			input:    `call void asm sideeffect "mov x26, $0", "r"(ptr %data)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
+		},
+		{
 			name:     "normalize riscv64 WriteCtxReg",
 			input:    `call void asm sideeffect "mv x27, $0", "r,~{x27},~{memory}"(ptr %val)`,
 			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
@@ -55,6 +60,11 @@ func TestNormalizeIR(t *testing.T) {
 		{
 			name:     "normalize riscv64 WriteCtxReg without memory",
 			input:    `call void asm sideeffect "mv x27, $0", "r,~{x27}"(ptr %val)`,
+			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
+		},
+		{
+			name:     "normalize riscv64 WriteCtxReg minimal constraints",
+			input:    `call void asm sideeffect "mv x27, $0", "r"(ptr %val)`,
 			expected: `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`,
 		},
 		// ReadCtxReg patterns (precise matching)

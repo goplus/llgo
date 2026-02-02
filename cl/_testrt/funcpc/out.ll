@@ -109,7 +109,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/funcpc.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -124,7 +124,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, pt
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/funcpc.(*S).Method$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = call i64 @"github.com/goplus/llgo/cl/_testrt/funcpc.(*S).Method"(ptr %2)

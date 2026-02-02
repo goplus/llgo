@@ -170,7 +170,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/reflectclosure.testReflectCallDirect$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
@@ -248,7 +248,7 @@ _llgo_0:
   store ptr %0, ptr %4, align 8
   %5 = load ptr, ptr %1, align 8
   %6 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %6)
   %7 = call ptr %5()
   %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_closure$9Xnzh6tTLee8-T1hkjbEMbbXK5IX2MYsUOq3E1fXCtY", ptr undef }, ptr %7, 1
   %9 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %8)
@@ -271,7 +271,7 @@ _llgo_0:
 
 define ptr @"github.com/goplus/llgo/cl/_testgo/reflectclosure.testReflectCallNested$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 20, ptr %2, align 4
@@ -290,7 +290,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/reflectclosure.testReflectCallNested$1$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -386,7 +386,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/reflectclosure.testReflectCallWithFreeVar$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -513,7 +513,7 @@ _llgo_0:
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/reflectclosure.testReflectMakeFunc$1"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4
@@ -570,7 +570,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/reflectclosure.(*Counter).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/reflectclosure.(*Counter).Add"(ptr %3, i64 %0)

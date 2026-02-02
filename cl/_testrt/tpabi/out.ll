@@ -106,7 +106,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %26 = getelementptr i8, ptr %21, i64 16
   %27 = load ptr, ptr %26, align 8
   %28 = getelementptr i8, ptr %21, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %28)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %28)
   call void %25(ptr %27)
   %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %30 = getelementptr inbounds i64, ptr %29, i64 0

@@ -98,7 +98,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %11 = load ptr, ptr %7, align 8
   %12 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
   call void %11()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
@@ -136,7 +136,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 define void @"github.com/goplus/llgo/cl/_testgo/ifaceval.Printer.Print$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)
@@ -154,7 +154,7 @@ _llgo_0:
   %12 = getelementptr i8, ptr %7, i64 16
   %13 = load ptr, ptr %12, align 8
   %14 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
   call void %11(ptr %13)
   ret void
 }

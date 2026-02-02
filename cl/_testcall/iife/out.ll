@@ -29,14 +29,14 @@ _llgo_0:
   store ptr %0, ptr %4, align 8
   %5 = load ptr, ptr %1, align 8
   %6 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %6)
   %7 = call i64 %5(i64 5)
   ret void
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/iife.main$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4

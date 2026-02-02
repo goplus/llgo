@@ -137,7 +137,7 @@ _llgo_1:                                          ; preds = %_llgo_5
   %17 = getelementptr i8, ptr %12, i64 16
   %18 = load ptr, ptr %17, align 8
   %19 = getelementptr i8, ptr %12, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %19)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %19)
   call void %16(ptr %18)
   br label %_llgo_2
 

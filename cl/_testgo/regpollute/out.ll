@@ -29,7 +29,7 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testgo/regpollute.makeOuter"(i64 42)
   %1 = load ptr, ptr %0, align 8
   %2 = getelementptr i8, ptr %0, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %2)
   %3 = call i64 %1()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -70,7 +70,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/regpollute.makeInner$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -99,13 +99,13 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/regpollute.makeOuter$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
   %4 = load ptr, ptr %3, align 8
   %5 = getelementptr i8, ptr %3, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   %6 = call i64 %4()
   %7 = extractvalue { ptr, ptr } %1, 1
   %8 = load i64, ptr %7, align 4

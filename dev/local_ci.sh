@@ -15,6 +15,7 @@ cleanup() {
 trap cleanup EXIT
 
 export LLGO_ROOT="$workdir"
+demo_skip=()
 
 log_section() {
 	printf "\n==== %s ====\n" "$1"
@@ -68,22 +69,21 @@ setup_python3_embed_pc
 
 install_python_demo_deps() {
 	local pkgs=("numpy" "torch")
-	local pip_cmd=""
+	local pip_cmd=()
 	if command -v pip3.12 >/dev/null 2>&1; then
-		pip_cmd="pip3.12"
+		pip_cmd=(pip3.12)
 	elif command -v python3.12 >/dev/null 2>&1; then
-		pip_cmd="python3.12 -m pip"
+		pip_cmd=(python3.12 -m pip)
 	elif command -v python3 >/dev/null 2>&1; then
-		pip_cmd="python3 -m pip"
+		pip_cmd=(python3 -m pip)
 	else
 		echo "warning: python3 not available; skipping python demo deps" >&2
 		return
 	fi
-	local extra_flags=()
-	if $pip_cmd --help 2>/dev/null | grep -q break-system-packages; then
-		extra_flags+=("--break-system-packages")
+	if "${pip_cmd[@]}" install --break-system-packages "${pkgs[@]}" 2>/dev/null; then
+		return
 	fi
-	$pip_cmd install "${extra_flags[@]}" "${pkgs[@]}"
+	"${pip_cmd[@]}" install "${pkgs[@]}"
 }
 
 ensure_cargs_libs() {
@@ -110,17 +110,27 @@ ensure_cargs_libs() {
 		esac
 		if [ -z "$demo_pkg" ]; then
 			echo "warning: unsupported platform for cargs demo: ${goos}-${goarch}" >&2
+			demo_skip+=("_demo/c/cargs")
 			return
 		fi
 		mkdir -p "$cargs_dir"
 		url="https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/${demo_pkg}"
 		if command -v curl >/dev/null 2>&1; then
-			curl -fL "$url" -o "$cargs_dir/$demo_pkg"
+			if ! curl -fL "$url" -o "$cargs_dir/$demo_pkg"; then
+				echo "warning: failed to download cargs demo package; skipping cargs demo" >&2
+				demo_skip+=("_demo/c/cargs")
+				return
+			fi
 		elif command -v wget >/dev/null 2>&1; then
-			wget -O "$cargs_dir/$demo_pkg" "$url"
+			if ! wget -O "$cargs_dir/$demo_pkg" "$url"; then
+				echo "warning: failed to download cargs demo package; skipping cargs demo" >&2
+				demo_skip+=("_demo/c/cargs")
+				return
+			fi
 		else
-			echo "error: missing curl/wget for cargs demo download" >&2
-			exit 1
+			echo "warning: missing curl/wget for cargs demo download; skipping cargs demo" >&2
+			demo_skip+=("_demo/c/cargs")
+			return
 		fi
 		( cd "$cargs_dir" && unzip -q "$demo_pkg" && rm -f "$demo_pkg" )
 	fi
@@ -157,16 +167,21 @@ ensure_llama2_model() {
 	if command -v curl >/dev/null 2>&1; then
 		if ! curl -fL "$url" -o "$tmp"; then
 			rm -f "$tmp"
-			exit 1
+			echo "warning: failed to download llama2 model; skipping llama2 demo" >&2
+			demo_skip+=("_demo/c/llama2-c")
+			return
 		fi
 	elif command -v wget >/dev/null 2>&1; then
 		if ! wget -O "$tmp" "$url"; then
 			rm -f "$tmp"
-			exit 1
+			echo "warning: failed to download llama2 model; skipping llama2 demo" >&2
+			demo_skip+=("_demo/c/llama2-c")
+			return
 		fi
 	else
-		echo "error: missing llama2 model and neither curl nor wget is available: $dst" >&2
-		exit 1
+		echo "warning: missing llama2 model and neither curl nor wget is available; skipping llama2 demo" >&2
+		demo_skip+=("_demo/c/llama2-c")
+		return
 	fi
 	mv -f "$tmp" "$dst"
 }
@@ -239,7 +254,9 @@ log_section "Go Build"
 (cd "$workdir" && go build ./...)
 
 log_section "Go Test"
-(cd "$workdir" && go test ./...)
+install_python_demo_deps
+go_test_timeout="${LLGO_GO_TEST_TIMEOUT:-20m}"
+(cd "$workdir" && go test -timeout="${go_test_timeout}" ./...)
 
 log_section "Install llgo"
 (cd "$workdir" && go install ./cmd/llgo)
@@ -254,9 +271,12 @@ log_section "llgo test"
 (cd "$workdir" && llgo test ./...)
 
 log_section "Demo Tests"
-install_python_demo_deps
 ensure_cargs_libs
 export LLGO_FULL_RPATH=true
+demo_skip_env=""
+if [ "${#demo_skip[@]}" -gt 0 ]; then
+	demo_skip_env="$(IFS=,; echo "${demo_skip[*]}")"
+fi
 demo_jobs="${LLGO_DEMO_JOBS:-}"
 if [ -z "$demo_jobs" ]; then
 	if command -v nproc >/dev/null 2>&1; then
@@ -270,10 +290,11 @@ if [ -z "$demo_jobs" ]; then
 		demo_jobs=4
 	fi
 fi
-(cd "$workdir" && LLGO_DEMO_JOBS="$demo_jobs" bash .github/workflows/test_demo.sh)
+(cd "$workdir" && LLGO_DEMO_JOBS="$demo_jobs" LLGO_DEMO_SKIP="$demo_skip_env" bash .github/workflows/test_demo.sh)
 
 log_section "Build targets"
-(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh)
+(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh empty)
+(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh defer)
 
 log_section "Hello World"
 hello_logs=()

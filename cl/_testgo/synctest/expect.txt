@@ -1,6 +1,6 @@
 starting test
 once.Do: first call
 creating goroutine
-goroutine: result set to 42
 waiting for goroutine
+goroutine: result set to 42
 done, result = 42

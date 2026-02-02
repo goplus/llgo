@@ -60,7 +60,7 @@ _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
@@ -100,7 +100,7 @@ _llgo_0:
   %3 = extractvalue { ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %1, 1
   %4 = load ptr, ptr %2, align 8
   %5 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   call void %4(%"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
   call void @free(ptr %0)
   ret ptr null

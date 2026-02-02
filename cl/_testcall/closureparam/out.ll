@@ -67,7 +67,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %14 = load i64, ptr %13, align 4
   %15 = load ptr, ptr %1, align 8
   %16 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call i64 %15(i64 %14)
   %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 0
   %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3, 1
@@ -85,7 +85,7 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/closureparam.main$2"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load i64, ptr %3, align 4

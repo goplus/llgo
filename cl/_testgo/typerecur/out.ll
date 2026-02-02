@@ -62,7 +62,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   %4 = load ptr, ptr %3, align 8
   %5 = load ptr, ptr %4, align 8
   %6 = getelementptr i8, ptr %4, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %6)
   %7 = call ptr %5(ptr %0)
   %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
   store ptr %7, ptr %8, align 8

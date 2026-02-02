@@ -371,6 +371,18 @@ func (b Builder) WriteCtxReg(val Expr) {
 	if ctxRegCallerSaved(b.Prog.target.GOARCH) {
 		parts = append(parts, "~{memory}")
 	}
+	if len(parts) > 1 {
+		seen := make(map[string]bool, len(parts))
+		uniq := parts[:0]
+		for _, p := range parts {
+			if seen[p] {
+				continue
+			}
+			seen[p] = true
+			uniq = append(uniq, p)
+		}
+		parts = uniq
+	}
 	constraints := strings.Join(parts, ",")
 	asm := llvm.InlineAsm(ftype, writeAsm, constraints, true, false, dialect, false)
 	b.impl.CreateCall(ftype, asm, []llvm.Value{casted.impl}, "")

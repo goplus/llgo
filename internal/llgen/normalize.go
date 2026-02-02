@@ -63,9 +63,9 @@ func init() {
 		writeAsm := fmt.Sprintf(tmpl.writeFmt, info.Name)
 		readAsm := fmt.Sprintf(tmpl.readFmt, info.Name)
 
-		// WriteCtxReg pattern: call void asm sideeffect "<write_asm>", "r,~{reg}[,~{memory}]"(ptr %...)
+		// WriteCtxReg pattern: call void asm sideeffect "<write_asm>", "r[,~{reg}][,~{memory}]"(ptr %...)
 		writePattern := fmt.Sprintf(
-			`call void asm sideeffect "%s", "r,~\{%s\}(?:,~\{memory\})?"\(ptr [^)]+\)`,
+			`call void asm sideeffect "%s", "r(?:,~\{%s\})?(?:,~\{memory\})?"\(ptr [^)]+\)`,
 			writeAsm, info.Name,
 		)
 		writeCtxRegPatterns = append(writeCtxRegPatterns, regexp.MustCompile(writePattern))

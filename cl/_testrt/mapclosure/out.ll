@@ -123,7 +123,7 @@ _llgo_0:
   %10 = getelementptr i8, ptr %5, i64 16
   %11 = load ptr, ptr %10, align 8
   %12 = getelementptr i8, ptr %5, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
   %13 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %9(ptr %11)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %13
 }
@@ -176,14 +176,14 @@ _llgo_0:
   %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13, ptr %0, 1
   %15 = load ptr, ptr %5, align 8
   %16 = getelementptr i8, ptr %5, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %15(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %14)
   %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ")
   %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %18, 0
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %19, ptr %0, 1
   %21 = load ptr, ptr %11, align 8
   %22 = getelementptr i8, ptr %11, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %22)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %22)
   %23 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %21(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %20)
   %24 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %17, %"github.com/goplus/llgo/runtime/internal/runtime.String" %23)
   %25 = xor i1 %24, true

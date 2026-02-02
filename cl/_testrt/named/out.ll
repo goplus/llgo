@@ -101,7 +101,7 @@ _llgo_0:
   %62 = load ptr, ptr %61, align 8
   %63 = load ptr, ptr %62, align 8
   %64 = getelementptr i8, ptr %62, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %64)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %64)
   %65 = call i64 %63(i64 -2)
   %66 = load ptr, ptr %0, align 8
   %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %66, i32 0, i32 3
@@ -111,7 +111,7 @@ _llgo_0:
   %71 = load ptr, ptr %70, align 8
   %72 = load ptr, ptr %71, align 8
   %73 = getelementptr i8, ptr %71, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %73)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %73)
   %74 = call i64 %72(i64 -3)
   %75 = call i32 (ptr, ...) @printf(ptr @0, i64 %42, i64 %49, i64 %53, i64 %59, i64 %65, i64 %74)
   ret void
@@ -119,7 +119,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/named.main$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load ptr, ptr %3, align 8

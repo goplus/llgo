@@ -40,7 +40,7 @@ _llgo_0:
   store ptr %0, ptr %5, align 8
   %6 = load ptr, ptr %2, align 8
   %7 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %7)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %7)
   %8 = call i64 %6(i64 7)
   ret void
 }
@@ -49,7 +49,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/ptrmethodval.(*S).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/ptrmethodval.(*S).Add"(ptr %3, i64 %0)

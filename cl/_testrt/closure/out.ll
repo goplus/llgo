@@ -33,7 +33,7 @@ _llgo_0:
   store ptr %0, ptr %4, align 8
   %5 = load ptr, ptr %1, align 8
   %6 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %6)
   call void %5()
   ret void
 }
@@ -52,13 +52,13 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/closure.main$3"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
   %4 = load ptr, ptr %3, align 8
   %5 = getelementptr i8, ptr %3, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   call void %4(i64 100, i64 200)
   ret void
 }

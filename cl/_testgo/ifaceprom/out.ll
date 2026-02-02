@@ -76,7 +76,7 @@ _llgo_0:
   %13 = getelementptr i8, ptr %8, i64 16
   %14 = load ptr, ptr %13, align 8
   %15 = getelementptr i8, ptr %8, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call i64 %12(ptr %14)
   ret i64 %16
 }
@@ -103,7 +103,7 @@ _llgo_0:
   %13 = getelementptr i8, ptr %8, i64 16
   %14 = load ptr, ptr %13, align 8
   %15 = getelementptr i8, ptr %8, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %12(ptr %14)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %16
 }
@@ -127,7 +127,7 @@ _llgo_0:
   %12 = getelementptr i8, ptr %7, i64 16
   %13 = load ptr, ptr %12, align 8
   %14 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call i64 %11(ptr %13)
   ret i64 %15
 }
@@ -151,7 +151,7 @@ _llgo_0:
   %12 = getelementptr i8, ptr %7, i64 16
   %13 = load ptr, ptr %12, align 8
   %14 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %11(ptr %13)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %15
 }
@@ -221,7 +221,7 @@ _llgo_0:
   %17 = getelementptr i8, ptr %12, i64 16
   %18 = load ptr, ptr %17, align 8
   %19 = getelementptr i8, ptr %12, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %19)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %19)
   %20 = call i64 %16(ptr %18)
   %21 = icmp ne i64 %20, 1
   br i1 %21, label %_llgo_1, label %_llgo_2
@@ -250,7 +250,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %35 = getelementptr i8, ptr %30, i64 16
   %36 = load ptr, ptr %35, align 8
   %37 = getelementptr i8, ptr %30, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %37)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %37)
   %38 = call i64 %34(ptr %36)
   %39 = icmp ne i64 %38, 1
   br i1 %39, label %_llgo_3, label %_llgo_4
@@ -305,7 +305,7 @@ _llgo_8:                                          ; preds = %_llgo_19
   %65 = getelementptr i8, ptr %60, i64 16
   %66 = load ptr, ptr %65, align 8
   %67 = getelementptr i8, ptr %60, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %67)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %67)
   %68 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %64(ptr %66)
   %69 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %68, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %70 = xor i1 %69, true
@@ -336,7 +336,7 @@ _llgo_10:                                         ; preds = %_llgo_8
   %84 = getelementptr i8, ptr %79, i64 16
   %85 = load ptr, ptr %84, align 8
   %86 = getelementptr i8, ptr %79, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %86)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %86)
   %87 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %83(ptr %85)
   %88 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %87, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %89 = xor i1 %88, true
@@ -392,7 +392,7 @@ _llgo_17:                                         ; preds = %_llgo_4
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %43, ptr %107, align 8
   %108 = load ptr, ptr %104, align 8
   %109 = getelementptr i8, ptr %104, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %109)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %109)
   %110 = call i64 %108()
   %111 = icmp ne i64 %110, 1
   br i1 %111, label %_llgo_5, label %_llgo_6
@@ -414,7 +414,7 @@ _llgo_19:                                         ; preds = %_llgo_6
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %49, ptr %117, align 8
   %118 = load ptr, ptr %114, align 8
   %119 = getelementptr i8, ptr %114, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %119)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %119)
   %120 = call i64 %118()
   %121 = icmp ne i64 %120, 1
   br i1 %121, label %_llgo_7, label %_llgo_8
@@ -436,7 +436,7 @@ _llgo_21:                                         ; preds = %_llgo_12
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %93, ptr %127, align 8
   %128 = load ptr, ptr %124, align 8
   %129 = getelementptr i8, ptr %124, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %129)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %129)
   %130 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %128()
   %131 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %130, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %132 = xor i1 %131, true
@@ -459,7 +459,7 @@ _llgo_23:                                         ; preds = %_llgo_14
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %99, ptr %138, align 8
   %139 = load ptr, ptr %135, align 8
   %140 = getelementptr i8, ptr %135, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %140)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %140)
   %141 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %139()
   %142 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %141, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %143 = xor i1 %142, true
@@ -498,7 +498,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"githu
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)
@@ -516,7 +516,7 @@ _llgo_0:
   %12 = getelementptr i8, ptr %7, i64 16
   %13 = load ptr, ptr %12, align 8
   %14 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call i64 %11(ptr %13)
   ret i64 %15
 }
@@ -525,7 +525,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"gith
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)
@@ -543,7 +543,7 @@ _llgo_0:
   %12 = getelementptr i8, ptr %7, i64 16
   %13 = load ptr, ptr %12, align 8
   %14 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %14)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %11(ptr %13)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %15
 }

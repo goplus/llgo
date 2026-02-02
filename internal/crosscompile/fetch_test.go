@@ -687,6 +687,9 @@ func TestExtractZip(t *testing.T) {
 
 	// 3. Test non-writable destination
 	t.Run("UnwritableDestination", func(t *testing.T) {
+		if isRoot() {
+			t.Skip("root can write to read-only directories")
+		}
 		// Create test ZIP file
 		if err := createTestZip(zipPath); err != nil {
 			t.Fatal(err)

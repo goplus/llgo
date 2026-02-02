@@ -91,7 +91,7 @@ _llgo_0:
   %10 = getelementptr i8, ptr %5, i64 16
   %11 = load ptr, ptr %10, align 8
   %12 = getelementptr i8, ptr %5, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
   %13 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %9(ptr %11)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)

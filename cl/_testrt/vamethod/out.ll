@@ -154,7 +154,7 @@ _llgo_2:                                          ; preds = %_llgo_5
   %22 = getelementptr i8, ptr %17, i64 16
   %23 = load ptr, ptr %22, align 8
   %24 = getelementptr i8, ptr %17, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %24)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %24)
   call void %21(ptr %23, ptr @18)
   %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %45)
   %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %45, 0
@@ -171,7 +171,7 @@ _llgo_2:                                          ; preds = %_llgo_5
   %34 = getelementptr i8, ptr %29, i64 16
   %35 = load ptr, ptr %34, align 8
   %36 = getelementptr i8, ptr %29, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %36)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %36)
   %37 = call i32 (ptr, ...) %33(ptr %35, ptr @19, i64 100, i64 200)
   ret void
 

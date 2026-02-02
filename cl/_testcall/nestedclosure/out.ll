@@ -29,18 +29,18 @@ _llgo_0:
   store ptr %0, ptr %4, align 8
   %5 = load ptr, ptr %1, align 8
   %6 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %6)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %6)
   %7 = call ptr %5()
   %8 = load ptr, ptr %7, align 8
   %9 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %9)
   %10 = call i64 %8()
   ret void
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testcall/nestedclosure.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 2, ptr %2, align 4
@@ -59,7 +59,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/nestedclosure.main$1$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr } %1, 0
   %3 = load i64, ptr %2, align 4

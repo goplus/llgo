@@ -44,7 +44,7 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testgo/cfuncpollute.makeClosure"(i64 42)
   %1 = load ptr, ptr %0, align 8
   %2 = getelementptr i8, ptr %0, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %2)
   %3 = call i64 %1()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -85,7 +85,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/cfuncpollute.makeClosure$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/cl/_testgo/cfuncpollute.cstr"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 17 })
   %3 = call i32 @printf(ptr %2, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)

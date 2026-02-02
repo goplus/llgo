@@ -33,7 +33,7 @@ _llgo_0:
   %7 = load ptr, ptr %6, align 8
   %8 = load ptr, ptr %7, align 8
   %9 = getelementptr i8, ptr %7, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %9)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %9)
   call void %8(i64 100)
   ret void
 }

@@ -261,7 +261,7 @@ _llgo_1:                                          ; preds = %_llgo_6, %_llgo_3, 
   %18 = getelementptr i8, ptr %13, i64 16
   %19 = load ptr, ptr %18, align 8
   %20 = getelementptr i8, ptr %13, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %20)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %20)
   %21 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17(ptr %19, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8)
   %22 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %21, 0
   %23 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %21, 1
@@ -348,7 +348,7 @@ _llgo_1:                                          ; preds = %_llgo_5
   %13 = getelementptr i8, ptr %8, i64 16
   %14 = load ptr, ptr %13, align 8
   %15 = getelementptr i8, ptr %8, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %14, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
   %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, 0
   %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, 1
@@ -373,7 +373,7 @@ _llgo_2:                                          ; preds = %_llgo_5
   %31 = getelementptr i8, ptr %26, i64 16
   %32 = load ptr, ptr %31, align 8
   %33 = getelementptr i8, ptr %26, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %33)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %33)
   %34 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %30(ptr %32, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %21)
   %35 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %34, 0
   %36 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %34, 1
@@ -482,7 +482,7 @@ _llgo_0:
   %14 = getelementptr i8, ptr %9, i64 16
   %15 = load ptr, ptr %14, align 8
   %16 = getelementptr i8, ptr %9, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13(ptr %15, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17, 0
   %19 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17, 1
@@ -517,7 +517,7 @@ _llgo_0:
   %13 = getelementptr i8, ptr %8, i64 16
   %14 = load ptr, ptr %13, align 8
   %15 = getelementptr i8, ptr %8, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %14, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, 0
   %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, 1
@@ -553,7 +553,7 @@ _llgo_0:
   %14 = getelementptr i8, ptr %9, i64 16
   %15 = load ptr, ptr %14, align 8
   %16 = getelementptr i8, ptr %9, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %13(ptr %15, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17, 0
   %19 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %17, 1
@@ -593,7 +593,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %20 = getelementptr i8, ptr %15, i64 16
   %21 = load ptr, ptr %20, align 8
   %22 = getelementptr i8, ptr %15, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %22)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %22)
   %23 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %19(ptr %21, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
   %24 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %23, 0
   %25 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %23, 1
@@ -635,7 +635,7 @@ _llgo_0:
   %13 = getelementptr i8, ptr %8, i64 16
   %14 = load ptr, ptr %13, align 8
   %15 = getelementptr i8, ptr %8, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %12(ptr %14, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   %17 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, 0
   %18 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %16, 1

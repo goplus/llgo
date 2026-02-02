@@ -52,7 +52,7 @@ _llgo_0:
   store %"github.com/goplus/llgo/cl/_testcall/valmethodval.S" %2, ptr %6, align 4
   %7 = load ptr, ptr %3, align 8
   %8 = getelementptr i8, ptr %3, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %8)
   %9 = call i64 %7(i64 3)
   ret void
 }
@@ -62,7 +62,7 @@ declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/valmethodval.S.Inc$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { %"github.com/goplus/llgo/cl/_testcall/valmethodval.S" }, ptr %1, align 4
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testcall/valmethodval.S" } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/valmethodval.S.Inc"(%"github.com/goplus/llgo/cl/_testcall/valmethodval.S" %3, i64 %0)

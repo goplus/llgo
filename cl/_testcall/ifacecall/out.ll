@@ -84,7 +84,7 @@ _llgo_0:
   %14 = getelementptr i8, ptr %9, i64 16
   %15 = load ptr, ptr %14, align 8
   %16 = getelementptr i8, ptr %9, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call i64 %13(ptr %15, i64 11)
   ret void
 }

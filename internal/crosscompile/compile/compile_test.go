@@ -73,6 +73,9 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("TmpDir Fail", func(t *testing.T) {
+		if isRoot() {
+			t.Skip("root can create temp files in unwritable TMPDIR")
+		}
 		tmpDir := filepath.Join(t.TempDir(), "test-compile")
 		os.RemoveAll(tmpDir)
 

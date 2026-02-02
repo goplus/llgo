@@ -103,7 +103,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   %25 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %20, 1
   %26 = load ptr, ptr %25, align 8
   %27 = getelementptr i8, ptr %25, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %27)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %27)
   %28 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %26(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 3 }, i64 2)
   %29 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %28, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 6 })
   %30 = xor i1 %29, true

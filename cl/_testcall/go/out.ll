@@ -232,7 +232,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testcall/go.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i64, ptr %2, align 4
@@ -270,7 +270,7 @@ _llgo_0:
   %2 = extractvalue { ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
   %4 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %4)
   call void %3()
   call void @free(ptr %0)
   ret ptr null
@@ -302,7 +302,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/go.(*S).Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/go.(*S).Add"(ptr %3, i64 %0)
@@ -316,7 +316,7 @@ _llgo_0:
   %3 = extractvalue { ptr, i64 } %1, 1
   %4 = load ptr, ptr %2, align 8
   %5 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   %6 = call i64 %4(i64 %3)
   call void @free(ptr %0)
   ret ptr null
@@ -324,7 +324,7 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/go.S.Inc$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { %"github.com/goplus/llgo/cl/_testcall/go.S" }, ptr %1, align 4
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testcall/go.S" } %2, 0
   %4 = call i64 @"github.com/goplus/llgo/cl/_testcall/go.S.Inc"(%"github.com/goplus/llgo/cl/_testcall/go.S" %3, i64 %0)
@@ -338,7 +338,7 @@ _llgo_0:
   %3 = extractvalue { ptr, i64 } %1, 1
   %4 = load ptr, ptr %2, align 8
   %5 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   %6 = call i64 %4(i64 %3)
   call void @free(ptr %0)
   ret ptr null
@@ -396,7 +396,7 @@ _llgo_0:
   %3 = extractvalue { ptr, i64 } %1, 1
   %4 = load ptr, ptr %2, align 8
   %5 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   %6 = call i64 %4(i64 %3)
   call void @free(ptr %0)
   ret ptr null
@@ -410,7 +410,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 define i64 @"github.com/goplus/llgo/cl/_testcall/go.interface{Add(int) int}.Add$bound"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %2 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %1, align 8
   %3 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %2, 0
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
@@ -428,7 +428,7 @@ _llgo_0:
   %13 = getelementptr i8, ptr %8, i64 16
   %14 = load ptr, ptr %13, align 8
   %15 = getelementptr i8, ptr %8, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %15)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call i64 %12(ptr %14, i64 %0)
   ret i64 %16
 }
@@ -440,7 +440,7 @@ _llgo_0:
   %3 = extractvalue { ptr, i64 } %1, 1
   %4 = load ptr, ptr %2, align 8
   %5 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   %6 = call i64 %4(i64 %3)
   call void @free(ptr %0)
   ret ptr null

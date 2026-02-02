@@ -21,13 +21,16 @@ func main() {
 
 	println("creating goroutine")
 	wg.Add(1)
+	start := make(chan struct{})
 	go func() {
 		defer wg.Done()
+		<-start
 		result = 42
 		println("goroutine: result set to", result)
 	}()
 
 	println("waiting for goroutine")
+	close(start)
 	wg.Wait()
 	println("done, result =", result)
 }

@@ -202,11 +202,23 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 // and should not cause test failures.
 func filterLinkerWarnings(output []byte) []byte {
 	var filtered []byte
+	sawReservedRegWarning := false
 	for _, line := range bytes.Split(output, []byte("\n")) {
 		if bytes.HasPrefix(line, []byte("ld64.lld: warning:")) {
 			continue
 		}
 		if bytes.HasPrefix(line, []byte("WARNING: Using LLGO root for devel:")) {
+			continue
+		}
+		if bytes.HasPrefix(line, []byte("warning: inline asm clobber list contains reserved registers:")) {
+			sawReservedRegWarning = true
+			continue
+		}
+		if bytes.HasPrefix(line, []byte("note: Reserved registers on the clobber list may not be preserved across the asm statement, and clobbering them may lead to undefined behaviour.")) {
+			sawReservedRegWarning = true
+			continue
+		}
+		if sawReservedRegWarning && (bytes.HasSuffix(line, []byte(" warning generated.")) || bytes.HasSuffix(line, []byte(" warnings generated."))) {
 			continue
 		}
 		if len(filtered) > 0 || len(line) > 0 {

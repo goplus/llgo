@@ -13,7 +13,7 @@ define void @"github.com/goplus/llgo/cl/_testgo/simplecall.callFunc"(ptr %0) {
 _llgo_0:
   %1 = load ptr, ptr %0, align 8
   %2 = getelementptr i8, ptr %0, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %2)
   call void %1()
   ret void
 }

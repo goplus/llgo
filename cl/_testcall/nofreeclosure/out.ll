@@ -22,7 +22,7 @@ _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testcall/nofreeclosure.main$1"()
   %1 = load ptr, ptr %0, align 8
   %2 = getelementptr i8, ptr %0, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %2)
   %3 = call i64 %1(i64 1)
   ret void
 }

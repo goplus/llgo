@@ -10,7 +10,7 @@ define void @"github.com/goplus/llgo/cl/_testrt/callback.callback"(ptr %0, ptr %
 _llgo_0:
   %2 = load ptr, ptr %1, align 8
   %3 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %3)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %3)
   call void %2(ptr %0)
   ret void
 }

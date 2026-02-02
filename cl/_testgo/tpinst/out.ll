@@ -93,7 +93,7 @@ _llgo_0:
   %14 = getelementptr i8, ptr %9, i64 16
   %15 = load ptr, ptr %14, align 8
   %16 = getelementptr i8, ptr %9, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %16)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call i64 %13(ptr %15)
   %18 = icmp ne i64 %17, 100
   br i1 %18, label %_llgo_1, label %_llgo_2
@@ -127,7 +127,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %35 = getelementptr i8, ptr %30, i64 16
   %36 = load ptr, ptr %35, align 8
   %37 = getelementptr i8, ptr %30, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %37)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %37)
   %38 = call double %34(ptr %36)
   %39 = fcmp une double %38, 1.001000e+02
   br i1 %39, label %_llgo_3, label %_llgo_4
@@ -174,7 +174,7 @@ _llgo_7:                                          ; preds = %_llgo_4
   %59 = getelementptr i8, ptr %54, i64 16
   %60 = load ptr, ptr %59, align 8
   %61 = getelementptr i8, ptr %54, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %61)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %61)
   %62 = call i64 %58(ptr %60)
   %63 = icmp ne i64 %62, 100
   br i1 %63, label %_llgo_5, label %_llgo_6

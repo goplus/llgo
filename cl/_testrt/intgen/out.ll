@@ -25,7 +25,7 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1
   %7 = load ptr, ptr %1, align 8
   %8 = getelementptr i8, ptr %1, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %8)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %8)
   %9 = call i32 %7()
   %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %2, 0
   %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %2, 1
@@ -161,7 +161,7 @@ _llgo_9:                                          ; preds = %_llgo_7
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.main$1"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load i32, ptr %2, align 4
@@ -187,7 +187,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r,~{memory}"()
+  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = call i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next"(ptr %2)

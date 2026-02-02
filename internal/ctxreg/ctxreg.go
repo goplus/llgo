@@ -31,6 +31,10 @@ func ReserveFlags(goarch string) []string {
 		return []string{"-msse2"}
 	default:
 		// Use target-feature to reserve the register across backends.
-		return []string{"-Xclang", "-target-feature", "-Xclang", "+reserve-" + info.Name}
+		// Suppress warning about clobbering reserved registers in inline asm.
+		return []string{
+			"-Xclang", "-target-feature", "-Xclang", "+reserve-" + info.Name,
+			"-Wno-inline-asm",
+		}
 	}
 }

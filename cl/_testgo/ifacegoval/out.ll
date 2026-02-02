@@ -138,7 +138,7 @@ _llgo_0:
   %2 = extractvalue { ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
   %4 = getelementptr i8, ptr %2, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %4)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %4)
   call void %3()
   call void @free(ptr %0)
   ret ptr null

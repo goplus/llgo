@@ -95,7 +95,7 @@ _llgo_0:
   %3 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, align 8
   %4 = load ptr, ptr %0, align 8
   %5 = getelementptr i8, ptr %0, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   call void %4(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %3)
   ret void
 }
@@ -131,7 +131,7 @@ _llgo_0:
   %10 = getelementptr i8, ptr %5, i64 16
   %11 = load ptr, ptr %10, align 8
   %12 = getelementptr i8, ptr %5, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %12)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
   call void %9(ptr %11, ptr @"__llgo_closure_const$github.com/goplus/llgo/cl/_testrt/tpmethod.main$1")
   ret void
 }
@@ -184,7 +184,7 @@ _llgo_0:
   %3 = load ptr, ptr %2, align 8
   %4 = load ptr, ptr %3, align 8
   %5 = getelementptr i8, ptr %3, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   call void %4(ptr %1)
   ret void
 }

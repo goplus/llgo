@@ -58,11 +58,11 @@ define linkonce [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[githu
 _llgo_0:
   %1 = load ptr, ptr %0, align 8
   %2 = getelementptr i8, ptr %0, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %2)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %2)
   %3 = call ptr %1()
   %4 = load ptr, ptr %3, align 8
   %5 = getelementptr i8, ptr %3, i64 16
-  call void asm sideeffect "mov x26, $0", "r,~{x26},~{memory}"(ptr %5)
+  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
   %6 = call [0 x i8] %4()
   ret [0 x i8] %6
 }
