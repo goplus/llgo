@@ -202,28 +202,10 @@ func (p Package) NewFunc(name string, sig *types.Signature, bg Background) Funct
 	return p.NewFuncEx(name, sig, bg, false, false)
 }
 
-type none struct{}
-
-var (
-	reflectFunc = map[string]none{
-		"reflect.ArrayOf":  none{},
-		"reflect.ChanOf":   none{},
-		"reflect.FuncOf":   none{},
-		"reflect.MapOf":    none{},
-		"reflect.SliceOf":  none{},
-		"reflect.StructOf": none{},
-	}
-)
-
 // NewFuncEx creates a new function.
 func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, hasFreeVars bool, instantiated bool) Function {
 	if v, ok := p.fns[name]; ok {
 		return v
-	}
-	if !p.NeedAbiInit && p.Path() != "reflect" {
-		if _, ok := reflectFunc[name]; ok {
-			p.NeedAbiInit = true
-		}
 	}
 	prog := p.Prog
 	hasEnvParam := hasFreeVars && prog.target.CtxRegister().Name == ""
