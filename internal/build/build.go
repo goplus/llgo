@@ -236,6 +236,8 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Target != "" && export.GOARCH != "" {
 		conf.Goarch = export.GOARCH
 	}
+	ctxArch := ctxGoarch(conf.Goarch, export.LLVMTarget)
+	passCtxByReg := (&llssa.Target{GOOS: conf.Goos, GOARCH: ctxArch}).CtxRegister().Name != ""
 
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
@@ -250,6 +252,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if len(export.BuildTags) > 0 {
 		tags += "," + strings.Join(export.BuildTags, ",")
+	}
+	if passCtxByReg {
+		tags += ",llgo_pass_ctx_by_reg"
 	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -277,7 +282,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	target := &llssa.Target{
 		GOOS:   conf.Goos,
-		GOARCH: conf.Goarch,
+		GOARCH: ctxArch,
 		Target: conf.Target,
 	}
 

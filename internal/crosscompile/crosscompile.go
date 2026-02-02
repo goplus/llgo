@@ -8,9 +8,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
+	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/targets"
@@ -78,6 +80,36 @@ func buildEnvMap(llgoRoot string) map[string]string {
 	// envs["zip"] = ""      // Path to zip file
 
 	return envs
+}
+
+// reserveRegisterFlags returns clang flags to reserve the closure ctx register.
+func reserveRegisterFlags(goarch string) []string {
+	return ctxreg.ReserveFlags(goarch)
+}
+
+func appendMissingFlags(dst []string, flags []string) []string {
+	for i := 0; i < len(flags); i++ {
+		flag := flags[i]
+		if flag == "-Xclang" && i+1 < len(flags) {
+			arg := flags[i+1]
+			found := false
+			for j := 0; j+1 < len(dst); j++ {
+				if dst[j] == "-Xclang" && dst[j+1] == arg {
+					found = true
+					break
+				}
+			}
+			if !found {
+				dst = append(dst, flag, arg)
+			}
+			i++
+			continue
+		}
+		if !slices.Contains(dst, flag) {
+			dst = append(dst, flag)
+		}
+	}
+	return dst
 }
 
 // getCanonicalArchName returns the canonical architecture name for a target triple
@@ -246,6 +278,10 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 		export.CCFLAGS = []string{
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
+		}
+		if reserve := reserveRegisterFlags(goarch); len(reserve) > 0 {
+			export.CCFLAGS = appendMissingFlags(export.CCFLAGS, reserve)
+			export.CFLAGS = appendMissingFlags(export.CFLAGS, reserve)
 		}
 
 		// Add sysroot for macOS only
@@ -491,6 +527,10 @@ func UseTarget(targetName string) (export Export, err error) {
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
+	}
+	if reserve := reserveRegisterFlags(config.GOARCH); len(reserve) > 0 {
+		cflags = appendMissingFlags(cflags, reserve)
+		ccflags = appendMissingFlags(ccflags, reserve)
 	}
 	// Expand template variables in cflags
 	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)

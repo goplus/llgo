@@ -31,6 +31,46 @@ type Target struct {
 	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
 }
 
+// CtxRegister describes the closure context register for a target architecture.
+// Requirements for a ctx register:
+//  1. Must survive the call boundary long enough for the callee to read it.
+//  2. Not used for C ABI parameters/returns.
+//  3. Must be usable in LLVM inline asm constraints.
+//
+// Supported platforms:
+//   - amd64: MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
+//   - 386:   MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
+//   - arm64: X26 - callee-saved, reservable via +reserve-x26
+//   - riscv64: X27 (s11) - callee-saved register
+//
+// Platforms without a ctx register:
+//   - arm: r8-r15 are "high registers", LLVM can't use {rN} constraint in ARM mode
+//   - wasm: no registers available
+type CtxRegister struct {
+	Name       string // LLVM register name for inline asm, e.g., "r12", "x26"
+	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x26}"
+}
+
+// CtxRegister returns the closure context register for the target architecture.
+func (t *Target) CtxRegister() CtxRegister {
+	goarch := t.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	switch goarch {
+	case "amd64":
+		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
+	case "arm64":
+		return CtxRegister{Name: "x26", Constraint: "{x26}"}
+	case "386":
+		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
+	case "riscv64":
+		return CtxRegister{Name: "x27", Constraint: "{x27}"}
+	default:
+		return CtxRegister{}
+	}
+}
+
 func (p *Target) targetData() llvm.TargetData {
 	spec := p.Spec()
 	if spec.Triple == "" {

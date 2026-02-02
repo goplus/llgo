@@ -20,12 +20,12 @@
 package ssa
 
 import (
-	"fmt"
 	"go/constant"
 	"go/importer"
 	"go/token"
 	"go/types"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -142,7 +142,7 @@ func TestClosureCtx(t *testing.T) {
 		}
 	}()
 	var f aFunction
-	f.closureCtx(nil)
+	f.closureCtx()
 }
 
 func TestClosureNoCtxValue(t *testing.T) {
@@ -174,14 +174,8 @@ _llgo_0:
 define void @holder() {
 _llgo_0:
   %0 = alloca { ptr, ptr }, align 8
-  store { ptr, ptr } { ptr @__llgo_stub.fn, ptr null }, ptr %0, align 8
+  store { ptr, ptr } { ptr @fn, ptr null }, ptr %0, align 8
   ret void
-}
-
-define linkonce i64 @__llgo_stub.fn(ptr %0, i64 %1) {
-_llgo_0:
-  %2 = tail call i64 @fn(i64 %1)
-  ret i64 %2
 }
 `)
 }
@@ -213,38 +207,21 @@ func TestClosureFuncPtrValue(t *testing.T) {
 	hb.Store(ptr, fnPtr)
 	hb.Return()
 
-	wrapName := "__llgo_stub." + pkg.abi.FuncName(sig)
-	wrapRef := wrapName
-	if strings.Contains(wrapName, "$") {
-		wrapRef = fmt.Sprintf("\"%s\"", wrapName)
-	}
-	expected := fmt.Sprintf(`; ModuleID = 'foo/bar'
+	expected := `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %%0) {
+define i64 @fn(i64 %0) {
 _llgo_0:
-  ret i64 %%0
+  ret i64 %0
 }
 
 define void @holder() {
 _llgo_0:
-  %%0 = alloca { ptr, ptr }, align 8
-  %%1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  store ptr @fn, ptr %%1, align 8
-  %%2 = insertvalue { ptr, ptr } { ptr @%s, ptr undef }, ptr %%1, 1
-  store { ptr, ptr } %%2, ptr %%0, align 8
+  %0 = alloca { ptr, ptr }, align 8
+  store { ptr, ptr } { ptr @fn, ptr null }, ptr %0, align 8
   ret void
 }
-
-define linkonce i64 @%s(ptr %%0, i64 %%1) {
-_llgo_0:
-  %%2 = load ptr, ptr %%0, align 8
-  %%3 = tail call i64 %%2(i64 %%1)
-  ret i64 %%3
-}
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
-`, wrapRef, wrapRef)
+`
 	assertPkg(t, pkg, expected)
 }
 
@@ -271,7 +248,8 @@ define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  %4 = call i64 %3(ptr %2, i64 %1)
+  call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %2)
+  %4 = call i64 %3(i64 %1)
   ret i64 %4
 }
 `)
@@ -402,14 +380,475 @@ _llgo_0:
   %4 = load ptr, ptr %3, align 8
   %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
+  %7 = extractvalue { ptr, ptr } %6, 0
+  %8 = extractvalue { ptr, ptr } %6, 1
+  call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %8)
+  %9 = call i64 (ptr, ...) %7(ptr %8, i64 100, i64 200)
   ret i64 %9
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 `)
+}
+
+func TestCtxRegisterDefinitions(t *testing.T) {
+	tests := []struct {
+		goos       string
+		goarch     string
+		wantName   string
+		wantConstr string
+	}{
+		{"linux", "amd64", "mm0", "{mm0}"},
+		{"linux", "arm64", "x26", "{x26}"},
+		{"darwin", "arm64", "x26", "{x26}"},
+		{"linux", "arm", "", ""},
+		{"linux", "386", "mm0", "{mm0}"},
+		{"linux", "riscv64", "x27", "{x27}"},
+		{"js", "wasm", "", ""},
+	}
+	for _, tt := range tests {
+		tgt := &Target{GOOS: tt.goos, GOARCH: tt.goarch}
+		reg := tgt.CtxRegister()
+		if reg.Name != tt.wantName {
+			t.Errorf("CtxRegister(GOOS=%q, GOARCH=%q).Name = %q, want %q", tt.goos, tt.goarch, reg.Name, tt.wantName)
+		}
+		if reg.Constraint != tt.wantConstr {
+			t.Errorf("CtxRegister(GOOS=%q, GOARCH=%q).Constraint = %q, want %q", tt.goos, tt.goarch, reg.Constraint, tt.wantConstr)
+		}
+	}
+}
+
+func TestCtxRegisterFallback(t *testing.T) {
+	tests := []string{"wasm", "riscv32"}
+	for _, goarch := range tests {
+		reg := (&Target{GOARCH: goarch}).CtxRegister()
+		if reg.Name != "" || reg.Constraint != "" {
+			t.Fatalf("CtxRegister(%q) expected empty fallback, got %q/%q", goarch, reg.Name, reg.Constraint)
+		}
+	}
+}
+
+func TestWriteReadCtxRegIR(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	pkg := prog.NewPackage("test", "test")
+	fn := pkg.NewFunc("test_ctx_reg", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+
+	ptr := prog.Nil(prog.VoidPtr())
+	b.WriteCtxReg(ptr)
+	_ = b.ReadCtxReg()
+	b.Return()
+
+	ir := pkg.String()
+	if !strings.Contains(ir, `asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"`) {
+		t.Errorf("expected ctx write asm in IR:\n%s", ir)
+	}
+	if !strings.Contains(ir, `asm sideeffect "movq %mm0, $0", "=r,~{memory}"`) {
+		t.Errorf("expected ctx read asm in IR:\n%s", ir)
+	}
+}
+
+func TestWriteReadCtxRegUnsupported(t *testing.T) {
+	assertPanics := func(t *testing.T, name string, fn func()) {
+		t.Helper()
+		defer func() {
+			if r := recover(); r == nil {
+				t.Fatalf("expected panic: %s", name)
+			}
+		}()
+		fn()
+	}
+
+	assertPanics(t, "WriteCtxReg", func() {
+		prog := NewProgram(&Target{GOOS: "js", GOARCH: "wasm"})
+		pkg := prog.NewPackage("test", "test")
+		fn := pkg.NewFunc("test_no_ctx", NoArgsNoRet, InGo)
+		b := fn.MakeBody(1)
+		ptr := prog.Nil(prog.VoidPtr())
+		b.WriteCtxReg(ptr)
+	})
+
+	assertPanics(t, "ReadCtxReg", func() {
+		prog := NewProgram(&Target{GOOS: "js", GOARCH: "wasm"})
+		pkg := prog.NewPackage("test", "test")
+		fn := pkg.NewFunc("test_no_ctx", NoArgsNoRet, InGo)
+		b := fn.MakeBody(1)
+		_ = b.ReadCtxReg()
+	})
+}
+
+func TestCallClosureViaRegister(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+
+	callerParams := types.NewTuple(
+		types.NewVar(0, nil, "f", sig),
+		types.NewVar(0, nil, "x", types.Typ[types.Int]),
+	)
+	callerSig := types.NewSignatureType(nil, nil, nil, callerParams, rets, false)
+	caller := pkg.NewFunc("caller", callerSig, InGo)
+	b := caller.MakeBody(1)
+	b.Return(b.Call(caller.Param(0), caller.Param(1)))
+
+	ir := pkg.String()
+	if !strings.Contains(ir, `asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"`) {
+		t.Errorf("expected ctx register write before closure call:\n%s", ir)
+	}
+	if strings.Contains(ir, "__llgo_ctx") {
+		t.Errorf("expected no __llgo_ctx in closure call:\n%s", ir)
+	}
+}
+
+func TestClosureFunctionReadsCtxFromReg(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
+	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
+	inner := pkg.NewFuncEx("inner", innerSig, InGo, true, false)
+
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
+	freeVar := inner.FreeVar(ib, 0)
+	result := ib.BinOp(token.ADD, freeVar, inner.Param(0))
+	ib.Return(result)
+
+	ir := pkg.String()
+	if !strings.Contains(ir, `asm sideeffect "movq %mm0, $0", "=r,~{memory}"`) {
+		t.Errorf("expected ctx register read in closure function:\n%s", ir)
+	}
+	if strings.Contains(ir, "define i64 @inner(ptr") {
+		t.Errorf("expected no ctx parameter in function signature:\n%s", ir)
+	}
+}
+
+// TestCallClosureConditional verifies that platforms without ctx register
+// use conditional calls based on env without inline asm.
+func TestCallClosureConditional(t *testing.T) {
+	prog := NewProgram(&Target{GOOS: "js", GOARCH: "wasm"})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+
+	callerParams := types.NewTuple(
+		types.NewVar(0, nil, "f", sig),
+		types.NewVar(0, nil, "x", types.Typ[types.Int]),
+	)
+	callerSig := types.NewSignatureType(nil, nil, nil, callerParams, rets, false)
+	caller := pkg.NewFunc("caller", callerSig, InGo)
+	b := caller.MakeBody(1)
+	b.Return(b.Call(caller.Param(0), caller.Param(1)))
+
+	ir := pkg.String()
+	if strings.Contains(ir, "asm sideeffect") {
+		t.Errorf("expected no inline asm for fallback calling:\n%s", ir)
+	}
+	if !strings.Contains(ir, "br i1") {
+		t.Errorf("expected conditional branch for env check:\n%s", ir)
+	}
+	if !strings.Contains(ir, "call i64 %") || !strings.Contains(ir, "ptr") {
+		t.Errorf("expected call with env param for hasCtx:\n%s", ir)
+	}
+}
+
+func TestMakeClosureWithBindings(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
+	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
+	inner := pkg.NewFuncEx("inner", innerSig, InGo, true, false)
+
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
+	freeVar := inner.FreeVar(ib, 0)
+	result := ib.BinOp(token.ADD, freeVar, inner.Param(0))
+	ib.Return(result)
+
+	outerParams := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	outerRetSig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int])),
+		innerRets, false)
+	outerSig := types.NewSignatureType(nil, nil, nil, outerParams,
+		types.NewTuple(types.NewVar(0, nil, "", outerRetSig)), false)
+	outer := pkg.NewFunc("outer", outerSig, InGo)
+	ob := outer.MakeBody(1)
+	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
+	ob.Return(closure)
+
+	ir := normalizeIR(pkg.String())
+	if !strings.Contains(ir, `define i64 @inner(i64`) {
+		t.Errorf("expected inner closure without ctx param:\n%s", ir)
+	}
+	if strings.Contains(ir, "define i64 @inner(ptr") {
+		t.Errorf("expected no ctx parameter in closure signature:\n%s", ir)
+	}
+	if !strings.Contains(ir, "read_ctx_reg") {
+		t.Errorf("expected ctx register read in closure body:\n%s", ir)
+	}
+	if !strings.Contains(ir, "define { ptr, ptr } @outer") {
+		t.Errorf("expected closure value in outer:\n%s", ir)
+	}
+	if !strings.Contains(ir, "AllocU") {
+		t.Errorf("expected env allocation in outer:\n%s", ir)
+	}
+	if !strings.Contains(ir, "insertvalue { ptr, ptr }") {
+		t.Errorf("expected closure aggregate assembly:\n%s", ir)
+	}
+}
+
+// TestClosureIIFEIR verifies IR for immediately invoked function expression (IIFE).
+func TestClosureIIFEIR(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("test", "test")
+
+	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
+	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
+	inner := pkg.NewFuncEx("iife_inner", innerSig, InGo, true, false)
+
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
+	x := inner.FreeVar(ib, 0)
+	result := ib.BinOp(token.ADD, x, inner.Param(0))
+	ib.Return(result)
+
+	callerSig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
+		innerRets, false)
+	caller := pkg.NewFunc("test_iife", callerSig, InGo)
+	cb := caller.MakeBody(1)
+	closure := cb.MakeClosure(inner.Expr, []Expr{caller.Param(0)})
+	ret := cb.Call(closure, prog.Val(5))
+	cb.Return(ret)
+
+	ir := normalizeIR(pkg.String())
+	if !strings.Contains(ir, "define i64 @iife_inner") {
+		t.Errorf("expected inner closure definition:\n%s", ir)
+	}
+	if strings.Contains(ir, "define i64 @iife_inner(ptr") {
+		t.Errorf("expected no ctx parameter in IIFE closure:\n%s", ir)
+	}
+	if !strings.Contains(ir, "read_ctx_reg") {
+		t.Errorf("expected ctx register read in IIFE closure:\n%s", ir)
+	}
+	if !strings.Contains(ir, "define i64 @test_iife") {
+		t.Errorf("expected IIFE caller definition:\n%s", ir)
+	}
+	if !strings.Contains(ir, "write_ctx_reg") {
+		t.Errorf("expected ctx register write before IIFE call:\n%s", ir)
+	}
+}
+
+// TestClosureAsParamIR verifies IR for closure passed as function parameter.
+func TestClosureAsParamIR(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	pkg := prog.NewPackage("test", "test")
+
+	closureParams := types.NewTuple(types.NewVar(0, nil, "n", types.Typ[types.Int]))
+	closureRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	closureSig := types.NewSignatureType(nil, nil, nil, closureParams, closureRets, false)
+
+	params := types.NewTuple(
+		types.NewVar(0, nil, "f", closureSig),
+		types.NewVar(0, nil, "x", types.Typ[types.Int]),
+	)
+	sig := types.NewSignatureType(nil, nil, nil, params, closureRets, false)
+	fn := pkg.NewFunc("applyTwice", sig, InGo)
+	b := fn.MakeBody(1)
+	first := b.Call(fn.Param(0), fn.Param(1))
+	second := b.Call(fn.Param(0), first)
+	b.Return(second)
+
+	ir := normalizeIR(pkg.String())
+	if strings.Count(ir, "write_ctx_reg") != 2 {
+		t.Errorf("expected two ctx register writes for applyTwice:\n%s", ir)
+	}
+}
+
+// TestDeferClosureIR verifies that closure body reads ctx from register.
+func TestDeferClosureIR(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("test", "test")
+
+	innerSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	inner := pkg.NewFuncEx("defer_body", innerSig, InGo, true, false)
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
+	_ = inner.FreeVar(ib, 0)
+	ib.Return()
+
+	ir := normalizeIR(pkg.String())
+	if !strings.Contains(ir, "define void @defer_body") {
+		t.Errorf("expected defer closure definition:\n%s", ir)
+	}
+	if !strings.Contains(ir, "read_ctx_reg") {
+		t.Errorf("expected ctx register read in defer closure:\n%s", ir)
+	}
+	if strings.Contains(ir, "define void @defer_body(ptr") {
+		t.Errorf("expected no ctx parameter in defer closure:\n%s", ir)
+	}
+}
+
+// TestGoClosureIR verifies that closure body reads ctx from register.
+func TestGoClosureIR(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("test", "test")
+
+	innerSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	inner := pkg.NewFuncEx("goroutine_body", innerSig, InGo, true, false)
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
+	_ = inner.FreeVar(ib, 0)
+	ib.Return()
+
+	ir := normalizeIR(pkg.String())
+	if !strings.Contains(ir, "define void @goroutine_body") {
+		t.Errorf("expected goroutine closure definition:\n%s", ir)
+	}
+	if !strings.Contains(ir, "read_ctx_reg") {
+		t.Errorf("expected ctx register read in goroutine closure:\n%s", ir)
+	}
+	if strings.Contains(ir, "define void @goroutine_body(ptr") {
+		t.Errorf("expected no ctx parameter in goroutine closure:\n%s", ir)
+	}
+}
+
+// TestGoRoutineWrapperCtxIR verifies goroutine wrapper sets ctx register before calling closure.
+func TestGoRoutineWrapperCtxIR(t *testing.T) {
+	target := &Target{GOARCH: "amd64"}
+	prog := NewProgram(target)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("test", "test")
+
+	innerSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	inner := pkg.NewFuncEx("goroutine_body2", innerSig, InGo, true, false)
+	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
+	ctxStruct := types.NewStruct(ctxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
+	_ = inner.FreeVar(ib, 0)
+	ib.Return()
+
+	callerSig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
+		nil, false)
+	caller := pkg.NewFunc("test_go_routine", callerSig, InGo)
+	cb := caller.MakeBody(1)
+	closure := cb.MakeClosure(inner.Expr, []Expr{caller.Param(0)})
+	cb.Go(closure)
+	cb.Return()
+
+	ir := normalizeIR(pkg.String())
+	start := strings.Index(ir, `define ptr @"test._llgo_routine$`)
+	if start == -1 {
+		t.Fatalf("goroutine wrapper not found in IR:\n%s", ir)
+	}
+	block := ir[start:]
+	if end := strings.Index(block, "\n}\n"); end != -1 {
+		block = block[:end]
+	}
+	if !strings.Contains(block, "write_ctx_reg") {
+		t.Fatalf("expected ctx register write in goroutine wrapper:\n%s", block)
+	}
+}
+
+// TestNestedClosureIR verifies IR for closure with multi-field capture (nested scenario).
+func TestNestedClosureIR(t *testing.T) {
+	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("test", "test")
+
+	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	innerSig := types.NewSignatureType(nil, nil, nil, nil, innerRets, false)
+	inner := pkg.NewFuncEx("nested_inner", innerSig, InGo, true, false)
+	innerCtxFields := []*types.Var{
+		types.NewField(0, nil, "a", types.Typ[types.Int], false),
+		types.NewField(0, nil, "b", types.Typ[types.Int], false),
+	}
+	innerCtxStruct := types.NewStruct(innerCtxFields, nil)
+
+	ib := inner.MakeBody(1)
+	inner.InitClosureCtx(ib, prog.Type(innerCtxStruct, InGo))
+	a := inner.FreeVar(ib, 0)
+	b := inner.FreeVar(ib, 1)
+	result := ib.BinOp(token.ADD, a, b)
+	ib.Return(result)
+
+	ir := normalizeIR(pkg.String())
+	if !strings.Contains(ir, "define i64 @nested_inner") {
+		t.Errorf("expected nested closure definition:\n%s", ir)
+	}
+	if !strings.Contains(ir, "read_ctx_reg") {
+		t.Errorf("expected ctx register read in nested closure:\n%s", ir)
+	}
+	if !strings.Contains(ir, "load { i64, i64 }") {
+		t.Errorf("expected load of multi-field ctx in nested closure:\n%s", ir)
+	}
 }
 
 func TestClosureCtxHelpers(t *testing.T) {
@@ -444,44 +883,6 @@ func TestClosureCtxHelpers(t *testing.T) {
 	noCtx := removeCtx(goodSig)
 	if noCtx.Params().Len() != 1 || noCtx.Params().At(0).Name() != "x" {
 		t.Fatalf("removeCtx result mismatch: params=%v", noCtx.Params().Len())
-	}
-}
-
-func TestClosureWrapHelpers(t *testing.T) {
-	prog := NewProgram(nil)
-	pkg := prog.NewPackage("bar", "foo/bar")
-	ctx := types.NewParam(0, nil, closureCtx, types.Typ[types.UnsafePointer])
-	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(), types.NewTuple(), false)
-	sigCtx := FuncAddCtx(ctx, sig)
-	wrap := pkg.NewFunc("wrap", sigCtx, InGo)
-	b := wrap.MakeBody(1)
-	if args := closureWrapArgs(wrap); len(args) != 0 {
-		t.Fatalf("closureWrapArgs should return 0 args, got %d", len(args))
-	}
-	closureWrapReturn(b, sig, Expr{})
-}
-
-func TestClosureWrapCache(t *testing.T) {
-	prog := NewProgram(nil)
-	pkg := prog.NewPackage("bar", "foo/bar")
-
-	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
-	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-	fn := pkg.NewFunc("fn", sig, InGo)
-	b := fn.MakeBody(1)
-	b.Return(fn.Param(0))
-
-	w1 := pkg.closureWrapDecl(fn.Expr, sig)
-	w2 := pkg.closureWrapDecl(fn.Expr, sig)
-	if w1 != w2 {
-		t.Fatal("closureWrapDecl should reuse existing wrapper")
-	}
-
-	p1 := pkg.closureWrapPtr(sig)
-	p2 := pkg.closureWrapPtr(sig)
-	if p1 != p2 {
-		t.Fatal("closureWrapPtr should reuse existing wrapper")
 	}
 }
 
@@ -614,16 +1015,6 @@ func TestPackageCoverageHelpers(t *testing.T) {
 	if len(pkg.ExportFuncs()) != 0 {
 		t.Fatal("ExportFuncs should be empty for new package")
 	}
-
-	// cover closureStub default branch
-	fn := pkg.NewFunc("noop", NoArgsNoRet, InGo)
-	b := fn.MakeBody(1)
-	expr := prog.Val(1)
-	got, data := pkg.closureStub(b, expr, nil, vkString)
-	if got.impl.IsNil() || !data.impl.IsNull() {
-		t.Fatal("closureStub default branch should return expr and nil data")
-	}
-	b.Return()
 }
 
 func TestExprCoverageHelpers(t *testing.T) {
@@ -708,10 +1099,23 @@ func TestAny(t *testing.T) {
 	prog.Any()
 }
 
+var (
+	writeCtxRegRe = regexp.MustCompile(`(?m)^(\s*)call void asm sideeffect "[^"]+", "r(?:,~\{[^}]+\})?(?:,~\{memory\})?"\(ptr ([^)]+)\)`)
+	readCtxRegRe  = regexp.MustCompile(`(?m)^(\s*%[\w.]+\s*=\s*)call ptr asm sideeffect "[^"]+", "=r(?:,~\{memory\})?"\(\)`)
+)
+
+func normalizeIR(ir string) string {
+	ir = writeCtxRegRe.ReplaceAllString(ir, `${1}call void asm sideeffect "write_ctx_reg $$0", "r,~{CTX_REG},~{memory}"(ptr ${2})`)
+	ir = readCtxRegRe.ReplaceAllString(ir, `${1}call ptr asm sideeffect "read_ctx_reg $$0", "=r,~{memory}"()`)
+	return ir
+}
+
 func assertPkg(t *testing.T, p Package, expected string) {
 	t.Helper()
-	if v := p.String(); v != expected {
-		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+	got := normalizeIR(p.String())
+	want := normalizeIR(expected)
+	if got != want {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", got, want)
 	}
 }
 
