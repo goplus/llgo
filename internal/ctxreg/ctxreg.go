@@ -11,6 +11,7 @@ var table = map[string]Info{
 	"arm64":   {Name: "x26", Constraint: "{x26}"},
 	"386":     {Name: "mm0", Constraint: "{mm0}"},
 	"riscv64": {Name: "x27", Constraint: "{x27}"},
+	"riscv32": {Name: "x27", Constraint: "{x27}"},
 }
 
 // Get returns the register info for the given GOARCH.

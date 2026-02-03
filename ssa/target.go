@@ -41,7 +41,7 @@ type Target struct {
 //   - amd64: MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
 //   - 386:   MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
 //   - arm64: X26 - callee-saved, reservable via +reserve-x26
-//   - riscv64: X27 (s11) - callee-saved register
+//   - riscv64/riscv32: X27 (s11) - callee-saved register
 //
 // Platforms without a ctx register:
 //   - arm: r8-r15 are "high registers", LLVM can't use {rN} constraint in ARM mode
@@ -65,6 +65,8 @@ func (t *Target) CtxRegister() CtxRegister {
 	case "386":
 		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
 	case "riscv64":
+		return CtxRegister{Name: "x27", Constraint: "{x27}"}
+	case "riscv32":
 		return CtxRegister{Name: "x27", Constraint: "{x27}"}
 	default:
 		return CtxRegister{}

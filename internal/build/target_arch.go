@@ -40,8 +40,7 @@ func goarchFromTriple(triple string) string {
 	case "riscv64":
 		return "riscv64"
 	case "riscv32":
-		// ESP32-C3 and other RISC-V 32-bit targets can use the same x27 register as riscv64
-		return "riscv64"
+		return "riscv32"
 	case "wasm32":
 		return "wasm"
 	}

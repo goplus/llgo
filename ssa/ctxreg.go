@@ -35,6 +35,11 @@ var ctxAsmTemplates = map[string]ctxAsmTemplate{
 		read:    "mv $0, %s",
 		dialect: llvm.InlineAsmDialectATT,
 	},
+	"riscv32": {
+		write:   "mv %s, $0",
+		read:    "mv $0, %s",
+		dialect: llvm.InlineAsmDialectATT,
+	},
 }
 
 func ctxAsmStrings(goarch, reg string) (write string, read string, dialect llvm.InlineAsmDialect, ok bool) {
