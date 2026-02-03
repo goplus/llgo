@@ -39,8 +39,8 @@ type Target struct {
 //  3. Must be usable in LLVM inline asm constraints.
 //
 // Supported platforms:
-//   - amd64: MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
-//   - 386:   MM0 - MMX register (caller-saved), avoid MMX usage via -msse2
+//   - amd64: MM0 - MMX register, x87 disabled via -mno-80387
+//   - 386:   MM0 - MMX register, x87 disabled via -mfpmath=sse -msse2 -mno-80387
 //   - arm64: X26 - callee-saved, reservable via +reserve-x26
 //   - riscv64/riscv32: X27 (s11) - callee-saved register
 //

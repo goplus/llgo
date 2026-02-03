@@ -68,16 +68,18 @@ Closure bodies accept an explicit ctx parameter and use it as the env base.
 
 | GOARCH | Register | Notes |
 |---|---|---|
-| amd64 | mm0 | use `-msse2` to free MMX |
-| 386 | mm0 | use `-msse2` to free MMX |
+| amd64 | mm0 | disable x87 via `-mno-80387` |
+| 386 | mm0 | disable x87 via `-mfpmath=sse -msse2 -mno-80387` |
 | arm64 | x26 | reserved via clang target-feature |
 | riscv64 | x27 | reserved via clang target-feature |
+| riscv32 | x27 | reserved via clang target-feature |
 | wasm | - | conditional ctx param |
 | arm | - | conditional ctx param |
 
 Native builds reserve the ctx reg via clang target-feature `+reserve-<reg>`
-(arm64/riscv64). For caller-saved x86, inline asm uses a memory clobber;
-callee-saved targets do not.
+(arm64/riscv64). x86/x86_64 use compiler flags to disable x87 so MM0 is not
+clobbered by `long double` operations. For caller-saved x86, inline asm uses a
+memory clobber; callee-saved targets do not.
 
 ## Covered Scenarios
 
