@@ -140,7 +140,7 @@ _llgo_2:                                          ; preds = %_llgo_5
   %18 = insertvalue { ptr, ptr } %17, ptr %13, 1
   %19 = extractvalue { ptr, ptr } %18, 0
   %20 = extractvalue { ptr, ptr } %18, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %20)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %20)
   call void %19(ptr %20, ptr @18)
   %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %37)
   %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %37, 0
@@ -150,7 +150,7 @@ _llgo_2:                                          ; preds = %_llgo_5
   %26 = insertvalue { ptr, ptr } %25, ptr %21, 1
   %27 = extractvalue { ptr, ptr } %26, 0
   %28 = extractvalue { ptr, ptr } %26, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %28)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %28)
   %29 = call i32 (ptr, ...) %27(ptr %28, ptr @19, i64 100, i64 200)
   ret void
 

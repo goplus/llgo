@@ -365,7 +365,7 @@ _llgo_0:
   %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
   %14 = extractvalue { ptr, ptr } %13, 0
   %15 = extractvalue { ptr, ptr } %13, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call i64 %14(ptr %15)
   %17 = icmp ne i64 %16, 100
   br i1 %17, label %_llgo_1, label %_llgo_2
@@ -406,7 +406,7 @@ _llgo_0:
   %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
   %16 = extractvalue { ptr, ptr } %15, 0
   %17 = extractvalue { ptr, ptr } %15, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %17)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %17)
   %18 = call i64 %16(ptr %17)
   %19 = icmp ne i64 %18, 100
   br i1 %19, label %_llgo_1, label %_llgo_2
@@ -445,7 +445,7 @@ _llgo_0:
   %14 = insertvalue { ptr, ptr } %13, ptr %9, 1
   %15 = extractvalue { ptr, ptr } %14, 0
   %16 = extractvalue { ptr, ptr } %14, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call i64 %15(ptr %16)
   %18 = icmp ne i64 %17, 100
   br i1 %18, label %_llgo_1, label %_llgo_2
@@ -480,7 +480,7 @@ _llgo_0:
   %12 = insertvalue { ptr, ptr } %11, ptr %7, 1
   %13 = extractvalue { ptr, ptr } %12, 0
   %14 = extractvalue { ptr, ptr } %12, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call i64 %13(ptr %14)
   %16 = icmp ne i64 %15, 100
   br i1 %16, label %_llgo_1, label %_llgo_2
@@ -515,7 +515,7 @@ _llgo_0:
   %12 = insertvalue { ptr, ptr } %11, ptr %7, 1
   %13 = extractvalue { ptr, ptr } %12, 0
   %14 = extractvalue { ptr, ptr } %12, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call i64 %13(ptr %14)
   %16 = icmp ne i64 %15, 100
   br i1 %16, label %_llgo_1, label %_llgo_2
@@ -556,7 +556,7 @@ _llgo_0:
   %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
   %16 = extractvalue { ptr, ptr } %15, 0
   %17 = extractvalue { ptr, ptr } %15, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %17)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %17)
   %18 = call i64 %16(ptr %17)
   %19 = icmp ne i64 %18, 100
   br i1 %19, label %_llgo_1, label %_llgo_2
@@ -597,7 +597,7 @@ _llgo_0:
   %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
   %16 = extractvalue { ptr, ptr } %15, 0
   %17 = extractvalue { ptr, ptr } %15, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %17)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %17)
   %18 = call i64 %16(ptr %17)
   %19 = icmp ne i64 %18, 100
   br i1 %19, label %_llgo_1, label %_llgo_2
@@ -618,7 +618,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %27 = insertvalue { ptr, ptr } %26, ptr %22, 1
   %28 = extractvalue { ptr, ptr } %27, 0
   %29 = extractvalue { ptr, ptr } %27, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %29)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %29)
   %30 = call i64 %28(ptr %29)
   %31 = icmp ne i64 %30, 100
   br i1 %31, label %_llgo_3, label %_llgo_4
@@ -659,7 +659,7 @@ _llgo_0:
   %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
   %16 = extractvalue { ptr, ptr } %15, 0
   %17 = extractvalue { ptr, ptr } %15, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %17)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %17)
   %18 = call i64 %16(ptr %17)
   %19 = icmp ne i64 %18, 100
   br i1 %19, label %_llgo_1, label %_llgo_2
@@ -680,7 +680,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %27 = insertvalue { ptr, ptr } %26, ptr %22, 1
   %28 = extractvalue { ptr, ptr } %27, 0
   %29 = extractvalue { ptr, ptr } %27, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %29)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %29)
   %30 = call i64 %28(ptr %29)
   %31 = icmp ne i64 %30, 100
   br i1 %31, label %_llgo_3, label %_llgo_4
@@ -701,7 +701,7 @@ _llgo_4:                                          ; preds = %_llgo_2
   %39 = insertvalue { ptr, ptr } %38, ptr %34, 1
   %40 = extractvalue { ptr, ptr } %39, 0
   %41 = extractvalue { ptr, ptr } %39, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %41)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %41)
   %42 = call i64 %40(ptr %41)
   %43 = icmp ne i64 %42, 100
   br i1 %43, label %_llgo_5, label %_llgo_6
@@ -736,7 +736,7 @@ _llgo_0:
   %12 = insertvalue { ptr, ptr } %11, ptr %7, 1
   %13 = extractvalue { ptr, ptr } %12, 0
   %14 = extractvalue { ptr, ptr } %12, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %13(ptr %14)
   %16 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %15, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @26, i64 5 })
   %17 = xor i1 %16, true
@@ -768,7 +768,7 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 0
   %12 = extractvalue { ptr, ptr } %10, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %12)
   call void %11(ptr %12, ptr %4)
   %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
   %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3, 0
@@ -778,7 +778,7 @@ _llgo_0:
   %18 = insertvalue { ptr, ptr } %17, ptr %13, 1
   %19 = extractvalue { ptr, ptr } %18, 0
   %20 = extractvalue { ptr, ptr } %18, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %20)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %20)
   %21 = call ptr %19(ptr %20)
   %22 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %21, align 8
   %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 0
@@ -832,7 +832,7 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 0
   %12 = extractvalue { ptr, ptr } %10, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %12)
   %13 = call i64 %11(ptr %12)
   %14 = icmp ne i64 %13, 100
   br i1 %14, label %_llgo_1, label %_llgo_2
@@ -868,7 +868,7 @@ _llgo_0:
   %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
   %14 = extractvalue { ptr, ptr } %13, 0
   %15 = extractvalue { ptr, ptr } %13, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call i64 %14(ptr %15)
   %17 = icmp ne i64 %16, 100
   br i1 %17, label %_llgo_1, label %_llgo_2
@@ -900,7 +900,7 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 0
   %12 = extractvalue { ptr, ptr } %10, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %12)
   %13 = call i64 %11(ptr %12)
   %14 = icmp ne i64 %13, 100
   br i1 %14, label %_llgo_1, label %_llgo_2

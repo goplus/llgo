@@ -62,7 +62,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   %4 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %3, align 8
   %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 1
   %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %5)
   %7 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %0)
   %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
   store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %7, ptr %8, align 8

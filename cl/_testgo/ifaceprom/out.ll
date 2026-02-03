@@ -64,7 +64,7 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 0
   %11 = extractvalue { ptr, ptr } %9, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %11)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %11)
   %12 = call i64 %10(ptr %11)
   ret i64 %12
 }
@@ -84,7 +84,7 @@ _llgo_0:
   %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
   %10 = extractvalue { ptr, ptr } %9, 0
   %11 = extractvalue { ptr, ptr } %9, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %11)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %11)
   %12 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %10(ptr %11)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %12
 }
@@ -101,7 +101,7 @@ _llgo_0:
   %8 = insertvalue { ptr, ptr } %7, ptr %3, 1
   %9 = extractvalue { ptr, ptr } %8, 0
   %10 = extractvalue { ptr, ptr } %8, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %10)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %10)
   %11 = call i64 %9(ptr %10)
   ret i64 %11
 }
@@ -118,7 +118,7 @@ _llgo_0:
   %8 = insertvalue { ptr, ptr } %7, ptr %3, 1
   %9 = extractvalue { ptr, ptr } %8, 0
   %10 = extractvalue { ptr, ptr } %8, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %10)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %10)
   %11 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %9(ptr %10)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %11
 }
@@ -181,7 +181,7 @@ _llgo_0:
   %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
   %14 = extractvalue { ptr, ptr } %13, 0
   %15 = extractvalue { ptr, ptr } %13, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %15)
   %16 = call i64 %14(ptr %15)
   %17 = icmp ne i64 %16, 1
   br i1 %17, label %_llgo_1, label %_llgo_2
@@ -203,7 +203,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %27 = insertvalue { ptr, ptr } %26, ptr %22, 1
   %28 = extractvalue { ptr, ptr } %27, 0
   %29 = extractvalue { ptr, ptr } %27, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %29)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %29)
   %30 = call i64 %28(ptr %29)
   %31 = icmp ne i64 %30, 1
   br i1 %31, label %_llgo_3, label %_llgo_4
@@ -251,7 +251,7 @@ _llgo_8:                                          ; preds = %_llgo_19
   %53 = insertvalue { ptr, ptr } %52, ptr %48, 1
   %54 = extractvalue { ptr, ptr } %53, 0
   %55 = extractvalue { ptr, ptr } %53, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %55)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %55)
   %56 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %54(ptr %55)
   %57 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %56, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %58 = xor i1 %57, true
@@ -275,7 +275,7 @@ _llgo_10:                                         ; preds = %_llgo_8
   %68 = insertvalue { ptr, ptr } %67, ptr %63, 1
   %69 = extractvalue { ptr, ptr } %68, 0
   %70 = extractvalue { ptr, ptr } %68, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %70)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %70)
   %71 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %69(ptr %70)
   %72 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %71, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %73 = xor i1 %72, true
@@ -328,7 +328,7 @@ _llgo_17:                                         ; preds = %_llgo_4
   %90 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound", ptr undef }, ptr %88, 1
   %91 = extractvalue { ptr, ptr } %90, 1
   %92 = extractvalue { ptr, ptr } %90, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %91)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %91)
   %93 = call i64 %92()
   %94 = icmp ne i64 %93, 1
   br i1 %94, label %_llgo_5, label %_llgo_6
@@ -347,7 +347,7 @@ _llgo_19:                                         ; preds = %_llgo_6
   %99 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound", ptr undef }, ptr %97, 1
   %100 = extractvalue { ptr, ptr } %99, 1
   %101 = extractvalue { ptr, ptr } %99, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %100)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %100)
   %102 = call i64 %101()
   %103 = icmp ne i64 %102, 1
   br i1 %103, label %_llgo_7, label %_llgo_8
@@ -366,7 +366,7 @@ _llgo_21:                                         ; preds = %_llgo_12
   %108 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound", ptr undef }, ptr %106, 1
   %109 = extractvalue { ptr, ptr } %108, 1
   %110 = extractvalue { ptr, ptr } %108, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %109)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %109)
   %111 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %110()
   %112 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %111, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %113 = xor i1 %112, true
@@ -386,7 +386,7 @@ _llgo_23:                                         ; preds = %_llgo_14
   %118 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound", ptr undef }, ptr %116, 1
   %119 = extractvalue { ptr, ptr } %118, 1
   %120 = extractvalue { ptr, ptr } %118, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %119)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %119)
   %121 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %120()
   %122 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %121, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   %123 = xor i1 %122, true
@@ -425,7 +425,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"githu
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.one$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
+  %0 = call ptr asm "mov $0, x26", "=r"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)
@@ -436,7 +436,7 @@ _llgo_0:
   %8 = insertvalue { ptr, ptr } %7, ptr %3, 1
   %9 = extractvalue { ptr, ptr } %8, 0
   %10 = extractvalue { ptr, ptr } %8, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %10)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %10)
   %11 = call i64 %9(ptr %10)
   ret i64 %11
 }
@@ -445,7 +445,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"gith
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/ifaceprom.I.two$bound"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
+  %0 = call ptr asm "mov $0, x26", "=r"()
   %1 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %1, 0
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %2)
@@ -456,7 +456,7 @@ _llgo_0:
   %8 = insertvalue { ptr, ptr } %7, ptr %3, 1
   %9 = extractvalue { ptr, ptr } %8, 0
   %10 = extractvalue { ptr, ptr } %8, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %10)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %10)
   %11 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %9(ptr %10)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %11
 }

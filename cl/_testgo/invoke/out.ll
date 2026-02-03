@@ -213,7 +213,7 @@ define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke"(%"github.com/go
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %1)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %1)
   %3 = call i64 %2()
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -252,7 +252,7 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 0
   %8 = extractvalue { ptr, ptr } %6, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %8)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %8)
   %9 = call i64 %7(ptr %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)

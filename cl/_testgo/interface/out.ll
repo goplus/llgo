@@ -126,7 +126,7 @@ _llgo_1:                                          ; preds = %_llgo_5
   %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
   %14 = extractvalue { ptr, ptr } %13, 0
   %15 = extractvalue { ptr, ptr } %13, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %15)
   call void %14(ptr %15)
   br label %_llgo_2
 

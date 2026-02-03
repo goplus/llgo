@@ -35,14 +35,14 @@ _llgo_0:
   %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1", ptr undef }, ptr %2, 1
   %5 = extractvalue { ptr, ptr } %4, 1
   %6 = extractvalue { ptr, ptr } %4, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %5)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %5)
   call void %6(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
+  %1 = call ptr asm "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
   %4 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 1
@@ -60,7 +60,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %13 = load { ptr, ptr }, ptr %12, align 8
   %14 = extractvalue { ptr, ptr } %13, 1
   %15 = extractvalue { ptr, ptr } %13, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %14)
   call void %15(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
   ret void
 
@@ -69,7 +69,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %17 = load { ptr, ptr }, ptr %16, align 8
   %18 = extractvalue { ptr, ptr } %17, 1
   %19 = extractvalue { ptr, ptr } %17, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %18)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %18)
   call void %19(%"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
   ret void
 }

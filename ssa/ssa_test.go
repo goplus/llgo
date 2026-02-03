@@ -248,7 +248,7 @@ define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %2)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %2)
   %4 = call i64 %3(i64 %1)
   ret i64 %4
 }
@@ -382,7 +382,7 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 0
   %8 = extractvalue { ptr, ptr } %6, 1
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %8)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %8)
   %9 = call i64 (ptr, ...) %7(ptr %8, i64 100, i64 200)
   ret i64 %9
 }
@@ -441,10 +441,10 @@ func TestWriteReadCtxRegIR(t *testing.T) {
 	b.Return()
 
 	ir := pkg.String()
-	if !strings.Contains(ir, `asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"`) {
+	if !strings.Contains(ir, `asm "movq $0, %mm0", "r,~{mm0}"`) {
 		t.Errorf("expected ctx write asm in IR:\n%s", ir)
 	}
-	if !strings.Contains(ir, `asm sideeffect "movq %mm0, $0", "=r,~{memory}"`) {
+	if !strings.Contains(ir, `asm "movq %mm0, $0", "=r"`) {
 		t.Errorf("expected ctx read asm in IR:\n%s", ir)
 	}
 }
@@ -502,7 +502,7 @@ define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %2)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %2)
   %4 = call i64 %3(i64 %1)
   ret i64 %4
 }
@@ -538,7 +538,7 @@ source_filename = "foo/bar"
 
 define i64 @inner(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = call ptr asm "movq %mm0, $0", "=r"()
   %2 = load { i64 }, ptr %1, align 4
   %3 = extractvalue { i64 } %2, 0
   %4 = add i64 %3, %0
@@ -634,7 +634,7 @@ source_filename = "foo/bar"
 
 define i64 @inner(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = call ptr asm "movq %mm0, $0", "=r"()
   %2 = load { i64 }, ptr %1, align 4
   %3 = extractvalue { i64 } %2, 0
   %4 = add i64 %3, %0
@@ -693,7 +693,7 @@ source_filename = "test"
 
 define i64 @iife_inner(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %1 = call ptr asm "movq %mm0, $0", "=r"()
   %2 = load { i64 }, ptr %1, align 4
   %3 = extractvalue { i64 } %2, 0
   %4 = add i64 %3, %0
@@ -708,7 +708,7 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @iife_inner, ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %4)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %4)
   %6 = call i64 %5(i64 5)
   ret i64 %6
 }
@@ -744,11 +744,11 @@ define i64 @applyTwice({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %2)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %2)
   %4 = call i64 %3(i64 %1)
   %5 = extractvalue { ptr, ptr } %0, 1
   %6 = extractvalue { ptr, ptr } %0, 0
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %5)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %5)
   %7 = call i64 %6(i64 %4)
   ret i64 %7
 }
@@ -781,7 +781,7 @@ source_filename = "test"
 
 define void @defer_body() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %0 = call ptr asm "movq %mm0, $0", "=r"()
   %1 = load { i64 }, ptr %0, align 4
   %2 = extractvalue { i64 } %1, 0
   ret void
@@ -815,7 +815,7 @@ source_filename = "test"
 
 define void @goroutine_body() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %0 = call ptr asm "movq %mm0, $0", "=r"()
   %1 = load { i64 }, ptr %0, align 4
   %2 = extractvalue { i64 } %1, 0
   ret void
@@ -861,7 +861,7 @@ source_filename = "test"
 
 define void @goroutine_body2() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %0 = call ptr asm "movq %mm0, $0", "=r"()
   %1 = load { i64 }, ptr %0, align 4
   %2 = extractvalue { i64 } %1, 0
   ret void
@@ -891,7 +891,7 @@ _llgo_0:
   %2 = extractvalue { { ptr, ptr } } %1, 0
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  call void asm sideeffect "movq $0, %mm0", "r,~{mm0},~{memory}"(ptr %3)
+  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %3)
   call void %4()
   call void @free(ptr %0)
   ret ptr null
@@ -935,7 +935,7 @@ source_filename = "test"
 
 define i64 @nested_inner() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "movq %mm0, $0", "=r,~{memory}"()
+  %0 = call ptr asm "movq %mm0, $0", "=r"()
   %1 = load { i64, i64 }, ptr %0, align 4
   %2 = extractvalue { i64, i64 } %1, 0
   %3 = extractvalue { i64, i64 } %1, 1
@@ -1194,13 +1194,13 @@ func TestAny(t *testing.T) {
 }
 
 var (
-	writeCtxRegRe = regexp.MustCompile(`(?m)^(\s*)call void asm sideeffect "[^"]+", "r(?:,~\{[^}]+\})?(?:,~\{memory\})?"\(ptr ([^)]+)\)`)
-	readCtxRegRe  = regexp.MustCompile(`(?m)^(\s*%[\w.]+\s*=\s*)call ptr asm sideeffect "[^"]+", "=r(?:,~\{memory\})?"\(\)`)
+	writeCtxRegRe = regexp.MustCompile(`(?m)^(\s*)call void asm "[^"]+", "r(?:,~\{[^}]+\})?(?:,~\{memory\})?"\(ptr ([^)]+)\)`)
+	readCtxRegRe  = regexp.MustCompile(`(?m)^(\s*%[\w.]+\s*=\s*)call ptr asm "[^"]+", "=r(?:,~\{memory\})?"\(\)`)
 )
 
 func normalizeIR(ir string) string {
-	ir = writeCtxRegRe.ReplaceAllString(ir, `${1}call void asm sideeffect "write_ctx_reg $$0", "r,~{CTX_REG},~{memory}"(ptr ${2})`)
-	ir = readCtxRegRe.ReplaceAllString(ir, `${1}call ptr asm sideeffect "read_ctx_reg $$0", "=r,~{memory}"()`)
+	ir = writeCtxRegRe.ReplaceAllString(ir, `${1}call void asm "write_ctx_reg $$0", "r,~{CTX_REG}"(ptr ${2})`)
+	ir = readCtxRegRe.ReplaceAllString(ir, `${1}call ptr asm "read_ctx_reg $$0", "=r"()`)
 	return ir
 }
 

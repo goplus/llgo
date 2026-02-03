@@ -29,7 +29,7 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closure.main$3", ptr undef }, ptr %1, 1
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %4)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %4)
   call void %5()
   ret void
 }
@@ -48,13 +48,13 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/closure.main$3"() {
 _llgo_0:
-  %0 = call ptr asm sideeffect "mov $0, x26", "=r"()
+  %0 = call ptr asm "mov $0, x26", "=r"()
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
   %3 = load { ptr, ptr }, ptr %2, align 8
   %4 = extractvalue { ptr, ptr } %3, 1
   %5 = extractvalue { ptr, ptr } %3, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %4)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %4)
   call void %5(i64 100, i64 200)
   ret void
 }

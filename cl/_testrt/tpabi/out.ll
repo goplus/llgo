@@ -94,7 +94,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   %22 = insertvalue { ptr, ptr } %21, ptr %17, 1
   %23 = extractvalue { ptr, ptr } %22, 0
   %24 = extractvalue { ptr, ptr } %22, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %24)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %24)
   call void %23(ptr %24)
   %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %26 = getelementptr inbounds i64, ptr %25, i64 0

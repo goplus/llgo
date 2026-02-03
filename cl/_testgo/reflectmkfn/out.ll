@@ -100,7 +100,7 @@ _llgo_3:                                          ; preds = %_llgo_0
   %26 = load { ptr, ptr }, ptr %25, align 8
   %27 = extractvalue { ptr, ptr } %26, 1
   %28 = extractvalue { ptr, ptr } %26, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %27)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %27)
   %29 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %28(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 3 }, i64 2)
   %30 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %29, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 6 })
   %31 = xor i1 %30, true

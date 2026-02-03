@@ -103,7 +103,7 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 0
   %8 = extractvalue { ptr, ptr } %6, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %8)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %8)
   %9 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %7(ptr %8)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %9
 }
@@ -156,14 +156,14 @@ _llgo_0:
   %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13, ptr %0, 1
   %15 = extractvalue { ptr, ptr } %5, 1
   %16 = extractvalue { ptr, ptr } %5, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %15)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %15)
   %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %16(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %14)
   %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ")
   %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %18, 0
   %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %19, ptr %0, 1
   %21 = extractvalue { ptr, ptr } %11, 1
   %22 = extractvalue { ptr, ptr } %11, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %21)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %21)
   %23 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %22(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %20)
   %24 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %17, %"github.com/goplus/llgo/runtime/internal/runtime.String" %23)
   %25 = xor i1 %24, true

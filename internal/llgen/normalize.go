@@ -44,8 +44,8 @@ var (
 	writeCtxRegPatterns []*regexp.Regexp
 	readCtxRegPatterns  []*regexp.Regexp
 
-	normalizedWriteCtxReg = `call void asm sideeffect "write_ctx_reg $0", "r,~{CTX_REG},~{memory}"(ptr %__llgo_ctx)`
-	normalizedReadCtxReg  = `call ptr asm sideeffect "read_ctx_reg $0", "=r,~{memory}"()`
+	normalizedWriteCtxReg = `call void asm "write_ctx_reg $0", "r,~{CTX_REG}"(ptr %__llgo_ctx)`
+	normalizedReadCtxReg  = `call ptr asm "read_ctx_reg $0", "=r"()`
 )
 
 func init() {
@@ -59,13 +59,13 @@ func init() {
 		readAsm := fmt.Sprintf(tmpl.readFmt, info.Name)
 
 		writePattern := fmt.Sprintf(
-			`call void asm sideeffect "%s", "r(?:,~\{%s\})?(?:,~\{memory\})?"\(ptr [^)]+\)`,
+			`call void asm "%s", "r(?:,~\{%s\})?"\(ptr [^)]+\)`,
 			writeAsm, info.Name,
 		)
 		writeCtxRegPatterns = append(writeCtxRegPatterns, regexp.MustCompile(writePattern))
 
 		readPattern := fmt.Sprintf(
-			`call ptr asm sideeffect "%s", "=r(?:,~\{memory\})?"\(\)`,
+			`call ptr asm "%s", "=r"\(\)`,
 			readAsm,
 		)
 		readCtxRegPatterns = append(readCtxRegPatterns, regexp.MustCompile(readPattern))

@@ -80,7 +80,7 @@ _llgo_0:
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
   %7 = extractvalue { ptr, ptr } %6, 0
   %8 = extractvalue { ptr, ptr } %6, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %8)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %8)
   %9 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %7(ptr %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)

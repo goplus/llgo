@@ -78,8 +78,8 @@ Closure bodies accept an explicit ctx parameter and use it as the env base.
 
 Native builds reserve the ctx reg via clang target-feature `+reserve-<reg>`
 (arm64/riscv64). x86/x86_64 use compiler flags to disable x87 so MM0 is not
-clobbered by `long double` operations. For caller-saved x86, inline asm uses a
-memory clobber; callee-saved targets do not.
+clobbered by `long double` operations. Inline asm uses minimal constraints and
+does not add side effects or memory clobbers.
 
 ## Covered Scenarios
 

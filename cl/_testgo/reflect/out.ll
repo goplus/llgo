@@ -152,7 +152,7 @@ _llgo_0:
   %14 = insertvalue { ptr, ptr } %13, ptr %9, 1
   %15 = extractvalue { ptr, ptr } %14, 0
   %16 = extractvalue { ptr, ptr } %14, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %16)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %16)
   %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %15(ptr %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -192,7 +192,7 @@ _llgo_1:                                          ; preds = %_llgo_5
 _llgo_2:                                          ; preds = %_llgo_5
   %36 = extractvalue { ptr, ptr } %44, 1
   %37 = extractvalue { ptr, ptr } %44, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %36)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %36)
   %38 = call i64 %37(i64 100)
   ret void
 
@@ -215,7 +215,7 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/reflect.callClosure$1"(i64 %0) {
 _llgo_0:
-  %1 = call ptr asm sideeffect "mov $0, x26", "=r"()
+  %1 = call ptr asm "mov $0, x26", "=r"()
   %2 = load { ptr }, ptr %1, align 8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 12 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
@@ -242,7 +242,7 @@ _llgo_0:
   %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
   %11 = extractvalue { ptr, ptr } %10, 0
   %12 = extractvalue { ptr, ptr } %10, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %12)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %12)
   %13 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %11(ptr %12)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -282,7 +282,7 @@ _llgo_1:                                          ; preds = %_llgo_5
 _llgo_2:                                          ; preds = %_llgo_5
   %32 = extractvalue { ptr, ptr } %40, 1
   %33 = extractvalue { ptr, ptr } %40, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %32)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %32)
   %34 = call i64 %33(i64 100)
   ret void
 
@@ -335,7 +335,7 @@ _llgo_0:
   %18 = insertvalue { ptr, ptr } %17, ptr %13, 1
   %19 = extractvalue { ptr, ptr } %18, 0
   %20 = extractvalue { ptr, ptr } %18, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %20)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %20)
   %21 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %19(ptr %20)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -375,7 +375,7 @@ _llgo_1:                                          ; preds = %_llgo_5
 _llgo_2:                                          ; preds = %_llgo_5
   %40 = extractvalue { ptr, ptr } %63, 1
   %41 = extractvalue { ptr, ptr } %63, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %40)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %40)
   %42 = call i64 %41(i64 1)
   %43 = call %"github.com/goplus/llgo/runtime/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %10)
   %44 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %43)
@@ -433,7 +433,7 @@ _llgo_0:
   %12 = insertvalue { ptr, ptr } %11, ptr %7, 1
   %13 = extractvalue { ptr, ptr } %12, 0
   %14 = extractvalue { ptr, ptr } %12, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %14)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %14)
   %15 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %13(ptr %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 6 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -473,7 +473,7 @@ _llgo_1:                                          ; preds = %_llgo_5
 _llgo_2:                                          ; preds = %_llgo_5
   %34 = extractvalue { ptr, ptr } %57, 1
   %35 = extractvalue { ptr, ptr } %57, 0
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %34)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %34)
   %36 = call i64 %35(i64 1)
   %37 = call %"github.com/goplus/llgo/runtime/internal/runtime.eface" @reflect.Value.Interface(%reflect.Value %4)
   %38 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %37)
@@ -799,7 +799,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %41 = insertvalue { ptr, ptr } %40, ptr %36, 1
   %42 = extractvalue { ptr, ptr } %41, 0
   %43 = extractvalue { ptr, ptr } %41, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %43)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %43)
   %44 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" %42(ptr %43)
   %45 = call %reflect.Value @reflect.New(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %44)
   %46 = call %reflect.Value @reflect.Value.Elem(%reflect.Value %45)
@@ -812,7 +812,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %53 = insertvalue { ptr, ptr } %52, ptr %48, 1
   %54 = extractvalue { ptr, ptr } %53, 0
   %55 = extractvalue { ptr, ptr } %53, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %55)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %55)
   %56 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" %54(ptr %55)
   %57 = call %reflect.Value @reflect.New(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %56)
   %58 = call %reflect.Value @reflect.Value.Elem(%reflect.Value %57)
@@ -946,7 +946,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %48 = insertvalue { ptr, ptr } %47, ptr %43, 1
   %49 = extractvalue { ptr, ptr } %48, 0
   %50 = extractvalue { ptr, ptr } %48, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %50)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %50)
   %51 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" %49(ptr %50)
   %52 = call %reflect.Value @reflect.New(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %51)
   %53 = call %reflect.Value @reflect.Value.Elem(%reflect.Value %52)
@@ -959,7 +959,7 @@ _llgo_9:                                          ; preds = %_llgo_8, %_llgo_7
   %60 = insertvalue { ptr, ptr } %59, ptr %55, 1
   %61 = extractvalue { ptr, ptr } %60, 0
   %62 = extractvalue { ptr, ptr } %60, 1
-  call void asm sideeffect "mov x26, $0", "r,~{x26}"(ptr %62)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %62)
   %63 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" %61(ptr %62)
   %64 = call %reflect.Value @reflect.New(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %63)
   %65 = call %reflect.Value @reflect.Value.Elem(%reflect.Value %64)
