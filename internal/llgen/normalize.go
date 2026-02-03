@@ -38,6 +38,7 @@ var (
 		"386":     {writeFmt: "movd \\$0, %%%s", readFmt: "movd %%%s, \\$0"},
 		"arm64":   {writeFmt: "mov %s, \\$0", readFmt: "mov \\$0, %s"},
 		"riscv64": {writeFmt: "mv %s, \\$0", readFmt: "mv \\$0, %s"},
+		"riscv32": {writeFmt: "mv %s, \\$0", readFmt: "mv \\$0, %s"},
 	}
 
 	writeCtxRegPatterns []*regexp.Regexp

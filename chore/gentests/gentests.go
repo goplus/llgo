@@ -25,6 +25,7 @@ import (
 
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/internal/testutil"
 	"github.com/goplus/mod"
 )
 
@@ -90,7 +91,7 @@ func runExpectDir(root, relDir string) {
 			fmt.Fprintln(os.Stderr, "error:", relPath, err)
 			output = []byte{';'}
 		}
-		output = filterExpectOutput(output)
+		output = testutil.FilterTestOutput(output)
 		check(os.WriteFile(filepath.Join(testDir, "expect.txt"), output, 0644))
 	}
 }
@@ -105,25 +106,6 @@ func shouldSkipExpect(testDir string) (bool, error) {
 		return false, err
 	}
 	return string(bytes.TrimSpace(data)) == ";", nil
-}
-
-func filterExpectOutput(output []byte) []byte {
-	var filtered []byte
-	for _, line := range bytes.Split(output, []byte("\n")) {
-		if bytes.HasPrefix(line, []byte("ld64.lld: warning:")) {
-			continue
-		}
-		if bytes.HasPrefix(line, []byte("WARNING: Using LLGO root for devel:")) {
-			continue
-		}
-		if len(filtered) > 0 || len(line) > 0 {
-			if len(filtered) > 0 {
-				filtered = append(filtered, '\n')
-			}
-			filtered = append(filtered, line...)
-		}
-	}
-	return filtered
 }
 
 func check(err error) {

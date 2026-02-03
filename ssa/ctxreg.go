@@ -15,6 +15,7 @@ type ctxAsmTemplate struct {
 }
 
 var ctxAsmTemplates = map[string]ctxAsmTemplate{
+	// Keep in sync with internal/llgen/normalize.go asmTemplates.
 	"amd64": {
 		write:   "movq $0, %%%s",
 		read:    "movq %%%s, $0",

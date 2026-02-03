@@ -19,6 +19,7 @@ package ssa
 import (
 	"runtime"
 
+	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llvm"
 )
 
@@ -57,20 +58,8 @@ func (t *Target) CtxRegister() CtxRegister {
 	if goarch == "" {
 		goarch = runtime.GOARCH
 	}
-	switch goarch {
-	case "amd64":
-		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
-	case "arm64":
-		return CtxRegister{Name: "x26", Constraint: "{x26}"}
-	case "386":
-		return CtxRegister{Name: "mm0", Constraint: "{mm0}"}
-	case "riscv64":
-		return CtxRegister{Name: "x27", Constraint: "{x27}"}
-	case "riscv32":
-		return CtxRegister{Name: "x27", Constraint: "{x27}"}
-	default:
-		return CtxRegister{}
-	}
+	info := ctxreg.Get(goarch)
+	return CtxRegister{Name: info.Name, Constraint: info.Constraint}
 }
 
 func (p *Target) targetData() llvm.TargetData {

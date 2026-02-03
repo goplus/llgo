@@ -38,6 +38,7 @@ import (
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/testutil"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
@@ -189,36 +190,10 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 	if err != nil {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
-	output = filterLinkerWarnings(output)
+	output = testutil.FilterTestOutput(output)
 	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
 		t.Fatal("unexpected output")
 	}
-}
-
-// filterLinkerWarnings removes ld64.lld warning lines from output.
-// These warnings about library version mismatches are environment-specific
-// and should not cause test failures.
-func filterLinkerWarnings(output []byte) []byte {
-	var filtered []byte
-	sawReservedRegWarning := false
-	for _, line := range bytes.Split(output, []byte("\n")) {
-		if bytes.HasPrefix(line, []byte("ld64.lld: warning:")) {
-			continue
-		}
-		if bytes.HasPrefix(line, []byte("WARNING: Using LLGO root for devel:")) {
-			continue
-		}
-		if sawReservedRegWarning && (bytes.HasSuffix(line, []byte(" warning generated.")) || bytes.HasSuffix(line, []byte(" warnings generated."))) {
-			continue
-		}
-		if len(filtered) > 0 || len(line) > 0 {
-			if len(filtered) > 0 {
-				filtered = append(filtered, '\n')
-			}
-			filtered = append(filtered, line...)
-		}
-	}
-	return filtered
 }
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
@@ -300,7 +275,7 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 	_ = w.Close()
 	output := <-outputCh
-	output = filterLinkerWarnings(output)
+	output = testutil.FilterTestOutput(output)
 	if runErr != nil {
 		return output, fmt.Errorf("run failed: %w", runErr)
 	}
