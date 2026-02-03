@@ -164,10 +164,10 @@ func (p *Target) Spec() (spec TargetSpec) {
 	switch goarch {
 	case "386":
 		spec.CPU = "pentium4"
-		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,+x87"
+		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,-x87"
 	case "amd64":
 		spec.CPU = "x86-64"
-		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,+x87"
+		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,-x87"
 	case "arm":
 		spec.CPU = "generic"
 		switch llvmarch {
