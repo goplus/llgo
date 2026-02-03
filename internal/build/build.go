@@ -41,6 +41,7 @@ import (
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
@@ -1230,6 +1231,10 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	if targetTriple != "" && !hasTargetFlag(ctx.crossCompile.CCFLAGS) && !hasTargetFlag(ctx.crossCompile.CFLAGS) {
 		args = append(args, "--target="+targetTriple)
+	}
+	ctxArch := ctxGoarch(ctx.buildConf.Goarch, ctx.crossCompile.LLVMTarget)
+	if reserve := ctxreg.ReserveFlags(ctxArch); len(reserve) > 0 {
+		args = appendMissingFlags(args, reserve)
 	}
 	if ctx.shouldPrintCommands(false) {
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)

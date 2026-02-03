@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
-	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/flash"
 	"github.com/goplus/llgo/internal/targets"
@@ -80,11 +79,6 @@ func buildEnvMap(llgoRoot string) map[string]string {
 	// envs["zip"] = ""      // Path to zip file
 
 	return envs
-}
-
-// reserveRegisterFlags returns clang flags to reserve the closure ctx register.
-func reserveRegisterFlags(goarch string) []string {
-	return ctxreg.ReserveFlags(goarch)
 }
 
 func appendMissingFlags(dst []string, flags []string) []string {
@@ -279,11 +273,6 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
 		}
-		if reserve := reserveRegisterFlags(goarch); len(reserve) > 0 {
-			export.CCFLAGS = appendMissingFlags(export.CCFLAGS, reserve)
-			export.CFLAGS = appendMissingFlags(export.CFLAGS, reserve)
-		}
-
 		// Add sysroot for macOS only
 		if goos == "darwin" {
 			sysrootPath, sysrootErr := getMacOSSysroot()
@@ -527,10 +516,6 @@ func UseTarget(targetName string) (export Export, err error) {
 	if config.LLVMTarget != "" {
 		cflags = append(cflags, "--target="+config.LLVMTarget)
 		ccflags = append(ccflags, "--target="+config.LLVMTarget)
-	}
-	if reserve := reserveRegisterFlags(config.GOARCH); len(reserve) > 0 {
-		cflags = appendMissingFlags(cflags, reserve)
-		ccflags = appendMissingFlags(ccflags, reserve)
 	}
 	// Expand template variables in cflags
 	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)
