@@ -404,6 +404,7 @@ func TestCtxRegisterDefinitions(t *testing.T) {
 		{"linux", "arm", "", ""},
 		{"linux", "386", "mm0", "{mm0}"},
 		{"linux", "riscv64", "x27", "{x27}"},
+		{"linux", "riscv32", "x27", "{x27}"},
 		{"js", "wasm", "", ""},
 	}
 	for _, tt := range tests {
@@ -419,7 +420,7 @@ func TestCtxRegisterDefinitions(t *testing.T) {
 }
 
 func TestCtxRegisterFallback(t *testing.T) {
-	tests := []string{"wasm", "riscv32"}
+	tests := []string{"wasm"}
 	for _, goarch := range tests {
 		reg := (&Target{GOARCH: goarch}).CtxRegister()
 		if reg.Name != "" || reg.Constraint != "" {
