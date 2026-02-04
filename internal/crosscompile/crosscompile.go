@@ -224,6 +224,9 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			"-Wno-unused-command-line-argument",
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
+			// Enable ICF (Identical Code Folding) to reduce binary size
+			"-Xlinker",
+			"--icf=safe",
 		}
 		if clangRoot != "" {
 			clangLib := filepath.Join(clangRoot, "lib")
@@ -280,7 +283,6 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 				"-ffunction-sections",
 				"-Xlinker",
 				"--gc-sections",
-				"-lm",
 				"-latomic",
 				// libpthread & libdl is built-in since glibc 2.34 (2021-08-01); we need to support earlier versions.
 				"-lpthread",
@@ -485,7 +487,8 @@ func UseTarget(targetName string) (export Export, err error) {
 	envs := buildEnvMap(env.LLGoROOT())
 
 	// Convert LLVMTarget, CPU, Features to CCFLAGS/LDFLAGS
-	ldflags := []string{"-S"}
+	// Enable ICF (Identical Code Folding) to reduce binary size
+	ldflags := []string{"-S", "--icf=safe"}
 	ccflags := []string{"-Oz"}
 	cflags := []string{"-Wno-override-module", "-Qunused-arguments", "-Wno-unused-command-line-argument"}
 	if config.LLVMTarget != "" {
