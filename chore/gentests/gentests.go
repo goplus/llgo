@@ -17,6 +17,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,16 +28,24 @@ import (
 	"github.com/goplus/mod"
 )
 
+var (
+	runexp = flag.Bool("runexp", false, "only run genExpects(dir) to generate expect.txt files")
+)
+
 func main() {
+	flag.Parse()
+
 	dir, _, err := mod.FindGoMod(".")
 	check(err)
 
-	llgenDir(dir + "/cl/_testlibc")
-	llgenDir(dir + "/cl/_testlibgo")
-	llgenDir(dir + "/cl/_testrt")
-	llgenDir(dir + "/cl/_testgo")
-	llgenDir(dir + "/cl/_testpy")
-	llgenDir(dir + "/cl/_testdata")
+	if !*runexp {
+		llgenDir(dir + "/cl/_testlibc")
+		llgenDir(dir + "/cl/_testlibgo")
+		llgenDir(dir + "/cl/_testrt")
+		llgenDir(dir + "/cl/_testgo")
+		llgenDir(dir + "/cl/_testpy")
+		llgenDir(dir + "/cl/_testdata")
+	}
 
 	genExpects(dir)
 }
