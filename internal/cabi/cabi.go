@@ -445,15 +445,12 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				//
 				// void @fn(ptr sret(%typ) %0)
 				// %2 = load %typ, ptr %1
-				// store %typ %2, ptr %0 # llvm.memcpy(ptr %0, ptr %1, i64 size, i1 false)
+				// store %typ %2, ptr %0
 				// ret void
-				if p.optimize {
-					if load := ret.IsALoadInst(); !load.IsNil() {
-						p.callMemcpy(m, ctx, b, params[0], ret.Operand(0), info.Return.Size)
-						rv = b.CreateRetVoid()
-						break
-					}
-				}
+				//
+				// Note: We don't use memcpy optimization here because the source
+				// address content may be modified between load and ret.
+				// See: https://github.com/goplus/llgo/issues/1608
 				b.CreateStore(ret, params[0])
 				rv = b.CreateRetVoid()
 			case AttrWidthType:
