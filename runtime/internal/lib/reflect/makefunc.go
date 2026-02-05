@@ -36,6 +36,44 @@ type funcData struct {
 	nin  int
 }
 
+func makeFuncInputs(fd *funcData, args *unsafe.Pointer) []Value {
+	ins := make([]Value, fd.nin)
+	for i := 0; i < fd.nin; i++ {
+		ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
+	}
+	return ins
+}
+
+func makeFuncCallback0(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	fd := (*funcData)(userdata)
+	_ = cif
+	_ = ret
+	fd.fn(makeFuncInputs(fd, args))
+}
+
+func makeFuncCallback1(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	fd := (*funcData)(userdata)
+	out := fd.fn(makeFuncInputs(fd, args))
+	outTyp := fd.ftyp.Out[0]
+	c.Memmove(ret, toFFIArg(out[0], outTyp), outTyp.Size_)
+	_ = cif
+}
+
+func makeFuncCallbackN(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	fd := (*funcData)(userdata)
+	outs := fd.fn(makeFuncInputs(fd, args))
+	alignment := uintptr(cif.RType.Alignment)
+	if alignment == 0 {
+		alignment = 1
+	}
+	var offset uintptr
+	for i, out := range outs {
+		outTyp := fd.ftyp.Out[i]
+		c.Memmove(add(ret, offset, ""), toFFIArg(out, outTyp), outTyp.Size_)
+		offset += (outTyp.Size_ + alignment - 1) &^ (alignment - 1)
+	}
+}
+
 func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	if typ.Kind() != Func {
 		panic("reflect: call of MakeFunc with non-Func type")
@@ -51,46 +89,11 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 
 	switch len(ftyp.Out) {
 	case 0:
-		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			fd := (*funcData)(userdata)
-			ins := make([]Value, fd.nin)
-			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
-			}
-			fd.fn(ins)
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		err = closure.Bind(sig, makeFuncCallback0, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
 	case 1:
-		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			fd := (*funcData)(userdata)
-			ins := make([]Value, fd.nin)
-			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
-			}
-			out := fd.fn(ins)
-			if fd.ftyp.Out[0].IfaceIndir() {
-				c.Memmove(ret, out[0].ptr, fd.ftyp.Out[0].Size_)
-			} else {
-				*(*unsafe.Pointer)(ret) = unsafe.Pointer(out[0].ptr)
-			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		err = closure.Bind(sig, makeFuncCallback1, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
 	default:
-		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			fd := (*funcData)(userdata)
-			ins := make([]Value, fd.nin)
-			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
-			}
-			outs := fd.fn(ins)
-			var offset uintptr = 0
-			for i, out := range outs {
-				if fd.ftyp.Out[i].IfaceIndir() {
-					c.Memmove(add(ret, offset, ""), out.ptr, fd.ftyp.Out[i].Size_)
-				} else {
-					*(*unsafe.Pointer)(add(ret, offset, "")) = unsafe.Pointer(out.ptr)
-				}
-				offset += fd.ftyp.Out[i].Size_
-			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		err = closure.Bind(sig, makeFuncCallbackN, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
 	}
 	if err != nil {
 		panic("libffi error: " + err.Error())
@@ -208,6 +211,9 @@ func makeMethodValue(op string, v Value) Value {
 	if v.flag&flagMethod == 0 {
 		panic("reflect: internal error: invalid use of makeMethodValue")
 	}
+	if methodValueUseMakeFunc {
+		return makeMethodValueViaMakeFunc(op, v)
+	}
 
 	// Ignoring the flagMethod bit, v describes the receiver, not the method type.
 	fl := v.flag & (flagRO | flagAddr | flagIndir)
@@ -228,6 +234,23 @@ func makeMethodValue(op string, v Value) Value {
 	// The panic would still happen during the call if we omit this,
 	// but we want Interface() and other operations to fail early.
 	return Value{typ, unsafe.Pointer(fv), v.flag&flagRO | flagIndir | flag(Func)}
+}
+
+func makeMethodValueViaMakeFunc(op string, v Value) Value {
+	// Validate method and panic early for nil interface receivers, etc.
+	fl := v.flag & (flagRO | flagAddr | flagIndir)
+	fl |= flag(v.typ().Kind())
+	rcvr := Value{v.typ(), v.ptr, fl}
+	methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
+
+	ftyp := v.Type()
+	variadic := ftyp.IsVariadic()
+	return MakeFunc(ftyp, func(args []Value) []Value {
+		if variadic {
+			return v.call("CallSlice", args)
+		}
+		return v.call("Call", args)
+	})
 }
 
 var unsafePointerType = rtypeOf(unsafe.Pointer(nil))
