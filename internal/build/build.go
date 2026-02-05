@@ -113,35 +113,34 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos           string
-	Goarch         string
-	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath        string
-	AppExt         string  // ".exe" on Windows, empty on Unix
-	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts        OutFmts // Output format specifications (only for Target != "")
-	CompileOnly    bool    // compile test binary but do not run it (only valid for ModeTest)
-	Emulator       bool    // run in emulator mode
-	Port           string  // target port for flashing
-	BaudRate       int     // baudrate for serial communication
-	RunArgs        []string
-	Mode           Mode
-	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode        AbiMode
-	GenExpect      bool // only valid for ModeCmpTest
-	Verbose        bool
-	PrintCommands  bool
-	GenLL          bool // generate pkg .ll files
-	CheckLLFiles   bool // check .ll files valid
-	CheckLinkArgs  bool // check linkargs valid
-	ForceEspClang  bool // force to use esp-clang
-	ForceRebuild   bool // force rebuilding of packages that are already up-to-date
-	Tags           string
-	SizeReport     bool   // print size report after successful build
-	SizeFormat     string // size report format: text,json (default text)
-	SizeLevel      string // size aggregation level: full,module,package (default module)
-	CompilerHash   string // metadata hash for the running compiler (development builds only)
-	SkipTargetInfo bool   // skip setting data layout and target triple (for test generation)
+	Goos          string
+	Goarch        string
+	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath       string
+	AppExt        string  // ".exe" on Windows, empty on Unix
+	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts       OutFmts // Output format specifications (only for Target != "")
+	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
+	Emulator      bool    // run in emulator mode
+	Port          string  // target port for flashing
+	BaudRate      int     // baudrate for serial communication
+	RunArgs       []string
+	Mode          Mode
+	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode       AbiMode
+	GenExpect     bool // only valid for ModeCmpTest
+	Verbose       bool
+	PrintCommands bool
+	GenLL         bool // generate pkg .ll files
+	CheckLLFiles  bool // check .ll files valid
+	CheckLinkArgs bool // check linkargs valid
+	ForceEspClang bool // force to use esp-clang
+	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
+	Tags          string
+	SizeReport    bool   // print size report after successful build
+	SizeFormat    string // size report format: text,json (default text)
+	SizeLevel     string // size aggregation level: full,module,package (default module)
+	CompilerHash  string // metadata hash for the running compiler (development builds only)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -345,6 +344,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	buildMode := ssaBuildMode
 	cabiOptimize := true
+	passOpt := true
+	if IsDbgEnabled() || mode == ModeGen {
+		passOpt = false
+	}
 	if IsDbgEnabled() {
 		buildMode |= ssa.GlobalDebug
 		cabiOptimize = false
@@ -366,6 +369,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		pkgs:           map[*packages.Package]Package{},
 		pkgByID:        map[string]Package{},
 		output:         output,
+		passOpt:        passOpt,
 		buildConf:      conf,
 		crossCompile:   export,
 		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
@@ -525,6 +529,7 @@ type context struct {
 	mode           Mode
 	nLibdir        int32
 	output         bool
+	passOpt        bool
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
@@ -1154,8 +1159,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
 	// Run LLVM optimization passes (memcpyopt converts load/store to memcpy)
-	// Skip when SkipTargetInfo is set (for test generation to avoid target-specific output)
-	if !ctx.buildConf.SkipTargetInfo {
+	if ctx.passOpt {
 		mod := ret.Module()
 		mod.SetDataLayout(ctx.prog.DataLayout())
 		mod.SetTarget(ctx.prog.Target().Spec().Triple)
