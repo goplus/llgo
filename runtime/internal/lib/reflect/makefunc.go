@@ -86,14 +86,15 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 		panic(err)
 	}
 	closure := ffi.NewClosure()
+	fd := &funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}
 
 	switch len(ftyp.Out) {
 	case 0:
-		err = closure.Bind(sig, makeFuncCallback0, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		err = closure.Bind(sig, makeFuncCallback0, unsafe.Pointer(fd))
 	case 1:
-		err = closure.Bind(sig, makeFuncCallback1, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		err = closure.Bind(sig, makeFuncCallback1, unsafe.Pointer(fd))
 	default:
-		err = closure.Bind(sig, makeFuncCallbackN, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		err = closure.Bind(sig, makeFuncCallbackN, unsafe.Pointer(fd))
 	}
 	if err != nil {
 		panic("libffi error: " + err.Error())
