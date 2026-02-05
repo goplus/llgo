@@ -20,12 +20,12 @@
 package ssa
 
 import (
+	"fmt"
 	"go/constant"
 	"go/importer"
 	"go/token"
 	"go/types"
 	"os"
-	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -142,7 +142,7 @@ func TestClosureCtx(t *testing.T) {
 		}
 	}()
 	var f aFunction
-	f.closureCtx()
+	f.closureCtx(nil)
 }
 
 func TestClosureNoCtxValue(t *testing.T) {
@@ -163,7 +163,7 @@ func TestClosureNoCtxValue(t *testing.T) {
 	hb.Store(ptr, fn.Expr)
 	hb.Return()
 
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @fn(i64 %0) {
@@ -174,8 +174,14 @@ _llgo_0:
 define void @holder() {
 _llgo_0:
   %0 = alloca { ptr, ptr }, align 8
-  store { ptr, ptr } { ptr @fn, ptr null }, ptr %0, align 8
+  store { ptr, ptr } { ptr @__llgo_stub.fn, ptr null }, ptr %0, align 8
   ret void
+}
+
+define linkonce i64 @__llgo_stub.fn(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = tail call i64 @fn(i64 %1)
+  ret i64 %2
 }
 `)
 }
@@ -207,26 +213,43 @@ func TestClosureFuncPtrValue(t *testing.T) {
 	hb.Store(ptr, fnPtr)
 	hb.Return()
 
-	expected := `; ModuleID = 'foo/bar'
+	wrapName := "__llgo_stub." + pkg.abi.FuncName(sig)
+	wrapRef := wrapName
+	if strings.Contains(wrapName, "$") {
+		wrapRef = fmt.Sprintf("\"%s\"", wrapName)
+	}
+	expected := fmt.Sprintf(`; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0) {
+define i64 @fn(i64 %%0) {
 _llgo_0:
-  ret i64 %0
+  ret i64 %%0
 }
 
 define void @holder() {
 _llgo_0:
-  %0 = alloca { ptr, ptr }, align 8
-  store { ptr, ptr } { ptr @fn, ptr null }, ptr %0, align 8
+  %%0 = alloca { ptr, ptr }, align 8
+  %%1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store ptr @fn, ptr %%1, align 8
+  %%2 = insertvalue { ptr, ptr } { ptr @%s, ptr undef }, ptr %%1, 1
+  store { ptr, ptr } %%2, ptr %%0, align 8
   ret void
 }
-`
-	assertPkgRaw(t, pkg, expected)
+
+define linkonce i64 @%s(ptr %%0, i64 %%1) {
+_llgo_0:
+  %%2 = load ptr, ptr %%0, align 8
+  %%3 = tail call i64 %%2(i64 %%1)
+  ret i64 %%3
+}
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+`, wrapRef, wrapRef)
+	assertPkg(t, pkg, expected)
 }
 
 func TestCallClosureDynamic(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
 	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
@@ -241,15 +264,14 @@ func TestCallClosureDynamic(t *testing.T) {
 	b := caller.MakeBody(1)
 	b.Return(b.Call(caller.Param(0), caller.Param(1)))
 
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @caller({ ptr, ptr } %0, i64 %1) {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %2)
-  %4 = call i64 %3(i64 %1)
+  %4 = call i64 %3(ptr %2, i64 %1)
   ret i64 %4
 }
 `)
@@ -286,7 +308,7 @@ func TestMakeClosureWithCtx(t *testing.T) {
 	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
 	ob.Return(closure)
 
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 define i64 @inner(ptr %0, i64 %1) {
@@ -338,7 +360,7 @@ func TestCvtClosureDropsRecv(t *testing.T) {
 }
 
 func TestIfaceMethodClosureCallIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
+	prog := NewProgram(nil)
 	prog.SetRuntime(func() *types.Package {
 		fset := token.NewFileSet()
 		imp := packages.NewImporter(fset)
@@ -367,7 +389,7 @@ func TestIfaceMethodClosureCallIR(t *testing.T) {
 	ret := b.Call(closure, prog.Val(100), prog.Val(200))
 	b.Return(ret)
 
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
@@ -380,568 +402,13 @@ _llgo_0:
   %4 = load ptr, ptr %3, align 8
   %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 0
-  %8 = extractvalue { ptr, ptr } %6, 1
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %8)
-  %9 = call i64 (ptr, ...) %7(ptr %8, i64 100, i64 200)
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  %9 = call i64 (ptr, ...) %8(ptr %7, i64 100, i64 200)
   ret i64 %9
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
-`)
-}
-
-func TestCtxRegisterDefinitions(t *testing.T) {
-	tests := []struct {
-		goos       string
-		goarch     string
-		wantName   string
-		wantConstr string
-	}{
-		{"linux", "amd64", "mm0", "{mm0}"},
-		{"linux", "arm64", "x26", "{x26}"},
-		{"darwin", "arm64", "x26", "{x26}"},
-		{"linux", "arm", "", ""},
-		{"linux", "386", "mm0", "{mm0}"},
-		{"linux", "riscv64", "x27", "{x27}"},
-		{"linux", "riscv32", "x27", "{x27}"},
-		{"js", "wasm", "", ""},
-	}
-	for _, tt := range tests {
-		tgt := &Target{GOOS: tt.goos, GOARCH: tt.goarch}
-		reg := tgt.CtxRegister()
-		if reg.Name != tt.wantName {
-			t.Errorf("CtxRegister(GOOS=%q, GOARCH=%q).Name = %q, want %q", tt.goos, tt.goarch, reg.Name, tt.wantName)
-		}
-		if reg.Constraint != tt.wantConstr {
-			t.Errorf("CtxRegister(GOOS=%q, GOARCH=%q).Constraint = %q, want %q", tt.goos, tt.goarch, reg.Constraint, tt.wantConstr)
-		}
-	}
-}
-
-func TestCtxRegisterFallback(t *testing.T) {
-	tests := []string{"wasm"}
-	for _, goarch := range tests {
-		reg := (&Target{GOARCH: goarch}).CtxRegister()
-		if reg.Name != "" || reg.Constraint != "" {
-			t.Fatalf("CtxRegister(%q) expected empty fallback, got %q/%q", goarch, reg.Name, reg.Constraint)
-		}
-	}
-}
-
-func TestWriteReadCtxRegIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	pkg := prog.NewPackage("test", "test")
-	fn := pkg.NewFunc("test_ctx_reg", NoArgsNoRet, InGo)
-	b := fn.MakeBody(1)
-
-	ptr := prog.Nil(prog.VoidPtr())
-	b.WriteCtxReg(ptr)
-	_ = b.ReadCtxReg()
-	b.Return()
-
-	ir := pkg.String()
-	if !strings.Contains(ir, `asm "movq $0, %mm0", "r,~{mm0}"`) {
-		t.Errorf("expected ctx write asm in IR:\n%s", ir)
-	}
-	if !strings.Contains(ir, `asm "movq %mm0, $0", "=r"`) {
-		t.Errorf("expected ctx read asm in IR:\n%s", ir)
-	}
-}
-
-func TestWriteReadCtxRegUnsupported(t *testing.T) {
-	assertPanics := func(t *testing.T, name string, fn func()) {
-		t.Helper()
-		defer func() {
-			if r := recover(); r == nil {
-				t.Fatalf("expected panic: %s", name)
-			}
-		}()
-		fn()
-	}
-
-	assertPanics(t, "WriteCtxReg", func() {
-		prog := NewProgram(&Target{GOOS: "js", GOARCH: "wasm"})
-		pkg := prog.NewPackage("test", "test")
-		fn := pkg.NewFunc("test_no_ctx", NoArgsNoRet, InGo)
-		b := fn.MakeBody(1)
-		ptr := prog.Nil(prog.VoidPtr())
-		b.WriteCtxReg(ptr)
-	})
-
-	assertPanics(t, "ReadCtxReg", func() {
-		prog := NewProgram(&Target{GOOS: "js", GOARCH: "wasm"})
-		pkg := prog.NewPackage("test", "test")
-		fn := pkg.NewFunc("test_no_ctx", NoArgsNoRet, InGo)
-		b := fn.MakeBody(1)
-		_ = b.ReadCtxReg()
-	})
-}
-
-func TestCallClosureViaRegister(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	pkg := prog.NewPackage("bar", "foo/bar")
-
-	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
-	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-
-	callerParams := types.NewTuple(
-		types.NewVar(0, nil, "f", sig),
-		types.NewVar(0, nil, "x", types.Typ[types.Int]),
-	)
-	callerSig := types.NewSignatureType(nil, nil, nil, callerParams, rets, false)
-	caller := pkg.NewFunc("caller", callerSig, InGo)
-	b := caller.MakeBody(1)
-	b.Return(b.Call(caller.Param(0), caller.Param(1)))
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
-source_filename = "foo/bar"
-
-define i64 @caller({ ptr, ptr } %0, i64 %1) {
-_llgo_0:
-  %2 = extractvalue { ptr, ptr } %0, 1
-  %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %2)
-  %4 = call i64 %3(i64 %1)
-  ret i64 %4
-}
-`)
-}
-
-func TestClosureFunctionReadsCtxFromReg(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("bar", "foo/bar")
-
-	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
-	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
-	inner := pkg.NewFuncEx("inner", innerSig, InGo, true, false)
-
-	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
-	ctxStruct := types.NewStruct(ctxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
-	freeVar := inner.FreeVar(ib, 0)
-	result := ib.BinOp(token.ADD, freeVar, inner.Param(0))
-	ib.Return(result)
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
-source_filename = "foo/bar"
-
-define i64 @inner(i64 %0) {
-_llgo_0:
-  %1 = call ptr asm "movq %mm0, $0", "=r"()
-  %2 = load { i64 }, ptr %1, align 4
-  %3 = extractvalue { i64 } %2, 0
-  %4 = add i64 %3, %0
-  ret i64 %4
-}
-`)
-}
-
-// TestCallClosureConditional verifies that platforms without ctx register
-// use conditional calls based on env without inline asm.
-func TestCallClosureConditional(t *testing.T) {
-	prog := NewProgram(&Target{GOOS: "js", GOARCH: "wasm"})
-	pkg := prog.NewPackage("bar", "foo/bar")
-
-	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
-	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
-
-	callerParams := types.NewTuple(
-		types.NewVar(0, nil, "f", sig),
-		types.NewVar(0, nil, "x", types.Typ[types.Int]),
-	)
-	callerSig := types.NewSignatureType(nil, nil, nil, callerParams, rets, false)
-	caller := pkg.NewFunc("caller", callerSig, InGo)
-	b := caller.MakeBody(1)
-	b.Return(b.Call(caller.Param(0), caller.Param(1)))
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
-source_filename = "foo/bar"
-
-define i32 @caller({ ptr, ptr } %0, i32 %1) {
-_llgo_0:
-  %2 = extractvalue { ptr, ptr } %0, 1
-  %3 = extractvalue { ptr, ptr } %0, 0
-  %4 = icmp eq ptr %2, null
-  %5 = alloca i32, align 4
-  br i1 %4, label %_llgo_2, label %_llgo_1
-
-_llgo_1:                                          ; preds = %_llgo_0
-  %6 = call i32 %3(ptr %2, i32 %1)
-  store i32 %6, ptr %5, align 4
-  br label %_llgo_3
-
-_llgo_2:                                          ; preds = %_llgo_0
-  %7 = call i32 %3(i32 %1)
-  store i32 %7, ptr %5, align 4
-  br label %_llgo_3
-
-_llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
-  %8 = load i32, ptr %5, align 4
-  ret i32 %8
-}
-`)
-}
-
-func TestMakeClosureWithBindings(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("bar", "foo/bar")
-
-	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
-	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
-	inner := pkg.NewFuncEx("inner", innerSig, InGo, true, false)
-
-	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
-	ctxStruct := types.NewStruct(ctxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
-	freeVar := inner.FreeVar(ib, 0)
-	result := ib.BinOp(token.ADD, freeVar, inner.Param(0))
-	ib.Return(result)
-
-	outerParams := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
-	outerRetSig := types.NewSignatureType(nil, nil, nil,
-		types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int])),
-		innerRets, false)
-	outerSig := types.NewSignatureType(nil, nil, nil, outerParams,
-		types.NewTuple(types.NewVar(0, nil, "", outerRetSig)), false)
-	outer := pkg.NewFunc("outer", outerSig, InGo)
-	ob := outer.MakeBody(1)
-	closure := ob.MakeClosure(inner.Expr, []Expr{outer.Param(0)})
-	ob.Return(closure)
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'foo/bar'
-source_filename = "foo/bar"
-
-define i64 @inner(i64 %0) {
-_llgo_0:
-  %1 = call ptr asm "movq %mm0, $0", "=r"()
-  %2 = load { i64 }, ptr %1, align 4
-  %3 = extractvalue { i64 } %2, 0
-  %4 = add i64 %3, %0
-  ret i64 %4
-}
-
-define { ptr, ptr } @outer(i64 %0) {
-_llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
-  store i64 %0, ptr %2, align 4
-  %3 = insertvalue { ptr, ptr } { ptr @inner, ptr undef }, ptr %1, 1
-  ret { ptr, ptr } %3
-}
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
-`)
-}
-
-// TestClosureIIFEIR verifies IR for immediately invoked function expression (IIFE).
-func TestClosureIIFEIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("test", "test")
-
-	innerParams := types.NewTuple(types.NewVar(0, nil, "y", types.Typ[types.Int]))
-	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	innerSig := types.NewSignatureType(nil, nil, nil, innerParams, innerRets, false)
-	inner := pkg.NewFuncEx("iife_inner", innerSig, InGo, true, false)
-
-	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
-	ctxStruct := types.NewStruct(ctxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
-	x := inner.FreeVar(ib, 0)
-	result := ib.BinOp(token.ADD, x, inner.Param(0))
-	ib.Return(result)
-
-	callerSig := types.NewSignatureType(nil, nil, nil,
-		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
-		innerRets, false)
-	caller := pkg.NewFunc("test_iife", callerSig, InGo)
-	cb := caller.MakeBody(1)
-	closure := cb.MakeClosure(inner.Expr, []Expr{caller.Param(0)})
-	ret := cb.Call(closure, prog.Val(5))
-	cb.Return(ret)
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'test'
-source_filename = "test"
-
-define i64 @iife_inner(i64 %0) {
-_llgo_0:
-  %1 = call ptr asm "movq %mm0, $0", "=r"()
-  %2 = load { i64 }, ptr %1, align 4
-  %3 = extractvalue { i64 } %2, 0
-  %4 = add i64 %3, %0
-  ret i64 %4
-}
-
-define i64 @test_iife(i64 %0) {
-_llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
-  store i64 %0, ptr %2, align 4
-  %3 = insertvalue { ptr, ptr } { ptr @iife_inner, ptr undef }, ptr %1, 1
-  %4 = extractvalue { ptr, ptr } %3, 1
-  %5 = extractvalue { ptr, ptr } %3, 0
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %4)
-  %6 = call i64 %5(i64 5)
-  ret i64 %6
-}
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
-`)
-}
-
-// TestClosureAsParamIR verifies IR for closure passed as function parameter.
-func TestClosureAsParamIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	pkg := prog.NewPackage("test", "test")
-
-	closureParams := types.NewTuple(types.NewVar(0, nil, "n", types.Typ[types.Int]))
-	closureRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	closureSig := types.NewSignatureType(nil, nil, nil, closureParams, closureRets, false)
-
-	params := types.NewTuple(
-		types.NewVar(0, nil, "f", closureSig),
-		types.NewVar(0, nil, "x", types.Typ[types.Int]),
-	)
-	sig := types.NewSignatureType(nil, nil, nil, params, closureRets, false)
-	fn := pkg.NewFunc("applyTwice", sig, InGo)
-	b := fn.MakeBody(1)
-	first := b.Call(fn.Param(0), fn.Param(1))
-	second := b.Call(fn.Param(0), first)
-	b.Return(second)
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'test'
-source_filename = "test"
-
-define i64 @applyTwice({ ptr, ptr } %0, i64 %1) {
-_llgo_0:
-  %2 = extractvalue { ptr, ptr } %0, 1
-  %3 = extractvalue { ptr, ptr } %0, 0
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %2)
-  %4 = call i64 %3(i64 %1)
-  %5 = extractvalue { ptr, ptr } %0, 1
-  %6 = extractvalue { ptr, ptr } %0, 0
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %5)
-  %7 = call i64 %6(i64 %4)
-  ret i64 %7
-}
-`)
-}
-
-// TestDeferClosureIR verifies that closure body reads ctx from register.
-func TestDeferClosureIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("test", "test")
-
-	innerSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	inner := pkg.NewFuncEx("defer_body", innerSig, InGo, true, false)
-	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
-	ctxStruct := types.NewStruct(ctxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
-	_ = inner.FreeVar(ib, 0)
-	ib.Return()
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'test'
-source_filename = "test"
-
-define void @defer_body() {
-_llgo_0:
-  %0 = call ptr asm "movq %mm0, $0", "=r"()
-  %1 = load { i64 }, ptr %0, align 4
-  %2 = extractvalue { i64 } %1, 0
-  ret void
-}
-`)
-}
-
-// TestGoClosureIR verifies that closure body reads ctx from register.
-func TestGoClosureIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("test", "test")
-
-	innerSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	inner := pkg.NewFuncEx("goroutine_body", innerSig, InGo, true, false)
-	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
-	ctxStruct := types.NewStruct(ctxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
-	_ = inner.FreeVar(ib, 0)
-	ib.Return()
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'test'
-source_filename = "test"
-
-define void @goroutine_body() {
-_llgo_0:
-  %0 = call ptr asm "movq %mm0, $0", "=r"()
-  %1 = load { i64 }, ptr %0, align 4
-  %2 = extractvalue { i64 } %1, 0
-  ret void
-}
-`)
-}
-
-// TestGoRoutineWrapperCtxIR verifies goroutine wrapper sets ctx register before calling closure.
-func TestGoRoutineWrapperCtxIR(t *testing.T) {
-	target := &Target{GOARCH: "amd64"}
-	prog := NewProgram(target)
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("test", "test")
-
-	innerSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
-	inner := pkg.NewFuncEx("goroutine_body2", innerSig, InGo, true, false)
-	ctxFields := []*types.Var{types.NewField(0, nil, "x", types.Typ[types.Int], false)}
-	ctxStruct := types.NewStruct(ctxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(ctxStruct, InGo))
-	_ = inner.FreeVar(ib, 0)
-	ib.Return()
-
-	callerSig := types.NewSignatureType(nil, nil, nil,
-		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
-		nil, false)
-	caller := pkg.NewFunc("test_go_routine", callerSig, InGo)
-	cb := caller.MakeBody(1)
-	closure := cb.MakeClosure(inner.Expr, []Expr{caller.Param(0)})
-	cb.Go(closure)
-	cb.Return()
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'test'
-source_filename = "test"
-
-%"github.com/goplus/llgo/runtime/internal/clite/pthread.RoutineFunc" = type { ptr, ptr }
-
-define void @goroutine_body2() {
-_llgo_0:
-  %0 = call ptr asm "movq %mm0, $0", "=r"()
-  %1 = load { i64 }, ptr %0, align 4
-  %2 = extractvalue { i64 } %1, 0
-  ret void
-}
-
-define void @test_go_routine(i64 %0) {
-_llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
-  store i64 %0, ptr %2, align 4
-  %3 = insertvalue { ptr, ptr } { ptr @goroutine_body2, ptr undef }, ptr %1, 1
-  %4 = call ptr @malloc(i64 16)
-  %5 = getelementptr inbounds { { ptr, ptr } }, ptr %4, i32 0, i32 0
-  store { ptr, ptr } %3, ptr %5, align 8
-  %6 = alloca i8, i64 8, align 1
-  %7 = call i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr %6, ptr null, %"github.com/goplus/llgo/runtime/internal/clite/pthread.RoutineFunc" { ptr @"test._llgo_routine$1", ptr null }, ptr %4)
-  ret void
-}
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
-
-declare ptr @malloc(i64)
-
-define ptr @"test._llgo_routine$1"(ptr %0) {
-_llgo_0:
-  %1 = load { { ptr, ptr } }, ptr %0, align 8
-  %2 = extractvalue { { ptr, ptr } } %1, 0
-  %3 = extractvalue { ptr, ptr } %2, 1
-  %4 = extractvalue { ptr, ptr } %2, 0
-  call void asm "movq $0, %mm0", "r,~{mm0}"(ptr %3)
-  call void %4()
-  call void @free(ptr %0)
-  ret ptr null
-}
-
-declare void @free(ptr)
-
-declare i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr, ptr, %"github.com/goplus/llgo/runtime/internal/clite/pthread.RoutineFunc", ptr)
-`)
-}
-
-// TestNestedClosureIR verifies IR for closure with multi-field capture (nested scenario).
-func TestNestedClosureIR(t *testing.T) {
-	prog := NewProgram(&Target{GOARCH: "amd64"})
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
-		return pkg
-	})
-	pkg := prog.NewPackage("test", "test")
-
-	innerRets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
-	innerSig := types.NewSignatureType(nil, nil, nil, nil, innerRets, false)
-	inner := pkg.NewFuncEx("nested_inner", innerSig, InGo, true, false)
-	innerCtxFields := []*types.Var{
-		types.NewField(0, nil, "a", types.Typ[types.Int], false),
-		types.NewField(0, nil, "b", types.Typ[types.Int], false),
-	}
-	innerCtxStruct := types.NewStruct(innerCtxFields, nil)
-
-	ib := inner.MakeBody(1)
-	inner.InitClosureCtx(ib, prog.Type(innerCtxStruct, InGo))
-	a := inner.FreeVar(ib, 0)
-	b := inner.FreeVar(ib, 1)
-	result := ib.BinOp(token.ADD, a, b)
-	ib.Return(result)
-
-	assertPkgRaw(t, pkg, `; ModuleID = 'test'
-source_filename = "test"
-
-define i64 @nested_inner() {
-_llgo_0:
-  %0 = call ptr asm "movq %mm0, $0", "=r"()
-  %1 = load { i64, i64 }, ptr %0, align 4
-  %2 = extractvalue { i64, i64 } %1, 0
-  %3 = extractvalue { i64, i64 } %1, 1
-  %4 = add i64 %2, %3
-  ret i64 %4
-}
 `)
 }
 
@@ -977,6 +444,44 @@ func TestClosureCtxHelpers(t *testing.T) {
 	noCtx := removeCtx(goodSig)
 	if noCtx.Params().Len() != 1 || noCtx.Params().At(0).Name() != "x" {
 		t.Fatalf("removeCtx result mismatch: params=%v", noCtx.Params().Len())
+	}
+}
+
+func TestClosureWrapHelpers(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	ctx := types.NewParam(0, nil, closureCtx, types.Typ[types.UnsafePointer])
+	sig := types.NewSignatureType(nil, nil, nil, types.NewTuple(), types.NewTuple(), false)
+	sigCtx := FuncAddCtx(ctx, sig)
+	wrap := pkg.NewFunc("wrap", sigCtx, InGo)
+	b := wrap.MakeBody(1)
+	if args := closureWrapArgs(wrap); len(args) != 0 {
+		t.Fatalf("closureWrapArgs should return 0 args, got %d", len(args))
+	}
+	closureWrapReturn(b, sig, Expr{})
+}
+
+func TestClosureWrapCache(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int]))
+	rets := types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int]))
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Return(fn.Param(0))
+
+	w1 := pkg.closureWrapDecl(fn.Expr, sig)
+	w2 := pkg.closureWrapDecl(fn.Expr, sig)
+	if w1 != w2 {
+		t.Fatal("closureWrapDecl should reuse existing wrapper")
+	}
+
+	p1 := pkg.closureWrapPtr(sig)
+	p2 := pkg.closureWrapPtr(sig)
+	if p1 != p2 {
+		t.Fatal("closureWrapPtr should reuse existing wrapper")
 	}
 }
 
@@ -1109,6 +614,16 @@ func TestPackageCoverageHelpers(t *testing.T) {
 	if len(pkg.ExportFuncs()) != 0 {
 		t.Fatal("ExportFuncs should be empty for new package")
 	}
+
+	// cover closureStub default branch
+	fn := pkg.NewFunc("noop", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+	expr := prog.Val(1)
+	got, data := pkg.closureStub(b, expr, nil, vkString)
+	if got.impl.IsNil() || !data.impl.IsNull() {
+		t.Fatal("closureStub default branch should return expr and nil data")
+	}
+	b.Return()
 }
 
 func TestExprCoverageHelpers(t *testing.T) {
@@ -1193,31 +708,10 @@ func TestAny(t *testing.T) {
 	prog.Any()
 }
 
-var (
-	writeCtxRegRe = regexp.MustCompile(`(?m)^(\s*)call void asm "[^"]+", "r(?:,~\{[^}]+\})?(?:,~\{memory\})?"\(ptr ([^)]+)\)`)
-	readCtxRegRe  = regexp.MustCompile(`(?m)^(\s*%[\w.]+\s*=\s*)call ptr asm "[^"]+", "=r(?:,~\{memory\})?"\(\)`)
-)
-
-func normalizeIR(ir string) string {
-	ir = writeCtxRegRe.ReplaceAllString(ir, `${1}call void asm "write_ctx_reg $$0", "r,~{CTX_REG}"(ptr ${2})`)
-	ir = readCtxRegRe.ReplaceAllString(ir, `${1}call ptr asm "read_ctx_reg $$0", "=r"()`)
-	return ir
-}
-
-func assertPkgRaw(t *testing.T, p Package, expected string) {
-	t.Helper()
-	got := p.String()
-	if got != expected {
-		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", got, expected)
-	}
-}
-
 func assertPkg(t *testing.T, p Package, expected string) {
 	t.Helper()
-	got := normalizeIR(p.String())
-	want := normalizeIR(expected)
-	if got != want {
-		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", got, want)
+	if v := p.String(); v != expected {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
 	}
 }
 

@@ -65,14 +65,7 @@ func iMethodOf(rawIntf *types.Interface, name string) int {
 }
 
 // Imethod returns closure of an interface method.
-// It uses stack allocation for any synthetic env storage.
 func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
-	return b.ImethodEx(intf, method, false)
-}
-
-// ImethodEx returns closure of an interface method.
-// If heap is true, any synthetic env storage is heap-allocated.
-func (b Builder) ImethodEx(intf Expr, method *types.Func, heap bool) Expr {
 	prog := b.Prog
 	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
 	sig := method.Type().(*types.Signature)
@@ -94,11 +87,7 @@ func (b Builder) ImethodEx(intf Expr, method *types.Func, heap bool) Expr {
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
 	fn := b.Load(pfn)
-
-	_ = heap
-	fn = b.ChangeType(prog.rawType(sig), fn)
 	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
-	ret.Type = ret.Type.withKind(vkImethodClosure)
 	return ret
 }
 
@@ -273,7 +262,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 		if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
 			eq = b.InlineCall(b.Pkg.rtFunc("Implements"), tabi, tx)
 			val = func() Expr { return Expr{b.unsafeInterface(rawIntf, tx, b.faceData(x.impl)), assertedTyp} }
-		} else if isClosureKind(assertedTyp.kind) {
+		} else if assertedTyp.kind == vkClosure {
 			eq = b.InlineCall(b.Pkg.rtFunc("MatchesClosure"), tabi, tx)
 			val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
 		} else {

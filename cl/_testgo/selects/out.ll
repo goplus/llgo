@@ -13,9 +13,9 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/selects"
 @1 = private unnamed_addr constant [4 x i8] c"<-c2", align 1
 @2 = private unnamed_addr constant [4 x i8] c"<-c4", align 1
 @3 = private unnamed_addr constant [31 x i8] c"blocking select matched no case", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr @"*_llgo_string" }, align 8
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr @"*_llgo_string" }, align 8
 @4 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 @5 = private unnamed_addr constant [4 x i8] c"<-c1", align 1
 @6 = private unnamed_addr constant [4 x i8] c"c2<-", align 1
 @7 = private unnamed_addr constant [4 x i8] c"<-c3", align 1
@@ -126,9 +126,8 @@ _llgo_5:                                          ; preds = %_llgo_3
   unreachable
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/selects.main$1"() {
+define void @"github.com/goplus/llgo/cl/_testgo/selects.main$1"(ptr %0) {
 _llgo_0:
-  %0 = call ptr asm "mov $0, x26", "=r"()
   %1 = load { ptr, ptr, ptr }, ptr %0, align 8
   %2 = extractvalue { ptr, ptr, ptr } %1, 0
   %3 = load ptr, ptr %2, align 8
@@ -214,8 +213,7 @@ _llgo_0:
   %2 = extractvalue { { ptr, ptr } } %1, 0
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %3)
-  call void %4()
+  call void %4(ptr %3)
   call void @free(ptr %0)
   ret ptr null
 }
@@ -237,7 +235,19 @@ declare { i64, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.Select"(%"
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
+  ret i1 %3
+}
+
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
+_llgo_0:
+  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
+  ret i1 %3
+}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

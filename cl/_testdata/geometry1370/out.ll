@@ -66,10 +66,9 @@ _llgo_0:
   %5 = load ptr, ptr %4, align 8
   %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
   %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
-  %8 = extractvalue { ptr, ptr } %7, 0
-  %9 = extractvalue { ptr, ptr } %7, 1
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %9)
-  call void %8(ptr %9, i64 %1)
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  call void %9(ptr %8, i64 %1)
   ret void
 }
 

@@ -425,10 +425,8 @@ var llgoInstrs = map[string]int{
 	"_cgoCheckPointer":     llgoCgoCheckPointer,
 	"_cgo_runtime_cgocall": llgoCgoCgocall,
 
-	"asm":           llgoAsm,
-	"stackSave":     llgoStackSave,
-	"getClosurePtr": llgoGetClosurePtr,
-	"setClosurePtr": llgoSetClosurePtr,
+	"asm":       llgoAsm,
+	"stackSave": llgoStackSave,
 }
 
 // funcOf returns a function by name and set ftype = goFunc, cFunc, etc.
@@ -508,7 +506,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	cv := call.Value
 	if mthd := call.Method; mthd != nil {
 		o := p.compileValue(b, cv)
-		fn := b.ImethodEx(o, mthd, act != llssa.Call)
+		fn := b.Imethod(o, mthd)
 		hasVArg := fnNormal
 		if llssa.HasNameValist(call.Signature()) {
 			hasVArg = fnHasVArg
@@ -606,17 +604,6 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.siglongjmp(b, args)
 		case llgoStackSave:
 			ret = b.StackSave()
-		case llgoGetClosurePtr:
-			if b.Func.HasEnvParam() {
-				ret = b.Func.EnvParam()
-			} else {
-				ret = b.ReadCtxReg()
-			}
-		case llgoSetClosurePtr:
-			if len(args) != 1 {
-				panic("setClosurePtr(ptr): invalid arguments")
-			}
-			b.WriteCtxReg(p.compileValue(b, args[0]))
 		case llgoSigjmpbuf: // func sigjmpbuf()
 			ret = b.AllocaSigjmpBuf()
 		case llgoDeferData: // func deferData() *Defer

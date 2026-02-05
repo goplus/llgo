@@ -55,12 +55,11 @@ _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
   br i1 %13, label %_llgo_2, label %_llgo_1
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
 _llgo_0:
-  %1 = call ptr asm "mov $0, x26", "=r"()
-  %2 = load { ptr }, ptr %1, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
   store i1 true, ptr %3, align 1
   ret void
@@ -97,8 +96,7 @@ _llgo_0:
   %3 = extractvalue { { ptr, ptr }, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %1, 1
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %4)
-  call void %5(%"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
+  call void %5(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
   call void @free(ptr %0)
   ret ptr null
 }

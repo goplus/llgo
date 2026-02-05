@@ -26,7 +26,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/packages"
 	gopackages "golang.org/x/tools/go/packages"
@@ -102,10 +101,6 @@ func (c *context) collectCommonInputs(m *manifestBuilder) {
 	m.common.AbiMode = fmt.Sprintf("%d", c.buildConf.AbiMode)
 	if c.buildConf.Tags != "" {
 		m.common.BuildTags = strings.Split(c.buildConf.Tags, ",")
-	}
-	ctxArch := ctxGoarch(c.buildConf.Goarch, c.crossCompile.LLVMTarget)
-	if ctxreg.Get(ctxArch).Name != "" {
-		m.common.BuildTags = append(m.common.BuildTags, "llgo_pass_ctx_by_reg")
 	}
 	m.common.Target = c.buildConf.Target
 	m.common.TargetABI = c.crossCompile.TargetABI
