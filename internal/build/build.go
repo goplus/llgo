@@ -41,7 +41,6 @@ import (
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
-	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
@@ -50,7 +49,6 @@ import (
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
-	llvmTarget "github.com/goplus/llgo/internal/xtool/llvm"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
@@ -238,8 +236,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Target != "" && export.GOARCH != "" {
 		conf.Goarch = export.GOARCH
 	}
-	ctxArch := ctxGoarch(conf.Goarch, export.LLVMTarget)
-	passCtxByReg := (&llssa.Target{GOOS: conf.Goos, GOARCH: ctxArch}).CtxRegister().Name != ""
 
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
@@ -254,9 +250,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if len(export.BuildTags) > 0 {
 		tags += "," + strings.Join(export.BuildTags, ",")
-	}
-	if passCtxByReg {
-		tags += ",llgo_pass_ctx_by_reg"
 	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedDeps | packages.NeedModule | packages.NeedExportFile,
@@ -284,7 +277,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	target := &llssa.Target{
 		GOOS:   conf.Goos,
-		GOARCH: ctxArch,
+		GOARCH: conf.Goarch,
 		Target: conf.Target,
 	}
 
@@ -1225,17 +1218,6 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	objFile.Close()
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
-	targetTriple := ctx.crossCompile.LLVMTarget
-	if targetTriple == "" {
-		targetTriple = llvmTarget.GetTargetTriple(ctx.buildConf.Goos, ctx.buildConf.Goarch)
-	}
-	if targetTriple != "" && !hasTargetFlag(ctx.crossCompile.CCFLAGS) && !hasTargetFlag(ctx.crossCompile.CFLAGS) {
-		args = append(args, "--target="+targetTriple)
-	}
-	ctxArch := ctxGoarch(ctx.buildConf.Goarch, ctx.crossCompile.LLVMTarget)
-	if reserve := ctxreg.ReserveFlags(ctxArch); len(reserve) > 0 {
-		args = appendMissingFlags(args, reserve)
-	}
 	if ctx.shouldPrintCommands(false) {
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)

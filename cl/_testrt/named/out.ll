@@ -98,8 +98,7 @@ _llgo_0:
   %61 = load { ptr, ptr }, ptr %60, align 8
   %62 = extractvalue { ptr, ptr } %61, 1
   %63 = extractvalue { ptr, ptr } %61, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %62)
-  %64 = call i64 %63(i64 -2)
+  %64 = call i64 %63(ptr %62, i64 -2)
   %65 = load ptr, ptr %0, align 8
   %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %65, i32 0, i32 3
   %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.minfo", ptr %66, i32 0, i32 0
@@ -108,21 +107,19 @@ _llgo_0:
   %70 = load { ptr, ptr }, ptr %69, align 8
   %71 = extractvalue { ptr, ptr } %70, 1
   %72 = extractvalue { ptr, ptr } %70, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %71)
-  %73 = call i64 %72(i64 -3)
+  %73 = call i64 %72(ptr %71, i64 -3)
   %74 = call i32 (ptr, ...) @printf(ptr @0, i64 %41, i64 %48, i64 %52, i64 %58, i64 %64, i64 %73)
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/named.main$1"(i64 %0) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/named.main$1"(ptr %0, i64 %1) {
 _llgo_0:
-  %1 = call ptr asm "mov $0, x26", "=r"()
-  %2 = load { ptr }, ptr %1, align 8
+  %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load ptr, ptr %3, align 8
   %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/named.mspan", ptr %4, i32 0, i32 4
   %6 = load i64, ptr %5, align 4
-  %7 = mul i64 %6, %0
+  %7 = mul i64 %6, %1
   ret i64 %7
 }
 

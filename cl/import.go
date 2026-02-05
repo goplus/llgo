@@ -515,10 +515,8 @@ const (
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
 	llgoCgoCgocall      = llgoCgoBase + 0x7
 
-	llgoAsm           = llgoInstrBase + 0x40
-	llgoStackSave     = llgoInstrBase + 0x41
-	llgoGetClosurePtr = llgoInstrBase + 0x42
-	llgoSetClosurePtr = llgoInstrBase + 0x43
+	llgoAsm       = llgoInstrBase + 0x40
+	llgoStackSave = llgoInstrBase + 0x41
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )

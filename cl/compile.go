@@ -316,13 +316,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 
 	var hasCtx = len(f.FreeVars) > 0
-	var ctxType *types.Struct
 	if hasCtx {
 		if debugInstr {
 			log.Println("==> NewClosure", name, "type:", sig)
 		}
 		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
-		ctxType = ctx.Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
+		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
 		if debugInstr {
 			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
@@ -367,10 +366,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				log.Println("==> FuncBody", name)
 			}
 			b := fn.NewBuilder()
-			b.SetBlock(fn.Block(0))
-			if hasCtx {
-				fn.InitClosureCtx(b, pkg.Prog.Type(ctxType, llssa.InGo))
-			}
 			if dbgEnabled {
 				pos := p.goProg.Fset.Position(f.Pos())
 				bodyPos := p.getFuncBodyPos(f)

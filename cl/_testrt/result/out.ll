@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/result"
 
 define { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"() {
 _llgo_0:
-  ret { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/result.add$1", ptr null }
+  ret { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/result.add$1", ptr null }
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/result.add$1"(i64 %0, i64 %1) {
@@ -19,7 +19,7 @@ _llgo_0:
 
 define { { ptr, ptr }, i64 } @"github.com/goplus/llgo/cl/_testrt/result.add2"() {
 _llgo_0:
-  ret { { ptr, ptr }, i64 } { { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/result.add2$1", ptr null }, i64 1 }
+  ret { { ptr, ptr }, i64 } { { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/result.add2$1", ptr null }, i64 1 }
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/result.add2$1"(i64 %0, i64 %1) {
@@ -46,14 +46,12 @@ _llgo_0:
   %0 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.main$1"()
   %1 = extractvalue { ptr, ptr } %0, 1
   %2 = extractvalue { ptr, ptr } %0, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %1)
-  %3 = call i64 %2(i64 100, i64 200)
+  %3 = call i64 %2(ptr %1, i64 100, i64 200)
   %4 = call i32 (ptr, ...) @printf(ptr @0, i64 %3)
   %5 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"()
   %6 = extractvalue { ptr, ptr } %5, 1
   %7 = extractvalue { ptr, ptr } %5, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %6)
-  %8 = call i64 %7(i64 100, i64 200)
+  %8 = call i64 %7(ptr %6, i64 100, i64 200)
   %9 = call i32 (ptr, ...) @printf(ptr @1, i64 %8)
   %10 = call { { ptr, ptr }, i64 } @"github.com/goplus/llgo/cl/_testrt/result.add2"()
   %11 = extractvalue { { ptr, ptr }, i64 } %10, 0
@@ -61,15 +59,14 @@ _llgo_0:
   %13 = call { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.add"()
   %14 = extractvalue { ptr, ptr } %13, 1
   %15 = extractvalue { ptr, ptr } %13, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %14)
-  %16 = call i64 %15(i64 100, i64 200)
+  %16 = call i64 %15(ptr %14, i64 100, i64 200)
   %17 = call i32 (ptr, ...) @printf(ptr @2, i64 %16, i64 %12)
   ret void
 }
 
 define { ptr, ptr } @"github.com/goplus/llgo/cl/_testrt/result.main$1"() {
 _llgo_0:
-  ret { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/result.main$1$1", ptr null }
+  ret { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/result.main$1$1", ptr null }
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/result.main$1$1"(i64 %0, i64 %1) {
@@ -78,4 +75,22 @@ _llgo_0:
   ret i64 %2
 }
 
+define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/result.add$1"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = tail call i64 @"github.com/goplus/llgo/cl/_testrt/result.add$1"(i64 %1, i64 %2)
+  ret i64 %3
+}
+
+define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/result.add2$1"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = tail call i64 @"github.com/goplus/llgo/cl/_testrt/result.add2$1"(i64 %1, i64 %2)
+  ret i64 %3
+}
+
 declare i32 @printf(ptr, ...)
+
+define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/result.main$1$1"(ptr %0, i64 %1, i64 %2) {
+_llgo_0:
+  %3 = tail call i64 @"github.com/goplus/llgo/cl/_testrt/result.main$1$1"(i64 %1, i64 %2)
+  ret i64 %3
+}

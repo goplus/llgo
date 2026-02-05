@@ -1,93 +1,84 @@
 # Closure Implementation Notes
 
-This document describes the current LLGo SSA closure implementation (2‑word
-closure ABI).
+This document describes the current LLGo SSA closure implementation.
 
 ## Goals
 
-- Keep function values pointing to **real symbols** (no wrapper stubs).
-- Use a **2‑word closure value** `{fn, env}`.
-- Pass closure ctx via a **reserved register** when available; otherwise pass
-  it as an implicit first parameter with conditional call sites.
-- Treat C function pointers as **first‑class**: store the real C symbol in
-  `fn` and avoid wrappers.
+- Keep function values pointing to **real symbols** (no global stub for every
+  closure). For non-ctx functions, a thin `__llgo_stub` wrapper is used as the
+  callable symbol.
+- Preserve a `funcval`-like layout: `{fn, data}`.
+- Use an explicit `ctx` parameter in the call ABI (no runtime branching);
+  adaptation happens at conversion time via wrappers.
 
 ## Representation
 
-Closures are lowered to a 2‑field value:
+Closures are lowered to a 2-field struct:
 
 ```
-type closure struct {
-    fn  *func
-    env unsafe.Pointer // nil if no ctx
-}
+{ fn: *func, data: unsafe.Pointer }
 ```
 
-- `env` points to a context object that stores free variables (a struct with
-  captured fields), or is `nil` when no ctx is needed.
-- `fn` is the real function symbol (Go or C). For closures it expects ctx
-  according to the target’s calling convention (see below).
-- There is **no `hasCtx` field**; `env == nil` is the sole indicator.
+- `fn` is always a function whose signature **includes** a `__llgo_ctx`
+  parameter.
+- `data` is:
+  - `nil` for plain functions or wrappers that ignore ctx.
+  - a pointer to a heap-allocated context for free variables.
+  - a pointer to a heap cell that stores a function pointer (for `func` values
+    represented as raw function pointers).
 
-## Calling Convention
+## Calling a Closure
 
-### Targets with a ctx register
-
-Call sites write the env pointer into the reserved ctx register (if non‑nil)
-then call the function with its original signature:
-
-```
-write_ctx(env)
-fn(args...)
-```
-
-Closure bodies read the ctx register once at entry and use it as the env base.
-
-### Targets without a ctx register
-
-Call sites branch on `env == nil` and choose the correct signature:
+Calls to **closure values** always emit:
 
 ```
-if env != nil {
-    fn(ctx, args...)
-} else {
-    fn(args...)
-}
+fn(ctx, args...)
 ```
 
-Closure bodies accept an explicit ctx parameter and use it as the env base.
+There is no runtime `ctx==nil` check and no sentinel. Any function value that
+does not naturally accept a ctx is adapted at conversion time (see below).
 
-## getClosurePtr
+## Function Value -> Closure Wrappers
 
-`getClosurePtr` returns the env pointer:
+To keep the explicit-ctx ABI while avoiding mismatched calls:
 
-- On ctx‑register targets it reads the ctx register.
-- On no‑reg targets it uses the explicit ctx parameter.
+- **Function declarations** without ctx are wrapped by a thin adapter:
+  - Name: `__llgo_stub.<fn>`
+  - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
+  - Body: ignores ctx, calls the original function.
+  - Linkage: `linkonce`
+- **Function pointers** use a generic wrapper:
+  - Name: `__llgo_stub._llgo_func$<hash>`
+  - Signature: `func(__llgo_ctx unsafe.Pointer, args...)`
+  - Body: treats `__llgo_ctx` as a pointer to a stored function pointer, loads
+    it, and calls it.
+  - Linkage: `linkonce`
+  - Note: the ctx pointer is guaranteed non-nil for this wrapper; we do not
+    emit runtime null checks.
 
-## Context Register Mapping
+This is the only remaining use of the `__llgo_stub.` prefix; it is no longer
+used to generate a global stub for every closure.
 
-| GOARCH | Register | Notes |
-|---|---|---|
-| amd64 | mm0 | disable x87 via `-mno-80387` |
-| 386 | mm0 | disable x87 via `-mfpmath=sse -msse2 -mno-80387` |
-| arm64 | x26 | reserved via clang target-feature |
-| riscv64 | x27 | reserved via clang target-feature |
-| riscv32 | x27 | reserved via clang target-feature |
-| wasm | - | conditional ctx param |
-| arm | - | conditional ctx param |
+## Interface Method Values
 
-Native builds reserve the ctx reg via clang target-feature `+reserve-<reg>`
-(arm64/riscv64). x86/x86_64 use compiler flags to disable x87 so MM0 is not
-clobbered by `long double` operations. Inline asm uses minimal constraints and
-does not add side effects or memory clobbers.
+Interface method signatures in `go/types` include a receiver. When turning an
+interface method into a closure:
+
+- The receiver parameter is dropped from the closure signature.
+- The resulting closure is built with `{fn, data}` and will be wrapped if it
+  does not already accept `__llgo_ctx`.
 
 ## Covered Scenarios
 
-- Plain functions (no env).
-- Closures with captured variables.
+- Plain functions (no free variables).
+- Closures with captured variables (`__llgo_ctx`).
 - Method values / method expressions.
-- Interface method values.
-- Variadic functions.
+- Interface method values (receiver dropped).
+- Variadic functions (`__llgo_va_list`).
 - `go:linkname` to C (`C.xxx`) and `llgo:type C` callback parameters.
 - `defer` / `go` invocation of closure values.
-- `FuncPCABI0` points at the real symbol.
+- `FuncPCABI0` points at the real symbol (wrappers only for ctx adaptation).
+
+## Notes / Limitations
+
+- Python closures are intentionally out of scope for now.

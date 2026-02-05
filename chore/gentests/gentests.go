@@ -17,7 +17,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,7 +24,6 @@ import (
 
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/llgen"
-	"github.com/goplus/llgo/internal/testutil"
 	"github.com/goplus/mod"
 )
 
@@ -78,12 +76,6 @@ func runExpectDir(root, relDir string) {
 		}
 		relPath := filepath.ToSlash(filepath.Join(relDir, name))
 		testDir := filepath.Join(dir, name)
-		if skip, err := shouldSkipExpect(testDir); err != nil {
-			check(err)
-		} else if skip {
-			fmt.Fprintln(os.Stderr, "expect skip", relPath)
-			continue
-		}
 		fmt.Fprintln(os.Stderr, "expect", relPath)
 		pkgPath := "./" + relPath
 		output, err := cltest.RunAndCapture(pkgPath, testDir)
@@ -91,21 +83,8 @@ func runExpectDir(root, relDir string) {
 			fmt.Fprintln(os.Stderr, "error:", relPath, err)
 			output = []byte{';'}
 		}
-		output = testutil.FilterTestOutput(output)
 		check(os.WriteFile(filepath.Join(testDir, "expect.txt"), output, 0644))
 	}
-}
-
-func shouldSkipExpect(testDir string) (bool, error) {
-	path := filepath.Join(testDir, "expect.txt")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return string(bytes.TrimSpace(data)) == ";", nil
 }
 
 func check(err error) {

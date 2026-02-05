@@ -33,12 +33,10 @@ _llgo_0:
   %4 = alloca %"github.com/goplus/llgo/cl/_testgo/closure.T", align 8
   store { ptr, ptr } %3, ptr %4, align 8
   %5 = load %"github.com/goplus/llgo/cl/_testgo/closure.T", ptr %4, align 8
-  call void asm "mov x26, $0", "r,~{x26}"(ptr null)
-  call void @"github.com/goplus/llgo/cl/_testgo/closure.main$1"(i64 100)
+  call void @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/closure.main$1"(ptr null, i64 100)
   %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 1
   %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 0
-  call void asm "mov x26, $0", "r,~{x26}"(ptr %6)
-  call void %7(i64 200)
+  call void %7(ptr %6, i64 200)
   ret void
 }
 
@@ -51,15 +49,14 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/closure.main$2"(i64 %0) {
+define void @"github.com/goplus/llgo/cl/_testgo/closure.main$2"(ptr %0, i64 %1) {
 _llgo_0:
-  %1 = call ptr asm "mov $0, x26", "=r"()
-  %2 = load { ptr }, ptr %1, align 8
+  %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
   %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %3, align 8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
@@ -67,6 +64,12 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/closure.main$1"(ptr %0, i64 %1) {
+_llgo_0:
+  tail call void @"github.com/goplus/llgo/cl/_testgo/closure.main$1"(i64 %1)
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
