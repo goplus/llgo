@@ -248,3 +248,127 @@ func sretAttribute(ctx llvm.Context, typ llvm.Type) llvm.Attribute {
 	id := llvm.AttributeKindID("sret")
 	return ctx.CreateTypeAttribute(id, typ)
 }
+
+// TestIssue1608_AttrPointerReturnNoMemcpy is a regression test for
+// https://github.com/goplus/llgo/issues/1608
+//
+// When transforming functions with sret (structure return), the optimizer
+// previously used memcpy from the load source address. However, if the source
+// address content is modified between load and ret, the memcpy would copy the
+// wrong value. The fix is to always use store instead of memcpy.
+func TestIssue1608_AttrPointerReturnNoMemcpy(t *testing.T) {
+	// Create test IR that mimics the bug scenario:
+	// 1. Load a slice from struct field
+	// 2. Modify the struct field
+	// 3. Return the originally loaded slice
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%Slice = type { ptr, i64, i64 }
+%T = type { %Slice }
+
+define %Slice @testfunc() {
+entry:
+  %0 = alloca %T, align 8
+  %1 = getelementptr inbounds %T, ptr %0, i32 0, i32 0
+
+  ; Store first slice {ptr, 2, 2}
+  %2 = insertvalue %Slice undef, ptr null, 0
+  %3 = insertvalue %Slice %2, i64 2, 1
+  %4 = insertvalue %Slice %3, i64 2, 2
+  store %Slice %4, ptr %1, align 8
+
+  ; Load the slice (should return this value)
+  %5 = getelementptr inbounds %T, ptr %0, i32 0, i32 0
+  %6 = load %Slice, ptr %5, align 8
+
+  ; Modify the source - THIS IS THE KEY!
+  %7 = insertvalue %Slice undef, ptr null, 0
+  %8 = insertvalue %Slice %7, i64 3, 1
+  %9 = insertvalue %Slice %8, i64 3, 2
+  %10 = getelementptr inbounds %T, ptr %0, i32 0, i32 0
+  store %Slice %9, ptr %10, align 8
+
+  ; Return the originally loaded value
+  ret %Slice %6
+}
+`
+
+	// Expected IR after CABI transformation:
+	// - Function signature changed to use sret
+	// - Return value stored via sret pointer (NOT memcpy!)
+	// - Returns void
+	expectedFuncIR := `define void @testfunc(ptr sret(%Slice) %0) {
+entry:
+  %1 = alloca %T, align 8
+  %2 = getelementptr inbounds %T, ptr %1, i32 0, i32 0
+  %3 = insertvalue %Slice undef, ptr null, 0
+  %4 = insertvalue %Slice %3, i64 2, 1
+  %5 = insertvalue %Slice %4, i64 2, 2
+  store %Slice %5, ptr %2, align 8
+  %6 = getelementptr inbounds %T, ptr %1, i32 0, i32 0
+  %7 = load %Slice, ptr %6, align 8
+  %8 = insertvalue %Slice undef, ptr null, 0
+  %9 = insertvalue %Slice %8, i64 3, 1
+  %10 = insertvalue %Slice %9, i64 3, 2
+  %11 = getelementptr inbounds %T, ptr %1, i32 0, i32 0
+  store %Slice %10, ptr %11, align 8
+  store %Slice %7, ptr %0, align 8
+  ret void
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	// Write test IR to temporary file
+	tmpfile := filepath.Join(t.TempDir(), "test.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	// Parse the test IR
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	// Get the function before transformation
+	fn := mod.NamedFunction("testfunc")
+	if fn.IsNil() {
+		t.Fatal("Test function not found")
+	}
+
+	// Build minimal config for CABI transformation
+	conf, _ := buildConf(cabi.ModeAllFunc, "arm64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+
+	prog := pkgs[0].LPkg.Prog
+
+	// Apply CABI transformation with optimize=true
+	// This tests the code path that previously had the memcpy bug
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.TransformModule("test", mod)
+
+	// Get transformed function IR
+	transformedFn := mod.NamedFunction("testfunc")
+	if transformedFn.IsNil() {
+		t.Fatal("Transformed function not found")
+	}
+	actualFuncIR := strings.TrimSpace(transformedFn.String())
+	expectedFuncIRTrimmed := strings.TrimSpace(expectedFuncIR)
+
+	// Compare IR
+	if actualFuncIR != expectedFuncIRTrimmed {
+		t.Errorf("Transformed IR mismatch!\n\nExpected:\n%s\n\nActual:\n%s", expectedFuncIRTrimmed, actualFuncIR)
+	}
+}
