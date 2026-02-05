@@ -52,6 +52,7 @@ import (
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
+	gollvm "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -112,34 +113,35 @@ type OutFmtDetails struct {
 }
 
 type Config struct {
-	Goos          string
-	Goarch        string
-	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
-	BinPath       string
-	AppExt        string  // ".exe" on Windows, empty on Unix
-	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
-	OutFmts       OutFmts // Output format specifications (only for Target != "")
-	CompileOnly   bool    // compile test binary but do not run it (only valid for ModeTest)
-	Emulator      bool    // run in emulator mode
-	Port          string  // target port for flashing
-	BaudRate      int     // baudrate for serial communication
-	RunArgs       []string
-	Mode          Mode
-	BuildMode     BuildMode // Build mode: exe, c-archive, c-shared
-	AbiMode       AbiMode
-	GenExpect     bool // only valid for ModeCmpTest
-	Verbose       bool
-	PrintCommands bool
-	GenLL         bool // generate pkg .ll files
-	CheckLLFiles  bool // check .ll files valid
-	CheckLinkArgs bool // check linkargs valid
-	ForceEspClang bool // force to use esp-clang
-	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
-	Tags          string
-	SizeReport    bool   // print size report after successful build
-	SizeFormat    string // size report format: text,json (default text)
-	SizeLevel     string // size aggregation level: full,module,package (default module)
-	CompilerHash  string // metadata hash for the running compiler (development builds only)
+	Goos           string
+	Goarch         string
+	Target         string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	BinPath        string
+	AppExt         string  // ".exe" on Windows, empty on Unix
+	OutFile        string  // only valid for ModeBuild when len(pkgs) == 1
+	OutFmts        OutFmts // Output format specifications (only for Target != "")
+	CompileOnly    bool    // compile test binary but do not run it (only valid for ModeTest)
+	Emulator       bool    // run in emulator mode
+	Port           string  // target port for flashing
+	BaudRate       int     // baudrate for serial communication
+	RunArgs        []string
+	Mode           Mode
+	BuildMode      BuildMode // Build mode: exe, c-archive, c-shared
+	AbiMode        AbiMode
+	GenExpect      bool // only valid for ModeCmpTest
+	Verbose        bool
+	PrintCommands  bool
+	GenLL          bool // generate pkg .ll files
+	CheckLLFiles   bool // check .ll files valid
+	CheckLinkArgs  bool // check linkargs valid
+	ForceEspClang  bool // force to use esp-clang
+	ForceRebuild   bool // force rebuilding of packages that are already up-to-date
+	Tags           string
+	SizeReport     bool   // print size report after successful build
+	SizeFormat     string // size report format: text,json (default text)
+	SizeLevel      string // size aggregation level: full,module,package (default module)
+	CompilerHash   string // metadata hash for the running compiler (development builds only)
+	SkipTargetInfo bool   // skip setting data layout and target triple (for test generation)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
 	// Each Rewrites entry maps variable names to replacement string values. Only
@@ -1150,6 +1152,19 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+
+	// Run LLVM optimization passes (memcpyopt converts load/store to memcpy)
+	// Skip when SkipTargetInfo is set (for test generation to avoid target-specific output)
+	if !ctx.buildConf.SkipTargetInfo {
+		mod := ret.Module()
+		mod.SetDataLayout(ctx.prog.DataLayout())
+		mod.SetTarget(ctx.prog.Target().Spec().Triple)
+		pbo := gollvm.NewPassBuilderOptions()
+		defer pbo.Dispose()
+		if err := mod.RunPasses("memcpyopt", ctx.prog.TargetMachine(), pbo); err != nil {
+			return fmt.Errorf("run LLVM passes failed for %v: %v", pkgPath, err)
+		}
+	}
 
 	printCmds := ctx.shouldPrintCommands(verbose)
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, printCmds)

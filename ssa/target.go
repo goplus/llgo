@@ -31,7 +31,37 @@ type Target struct {
 	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
 }
 
-func (p *Target) targetData() llvm.TargetData {
+// CtxRegister describes the closure context register for a target architecture.
+// Requirements for a ctx register:
+//  1. Must survive the call boundary long enough for the callee to read it.
+//  2. Not used for C ABI parameters/returns.
+//  3. Must be usable in LLVM inline asm constraints.
+//
+// Supported platforms:
+//   - amd64: MM0 - MMX register, x87 disabled via -mno-80387
+//   - 386:   MM0 - MMX register, x87 disabled via -mfpmath=sse -msse2 -mno-80387
+//   - arm64: X26 - callee-saved, reservable via +reserve-x26
+//   - riscv64/riscv32: X27 (s11) - callee-saved register
+//
+// Platforms without a ctx register:
+//   - arm: r8-r15 are "high registers", LLVM can't use {rN} constraint in ARM mode
+//   - wasm: no registers available
+type CtxRegister struct {
+	Name       string // LLVM register name for inline asm, e.g., "r12", "x26"
+	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x26}"
+}
+
+// CtxRegister returns the closure context register for the target architecture.
+func (t *Target) CtxRegister() CtxRegister {
+	goarch := t.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	info := ctxreg.Get(goarch)
+	return CtxRegister{Name: info.Name, Constraint: info.Constraint}
+}
+
+func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
 	spec := p.Spec()
 	if spec.Triple == "" {
 		spec.Triple = llvm.DefaultTargetTriple()
@@ -41,29 +71,8 @@ func (p *Target) targetData() llvm.TargetData {
 		panic(err)
 	}
 	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
-	return machine.CreateTargetData()
+	return machine.CreateTargetData(), machine
 }
-
-/*
-func (p *Program) targetMachine() llvm.TargetMachine {
-	if p.tm.C == nil {
-		spec := p.target.toSpec()
-		target, err := llvm.GetTargetFromTriple(spec.triple)
-		if err != nil {
-			panic(err)
-		}
-		p.tm = target.CreateTargetMachine(
-			spec.triple,
-			spec.cpu,
-			spec.features,
-			llvm.CodeGenLevelDefault,
-			llvm.RelocDefault,
-			llvm.CodeModelDefault,
-		)
-	}
-	return p.tm
-}
-*/
 
 type TargetSpec struct {
 	Triple   string

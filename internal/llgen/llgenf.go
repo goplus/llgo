@@ -45,8 +45,9 @@ func genFrom(pkgPath string, abiMode build.AbiMode) (build.Package, error) {
 	}()
 
 	conf := &build.Config{
-		Mode:    build.ModeGen,
-		AbiMode: abiMode,
+		Mode:           build.ModeGen,
+		AbiMode:        abiMode,
+		SkipTargetInfo: true,
 	}
 	pkgs, err := build.Do([]string{pkgPath}, conf)
 	if err != nil {
