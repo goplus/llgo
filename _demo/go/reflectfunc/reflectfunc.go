@@ -43,6 +43,17 @@ func main() {
 	if v.Field(0).Kind() != reflect.Func {
 		panic("must func")
 	}
+
+	// Closure call via reflect.Value.Call (ff repro).
+	x := 10
+	addc := func(n int) int {
+		return x + n
+	}
+	vadd := reflect.ValueOf(addc)
+	out := vadd.Call([]reflect.Value{reflect.ValueOf(5)})
+	if len(out) != 1 || out[0].Int() != 15 {
+		panic(fmt.Sprintf("reflect closure call failed: got %v", out))
+	}
 }
 
 type T struct {
