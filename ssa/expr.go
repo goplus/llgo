@@ -598,14 +598,14 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				ret.impl = llvm.CreateNot(b.impl, ret.impl)
 				return ret
 			}
-		case vkClosure:
+		case vkClosure, vkImethodClosure:
 			x = b.Field(x, 0)
-			if y.kind == vkClosure {
+			if isClosureKind(y.kind) {
 				y = b.Field(y, 0)
 			}
 			fallthrough
 		case vkFuncPtr, vkFuncDecl, vkChan, vkMap:
-			if y.kind == vkClosure {
+			if isClosureKind(y.kind) {
 				y = b.Field(y, 0)
 			}
 			switch op {
@@ -746,11 +746,11 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	}
-	if t.kind == vkClosure {
+	if isClosureKind(t.kind) {
 		switch x.kind {
 		case vkFuncDecl:
 			ret.impl = checkExpr(x, t.raw.Type, b).impl
-		case vkClosure:
+		case vkClosure, vkImethodClosure:
 			// TODO(xsw): change type should be a noop instruction
 			convType := func() Expr {
 				r := Expr{llvm.CreateAlloca(b.impl, t.ll), b.Prog.Pointer(t)}
@@ -995,12 +995,26 @@ func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
 	tfn := fn.Type
 	sig := tfn.raw.Type.(*types.Signature)
 	data := prog.Nil(prog.VoidPtr()).impl
-	if ctxParam := closureCtxParam(sig); ctxParam != nil {
-		tctx := ctxParam.Type().Underlying().(*types.Pointer).Elem().(*types.Struct)
+	if len(bindings) > 0 {
+		fields := make([]*types.Var, len(bindings))
+		for i, v := range bindings {
+			fields[i] = types.NewField(token.NoPos, nil, fmt.Sprintf("$f%d", i), v.Type.raw.Type, false)
+		}
+		tctx := types.NewStruct(fields, nil)
 		ptr := b.aggregateAllocU(prog.rawType(tctx), llvmFields(bindings, tctx, b)...)
 		data = ptr
 	}
 	return b.aggregateValue(prog.Closure(removeCtx(sig)), fn.impl, data)
+}
+
+func (b Builder) closureEnvPtr(closure Expr) Expr {
+	return b.Field(closure, 1)
+}
+
+func (b Builder) closureHasCtx(closure Expr) Expr {
+	env := b.closureEnvPtr(closure)
+	zero := llvm.ConstNull(env.ll)
+	return Expr{b.impl.CreateICmp(llvm.IntNE, env.impl, zero, ""), b.Prog.Bool()}
 }
 
 // -----------------------------------------------------------------------------
@@ -1025,6 +1039,9 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 		logCall("Call", fn, args)
 	}
 	var kind = fn.kind
+	if !isClosureKind(kind) && isClosureKind(fn.Type.kind) {
+		kind = fn.Type.kind
+	}
 	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
 	}
@@ -1034,14 +1051,34 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	var raw = fn.raw.Type
 	switch kind {
 	case vkClosure:
-		data = b.Field(fn, 1)
-		fn = b.Field(fn, 0)
+		closure := fn
+		data = b.closureEnvPtr(closure)
+		fn = b.Field(closure, 0)
 		sig = fn.raw.Type.(*types.Signature)
-		ctx := types.NewParam(token.NoPos, nil, closureCtx, types.Typ[types.UnsafePointer])
-		sigCtx := FuncAddCtx(ctx, sig)
 		ret.Type = b.Prog.retType(sig)
-		ll = b.Prog.FuncDecl(sigCtx, InC).ll
-		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sigCtx.Params(), b))
+		if b.Prog.target.CtxRegister().Name == "" {
+			return b.callClosureIndirect(fn, data, sig, args)
+		}
+		ll = b.Prog.FuncDecl(sig, InC).ll
+		callArgs := llvmParams(0, args, sig.Params(), b)
+		b.WriteCtxReg(data)
+		ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, callArgs)
+		return ret
+	case vkImethodClosure:
+		closure := fn
+		fn = b.Field(closure, 0)
+		sig = fn.raw.Type.(*types.Signature)
+		ret.Type = b.Prog.retType(sig)
+		ctx := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+		sigWithCtx := FuncAddCtx(ctx, sig)
+		ll = b.Prog.FuncDecl(sigWithCtx, InC).ll
+		env := b.closureEnvPtr(closure)
+		callArgs := llvmParamsEx(env, args, sigWithCtx.Params(), b)
+		if b.Prog.target.CtxRegister().Name != "" {
+			b.WriteCtxReg(env)
+		}
+		fnWithCtx := b.ChangeType(b.Prog.rawType(sigWithCtx), fn)
+		ret.impl = llvm.CreateCall(b.impl, ll, fnWithCtx.impl, callArgs)
 		return ret
 	case vkFuncPtr:
 		sig = raw.Underlying().(*types.Signature)
@@ -1095,6 +1132,57 @@ func logCall(da string, fn Expr, args []Expr) {
 		sep = ", "
 	}
 	log.Println(b.String())
+}
+
+// callClosureIndirect handles closure calls on targets without ctx register
+// support. It branches on env == nil and calls with/without ctx accordingly.
+func (b Builder) callClosureIndirect(fn, env Expr, sig *types.Signature, args []Expr) (ret Expr) {
+	prog := b.Prog
+	retType := prog.retType(sig)
+	ret.Type = retType
+
+	ctx := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+	sigWithEnv := FuncAddCtx(ctx, sig)
+	llWithEnv := prog.FuncDecl(sigWithEnv, InC).ll
+	llPlain := prog.FuncDecl(sig, InC).ll
+
+	isNil := llvm.CreateICmp(b.impl, llvm.IntEQ, env.impl, llvm.ConstNull(env.ll))
+	withEnvBlk := b.Func.MakeBlock()
+	plainBlk := b.Func.MakeBlock()
+	doneBlk := b.Func.MakeBlock()
+
+	var resultSlot llvm.Value
+	isVoid := retType.ll.TypeKind() == llvm.VoidTypeKind
+	if !isVoid {
+		resultSlot = llvm.CreateAlloca(b.impl, retType.ll)
+	}
+
+	b.impl.CreateCondBr(isNil, plainBlk.first, withEnvBlk.first)
+
+	b.impl.SetInsertPointAtEnd(withEnvBlk.last)
+	callArgsWithEnv := llvmParamsEx(env, args, sigWithEnv.Params(), b)
+	fnWithEnv := b.ChangeType(b.Prog.rawType(sigWithEnv), fn)
+	r1 := llvm.CreateCall(b.impl, llWithEnv, fnWithEnv.impl, callArgsWithEnv)
+	if !isVoid {
+		b.impl.CreateStore(r1, resultSlot)
+	}
+	b.impl.CreateBr(doneBlk.first)
+
+	b.impl.SetInsertPointAtEnd(plainBlk.last)
+	callArgsPlain := llvmParams(0, args, sig.Params(), b)
+	r2 := llvm.CreateCall(b.impl, llPlain, fn.impl, callArgsPlain)
+	if !isVoid {
+		b.impl.CreateStore(r2, resultSlot)
+	}
+	b.impl.CreateBr(doneBlk.first)
+
+	b.impl.SetInsertPointAtEnd(doneBlk.last)
+	if !isVoid {
+		ret.impl = b.impl.CreateLoad(retType.ll, resultSlot, "")
+	}
+	b.blk.last = doneBlk.last
+
+	return ret
 }
 
 type DoAction int
@@ -1365,7 +1453,7 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 			typ = prog.Float64()
 		case vkSlice:
 			fn = "PrintSlice"
-		case vkClosure:
+		case vkClosure, vkImethodClosure:
 			arg = b.Field(arg, 0)
 			fallthrough
 		case vkPtr, vkFuncPtr, vkFuncDecl:
@@ -1404,11 +1492,10 @@ func (b Builder) PrintEx(ln bool, args ...Expr) (ret Expr) {
 
 func checkExpr(v Expr, t types.Type, b Builder) Expr {
 	if st, ok := t.Underlying().(*types.Struct); ok && IsClosure(st) {
-		if v.kind == vkClosure {
+		if isClosureKind(v.kind) {
 			return v
 		}
 		prog := b.Prog
-		origKind := v.kind
 		tclosure := prog.rawType(t)
 		fnType := prog.Field(tclosure, 0)
 		if v.Type != fnType {
@@ -1420,11 +1507,6 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 			}
 		}
 		data := prog.Nil(prog.VoidPtr())
-		if origKind == vkFuncDecl || origKind == vkFuncPtr {
-			if sig, ok := fnType.raw.Type.(*types.Signature); ok && closureCtxParam(sig) == nil {
-				v, data = b.Pkg.closureStub(b, v, sig, origKind)
-			}
-		}
 		return b.aggregateValue(tclosure, v.impl, data.impl)
 	}
 	return v

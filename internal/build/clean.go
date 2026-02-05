@@ -24,6 +24,7 @@ import (
 	"runtime"
 
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/ssa"
 )
 
 /*
@@ -42,9 +43,14 @@ func Clean(patterns []string, conf *Config) {
 	if conf.Goarch == "" {
 		conf.Goarch = runtime.GOARCH
 	}
+	ctxArch := ctxGoarch(conf.Goarch, "")
+	passCtxByReg := (&ssa.Target{GOOS: conf.Goos, GOARCH: ctxArch}).CtxRegister().Name != ""
 	tags := "llgo"
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
+	}
+	if passCtxByReg {
+		tags += ",llgo_pass_ctx_by_reg"
 	}
 	cfg := &packages.Config{
 		Mode:       loadSyntax | packages.NeedExportFile,
