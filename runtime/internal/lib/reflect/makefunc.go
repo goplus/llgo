@@ -43,7 +43,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 
 	t := typ.common()
 	ftyp := (*funcType)(unsafe.Pointer(t))
-	sig, err := toFFISig(append([]*abi.Type{unsafePointerType}, ftyp.In...), ftyp.Out)
+	sig, err := makeFuncSig(ftyp)
 	if err != nil {
 		panic(err)
 	}
@@ -55,7 +55,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			fd := (*funcData)(userdata)
 			ins := make([]Value, fd.nin)
 			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
 			}
 			fd.fn(ins)
 		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
@@ -64,7 +64,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			fd := (*funcData)(userdata)
 			ins := make([]Value, fd.nin)
 			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
 			}
 			out := fd.fn(ins)
 			if fd.ftyp.Out[0].IfaceIndir() {
@@ -78,7 +78,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			fd := (*funcData)(userdata)
 			ins := make([]Value, fd.nin)
 			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
 			}
 			outs := fd.fn(ins)
 			var offset uintptr = 0
