@@ -2282,22 +2282,20 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		tout []*abi.Type
 		args []unsafe.Pointer
 		fn   unsafe.Pointer
+		env  unsafe.Pointer
 		ret  unsafe.Pointer
 		ioff int
 	)
 	if v.typ_.IsClosure() {
 		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
-		tin = append([]*abi.Type{rtypeOf(unsafe.Pointer(nil))}, ft.In...)
-		tout = ft.Out
-		c := (*struct {
-			fn  unsafe.Pointer
-			env unsafe.Pointer
-		})(v.ptr)
-		fn = c.fn
-		ioff = 1
-		args = append(args, unsafe.Pointer(&c.env))
+		fn, env, tin, tout, ioff, args = closureCallInfo(v, ft, args)
 	} else {
-		if v.flag&flagMethod != 0 {
+		// Function values in llgo are represented as closures even when
+		// the dynamic type is a plain func signature.
+		if v.typ_.Kind() == abi.Func {
+			ft = v.typ_.FuncType()
+			fn, env, tin, tout, ioff, args = closureCallInfo(v, ft, args)
+		} else if v.flag&flagMethod != 0 {
 			var (
 				rcvrtype *abi.Type
 			)
@@ -2383,12 +2381,13 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	}
 	if sig.RType != ffi.TypeVoid {
 		v := runtime.AllocZ(sig.RType.Size)
-		ret = unsafe.Pointer(&v)
+		// libffi expects rvalue to point to the return value storage.
+		ret = v
 	}
 	for i, in := range in {
 		args = append(args, toFFIArg(in, tin[ioff+i]))
 	}
-	ffi.Call(sig, fn, ret, args...)
+	callFunc(sig, fn, env, ret, args)
 	switch n := len(tout); n {
 	case 0:
 	case 1:

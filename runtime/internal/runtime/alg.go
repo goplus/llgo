@@ -266,31 +266,6 @@ func ifaceeq(tab *itab, x, y unsafe.Pointer) bool {
 	return eq(x, y)
 }
 
-func structequal(t, p, q unsafe.Pointer) bool {
-	x := (*structtype)(t)
-	for _, ft := range x.Fields {
-		pi := add(p, ft.Offset)
-		qi := add(q, ft.Offset)
-		if !ft.Typ.Equal(pi, qi) {
-			return false
-		}
-	}
-	return true
-}
-
-func arrayequal(t, p, q unsafe.Pointer) bool {
-	x := (*arraytype)(t)
-	elem := x.Elem
-	for i := uintptr(0); i < x.Len; i++ {
-		pi := add(p, i*elem.Size_)
-		qi := add(q, i*elem.Size_)
-		if !elem.Equal(pi, qi) {
-			return false
-		}
-	}
-	return true
-}
-
 // Testing adapters for hash quality tests (see hash_test.go)
 func stringHash(s string, seed uintptr) uintptr {
 	return strhash(noescape(unsafe.Pointer(&s)), seed)

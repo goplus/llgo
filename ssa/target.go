@@ -19,6 +19,7 @@ package ssa
 import (
 	"runtime"
 
+	"github.com/goplus/llgo/internal/ctxreg"
 	"github.com/goplus/llvm"
 )
 
@@ -29,6 +30,36 @@ type Target struct {
 	GOARCH string
 	GOARM  string // "5", "6", "7" (default)
 	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+}
+
+// CtxRegister describes the closure context register for a target architecture.
+// Requirements for a ctx register:
+//  1. Must survive the call boundary long enough for the callee to read it.
+//  2. Not used for C ABI parameters/returns.
+//  3. Must be usable in LLVM inline asm constraints.
+//
+// Supported platforms:
+//   - amd64: MM0 - MMX register, x87 disabled via -mno-80387
+//   - 386:   MM0 - MMX register, x87 disabled via -mfpmath=sse -msse2 -mno-80387
+//   - arm64: X26 - callee-saved, reservable via +reserve-x26
+//   - riscv64/riscv32: X27 (s11) - callee-saved register
+//
+// Platforms without a ctx register:
+//   - arm: r8-r15 are "high registers", LLVM can't use {rN} constraint in ARM mode
+//   - wasm: no registers available
+type CtxRegister struct {
+	Name       string // LLVM register name for inline asm, e.g., "r12", "x26"
+	Constraint string // LLVM inline asm constraint, e.g., "{r12}", "{x26}"
+}
+
+// CtxRegister returns the closure context register for the target architecture.
+func (t *Target) CtxRegister() CtxRegister {
+	goarch := t.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	info := ctxreg.Get(goarch)
+	return CtxRegister{Name: info.Name, Constraint: info.Constraint}
 }
 
 func (p *Target) targetData() llvm.TargetData {
@@ -133,10 +164,10 @@ func (p *Target) Spec() (spec TargetSpec) {
 	switch goarch {
 	case "386":
 		spec.CPU = "pentium4"
-		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,+x87"
+		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,-x87"
 	case "amd64":
 		spec.CPU = "x86-64"
-		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,+x87"
+		spec.Features = "+cx8,+fxsr,+mmx,+sse,+sse2,-x87"
 	case "arm":
 		spec.CPU = "generic"
 		switch llvmarch {

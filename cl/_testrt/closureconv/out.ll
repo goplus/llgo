@@ -55,12 +55,12 @@ _llgo_0:
 
 define %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo3"() {
 _llgo_0:
-  ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closureconv.add", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.add", ptr null }
 }
 
 define %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4"() {
 _llgo_0:
-  ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closureconv.demo4$1", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4$1", ptr null }
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4$1"(i64 %0, i64 %1) {
@@ -83,13 +83,14 @@ _llgo_0:
   ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %6
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5$1"(ptr %0, i64 %1, i64 %2) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5$1"(i64 %0, i64 %1) {
 _llgo_0:
-  %3 = add i64 %1, %2
-  %4 = load { ptr }, ptr %0, align 8
-  %5 = extractvalue { ptr } %4, 0
+  %2 = call ptr asm "mov $0, x26", "=r"()
+  %3 = load { ptr }, ptr %2, align 8
+  %4 = add i64 %0, %1
+  %5 = extractvalue { ptr } %3, 0
   %6 = load i64, ptr %5, align 4
-  %7 = add i64 %3, %6
+  %7 = add i64 %4, %6
   ret i64 %7
 }
 
@@ -111,31 +112,36 @@ _llgo_0:
   %0 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo1"(i64 1)
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %0, 0
-  %3 = call i64 %2(ptr %1, i64 99, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %1)
+  %3 = call i64 %2(i64 99, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %4 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo2"()
   %5 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %4, 1
   %6 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %4, 0
-  %7 = call i64 %6(ptr %5, i64 100, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %5)
+  %7 = call i64 %6(i64 100, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %8 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo3"()
   %9 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %8, 1
   %10 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %8, 0
-  %11 = call i64 %10(ptr %9, i64 100, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %9)
+  %11 = call i64 %10(i64 100, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %11)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %12 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4"()
   %13 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %12, 1
   %14 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %12, 0
-  %15 = call i64 %14(ptr %13, i64 100, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %13)
+  %15 = call i64 %14(i64 100, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %16 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
   %17 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %16, 1
   %18 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %16, 0
-  %19 = call i64 %18(ptr %17, i64 99, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %17)
+  %19 = call i64 %18(i64 99, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %19)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %20 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
@@ -144,13 +150,15 @@ _llgo_0:
   %22 = load { ptr, ptr }, ptr %21, align 8
   %23 = extractvalue { ptr, ptr } %22, 1
   %24 = extractvalue { ptr, ptr } %22, 0
-  %25 = call i64 %24(ptr %23, i64 99, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %23)
+  %25 = call i64 %24(i64 99, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %25)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %26 = call %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo5"(i64 1)
   %27 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %26, 1
   %28 = extractvalue %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %26, 0
-  %29 = call i64 %28(ptr %27, i64 99, i64 200)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %27)
+  %29 = call i64 %28(i64 99, i64 200)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %29)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
@@ -158,27 +166,16 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound"(ptr %0, i64 %1, i64 %2) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound"(i64 %0, i64 %1) {
 _llgo_0:
-  %3 = load { ptr }, ptr %0, align 8
+  %2 = call ptr asm "mov $0, x26", "=r"()
+  %3 = load { ptr }, ptr %2, align 8
   %4 = extractvalue { ptr } %3, 0
-  %5 = call i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add"(ptr %4, i64 %1, i64 %2)
+  %5 = call i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add"(ptr %4, i64 %0, i64 %1)
   ret i64 %5
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
-
-define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closureconv.add"(ptr %0, i64 %1, i64 %2) {
-_llgo_0:
-  %3 = tail call i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.add"(i64 %1, i64 %2)
-  ret i64 %3
-}
-
-define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closureconv.demo4$1"(ptr %0, i64 %1, i64 %2) {
-_llgo_0:
-  %3 = tail call i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.demo4$1"(i64 %1, i64 %2)
-  ret i64 %3
-}
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

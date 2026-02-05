@@ -32,7 +32,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" zeroinitializer
 
 _llgo_2:                                          ; preds = %_llgo_0
-  ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }
+  ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/typerecur.init"() {
@@ -54,7 +54,7 @@ _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 1
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
   store i64 5, ptr %1, align 4
-  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }, ptr %2, align 8
+  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" { ptr @"github.com/goplus/llgo/cl/_testgo/typerecur.countState", ptr null }, ptr %2, align 8
   br label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -62,7 +62,8 @@ _llgo_1:                                          ; preds = %_llgo_3
   %4 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %3, align 8
   %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 1
   %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 0
-  %7 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %5, ptr %0)
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %5)
+  %7 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %0)
   %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
   store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %7, ptr %8, align 8
   br label %_llgo_3
@@ -83,11 +84,5 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
-
-define linkonce %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/typerecur.countState"(ptr %0, ptr %1) {
-_llgo_0:
-  %2 = tail call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" @"github.com/goplus/llgo/cl/_testgo/typerecur.countState"(ptr %1)
-  ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %2
-}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)

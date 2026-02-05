@@ -38,6 +38,7 @@ import (
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/testutil"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
@@ -161,7 +162,9 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	out := pkgDir + "/out.ll"
 	b, _ := os.ReadFile(out)
 	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
-		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
+		normalizedGen := llgen.NormalizeIR(v)
+		normalizedExp := llgen.NormalizeIR(string(b))
+		if test.Diff(t, pkgDir+"/result.txt", []byte(normalizedGen), []byte(normalizedExp)) {
 			t.Fatal("llgen.GenFrom: unexpect result")
 		}
 	}
@@ -187,6 +190,7 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 	if err != nil {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
+	output = testutil.FilterTestOutput(output)
 	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
 		t.Fatal("unexpected output")
 	}
@@ -271,6 +275,7 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 	_ = w.Close()
 	output := <-outputCh
+	output = testutil.FilterTestOutput(output)
 	if runErr != nil {
 		return output, fmt.Errorf("run failed: %w", runErr)
 	}
