@@ -51,6 +51,8 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+      - name: Install embedded dependencies
+        uses: ./.github/actions/setup-embed-deps
       - name: Download model artifact
         uses: actions/download-artifact@v7
         with:
@@ -208,7 +210,6 @@ jobs:
       - name: run llgo test
         run: |
           llgo test ./...
-
 
   hello:
     continue-on-error: true
