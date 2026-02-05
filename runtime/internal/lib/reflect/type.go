@@ -305,7 +305,13 @@ func (t *rtype) Method(i int) (m Method) {
 	}
 	mt := FuncOf(in, out, ft.Variadic())
 	m.Type = mt
-	m.Func = Value{&mt.(*rtype).t, p.Tfn_, fl}
+	ftyp := mt.(*rtype).t.FuncType()
+	ctyp := closureOf(ftyp)
+	fv := &struct {
+		fn  unsafe.Pointer
+		env unsafe.Pointer
+	}{p.Tfn_, nil}
+	m.Func = Value{ctyp, unsafe.Pointer(fv), fl | flagIndir}
 	m.Index = i
 	return m
 }
