@@ -37,8 +37,7 @@ type Stats struct {
 type Options struct{}
 
 // Apply runs the DCE pass over mod using the reachability result.
-// It clears unreachable method pointers in type metadata and removes
-// reloc tables to allow LLVM DCE to eliminate unused functions.
+// It clears unreachable method pointers in type metadata.
 func Apply(mod llvm.Module, res deadcode.Result, _ Options) Stats {
 	stats := Stats{
 		Reachable:           len(res.Reachable),
@@ -48,65 +47,7 @@ func Apply(mod llvm.Module, res deadcode.Result, _ Options) Stats {
 		return stats
 	}
 	stats.DroppedMethod, stats.DroppedMethodDetail = clearUnreachableMethods(mod, res.ReachableMethods)
-	// Remove __llgo_relocs.* tables that hold references to functions,
-	// preventing LLVM's globaldce from removing unreachable functions.
-	removeRelocTables(mod)
 	return stats
-}
-
-// removeRelocTables deletes all @__llgo_relocs* global variables.
-// These tables contain references to functions for runtime type system,
-// but they prevent LLVM DCE from removing unreachable functions.
-// Also updates @llvm.used to remove references to deleted globals.
-func removeRelocTables(mod llvm.Module) {
-	// Collect relocs to remove
-	var toRemove []llvm.Value
-	removeSet := make(map[string]bool)
-	for g := mod.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
-		name := g.Name()
-		// Match __llgo_relocs, __llgo_relocs.123, etc.
-		if name == "__llgo_relocs" || strings.HasPrefix(name, "__llgo_relocs.") {
-			toRemove = append(toRemove, g)
-			removeSet[name] = true
-		}
-	}
-	if len(toRemove) == 0 {
-		return
-	}
-
-	// Update @llvm.used to remove references to relocs
-	llvmUsed := mod.NamedGlobal("llvm.used")
-	if !llvmUsed.IsNil() {
-		init := llvmUsed.Initializer()
-		if !init.IsNil() && init.Type().TypeKind() == llvm.ArrayTypeKind {
-			count := init.OperandsCount()
-			var kept []llvm.Value
-			for i := 0; i < count; i++ {
-				op := init.Operand(i)
-				// Check if this operand references a reloc we're removing
-				opName := op.Name()
-				if !removeSet[opName] {
-					kept = append(kept, op)
-				}
-			}
-			if len(kept) < count {
-				if len(kept) == 0 {
-					// Remove llvm.used entirely if empty
-					llvmUsed.EraseFromParentAsGlobal()
-				} else {
-					// Rebuild llvm.used with remaining entries
-					elemTy := init.Type().ElementType()
-					newArray := llvm.ConstArray(elemTy, kept)
-					llvmUsed.SetInitializer(newArray)
-				}
-			}
-		}
-	}
-
-	// Now safe to remove relocs
-	for _, g := range toRemove {
-		g.EraseFromParentAsGlobal()
-	}
 }
 
 // clearUnreachableMethods zeros Mtyp/Ifn/Tfn for unreachable methods in type

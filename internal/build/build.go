@@ -1284,9 +1284,8 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				}
 				fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
 			}
-			// Merge IRGraphs from all packages instead of building from merged module.
-			// This avoids the issue where LLVM renames duplicate __llgo_relocs globals
-			// to __llgo_relocs.2, __llgo_relocs.4, etc. when linking modules.
+			// Merge IRGraphs from all packages. Each package graph already includes
+			// reloc metadata injected from SSA package context.
 			graph := mergePackageGraphs(ctx)
 			if verbose {
 				nodes, edges, call, ref, reloc := graphSummary(graph)

@@ -130,8 +130,7 @@ func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
 		return
 	}
 	childVal := b.abiType(child).impl
-	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
-	b.Pkg.addReloc(relocTypeRef, owner, childVal, 0, nilPtr, nilPtr, "", "")
+	b.Pkg.addReloc(relocTypeRef, owner, childVal, 0, "", "", llvm.Value{})
 }
 
 func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
@@ -515,17 +514,14 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 		// Record reloc metadata (method offsets) if enabled.
 		if b.Pkg != nil && b.Prog.emitReloc {
 			pkg := b.Pkg
-			nilPtr := llvm.ConstNull(pkg.Prog.tyVoidPtr())
-			// Use relocString for a stable pointer to the method name (avoid casting runtime.String).
 			// For unexported methods, use fully qualified name to match useifacemethod relocs.
 			infoName := mName
 			if !token.IsExported(mName) && mPkg != nil {
 				infoName = abi.FullName(mPkg, mName)
 			}
-			infoVal := pkg.relocString(infoName)
-			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i), infoVal, nilPtr, infoName, "")
-			pkg.addReloc(relocMethodOff, owner, ifn, int64(i), nilPtr, nilPtr, "", "")
-			pkg.addReloc(relocMethodOff, owner, tfn, int64(i), nilPtr, nilPtr, "", "")
+			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i), infoName, "", llvm.Value{})
+			pkg.addReloc(relocMethodOff, owner, ifn, int64(i), "", "", llvm.Value{})
+			pkg.addReloc(relocMethodOff, owner, tfn, int64(i), "", "", llvm.Value{})
 		}
 	}
 	return llvm.ConstArray(ft.ll, fields)

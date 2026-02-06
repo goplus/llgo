@@ -57,8 +57,7 @@ func (b Builder) markUseIface(t Type) {
 		return
 	}
 	tabi := b.abiType(t.raw.Type)
-	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
-	b.Pkg.addReloc(relocUseIface, b.Func.impl, tabi.impl, 0, nilPtr, nilPtr, "", "")
+	b.Pkg.addReloc(relocUseIface, b.Func.impl, tabi.impl, 0, "", "", llvm.Value{})
 }
 
 func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
@@ -67,7 +66,7 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 	}
 	tintf := b.abiType(rawIntf)
 	// Store method index in addend; later passes can map it to the method entry.
-	var nameVal, fnTypeVal llvm.Value
+	var fnTypeVal llvm.Value
 	infoName := ""
 	if idx < rawIntf.NumMethods() {
 		m := rawIntf.Method(idx)
@@ -78,11 +77,10 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 			}
 		}
 		infoName = name
-		nameVal = b.Pkg.relocString(name)
 		ftyp := funcType(b.Prog, m.Type())
 		fnTypeVal = b.abiType(ftyp).impl
 	}
-	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx), nameVal, fnTypeVal, infoName, "")
+	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx), infoName, "", fnTypeVal)
 }
 
 // MarkUseNamedMethod records a named method usage for reachability analysis.
@@ -91,7 +89,7 @@ func (b Builder) MarkUseNamedMethod(name string) {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, b.Pkg.relocString(name), 0, llvm.ConstNull(b.Prog.tyVoidPtr()), llvm.ConstNull(b.Prog.tyVoidPtr()), name, name)
+	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, llvm.Value{}, 0, name, name, llvm.Value{})
 }
 
 // MarkReflectMethod records a reflect-driven method lookup.
@@ -100,8 +98,7 @@ func (b Builder) MarkReflectMethod() {
 	if !b.canEmitReloc() {
 		return
 	}
-	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
-	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0, nilPtr, nilPtr, "", "")
+	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0, "", "", llvm.Value{})
 }
 
 func (b Builder) canEmitReloc() bool {
