@@ -1027,77 +1027,6 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
-// dumpAbiTypeMetadata walks the merged bitcode via LLVM APIs and prints a small
-// summary of globals whose types reference runtime/abi.Type (only in verbose mode).
-func dumpAbiTypeMetadata(mod llvm.Module, bcPath string, verbose bool) {
-	if !verbose || mod.IsNil() {
-		return
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Fprintf(os.Stderr, "[bc-pass] skip abi.Type scan (panic: %v) on %s\n", r, bcPath)
-		}
-	}()
-
-	totalGlobals := 0
-	matchedGlobals := 0
-	samples := make([]string, 0, 20)
-	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
-		totalGlobals++
-		if typeContainsAbiType(gv.Type(), make(map[uintptr]bool)) {
-			matchedGlobals++
-			if len(samples) < 20 {
-				samples = append(samples, fmt.Sprintf("%s :: %s", gv.Name(), gv.Type().String()))
-			}
-		}
-	}
-
-	fmt.Fprintf(os.Stderr, "[bc-pass] abi.Type-containing globals: %d/%d in %s\n", matchedGlobals, totalGlobals, bcPath)
-	for _, s := range samples {
-		fmt.Fprintln(os.Stderr, "  ", s)
-	}
-	if matchedGlobals > len(samples) {
-		fmt.Fprintf(os.Stderr, "  ... %d more globals omitted ...\n", matchedGlobals-len(samples))
-	}
-}
-
-// typeContainsAbiType reports whether the given LLVM type references the runtime/abi.Type
-// named struct anywhere in its shape.
-func typeContainsAbiType(t llvm.Type, seen map[uintptr]bool) bool {
-	if t.IsNil() {
-		return false
-	}
-	key := uintptr(unsafe.Pointer(t.C))
-	if seen[key] {
-		return false
-	}
-	seen[key] = true
-
-	switch t.TypeKind() {
-	case llvm.PointerTypeKind, llvm.ArrayTypeKind, llvm.VectorTypeKind:
-		return typeContainsAbiType(t.ElementType(), seen)
-	case llvm.StructTypeKind:
-		if strings.Contains(t.StructName(), "runtime/abi.Type") {
-			return true
-		}
-		for _, et := range t.StructElementTypes() {
-			if typeContainsAbiType(et, seen) {
-				return true
-			}
-		}
-	case llvm.FunctionTypeKind:
-		if typeContainsAbiType(t.ReturnType(), seen) {
-			return true
-		}
-		for _, pt := range t.ParamTypes() {
-			if typeContainsAbiType(pt, seen) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
 	candidates := []string{"main", "_start"}
 	var roots []irgraph.SymID
@@ -1269,150 +1198,101 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 			return fmt.Errorf("no bitcode inputs to link")
 		}
 
-		dceLLName := ""
-		if ctx.buildConf.DCE {
-			roots, err := dceEntryRoots(merged)
-			if err != nil {
-				merged.Dispose()
-				return err
+		roots, err := dceEntryRoots(merged)
+		if err != nil {
+			merged.Dispose()
+			return err
+		}
+		if verbose {
+			rootNames := make([]string, 0, len(roots))
+			for _, r := range roots {
+				rootNames = append(rootNames, string(r))
 			}
-			if verbose {
-				rootNames := make([]string, 0, len(roots))
-				for _, r := range roots {
-					rootNames = append(rootNames, string(r))
-				}
-				fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
-			}
-			// Merge IRGraphs from all packages. Each package graph already includes
-			// reloc metadata injected from SSA package context.
-			graph := mergePackageGraphs(ctx)
-			if verbose {
-				nodes, edges, call, ref, reloc := graphSummary(graph)
-				fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
-			}
-			deadcode.SetVerbose(verbose)
-			res := deadcode.Analyze(graph, roots)
-			if verbose {
-				fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
-				fmt.Fprintln(os.Stderr, "[dce] pass begin")
-			}
+			fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
+		}
+		// Merge IRGraphs from all packages. Each package graph already includes
+		// reloc metadata injected from SSA package context.
+		graph := mergePackageGraphs(ctx)
+		if verbose {
+			nodes, edges, call, ref, reloc := graphSummary(graph)
+			fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
+		}
+		deadcode.SetVerbose(verbose)
+		res := deadcode.Analyze(graph, roots)
+		if verbose {
+			fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
+			fmt.Fprintln(os.Stderr, "[dce] pass begin")
+		}
 
-			prePassLL := ""
-			if verbose {
-				if f, err := os.CreateTemp("", "llgo-dce-pre-*.ll"); err == nil {
-					_, _ = f.WriteString(merged.String())
-					f.Close()
-					prePassLL = f.Name()
-					fmt.Fprintf(os.Stderr, "[dce] module ll (pre): %s\n", prePassLL)
-				}
-			}
-
-			stats := dcepass.Apply(merged, res, dcepass.Options{})
-			if verbose {
-				rmCount := 0
-				for _, m := range res.ReachableMethods {
-					rmCount += len(m)
-				}
-				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d reachable_methods=%d dropped_methods=%d)\n",
-					stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal, rmCount, stats.DroppedMethod)
-				if rmCount > 0 {
-					for typ, idxs := range res.ReachableMethods {
-						var list []string
-						for idx := range idxs {
-							list = append(list, fmt.Sprintf("%d", idx))
-						}
-						sort.Strings(list)
-						fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
-					}
-				}
-				if len(stats.DroppedMethodDetail) > 0 {
-					for typ, idxs := range stats.DroppedMethodDetail {
-						list := make([]string, len(idxs))
-						for i, v := range idxs {
-							list[i] = fmt.Sprintf("%d", v)
-						}
-						sort.Strings(list)
-						fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
-					}
-				}
-			}
-			llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
-			if err != nil {
-				merged.Dispose()
-				return err
-			}
-			if _, err := llFile.WriteString(merged.String()); err != nil {
-				llFile.Close()
-				merged.Dispose()
-				return err
-			}
-			if err := llFile.Close(); err != nil {
-				merged.Dispose()
-				return err
-			}
-			dceLLName = llFile.Name()
-			if verbose {
-				fmt.Fprintf(os.Stderr, "[dce] module ll (post): %s\n", dceLLName)
+		prePassLL := ""
+		if verbose {
+			if f, err := os.CreateTemp("", "llgo-dce-pre-*.ll"); err == nil {
+				_, _ = f.WriteString(merged.String())
+				f.Close()
+				prePassLL = f.Name()
+				fmt.Fprintf(os.Stderr, "[dce] module ll (pre): %s\n", prePassLL)
 			}
 		}
 
-		if ctx.buildConf.DCE {
-			if dceLLName == "" {
-				merged.Dispose()
-				return fmt.Errorf("missing DCE module .ll output")
+		stats := dcepass.Apply(merged, res, dcepass.Options{})
+		if verbose {
+			rmCount := 0
+			for _, m := range res.ReachableMethods {
+				rmCount += len(m)
 			}
-			// NOTE: after the DCE pass the merged module may contain mutated
-			// constants that occasionally trip LLVM type walkers. Skip the
-			// ABI metadata dump in DCE mode to avoid crashes during verbose runs.
-			if !ctx.buildConf.DCE {
-				dumpAbiTypeMetadata(merged, dceLLName, verbose)
+			fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d reachable_methods=%d dropped_methods=%d)\n",
+				stats.Reachable, rmCount, stats.DroppedMethod)
+			if rmCount > 0 {
+				for typ, idxs := range res.ReachableMethods {
+					var list []string
+					for idx := range idxs {
+						list = append(list, fmt.Sprintf("%d", idx))
+					}
+					sort.Strings(list)
+					fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
+				}
 			}
-
-			combinedObj := strings.TrimSuffix(dceLLName, ".ll") + ".o"
-			args := []string{"-o", combinedObj, "-c", dceLLName, "-Wno-override-module"}
-			if verbose {
-				fmt.Fprintln(os.Stderr, "clang", args)
+			if len(stats.DroppedMethodDetail) > 0 {
+				for typ, idxs := range stats.DroppedMethodDetail {
+					list := make([]string, len(idxs))
+					for i, v := range idxs {
+						list[i] = fmt.Sprintf("%d", v)
+					}
+					sort.Strings(list)
+					fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
+				}
 			}
-			if err := ctx.compiler().Compile(args...); err != nil {
-				merged.Dispose()
-				return fmt.Errorf("failed to compile DCE ll: %v", err)
-			}
-			merged.Dispose()
-			objFiles = []string{combinedObj}
-		} else {
-			combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
-			if err != nil {
-				merged.Dispose()
-				return err
-			}
-			combinedBcName := combinedBc.Name()
-			if err := llvm.WriteBitcodeToFile(merged, combinedBc); err != nil {
-				combinedBc.Close()
-				merged.Dispose()
-				return fmt.Errorf("write combined bitcode: %w", err)
-			}
-			combinedBc.Close()
-			if verbose {
-				fmt.Fprintf(os.Stderr, "[bc-pass] merged bitcode written to %s\n", combinedBcName)
-			}
-
-			// Optional debug: dump abi.Type metadata from the merged module.
-			dumpAbiTypeMetadata(merged, combinedBcName, verbose)
-
-			// Compile the merged BC to a single object for final native link.
-			combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"
-			args := []string{"-o", combinedObj, "-c", combinedBcName, "-Wno-override-module"}
-			if verbose {
-				fmt.Fprintln(os.Stderr, "clang", args)
-			}
-			if err := ctx.compiler().Compile(args...); err != nil {
-				merged.Dispose()
-				return fmt.Errorf("failed to compile combined bc: %v", err)
-			}
-
-			merged.Dispose()
-			objFiles = []string{combinedObj}
 		}
+		llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
+		if err != nil {
+			merged.Dispose()
+			return err
+		}
+		if _, err := llFile.WriteString(merged.String()); err != nil {
+			llFile.Close()
+			merged.Dispose()
+			return err
+		}
+		if err := llFile.Close(); err != nil {
+			merged.Dispose()
+			return err
+		}
+		dceLLName := llFile.Name()
+		if verbose {
+			fmt.Fprintf(os.Stderr, "[dce] module ll (post): %s\n", dceLLName)
+		}
+
+		combinedObj := strings.TrimSuffix(dceLLName, ".ll") + ".o"
+		args := []string{"-o", combinedObj, "-c", dceLLName, "-Wno-override-module"}
+		if verbose {
+			fmt.Fprintln(os.Stderr, "clang", args)
+		}
+		if err := ctx.compiler().Compile(args...); err != nil {
+			merged.Dispose()
+			return fmt.Errorf("failed to compile DCE ll: %v", err)
+		}
+		merged.Dispose()
+		objFiles = []string{combinedObj}
 	} else if ctx.buildConf.GenLL {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
@@ -2019,11 +1899,11 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	}
 	for _, file := range strings.Split(files, ";") {
 		cFile := filepath.Join(dir, strings.TrimSpace(file))
-		clFile(ctx, args, cFile, expFile, procFile, verbose)
+		clFile(ctx, args, cFile, expFile, pkg.PkgPath, procFile, verbose)
 	}
 }
 
-func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
+func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFile func(linkFile string), verbose bool) {
 	baseName := expFile + filepath.Base(cFile)
 	ext := filepath.Ext(cFile)
 
@@ -2038,6 +1918,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 			llFile := baseName + ".ll"
 			llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 			if verbose {
+				fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
 				fmt.Fprintln(os.Stderr, "clang", llArgs)
 			}
 			cmd := ctx.compiler()
@@ -2048,6 +1929,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 			bcFile := baseName + ".bc"
 			bcArgs := append(slices.Clone(args), "-emit-llvm", "-o", bcFile, "-c", cFile)
 			if verbose {
+				fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", bcFile, pkgPath)
 				fmt.Fprintln(os.Stderr, "clang", bcArgs)
 			}
 			cmd := ctx.compiler()
@@ -2064,6 +1946,7 @@ func clFile(ctx *context, args []string, cFile, expFile string, procFile func(li
 		objFile := baseName + ".o"
 		objArgs := append(args, "-o", objFile, "-c", cFile)
 		if verbose {
+			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
 			fmt.Fprintln(os.Stderr, "clang", objArgs)
 		}
 		cmd := ctx.compiler()

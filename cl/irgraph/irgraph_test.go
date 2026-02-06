@@ -205,7 +205,7 @@ func TestAddRelocRecordsMapping(t *testing.T) {
 	for _, r := range g.Relocs {
 		switch r.Kind {
 		case EdgeRelocUseNamedMethod:
-			if r.Owner == "caller" && r.Target == "_mname:Foo" && r.Name == "Foo" {
+			if r.Owner == "caller" && r.Target == "Foo" && r.Name == "Foo" {
 				foundNamed = true
 			}
 		case EdgeRelocUseIfaceMethod:

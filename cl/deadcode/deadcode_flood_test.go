@@ -497,7 +497,7 @@ func TestNamedMethodKeepsSpecificMethod(t *testing.T) {
 			{Owner: "caller", Target: "TypeT", Kind: irgraph.EdgeRef},
 			{Owner: "caller", Target: "TypeT", Kind: irgraph.EdgeRelocUseIface},
 			// MethodByName("Foo") - should only keep Foo
-			{Owner: "caller", Target: "_mname:Foo", Kind: irgraph.EdgeRelocUseNamedMethod, Name: "Foo"},
+			{Owner: "caller", Target: "Foo", Kind: irgraph.EdgeRelocUseNamedMethod, Name: "Foo"},
 			// TypeT has two methods: Foo and Bar
 			{Owner: "TypeT", Target: "FooType", Kind: irgraph.EdgeRelocMethodOff, Addend: 0, Name: "Foo"},
 			{Owner: "TypeT", Target: "FooIfn", Kind: irgraph.EdgeRelocMethodOff, Addend: 0},

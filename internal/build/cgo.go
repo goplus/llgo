@@ -86,7 +86,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 		}
 	}
 	for _, cfile := range cfiles {
-		clFile(ctx, cflags, cfile, pkg.ExportFile, func(linkFile string) {
+		clFile(ctx, cflags, cfile, pkg.ExportFile, pkg.PkgPath, func(linkFile string) {
 			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
@@ -129,7 +129,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 		if err = os.WriteFile(tmpName, []byte(code+"\n\n"+externDecls), 0644); err != nil {
 			return nil, nil, fmt.Errorf("failed to write temp file: %v", err)
 		}
-		clFile(ctx, cflags, tmpName, pkg.ExportFile, func(linkFile string) {
+		clFile(ctx, cflags, tmpName, pkg.ExportFile, pkg.PkgPath, func(linkFile string) {
 			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}

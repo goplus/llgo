@@ -27,8 +27,6 @@ import (
 // Stats reports basic DCE pass metrics.
 type Stats struct {
 	Reachable           int
-	DroppedFuncs        int
-	DroppedGlobal       int
 	DroppedMethod       int
 	DroppedMethodDetail map[irgraph.SymID][]int
 }

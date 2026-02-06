@@ -267,13 +267,6 @@ func NewProgram(target *Target) Program {
 	}
 }
 
-// EnableRelocTable is kept for API compatibility.
-// Reloc metadata is collected unconditionally.
-func (p Program) EnableRelocTable(enable bool) {
-	_ = p
-	_ = enable
-}
-
 func (p Program) Target() *Target {
 	return p.target
 }

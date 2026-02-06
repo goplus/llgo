@@ -299,8 +299,6 @@ const (
 	relocTypeRef        = 6
 )
 
-const methodNamePrefix = "_mname:"
-
 func relocKindToEdge(kind int32) (EdgeKind, bool) {
 	switch kind {
 	case relocUseIface:
@@ -340,13 +338,10 @@ func (g *Graph) AddRelocRecords(records []RelocRecord, opts Options) {
 			if name == "" {
 				name = string(targetID)
 			}
-			if strings.HasPrefix(name, methodNamePrefix) {
-				name = strings.TrimPrefix(name, methodNamePrefix)
-			}
 			if name == "" {
 				continue
 			}
-			g.addRelocEdge(ownerID, SymID(methodNamePrefix+name), edgeKind, rec.Addend, name, "")
+			g.addRelocEdge(ownerID, SymID(name), edgeKind, rec.Addend, name, "")
 			continue
 		}
 		if targetID == "" {

@@ -9,4 +9,4 @@ reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_
 reloc(typeref) _llgo_reflecttypemethod.T -> *_llgo_reflecttypemethod.T
 reloc(useiface) reflecttypemethod.A -> _llgo_reflecttypemethod.T
 reloc(useifacemethod) name=MethodByName fntype=_llgo_func$aM2cVUtLQbPq1YHtnabQiM7XJ5Cg5RyV6BIDWrqey7E reflecttypemethod.A -> reflecttypemethod.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
-reloc(usenamedmethod) reflecttypemethod.A -> _mname:Foo
+reloc(usenamedmethod) reflecttypemethod.A -> Foo
