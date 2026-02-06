@@ -14,6 +14,7 @@ type methodValueData struct {
 	fn      unsafe.Pointer
 	rcvr    unsafe.Pointer
 	sigCall *ffi.Signature
+	sigWrap *ffi.Signature // keepalive for libffi closure
 	nin     int
 }
 
@@ -69,7 +70,7 @@ func makeMethodValue(op string, v Value) Value {
 	}
 
 	closure := ffi.NewClosure()
-	md := &methodValueData{fn: fn, rcvr: ptr, sigCall: sigCall, nin: len(ftyp.In)}
+	md := &methodValueData{fn: fn, rcvr: ptr, sigCall: sigCall, sigWrap: sigWrapper, nin: len(ftyp.In)}
 	if err := closure.Bind(sigWrapper, methodValueCallback, unsafe.Pointer(md)); err != nil {
 		panic("libffi error: " + err.Error())
 	}
@@ -78,7 +79,7 @@ func makeMethodValue(op string, v Value) Value {
 	fv := &struct {
 		fn  unsafe.Pointer
 		env unsafe.Pointer
-	}{closure.Fn, nil}
+	}{closure.Fn, keepAlivePtr(unsafe.Pointer(md))}
 
 	return Value{typ, unsafe.Pointer(fv), v.flag&flagRO | flagIndir | flag(Func)}
 }

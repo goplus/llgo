@@ -34,6 +34,7 @@ type funcData struct {
 	ftyp *funcType
 	fn   func(args []Value) (results []Value)
 	nin  int
+	sig  *ffi.Signature // keepalive for libffi closure
 }
 
 func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
@@ -48,6 +49,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 		panic(err)
 	}
 	closure := ffi.NewClosure()
+	fd := &funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In), sig: sig}
 
 	switch len(ftyp.Out) {
 	case 0:
@@ -58,7 +60,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 				ins[i] = ffiToValue(ffi.Index(args, makeFuncArgIndex(i)), fd.ftyp.In[i])
 			}
 			fd.fn(ins)
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		}, unsafe.Pointer(fd))
 	case 1:
 		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 			fd := (*funcData)(userdata)
@@ -72,7 +74,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			} else {
 				*(*unsafe.Pointer)(ret) = unsafe.Pointer(out[0].ptr)
 			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		}, unsafe.Pointer(fd))
 	default:
 		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 			fd := (*funcData)(userdata)
@@ -90,7 +92,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 				}
 				offset += fd.ftyp.Out[i].Size_
 			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		}, unsafe.Pointer(fd))
 	}
 	if err != nil {
 		panic("libffi error: " + err.Error())
@@ -99,7 +101,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	fv := &struct {
 		fn  unsafe.Pointer
 		env unsafe.Pointer
-	}{closure.Fn, unsafe.Pointer(&fn)}
+	}{closure.Fn, keepAlivePtr(unsafe.Pointer(fd))}
 	return Value{styp, unsafe.Pointer(fv), flagIndir | flag(Func)}
 }
 

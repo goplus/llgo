@@ -22,6 +22,11 @@ func wrapClosureForCall(sig *ffi.Signature, fn, env unsafe.Pointer) unsafe.Point
 	if env == nil {
 		return fn
 	}
+	// keepAliveBox env values are used only to keep userdata reachable.
+	// The target does not require a closure environment, so don't wrap.
+	if isKeepAlivePtr(env) {
+		return fn
+	}
 	if fn2, ok := ffi.WrapClosure(fn, env, uint32(sig.Bytes)); ok {
 		return fn2
 	}
