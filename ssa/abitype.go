@@ -129,8 +129,8 @@ func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
 	if b.Pkg == nil || owner.IsNil() {
 		return
 	}
-	childVal := b.abiType(child).impl
-	b.Pkg.addReloc(relocTypeRef, owner, childVal, 0, "", "", "", llvm.Value{})
+	childName, _ := b.Pkg.abi.TypeName(child)
+	b.Pkg.addReloc(relocTypeRef, owner, llvm.Value{}, 0, "", childName, "", llvm.Value{})
 }
 
 func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
