@@ -258,6 +258,9 @@ func Fopen(c *Char, mod *Char) FilePtr
 //go:linkname Fclose C.fclose
 func Fclose(fp FilePtr) Int
 
+//go:linkname Write C.write
+func Write(fd Int, buf Pointer, count uintptr) Int
+
 //go:linkname Perror C.perror
 func Perror(s *Char)
 
