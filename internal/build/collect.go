@@ -307,9 +307,6 @@ func (c *context) ensureCacheManager() *cacheManager {
 // tryLoadFromCache attempts to load a package from cache.
 // Returns true if cache hit, false otherwise.
 func (c *context) tryLoadFromCache(pkg *aPackage) bool {
-	if c.buildConf.DCE {
-		return false
-	}
 	if !cacheEnabled() {
 		return false
 	}
