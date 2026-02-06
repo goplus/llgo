@@ -306,41 +306,18 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 // func funcAddr(fn any) unsafe.Pointer
 func (p *context) funcAddr(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	if len(args) == 1 {
-		return p.funcAddrValue(b, args[0])
-	}
-	panic("funcAddr(<func>): invalid arguments")
-}
-
-func (p *context) funcAddrValue(b llssa.Builder, v ssa.Value) llssa.Expr {
-	switch v := v.(type) {
-	case *ssa.MakeInterface:
-		return p.funcAddrValue(b, v.X)
-	case *ssa.Function:
-		if cname := extractTrampolineCName(v.Name()); cname != "" && isTrampolineStub(v) {
-			cname = p.remapTrampolineCName(cname)
-			fnSig := p.syscallFnSig(0)
-			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
-			return b.Convert(p.prog.VoidPtr(), cfn.Expr)
-		}
-		if aFn, _, _ := p.compileFunction(v); aFn != nil {
-			return aFn.Expr
-		}
-	case *ssa.MakeClosure:
-		return p.funcAddrValue(b, v.Fn)
-	default:
-		if t := v.Type(); t != nil {
-			if _, ok := t.Underlying().(*types.Interface); ok {
-				data := b.InterfaceData(p.compileValue(b, v))
-				uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
-				uptrPtr := p.prog.Pointer(uptr)
-				codePtr := b.Convert(uptrPtr, data)
-				code := b.Load(codePtr)
-				return b.Convert(p.prog.VoidPtr(), code)
+		if fn, ok := args[0].(*ssa.MakeInterface); ok {
+			switch f := fn.X.(type) {
+			case *ssa.Function:
+				if aFn, _, _ := p.compileFunction(f); aFn != nil {
+					return aFn.Expr
+				}
+			default:
+				v := p.compileValue(b, f)
+				if _, ok := v.Type.RawType().Underlying().(*types.Signature); ok {
+					return v
+				}
 			}
-		}
-		ev := p.compileValue(b, v)
-		if _, ok := ev.Type.RawType().Underlying().(*types.Signature); ok {
-			return ev
 		}
 	}
 	panic("funcAddr(<func>): invalid arguments")
