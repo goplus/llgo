@@ -14,4 +14,3 @@ func wrapClosureForCall(sig *ffi.Signature, fn, env unsafe.Pointer) unsafe.Point
 	_ = env
 	return fn
 }
-

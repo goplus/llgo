@@ -99,16 +99,16 @@ func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	// Instruction sequence (31 insns incl. 1 NOP padding), then 4 literals:
 	//   env, fn, stackBytes, frameSize
 	const (
-		condNE     = 1
-		codeInsns  = 30 // keep even so literals are 8-byte aligned
-		codeSize   = codeInsns * 4
-		litSize    = 32
-		stubSize   = codeSize + litSize
-		litOff     = codeSize
-		litEnvOff  = litOff + 0
-		litFnOff   = litOff + 8
-		litSBOff   = litOff + 16
-		litFSOff   = litOff + 24
+		condNE    = 1
+		codeInsns = 30 // keep even so literals are 8-byte aligned
+		codeSize  = codeInsns * 4
+		litSize   = 32
+		stubSize  = codeSize + litSize
+		litOff    = codeSize
+		litEnvOff = litOff + 0
+		litFnOff  = litOff + 8
+		litSBOff  = litOff + 16
+		litFSOff  = litOff + 24
 	)
 
 	p := allocExec(stubSize)
@@ -132,13 +132,13 @@ func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	)
 
 	var (
-		insn         []uint32
-		adr1Idx      int
-		cbzIdx       int
-		loopIdx      int
-		bneIdx       int
-		copyDoneIdx  int
-		adr2Idx      int
+		insn        []uint32
+		adr1Idx     int
+		cbzIdx      int
+		loopIdx     int
+		bneIdx      int
+		copyDoneIdx int
+		adr2Idx     int
 	)
 
 	emit := func(u uint32) {
@@ -146,15 +146,15 @@ func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	}
 
 	adr1Idx = 0
-	emit(0)                            // adr x9, lit (patched later)
-	emit(arm64LDR64Imm(x10, x9, 0))    // ldr x10, [x9]        env
-	emit(arm64LDR64Imm(x11, x9, 8))    // ldr x11, [x9, #8]    fn
-	emit(arm64LDR64Imm(x12, x9, 16))   // ldr x12, [x9, #16]   stackBytes
-	emit(arm64LDR64Imm(x13, x9, 24))   // ldr x13, [x9, #24]   frameSize
+	emit(0)                          // adr x9, lit (patched later)
+	emit(arm64LDR64Imm(x10, x9, 0))  // ldr x10, [x9]        env
+	emit(arm64LDR64Imm(x11, x9, 8))  // ldr x11, [x9, #8]    fn
+	emit(arm64LDR64Imm(x12, x9, 16)) // ldr x12, [x9, #16]   stackBytes
+	emit(arm64LDR64Imm(x13, x9, 24)) // ldr x13, [x9, #24]   frameSize
 	emit(arm64SUBReg(arm64RegSP, arm64RegSP, x13))
-	emit(arm64ADDReg(x14, arm64RegSP, x13))    // src = old sp
+	emit(arm64ADDReg(x14, arm64RegSP, x13))         // src = old sp
 	emit(arm64ADDReg(x15, arm64RegSP, arm64RegXZR)) // dst = new sp
-	emit(arm64ADDReg(x16, x12, arm64RegXZR))   // cnt = stackBytes
+	emit(arm64ADDReg(x16, x12, arm64RegXZR))        // cnt = stackBytes
 	cbzIdx = len(insn)
 	emit(0) // cbz x16, copy_done (patched later)
 
@@ -168,20 +168,20 @@ func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	emit(0) // b.ne loop (patched later)
 
 	copyDoneIdx = len(insn)
-	emit(arm64SUBImm(x9, x13, 16))                 // x9 = frameSize-16 (save area offset)
-	emit(arm64ADDReg(x9, arm64RegSP, x9))          // x9 = sp + offset
-	emit(arm64STR64Imm(26, x9, 0))                 // str x26, [x9]
-	emit(arm64STR64Imm(30, x9, 8))                 // str x30, [x9,#8]
-	emit(arm64ADDReg(26, x10, arm64RegXZR))        // x26 = env
-	emit(arm64BLR(x11))                            // blr fn
+	emit(arm64SUBImm(x9, x13, 16))          // x9 = frameSize-16 (save area offset)
+	emit(arm64ADDReg(x9, arm64RegSP, x9))   // x9 = sp + offset
+	emit(arm64STR64Imm(26, x9, 0))          // str x26, [x9]
+	emit(arm64STR64Imm(30, x9, 8))          // str x30, [x9,#8]
+	emit(arm64ADDReg(26, x10, arm64RegXZR)) // x26 = env
+	emit(arm64BLR(x11))                     // blr fn
 
 	adr2Idx = len(insn)
-	emit(0)                                       // adr x9, lit (patched later)
-	emit(arm64LDR64Imm(x13, x9, 24))              // ldr x13, [x9,#24] frameSize
-	emit(arm64SUBImm(x9, x13, 16))                // x9 = frameSize-16
-	emit(arm64ADDReg(x9, arm64RegSP, x9))         // x9 = sp + offset
-	emit(arm64LDR64Imm(26, x9, 0))                // ldr x26, [x9]
-	emit(arm64LDR64Imm(30, x9, 8))                // ldr x30, [x9,#8]
+	emit(0)                                        // adr x9, lit (patched later)
+	emit(arm64LDR64Imm(x13, x9, 24))               // ldr x13, [x9,#24] frameSize
+	emit(arm64SUBImm(x9, x13, 16))                 // x9 = frameSize-16
+	emit(arm64ADDReg(x9, arm64RegSP, x9))          // x9 = sp + offset
+	emit(arm64LDR64Imm(26, x9, 0))                 // ldr x26, [x9]
+	emit(arm64LDR64Imm(30, x9, 8))                 // ldr x30, [x9,#8]
 	emit(arm64ADDReg(arm64RegSP, arm64RegSP, x13)) // add sp, sp, frameSize
 	emit(0xD65F03C0)                               // ret
 
