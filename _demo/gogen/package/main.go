@@ -854,8 +854,6 @@ func foo(v interface{}) {
 }
 
 // ============ Test 29: TestTypeSwitch2 ============
-// IGNORED in main: Bug in llgo - TypeSwitch initialization statement is missing
-// See: https://github.com/goplus/llgo/issues/1604
 func testTypeSwitch2() {
 	fmt.Println("=== testTypeSwitch2 ===")
 	pkg := newMainPackage()
@@ -1982,8 +1980,7 @@ func foo(format string, args ...interface{}) (int, error) {
 }
 
 // ============ Test 75: TestIf ============
-// IGNORED in main: Bug in llgo - If statement initialization is missing
-// See: https://github.com/goplus/llgo/issues/1606
+// ============ Test 78: TestIf ============
 func testIf() {
 	fmt.Println("=== testIf ===")
 	pkg := newMainPackage()
@@ -2006,9 +2003,7 @@ func main() {
 	fmt.Println("  [PASS]")
 }
 
-// ============ Test 76: TestIfElse ============
-// IGNORED in main: Same bug as testIf - If statement initialization is missing
-// See: https://github.com/goplus/llgo/issues/1606
+// ============ Test 79: TestIfElse ============
 func testIfElse() {
 	fmt.Println("=== testIfElse ===")
 	pkg := newMainPackage()
@@ -2124,9 +2119,7 @@ func main() {
 	fmt.Println("  [PASS]")
 }
 
-// ============ Test 81: TestSwitch ============
-// IGNORED in main: Same bug as testIf - Switch statement initialization is missing
-// See: https://github.com/goplus/llgo/issues/1606
+// ============ Test 90: TestSwitch ============
 func testSwitch() {
 	fmt.Println("=== testSwitch ===")
 	pkg := newMainPackage()
@@ -2202,9 +2195,7 @@ func main() {
 	fmt.Println("  [PASS]")
 }
 
-// ============ Test 83: TestFor ============
-// IGNORED in main: Same bug as testIf - For loop initialization is missing
-// See: https://github.com/goplus/llgo/issues/1606
+// ============ Test 95: TestFor ============
 func testFor() {
 	fmt.Println("=== testFor ===")
 	pkg := newMainPackage()
@@ -2251,9 +2242,7 @@ func main() {
 	fmt.Println("  [PASS]")
 }
 
-// ============ Test 85: TestLabeledFor ============
-// IGNORED in main: Same bug as testIf - For loop initialization is missing
-// See: https://github.com/goplus/llgo/issues/1606
+// ============ Test 97: TestLabeledFor ============
 func testLabeledFor() {
 	fmt.Println("=== testLabeledFor ===")
 	pkg := newMainPackage()
@@ -3738,7 +3727,7 @@ func main() {
 
 // ============ Main ============
 func main() {
-	fmt.Println("Running package_test tests (144 tests, 6 ignored)...")
+	fmt.Println("Running package_test tests (150 tests)...")
 	fmt.Println()
 
 	// Batch 1: tests 1-5
@@ -3827,7 +3816,8 @@ func main() {
 	testTypeSwitch()
 	fmt.Println()
 
-	// IGNORED: testTypeSwitch2() - llgo bug, see https://github.com/goplus/llgo/issues/1604
+	testTypeSwitch2()
+	fmt.Println()
 
 	testSelect()
 	fmt.Println()
@@ -3964,8 +3954,11 @@ func main() {
 	testDelayedLoadUsed()
 	fmt.Println()
 
-	// IGNORED: testIf() - llgo bug, see https://github.com/goplus/llgo/issues/1606
-	// IGNORED: testIfElse() - same bug as testIf
+	testIf()
+	fmt.Println()
+
+	testIfElse()
+	fmt.Println()
 
 	testGoto()
 	fmt.Println()
@@ -3979,17 +3972,20 @@ func main() {
 	testGoDefer()
 	fmt.Println()
 
-	// IGNORED: testSwitch() - same bug as testIf (Switch initialization missing)
+	testSwitch()
+	fmt.Println()
 
 	testSwitchNoTag()
 	fmt.Println()
 
-	// IGNORED: testFor() - same bug as testIf (For initialization missing)
+	testFor()
+	fmt.Println()
 
 	testLoopFor()
 	fmt.Println()
 
-	// IGNORED: testLabeledFor() - same bug as testIf (For initialization missing)
+	testLabeledFor()
+	fmt.Println()
 
 	testForRange()
 	fmt.Println()
