@@ -1,0 +1,4 @@
+reloc(directcall) sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directcall) sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.SliceAppend
+reloc(directref) sliceappend.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directref) sliceappend.init -> sliceappend.init$guard

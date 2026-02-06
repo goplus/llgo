@@ -1,0 +1,6 @@
+reloc(directcall) __llgo_stub.funcptrslice.B -> funcptrslice.B
+reloc(directcall) funcptrslice.init -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directref) funcptrslice.init -> __llgo_stub.funcptrslice.B
+reloc(directref) funcptrslice.init -> funcptrslice.G
+reloc(directref) funcptrslice.init -> funcptrslice.init$guard
+reloc(directref) funcptrslice.init -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ

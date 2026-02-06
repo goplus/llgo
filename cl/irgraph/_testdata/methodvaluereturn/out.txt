@@ -1,0 +1,6 @@
+reloc(directcall) methodvaluereturn.(*T).M -> methodvaluereturn.T.M
+reloc(directcall) methodvaluereturn.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+reloc(directcall) methodvaluereturn.T.M$bound -> methodvaluereturn.T.M
+reloc(directref) methodvaluereturn.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+reloc(directref) methodvaluereturn.A -> methodvaluereturn.T.M$bound
+reloc(directref) methodvaluereturn.init -> methodvaluereturn.init$guard

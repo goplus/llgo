@@ -52,6 +52,72 @@ func (b Builder) unsafeInterface(rawIntf *types.Interface, t Expr, data llvm.Val
 	return b.unsafeIface(itab.impl, data)
 }
 
+func (b Builder) markUseIface(t Type) {
+	if !b.canEmitReloc() {
+		return
+	}
+	tabi := b.abiType(t.raw.Type)
+	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
+	b.Pkg.addReloc(relocUseIface, b.Func.impl, tabi.impl, 0, nilPtr, nilPtr)
+}
+
+func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
+	if !b.canEmitReloc() || idx < 0 {
+		return
+	}
+	tintf := b.abiType(rawIntf)
+	// Store method index in addend; later passes can map it to the method entry.
+	var nameVal, fnTypeVal llvm.Value
+	if idx < rawIntf.NumMethods() {
+		m := rawIntf.Method(idx)
+		name := m.Name()
+		if !token.IsExported(name) {
+			if pkg := m.Pkg(); pkg != nil {
+				name = abi.FullName(pkg, name)
+			}
+		}
+		nameVal = b.Pkg.relocString(name)
+		ftyp := funcType(b.Prog, m.Type())
+		fnTypeVal = b.abiType(ftyp).impl
+	}
+	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx), nameVal, fnTypeVal)
+}
+
+// MarkUseNamedMethod records a named method usage for reachability analysis.
+// This corresponds to Go's R_USENAMEDMETHOD reloc.
+func (b Builder) MarkUseNamedMethod(name string) {
+	if !b.canEmitReloc() {
+		return
+	}
+	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, b.Pkg.relocString(name), 0, llvm.ConstNull(b.Prog.tyVoidPtr()), llvm.ConstNull(b.Prog.tyVoidPtr()))
+}
+
+// MarkReflectMethod records a reflect-driven method lookup.
+// This corresponds to Go's ReflectMethod attribute (conservatively keep exported methods).
+func (b Builder) MarkReflectMethod() {
+	if !b.canEmitReloc() {
+		return
+	}
+	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
+	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0, nilPtr, nilPtr)
+}
+
+func (b Builder) canEmitReloc() bool {
+	if b.Pkg == nil || b.Func == nil {
+		return false
+	}
+	if !b.Prog.emitReloc {
+		return false
+	}
+	rt := b.Prog.runtime()
+	if rt == nil || rt.Scope() == nil {
+		return false
+	}
+	// Export data importers do not include unexported runtime symbols.
+	// Skip reloc emission in that case to avoid triggering missing runtime lookups.
+	return rt.Scope().Lookup("interequal") != nil
+}
+
 func iMethodOf(rawIntf *types.Interface, name string) int {
 	n := rawIntf.NumMethods()
 	for i := 0; i < n; i++ {
@@ -82,6 +148,7 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	}
 	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
+	b.markUseIfaceMethod(rawIntf, i)
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
@@ -119,6 +186,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	prog := b.Prog
 	typ := x.Type
 	tabi := b.abiType(typ.raw.Type)
+	b.markUseIface(typ)
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
@@ -251,6 +319,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	if debugInstr {
 		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	}
+	b.markUseIface(assertedTyp)
 	tx := b.faceAbiType(x)
 	tabi := b.abiType(assertedTyp.raw.Type)
 	var eq Expr
@@ -318,6 +387,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 //	t1 = change interface interface{} <- I (t0)
 func (b Builder) ChangeInterface(typ Type, x Expr) (ret Expr) {
 	rawIntf := typ.raw.Type.Underlying().(*types.Interface)
+	b.markUseIface(typ)
 	tabi := b.faceAbiType(x)
 	data := b.faceData(x.impl)
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), typ}

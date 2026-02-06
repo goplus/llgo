@@ -1,0 +1,19 @@
+reloc(methodoff idx=0) *_llgo_useifacemethod_unexported.T -> useifacemethod_unexported.(*T).M
+reloc(methodoff idx=0) _llgo_useifacemethod_unexported.T -> useifacemethod_unexported.(*T).M
+reloc(methodoff idx=0) _llgo_useifacemethod_unexported.T -> useifacemethod_unexported.T.M
+reloc(methodoff idx=0) name=M *_llgo_useifacemethod_unexported.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) name=M _llgo_useifacemethod_unexported.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=1) *_llgo_useifacemethod_unexported.T -> useifacemethod_unexported.(*T).m
+reloc(methodoff idx=1) _llgo_useifacemethod_unexported.T -> useifacemethod_unexported.(*T).m
+reloc(methodoff idx=1) _llgo_useifacemethod_unexported.T -> useifacemethod_unexported.T.m
+reloc(methodoff idx=1) name=useifacemethod_unexported.m *_llgo_useifacemethod_unexported.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=1) name=useifacemethod_unexported.m _llgo_useifacemethod_unexported.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_useifacemethod_unexported.T -> _llgo_useifacemethod_unexported.T
+reloc(typeref) *useifacemethod_unexported.iface$joxdAuIpp-8HpAZhEb2I0x4z1L_r7Ri2MX_K22EgDQM -> useifacemethod_unexported.iface$joxdAuIpp-8HpAZhEb2I0x4z1L_r7Ri2MX_K22EgDQM
+reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_useifacemethod_unexported.T -> *_llgo_useifacemethod_unexported.T
+reloc(typeref) useifacemethod_unexported.iface$joxdAuIpp-8HpAZhEb2I0x4z1L_r7Ri2MX_K22EgDQM -> *useifacemethod_unexported.iface$joxdAuIpp-8HpAZhEb2I0x4z1L_r7Ri2MX_K22EgDQM
+reloc(typeref) useifacemethod_unexported.iface$joxdAuIpp-8HpAZhEb2I0x4z1L_r7Ri2MX_K22EgDQM -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(useiface) useifacemethod_unexported.Convert -> _llgo_useifacemethod_unexported.T
+reloc(useifacemethod) name=useifacemethod_unexported.m fntype=_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac useifacemethod_unexported.Use -> useifacemethod_unexported.iface$joxdAuIpp-8HpAZhEb2I0x4z1L_r7Ri2MX_K22EgDQM

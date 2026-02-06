@@ -31,13 +31,19 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
 
+	"github.com/goplus/llvm"
+
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/cl/dcepass"
+	"github.com/goplus/llgo/cl/deadcode"
+	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
@@ -51,7 +57,7 @@ import (
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
-	"github.com/goplus/llgo/xtool/env/llvm"
+	envllvm "github.com/goplus/llgo/xtool/env/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -129,8 +135,9 @@ type Config struct {
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
-	PrintCommands bool
+	PrintCommands bool // print executed commands
 	GenLL         bool // generate pkg .ll files
+	DCE           bool // enable experimental Go-like link-time DCE (build/run only)
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
@@ -222,6 +229,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err := ensureSizeReporting(conf); err != nil {
 		return nil, err
 	}
+	if conf.DCE {
+		if conf.Mode != ModeBuild && conf.Mode != ModeRun {
+			return nil, fmt.Errorf("dce only supports build/run modes")
+		}
+		if conf.BuildMode != BuildModeExe {
+			return nil, fmt.Errorf("dce only supports buildmode=exe")
+		}
+	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)
@@ -240,6 +255,13 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
 		cl.EnableExportRename(true)
+	}
+
+	if conf.DCE {
+		if isWasmTarget(conf.Goos) || strings.HasPrefix(conf.Target, "wasi") {
+			return nil, fmt.Errorf("dce does not support wasm targets")
+		}
+		conf.ForceRebuild = true
 	}
 
 	verbose := conf.Verbose
@@ -282,6 +304,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	prog := llssa.NewProgram(target)
+	prog.EnableRelocTable(conf.DCE)
 	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
 		if arch == "wasm" {
 			sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
@@ -354,7 +377,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	env := llvm.New("")
+	env := envllvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
@@ -483,6 +506,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		mockable.Exit(1)
 	}
 
+	if conf.DCE && len(ctx.entryPkgs) > 0 {
+		allPkgs = append(allPkgs, ctx.entryPkgs...)
+	}
+
 	return allPkgs, nil
 }
 
@@ -509,7 +536,7 @@ const (
 )
 
 type context struct {
-	env            *llvm.Env
+	env            *envllvm.Env
 	conf           *packages.Config
 	progSSA        *ssa.Program
 	prog           llssa.Program
@@ -520,6 +547,7 @@ type context struct {
 	initial        []*packages.Package
 	pkgs           map[*packages.Package]Package // cache for lookup
 	pkgByID        map[string]Package            // cache for lookup by pkg.ID
+	entryPkgs      []*aPackage
 	mode           Mode
 	nLibdir        int32
 	output         bool
@@ -545,7 +573,7 @@ func (c *context) compiler() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewCompiler(config)
-	cmd.Verbose = c.shouldPrintCommands(false)
+	cmd.Verbose = c.buildConf.Verbose
 	return cmd
 }
 
@@ -558,18 +586,17 @@ func (c *context) linker() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewLinker(config)
-	cmd.Verbose = c.shouldPrintCommands(false)
+	cmd.Verbose = c.buildConf.Verbose
 	return cmd
-}
-
-// shouldPrintCommands reports whether command tracing should be enabled.
-func (c *context) shouldPrintCommands(verbose bool) bool {
-	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
 }
 
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
+	if ctx.buildConf.DCE {
+		// In DCE mode we keep raw .bc inputs for linking (no archives).
+		return nil
+	}
 	if len(aPkg.ObjFiles) == 0 {
 		return nil
 	}
@@ -808,7 +835,6 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		return nil, nil
 	}
 
-	printCmds := ctx.shouldPrintCommands(verbose)
 	var objFiles []string
 	llgoRoot := env.LLGoROOT()
 
@@ -842,31 +868,48 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// If GenLL is enabled, first emit .ll for debugging
-		if ctx.buildConf.GenLL {
-			llFile := baseName + ".ll"
-			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
-			if printCmds {
-				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
+		// If GenLL/DCE is enabled, emit .ll/.bc for debugging
+		if ctx.buildConf.GenLL || ctx.buildConf.DCE {
+			if ctx.buildConf.GenLL {
+				llFile := baseName + ".ll"
+				llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
+				}
+				cmd := ctx.compiler()
+				if err := cmd.Compile(llArgs...); err != nil {
+					return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
+				}
+			}
+			if ctx.buildConf.DCE {
+				bcFile := baseName + ".bc"
+				bcArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-o", bcFile, "-c", srcFile)
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Compiling extra file (bc): clang %s\n", strings.Join(bcArgs, " "))
+				}
+				cmd := ctx.compiler()
+				if err := cmd.Compile(bcArgs...); err != nil {
+					return nil, fmt.Errorf("failed to compile extra file %s to .bc: %w", srcFile, err)
+				}
+			}
+		}
+
+		// If DCE is enabled, record the .bc for linking; otherwise compile to .o
+		if ctx.buildConf.DCE {
+			bcFile := baseName + ".bc"
+			objFiles = append(objFiles, bcFile)
+		} else {
+			objFile := baseName + ".o"
+			objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 			}
 			cmd := ctx.compiler()
-			if err := cmd.Compile(llArgs...); err != nil {
-				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
+			if err := cmd.Compile(objArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
 			}
+			objFiles = append(objFiles, objFile)
 		}
-
-		// Always compile to .o for linking
-		objFile := baseName + ".o"
-		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
-		if printCmds {
-			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
-		}
-		cmd := ctx.compiler()
-		if err := cmd.Compile(objArgs...); err != nil {
-			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
-		}
-
-		objFiles = append(objFiles, objFile)
 		os.Remove(baseName) // Remove the temp file we created for naming
 	}
 
@@ -905,6 +948,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
 				if aPkg.ArchiveFile != "" {
 					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
+				} else {
+					linkInputs = append(linkInputs, aPkg.ObjFiles...)
 				}
 				return
 			} else {
@@ -920,6 +965,8 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			if aPkg.ArchiveFile != "" {
 				linkInputs = append(linkInputs, aPkg.ArchiveFile)
+			} else {
+				linkInputs = append(linkInputs, aPkg.ObjFiles...)
 			}
 		}
 	})
@@ -932,9 +979,15 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
-	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
-	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	if ctx.buildConf.DCE {
+		if ctx.buildConf.DCE {
+			_ = entryPkg.LPkg.String() // ensure __llgo_relocs is materialized
+		}
+		entryPkg.IRGraph = irgraph.Build(entryPkg.LPkg.Module(), irgraph.Options{})
+		ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
+	}
+	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
@@ -978,11 +1031,156 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
+// dumpAbiTypeMetadata walks the merged bitcode via LLVM APIs and prints a small
+// summary of globals whose types reference runtime/abi.Type (only in verbose mode).
+func dumpAbiTypeMetadata(mod llvm.Module, bcPath string, verbose bool) {
+	if !verbose || mod.IsNil() {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(os.Stderr, "[bc-pass] skip abi.Type scan (panic: %v) on %s\n", r, bcPath)
+		}
+	}()
+
+	totalGlobals := 0
+	matchedGlobals := 0
+	samples := make([]string, 0, 20)
+	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
+		totalGlobals++
+		if typeContainsAbiType(gv.Type(), make(map[uintptr]bool)) {
+			matchedGlobals++
+			if len(samples) < 20 {
+				samples = append(samples, fmt.Sprintf("%s :: %s", gv.Name(), gv.Type().String()))
+			}
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "[bc-pass] abi.Type-containing globals: %d/%d in %s\n", matchedGlobals, totalGlobals, bcPath)
+	for _, s := range samples {
+		fmt.Fprintln(os.Stderr, "  ", s)
+	}
+	if matchedGlobals > len(samples) {
+		fmt.Fprintf(os.Stderr, "  ... %d more globals omitted ...\n", matchedGlobals-len(samples))
+	}
+}
+
+// typeContainsAbiType reports whether the given LLVM type references the runtime/abi.Type
+// named struct anywhere in its shape.
+func typeContainsAbiType(t llvm.Type, seen map[uintptr]bool) bool {
+	if t.IsNil() {
+		return false
+	}
+	key := uintptr(unsafe.Pointer(t.C))
+	if seen[key] {
+		return false
+	}
+	seen[key] = true
+
+	switch t.TypeKind() {
+	case llvm.PointerTypeKind, llvm.ArrayTypeKind, llvm.VectorTypeKind:
+		return typeContainsAbiType(t.ElementType(), seen)
+	case llvm.StructTypeKind:
+		if strings.Contains(t.StructName(), "runtime/abi.Type") {
+			return true
+		}
+		for _, et := range t.StructElementTypes() {
+			if typeContainsAbiType(et, seen) {
+				return true
+			}
+		}
+	case llvm.FunctionTypeKind:
+		if typeContainsAbiType(t.ReturnType(), seen) {
+			return true
+		}
+		for _, pt := range t.ParamTypes() {
+			if typeContainsAbiType(pt, seen) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
+	candidates := []string{"main", "_start"}
+	var roots []irgraph.SymID
+	for _, name := range candidates {
+		fn := mod.NamedFunction(name)
+		if fn.IsNil() {
+			continue
+		}
+		if fn.IsDeclaration() {
+			return nil, fmt.Errorf("dce root %q is declaration only", name)
+		}
+		roots = append(roots, irgraph.SymID(name))
+	}
+	if len(roots) == 0 {
+		return nil, fmt.Errorf("dce requires at least one entry root (main/_start)")
+	}
+	return roots, nil
+}
+
+// mergePackageGraphs merges IRGraphs from all packages in ctx.
+// This is used instead of building a graph from the merged LLVM module,
+// because LLVM renames duplicate @__llgo_relocs globals when linking,
+// causing irgraph.Build to miss most reloc information.
+func mergePackageGraphs(ctx *context) *irgraph.Graph {
+	merged := &irgraph.Graph{
+		Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
+		Relocs: nil,
+	}
+	// Merge from all cached packages
+	for _, pkg := range ctx.pkgs {
+		if pkg == nil || pkg.IRGraph == nil {
+			continue
+		}
+		for id, node := range pkg.IRGraph.Nodes {
+			if _, ok := merged.Nodes[id]; !ok {
+				merged.Nodes[id] = node
+			}
+		}
+		merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
+	}
+	// Merge from entry packages (generated main module, etc.)
+	for _, pkg := range ctx.entryPkgs {
+		if pkg == nil || pkg.IRGraph == nil {
+			continue
+		}
+		for id, node := range pkg.IRGraph.Nodes {
+			if _, ok := merged.Nodes[id]; !ok {
+				merged.Nodes[id] = node
+			}
+		}
+		merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
+	}
+	return merged
+}
+
+func graphSummary(g *irgraph.Graph) (nodes, edges, call, ref, reloc int) {
+	if g == nil {
+		return 0, 0, 0, 0, 0
+	}
+	nodes = len(g.Nodes)
+	edges = len(g.Relocs)
+	for _, r := range g.Relocs {
+		if r.Kind&irgraph.EdgeCall != 0 {
+			call++
+		}
+		if r.Kind&irgraph.EdgeRef != 0 {
+			ref++
+		}
+		if r.Kind&irgraph.EdgeRelocMask != 0 {
+			reloc++
+		}
+	}
+	return nodes, edges, call, ref, reloc
+}
+
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
-	printCmds := ctx.shouldPrintCommands(verbose)
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return ctx.createArchiveFile(app, objFiles, printCmds)
+		return ctx.createArchiveFile(app, objFiles, verbose)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -1001,20 +1199,228 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	if ctx.buildConf.GenLL {
+	if ctx.buildConf.DCE {
+		for _, f := range objFiles {
+			if strings.HasSuffix(f, ".o") {
+				return fmt.Errorf("DCE enabled but non-bc input %s", f)
+			}
+		}
+
+		var bcInputs []string
+		for _, f := range objFiles {
+			switch {
+			case strings.HasSuffix(f, ".bc"):
+				bcInputs = append(bcInputs, f)
+			case strings.HasSuffix(f, ".ll"):
+				bcFile := strings.TrimSuffix(f, ".ll") + ".bc"
+				args := []string{"-emit-llvm", "-o", bcFile, "-c", f, "-Wno-override-module"}
+				if verbose {
+					fmt.Fprintln(os.Stderr, "clang", args)
+				}
+				if err := ctx.compiler().Compile(args...); err != nil {
+					return fmt.Errorf("failed to compile %s: %v", f, err)
+				}
+				bcInputs = append(bcInputs, bcFile)
+			default:
+				return fmt.Errorf("DCE expects .bc/.ll inputs, got %s", f)
+			}
+		}
+
+		// Link all BC modules together for a whole-program view using LLVM bindings.
+		llctx := llvm.NewContext()
+		defer llctx.Dispose()
+		var merged llvm.Module
+		for i, f := range bcInputs {
+			m, err := llctx.ParseBitcodeFile(f)
+			if err != nil {
+				if !merged.IsNil() {
+					merged.Dispose()
+				}
+				return fmt.Errorf("parse bitcode %s: %w", f, err)
+			}
+			if i == 0 {
+				merged = m
+			} else {
+				if err := llvm.LinkModules(merged, m); err != nil {
+					merged.Dispose()
+					return fmt.Errorf("link bitcode %s: %w", f, err)
+				}
+			}
+		}
+		if merged.IsNil() {
+			return fmt.Errorf("no bitcode inputs to link")
+		}
+
+		dceLLName := ""
+		if ctx.buildConf.DCE {
+			roots, err := dceEntryRoots(merged)
+			if err != nil {
+				merged.Dispose()
+				return err
+			}
+			if verbose {
+				rootNames := make([]string, 0, len(roots))
+				for _, r := range roots {
+					rootNames = append(rootNames, string(r))
+				}
+				fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
+			}
+			// Merge IRGraphs from all packages instead of building from merged module.
+			// This avoids the issue where LLVM renames duplicate __llgo_relocs globals
+			// to __llgo_relocs.2, __llgo_relocs.4, etc. when linking modules.
+			graph := mergePackageGraphs(ctx)
+			if verbose {
+				nodes, edges, call, ref, reloc := graphSummary(graph)
+				fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
+			}
+			deadcode.SetVerbose(verbose)
+			res := deadcode.Analyze(graph, roots)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
+				fmt.Fprintln(os.Stderr, "[dce] pass begin")
+			}
+
+			prePassLL := ""
+			if verbose {
+				if f, err := os.CreateTemp("", "llgo-dce-pre-*.ll"); err == nil {
+					_, _ = f.WriteString(merged.String())
+					f.Close()
+					prePassLL = f.Name()
+					fmt.Fprintf(os.Stderr, "[dce] module ll (pre): %s\n", prePassLL)
+				}
+			}
+
+			stats := dcepass.Apply(merged, res, dcepass.Options{})
+			if verbose {
+				rmCount := 0
+				for _, m := range res.ReachableMethods {
+					rmCount += len(m)
+				}
+				fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d dropped_funcs=%d dropped_globals=%d reachable_methods=%d dropped_methods=%d)\n",
+					stats.Reachable, stats.DroppedFuncs, stats.DroppedGlobal, rmCount, stats.DroppedMethod)
+				if rmCount > 0 {
+					for typ, idxs := range res.ReachableMethods {
+						var list []string
+						for idx := range idxs {
+							list = append(list, fmt.Sprintf("%d", idx))
+						}
+						sort.Strings(list)
+						fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
+					}
+				}
+				if len(stats.DroppedMethodDetail) > 0 {
+					for typ, idxs := range stats.DroppedMethodDetail {
+						list := make([]string, len(idxs))
+						for i, v := range idxs {
+							list[i] = fmt.Sprintf("%d", v)
+						}
+						sort.Strings(list)
+						fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
+					}
+				}
+			}
+			llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
+			if err != nil {
+				merged.Dispose()
+				return err
+			}
+			if _, err := llFile.WriteString(merged.String()); err != nil {
+				llFile.Close()
+				merged.Dispose()
+				return err
+			}
+			if err := llFile.Close(); err != nil {
+				merged.Dispose()
+				return err
+			}
+			dceLLName = llFile.Name()
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[dce] module ll (post): %s\n", dceLLName)
+			}
+		}
+
+		if ctx.buildConf.DCE {
+			if dceLLName == "" {
+				merged.Dispose()
+				return fmt.Errorf("missing DCE module .ll output")
+			}
+			// NOTE: after the DCE pass the merged module may contain mutated
+			// constants that occasionally trip LLVM type walkers. Skip the
+			// ABI metadata dump in DCE mode to avoid crashes during verbose runs.
+			if !ctx.buildConf.DCE {
+				dumpAbiTypeMetadata(merged, dceLLName, verbose)
+			}
+
+			combinedObj := strings.TrimSuffix(dceLLName, ".ll") + ".o"
+			args := []string{"-o", combinedObj, "-c", dceLLName, "-Wno-override-module"}
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", args)
+			}
+			if err := ctx.compiler().Compile(args...); err != nil {
+				merged.Dispose()
+				return fmt.Errorf("failed to compile DCE ll: %v", err)
+			}
+			merged.Dispose()
+			objFiles = []string{combinedObj}
+		} else {
+			combinedBc, err := os.CreateTemp("", "llgo-link-*.bc")
+			if err != nil {
+				merged.Dispose()
+				return err
+			}
+			combinedBcName := combinedBc.Name()
+			if err := llvm.WriteBitcodeToFile(merged, combinedBc); err != nil {
+				combinedBc.Close()
+				merged.Dispose()
+				return fmt.Errorf("write combined bitcode: %w", err)
+			}
+			combinedBc.Close()
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[bc-pass] merged bitcode written to %s\n", combinedBcName)
+			}
+
+			// Optional debug: dump abi.Type metadata from the merged module.
+			dumpAbiTypeMetadata(merged, combinedBcName, verbose)
+
+			// Compile the merged BC to a single object for final native link.
+			combinedObj := strings.TrimSuffix(combinedBcName, ".bc") + ".o"
+			args := []string{"-o", combinedObj, "-c", combinedBcName, "-Wno-override-module"}
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", args)
+			}
+			if err := ctx.compiler().Compile(args...); err != nil {
+				merged.Dispose()
+				return fmt.Errorf("failed to compile combined bc: %v", err)
+			}
+
+			merged.Dispose()
+			objFiles = []string{combinedObj}
+		}
+	} else if ctx.buildConf.GenLL {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
-			if strings.HasSuffix(objFile, ".ll") {
+			switch {
+			case strings.HasSuffix(objFile, ".ll"):
 				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
 				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-				if printCmds {
+				if verbose {
 					fmt.Fprintln(os.Stderr, "clang", args)
 				}
 				if err := ctx.compiler().Compile(args...); err != nil {
 					return fmt.Errorf("failed to compile %s: %v", objFile, err)
 				}
 				compiledObjFiles = append(compiledObjFiles, oFile)
-			} else {
+			case strings.HasSuffix(objFile, ".bc"):
+				oFile := strings.TrimSuffix(objFile, ".bc") + ".o"
+				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+				if verbose {
+					fmt.Fprintln(os.Stderr, "clang", args)
+				}
+				if err := ctx.compiler().Compile(args...); err != nil {
+					return fmt.Errorf("failed to compile %s: %v", objFile, err)
+				}
+				compiledObjFiles = append(compiledObjFiles, oFile)
+			default:
 				compiledObjFiles = append(compiledObjFiles, objFile)
 			}
 		}
@@ -1024,7 +1430,10 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()
-	cmd.Verbose = printCmds
+	cmd.Verbose = verbose
+	if verbose {
+		fmt.Fprintf(os.Stderr, "Linking final binary: %s\n", strings.Join(buildArgs, " "))
+	}
 	return cmd.Link(buildArgs...)
 }
 
@@ -1078,8 +1487,7 @@ func (c *context) createArchiveFile(archivePath string, objFiles []string, verbo
 	args := append([]string{"rcs", tmpName}, objFiles...)
 	arCmd := c.archiver()
 	cmd := exec.Command(arCmd, args...)
-	printCmds := c.shouldPrintCommands(len(verbose) > 0 && verbose[0])
-	if printCmds {
+	if len(verbose) > 0 && verbose[0] {
 		fmt.Fprintf(os.Stderr, "%s %s\n", filepath.Base(arCmd), strings.Join(args, " "))
 	}
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -1151,21 +1559,27 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
-	printCmds := ctx.shouldPrintCommands(verbose)
-	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, printCmds)
+	if ctx.buildConf.DCE {
+		if ctx.buildConf.DCE {
+			_ = ret.String() // ensure __llgo_relocs is materialized
+		}
+		aPkg.IRGraph = irgraph.Build(ret.Module(), irgraph.Options{})
+	}
+
+	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
-	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
 	if aPkg.AltPkg != nil {
-		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
+		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, verbose)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
-		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
@@ -1200,33 +1614,47 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
-	// If GenLL is enabled, keep a copy of the .ll file for debugging
-	if ctx.buildConf.GenLL {
-		llFile := exportFile + ".ll"
+	// If GenLL/DCE is enabled, keep copies of the .ll/.bc for debugging
+	if ctx.buildConf.GenLL || ctx.buildConf.DCE {
 		if err := os.Chmod(f.Name(), 0644); err != nil {
 			return "", err
 		}
-		// Copy instead of rename so we can still compile to .o
-		if err := copyFileAtomic(f.Name(), llFile); err != nil {
-			return "", err
+		if ctx.buildConf.GenLL {
+			llFile := exportFile + ".ll"
+			if err := copyFileAtomic(f.Name(), llFile); err != nil {
+				return "", err
+			}
+		}
+		if ctx.buildConf.DCE {
+			bcFile := exportFile + ".bc"
+			bcArgs := []string{"-emit-llvm", "-o", bcFile, "-c", f.Name(), "-Wno-override-module"}
+			if ctx.buildConf.Verbose {
+				fmt.Fprintln(os.Stderr, "clang", bcArgs)
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(bcArgs...); err != nil {
+				return "", err
+			}
 		}
 	}
-	// Always compile .ll to .o for linking
+	// If DCE is enabled, return the .bc for linking; otherwise compile .ll to .o
+	if ctx.buildConf.DCE {
+		return exportFile + ".bc", nil
+	}
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err
 	}
 	objFile.Close()
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
-	if ctx.shouldPrintCommands(false) {
-		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
+	if ctx.buildConf.Verbose {
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
 	return objFile.Name(), cmd.Compile(args...)
 }
 
-func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
+func llcCheck(env *envllvm.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
@@ -1273,9 +1701,10 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 
 type aPackage struct {
 	*packages.Package
-	SSA    *ssa.Package
-	AltPkg *packages.Cached
-	LPkg   llssa.Package
+	SSA     *ssa.Package
+	AltPkg  *packages.Cached
+	LPkg    llssa.Package
+	IRGraph *irgraph.Graph
 
 	NeedRt     bool
 	NeedPyInit bool
@@ -1576,11 +2005,11 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 	}
 	for _, file := range strings.Split(files, ";") {
 		cFile := filepath.Join(dir, strings.TrimSpace(file))
-		clFile(ctx, args, cFile, expFile, pkg.PkgPath, procFile, verbose)
+		clFile(ctx, args, cFile, expFile, procFile, verbose)
 	}
 }
 
-func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFile func(linkFile string), verbose bool) {
+func clFile(ctx *context, args []string, cFile, expFile string, procFile func(linkFile string), verbose bool) {
 	baseName := expFile + filepath.Base(cFile)
 	ext := filepath.Ext(cFile)
 
@@ -1589,31 +2018,45 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		args = append(args, "-x", "c")
 	}
 
-	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
-	printCmds := ctx.shouldPrintCommands(verbose)
-	if ctx.buildConf.GenLL {
-		llFile := baseName + ".ll"
-		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-		if printCmds {
-			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
-			fmt.Fprintln(os.Stderr, "clang", llArgs)
+	// If GenLL/DCE is enabled, emit .ll/.bc for debugging, then compile to .o
+	if ctx.buildConf.GenLL || ctx.buildConf.DCE {
+		if ctx.buildConf.GenLL {
+			llFile := baseName + ".ll"
+			llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", llArgs)
+			}
+			cmd := ctx.compiler()
+			err := cmd.Compile(llArgs...)
+			check(err)
 		}
-		cmd := ctx.compiler()
-		err := cmd.Compile(llArgs...)
-		check(err)
+		if ctx.buildConf.DCE {
+			bcFile := baseName + ".bc"
+			bcArgs := append(slices.Clone(args), "-emit-llvm", "-o", bcFile, "-c", cFile)
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", bcArgs)
+			}
+			cmd := ctx.compiler()
+			err := cmd.Compile(bcArgs...)
+			check(err)
+		}
 	}
 
-	// Always compile to .o for linking
-	objFile := baseName + ".o"
-	objArgs := append(args, "-o", objFile, "-c", cFile)
-	if printCmds {
-		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
-		fmt.Fprintln(os.Stderr, "clang", objArgs)
+	// If DCE is enabled, record .bc for linking; otherwise compile to .o
+	if ctx.buildConf.DCE {
+		bcFile := baseName + ".bc"
+		procFile(bcFile)
+	} else {
+		objFile := baseName + ".o"
+		objArgs := append(args, "-o", objFile, "-c", cFile)
+		if verbose {
+			fmt.Fprintln(os.Stderr, "clang", objArgs)
+		}
+		cmd := ctx.compiler()
+		err := cmd.Compile(objArgs...)
+		check(err)
+		procFile(objFile)
 	}
-	cmd := ctx.compiler()
-	err := cmd.Compile(objArgs...)
-	check(err)
-	procFile(objFile)
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {

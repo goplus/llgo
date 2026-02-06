@@ -1,0 +1,13 @@
+reloc(methodoff idx=0) *_llgo_useiface.T -> useiface.(*T).M
+reloc(methodoff idx=0) _llgo_useiface.T -> useiface.(*T).M
+reloc(methodoff idx=0) _llgo_useiface.T -> useiface.T.M
+reloc(methodoff idx=0) name=M *_llgo_useiface.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) name=M _llgo_useiface.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(typeref) *_llgo_useiface.T -> _llgo_useiface.T
+reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> *_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(typeref) _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_useiface.T -> *_llgo_useiface.T
+reloc(useiface) useiface.A -> _llgo_useiface.T

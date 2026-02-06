@@ -1,0 +1,3 @@
+reloc(directcall) multicall.A -> multicall.B
+reloc(directcall) multicall.A -> multicall.C
+reloc(directref) multicall.init -> multicall.init$guard

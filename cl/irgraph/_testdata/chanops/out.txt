@@ -1,0 +1,5 @@
+reloc(directcall) chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.ChanRecv
+reloc(directcall) chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.ChanSend
+reloc(directcall) chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.NewChan
+reloc(directref) chanops.A -> github.com/goplus/llgo/runtime/internal/runtime.NewChan
+reloc(directref) chanops.init -> chanops.init$guard
