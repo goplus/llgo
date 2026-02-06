@@ -9,8 +9,9 @@ import (
 )
 
 type closureStubKey struct {
-	fn  unsafe.Pointer
-	env unsafe.Pointer
+	fn         unsafe.Pointer
+	env        unsafe.Pointer
+	stackBytes uint32
 }
 
 var (
@@ -24,18 +25,18 @@ var (
 // For plain functions (env == nil) it returns fn directly.
 // For closures it returns (stub, true) when supported, otherwise (nil, false)
 // so callers may fall back to other strategies.
-func WrapClosure(fn, env unsafe.Pointer) (unsafe.Pointer, bool) {
+func WrapClosure(fn, env unsafe.Pointer, stackBytes uint32) (unsafe.Pointer, bool) {
 	if env == nil {
 		return fn, true
 	}
-	key := closureStubKey{fn: fn, env: env}
+	key := closureStubKey{fn: fn, env: env, stackBytes: stackBytes}
 
 	closureStubMu.Lock()
 	if p, ok := closureStubCache[key]; ok {
 		closureStubMu.Unlock()
 		return p, true
 	}
-	p := makeClosureStub(fn, env)
+	p := makeClosureStub(fn, env, stackBytes)
 	if p != nil {
 		closureStubCache[key] = p
 		closureStubMu.Unlock()

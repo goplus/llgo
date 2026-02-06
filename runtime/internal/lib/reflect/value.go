@@ -2282,12 +2282,13 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		tout []*abi.Type
 		args []unsafe.Pointer
 		fn   unsafe.Pointer
+		env  unsafe.Pointer
 		ret  unsafe.Pointer
 		ioff int
 	)
 	if v.typ_.IsClosure() {
 		ft = v.typ_.StructType().Fields[0].Typ.FuncType()
-		fn, tin, tout, ioff, args = closureCallInfo(v, ft, args)
+		fn, env, tin, tout, ioff, args = closureCallInfo(v, ft, args)
 	} else {
 		if v.flag&flagMethod != 0 {
 			var (
@@ -2373,6 +2374,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	if err != nil {
 		panic(err)
 	}
+	fn = wrapClosureForCall(sig, fn, env)
 	if sig.RType != ffi.TypeVoid {
 		v := runtime.AllocZ(sig.RType.Size)
 		ret = unsafe.Pointer(&v)

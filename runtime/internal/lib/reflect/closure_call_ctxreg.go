@@ -13,14 +13,21 @@ import (
 //go:linkname setClosurePtr llgo.setClosurePtr
 func setClosurePtr(ptr unsafe.Pointer)
 
-func closureCallInfo(v Value, ft *abi.FuncType, args []unsafe.Pointer) (unsafe.Pointer, []*abi.Type, []*abi.Type, int, []unsafe.Pointer) {
+func closureCallInfo(v Value, ft *abi.FuncType, args []unsafe.Pointer) (unsafe.Pointer, unsafe.Pointer, []*abi.Type, []*abi.Type, int, []unsafe.Pointer) {
 	c := (*closure)(v.ptr)
-	if fn, ok := ffi.WrapClosure(c.fn, c.env); ok {
-		return fn, ft.In, ft.Out, 0, args
+	return c.fn, c.env, ft.In, ft.Out, 0, args
+}
+
+func wrapClosureForCall(sig *ffi.Signature, fn, env unsafe.Pointer) unsafe.Pointer {
+	if env == nil {
+		return fn
+	}
+	if fn2, ok := ffi.WrapClosure(fn, env, uint32(sig.Bytes)); ok {
+		return fn2
 	}
 	// Fallback: write ctx reg in Go and call the target directly.
 	// This may be sufficient on targets where the C call path doesn't clobber
 	// the ctx register.
-	setClosurePtr(c.env)
-	return c.fn, ft.In, ft.Out, 0, args
+	setClosurePtr(env)
+	return fn
 }

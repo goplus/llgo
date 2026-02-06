@@ -6,8 +6,9 @@ package ffi
 
 import "unsafe"
 
-func makeClosureStub(fn, env unsafe.Pointer) unsafe.Pointer {
+func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	_ = fn
 	_ = env
+	_ = stackBytes
 	return nil
 }
