@@ -139,6 +139,96 @@ func TestRelocGraphFromTestdata(t *testing.T) {
 	}
 }
 
+func TestBuildRelocRequiresInjection(t *testing.T) {
+	root, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	pkgDir := filepath.Join(root, "_testdata_reloc", "useiface")
+	mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
+	if len(relocs) == 0 {
+		t.Fatal("expected reloc records from package context")
+	}
+
+	g := Build(mod, Options{})
+	baseReloc := 0
+	for _, r := range g.Relocs {
+		if r.Kind&EdgeRelocMask != 0 {
+			baseReloc++
+		}
+	}
+	if baseReloc != 0 {
+		t.Fatalf("Build should not include reloc edges before injection: got=%d", baseReloc)
+	}
+
+	g.AddRelocRecords(relocs, Options{})
+	injectedReloc := 0
+	for _, r := range g.Relocs {
+		if r.Kind&EdgeRelocMask != 0 {
+			injectedReloc++
+		}
+	}
+	if injectedReloc == 0 {
+		t.Fatal("expected reloc edges after AddRelocRecords")
+	}
+}
+
+func TestAddRelocRecordsMapping(t *testing.T) {
+	g := &Graph{
+		Nodes:  make(map[SymID]*NodeInfo),
+		Relocs: nil,
+	}
+	g.AddRelocRecords([]RelocRecord{
+		{
+			Kind:   relocUseNamedMethod,
+			Owner:  "caller",
+			Target: "Foo",
+		},
+		{
+			Kind:   relocUseIfaceMethod,
+			Owner:  "caller",
+			Target: "IfaceType",
+			Addend: 2,
+			Name:   "M",
+			FnType: "Iface.M$type",
+		},
+		{
+			Kind:   relocMethodOff,
+			Owner:  "TypeA",
+			Target: "",
+			Addend: 1,
+			Name:   "Bar",
+		},
+	}, Options{})
+
+	var foundNamed, foundIfaceMethod, foundMethodOff bool
+	for _, r := range g.Relocs {
+		switch r.Kind {
+		case EdgeRelocUseNamedMethod:
+			if r.Owner == "caller" && r.Target == "_mname:Foo" && r.Name == "Foo" {
+				foundNamed = true
+			}
+		case EdgeRelocUseIfaceMethod:
+			if r.Owner == "caller" && r.Target == "IfaceType" && r.Name == "M" && r.FnType == "Iface.M$type" && r.Addend == 2 {
+				foundIfaceMethod = true
+			}
+		case EdgeRelocMethodOff:
+			if r.Owner == "TypeA" && r.Target == "" && r.Name == "Bar" && r.Addend == 1 {
+				foundMethodOff = true
+			}
+		}
+	}
+	if !foundNamed {
+		t.Fatal("missing mapped usenamedmethod reloc edge")
+	}
+	if !foundIfaceMethod {
+		t.Fatal("missing mapped useifacemethod reloc edge")
+	}
+	if !foundMethodOff {
+		t.Fatal("missing mapped methodoff reloc edge with empty target")
+	}
+}
+
 func hasGoFiles(dir string) bool {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
