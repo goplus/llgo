@@ -26,8 +26,9 @@ func wrapClosureForCall(sig *ffi.Signature, fn, env unsafe.Pointer) unsafe.Point
 		return fn2
 	}
 	// Fallback: write ctx reg in Go and call the target directly.
-	// This may be sufficient on targets where the C call path doesn't clobber
-	// the ctx register.
+	// This is only correct if the ctx register is preserved across the libffi
+	// call path. If libffi clobbers the ctx register, this will misbehave.
+	// This fallback is best-effort for targets without a ctx-reg stub.
 	setClosurePtr(env)
 	return fn
 }

@@ -6,6 +6,12 @@ type Info struct {
 	Constraint string // LLVM inline asm constraint, e.g. "{r12}"
 }
 
+// table maps GOARCH to the dedicated closure context register (ctx-reg ABI).
+//
+// Selection criteria:
+// - must be reservable across the whole program (via LLVM "+reserve-<reg>" or toolchain flags)
+// - must not conflict with the platform calling convention for normal calls
+// - prefer callee-saved GPRs on RISC architectures; on x86 we use mm0 and disable x87 to avoid aliasing
 var table = map[string]Info{
 	"amd64":   {Name: "mm0", Constraint: "{mm0}"},
 	"arm64":   {Name: "x26", Constraint: "{x26}"},

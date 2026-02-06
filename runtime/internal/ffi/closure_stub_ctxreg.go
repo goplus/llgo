@@ -32,16 +32,14 @@ func WrapClosure(fn, env unsafe.Pointer, stackBytes uint32) (unsafe.Pointer, boo
 	key := closureStubKey{fn: fn, env: env, stackBytes: stackBytes}
 
 	closureStubMu.Lock()
+	defer closureStubMu.Unlock()
 	if p, ok := closureStubCache[key]; ok {
-		closureStubMu.Unlock()
 		return p, true
 	}
 	p := makeClosureStub(fn, env, stackBytes)
 	if p != nil {
 		closureStubCache[key] = p
-		closureStubMu.Unlock()
 		return p, true
 	}
-	closureStubMu.Unlock()
 	return nil, false
 }

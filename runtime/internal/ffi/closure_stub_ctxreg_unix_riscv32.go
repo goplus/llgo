@@ -6,10 +6,18 @@ package ffi
 import "unsafe"
 
 func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
-	// riscv32 ctx-reg is x27 (s11, callee-saved).
+	// This stub bridges libffi's C ABI call into llgo's ctx-reg closure ABI.
 	//
-	// We copy stack arguments (word by word) into a new frame to avoid
-	// perturbing the callee's view of stack-passed arguments.
+	// On riscv32 the ctx register is x27 (s11, callee-saved), so the stub must:
+	// - preserve s11 for the C caller
+	// - set s11=env before calling fn
+	//
+	// Additionally, the stub must not perturb stack-passed arguments. We
+	// allocate a new frame:
+	//   frameSize = alignUp(stackBytes, 16) + 16
+	// copy stackBytes from the old argument area (at old sp) into the new
+	// argument area (at new sp), save s11+ra in the last 16 bytes, call fn,
+	// then restore and return. Since this is riscv32, we copy word-by-word.
 	if stackBytes%4 != 0 {
 		return nil
 	}
@@ -135,6 +143,9 @@ func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	*(*uint32)(unsafe.Add(p, litOff+8)) = stackBytes
 	*(*uint32)(unsafe.Add(p, litOff+12)) = frameSize
 
+	// Clear I-cache before and after mprotect:
+	// - before: ensure written instructions are visible to I-cache
+	// - after: ensure the now-executable mapping is observed with correct I-cache state
 	clearICache(p, stubSize)
 	if !protectExec(p, stubSize) {
 		return nil

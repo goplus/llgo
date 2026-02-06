@@ -202,6 +202,9 @@ func makeClosureStub(fn, env unsafe.Pointer, stackBytes uint32) unsafe.Pointer {
 	*(*uint64)(unsafe.Add(p, litSBOff)) = uint64(stackBytes)
 	*(*uint64)(unsafe.Add(p, litFSOff)) = frameSize
 
+	// Clear I-cache before and after mprotect:
+	// - before: ensure written instructions are visible to I-cache
+	// - after: ensure the now-executable mapping is observed with correct I-cache state
 	clearICache(p, stubSize)
 	if !protectExec(p, stubSize) {
 		return nil
