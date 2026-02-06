@@ -406,40 +406,27 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	ft := prog.rtType("Method")
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
-	pkg, pkgPath := b.abiUncommonPkg(t)
+	pkg, _ := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
 	if anonymous {
 		pkg = types.NewPackage(b.Pkg.Path(), "")
 	}
-	var mPkg *types.Package
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
 		obj := m.Obj()
 		mName := obj.Name()
-		if token.IsExported(mName) {
-			mPkg = pkg
-		} else {
-			mPkg = obj.Pkg()
-		}
 		name := b.Str(mName).impl
-		var skipfn bool
 		if !token.IsExported(mName) {
-			name = b.Str(abi.FullName(mPkg, mName)).impl
-			skipfn = PathOf(mPkg) != pkgPath
+			name = b.Str(abi.FullName(obj.Pkg(), mName)).impl
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
-		if skipfn {
-			tfn = prog.Nil(prog.VoidPtr()).impl
-			ifn = tfn
-		} else {
-			tfn = b.abiMethodFunc(anonymous, mPkg, mName, mSig)
-			ifn = tfn
-			if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
-				pRecv := types.NewVar(token.NoPos, mPkg, "", types.NewPointer(mSig.Recv().Type()))
-				pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
-				ifn = b.abiMethodFunc(anonymous, mPkg, mName, pSig)
-			}
+		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
+		ifn = tfn
+		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
+			pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(mSig.Recv().Type()))
+			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
+			ifn = b.abiMethodFunc(anonymous, pkg, mName, pSig)
 		}
 		var values []llvm.Value
 		values = append(values, name)
