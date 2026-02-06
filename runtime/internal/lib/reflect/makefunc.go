@@ -204,32 +204,6 @@ type methodValue struct {
 // semantically equivalent to the input as far as the user of package
 // reflect can tell, but the true func representation can be handled
 // by code like Convert and Interface and Assign.
-func makeMethodValue(op string, v Value) Value {
-	if v.flag&flagMethod == 0 {
-		panic("reflect: internal error: invalid use of makeMethodValue")
-	}
-
-	// Ignoring the flagMethod bit, v describes the receiver, not the method type.
-	fl := v.flag & (flagRO | flagAddr | flagIndir)
-	fl |= flag(v.typ().Kind())
-	rcvr := Value{v.typ(), v.ptr, fl}
-
-	// v.Type returns the actual type of the method value.
-	_, _, fn := methodReceiver(op, rcvr, int(v.flag)>>flagMethodShift)
-	var ptr unsafe.Pointer
-	storeRcvr(v, unsafe.Pointer(&ptr))
-	fv := &struct {
-		fn  unsafe.Pointer
-		env unsafe.Pointer
-	}{fn, ptr}
-	ftyp := (*funcType)(unsafe.Pointer(v.Type().(*rtype)))
-	typ := closureOf(ftyp)
-	// Cause panic if method is not appropriate.
-	// The panic would still happen during the call if we omit this,
-	// but we want Interface() and other operations to fail early.
-	return Value{typ, unsafe.Pointer(fv), v.flag&flagRO | flagIndir | flag(Func)}
-}
-
 var unsafePointerType = rtypeOf(unsafe.Pointer(nil))
 
 /*
