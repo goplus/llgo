@@ -56,17 +56,17 @@ func (b Builder) markUseIface(t Type) {
 	if !b.canEmitReloc() {
 		return
 	}
-	tabi := b.abiType(t.raw.Type)
-	b.Pkg.addReloc(relocUseIface, b.Func.impl, tabi.impl, 0, "", "", llvm.Value{})
+	targetName, _ := b.Pkg.abi.TypeName(t.raw.Type)
+	b.Pkg.addReloc(relocUseIface, b.Func.impl, llvm.Value{}, 0, "", targetName, "", llvm.Value{})
 }
 
 func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 	if !b.canEmitReloc() || idx < 0 {
 		return
 	}
-	tintf := b.abiType(rawIntf)
 	// Store method index in addend; later passes can map it to the method entry.
-	var fnTypeVal llvm.Value
+	targetName, _ := b.Pkg.abi.TypeName(rawIntf)
+	fnTypeName := ""
 	infoName := ""
 	if idx < rawIntf.NumMethods() {
 		m := rawIntf.Method(idx)
@@ -78,9 +78,9 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 		}
 		infoName = name
 		ftyp := funcType(b.Prog, m.Type())
-		fnTypeVal = b.abiType(ftyp).impl
+		fnTypeName, _ = b.Pkg.abi.TypeName(ftyp)
 	}
-	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, tintf.impl, int64(idx), infoName, "", fnTypeVal)
+	b.Pkg.addReloc(relocUseIfaceMethod, b.Func.impl, llvm.Value{}, int64(idx), infoName, targetName, fnTypeName, llvm.Value{})
 }
 
 // MarkUseNamedMethod records a named method usage for reachability analysis.
@@ -89,7 +89,7 @@ func (b Builder) MarkUseNamedMethod(name string) {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, llvm.Value{}, 0, name, name, llvm.Value{})
+	b.Pkg.addReloc(relocUseNamedMethod, b.Func.impl, llvm.Value{}, 0, name, name, "", llvm.Value{})
 }
 
 // MarkReflectMethod records a reflect-driven method lookup.
@@ -98,14 +98,11 @@ func (b Builder) MarkReflectMethod() {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0, "", "", llvm.Value{})
+	b.Pkg.addReloc(relocReflectMethod, b.Func.impl, b.Func.impl, 0, "", "", "", llvm.Value{})
 }
 
 func (b Builder) canEmitReloc() bool {
 	if b.Pkg == nil || b.Func == nil {
-		return false
-	}
-	if !b.Prog.emitReloc {
 		return false
 	}
 	rt := b.Prog.runtime()

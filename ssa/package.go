@@ -210,8 +210,6 @@ type aProgram struct {
 
 	printfTy *types.Signature
 
-	emitReloc bool
-
 	paramObjPtr_ *types.Var
 	linkname     map[string]string // pkgPath.nameInPkg => linkname
 	abiSymbol    map[string]Type   // abi symbol name => Type
@@ -269,9 +267,11 @@ func NewProgram(target *Target) Program {
 	}
 }
 
-// EnableRelocTable toggles collecting reloc metadata in package context.
+// EnableRelocTable is kept for API compatibility.
+// Reloc metadata is collected unconditionally.
 func (p Program) EnableRelocTable(enable bool) {
-	p.emitReloc = enable
+	_ = p
+	_ = enable
 }
 
 func (p Program) Target() *Target {
@@ -843,16 +843,15 @@ const (
 	relocTypeRef                  = 6
 )
 
-// addReloc records a reloc metadata entry in package context if enabled.
-func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, name, targetName string, fnType llvm.Value) {
-	if !p.Prog.emitReloc {
-		return
-	}
+// addReloc records a reloc metadata entry in package context.
+func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, name, targetName, fnTypeName string, fnType llvm.Value) {
 	ownerName := relocSymbolName(owner)
 	if targetName == "" {
 		targetName = relocSymbolName(target)
 	}
-	fnTypeName := relocSymbolName(fnType)
+	if fnTypeName == "" {
+		fnTypeName = relocSymbolName(fnType)
+	}
 	p.relocRecords = append(p.relocRecords, RelocRecord{
 		Kind:   int32(kind),
 		Owner:  ownerName,

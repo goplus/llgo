@@ -295,7 +295,6 @@ func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (
 	}
 	prog := ssatest.NewProgramEx(t, nil, imp)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
-	prog.EnableRelocTable(enableReloc)
 	ret, err := cl.NewPackage(prog, foo, files)
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
