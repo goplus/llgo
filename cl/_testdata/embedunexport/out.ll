@@ -38,9 +38,10 @@ _llgo_0:
   %4 = load ptr, ptr %3, align 8
   %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
   %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  call void %8(ptr %7, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 8 })
+  %7 = extractvalue { ptr, ptr } %6, 0
+  %8 = extractvalue { ptr, ptr } %6, 1
+  call void asm "mov x26, $0", "r,~{x26}"(ptr %8)
+  call void %7(ptr %8, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 8 })
   ret void
 }
 
