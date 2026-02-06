@@ -11,7 +11,7 @@ func skip()
 //go:linkname libc_foo_trampoline C.foo
 func libc_foo_trampoline()
 
-//go:linkname bar_trampoline trampoline.bar
+//go:linkname bar_trampoline bar_trampoline
 func bar_trampoline()
 
 func UseLibc() uintptr {

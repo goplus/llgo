@@ -584,9 +584,6 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		orgName = funcName(pkg, fn, false)
 	}
 	if v, ok := p.prog.Linkname(orgName); ok {
-		if strings.HasPrefix(v, "trampoline.") && len(fn.Blocks) == 0 {
-			return nil, "", ignoredFunc
-		}
 		if strings.HasPrefix(v, "C.") {
 			return nil, v[2:], cFunc
 		}
