@@ -27,28 +27,43 @@ func (s Error) Error() string {
 	return "invalid status"
 }
 
+// signatureData keeps the arg type array alive for the lifetime of the cif.
+//
+// libffi's ffi_prep_cif stores pointers to the rtype and the arg_types array
+// inside the cif, so both must remain valid for as long as the signature is
+// used. We keep a Go slice to the arg type array reachable from the same heap
+// object as the cif to avoid relying on escape analysis details.
+type signatureData struct {
+	cif      Signature
+	argTypes []*Type
+}
+
 func NewSignature(ret *Type, args ...*Type) (*Signature, error) {
-	var cif Signature
 	var atype **Type
+	sd := &signatureData{}
 	if len(args) > 0 {
-		atype = &args[0]
+		sd.argTypes = make([]*Type, len(args))
+		copy(sd.argTypes, args)
+		atype = &sd.argTypes[0]
 	}
-	status := ffi.PrepCif(&cif, ffi.DefaultAbi, c.Uint(len(args)), ret, atype)
-	if status == 0 {
-		return &cif, nil
+	status := ffi.PrepCif(&sd.cif, ffi.DefaultAbi, c.Uint(len(args)), ret, atype)
+	if status == ffi.OK {
+		return &sd.cif, nil
 	}
 	return nil, Error(status)
 }
 
 func NewSignatureVar(ret *Type, fixed int, args ...*Type) (*Signature, error) {
-	var cif Signature
 	var atype **Type
+	sd := &signatureData{}
 	if len(args) > 0 {
-		atype = &args[0]
+		sd.argTypes = make([]*Type, len(args))
+		copy(sd.argTypes, args)
+		atype = &sd.argTypes[0]
 	}
-	status := ffi.PrepCifVar(&cif, ffi.DefaultAbi, c.Uint(fixed), c.Uint(len(args)), ret, atype)
+	status := ffi.PrepCifVar(&sd.cif, ffi.DefaultAbi, c.Uint(fixed), c.Uint(len(args)), ret, atype)
 	if status == ffi.OK {
-		return &cif, nil
+		return &sd.cif, nil
 	}
 	return nil, Error(status)
 }

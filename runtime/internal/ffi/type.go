@@ -99,26 +99,30 @@ var Typ = []*Type{
 	Slice:         TypeSlice,
 }
 
+// typeData keeps the Elements array alive for the lifetime of the *Type.
+//
+// libffi expects the `elements` pointer to remain valid for as long as the type
+// is used. Keep the backing slice reachable from the same heap object to avoid
+// relying on escape analysis details.
+type typeData struct {
+	typ   Type
+	elems []*Type
+}
+
 func ArrayOf(elem *Type, N int) *Type {
-	fs := make([]*Type, N+1)
+	td := &typeData{}
+	td.elems = make([]*Type, N+1)
 	for i := 0; i < N; i++ {
-		fs[i] = elem
+		td.elems[i] = elem
 	}
-	return &Type{
-		0,
-		0,
-		ffi.Struct,
-		&fs[0],
-	}
+	td.typ = Type{0, 0, ffi.Struct, &td.elems[0]}
+	return &td.typ
 }
 
 func StructOf(fields ...*Type) *Type {
-	fs := make([]*Type, len(fields)+1)
-	copy(fs, fields)
-	return &Type{
-		0,
-		0,
-		ffi.Struct,
-		&fs[0],
-	}
+	td := &typeData{}
+	td.elems = make([]*Type, len(fields)+1)
+	copy(td.elems, fields)
+	td.typ = Type{0, 0, ffi.Struct, &td.elems[0]}
+	return &td.typ
 }
