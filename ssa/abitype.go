@@ -131,7 +131,7 @@ func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
 	}
 	childVal := b.abiType(child).impl
 	nilPtr := llvm.ConstNull(b.Prog.tyVoidPtr())
-	b.Pkg.addReloc(relocTypeRef, owner, childVal, 0, nilPtr, nilPtr)
+	b.Pkg.addReloc(relocTypeRef, owner, childVal, 0, nilPtr, nilPtr, "", "")
 }
 
 func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
@@ -523,9 +523,9 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 				infoName = abi.FullName(mPkg, mName)
 			}
 			infoVal := pkg.relocString(infoName)
-			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i), infoVal, nilPtr)
-			pkg.addReloc(relocMethodOff, owner, ifn, int64(i), nilPtr, nilPtr)
-			pkg.addReloc(relocMethodOff, owner, tfn, int64(i), nilPtr, nilPtr)
+			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i), infoVal, nilPtr, infoName, "")
+			pkg.addReloc(relocMethodOff, owner, ifn, int64(i), nilPtr, nilPtr, "", "")
+			pkg.addReloc(relocMethodOff, owner, tfn, int64(i), nilPtr, nilPtr, "", "")
 		}
 	}
 	return llvm.ConstArray(ft.ll, fields)

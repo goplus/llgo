@@ -118,8 +118,9 @@ func TestRelocGraphFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			mod := compileModuleFromDirWithReloc(t, pkgDir, true)
+			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
 			graph := Build(mod, Options{})
+			graph.AddRelocRecords(relocs, Options{})
 			got := formatGraphWithMask(graph, EdgeRelocMask)
 			if updateRelocTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
@@ -156,10 +157,11 @@ func hasGoFiles(dir string) bool {
 }
 
 func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
-	return compileModuleFromDirWithReloc(t, dir, false)
+	mod, _ := compileModuleFromDirWithReloc(t, dir, false)
+	return mod
 }
 
-func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) llvm.Module {
+func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (llvm.Module, []RelocRecord) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -208,10 +210,22 @@ func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) l
 	if err != nil {
 		t.Fatal("cl.NewPackage failed:", err)
 	}
-	if enableReloc {
-		_ = ret.String()
+	if !enableReloc {
+		return ret.Module(), nil
 	}
-	return ret.Module()
+	src := ret.RelocRecords()
+	relocs := make([]RelocRecord, len(src))
+	for i, r := range src {
+		relocs[i] = RelocRecord{
+			Kind:   r.Kind,
+			Owner:  r.Owner,
+			Target: r.Target,
+			Addend: r.Addend,
+			Name:   r.Name,
+			FnType: r.FnType,
+		}
+	}
+	return ret.Module(), relocs
 }
 
 type testImporter struct {

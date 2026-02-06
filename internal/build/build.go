@@ -981,10 +981,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
 	if ctx.buildConf.DCE {
-		if ctx.buildConf.DCE {
-			_ = entryPkg.LPkg.String() // ensure __llgo_relocs is materialized
-		}
-		entryPkg.IRGraph = irgraph.Build(entryPkg.LPkg.Module(), irgraph.Options{})
+		entryPkg.IRGraph = buildPackageIRGraph(entryPkg.LPkg)
 		ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
 	}
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
@@ -1121,10 +1118,32 @@ func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
 	return roots, nil
 }
 
+func buildPackageIRGraph(pkg llssa.Package) *irgraph.Graph {
+	if pkg == nil {
+		return nil
+	}
+	opts := irgraph.Options{}
+	g := irgraph.Build(pkg.Module(), opts)
+	records := pkg.RelocRecords()
+	if len(records) == 0 {
+		return g
+	}
+	relocs := make([]irgraph.RelocRecord, len(records))
+	for i, r := range records {
+		relocs[i] = irgraph.RelocRecord{
+			Kind:   r.Kind,
+			Owner:  r.Owner,
+			Target: r.Target,
+			Addend: r.Addend,
+			Name:   r.Name,
+			FnType: r.FnType,
+		}
+	}
+	g.AddRelocRecords(relocs, opts)
+	return g
+}
+
 // mergePackageGraphs merges IRGraphs from all packages in ctx.
-// This is used instead of building a graph from the merged LLVM module,
-// because LLVM renames duplicate @__llgo_relocs globals when linking,
-// causing irgraph.Build to miss most reloc information.
 func mergePackageGraphs(ctx *context) *irgraph.Graph {
 	merged := &irgraph.Graph{
 		Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
@@ -1560,10 +1579,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
 	if ctx.buildConf.DCE {
-		if ctx.buildConf.DCE {
-			_ = ret.String() // ensure __llgo_relocs is materialized
-		}
-		aPkg.IRGraph = irgraph.Build(ret.Module(), irgraph.Options{})
+		aPkg.IRGraph = buildPackageIRGraph(ret)
 	}
 
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)

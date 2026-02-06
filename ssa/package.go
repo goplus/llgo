@@ -704,6 +704,7 @@ type aPackage struct {
 	export map[string]string // pkgPath.nameInPkg => exportname
 
 	relocs        []llvm.Value
+	relocRecords  []RelocRecord
 	relocBuilt    bool
 	relocStrCache map[string]llvm.Value
 }
@@ -720,6 +721,27 @@ func (p Package) SetExport(name, export string) {
 
 func (p Package) ExportFuncs() map[string]string {
 	return p.export
+}
+
+// RelocRecord records one relocation-style edge emitted during SSA lowering.
+// It is consumed by higher-level DCE graph construction without re-parsing LLVM IR.
+type RelocRecord struct {
+	Kind   int32
+	Owner  string
+	Target string
+	Addend int64
+	Name   string
+	FnType string
+}
+
+// RelocRecords returns reloc records collected for this package.
+func (p Package) RelocRecords() []RelocRecord {
+	if len(p.relocRecords) == 0 {
+		return nil
+	}
+	out := make([]RelocRecord, len(p.relocRecords))
+	copy(out, p.relocRecords)
+	return out
 }
 
 func (p Package) rtFunc(fnName string) Expr {
@@ -833,10 +855,24 @@ const (
 // (e.g. interface method name for useifacemethod reloc).
 // The 6th field "fnType" is used to carry an optional function type symbol
 // (e.g. interface method func type for useifacemethod reloc).
-func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, info llvm.Value, fnType llvm.Value) {
+func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, info llvm.Value, fnType llvm.Value, name, targetName string) {
 	if !p.Prog.emitReloc {
 		return
 	}
+	ownerName := relocSymbolName(owner)
+	if targetName == "" {
+		targetName = relocSymbolName(target)
+	}
+	fnTypeName := relocSymbolName(fnType)
+	p.relocRecords = append(p.relocRecords, RelocRecord{
+		Kind:   int32(kind),
+		Owner:  ownerName,
+		Target: targetName,
+		Addend: add,
+		Name:   name,
+		FnType: fnTypeName,
+	})
+
 	vptr := p.Prog.VoidPtr().ll
 	castPtr := func(v llvm.Value) llvm.Value {
 		if v.IsNil() {
@@ -857,6 +893,30 @@ func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, i
 		castPtr(fnType),
 	})
 	p.relocs = append(p.relocs, entry)
+}
+
+func relocSymbolName(v llvm.Value) string {
+	sym := relocSymbolValue(v)
+	if sym.IsNil() {
+		return ""
+	}
+	return sym.Name()
+}
+
+func relocSymbolValue(v llvm.Value) llvm.Value {
+	if v.IsNil() {
+		return llvm.Value{}
+	}
+	if gv := v.IsAGlobalValue(); !gv.IsNil() {
+		return gv
+	}
+	if ce := v.IsAConstantExpr(); !ce.IsNil() {
+		switch ce.Opcode() {
+		case llvm.BitCast, llvm.PtrToInt, llvm.IntToPtr, llvm.GetElementPtr:
+			return relocSymbolValue(ce.Operand(0))
+		}
+	}
+	return llvm.Value{}
 }
 
 func (p Package) relocStructType() llvm.Type {

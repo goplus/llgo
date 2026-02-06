@@ -33,17 +33,17 @@ const (
 	// EdgeRef captures non-call references to a function, such as function
 	// values stored in globals or passed as arguments.
 	EdgeRef
-	// EdgeRelocUseIface marks interface conversions recorded via __llgo_relocs.
+	// EdgeRelocUseIface marks interface conversions recorded via reloc metadata.
 	EdgeRelocUseIface
-	// EdgeRelocUseIfaceMethod marks interface method calls recorded via __llgo_relocs.
+	// EdgeRelocUseIfaceMethod marks interface method calls recorded via reloc metadata.
 	EdgeRelocUseIfaceMethod
-	// EdgeRelocUseNamedMethod marks named method usage recorded via __llgo_relocs.
+	// EdgeRelocUseNamedMethod marks named method usage recorded via reloc metadata.
 	EdgeRelocUseNamedMethod
-	// EdgeRelocMethodOff marks method table entries recorded via __llgo_relocs.
+	// EdgeRelocMethodOff marks method table entries recorded via reloc metadata.
 	EdgeRelocMethodOff
-	// EdgeRelocReflectMethod marks reflect-based method lookups recorded via __llgo_relocs.
+	// EdgeRelocReflectMethod marks reflect-based method lookups recorded via reloc metadata.
 	EdgeRelocReflectMethod
-	// EdgeRelocTypeRef marks type descriptor child-type references recorded via __llgo_relocs.
+	// EdgeRelocTypeRef marks type descriptor child-type references recorded via reloc metadata.
 	EdgeRelocTypeRef
 )
 
@@ -66,6 +66,17 @@ type Graph struct {
 type Options struct {
 	IncludeIntrinsics bool
 	IncludeDecls      bool
+}
+
+// RelocRecord is a symbol-level relocation-like edge produced by SSA lowering.
+// It is intentionally LLVM-value free so callers can pass package-context data.
+type RelocRecord struct {
+	Kind   int32
+	Owner  string
+	Target string
+	Addend int64
+	Name   string
+	FnType string
 }
 
 // Build constructs a dependency graph from an LLVM module.
@@ -120,7 +131,6 @@ func Build(mod llvm.Module, opts Options) *Graph {
 			}
 		}
 	}
-	g.addRelocEdges(mod, opts)
 	return g
 }
 
@@ -178,7 +188,7 @@ func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) 
 	g.AddEdge(SymID(caller.Name()), SymID(name), EdgeCall)
 }
 
-func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64, name string) {
+func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64, name string, fnType SymID) {
 	if owner == "" || target == "" {
 		return
 	}
@@ -190,6 +200,7 @@ func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64, n
 		Kind:   kind,
 		Addend: addend,
 		Name:   name,
+		FnType: fnType,
 	})
 }
 
@@ -290,106 +301,72 @@ const (
 
 const methodNamePrefix = "_mname:"
 
-func (g *Graph) addRelocEdges(mod llvm.Module, opts Options) {
-	relocs := mod.NamedGlobal("__llgo_relocs")
-	if relocs.IsNil() {
-		return
+func relocKindToEdge(kind int32) (EdgeKind, bool) {
+	switch kind {
+	case relocUseIface:
+		return EdgeRelocUseIface, true
+	case relocUseIfaceMethod:
+		return EdgeRelocUseIfaceMethod, true
+	case relocUseNamedMethod:
+		return EdgeRelocUseNamedMethod, true
+	case relocMethodOff:
+		return EdgeRelocMethodOff, true
+	case relocReflectMethod:
+		return EdgeRelocReflectMethod, true
+	case relocTypeRef:
+		return EdgeRelocTypeRef, true
+	default:
+		return 0, false
 	}
-	init := relocs.Initializer()
-	if init.IsNil() {
-		return
-	}
-	n := init.OperandsCount()
-	for i := 0; i < n; i++ {
-		entry := init.Operand(i)
-		if entry.IsNil() || entry.OperandsCount() < 4 {
+}
+
+// AddRelocRecords injects SSA-collected reloc records into the graph.
+func (g *Graph) AddRelocRecords(records []RelocRecord, opts Options) {
+	for _, rec := range records {
+		edgeKind, ok := relocKindToEdge(rec.Kind)
+		if !ok {
 			continue
 		}
-		kind := entry.Operand(0).SExtValue()
-		addend := entry.Operand(3).SExtValue()
-		var fnTypeVal llvm.Value
-		if entry.OperandsCount() >= 6 {
-			fnTypeVal = entry.Operand(5)
-		}
-		var edgeKind EdgeKind
-		switch kind {
-		case relocUseIface, relocUseIfaceMethod, relocUseNamedMethod, relocMethodOff, relocReflectMethod, relocTypeRef:
-			switch kind {
-			case relocUseIface:
-				edgeKind = EdgeRelocUseIface
-			case relocUseIfaceMethod:
-				edgeKind = EdgeRelocUseIfaceMethod
-			case relocUseNamedMethod:
-				edgeKind = EdgeRelocUseNamedMethod
-			case relocMethodOff:
-				edgeKind = EdgeRelocMethodOff
-			case relocReflectMethod:
-				edgeKind = EdgeRelocReflectMethod
-			case relocTypeRef:
-				edgeKind = EdgeRelocTypeRef
-			}
-		default:
+		ownerID := SymID(rec.Owner)
+		targetID := SymID(rec.Target)
+		if ownerID == "" {
 			continue
 		}
-		owner := resolveSymbolValue(entry.Operand(1))
-		target := resolveSymbolValue(entry.Operand(2))
+		if strings.HasPrefix(string(ownerID), "llvm.") && !opts.IncludeIntrinsics {
+			continue
+		}
 		if edgeKind == EdgeRelocUseNamedMethod {
-			name, ok := decodeRelocString(target)
-			if !ok {
-				panic("reloc(usenamedmethod) expects constant string target")
+			name := rec.Name
+			if name == "" {
+				name = string(targetID)
 			}
-			ownerID := SymID(owner.Name())
-			targetID := SymID(methodNamePrefix + name)
-			g.addRelocEdge(ownerID, targetID, edgeKind, addend, "")
+			if strings.HasPrefix(name, methodNamePrefix) {
+				name = strings.TrimPrefix(name, methodNamePrefix)
+			}
+			if name == "" {
+				continue
+			}
+			g.addRelocEdge(ownerID, SymID(methodNamePrefix+name), edgeKind, rec.Addend, name, "")
 			continue
 		}
-		if owner.IsNil() {
-			continue
-		}
-		if target.IsNil() {
+		if targetID == "" {
 			// methodoff relocs must preserve three-entry-per-method grouping
-			// even when target is null (skipped methods from other packages).
+			// even when target is empty (skipped methods from other packages).
 			if edgeKind == EdgeRelocMethodOff {
 				g.Relocs = append(g.Relocs, RelocEdge{
-					Owner:  SymID(owner.Name()),
+					Owner:  ownerID,
 					Kind:   edgeKind,
-					Addend: addend,
+					Addend: rec.Addend,
+					Name:   rec.Name,
+					FnType: SymID(rec.FnType),
 				})
 			}
 			continue
 		}
-		if strings.HasPrefix(owner.Name(), "llvm.") && !opts.IncludeIntrinsics {
+		if strings.HasPrefix(string(targetID), "llvm.") && !opts.IncludeIntrinsics {
 			continue
 		}
-		if strings.HasPrefix(target.Name(), "llvm.") && !opts.IncludeIntrinsics {
-			continue
-		}
-		ownerID := SymID(owner.Name())
-		targetID := SymID(target.Name())
-		nameStr := ""
-		if edgeKind == EdgeRelocUseIfaceMethod {
-			if s, ok := decodeRelocString(entry.Operand(4)); ok {
-				nameStr = s
-			}
-		} else if edgeKind == EdgeRelocMethodOff {
-			if s, ok := decodeRelocString(entry.Operand(4)); ok {
-				nameStr = s
-			}
-		}
-		fnTypeID := SymID("")
-		if !fnTypeVal.IsNil() {
-			if sym := resolveSymbolValue(fnTypeVal); !sym.IsNil() {
-				fnTypeID = SymID(sym.Name())
-			}
-		}
-		g.Relocs = append(g.Relocs, RelocEdge{
-			Owner:  ownerID,
-			Target: targetID,
-			Kind:   edgeKind,
-			Addend: addend,
-			Name:   nameStr,
-			FnType: fnTypeID,
-		})
+		g.addRelocEdge(ownerID, targetID, edgeKind, rec.Addend, rec.Name, SymID(rec.FnType))
 	}
 }
 
@@ -407,19 +384,4 @@ func resolveSymbolValue(v llvm.Value) llvm.Value {
 		}
 	}
 	return llvm.Value{}
-}
-
-func decodeRelocString(target llvm.Value) (string, bool) {
-	if target.IsNil() {
-		return "", false
-	}
-	gv := resolveSymbolValue(target)
-	if gv.IsNil() {
-		return "", false
-	}
-	init := gv.Initializer()
-	if init.IsNil() || !init.IsConstantString() {
-		return "", false
-	}
-	return init.ConstGetAsString(), true
 }
