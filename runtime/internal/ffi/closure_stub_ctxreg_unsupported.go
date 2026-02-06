@@ -1,6 +1,6 @@
-//go:build llgo_pass_ctx_by_reg && (!unix || (!arm64 && !amd64))
+//go:build llgo_pass_ctx_by_reg && (!unix || (!arm64 && !amd64 && !386 && !riscv64 && !riscv32))
 // +build llgo_pass_ctx_by_reg
-// +build !unix !arm64,!amd64
+// +build !unix !arm64,!amd64,!386,!riscv64,!riscv32
 
 package ffi
 

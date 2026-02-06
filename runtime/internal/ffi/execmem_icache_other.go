@@ -1,6 +1,8 @@
-//go:build llgo_pass_ctx_by_reg && (!darwin || !arm64) && !wasm
+//go:build llgo_pass_ctx_by_reg && !(darwin && arm64) && !riscv64 && !riscv32 && !wasm
 // +build llgo_pass_ctx_by_reg
 // +build !darwin !arm64
+// +build !riscv64
+// +build !riscv32
 // +build !wasm
 
 package ffi
