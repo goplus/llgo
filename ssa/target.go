@@ -31,7 +31,7 @@ type Target struct {
 	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
 }
 
-func (p *Target) targetData() llvm.TargetData {
+func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
 	spec := p.Spec()
 	if spec.Triple == "" {
 		spec.Triple = llvm.DefaultTargetTriple()
@@ -41,29 +41,8 @@ func (p *Target) targetData() llvm.TargetData {
 		panic(err)
 	}
 	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
-	return machine.CreateTargetData()
+	return machine.CreateTargetData(), machine
 }
-
-/*
-func (p *Program) targetMachine() llvm.TargetMachine {
-	if p.tm.C == nil {
-		spec := p.target.toSpec()
-		target, err := llvm.GetTargetFromTriple(spec.triple)
-		if err != nil {
-			panic(err)
-		}
-		p.tm = target.CreateTargetMachine(
-			spec.triple,
-			spec.cpu,
-			spec.features,
-			llvm.CodeGenLevelDefault,
-			llvm.RelocDefault,
-			llvm.CodeModelDefault,
-		)
-	}
-	return p.tm
-}
-*/
 
 type TargetSpec struct {
 	Triple   string
