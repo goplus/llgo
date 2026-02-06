@@ -1,0 +1,2 @@
+reloc(directcall) foo.A -> foo.B
+reloc(directref) foo.init -> foo.init$guard

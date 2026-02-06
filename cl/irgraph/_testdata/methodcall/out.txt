@@ -1,0 +1,4 @@
+reloc(directcall) methodcall.(*T).M -> methodcall.T.M
+reloc(directcall) methodcall.A -> methodcall.T.M
+reloc(directcall) methodcall.T.M -> methodcall.B
+reloc(directref) methodcall.init -> methodcall.init$guard

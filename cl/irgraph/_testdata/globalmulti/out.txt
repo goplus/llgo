@@ -1,0 +1,7 @@
+reloc(directcall) globalmulti.init -> globalmulti.A
+reloc(directcall) globalmulti.init -> globalmulti.B
+reloc(directref) globalmulti.init -> globalmulti.A
+reloc(directref) globalmulti.init -> globalmulti.B
+reloc(directref) globalmulti.init -> globalmulti.X
+reloc(directref) globalmulti.init -> globalmulti.Y
+reloc(directref) globalmulti.init -> globalmulti.init$guard

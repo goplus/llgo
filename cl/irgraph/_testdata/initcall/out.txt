@@ -1,0 +1,4 @@
+reloc(directcall) initcall.A -> initcall.B
+reloc(directcall) initcall.init -> initcall.init#1
+reloc(directcall) initcall.init#1 -> initcall.A
+reloc(directref) initcall.init -> initcall.init$guard

@@ -1,0 +1,3 @@
+reloc(directcall) __llgo_stub.funcptrlocal.B -> funcptrlocal.B
+reloc(directref) funcptrlocal.A -> __llgo_stub.funcptrlocal.B
+reloc(directref) funcptrlocal.init -> funcptrlocal.init$guard

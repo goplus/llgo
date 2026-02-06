@@ -1,0 +1,3 @@
+reloc(directcall) chain.A -> chain.B
+reloc(directcall) chain.B -> chain.C
+reloc(directref) chain.init -> chain.init$guard

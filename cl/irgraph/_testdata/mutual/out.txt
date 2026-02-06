@@ -1,0 +1,3 @@
+reloc(directcall) mutual.A -> mutual.B
+reloc(directcall) mutual.B -> mutual.A
+reloc(directref) mutual.init -> mutual.init$guard

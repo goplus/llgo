@@ -1,0 +1,11 @@
+reloc(methodoff idx=0) *_llgo_reflectmethodvar.T -> reflectmethodvar.(*T).Foo
+reloc(methodoff idx=0) _llgo_reflectmethodvar.T -> reflectmethodvar.(*T).Foo
+reloc(methodoff idx=0) _llgo_reflectmethodvar.T -> reflectmethodvar.T.Foo
+reloc(methodoff idx=0) name=Foo *_llgo_reflectmethodvar.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) name=Foo _llgo_reflectmethodvar.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(reflectmethod) reflectmethodvar.A -> reflectmethodvar.A
+reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_reflectmethodvar.T -> _llgo_reflectmethodvar.T
+reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_reflectmethodvar.T -> *_llgo_reflectmethodvar.T
+reloc(useiface) reflectmethodvar.A -> _llgo_reflectmethodvar.T

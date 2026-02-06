@@ -1,0 +1,3 @@
+package multifile
+
+func B() {}

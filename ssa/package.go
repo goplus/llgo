@@ -694,6 +694,8 @@ type aPackage struct {
 	NeedAbiInit bool // need load all abi types for reflect make type
 
 	export map[string]string // pkgPath.nameInPkg => exportname
+
+	relocRecords []RelocRecord
 }
 
 type Package = *aPackage
@@ -708,6 +710,27 @@ func (p Package) SetExport(name, export string) {
 
 func (p Package) ExportFuncs() map[string]string {
 	return p.export
+}
+
+// RelocRecord records one relocation-style edge emitted during SSA lowering.
+// It is consumed by higher-level DCE graph construction without re-parsing LLVM IR.
+type RelocRecord struct {
+	Kind   int32
+	Owner  string
+	Target string
+	Addend int64
+	Name   string
+	FnType string
+}
+
+// RelocRecords returns reloc records collected for this package.
+func (p Package) RelocRecords() []RelocRecord {
+	if len(p.relocRecords) == 0 {
+		return nil
+	}
+	out := make([]RelocRecord, len(p.relocRecords))
+	copy(out, p.relocRecords)
+	return out
 }
 
 func (p Package) rtFunc(fnName string) Expr {
@@ -798,6 +821,62 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 	}
 	p.strs[v] = ret
 	return
+}
+
+// reloc helpers -------------------------------------------------------------
+
+type relocKind = int32
+
+const (
+	relocUseIface       relocKind = 1
+	relocUseIfaceMethod           = 2
+	relocUseNamedMethod           = 3
+	relocMethodOff                = 4
+	relocReflectMethod            = 5
+	relocTypeRef                  = 6
+)
+
+// addReloc records a reloc metadata entry in package context.
+func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, name, targetName, fnTypeName string, fnType llvm.Value) {
+	ownerName := relocSymbolName(owner)
+	if targetName == "" {
+		targetName = relocSymbolName(target)
+	}
+	if fnTypeName == "" {
+		fnTypeName = relocSymbolName(fnType)
+	}
+	p.relocRecords = append(p.relocRecords, RelocRecord{
+		Kind:   int32(kind),
+		Owner:  ownerName,
+		Target: targetName,
+		Addend: add,
+		Name:   name,
+		FnType: fnTypeName,
+	})
+}
+
+func relocSymbolName(v llvm.Value) string {
+	sym := relocSymbolValue(v)
+	if sym.IsNil() {
+		return ""
+	}
+	return sym.Name()
+}
+
+func relocSymbolValue(v llvm.Value) llvm.Value {
+	if v.IsNil() {
+		return llvm.Value{}
+	}
+	if gv := v.IsAGlobalValue(); !gv.IsNil() {
+		return gv
+	}
+	if ce := v.IsAConstantExpr(); !ce.IsNil() {
+		switch ce.Opcode() {
+		case llvm.BitCast, llvm.PtrToInt, llvm.IntToPtr, llvm.GetElementPtr:
+			return relocSymbolValue(ce.Operand(0))
+		}
+	}
+	return llvm.Value{}
 }
 
 // -----------------------------------------------------------------------------

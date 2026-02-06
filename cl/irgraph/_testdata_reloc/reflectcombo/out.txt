@@ -1,0 +1,14 @@
+reloc(methodoff idx=0) *_llgo_reflectcombo.T -> reflectcombo.(*T).Foo
+reloc(methodoff idx=0) _llgo_reflectcombo.T -> reflectcombo.(*T).Foo
+reloc(methodoff idx=0) _llgo_reflectcombo.T -> reflectcombo.T.Foo
+reloc(methodoff idx=0) name=Foo *_llgo_reflectcombo.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) name=Foo _llgo_reflectcombo.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(reflectmethod) reflectcombo.A -> reflectcombo.A
+reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_reflectcombo.T -> _llgo_reflectcombo.T
+reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_reflectcombo.T -> *_llgo_reflectcombo.T
+reloc(useiface) reflectcombo.A -> _llgo_reflectcombo.T
+reloc(useifacemethod) name=Method fntype=_llgo_func$FmJJGomlX5kINJGxQdQDCAkD89ySoMslAYFrziWInVc reflectcombo.A -> reflectcombo.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
+reloc(useifacemethod) name=MethodByName fntype=_llgo_func$aM2cVUtLQbPq1YHtnabQiM7XJ5Cg5RyV6BIDWrqey7E reflectcombo.A -> reflectcombo.iface$MWILFNuV3gsIs9vcG3DS8tKx7NOxtRRciXlEOFYr790
+reloc(usenamedmethod) reflectcombo.A -> Foo
