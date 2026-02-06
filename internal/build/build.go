@@ -980,8 +980,9 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
 	if ctx.buildConf.DCE {
-		entryPkg.IRGraph = buildPackageIRGraph(entryPkg.LPkg)
-		ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
+		if err := applyDCEOverrides(ctx, pkgs, entryPkg, verbose); err != nil {
+			return err
+		}
 	}
 	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
@@ -1027,15 +1028,18 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
-func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
+func dceEntryRootsFromGraph(g *irgraph.Graph) ([]irgraph.SymID, error) {
+	if g == nil {
+		return nil, fmt.Errorf("dce graph is nil")
+	}
 	candidates := []string{"main", "_start"}
 	var roots []irgraph.SymID
 	for _, name := range candidates {
-		fn := mod.NamedFunction(name)
-		if fn.IsNil() {
+		node, ok := g.Nodes[irgraph.SymID(name)]
+		if !ok {
 			continue
 		}
-		if fn.IsDeclaration() {
+		if node.IsDecl {
 			return nil, fmt.Errorf("dce root %q is declaration only", name)
 		}
 		roots = append(roots, irgraph.SymID(name))
@@ -1044,6 +1048,82 @@ func dceEntryRoots(mod llvm.Module) ([]irgraph.SymID, error) {
 		return nil, fmt.Errorf("dce requires at least one entry root (main/_start)")
 	}
 	return roots, nil
+}
+
+func dceSourceModules(pkgs []*aPackage) []llvm.Module {
+	mods := make([]llvm.Module, 0, len(pkgs))
+	seen := make(map[llvm.Module]bool)
+	for _, pkg := range pkgs {
+		if pkg == nil || pkg.LPkg == nil {
+			continue
+		}
+		mod := pkg.LPkg.Module()
+		if mod.IsNil() || seen[mod] {
+			continue
+		}
+		seen[mod] = true
+		mods = append(mods, mod)
+	}
+	return mods
+}
+
+func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbose bool) error {
+	entryPkg.IRGraph = buildPackageIRGraph(entryPkg.LPkg)
+	ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
+
+	graph := mergePackageGraphs(ctx)
+	roots, err := dceEntryRootsFromGraph(graph)
+	if err != nil {
+		return err
+	}
+	if verbose {
+		rootNames := make([]string, 0, len(roots))
+		for _, r := range roots {
+			rootNames = append(rootNames, string(r))
+		}
+		fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
+		nodes, edges, call, ref, reloc := graphSummary(graph)
+		fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
+	}
+
+	deadcode.SetVerbose(verbose)
+	res := deadcode.Analyze(graph, roots)
+
+	srcMods := dceSourceModules(pkgs)
+	stats, err := dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, res.ReachableMethods, dcepass.Options{})
+	if err != nil {
+		return err
+	}
+
+	if verbose {
+		rmCount := 0
+		for _, m := range res.ReachableMethods {
+			rmCount += len(m)
+		}
+		fmt.Fprintf(os.Stderr, "[dce] analyze end (reachable=%d reachable_methods=%d)\n", len(res.Reachable), rmCount)
+		fmt.Fprintf(os.Stderr, "[dce] emit overrides (types=%d dropped_methods=%d)\n", stats.EmittedType, stats.DroppedMethod)
+		if rmCount > 0 {
+			for typ, idxs := range res.ReachableMethods {
+				var list []string
+				for idx := range idxs {
+					list = append(list, fmt.Sprintf("%d", idx))
+				}
+				sort.Strings(list)
+				fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
+			}
+		}
+		if len(stats.DroppedMethodDetail) > 0 {
+			for typ, idxs := range stats.DroppedMethodDetail {
+				list := make([]string, len(idxs))
+				for i, v := range idxs {
+					list[i] = fmt.Sprintf("%d", v)
+				}
+				sort.Strings(list)
+				fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
+			}
+		}
+	}
+	return nil
 }
 
 func buildPackageIRGraph(pkg llssa.Package) *irgraph.Graph {
@@ -1146,154 +1226,7 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	if ctx.buildConf.DCE {
-		for _, f := range objFiles {
-			if strings.HasSuffix(f, ".o") {
-				return fmt.Errorf("DCE enabled but non-bc input %s", f)
-			}
-		}
-
-		var bcInputs []string
-		for _, f := range objFiles {
-			switch {
-			case strings.HasSuffix(f, ".bc"):
-				bcInputs = append(bcInputs, f)
-			case strings.HasSuffix(f, ".ll"):
-				bcFile := strings.TrimSuffix(f, ".ll") + ".bc"
-				args := []string{"-emit-llvm", "-o", bcFile, "-c", f, "-Wno-override-module"}
-				if verbose {
-					fmt.Fprintln(os.Stderr, "clang", args)
-				}
-				if err := ctx.compiler().Compile(args...); err != nil {
-					return fmt.Errorf("failed to compile %s: %v", f, err)
-				}
-				bcInputs = append(bcInputs, bcFile)
-			default:
-				return fmt.Errorf("DCE expects .bc/.ll inputs, got %s", f)
-			}
-		}
-
-		// Link all BC modules together for a whole-program view using LLVM bindings.
-		llctx := llvm.NewContext()
-		defer llctx.Dispose()
-		var merged llvm.Module
-		for i, f := range bcInputs {
-			m, err := llctx.ParseBitcodeFile(f)
-			if err != nil {
-				if !merged.IsNil() {
-					merged.Dispose()
-				}
-				return fmt.Errorf("parse bitcode %s: %w", f, err)
-			}
-			if i == 0 {
-				merged = m
-			} else {
-				if err := llvm.LinkModules(merged, m); err != nil {
-					merged.Dispose()
-					return fmt.Errorf("link bitcode %s: %w", f, err)
-				}
-			}
-		}
-		if merged.IsNil() {
-			return fmt.Errorf("no bitcode inputs to link")
-		}
-
-		roots, err := dceEntryRoots(merged)
-		if err != nil {
-			merged.Dispose()
-			return err
-		}
-		if verbose {
-			rootNames := make([]string, 0, len(roots))
-			for _, r := range roots {
-				rootNames = append(rootNames, string(r))
-			}
-			fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
-		}
-		// Merge IRGraphs from all packages. Each package graph already includes
-		// reloc metadata injected from SSA package context.
-		graph := mergePackageGraphs(ctx)
-		if verbose {
-			nodes, edges, call, ref, reloc := graphSummary(graph)
-			fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
-		}
-		deadcode.SetVerbose(verbose)
-		res := deadcode.Analyze(graph, roots)
-		if verbose {
-			fmt.Fprintf(os.Stderr, "[dce] reachable=%d\n", len(res.Reachable))
-			fmt.Fprintln(os.Stderr, "[dce] pass begin")
-		}
-
-		prePassLL := ""
-		if verbose {
-			if f, err := os.CreateTemp("", "llgo-dce-pre-*.ll"); err == nil {
-				_, _ = f.WriteString(merged.String())
-				f.Close()
-				prePassLL = f.Name()
-				fmt.Fprintf(os.Stderr, "[dce] module ll (pre): %s\n", prePassLL)
-			}
-		}
-
-		stats := dcepass.Apply(merged, res, dcepass.Options{})
-		if verbose {
-			rmCount := 0
-			for _, m := range res.ReachableMethods {
-				rmCount += len(m)
-			}
-			fmt.Fprintf(os.Stderr, "[dce] pass end (reachable=%d reachable_methods=%d dropped_methods=%d)\n",
-				stats.Reachable, rmCount, stats.DroppedMethod)
-			if rmCount > 0 {
-				for typ, idxs := range res.ReachableMethods {
-					var list []string
-					for idx := range idxs {
-						list = append(list, fmt.Sprintf("%d", idx))
-					}
-					sort.Strings(list)
-					fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
-				}
-			}
-			if len(stats.DroppedMethodDetail) > 0 {
-				for typ, idxs := range stats.DroppedMethodDetail {
-					list := make([]string, len(idxs))
-					for i, v := range idxs {
-						list[i] = fmt.Sprintf("%d", v)
-					}
-					sort.Strings(list)
-					fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
-				}
-			}
-		}
-		llFile, err := os.CreateTemp("", "llgo-dce-*.ll")
-		if err != nil {
-			merged.Dispose()
-			return err
-		}
-		if _, err := llFile.WriteString(merged.String()); err != nil {
-			llFile.Close()
-			merged.Dispose()
-			return err
-		}
-		if err := llFile.Close(); err != nil {
-			merged.Dispose()
-			return err
-		}
-		dceLLName := llFile.Name()
-		if verbose {
-			fmt.Fprintf(os.Stderr, "[dce] module ll (post): %s\n", dceLLName)
-		}
-
-		combinedObj := strings.TrimSuffix(dceLLName, ".ll") + ".o"
-		args := []string{"-o", combinedObj, "-c", dceLLName, "-Wno-override-module"}
-		if verbose {
-			fmt.Fprintln(os.Stderr, "clang", args)
-		}
-		if err := ctx.compiler().Compile(args...); err != nil {
-			merged.Dispose()
-			return fmt.Errorf("failed to compile DCE ll: %v", err)
-		}
-		merged.Dispose()
-		objFiles = []string{combinedObj}
-	} else if ctx.buildConf.GenLL {
+	if ctx.buildConf.DCE || ctx.buildConf.GenLL {
 		var compiledObjFiles []string
 		for _, objFile := range objFiles {
 			switch {
