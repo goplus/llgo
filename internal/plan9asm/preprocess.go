@@ -17,6 +17,19 @@ func preprocess(src string) (string, error) {
 	}
 	macros := map[string]macro{}
 
+	type ifState struct {
+		outerActive bool
+		cond        bool
+		inElse      bool
+	}
+	isDefined := func(name string) bool {
+		// For now, only treat previously #defined macros as defined.
+		// This is enough for stdlib asm that uses GOAMD64_v* feature macros;
+		// llgo doesn't define those currently, so they default to false.
+		_, ok := macros[name]
+		return ok
+	}
+
 	// First pass: collect #define, build output lines for further parsing.
 	lines := []string{}
 
@@ -24,6 +37,8 @@ func preprocess(src string) (string, error) {
 	var defName string
 	var defBody strings.Builder
 	defCont := false
+	active := true
+	ifStack := []ifState{}
 	flushDefine := func() error {
 		if !defCont {
 			return nil
@@ -57,6 +72,16 @@ func preprocess(src string) (string, error) {
 
 		if defCont {
 			// Continue a definition body on the following line(s).
+			if !active {
+				// Discard bodies from inactive blocks.
+				if strings.HasSuffix(strings.TrimSpace(line), "\\") {
+					continue
+				}
+				if err := flushDefine(); err != nil {
+					return "", fmt.Errorf("line %d: %v", lineno, err)
+				}
+				continue
+			}
 			cont := strings.TrimSpace(line)
 			if strings.HasSuffix(cont, "\\") {
 				// Continuation to the next line.
@@ -79,7 +104,52 @@ func preprocess(src string) (string, error) {
 			// we treat flags as opaque in TEXT.
 			continue
 		}
+		if strings.HasPrefix(trim, "#ifdef") {
+			name := strings.TrimSpace(strings.TrimPrefix(trim, "#ifdef"))
+			if name == "" {
+				return "", fmt.Errorf("line %d: invalid #ifdef: %q", lineno, line)
+			}
+			st := ifState{outerActive: active, cond: isDefined(name)}
+			ifStack = append(ifStack, st)
+			active = active && st.cond
+			continue
+		}
+		if strings.HasPrefix(trim, "#ifndef") {
+			name := strings.TrimSpace(strings.TrimPrefix(trim, "#ifndef"))
+			if name == "" {
+				return "", fmt.Errorf("line %d: invalid #ifndef: %q", lineno, line)
+			}
+			st := ifState{outerActive: active, cond: !isDefined(name)}
+			ifStack = append(ifStack, st)
+			active = active && st.cond
+			continue
+		}
+		if strings.HasPrefix(trim, "#else") {
+			if len(ifStack) == 0 {
+				return "", fmt.Errorf("line %d: stray #else", lineno)
+			}
+			top := ifStack[len(ifStack)-1]
+			if top.inElse {
+				return "", fmt.Errorf("line %d: duplicate #else", lineno)
+			}
+			top.inElse = true
+			ifStack[len(ifStack)-1] = top
+			active = top.outerActive && !top.cond
+			continue
+		}
+		if strings.HasPrefix(trim, "#endif") {
+			if len(ifStack) == 0 {
+				return "", fmt.Errorf("line %d: stray #endif", lineno)
+			}
+			top := ifStack[len(ifStack)-1]
+			ifStack = ifStack[:len(ifStack)-1]
+			active = top.outerActive
+			continue
+		}
 		if strings.HasPrefix(trim, "#define") {
+			if !active {
+				continue
+			}
 			rest := strings.TrimSpace(strings.TrimPrefix(trim, "#define"))
 			fields := strings.Fields(rest)
 			if len(fields) < 1 {
@@ -102,6 +172,9 @@ func preprocess(src string) (string, error) {
 			continue
 		}
 
+		if !active {
+			continue
+		}
 		lines = append(lines, strings.TrimSpace(line))
 	}
 	if err := sc.Err(); err != nil {
@@ -111,6 +184,9 @@ func preprocess(src string) (string, error) {
 		if err := flushDefine(); err != nil {
 			return "", err
 		}
+	}
+	if len(ifStack) != 0 {
+		return "", fmt.Errorf("unterminated #if block")
 	}
 
 	// Second pass: expand macro invocations (statement == NAME).
