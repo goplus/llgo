@@ -46,6 +46,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseSkip"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 0)
   ret void
 }
 
@@ -69,3 +70,5 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare i64 @foo(...)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)

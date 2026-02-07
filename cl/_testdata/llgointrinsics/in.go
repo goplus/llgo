@@ -8,6 +8,9 @@ func funcPCABI0(fn interface{}) uintptr
 //go:linkname skip llgo.skip
 func skip()
 
+//go:linkname skipWithRet llgo.skip
+func skipWithRet() uintptr
+
 //go:linkname libc_foo_trampoline C.foo
 func libc_foo_trampoline()
 
@@ -35,4 +38,6 @@ func UseClosure() uintptr {
 
 func UseSkip() {
 	skip()
+	i := skipWithRet()
+	print(i)
 }
