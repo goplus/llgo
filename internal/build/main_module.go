@@ -32,6 +32,9 @@ import (
 
 	"github.com/goplus/llgo/internal/packages"
 	llvm "github.com/goplus/llvm"
+	"golang.org/x/tools/go/callgraph"
+	"golang.org/x/tools/go/callgraph/cha"
+	"golang.org/x/tools/go/ssa"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
@@ -91,6 +94,32 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
+	if !IsDbgEnabled() {
+		progSSA := ctx.progSSA
+		chaGraph := cha.CallGraph(progSSA)
+		//vtaGraph := vta.CallGraph(ssautil.AllFunctions(progSSA), chaGraph)
+		//_ = vtaGraph
+		invoked := buildInvokeIndex(chaGraph)
+		mainPkg.PruneAbiTypes(func(sel *types.Selection) bool {
+			method := progSSA.MethodValue(sel)
+			if _, ok := invoked[method]; ok {
+				return true
+			}
+			for v := range invoked {
+				if v.Name() == method.Name() {
+					if !types.Identical(prog.PatchType(v.Type().(*types.Signature).Recv().Type()), sel.Type().(*types.Signature).Recv().Type()) {
+						continue
+					}
+					if !types.Identical(prog.PatchType(v.Type()), sel.Type()) {
+						continue
+					}
+					return true
+				}
+			}
+			return false
+		})
+	}
+
 	var abiInit llssa.Function
 	if cfg.abiInit != 0 {
 		abiInit = mainPkg.InitAbiTypesFor("init$abitypes", func(sym *llssa.AbiSymbol) bool {
@@ -148,6 +177,20 @@ func filterAbiSymbol(abiInit int, sym *llssa.AbiSymbol) bool {
 		}
 	}
 	return false
+}
+
+func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
+	invoked := make(map[*ssa.Function]bool)
+	for _, node := range cg.Nodes {
+		for _, out := range node.Out {
+			if out.Callee != nil && out.Callee.Func != nil {
+				if out.Site != nil && out.Site.Common().IsInvoke() {
+					invoked[out.Callee.Func] = true
+				}
+			}
+		}
+	}
+	return invoked
 }
 
 // defineEntryFunction creates the program's entry function. The name is
