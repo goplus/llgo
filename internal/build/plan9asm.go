@@ -22,6 +22,10 @@ import (
 // NOTE: golang.org/x/tools/go/packages.Package does not expose SFiles, so we
 // query `go list -json` here to get the exact filtered set for GOOS/GOARCH.
 func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbose bool) ([]string, error) {
+	if !ctx.plan9asmEnabled(pkg.PkgPath) {
+		return nil, nil
+	}
+
 	sfiles, err := pkgSFiles(ctx, pkg)
 	if err != nil {
 		return nil, err
@@ -121,6 +125,39 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 	}
 
 	return objFiles, nil
+}
+
+func (ctx *context) plan9asmEnabled(pkgPath string) bool {
+	ctx.plan9asmOnce.Do(func() {
+		ctx.plan9asmPkgs = make(map[string]bool)
+		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+		if v == "" || v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
+			return
+		}
+		if v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true") {
+			ctx.plan9asmAll = true
+			return
+		}
+		split := func(r rune) bool {
+			switch r {
+			case ',', ';', ' ', '\t', '\n', '\r':
+				return true
+			default:
+				return false
+			}
+		}
+		for _, p := range strings.FieldsFunc(v, split) {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			ctx.plan9asmPkgs[p] = true
+		}
+	})
+	if ctx.plan9asmAll {
+		return true
+	}
+	return ctx.plan9asmPkgs[pkgPath]
 }
 
 func plan9asmArch(goarch string) (plan9asm.Arch, error) {

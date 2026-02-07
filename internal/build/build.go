@@ -32,6 +32,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"unsafe"
 
@@ -544,6 +545,11 @@ type context struct {
 
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
+
+	// plan9asm package allowlist parsed from env.
+	plan9asmOnce sync.Once
+	plan9asmAll  bool
+	plan9asmPkgs map[string]bool // pkg path -> enabled
 }
 
 func (c *context) compiler() *clang.Cmd {
