@@ -186,6 +186,34 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 		switch ins.Op {
 		case OpTEXT:
 			continue
+		case OpMRS:
+			// ARM64: MRS <sysreg>, Rn
+			src, dst := ins.Args[0], ins.Args[1]
+			if src.Kind != OpIdent || dst.Kind != OpReg {
+				return fmt.Errorf("MRS expects ident, reg: %q", ins.Raw)
+			}
+			name := newTmp()
+			// Read system register via inline asm.
+			// Example: call i64 asm "mrs $0, MIDR_EL1", "=r"()
+			fmt.Fprintf(b, "  %%%s = call i64 asm %q, %q()\n", name, "mrs $0, "+src.Ident, "=r")
+			reg[dst.Reg] = name
+			continue
+		case OpMOVD:
+			// ARM64: MOVD src, dst
+			src, dst := ins.Args[0], ins.Args[1]
+			v, err := valueOf(src)
+			if err != nil {
+				return err
+			}
+			switch dst.Kind {
+			case OpReg:
+				setReg(dst.Reg, v)
+			case OpFP:
+				setRet(v)
+			default:
+				return fmt.Errorf("MOVD dst unsupported: %s", dst.String())
+			}
+			continue
 		case OpMOVQ:
 			src, dst := ins.Args[0], ins.Args[1]
 			v, err := valueOf(src)
@@ -255,4 +283,3 @@ func llvmGlobal(name string) string {
 	}
 	return "@\"" + strings.ReplaceAll(name, "\"", "\\\"") + "\""
 }
-
