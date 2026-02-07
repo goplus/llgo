@@ -10,6 +10,7 @@ type Arch string
 
 const (
 	ArchAMD64 Arch = "amd64"
+	ArchARM64 Arch = "arm64"
 )
 
 type Reg string
@@ -22,7 +23,8 @@ const (
 )
 
 func parseReg(s string) (Reg, bool) {
-	switch strings.ToUpper(strings.TrimSpace(s)) {
+	ss := strings.ToUpper(strings.TrimSpace(s))
+	switch ss {
 	case "AX":
 		return AX, true
 	case "BX":
@@ -31,9 +33,14 @@ func parseReg(s string) (Reg, bool) {
 		return CX, true
 	case "DX":
 		return DX, true
-	default:
-		return "", false
 	}
+	if strings.HasPrefix(ss, "R") && len(ss) >= 2 {
+		// AArch64 general purpose registers: R0..R31.
+		if n, err := strconv.Atoi(ss[1:]); err == nil && 0 <= n && n <= 31 {
+			return Reg(ss), true
+		}
+	}
+	return "", false
 }
 
 type OperandKind int
@@ -43,6 +50,7 @@ const (
 	OpImm
 	OpReg
 	OpFP
+	OpIdent
 )
 
 // Operand models a minimal subset of Plan 9 asm operands.
@@ -59,6 +67,8 @@ type Operand struct {
 
 	FPName   string // OpFP (e.g. "a", "ret")
 	FPOffset int64  // OpFP
+
+	Ident string // OpIdent (e.g. system register name in MRS)
 }
 
 func (o Operand) String() string {
@@ -69,6 +79,8 @@ func (o Operand) String() string {
 		return string(o.Reg)
 	case OpFP:
 		return fmt.Sprintf("%s+%d(FP)", o.FPName, o.FPOffset)
+	case OpIdent:
+		return o.Ident
 	default:
 		return "<invalid>"
 	}
@@ -122,6 +134,24 @@ func parseOperand(s string) (Operand, error) {
 	if name, off, ok := parseFP(s); ok {
 		return Operand{Kind: OpFP, FPName: name, FPOffset: off}, nil
 	}
+	// Identifier (used by some arch-specific instructions like MRS).
+	if s := strings.TrimSpace(s); s != "" {
+		ok := true
+		for i := 0; i < len(s); i++ {
+			ch := s[i]
+			if (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_' {
+				continue
+			}
+			if i > 0 && ch >= '0' && ch <= '9' {
+				continue
+			}
+			ok = false
+			break
+		}
+		if ok {
+			return Operand{Kind: OpIdent, Ident: s}, nil
+		}
+	}
 	return Operand{}, fmt.Errorf("unsupported operand: %q", strings.TrimSpace(s))
 }
 
@@ -129,10 +159,12 @@ type Op string
 
 const (
 	OpTEXT Op = "TEXT"
+	OpMRS  Op = "MRS"
 	OpMOVQ Op = "MOVQ"
 	OpADDQ Op = "ADDQ"
 	OpSUBQ Op = "SUBQ"
 	OpXORQ Op = "XORQ"
+	OpMOVD Op = "MOVD"
 	OpBYTE Op = "BYTE"
 	OpRET  Op = "RET"
 )

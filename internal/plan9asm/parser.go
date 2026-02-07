@@ -78,7 +78,7 @@ func Parse(arch Arch, src string) (*File, error) {
 				cur.Instrs = append(cur.Instrs, Instr{Op: OpTEXT, Raw: stmt})
 				continue
 
-			case OpMOVQ, OpADDQ, OpSUBQ, OpXORQ:
+			case OpMOVQ, OpADDQ, OpSUBQ, OpXORQ, OpMOVD, OpMRS:
 				if cur == nil {
 					return nil, fmt.Errorf("line %d: instruction outside TEXT: %q", lineno, stmt)
 				}
@@ -163,4 +163,3 @@ func splitSemicolons(line string) []string {
 	}
 	return out
 }
-
