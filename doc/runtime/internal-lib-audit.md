@@ -25,11 +25,9 @@ patching can be removed over time.
 
 Patched packages (see `runtime/build.go`):
 
-- `crypto/internal/boring/sig`
 - `hash/crc32`
 - `internal/abi`
 - `internal/bytealg`
-- `internal/cpu`
 - `internal/reflectlite`
 - `internal/runtime/atomic`
 - `internal/runtime/maps`
@@ -66,13 +64,11 @@ Notes:
 Purpose: provides marker symbols ("code signatures") to indicate BoringCrypto /
 FIPS-only / standard crypto mode.
 
-LLGO patch:
+LLGO status (this branch):
 
-- `runtime/internal/lib/crypto/internal/boring/sig/sig.go` defines:
-  - `BoringCrypto()`
-  - `FIPSOnly()`
-  - `StandardCrypto()`
-- Alt package removes upstream `.s` definitions entirely.
+- Not patched via `runtime/build.go:hasAltPkg`.
+- Uses upstream sources from GOROOT.
+- Upstream `.s` is compiled via llgo's Plan 9 asm pipeline.
 
 Upstream:
 
@@ -81,9 +77,8 @@ Upstream:
 
 Removal analysis:
 
-- Removable if llgo can compile upstream Plan 9 assembly for this package, or
-  if we keep a small overlay that provides the Go definitions without patching
-  the whole package.
+- Removed from `hasAltPkg` in this branch. Remaining risk is keeping Plan 9 asm
+  support working across Go updates.
 
 Plan9 asm candidate:
 
@@ -94,13 +89,10 @@ Plan9 asm candidate:
 Purpose: CRC-32 checksum (IEEE / Castagnoli / Koopman), used by `hash/crc32`,
 `compress/*`, `archive/zip`, etc.
 
-LLGO patch (current state is incomplete):
+LLGO patch (current state):
 
-- `runtime/internal/lib/hash/crc32/crc32.go` implements IEEE CRC only via
-  `runtime/internal/clite/zlib`:
-  - `MakeTable` panics for non-IEEE.
-  - `New`, `Update` panic for non-IEEE tables.
-- This is correctness-risky for any code using Castagnoli/Koopman.
+- `runtime/internal/lib/hash/crc32` provides a full generic Go implementation
+  (simple + slicing-by-8) and intentionally avoids per-arch assembly for now.
 
 Upstream:
 
@@ -179,10 +171,11 @@ Plan9 asm candidate:
 
 Purpose: CPU feature detection (cpuid, system registers).
 
-LLGO patch:
+LLGO status (this branch):
 
-- `runtime/internal/lib/internal/cpu/cpu_x86.go` implements `cpuid` using a C
-  helper (`_wrap/cpu_x86.c`) and `//go:linkname` to `C.llgo_getcpuid`.
+- Not patched via `runtime/build.go:hasAltPkg`.
+- Uses upstream sources from GOROOT.
+- Upstream `.s` is compiled via llgo's Plan 9 asm pipeline.
 
 Upstream:
 
@@ -190,8 +183,8 @@ Upstream:
 
 Removal analysis:
 
-- Removable if llgo can compile upstream Plan 9 asm, or if we standardize on
-  LLVM/Clang builtins for feature probing across targets.
+- Removed from `hasAltPkg` in this branch. Remaining risk is supporting the
+  relevant `.s` files across platforms (notably `cpu_x86.s`).
 
 Plan9 asm candidate:
 
@@ -435,10 +428,8 @@ Plan9 asm candidate:
 These are the most likely patches to remove via Plan 9 assembly support or
 generic fallbacks, because their upstream asm is mostly CPU-instruction-level:
 
-- `crypto/internal/boring/sig`
 - `hash/crc32` (also needs correctness for non-IEEE polynomials)
 - `internal/bytealg`
-- `internal/cpu`
 - `internal/runtime/atomic`
 - `internal/runtime/syscall`
 - `sync/atomic`
@@ -457,8 +448,8 @@ Easy: leaf CPU primitives
   - `sync/atomic` and `internal/runtime/atomic` (atomics and barriers)
   - `internal/bytealg` (memcmp/memchr/index/compare helpers)
   - `hash/crc32` (CRC instructions / table updates)
-  - `internal/cpu` (feature probing like CPUID, system registers)
-  - `crypto/internal/boring/sig` (marker symbols)
+  - `internal/cpu` (feature probing like CPUID, system registers) (already unpatched)
+  - `crypto/internal/boring/sig` (marker symbols) (already unpatched)
 - Caveat: atomics must match the Go memory model (ordering and alignment).
 
 Easy: raw syscall stubs
