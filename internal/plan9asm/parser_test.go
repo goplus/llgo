@@ -51,4 +51,3 @@ RET
 		t.Fatalf("BYTE count=%d, want 2", got)
 	}
 }
-
