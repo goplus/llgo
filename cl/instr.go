@@ -325,10 +325,7 @@ func (p *context) funcAddr(b llssa.Builder, args []ssa.Value) llssa.Expr {
 
 // func funcPCABI0(fn any) uintptr
 func (p *context) funcPCABI0(b llssa.Builder, args []ssa.Value) llssa.Expr {
-	if len(args) == 1 {
-		return p.funcPCABI0Value(b, args[0])
-	}
-	panic("funcPCABI0(<func>): invalid arguments")
+	return p.funcPCABI0Value(b, args[0])
 }
 
 func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
@@ -529,11 +526,6 @@ var llgoInstrs = map[string]int{
 	"funcPCABI0":  llgoFuncPCABI0,
 	"skip":        llgoSkip,
 	"syscall":     llgoSyscall,
-	"syscall6":    llgoSyscall,
-	"syscall6X":   llgoSyscall,
-	"syscallPtr":  llgoSyscall,
-	"rawSyscall":  llgoSyscall,
-	"rawSyscall6": llgoSyscall,
 	"pystr":       llgoPyStr,
 	"pyList":      llgoPyList,
 	"pyTuple":     llgoPyTuple,

@@ -51,19 +51,19 @@ function pointer from `abi.FuncPCABI0`.
 //go:linkname syscall llgo.syscall
 func syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname syscall6 llgo.syscall6
+//go:linkname syscall6 llgo.syscall
 func syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
-//go:linkname syscall6X llgo.syscall6X
+//go:linkname syscall6X llgo.syscall
 func syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
-//go:linkname syscallPtr llgo.syscallPtr
+//go:linkname syscallPtr llgo.syscall
 func syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname rawSyscall llgo.rawSyscall
+//go:linkname rawSyscall llgo.syscall
 func rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname rawSyscall6 llgo.rawSyscall6
+//go:linkname rawSyscall6 llgo.syscall
 func rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 ```
 
@@ -72,6 +72,7 @@ intrinsic** in the compiler (same lowering logic). This avoids Go-variadic
 lowering into slices while still keeping the standard library signatures.
 
 Behavior:
+
 - Cast `fn` to function pointer and call directly with N arguments.
 - Check result == -1 and fetch errno via `__error()` (Darwin/FreeBSD) or `__errno()` (OpenBSD).
 - Return `(r1, r2, err)` as required by Go's `syscall` package.
@@ -95,6 +96,7 @@ func RawSyscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err Errn
 ```
 
 Implementation options:
+
 1. **Map to libc** (recommended): Look up libc function by syscall number
 2. **Inline syscall**: Generate platform-specific syscall instruction
 
@@ -113,6 +115,7 @@ func rawSysvicall6(trap, nargs, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uin
 ```
 
 The first argument is a pointer to `libcFunc` variable. LLGo should:
+
 1. Dereference to get function pointer
 2. Call with the given arguments
 3. Fetch errno via `___errno()`
@@ -124,6 +127,7 @@ We can implement the standard wrapper in Go and call `llgo.syscall` with the
 appropriate number of arguments. No new intrinsic is required.
 
 Pattern in `zsyscall_aix_ppc64.go`:
+
 ```go
 _, _, e1 := syscall6(uintptr(unsafe.Pointer(&libc_Dup2)), 2, uintptr(old), uintptr(new), 0, 0, 0, 0)
 ```
@@ -152,6 +156,7 @@ func SyscallN(trap uintptr, args ...uintptr) (r1, r2 uintptr, err Errno)
 ```
 
 Additional runtime support needed:
+
 - `LazyDLL.Load()` → calls `LoadLibraryW`
 - `LazyProc.Find()` → calls `GetProcAddress`
 - Error handling via `GetLastError()`
@@ -169,6 +174,7 @@ func Syscall6(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err ErrorSt
 ```
 
 **Key insight:** Plan 9 is **fully reusable** because `ErrorString` implements `error`:
+
 ```go
 type ErrorString string
 func (e ErrorString) Error() string { return string(e) }
@@ -216,38 +222,38 @@ Behavior:
 
 ## Complete Platform Reuse Summary
 
-| Package/File | Platform | Can Reuse? | Required Intrinsics |
-|--------------|----------|------------|---------------------|
-| `zsyscall_darwin_*.go` | Darwin | ✅ 100% | `llgo.funcPCABI0` + `llgo.syscall` |
-| `zsyscall_openbsd_*.go` | OpenBSD | ✅ 100% | Same as Darwin |
-| `zsyscall_linux_*.go` | Linux | ✅ 100% | `llgo.Syscall` (number mapping) |
-| `zsyscall_freebsd_*.go` | FreeBSD | ✅ 100% | Same as Linux |
-| `zsyscall_netbsd_*.go` | NetBSD | ✅ 100% | Same as Linux |
-| `zsyscall_dragonfly_*.go` | DragonFly | ✅ 100% | Same as Linux |
-| `zsyscall_solaris_*.go` | Solaris | ✅ 100% | `llgo.sysvicall6` |
-| `zsyscall_aix_*.go` | AIX | ✅ 100% | `llgo.syscall` (Go wrapper) |
-| `zsyscall_windows.go` | Windows | ✅ 100% | `llgo.SyscallWindows` + runtime |
-| `fs_wasip1.go` | WASI | ✅ 100% | `//go:wasmimport` |
-| `syscall_js.go` | JS/WASM | N/A | Uses `syscall/js` package |
-| `zsyscall_plan9_*.go` | Plan 9 | ✅ 100% | `llgo.SyscallPlan9` |
-| `zsyscall_*.s` | All | ❌ Skip | Assembly not needed |
+| Package/File              | Platform  | Can Reuse? | Required Intrinsics                |
+| ------------------------- | --------- | ---------- | ---------------------------------- |
+| `zsyscall_darwin_*.go`    | Darwin    | ✅ 100%    | `llgo.funcPCABI0` + `llgo.syscall` |
+| `zsyscall_openbsd_*.go`   | OpenBSD   | ✅ 100%    | Same as Darwin                     |
+| `zsyscall_linux_*.go`     | Linux     | ✅ 100%    | `llgo.Syscall` (number mapping)    |
+| `zsyscall_freebsd_*.go`   | FreeBSD   | ✅ 100%    | Same as Linux                      |
+| `zsyscall_netbsd_*.go`    | NetBSD    | ✅ 100%    | Same as Linux                      |
+| `zsyscall_dragonfly_*.go` | DragonFly | ✅ 100%    | Same as Linux                      |
+| `zsyscall_solaris_*.go`   | Solaris   | ✅ 100%    | `llgo.sysvicall6`                  |
+| `zsyscall_aix_*.go`       | AIX       | ✅ 100%    | `llgo.syscall` (Go wrapper)        |
+| `zsyscall_windows.go`     | Windows   | ✅ 100%    | `llgo.SyscallWindows` + runtime    |
+| `fs_wasip1.go`            | WASI      | ✅ 100%    | `//go:wasmimport`                  |
+| `syscall_js.go`           | JS/WASM   | N/A        | Uses `syscall/js` package          |
+| `zsyscall_plan9_*.go`     | Plan 9    | ✅ 100%    | `llgo.SyscallPlan9`                |
+| `zsyscall_*.s`            | All       | ❌ Skip    | Assembly not needed                |
 
 ---
 
 ## Errno Retrieval Functions by Platform
 
-| Platform | Function | Notes |
-|----------|----------|-------|
-| Darwin (macOS/iOS) | `__error()` | Returns `*int` |
-| FreeBSD | `__error()` | Same as Darwin |
-| DragonFly | `__error()` | Same as Darwin |
-| Linux (glibc/musl) | `__errno_location()` | Returns `*int` |
-| OpenBSD | `__errno()` | Returns `*int` |
-| NetBSD | `__errno()` | Returns `*int` |
-| Solaris/Illumos | `___errno()` | Returns `*int` |
-| AIX | `_Errno()` | Returns `*int` |
-| Windows | `GetLastError()` | Returns error code directly |
-| Plan 9 | `errstr()` | Returns error string |
+| Platform           | Function             | Notes                       |
+| ------------------ | -------------------- | --------------------------- |
+| Darwin (macOS/iOS) | `__error()`          | Returns `*int`              |
+| FreeBSD            | `__error()`          | Same as Darwin              |
+| DragonFly          | `__error()`          | Same as Darwin              |
+| Linux (glibc/musl) | `__errno_location()` | Returns `*int`              |
+| OpenBSD            | `__errno()`          | Returns `*int`              |
+| NetBSD             | `__errno()`          | Returns `*int`              |
+| Solaris/Illumos    | `___errno()`         | Returns `*int`              |
+| AIX                | `_Errno()`           | Returns `*int`              |
+| Windows            | `GetLastError()`     | Returns error code directly |
+| Plan 9             | `errstr()`           | Returns error string        |
 
 ---
 
@@ -255,16 +261,17 @@ Behavior:
 
 The `runtime` package on Darwin/OpenBSD uses its own set of trampolines (separate from syscall package). These are **not blockers** for syscall package reuse since LLGo has its own runtime:
 
-| Category | Trampolines |
-|----------|-------------|
-| I/O | `write`, `read`, `open`, `close` |
-| Memory | `mmap`, `munmap`, `madvise` |
-| Threading | `pthread_create`, `pthread_mutex_*`, `pthread_cond_*`, `pthread_attr_*` |
-| Time/Sleep | `nanotime`, `usleep` |
-| Signals | `raise`, `pthread_kill`, `sigaction`, `sigprocmask` |
-| Events | `kevent`, `kqueue` |
+| Category   | Trampolines                                                             |
+| ---------- | ----------------------------------------------------------------------- |
+| I/O        | `write`, `read`, `open`, `close`                                        |
+| Memory     | `mmap`, `munmap`, `madvise`                                             |
+| Threading  | `pthread_create`, `pthread_mutex_*`, `pthread_cond_*`, `pthread_attr_*` |
+| Time/Sleep | `nanotime`, `usleep`                                                    |
+| Signals    | `raise`, `pthread_kill`, `sigaction`, `sigprocmask`                     |
+| Events     | `kevent`, `kqueue`                                                      |
 
 For LLGo's runtime, implement these as direct C calls:
+
 ```go
 // In LLGo runtime (runtime/c package)
 //go:linkname write C.write
@@ -275,22 +282,23 @@ func write(fd int32, p unsafe.Pointer, n int32) int32
 
 ## Intrinsic Summary Table
 
-| Intrinsic | Platforms | First Arg | Error Handling |
-|-----------|-----------|-----------|----------------|
-| `llgo.funcPCABI0` | Darwin, OpenBSD | trampoline func | Returns C symbol address |
-| `llgo.syscall` | Darwin, OpenBSD | Function pointer | `__error()` / `__errno()` |
-| `llgo.Syscall` | Linux, FreeBSD, NetBSD, DragonFly | Syscall number | `__errno_location()` / `__error()` / `__errno()` |
-| `llgo.sysvicall6` | Solaris, Illumos | `*libcFunc` | `___errno()` |
-| `llgo.syscall` | AIX | `*libcFunc` (via wrapper) | `_Errno()` |
-| `llgo.SyscallWindows` | Windows | Proc address | `GetLastError()` |
-| `llgo.SyscallPlan9` | Plan 9 | Syscall number | `errstr()` → ErrorString |
-| `llgo.skip` | All | N/A | No-op call site + skip declaration |
+| Intrinsic             | Platforms                         | First Arg                 | Error Handling                                   |
+| --------------------- | --------------------------------- | ------------------------- | ------------------------------------------------ |
+| `llgo.funcPCABI0`     | Darwin, OpenBSD                   | trampoline func           | Returns C symbol address                         |
+| `llgo.syscall`        | Darwin, OpenBSD                   | Function pointer          | `__error()` / `__errno()`                        |
+| `llgo.Syscall`        | Linux, FreeBSD, NetBSD, DragonFly | Syscall number            | `__errno_location()` / `__error()` / `__errno()` |
+| `llgo.sysvicall6`     | Solaris, Illumos                  | `*libcFunc`               | `___errno()`                                     |
+| `llgo.syscall`        | AIX                               | `*libcFunc` (via wrapper) | `_Errno()`                                       |
+| `llgo.SyscallWindows` | Windows                           | Proc address              | `GetLastError()`                                 |
+| `llgo.SyscallPlan9`   | Plan 9                            | Syscall number            | `errstr()` → ErrorString                         |
+| `llgo.skip`           | All                               | N/A                       | No-op call site + skip declaration               |
 
 ---
 
 ## Implementation Plan
 
 ### Phase 1: Darwin/OpenBSD (Proof of Concept)
+
 1. Implement `llgo.funcPCABI0` intrinsic
 2. Implement `llgo.syscall` family intrinsics (lowercase)
 3. Use `llgo.skip` for `entersyscall`/`exitsyscall`
@@ -298,21 +306,25 @@ func write(fd int32, p unsafe.Pointer, n int32) int32
 5. Test with `zsyscall_darwin_arm64.go`
 
 ### Phase 2: Linux
+
 1. Create syscall number → libc function mapping
 2. Implement `llgo.Syscall` (capital S) for numeric syscalls
 3. Test with `zsyscall_linux_amd64.go`
 
 ### Phase 3: Other Unix-like
+
 1. FreeBSD, NetBSD, DragonFly - reuse Linux intrinsics with platform-specific errno
 2. Solaris - implement `llgo.sysvicall6`
 3. AIX - implement Go wrapper around `llgo.syscall`
 
 ### Phase 4: Windows
+
 1. Implement `LazyDLL`/`LazyProc` in LLGo runtime
 2. Implement `Syscall`/`Syscall6`/.../`SyscallN`
 3. Test with `zsyscall_windows.go`
 
 ### Phase 5: Special Platforms
+
 1. WASI - Support `//go:wasmimport` directive
 2. Plan 9 - Implement `llgo.SyscallPlan9` with ErrorString return
 3. JS/WASM - Implement `syscall/js` package (no syscall reuse)
@@ -329,19 +341,19 @@ func write(fd int32, p unsafe.Pointer, n int32) int32
 
 ## Appendix A: Platform Mechanisms and LLGo Implications
 
-| Platform | Mechanism | Key Go Sources (examples) | LLGo Implication |
-|----------|-----------|---------------------------|-----------------|
-| Darwin / iOS | libc trampoline | `syscall/zsyscall_darwin_*.go` | `llgo.funcPCABI0` + `llgo.syscall` |
-| OpenBSD | libc trampoline | `syscall/zsyscall_openbsd_*.go` | Same as Darwin |
-| Linux | raw syscall numbers | `syscall/zsyscall_linux_*.go` | Map syscall numbers → libc |
-| Android | raw syscall numbers | `syscall/syscall_linux.go` | Same as Linux, prefer libc for SECCOMP |
-| FreeBSD / NetBSD / DragonFly | raw syscall numbers | `syscall/zsyscall_*bsd_*.go` | Same as Linux strategy |
-| Solaris / illumos | sysvicall → libc | `syscall/zsyscall_solaris_*.go` | `llgo.sysvicall6` |
-| AIX | syscall6 via libc | `syscall/zsyscall_aix_*.go` | `llgo.syscall` (wrapper) |
-| Windows | DLL proc calls | `syscall/zsyscall_windows.go` | `llgo.SyscallWindows` + LazyDLL |
-| WASI | wasm imports | `syscall/fs_wasip1.go` | `//go:wasmimport` |
-| JS (GOOS=js/wasm) | no syscall | `syscall/js` | No syscall reuse |
-| Plan 9 | syscall + errstr | `syscall/zsyscall_plan9_*.go` | `llgo.SyscallPlan9` with ErrorString |
+| Platform                     | Mechanism           | Key Go Sources (examples)       | LLGo Implication                       |
+| ---------------------------- | ------------------- | ------------------------------- | -------------------------------------- |
+| Darwin / iOS                 | libc trampoline     | `syscall/zsyscall_darwin_*.go`  | `llgo.funcPCABI0` + `llgo.syscall`     |
+| OpenBSD                      | libc trampoline     | `syscall/zsyscall_openbsd_*.go` | Same as Darwin                         |
+| Linux                        | raw syscall numbers | `syscall/zsyscall_linux_*.go`   | Map syscall numbers → libc             |
+| Android                      | raw syscall numbers | `syscall/syscall_linux.go`      | Same as Linux, prefer libc for SECCOMP |
+| FreeBSD / NetBSD / DragonFly | raw syscall numbers | `syscall/zsyscall_*bsd_*.go`    | Same as Linux strategy                 |
+| Solaris / illumos            | sysvicall → libc    | `syscall/zsyscall_solaris_*.go` | `llgo.sysvicall6`                      |
+| AIX                          | syscall6 via libc   | `syscall/zsyscall_aix_*.go`     | `llgo.syscall` (wrapper)               |
+| Windows                      | DLL proc calls      | `syscall/zsyscall_windows.go`   | `llgo.SyscallWindows` + LazyDLL        |
+| WASI                         | wasm imports        | `syscall/fs_wasip1.go`          | `//go:wasmimport`                      |
+| JS (GOOS=js/wasm)            | no syscall          | `syscall/js`                    | No syscall reuse                       |
+| Plan 9                       | syscall + errstr    | `syscall/zsyscall_plan9_*.go`   | `llgo.SyscallPlan9` with ErrorString   |
 
 ## Appendix B: Trampoline Name Extraction Rules
 

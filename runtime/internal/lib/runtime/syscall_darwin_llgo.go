@@ -7,19 +7,19 @@ import _ "unsafe"
 //go:linkname llgo_syscall llgo.syscall
 func llgo_syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname llgo_syscall6 llgo.syscall6
+//go:linkname llgo_syscall6 llgo.syscall
 func llgo_syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
-//go:linkname llgo_syscall6X llgo.syscall6X
+//go:linkname llgo_syscall6X llgo.syscall
 func llgo_syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
-//go:linkname llgo_syscallPtr llgo.syscallPtr
+//go:linkname llgo_syscallPtr llgo.syscall
 func llgo_syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname llgo_rawSyscall llgo.rawSyscall
+//go:linkname llgo_rawSyscall llgo.syscall
 func llgo_rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname llgo_rawSyscall6 llgo.rawSyscall6
+//go:linkname llgo_rawSyscall6 llgo.syscall
 func llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
 //go:linkname syscall_syscall syscall.syscall

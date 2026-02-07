@@ -522,11 +522,6 @@ const (
 	llgoFuncPCABI0    = llgoInstrBase + 0x44
 	llgoSkip          = llgoInstrBase + 0x45
 	llgoSyscall       = llgoInstrBase + 0x46
-	llgoSyscall6      = llgoInstrBase + 0x47
-	llgoSyscall6X     = llgoInstrBase + 0x48
-	llgoSyscallPtr    = llgoInstrBase + 0x49
-	llgoRawSyscall    = llgoInstrBase + 0x4a
-	llgoRawSyscall6   = llgoInstrBase + 0x4b
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )

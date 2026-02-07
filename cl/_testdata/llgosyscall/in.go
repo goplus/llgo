@@ -5,19 +5,19 @@ import _ "unsafe"
 //go:linkname syscall llgo.syscall
 func syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname syscall6 llgo.syscall6
+//go:linkname syscall6 llgo.syscall
 func syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
-//go:linkname syscall6X llgo.syscall6X
+//go:linkname syscall6X llgo.syscall
 func syscall6X(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
-//go:linkname syscallPtr llgo.syscallPtr
+//go:linkname syscallPtr llgo.syscall
 func syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname rawSyscall llgo.rawSyscall
+//go:linkname rawSyscall llgo.syscall
 func rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
-//go:linkname rawSyscall6 llgo.rawSyscall6
+//go:linkname rawSyscall6 llgo.syscall
 func rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
 
 func Use() uintptr {
