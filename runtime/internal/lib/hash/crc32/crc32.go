@@ -1,33 +1,27 @@
-/*
- * Copyright (c) 2024 The XGo Authors (xgo.dev). All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
+// Package crc32 implements the 32-bit cyclic redundancy check, or CRC-32,
+// checksum. See https://en.wikipedia.org/wiki/Cyclic_redundancy_check for
+// information.
+//
+// This is an llgo overlay of the standard library package. It intentionally
+// uses the generic (non-assembly) algorithms to avoid depending on Go/Plan 9
+// assembler support for this package.
 package crc32
 
 import (
+	"errors"
 	"hash"
-
-	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/clite/zlib"
+	"sync"
 )
-
-// llgo:skipall
-type _crc32 struct{}
 
 // The size of a CRC-32 checksum in bytes.
 const Size = 4
+
+// llgo:skipall
+type _llgo_skipall struct{}
 
 // Predefined polynomials.
 const (
@@ -49,66 +43,148 @@ const (
 // Table is a 256-word table representing the polynomial for efficient processing.
 type Table [256]uint32
 
-// IEEETable is the table for the IEEE polynomial.
-var IEEETable *Table = new(Table)
+var (
+	// IEEETable is the table for the IEEE polynomial.
+	IEEETable = simpleMakeTable(IEEE)
+
+	ieeeOnce   sync.Once
+	ieeeTable8 *slicing8Table
+
+	castagnoliOnce   sync.Once
+	castagnoliTable  *Table
+	castagnoliTable8 *slicing8Table
+)
 
 // MakeTable returns a Table constructed from the specified polynomial.
 // The contents of this Table must not be modified.
 func MakeTable(poly uint32) *Table {
-	if poly == IEEE {
+	switch poly {
+	case IEEE:
 		return IEEETable
+	case Castagnoli:
+		castagnoliOnce.Do(func() {
+			castagnoliTable = simpleMakeTable(Castagnoli)
+			castagnoliTable8 = slicingMakeTable(Castagnoli)
+		})
+		return castagnoliTable
+	default:
+		return simpleMakeTable(poly)
 	}
-	panic("todo: hash/crc32.MakeTable")
 }
 
-type digest uint32
+func initIEEE() {
+	ieeeOnce.Do(func() {
+		ieeeTable8 = slicingMakeTable(IEEE)
+	})
+}
 
-func (d *digest) Size() int { return Size }
+// Update returns the result of adding the bytes in p to the crc.
+func Update(crc uint32, tab *Table, p []byte) uint32 {
+	switch {
+	case tab == IEEETable:
+		initIEEE()
+		return slicingUpdate(crc, ieeeTable8, p)
+	case castagnoliTable != nil && tab == castagnoliTable:
+		return slicingUpdate(crc, castagnoliTable8, p)
+	default:
+		return simpleUpdate(crc, tab, p)
+	}
+}
 
+// Checksum returns the CRC-32 checksum of data using the polynomial represented
+// by the Table.
+func Checksum(data []byte, tab *Table) uint32 { return Update(0, tab, data) }
+
+// ChecksumIEEE returns the CRC-32 checksum of data using the IEEE polynomial.
+func ChecksumIEEE(data []byte) uint32 {
+	initIEEE()
+	return slicingUpdate(0, ieeeTable8, data)
+}
+
+// digest represents the partial evaluation of a checksum.
+type digest struct {
+	crc uint32
+	tab *Table
+}
+
+// New creates a new hash.Hash32 computing the CRC-32 checksum using the
+// polynomial represented by the Table. Its Sum method will lay the value out
+// in big-endian byte order. The returned Hash32 also implements
+// encoding.BinaryMarshaler and encoding.BinaryUnmarshaler to marshal and
+// unmarshal the internal state of the hash.
+func New(tab *Table) hash.Hash32 {
+	if tab == IEEETable {
+		initIEEE()
+	}
+	return &digest{0, tab}
+}
+
+// NewIEEE creates a new hash.Hash32 computing the CRC-32 checksum using
+// the IEEE polynomial.
+func NewIEEE() hash.Hash32 { return New(IEEETable) }
+
+func (d *digest) Size() int      { return Size }
 func (d *digest) BlockSize() int { return 1 }
-
-func (d *digest) Reset() { *d = 0 }
+func (d *digest) Reset()         { d.crc = 0 }
 
 func (d *digest) Write(p []byte) (n int, err error) {
-	*d = digest(zlib.Crc32ZBytes(c.Ulong(*d), p))
+	d.crc = Update(d.crc, d.tab, p)
 	return len(p), nil
 }
 
-func (d *digest) Sum32() uint32 { return uint32(*d) }
+func (d *digest) Sum32() uint32 { return d.crc }
 
 func (d *digest) Sum(in []byte) []byte {
 	s := d.Sum32()
 	return append(in, byte(s>>24), byte(s>>16), byte(s>>8), byte(s))
 }
 
-func New(tab *Table) hash.Hash32 {
-	if tab == IEEETable {
-		return new(digest)
+const (
+	magic         = "crc\x01"
+	marshaledSize = len(magic) + 4 + 4
+)
+
+func tableSum(t *Table) uint32 {
+	var a [1024]byte
+	b := a[:0]
+	if t != nil {
+		for _, x := range t {
+			b = beAppendUint32(b, x)
+		}
 	}
-	panic("todo: hash/crc32.New")
+	return ChecksumIEEE(b)
 }
 
-// NewIEEE creates a new hash.Hash32 computing the CRC-32 checksum using
-// the IEEE polynomial. Its Sum method will lay the value out in
-// big-endian byte order. The returned Hash32 also implements
-// encoding.BinaryMarshaler and encoding.BinaryUnmarshaler to marshal
-// and unmarshal the internal state of the hash.
-func NewIEEE() hash.Hash32 { return New(IEEETable) }
-
-// Update returns the result of adding the bytes in p to the crc.
-func Update(crc uint32, tab *Table, p []byte) uint32 {
-	if tab == IEEETable {
-		return uint32(zlib.Crc32ZBytes(c.Ulong(crc), p))
-	}
-	panic("todo: hash/crc32.Update")
+func (d *digest) AppendBinary(b []byte) ([]byte, error) {
+	b = append(b, magic...)
+	b = beAppendUint32(b, tableSum(d.tab))
+	b = beAppendUint32(b, d.crc)
+	return b, nil
 }
 
-// Checksum returns the CRC-32 checksum of data
-// using the polynomial represented by the Table.
-func Checksum(data []byte, tab *Table) uint32 { return Update(0, tab, data) }
+func (d *digest) MarshalBinary() ([]byte, error) {
+	return d.AppendBinary(make([]byte, 0, marshaledSize))
+}
 
-// ChecksumIEEE returns the CRC-32 checksum of data
-// using the IEEE polynomial.
-func ChecksumIEEE(data []byte) uint32 {
-	return uint32(zlib.Crc32ZBytes(0, data))
+func (d *digest) UnmarshalBinary(b []byte) error {
+	if len(b) < len(magic) || string(b[:len(magic)]) != magic {
+		return errors.New("hash/crc32: invalid hash state identifier")
+	}
+	if len(b) != marshaledSize {
+		return errors.New("hash/crc32: invalid hash state size")
+	}
+	if tableSum(d.tab) != beUint32(b[4:]) {
+		return errors.New("hash/crc32: tables do not match")
+	}
+	d.crc = beUint32(b[8:])
+	return nil
+}
+
+func beAppendUint32(dst []byte, v uint32) []byte {
+	return append(dst, byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
+}
+
+func beUint32(b []byte) uint32 {
+	_ = b[3]
+	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }
