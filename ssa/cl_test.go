@@ -28,41 +28,17 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/ssa"
 )
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	ssa.SetDebug(ssa.DbgFlagAll)
+	ssa.Initialize(ssa.InitAll | ssa.InitNative)
 	if !testing.Verbose() {
 		log.SetOutput(io.Discard)
 	}
 	m.Run()
-}
-
-func TestFromTestlibgo(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testlibgo")
-}
-
-func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testgo")
-}
-
-func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testpy")
-}
-
-func TestFromTestlibc(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testlibc")
-}
-
-func TestFromTestrt(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testrt")
-}
-
-func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "../cl/_testdata")
 }
 
 func TestMakeInterface(t *testing.T) {

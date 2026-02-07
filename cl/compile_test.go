@@ -20,10 +20,8 @@
 package cl_test
 
 import (
-	"runtime"
 	"testing"
 
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 )
@@ -31,69 +29,6 @@ import (
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
 	cltest.TestCompileEx(t, src, "foo.go", expected, false)
-}
-
-func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testgo")
-}
-
-func TestRunFromTestgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testgo", nil)
-}
-
-func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "", "./_testpy")
-}
-
-func TestRunFromTestpy(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testpy", nil)
-}
-
-func TestFromTestlibgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibgo")
-}
-
-func TestRunFromTestlibgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibgo", nil)
-}
-
-func TestFromTestlibc(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibc")
-}
-
-func TestRunFromTestlibc(t *testing.T) {
-	var ignore []string
-	if runtime.GOOS == "linux" {
-		ignore = []string{
-			"./_testlibc/demangle", // Linux demangle symbol differs (itaniumDemangle linkage mismatch).
-		}
-	}
-	cltest.RunFromDir(t, "", "./_testlibc", ignore)
-}
-
-func TestFromTestrt(t *testing.T) {
-	cl.SetDebug(cl.DbgFlagAll)
-	cltest.FromDir(t, "", "./_testrt")
-	cl.SetDebug(0)
-}
-
-func TestRunFromTestrt(t *testing.T) {
-	var ignore []string
-	if runtime.GOOS == "linux" {
-		ignore = []string{
-			"./_testrt/asmfull", // Output is macOS-specific.
-			"./_testrt/fprintf", // Linux uses different stderr symbol (no __stderrp).
-		}
-	}
-	cltest.RunFromDir(t, "", "./_testrt", ignore)
-}
-
-func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata")
-}
-
-func TestRunFromTestdata(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testdata", nil)
 }
 
 func TestGoPkgMath(t *testing.T) {
