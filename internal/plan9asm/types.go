@@ -161,10 +161,13 @@ const (
 	OpTEXT Op = "TEXT"
 	OpMRS  Op = "MRS"
 	OpMOVQ Op = "MOVQ"
+	OpMOVL Op = "MOVL"
 	OpADDQ Op = "ADDQ"
 	OpSUBQ Op = "SUBQ"
 	OpXORQ Op = "XORQ"
 	OpMOVD Op = "MOVD"
+	OpCPUID  Op = "CPUID"
+	OpXGETBV Op = "XGETBV"
 	OpBYTE Op = "BYTE"
 	OpRET  Op = "RET"
 )

@@ -24,7 +24,7 @@ type Func struct {
 //
 // Currently supported:
 //   - TEXT directives (function start)
-//   - MOVQ/ADDQ/SUBQ/XORQ, BYTE, RET
+//   - MOVQ/ADDQ/SUBQ/XORQ/MOVL, CPUID, XGETBV, BYTE, RET
 //   - Operands: immediate ($imm), register (AX/BX/CX/DX), and name+off(FP)
 //
 // Also supported at a minimal level:
@@ -78,7 +78,7 @@ func Parse(arch Arch, src string) (*File, error) {
 				cur.Instrs = append(cur.Instrs, Instr{Op: OpTEXT, Raw: stmt})
 				continue
 
-			case OpMOVQ, OpADDQ, OpSUBQ, OpXORQ, OpMOVD, OpMRS:
+			case OpMOVQ, OpADDQ, OpSUBQ, OpXORQ, OpMOVL, OpMOVD, OpMRS:
 				if cur == nil {
 					return nil, fmt.Errorf("line %d: instruction outside TEXT: %q", lineno, stmt)
 				}
@@ -90,6 +90,16 @@ func Parse(arch Arch, src string) (*File, error) {
 					return nil, fmt.Errorf("line %d: %s expects 2 operands, got %d: %q", lineno, op, len(args), stmt)
 				}
 				cur.Instrs = append(cur.Instrs, Instr{Op: op, Args: args, Raw: stmt})
+				continue
+
+			case OpCPUID, OpXGETBV:
+				if cur == nil {
+					return nil, fmt.Errorf("line %d: %s outside TEXT: %q", lineno, op, stmt)
+				}
+				if strings.TrimSpace(rest) != "" {
+					return nil, fmt.Errorf("line %d: %s takes no operands: %q", lineno, op, stmt)
+				}
+				cur.Instrs = append(cur.Instrs, Instr{Op: op, Raw: stmt})
 				continue
 
 			case OpBYTE:
