@@ -2,19 +2,19 @@
 set -euo pipefail
 
 usage() {
-	cat >&2 <<'EOF'
-usage: dev/docker.sh <arch> [--go=1.21.13|1.22.12|1.23.6|1.25.2] [command...]
+	cat >&2 <<'EOT'
+usage: dev/compose.sh <arch> [--go=1.21.13|1.22.12|1.23.6|1.25.2] [command...]
 
 arch must be one of: amd64 arm64 i386
 
 Examples:
-  ./dev/docker.sh amd64
-  ./dev/docker.sh arm64 bash -lc './dev/llgo.sh test ./test/std/os/signal'
-  ./dev/docker.sh amd64 --go=1.21.13 bash -lc 'go version'
-  ./dev/docker.sh arm64 --go=1.22.12 bash -lc 'go version'
-  ./dev/docker.sh amd64 --go=1.23.6 bash -lc 'go version'
-  ./dev/docker.sh arm64 --go=1.25.2 bash -lc 'go version'
-EOF
+  ./dev/compose.sh amd64
+  ./dev/compose.sh arm64 bash -lc './dev/llgo.sh test ./test/std/os/signal'
+  ./dev/compose.sh amd64 --go=1.21.13 bash -lc 'go version'
+  ./dev/compose.sh arm64 --go=1.22.12 bash -lc 'go version'
+  ./dev/compose.sh amd64 --go=1.23.6 bash -lc 'go version'
+  ./dev/compose.sh arm64 --go=1.25.2 bash -lc 'go version'
+EOT
 	exit 2
 }
 
@@ -87,8 +87,13 @@ compose=(
 	--project-directory "$LLGO_ROOT"
 )
 
+running="$("${compose[@]}" ps -q --status=running "$service" 2>/dev/null || true)"
+if [[ -z "$running" ]]; then
+	"${compose[@]}" up -d "$service" >/dev/null
+fi
+
 if [[ $# -eq 0 ]]; then
-	"${compose[@]}" run --rm --workdir "$container_workdir" "$service" bash
+	"${compose[@]}" exec -w "$container_workdir" -it "$service" bash
 else
-	"${compose[@]}" run --rm --workdir "$container_workdir" "$service" "$@"
+	"${compose[@]}" exec -w "$container_workdir" -T "$service" "$@"
 fi

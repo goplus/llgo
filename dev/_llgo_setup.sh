@@ -24,12 +24,26 @@ _llgo_require_repo_context() {
 	done
 }
 
+_llgo_find_go() {
+	if command -v go >/dev/null 2>&1; then
+		LLGO_GO="$(command -v go)"
+		return
+	fi
+	if [ -x /usr/local/go/bin/go ]; then
+		LLGO_GO="/usr/local/go/bin/go"
+		export PATH="/usr/local/go/bin:${PATH}"
+		return
+	fi
+	echo "error: go not found in PATH and /usr/local/go/bin/go missing" >&2
+	exit 2
+}
+
 _llgo_compute_bin_path() {
 	local gobin
-	gobin="$(cd "${LLGO_ROOT}" && go env GOBIN)"
+	gobin="$(cd "${LLGO_ROOT}" && "${LLGO_GO}" env GOBIN)"
 	if [ -z "$gobin" ]; then
 		local gopath_raw
-		gopath_raw="$(cd "${LLGO_ROOT}" && go env GOPATH)"
+		gopath_raw="$(cd "${LLGO_ROOT}" && "${LLGO_GO}" env GOPATH)"
 		gobin="${gopath_raw%%:*}/bin"
 	fi
 	LLGO_BIN="${gobin}/llgo"
@@ -40,11 +54,12 @@ _llgo_ensure_llgo_cli() {
 
 	(
 		cd "${LLGO_ROOT}"
-		go install -tags=dev ./cmd/llgo
+		"${LLGO_GO}" install -tags=dev ./cmd/llgo
 	)
 }
 
 _llgo_require_repo_context
+_llgo_find_go
 
 # shellcheck disable=SC2034 # exported for wrappers to use directly
 export LLGO_ROOT
