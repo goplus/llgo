@@ -34,10 +34,8 @@ RET
 
 	ll, err := Translate(prog, Options{
 		TargetTriple: intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH),
-		Sig: FuncSig{
-			Name: "add",
-			Args: []LLVMType{I64, I64},
-			Ret:  I64,
+		Sigs: map[string]FuncSig{
+			"add": {Name: "add", Args: []LLVMType{I64, I64}, Ret: I64},
 		},
 	})
 	if err != nil {
