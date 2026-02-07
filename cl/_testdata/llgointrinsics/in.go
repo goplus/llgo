@@ -1,6 +1,8 @@
 package llgointrinsics
 
-import _ "unsafe"
+import (
+	"unsafe"
+)
 
 //go:linkname funcPCABI0 llgo.funcPCABI0
 func funcPCABI0(fn interface{}) uintptr
@@ -16,6 +18,13 @@ func libc_foo_trampoline()
 
 //go:linkname bar_trampoline bar_trampoline
 func bar_trampoline()
+
+//go:linkname write C.write
+func write(fd int, buf unsafe.Pointer, count int) int
+
+func UseC() uintptr {
+	return funcPCABI0(write)
+}
 
 func UseLibc() uintptr {
 	return funcPCABI0(libc_foo_trampoline)

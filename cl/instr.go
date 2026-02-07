@@ -333,7 +333,7 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 	case *ssa.MakeInterface:
 		return p.funcPCABI0Value(b, v.X)
 	case *ssa.Function:
-		if cname := extractTrampolineCName(v.Name()); cname != "" && isTrampolineStub(v) {
+		if cname := extractTrampolineCName(v.Name()); cname != "" {
 			cname = p.remapTrampolineCName(cname)
 			fnSig := p.syscallFnSig(0)
 			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
@@ -353,10 +353,6 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 				codePtr := b.Convert(uptrPtr, data)
 				return b.Load(codePtr)
 			}
-		}
-		ev := p.compileValue(b, v)
-		if _, ok := ev.Type.RawType().Underlying().(*types.Signature); ok {
-			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), ev)
 		}
 	}
 	panic("funcPCABI0(<func>): invalid arguments")
@@ -399,23 +395,6 @@ func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
 	errno = b.Convert(uptr, errno)
 	zero := p.prog.Zero(uptr)
 	return b.SelectValue(cond, errno, zero)
-}
-
-func isTrampolineStub(fn *ssa.Function) bool {
-	if len(fn.Blocks) == 0 {
-		return true
-	}
-	for _, blk := range fn.Blocks {
-		for _, ins := range blk.Instrs {
-			switch ins.(type) {
-			case *ssa.Return, *ssa.DebugRef:
-				// allow empty stub
-			default:
-				return false
-			}
-		}
-	}
-	return true
 }
 
 func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *types.Tuple) llssa.Expr {
@@ -585,16 +564,6 @@ func (p *context) funcOf(fn *ssa.Function) (aFn llssa.Function, pyFn llssa.PyObj
 		}
 	default:
 		pkg := p.pkg
-		if ftype == cFunc {
-			if cname := extractTrampolineCName(fn.Name()); cname != "" && isTrampolineStub(fn) {
-				sig := p.syscallFnSig(0)
-				aFn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), false, fn.Origin() != nil)
-				if disableInline {
-					aFn.Inline(llssa.NoInline)
-				}
-				return
-			}
-		}
 		if aFn = pkg.FuncOf(name); aFn == nil {
 			if len(fn.FreeVars) > 0 {
 				return nil, nil, ignoredFunc
