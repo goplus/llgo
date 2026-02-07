@@ -155,8 +155,14 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 	}
 
 	// Other files (C, assembly, etc.)
-	if len(p.OtherFiles) > 0 {
-		otherList, err := digestFiles(p.OtherFiles)
+	otherFiles := append([]string{}, p.OtherFiles...)
+	sfiles, err := pkgSFiles(c, p)
+	if err != nil {
+		return fmt.Errorf("list sfiles: %w", err)
+	}
+	otherFiles = append(otherFiles, sfiles...)
+	if len(otherFiles) > 0 {
+		otherList, err := digestFiles(otherFiles)
 		if err != nil {
 			return fmt.Errorf("digest other files: %w", err)
 		}
