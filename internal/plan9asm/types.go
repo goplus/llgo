@@ -133,6 +133,7 @@ const (
 	OpADDQ Op = "ADDQ"
 	OpSUBQ Op = "SUBQ"
 	OpXORQ Op = "XORQ"
+	OpBYTE Op = "BYTE"
 	OpRET  Op = "RET"
 )
 
