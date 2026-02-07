@@ -542,6 +542,10 @@ type context struct {
 	// Cache related fields
 	cacheManager *cacheManager
 	llvmVersion  string
+
+	// go list derived file lists (SFiles, etc.)
+	sfilesCache   map[string][]string // pkg.ID -> absolute .s/.S file paths
+	goOverlayFile string              // path to go command overlay.json mirroring conf.Overlay
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -1183,6 +1187,11 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
+	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, printCmds); err != nil {
+		return err
+	} else {
+		aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
+	}
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
@@ -1191,6 +1200,11 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		}
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
 		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
+		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, aPkg.AltPkg.Package, printCmds); err != nil {
+			return err
+		} else {
+			aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
+		}
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
