@@ -19,7 +19,6 @@ var hasAltPkg = map[string]none{
 	"hash/crc32":                 {},
 	"internal/abi":               {},
 	"internal/bytealg":           {},
-	"internal/cpu":               {},
 	"internal/reflectlite":       {},
 	"internal/runtime/atomic":    {},
 	"internal/runtime/maps":      {},
