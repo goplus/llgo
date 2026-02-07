@@ -22,6 +22,17 @@ func UseBare() uintptr {
 	return funcPCABI0(bar_trampoline)
 }
 
+func UseFunc() uintptr {
+	return funcPCABI0(func() {})
+}
+
+func UseClosure() uintptr {
+	var x int
+	return funcPCABI0(func() {
+		x++
+	})
+}
+
 func UseSkip() {
 	skip()
 }
