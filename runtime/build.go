@@ -15,7 +15,6 @@ func HasAltPkg(path string) (b bool) {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"crypto/internal/boring/sig": {},
 	"hash/crc32":                 {},
 	"internal/abi":               {},
 	"internal/bytealg":           {},

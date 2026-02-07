@@ -141,6 +141,7 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		// This avoids requiring an env var for essential stdlib deps, while still
 		// keeping the blast radius small as plan9asm support grows.
 		ctx.plan9asmPkgs = map[string]bool{
+			"crypto/internal/boring/sig": true,
 			"internal/cpu": true,
 		}
 		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
