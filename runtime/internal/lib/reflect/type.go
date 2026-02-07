@@ -26,9 +26,10 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
+	"sync"
+
 	"github.com/goplus/llgo/runtime/abi"
 	clite "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/lib/sync"
 	_ "github.com/goplus/llgo/runtime/internal/runtime"
 	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
