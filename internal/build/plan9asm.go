@@ -137,9 +137,20 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 
 func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 	ctx.plan9asmOnce.Do(func() {
-		ctx.plan9asmPkgs = make(map[string]bool)
+		// Default allowlist: packages we've explicitly validated end-to-end.
+		// This avoids requiring an env var for essential stdlib deps, while still
+		// keeping the blast radius small as plan9asm support grows.
+		ctx.plan9asmPkgs = map[string]bool{
+			"internal/cpu": true,
+		}
 		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
-		if v == "" || v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
+		// Explicitly disable all asm translation, including defaults.
+		if v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
+			ctx.plan9asmPkgs = make(map[string]bool)
+			return
+		}
+		// Empty means "defaults only".
+		if v == "" {
 			return
 		}
 		if v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true") {
