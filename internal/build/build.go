@@ -543,8 +543,7 @@ type context struct {
 	llvmVersion  string
 
 	// go list derived file lists (SFiles, etc.)
-	sfilesCache   map[string][]string // pkg.ID -> absolute .s/.S file paths
-	goOverlayFile string              // path to go command overlay.json mirroring conf.Overlay
+	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
 }
 
 func (c *context) compiler() *clang.Cmd {
