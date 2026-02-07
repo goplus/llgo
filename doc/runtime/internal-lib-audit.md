@@ -181,10 +181,8 @@ Purpose: CPU feature detection (cpuid, system registers).
 
 LLGO patch:
 
-- `runtime/internal/lib/internal/cpu/cpu_x86.go` implements `cpuid` using a
-  tiny helper compiled via `LLGoFiles` and `//go:linkname` to `C.llgo_getcpuid`.
-  Current helper is `_wrap/cpu_x86.ll` (LLVM IR using `llvm.x86.cpuid`), to avoid
-  depending on C headers/builtins.
+- `runtime/internal/lib/internal/cpu/cpu_x86.go` implements `cpuid` using a C
+  helper (`_wrap/cpu_x86.c`) and `//go:linkname` to `C.llgo_getcpuid`.
 
 Upstream:
 
