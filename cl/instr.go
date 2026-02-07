@@ -358,6 +358,9 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 	panic("funcPCABI0(<func>): invalid arguments")
 }
 
+// zeroResult returns the zero value for the intrinsic's result tuple.
+// Some intrinsics are specified as returning a tuple; in that case we need to
+// materialize a typed zero value of the tuple type.
 func (p *context) zeroResult(results *types.Tuple) llssa.Expr {
 	if results.Len() == 1 {
 		return p.prog.Zero(p.type_(results.At(0).Type(), llssa.InGo))
@@ -365,6 +368,8 @@ func (p *context) zeroResult(results *types.Tuple) llssa.Expr {
 	return p.prog.Zero(p.type_(results, llssa.InGo))
 }
 
+// syscallFnSig returns a variadic C signature with argc uintptr parameters
+// followed by a varargs marker, and returning a uintptr.
 func (p *context) syscallFnSig(argc int) *types.Signature {
 	params := make([]*types.Var, 0, argc+1)
 	for i := 0; i < argc; i++ {
@@ -375,6 +380,8 @@ func (p *context) syscallFnSig(argc int) *types.Signature {
 	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(ret), true)
 }
 
+// syscallFnSigFixed returns a non-variadic C signature with argc uintptr
+// parameters and returning a uintptr.
 func (p *context) syscallFnSigFixed(argc int) *types.Signature {
 	params := make([]*types.Var, 0, argc)
 	for i := 0; i < argc; i++ {
@@ -384,12 +391,16 @@ func (p *context) syscallFnSigFixed(argc int) *types.Signature {
 	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), types.NewTuple(ret), false)
 }
 
+var errnoSig = types.NewSignatureType(nil, nil, nil, nil,
+	types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])), false)
+
+// syscallErrno returns errno (as uintptr) if r1 is -1, otherwise 0.
+// This matches the common libc syscall convention used by our llgo.syscall
+// intrinsic lowering.
 func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
 	uptr := p.type_(types.Typ[types.Uintptr], llssa.InGo)
 	minus1 := p.prog.IntVal(^uint64(0), uptr)
 	cond := b.BinOp(token.EQL, r1, minus1)
-	errnoSig := types.NewSignatureType(nil, nil, nil, nil,
-		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])), false)
 	errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
 	errno := b.Call(errnoFn.Expr)
 	errno = b.Convert(uptr, errno)
@@ -397,6 +408,10 @@ func (p *context) syscallErrno(b llssa.Builder, r1 llssa.Expr) llssa.Expr {
 	return b.SelectValue(cond, errno, zero)
 }
 
+// syscallIntrinsic implements the llgo.syscall intrinsic for libc-based syscalls.
+// The first argument is treated as a function pointer, called with the remaining
+// arguments (as uintptr), and it returns a (r1, r2, errno) tuple. r2 is always 0
+// and errno is set iff r1 == -1.
 func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *types.Tuple) llssa.Expr {
 	if len(args) < 1 {
 		panic("syscall: missing arguments")
@@ -417,6 +432,8 @@ func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *t
 	return b.Aggregate(tuple, r1, r2, err)
 }
 
+// darwinTrampolineCNameMap maps syscall functions that require LLGo wrapper functions on Darwin.
+// These functions use variadic C arguments which require special handling in LLVM's C ABI.
 var darwinTrampolineCNameMap = map[string]string{
 	"open":   "llgo_open",
 	"openat": "llgo_openat",

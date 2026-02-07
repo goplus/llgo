@@ -538,6 +538,12 @@ retry:
 	panic(fmt.Errorf("invalid recv type: %v", typ))
 }
 
+// extractTrampolineCName extracts the C function name from a trampoline function name.
+// Handles patterns:
+//   - "libc_XXX_trampoline" -> "XXX"
+//   - "XXX_trampoline" -> "XXX"
+//
+// Returns empty string if name does not match the trampoline pattern.
 func extractTrampolineCName(name string) string {
 	if !strings.HasSuffix(name, "_trampoline") {
 		return ""
