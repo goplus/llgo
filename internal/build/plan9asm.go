@@ -60,6 +60,11 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		}
 		file, err := plan9asm.Parse(arch, string(src))
 		if err != nil {
+			// Some stdlib .s files are comment-only placeholders (e.g. internal/cpu/cpu.s).
+			// Skip those silently.
+			if strings.Contains(err.Error(), "no TEXT directive found") {
+				continue
+			}
 			return nil, fmt.Errorf("%s: parse %s: %w", pkg.PkgPath, sfile, err)
 		}
 
