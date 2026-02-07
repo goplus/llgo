@@ -13,6 +13,11 @@ _llgo_0:
   ret i64 ptrtoint (ptr @write to i64)
 }
 
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseCTrampoline"() {
+_llgo_0:
+  ret i64 ptrtoint (ptr @write to i64)
+}
+
 define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
@@ -51,6 +56,8 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseSkip"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 0)
   ret void
 }

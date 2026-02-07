@@ -13,6 +13,9 @@ func skip()
 //go:linkname skipWithRet llgo.skip
 func skipWithRet() uintptr
 
+//go:linkname skipWithMultiRet llgo.skip
+func skipWithMultiRet() (uintptr, uintptr)
+
 //go:linkname libc_foo_trampoline C.foo
 func libc_foo_trampoline()
 
@@ -22,8 +25,15 @@ func bar_trampoline()
 //go:linkname write C.write
 func write(fd int, buf unsafe.Pointer, count int) int
 
+//go:linkname write_trampoline C.write
+func write_trampoline()
+
 func UseC() uintptr {
 	return funcPCABI0(write)
+}
+
+func UseCTrampoline() uintptr {
+	return funcPCABI0(write_trampoline)
 }
 
 func UseLibc() uintptr {
@@ -49,4 +59,6 @@ func UseSkip() {
 	skip()
 	i := skipWithRet()
 	print(i)
+	a, b := skipWithMultiRet()
+	print(a, b)
 }

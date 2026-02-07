@@ -335,7 +335,7 @@ func (p *context) funcPCABI0Value(b llssa.Builder, v ssa.Value) llssa.Expr {
 	case *ssa.Function:
 		if cname := extractTrampolineCName(v.Name()); cname != "" {
 			cname = p.remapTrampolineCName(cname)
-			fnSig := p.syscallFnSig(0)
+			fnSig := p.syscallFnSig(len(v.Params))
 			cfn := b.Pkg.NewFunc(cname, fnSig, llssa.InC)
 			return b.Convert(p.type_(types.Typ[types.Uintptr], llssa.InGo), cfn.Expr)
 		}
