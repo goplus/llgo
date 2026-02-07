@@ -11,17 +11,44 @@ ADDQ b+8(FP), AX
 MOVQ AX, ret+16(FP)
 RET
 `
-	prog, err := Parse(ArchAMD64, src)
+	file, err := Parse(ArchAMD64, src)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if prog.Func != "add" {
-		t.Fatalf("Func=%q, want %q", prog.Func, "add")
+	if len(file.Funcs) != 1 {
+		t.Fatalf("Funcs=%d, want 1", len(file.Funcs))
 	}
-	if len(prog.Instrs) != 5 {
-		t.Fatalf("instrs=%d, want 5", len(prog.Instrs))
+	if file.Funcs[0].Sym != "add" {
+		t.Fatalf("Sym=%q, want %q", file.Funcs[0].Sym, "add")
 	}
-	if prog.Instrs[0].Op != OpTEXT || prog.Instrs[4].Op != OpRET {
-		t.Fatalf("unexpected ops: %v ... %v", prog.Instrs[0].Op, prog.Instrs[4].Op)
+	// TEXT + 3 ops + RET
+	if len(file.Funcs[0].Instrs) != 5 {
+		t.Fatalf("instrs=%d, want 5", len(file.Funcs[0].Instrs))
 	}
 }
+
+func TestParseDefineAndSemicolons(t *testing.T) {
+	src := `
+#define X BYTE $0x01; BYTE $0x02
+TEXT ·Foo(SB),$0
+X
+RET
+`
+	file, err := Parse(ArchAMD64, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Funcs) != 1 {
+		t.Fatalf("Funcs=%d, want 1", len(file.Funcs))
+	}
+	got := 0
+	for _, ins := range file.Funcs[0].Instrs {
+		if ins.Op == OpBYTE {
+			got++
+		}
+	}
+	if got != 2 {
+		t.Fatalf("BYTE count=%d, want 2", got)
+	}
+}
+

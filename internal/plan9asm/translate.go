@@ -2,50 +2,54 @@ package plan9asm
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
 type LLVMType string
 
 const (
-	I64 LLVMType = "i64"
+	Void LLVMType = "void"
+	I64  LLVMType = "i64"
 )
 
 type FuncSig struct {
 	Name string
 	Args []LLVMType
-	Ret  LLVMType // empty means void
+	Ret  LLVMType // use Void for void-return
 }
 
 type Options struct {
 	TargetTriple string
-	Sig          FuncSig
+
+	// ResolveSym maps the TEXT symbol (with (SB) trimmed) into the final linker
+	// symbol name to emit in LLVM IR. If nil, the symbol is used as-is.
+	ResolveSym func(sym string) string
+
+	// Sigs maps resolved symbol name -> signature.
+	Sigs map[string]FuncSig
 
 	// ABI model for name+off(FP) references.
 	// For now, we assume:
 	//   - arg i is at offset i*8
 	//   - return slot is at offset len(args)*8
-	// This matches the classic stack-based ABI style used in many small asm
-	// wrappers (and is sufficient for our initial tests).
+	// This is only used by the prototype arithmetic subset.
 }
 
-// Translate converts a parsed Plan 9 asm Program into LLVM IR text (`.ll`).
+// Translate converts a parsed Plan 9 asm File into LLVM IR text (`.ll`).
 //
-// This is intentionally a small prototype and supports only a tiny subset.
-func Translate(prog *Program, opt Options) (string, error) {
-	if prog == nil {
-		return "", fmt.Errorf("nil program")
+// This is intentionally a prototype and supports only a small subset.
+func Translate(file *File, opt Options) (string, error) {
+	if file == nil {
+		return "", fmt.Errorf("nil file")
 	}
-	if opt.Sig.Name == "" {
-		return "", fmt.Errorf("missing function name in signature")
+	if len(file.Funcs) == 0 {
+		return "", fmt.Errorf("empty file")
 	}
-	if prog.Func != "" && prog.Func != opt.Sig.Name {
-		// Keep the translator strict for now to avoid accidentally translating a
-		// different symbol than intended.
-		return "", fmt.Errorf("program TEXT symbol %q does not match signature name %q", prog.Func, opt.Sig.Name)
-	}
-	if opt.Sig.Ret == "" {
-		return "", fmt.Errorf("prototype only supports non-void return")
+
+	resolve := opt.ResolveSym
+	if resolve == nil {
+		resolve = func(s string) string { return s }
 	}
 
 	var b strings.Builder
@@ -54,16 +58,66 @@ func Translate(prog *Program, opt Options) (string, error) {
 		fmt.Fprintf(&b, "target triple = %q\n\n", opt.TargetTriple)
 	}
 
+	for i := range file.Funcs {
+		fn := &file.Funcs[i]
+		name := resolve(fn.Sym)
+		sig, ok := opt.Sigs[name]
+		if !ok {
+			return "", fmt.Errorf("missing signature for %q", name)
+		}
+		if sig.Name == "" {
+			sig.Name = name
+		}
+		if sig.Name != name {
+			return "", fmt.Errorf("signature name mismatch: %q vs %q", sig.Name, name)
+		}
+		if sig.Ret == "" {
+			return "", fmt.Errorf("missing return type for %q", name)
+		}
+		if err := translateFunc(&b, *fn, sig); err != nil {
+			return "", fmt.Errorf("%s: %v", name, err)
+		}
+		b.WriteString("\n")
+	}
+	return b.String(), nil
+}
+
+func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 	// Function header.
-	fmt.Fprintf(&b, "define %s @%s(", opt.Sig.Ret, opt.Sig.Name)
-	for i, t := range opt.Sig.Args {
+	fmt.Fprintf(b, "define %s %s(", sig.Ret, llvmGlobal(sig.Name))
+	for i, t := range sig.Args {
 		if i > 0 {
 			b.WriteString(", ")
 		}
-		fmt.Fprintf(&b, "%s %%arg%d", t, i)
+		fmt.Fprintf(b, "%s %%arg%d", t, i)
 	}
 	b.WriteString(") {\n")
 	b.WriteString("entry:\n")
+
+	// Fast path: void marker functions (TEXT ...; RET; and optionally BYTE).
+	if sig.Ret == Void {
+		for _, ins := range fn.Instrs {
+			switch ins.Op {
+			case OpTEXT, OpRET, OpBYTE:
+				// ignore
+			default:
+				return fmt.Errorf("unsupported opcode in void function: %s", ins.Op)
+			}
+		}
+		b.WriteString("  ret void\n")
+		b.WriteString("}\n")
+		return nil
+	}
+
+	// Prototype arithmetic subset: i64 only.
+	if sig.Ret != I64 {
+		return fmt.Errorf("prototype only supports i64/void return, got %q", sig.Ret)
+	}
+	for _, t := range sig.Args {
+		if t != I64 {
+			return fmt.Errorf("prototype only supports i64 args, got %q", t)
+		}
+	}
 
 	// Register SSA values.
 	reg := map[Reg]string{}
@@ -82,8 +136,6 @@ func Translate(prog *Program, opt Options) (string, error) {
 			v, ok := reg[op.Reg]
 			if !ok {
 				// Uninitialized register -> treat as 0 for now.
-				// (Real asm would use undefined value. For a prototype, being
-				// explicit makes debugging easier.)
 				return "0", nil
 			}
 			return "%" + v, nil
@@ -93,14 +145,13 @@ func Translate(prog *Program, opt Options) (string, error) {
 				return "", fmt.Errorf("unsupported FP offset (must be multiple of 8): %s", op.String())
 			}
 			idx := int(op.FPOffset / 8)
-			if idx < len(opt.Sig.Args) && opt.Sig.Args[idx] == I64 {
+			if idx < len(sig.Args) && sig.Args[idx] == I64 {
 				return fmt.Sprintf("%%arg%d", idx), nil
 			}
 			// return slot is after args
-			retOff := int64(len(opt.Sig.Args) * 8)
+			retOff := int64(len(sig.Args) * 8)
 			if op.FPOffset == retOff {
 				if retv == "" {
-					// Uninitialized return slot.
 					return "0", nil
 				}
 				return "%" + retv, nil
@@ -112,14 +163,12 @@ func Translate(prog *Program, opt Options) (string, error) {
 	}
 
 	setReg := func(r Reg, val string) {
-		// val is an SSA value with leading '%' or an immediate constant.
-		// Materialize immediates into SSA to keep later ops uniform.
 		if strings.HasPrefix(val, "%") {
 			reg[r] = strings.TrimPrefix(val, "%")
 			return
 		}
 		name := newTmp()
-		fmt.Fprintf(&b, "  %%%s = add i64 %s, 0\n", name, val)
+		fmt.Fprintf(b, "  %%%s = add i64 %s, 0\n", name, val)
 		reg[r] = name
 	}
 
@@ -129,11 +178,11 @@ func Translate(prog *Program, opt Options) (string, error) {
 			return
 		}
 		name := newTmp()
-		fmt.Fprintf(&b, "  %%%s = add i64 %s, 0\n", name, val)
+		fmt.Fprintf(b, "  %%%s = add i64 %s, 0\n", name, val)
 		retv = name
 	}
 
-	for _, ins := range prog.Instrs {
+	for _, ins := range fn.Instrs {
 		switch ins.Op {
 		case OpTEXT:
 			continue
@@ -141,7 +190,7 @@ func Translate(prog *Program, opt Options) (string, error) {
 			src, dst := ins.Args[0], ins.Args[1]
 			v, err := valueOf(src)
 			if err != nil {
-				return "", err
+				return err
 			}
 			switch dst.Kind {
 			case OpReg:
@@ -149,47 +198,61 @@ func Translate(prog *Program, opt Options) (string, error) {
 			case OpFP:
 				setRet(v)
 			default:
-				return "", fmt.Errorf("MOVQ dst unsupported: %s", dst.String())
+				return fmt.Errorf("MOVQ dst unsupported: %s", dst.String())
 			}
 
 		case OpADDQ, OpSUBQ, OpXORQ:
 			src, dst := ins.Args[0], ins.Args[1]
 			if dst.Kind != OpReg {
-				return "", fmt.Errorf("%s dst must be register in prototype: %s", ins.Op, dst.String())
+				return fmt.Errorf("%s dst must be register in prototype: %s", ins.Op, dst.String())
 			}
 			lhs, err := valueOf(dst)
 			if err != nil {
-				return "", err
+				return err
 			}
 			rhs, err := valueOf(src)
 			if err != nil {
-				return "", err
+				return err
 			}
 			name := newTmp()
 			switch ins.Op {
 			case OpADDQ:
-				fmt.Fprintf(&b, "  %%%s = add i64 %s, %s\n", name, lhs, rhs)
+				fmt.Fprintf(b, "  %%%s = add i64 %s, %s\n", name, lhs, rhs)
 			case OpSUBQ:
-				fmt.Fprintf(&b, "  %%%s = sub i64 %s, %s\n", name, lhs, rhs)
+				fmt.Fprintf(b, "  %%%s = sub i64 %s, %s\n", name, lhs, rhs)
 			case OpXORQ:
-				fmt.Fprintf(&b, "  %%%s = xor i64 %s, %s\n", name, lhs, rhs)
+				fmt.Fprintf(b, "  %%%s = xor i64 %s, %s\n", name, lhs, rhs)
 			}
 			reg[dst.Reg] = name
 
 		case OpRET:
-			// Prefer explicit return slot; otherwise return AX.
 			if retv != "" {
-				fmt.Fprintf(&b, "  ret i64 %%%s\n", retv)
+				fmt.Fprintf(b, "  ret i64 %%%s\n", retv)
 			} else if ax, ok := reg[AX]; ok {
-				fmt.Fprintf(&b, "  ret i64 %%%s\n", ax)
+				fmt.Fprintf(b, "  ret i64 %%%s\n", ax)
 			} else {
 				b.WriteString("  ret i64 0\n")
 			}
+
+		case OpBYTE:
+			// Ignore raw machine bytes for now (prototype).
+			continue
 		default:
-			return "", fmt.Errorf("unsupported instruction: %s", ins.Op)
+			return fmt.Errorf("unsupported instruction: %s", ins.Op)
 		}
 	}
 
 	b.WriteString("}\n")
-	return b.String(), nil
+	return nil
 }
+
+var llvmIdentRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+func llvmGlobal(name string) string {
+	// LLVM requires quoting if name contains special characters (like / or .).
+	if llvmIdentRe.MatchString(name) {
+		return "@" + name
+	}
+	return "@\"" + strings.ReplaceAll(name, "\"", "\\\"") + "\""
+}
+
