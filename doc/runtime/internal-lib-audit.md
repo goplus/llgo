@@ -44,11 +44,20 @@ Patched packages (see `runtime/build.go`):
 - `unique`
 - `weak`
 
-Present under `runtime/internal/lib/` but not currently patched (can likely be
-deleted after confirming no references):
+Present under `runtime/internal/lib/` but not currently patched (special cases):
 
 - `internal/itoa`
 - `internal/syscall/unix`
+
+Notes:
+
+- `internal/itoa` is imported by the patched `reflect` implementation
+  (`runtime/internal/lib/reflect/value.go`), so it is currently required even
+  though it is not part of `hasAltPkg`.
+- `internal/syscall/unix` is not currently imported in this branch, but
+  `runtime/internal/lib/runtime/vgetrandom_stub_llgo.go` keeps a stub symbol
+  intended to satisfy `//go:linkname` references from that package if/when we
+  re-enable code paths that need it.
 
 ## Package Notes
 
