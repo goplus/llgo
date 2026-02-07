@@ -35,7 +35,20 @@ RET
 	ll, err := Translate(prog, Options{
 		TargetTriple: intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH),
 		Sigs: map[string]FuncSig{
-			"add": {Name: "add", Args: []LLVMType{I64, I64}, Ret: I64},
+			"add": {
+				Name: "add",
+				Args: []LLVMType{I64, I64},
+				Ret:  I64,
+				Frame: FrameLayout{
+					Params: []FrameSlot{
+						{Offset: 0, Type: I64, Index: 0},
+						{Offset: 8, Type: I64, Index: 1},
+					},
+					Results: []FrameSlot{
+						{Offset: 16, Type: I64, Index: 0},
+					},
+				},
+			},
 		},
 	})
 	if err != nil {

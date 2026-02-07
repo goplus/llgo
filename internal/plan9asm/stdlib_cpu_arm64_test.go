@@ -37,9 +37,21 @@ func TestStdlibInternalCPU_ARM64_Compile(t *testing.T) {
 		return strings.ReplaceAll(sym, "·", ".")
 	}
 	sigs := map[string]FuncSig{
-		"internal/cpu.getisar0": {Name: "internal/cpu.getisar0", Ret: I64},
-		"internal/cpu.getpfr0":  {Name: "internal/cpu.getpfr0", Ret: I64},
-		"internal/cpu.getMIDR":  {Name: "internal/cpu.getMIDR", Ret: I64},
+		"internal/cpu.getisar0": {
+			Name: "internal/cpu.getisar0",
+			Ret:  I64,
+			Frame: FrameLayout{Results: []FrameSlot{{Offset: 0, Type: I64, Index: 0}}},
+		},
+		"internal/cpu.getpfr0": {
+			Name: "internal/cpu.getpfr0",
+			Ret:  I64,
+			Frame: FrameLayout{Results: []FrameSlot{{Offset: 0, Type: I64, Index: 0}}},
+		},
+		"internal/cpu.getMIDR": {
+			Name: "internal/cpu.getMIDR",
+			Ret:  I64,
+			Frame: FrameLayout{Results: []FrameSlot{{Offset: 0, Type: I64, Index: 0}}},
+		},
 	}
 	ll, err := Translate(file, Options{
 		TargetTriple: intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH),

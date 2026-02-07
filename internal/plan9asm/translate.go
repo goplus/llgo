@@ -10,6 +10,7 @@ type LLVMType string
 
 const (
 	Void LLVMType = "void"
+	I32  LLVMType = "i32"
 	I64  LLVMType = "i64"
 )
 
@@ -17,6 +18,24 @@ type FuncSig struct {
 	Name string
 	Args []LLVMType
 	Ret  LLVMType // use Void for void-return
+
+	// Frame provides a minimal stack-frame model for resolving name+off(FP)
+	// references in Go/Plan9 assembly into LLVM function args/returns.
+	//
+	// This is intentionally limited to the classic Go assembler convention used
+	// by stdlib .s files (e.g. internal/cpu/cpu_x86.s).
+	Frame FrameLayout
+}
+
+type FrameLayout struct {
+	Params  []FrameSlot
+	Results []FrameSlot
+}
+
+type FrameSlot struct {
+	Offset int64
+	Type   LLVMType
+	Index  int // index into Params/Results tuple
 }
 
 type Options struct {
@@ -29,11 +48,8 @@ type Options struct {
 	// Sigs maps resolved symbol name -> signature.
 	Sigs map[string]FuncSig
 
-	// ABI model for name+off(FP) references.
-	// For now, we assume:
-	//   - arg i is at offset i*8
-	//   - return slot is at offset len(args)*8
-	// This is only used by the prototype arithmetic subset.
+	// Goarch is used for a few arch-specific translations (e.g. x86 CPUID).
+	Goarch string
 }
 
 // Translate converts a parsed Plan 9 asm File into LLVM IR text (`.ll`).
@@ -109,77 +125,123 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 		return nil
 	}
 
-	// Prototype arithmetic subset: i64 only.
-	if sig.Ret != I64 {
-		return fmt.Errorf("prototype only supports i64/void return, got %q", sig.Ret)
-	}
-	for _, t := range sig.Args {
-		if t != I64 {
-			return fmt.Errorf("prototype only supports i64 args, got %q", t)
-		}
+	type ssaVal struct {
+		typ LLVMType
+		val string // either constant ("0") or SSA ("%t1")
 	}
 
+	isSSA := func(v string) bool { return strings.HasPrefix(v, "%") }
+
 	// Register SSA values.
-	reg := map[Reg]string{}
-	retv := "" // SSA value name without leading '%'
+	reg := map[Reg]ssaVal{}
+	results := make([]ssaVal, len(sig.Frame.Results))
+	haveResult := make([]bool, len(sig.Frame.Results))
 	tmp := 0
 	newTmp := func() string {
 		tmp++
 		return fmt.Sprintf("t%d", tmp)
 	}
 
-	valueOf := func(op Operand) (string, error) {
+	emitCast := func(v ssaVal, to LLVMType) (ssaVal, error) {
+		if v.typ == "" {
+			return ssaVal{}, fmt.Errorf("missing type for value %q", v.val)
+		}
+		if v.typ == to {
+			return v, nil
+		}
+		// Only support integer casts for now (enough for internal/cpu asm).
+		switch {
+		case v.typ == I64 && to == I32:
+			name := newTmp()
+			fmt.Fprintf(b, "  %%%s = trunc i64 %s to i32\n", name, v.val)
+			return ssaVal{typ: I32, val: "%" + name}, nil
+		case v.typ == I32 && to == I64:
+			name := newTmp()
+			fmt.Fprintf(b, "  %%%s = zext i32 %s to i64\n", name, v.val)
+			return ssaVal{typ: I64, val: "%" + name}, nil
+		default:
+			return ssaVal{}, fmt.Errorf("unsupported cast %s -> %s", v.typ, to)
+		}
+	}
+
+	zero := func(t LLVMType) (ssaVal, error) {
+		switch t {
+		case I32, I64:
+			return ssaVal{typ: t, val: "0"}, nil
+		default:
+			return ssaVal{}, fmt.Errorf("zero: unsupported type %q", t)
+		}
+	}
+
+	fpParamIndex := func(off int64) (int, LLVMType, bool) {
+		for _, s := range sig.Frame.Params {
+			if s.Offset == off {
+				return s.Index, s.Type, true
+			}
+		}
+		return 0, "", false
+	}
+	fpResultIndex := func(off int64) (int, LLVMType, bool) {
+		for _, s := range sig.Frame.Results {
+			if s.Offset == off {
+				return s.Index, s.Type, true
+			}
+		}
+		return 0, "", false
+	}
+
+	valueOf := func(op Operand) (ssaVal, error) {
 		switch op.Kind {
 		case OpImm:
-			return fmt.Sprintf("%d", op.Imm), nil
+			// Default immediates to i64; MOVL will cast to i32 as needed.
+			return ssaVal{typ: I64, val: fmt.Sprintf("%d", op.Imm)}, nil
 		case OpReg:
 			v, ok := reg[op.Reg]
 			if !ok {
-				// Uninitialized register -> treat as 0 for now.
-				return "0", nil
+				// Uninitialized register -> treat as 0 i64 for now.
+				return ssaVal{typ: I64, val: "0"}, nil
 			}
-			return "%" + v, nil
+			return v, nil
 		case OpFP:
-			// arg offset i*8
-			if op.FPOffset%8 != 0 {
-				return "", fmt.Errorf("unsupported FP offset (must be multiple of 8): %s", op.String())
+			idx, ty, ok := fpParamIndex(op.FPOffset)
+			if ok {
+				return ssaVal{typ: ty, val: fmt.Sprintf("%%arg%d", idx)}, nil
 			}
-			idx := int(op.FPOffset / 8)
-			if idx < len(sig.Args) && sig.Args[idx] == I64 {
-				return fmt.Sprintf("%%arg%d", idx), nil
-			}
-			// return slot is after args
-			retOff := int64(len(sig.Args) * 8)
-			if op.FPOffset == retOff {
-				if retv == "" {
-					return "0", nil
-				}
-				return "%" + retv, nil
-			}
-			return "", fmt.Errorf("unsupported FP slot: %s", op.String())
+			return ssaVal{}, fmt.Errorf("unsupported FP read slot: %s", op.String())
 		default:
-			return "", fmt.Errorf("invalid operand: %v", op)
+			return ssaVal{}, fmt.Errorf("invalid operand: %v", op)
 		}
 	}
 
-	setReg := func(r Reg, val string) {
-		if strings.HasPrefix(val, "%") {
-			reg[r] = strings.TrimPrefix(val, "%")
-			return
+	setReg := func(r Reg, v ssaVal) error {
+		if v.typ == "" {
+			return fmt.Errorf("setReg(%s): missing type", r)
 		}
-		name := newTmp()
-		fmt.Fprintf(b, "  %%%s = add i64 %s, 0\n", name, val)
-		reg[r] = name
+		// Materialize constants into SSA to simplify later inline asm.
+		if !isSSA(v.val) {
+			name := newTmp()
+			fmt.Fprintf(b, "  %%%s = add %s %s, 0\n", name, v.typ, v.val)
+			v.val = "%" + name
+		}
+		reg[r] = v
+		return nil
 	}
 
-	setRet := func(val string) {
-		if strings.HasPrefix(val, "%") {
-			retv = strings.TrimPrefix(val, "%")
-			return
+	setResult := func(off int64, v ssaVal) error {
+		idx, ty, ok := fpResultIndex(off)
+		if !ok {
+			return fmt.Errorf("unsupported FP write slot: +%d(FP)", off)
 		}
-		name := newTmp()
-		fmt.Fprintf(b, "  %%%s = add i64 %s, 0\n", name, val)
-		retv = name
+		if v.typ != ty {
+			var err error
+			v, err = emitCast(v, ty)
+			if err != nil {
+				return err
+			}
+		}
+		results[idx] = v
+		haveResult[idx] = true
+		return nil
 	}
 
 	for _, ins := range fn.Instrs {
@@ -196,7 +258,7 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 			// Read system register via inline asm.
 			// Example: call i64 asm "mrs $0, MIDR_EL1", "=r"()
 			fmt.Fprintf(b, "  %%%s = call i64 asm %q, %q()\n", name, "mrs $0, "+src.Ident, "=r")
-			reg[dst.Reg] = name
+			reg[dst.Reg] = ssaVal{typ: I64, val: "%" + name}
 			continue
 		case OpMOVD:
 			// ARM64: MOVD src, dst
@@ -205,11 +267,19 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 			if err != nil {
 				return err
 			}
+			v, err = emitCast(v, I64)
+			if err != nil {
+				return err
+			}
 			switch dst.Kind {
 			case OpReg:
-				setReg(dst.Reg, v)
+				if err := setReg(dst.Reg, v); err != nil {
+					return err
+				}
 			case OpFP:
-				setRet(v)
+				if err := setResult(dst.FPOffset, v); err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("MOVD dst unsupported: %s", dst.String())
 			}
@@ -220,11 +290,19 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 			if err != nil {
 				return err
 			}
+			v, err = emitCast(v, I64)
+			if err != nil {
+				return err
+			}
 			switch dst.Kind {
 			case OpReg:
-				setReg(dst.Reg, v)
+				if err := setReg(dst.Reg, v); err != nil {
+					return err
+				}
 			case OpFP:
-				setRet(v)
+				if err := setResult(dst.FPOffset, v); err != nil {
+					return err
+				}
 			default:
 				return fmt.Errorf("MOVQ dst unsupported: %s", dst.String())
 			}
@@ -242,24 +320,196 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 			if err != nil {
 				return err
 			}
+			lhs, err = emitCast(lhs, I64)
+			if err != nil {
+				return err
+			}
+			rhs, err = emitCast(rhs, I64)
+			if err != nil {
+				return err
+			}
 			name := newTmp()
 			switch ins.Op {
 			case OpADDQ:
-				fmt.Fprintf(b, "  %%%s = add i64 %s, %s\n", name, lhs, rhs)
+				fmt.Fprintf(b, "  %%%s = add i64 %s, %s\n", name, lhs.val, rhs.val)
 			case OpSUBQ:
-				fmt.Fprintf(b, "  %%%s = sub i64 %s, %s\n", name, lhs, rhs)
+				fmt.Fprintf(b, "  %%%s = sub i64 %s, %s\n", name, lhs.val, rhs.val)
 			case OpXORQ:
-				fmt.Fprintf(b, "  %%%s = xor i64 %s, %s\n", name, lhs, rhs)
+				fmt.Fprintf(b, "  %%%s = xor i64 %s, %s\n", name, lhs.val, rhs.val)
 			}
-			reg[dst.Reg] = name
+			reg[dst.Reg] = ssaVal{typ: I64, val: "%" + name}
+
+		case OpMOVL:
+			src, dst := ins.Args[0], ins.Args[1]
+			v, err := valueOf(src)
+			if err != nil {
+				return err
+			}
+			v, err = emitCast(v, I32)
+			if err != nil {
+				return err
+			}
+			switch dst.Kind {
+			case OpReg:
+				if err := setReg(dst.Reg, v); err != nil {
+					return err
+				}
+			case OpFP:
+				if err := setResult(dst.FPOffset, v); err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("MOVL dst unsupported: %s", dst.String())
+			}
+
+		case OpCPUID:
+			// x86: CPUID reads EAX/ECX and writes EAX/EBX/ECX/EDX.
+			eax := reg[AX]
+			if eax.typ == "" {
+				z, _ := zero(I32)
+				eax = z
+			} else {
+				var err error
+				eax, err = emitCast(eax, I32)
+				if err != nil {
+					return err
+				}
+			}
+			ecx := reg[CX]
+			if ecx.typ == "" {
+				z, _ := zero(I32)
+				ecx = z
+			} else {
+				var err error
+				ecx, err = emitCast(ecx, I32)
+				if err != nil {
+					return err
+				}
+			}
+			if !isSSA(eax.val) {
+				if err := setReg(AX, eax); err != nil {
+					return err
+				}
+				eax = reg[AX]
+			}
+			if !isSSA(ecx.val) {
+				if err := setReg(CX, ecx); err != nil {
+					return err
+				}
+				ecx = reg[CX]
+			}
+			call := newTmp()
+			// Return 4x i32 in EAX/EBX/ECX/EDX.
+			fmt.Fprintf(b, "  %%%s = call { i32, i32, i32, i32 } asm sideeffect %q, %q(i32 %s, i32 %s)\n",
+				call,
+				"cpuid",
+				"={ax},={bx},={cx},={dx},{ax},{cx},~{dirflag},~{fpsr},~{flags}",
+				eax.val, ecx.val)
+			ext := func(i int) string {
+				n := newTmp()
+				fmt.Fprintf(b, "  %%%s = extractvalue { i32, i32, i32, i32 } %%%s, %d\n", n, call, i)
+				return "%" + n
+			}
+			reg[AX] = ssaVal{typ: I32, val: ext(0)}
+			reg[BX] = ssaVal{typ: I32, val: ext(1)}
+			reg[CX] = ssaVal{typ: I32, val: ext(2)}
+			reg[DX] = ssaVal{typ: I32, val: ext(3)}
+
+		case OpXGETBV:
+			// x86: XGETBV reads ECX and writes EAX/EDX.
+			ecx := reg[CX]
+			if ecx.typ == "" {
+				z, _ := zero(I32)
+				ecx = z
+			} else {
+				var err error
+				ecx, err = emitCast(ecx, I32)
+				if err != nil {
+					return err
+				}
+			}
+			if !isSSA(ecx.val) {
+				if err := setReg(CX, ecx); err != nil {
+					return err
+				}
+				ecx = reg[CX]
+			}
+			call := newTmp()
+			fmt.Fprintf(b, "  %%%s = call { i32, i32 } asm sideeffect %q, %q(i32 %s)\n",
+				call,
+				"xgetbv",
+				"={ax},={dx},{cx},~{dirflag},~{fpsr},~{flags}",
+				ecx.val)
+			eaxN := newTmp()
+			edxN := newTmp()
+			fmt.Fprintf(b, "  %%%s = extractvalue { i32, i32 } %%%s, 0\n", eaxN, call)
+			fmt.Fprintf(b, "  %%%s = extractvalue { i32, i32 } %%%s, 1\n", edxN, call)
+			reg[AX] = ssaVal{typ: I32, val: "%" + eaxN}
+			reg[DX] = ssaVal{typ: I32, val: "%" + edxN}
 
 		case OpRET:
-			if retv != "" {
-				fmt.Fprintf(b, "  ret i64 %%%s\n", retv)
-			} else if ax, ok := reg[AX]; ok {
-				fmt.Fprintf(b, "  ret i64 %%%s\n", ax)
-			} else {
-				b.WriteString("  ret i64 0\n")
+			// Return value comes either from explicit result slots (name+off(FP))
+			// or, as a fallback, from AX for scalar returns.
+			switch {
+			case sig.Ret == Void:
+				b.WriteString("  ret void\n")
+			case len(sig.Frame.Results) > 1:
+				// Aggregate return.
+				cur := "undef"
+				last := ""
+				for _, slot := range sig.Frame.Results {
+					i := slot.Index
+					v := ssaVal{typ: slot.Type, val: "0"}
+					if haveResult[i] {
+						v = results[i]
+					} else {
+						z, err := zero(slot.Type)
+						if err != nil {
+							return err
+						}
+						v = z
+					}
+					if v.typ != slot.Type {
+						var err error
+						v, err = emitCast(v, slot.Type)
+						if err != nil {
+							return err
+						}
+					}
+					if !isSSA(v.val) {
+						// insertvalue accepts constants, but normalize to SSA for consistency.
+						name := newTmp()
+						fmt.Fprintf(b, "  %%%s = add %s %s, 0\n", name, v.typ, v.val)
+						v.val = "%" + name
+					}
+					name := newTmp()
+					fmt.Fprintf(b, "  %%%s = insertvalue %s %s, %s %s, %d\n", name, sig.Ret, cur, slot.Type, v.val, i)
+					cur = "%" + name
+					last = cur
+				}
+				fmt.Fprintf(b, "  ret %s %s\n", sig.Ret, last)
+			default:
+				// Scalar return.
+				var v ssaVal
+				if len(sig.Frame.Results) == 1 && haveResult[0] {
+					v = results[0]
+				} else if ax, ok := reg[AX]; ok {
+					v = ax
+				} else {
+					z, err := zero(sig.Ret)
+					if err != nil {
+						return err
+					}
+					v = z
+				}
+				if v.typ != sig.Ret {
+					var err error
+					v, err = emitCast(v, sig.Ret)
+					if err != nil {
+						return err
+					}
+				}
+				fmt.Fprintf(b, "  ret %s %s\n", sig.Ret, v.val)
 			}
 
 		case OpBYTE:

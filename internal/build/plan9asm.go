@@ -77,13 +77,16 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 			TargetTriple: triple,
 			ResolveSym:   resolve,
 			Sigs:         sigs,
+			Goarch:       ctx.buildConf.Goarch,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("%s: translate %s: %w", pkg.PkgPath, sfile, err)
 		}
 
-		baseName := aPkg.ExportFile + filepath.Base(sfile)
-		llFile, err := os.CreateTemp("", baseName+"-*.ll")
+		baseName := aPkg.ExportFile + filepath.Base(sfile) // used for stable debug output paths
+		tmpPrefix := "plan9asm-" + filepath.Base(sfile) + "-"
+
+		llFile, err := os.CreateTemp("", tmpPrefix+"*.ll")
 		if err != nil {
 			return nil, fmt.Errorf("%s: create temp .ll for %s: %w", pkg.PkgPath, sfile, err)
 		}
@@ -110,7 +113,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 			}
 		}
 
-		objFile, err := os.CreateTemp("", baseName+"-*.o")
+		objFile, err := os.CreateTemp("", tmpPrefix+"*.o")
 		if err != nil {
 			return nil, fmt.Errorf("%s: create temp .o for %s: %w", pkg.PkgPath, sfile, err)
 		}
@@ -180,6 +183,10 @@ func plan9asmArch(goarch string) (plan9asm.Arch, error) {
 func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym string) string, goarch string) (map[string]plan9asm.FuncSig, error) {
 	sigs := make(map[string]plan9asm.FuncSig, len(file.Funcs))
 	scope := pkg.Types.Scope()
+	sz := types.SizesFor("gc", goarch)
+	if sz == nil {
+		return nil, fmt.Errorf("missing sizes for goarch %q", goarch)
+	}
 
 	for i := range file.Funcs {
 		sym := file.Funcs[i].Sym
@@ -211,24 +218,58 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 			return nil, fmt.Errorf("variadic asm not supported: %s", fn.FullName())
 		}
 
-		args, err := llvmTypesForTuple(sig.Params(), goarch)
+		params := sig.Params()
+		args, err := llvmTypesForTuple(params, goarch)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", fn.FullName(), err)
 		}
 
 		res := sig.Results()
+		retTys, err := llvmTypesForTuple(res, goarch)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", fn.FullName(), err)
+		}
 		var ret plan9asm.LLVMType
-		switch res.Len() {
+		switch len(retTys) {
 		case 0:
 			ret = plan9asm.Void
 		case 1:
-			t, err := llvmTypeForGo(res.At(0).Type(), goarch)
-			if err != nil {
-				return nil, fmt.Errorf("%s: %w", fn.FullName(), err)
-			}
-			ret = t
+			ret = retTys[0]
 		default:
-			return nil, fmt.Errorf("%s: multiple return values not supported yet", fn.FullName())
+			parts := make([]string, 0, len(retTys))
+			for _, t := range retTys {
+				parts = append(parts, string(t))
+			}
+			ret = plan9asm.LLVMType("{ " + strings.Join(parts, ", ") + " }")
+		}
+
+		// Classic Go asm uses name+off(FP) stack slots. Compute a minimal layout
+		// so we can map those offsets back to LLVM args/returns.
+		var frame plan9asm.FrameLayout
+		off := int64(0)
+		align := func(off, a int64) int64 {
+			if a <= 1 {
+				return off
+			}
+			m := off % a
+			if m == 0 {
+				return off
+			}
+			return off + (a - m)
+		}
+		for i := 0; i < params.Len(); i++ {
+			t := params.At(i).Type()
+			a := int64(sz.Alignof(t))
+			off = align(off, a)
+			frame.Params = append(frame.Params, plan9asm.FrameSlot{Offset: off, Type: args[i], Index: i})
+			off += int64(sz.Sizeof(t))
+		}
+		for i := 0; i < res.Len(); i++ {
+			t := res.At(i).Type()
+			a := int64(sz.Alignof(t))
+			off = align(off, a)
+			frame.Results = append(frame.Results, plan9asm.FrameSlot{Offset: off, Type: retTys[i], Index: i})
+			off += int64(sz.Sizeof(t))
 		}
 
 		resolved := resolve(sym)
@@ -236,6 +277,7 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 			Name: resolved,
 			Args: args,
 			Ret:  ret,
+			Frame: frame,
 		}
 	}
 	return sigs, nil
@@ -296,6 +338,12 @@ func wordSize(goarch string) int {
 
 func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg == nil || pkg.PkgPath == "" {
+		return nil, nil
+	}
+	// Some unit tests construct synthetic packages that are not loadable via
+	// `go list` (PkgPath not in any module, and Dir/Standard/Goroot unset).
+	// In that case, treat the package as having no selected .s files.
+	if pkg.Dir == "" {
 		return nil, nil
 	}
 	// Fast path: if directory has no .s/.S at all, skip `go list`.
