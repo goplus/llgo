@@ -162,7 +162,7 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 	}
 	otherFiles = append(otherFiles, sfiles...)
 	if len(otherFiles) > 0 {
-		otherList, err := digestFiles(otherFiles)
+		otherList, err := digestFilesWithOverlay(otherFiles, c.conf.Overlay)
 		if err != nil {
 			return fmt.Errorf("digest other files: %w", err)
 		}

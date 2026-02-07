@@ -50,7 +50,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 
 	objFiles := make([]string, 0, len(sfiles))
 	for _, sfile := range sfiles {
-		src, err := os.ReadFile(sfile)
+		src, err := readFileWithOverlay(ctx.conf.Overlay, sfile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
 		}
@@ -272,17 +272,7 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		return v, nil
 	}
 
-	overlayArg := []string{}
-	if len(ctx.conf.Overlay) > 0 {
-		ov, err := ctx.ensureGoOverlay()
-		if err != nil {
-			return nil, err
-		}
-		overlayArg = []string{"-overlay", ov}
-	}
-
 	args := []string{"list", "-json"}
-	args = append(args, overlayArg...)
 	if ctx.buildConf.Tags != "" {
 		args = append(args, "-tags", ctx.buildConf.Tags)
 	}
@@ -294,11 +284,12 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		"GOOS="+ctx.buildConf.Goos,
 		"GOARCH="+ctx.buildConf.Goarch,
 	)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	var errBuf bytes.Buffer
-	cmd.Stderr = &errBuf
-	if err := cmd.Run(); err != nil {
+	out, err := cmd.Output()
+	if err != nil {
+		var errBuf bytes.Buffer
+		if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
+			errBuf.Write(ee.Stderr)
+		}
 		return nil, fmt.Errorf("go list -json %s failed: %w\n%s", pkg.PkgPath, err, strings.TrimSpace(errBuf.String()))
 	}
 
@@ -306,7 +297,7 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		Dir    string   `json:"Dir"`
 		SFiles []string `json:"SFiles"`
 	}
-	if err := json.Unmarshal(out.Bytes(), &lp); err != nil {
+	if err := json.Unmarshal(out, &lp); err != nil {
 		return nil, fmt.Errorf("go list -json %s: parse: %w", pkg.PkgPath, err)
 	}
 
@@ -321,36 +312,11 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	return paths, nil
 }
 
-func (ctx *context) ensureGoOverlay() (string, error) {
-	if ctx.goOverlayFile != "" {
-		return ctx.goOverlayFile, nil
-	}
-	// Convert packages.Config.Overlay (path -> bytes) into a go command overlay file.
-	tmpDir, err := os.MkdirTemp("", "llgo-go-overlay-*")
-	if err != nil {
-		return "", err
-	}
-	replace := make(map[string]string, len(ctx.conf.Overlay))
-	i := 0
-	for orig, data := range ctx.conf.Overlay {
-		i++
-		dst := filepath.Join(tmpDir, fmt.Sprintf("ov-%d", i))
-		if err := os.WriteFile(dst, data, 0644); err != nil {
-			return "", err
+func readFileWithOverlay(overlay map[string][]byte, path string) ([]byte, error) {
+	if overlay != nil {
+		if b, ok := overlay[path]; ok {
+			return b, nil
 		}
-		replace[orig] = dst
 	}
-	ov := struct {
-		Replace map[string]string `json:"Replace"`
-	}{Replace: replace}
-	ovBytes, err := json.Marshal(ov)
-	if err != nil {
-		return "", err
-	}
-	ovPath := filepath.Join(tmpDir, "overlay.json")
-	if err := os.WriteFile(ovPath, ovBytes, 0644); err != nil {
-		return "", err
-	}
-	ctx.goOverlayFile = ovPath
-	return ovPath, nil
+	return os.ReadFile(path)
 }
