@@ -271,10 +271,42 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 	_ = w.Close()
 	output := <-outputCh
+	output = filterRunOutput(output)
 	if runErr != nil {
 		return output, fmt.Errorf("run failed: %w", runErr)
 	}
 	return output, nil
+}
+
+func filterRunOutput(in []byte) []byte {
+	// Tests compare output with expect.txt. Some toolchain/environment warnings are
+	// inherently machine-specific and should not be part of the golden output.
+	parts := bytes.SplitAfter(in, []byte{'\n'})
+	if len(parts) == 0 {
+		return in
+	}
+	var out bytes.Buffer
+	for _, p := range parts {
+		line := bytes.TrimRight(p, "\r\n")
+		trim := bytes.TrimLeft(line, " \t")
+		switch {
+		case bytes.HasPrefix(trim, []byte("WARNING: Using LLGO root for devel: ")):
+			continue
+		case bytes.HasPrefix(trim, []byte("WARNING: LLGO_ROOT is not a valid LLGO root: ")):
+			continue
+		case bytes.HasPrefix(trim, []byte("ld64.lld: warning: ")):
+			continue
+		case bytes.HasPrefix(trim, []byte("ld.lld: warning: ")):
+			continue
+		case bytes.HasPrefix(trim, []byte("ld: warning: ")):
+			continue
+		}
+		out.Write(p)
+	}
+	if out.Len() == 0 {
+		return nil
+	}
+	return out.Bytes()
 }
 
 func TestCompileEx(t *testing.T, src any, fname, expected string, dbg bool) {
