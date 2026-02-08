@@ -227,6 +227,11 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			// Enable ICF (Identical Code Folding) to reduce binary size
 			"-Xlinker",
 			"--icf=safe",
+			// Enable ThinLTO, then global DCE will work well,
+			// and "merge-functions" can merge the function in whole program.
+			"-flto=thin",
+			"-Wl,-mllvm,-enable-merge-functions",
+			"-Wl,-mllvm,-mergefunc-use-aliases",
 		}
 		if clangRoot != "" {
 			clangLib := filepath.Join(clangRoot, "lib")
@@ -249,6 +254,8 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 		export.CCFLAGS = []string{
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
+			"-flto=thin",
+			"-funified-lto",
 		}
 
 		// Add sysroot for macOS only
@@ -498,6 +505,18 @@ func UseTarget(targetName string) (export Export, err error) {
 	// Expand template variables in cflags
 	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)
 	cflags = append(cflags, expandedCFlags...)
+
+	// For ld.lld linker, also add CPU info to linker flags
+	if config.Linker == "ld.lld" {
+		ldflags = append(ldflags,
+			// Enable ThinLTO, then global DCE will work well,
+			// and "merge-functions" can merge the function in whole program.
+			"--lto=thin",
+			"-mllvm", "-enable-merge-functions",
+			"-mllvm", "-mergefunc-use-aliases")
+		cflags = append(cflags, "-flto=thin", "-funified-lto")
+		ccflags = append(ccflags, "-flto=thin", "-funified-lto")
+	}
 
 	// The following parameters are inspired by tinygo/builder/library.go
 	// Handle CPU configuration
