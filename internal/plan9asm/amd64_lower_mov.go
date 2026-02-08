@@ -52,10 +52,7 @@ func (c *amd64Ctx) lowerMov(op Op, ins Instr) (ok bool, terminated bool, err err
 		return true, false, c.storeReg(dst.Reg, "%"+t)
 
 	case "MOVB", "MOVW":
-		// MOVB/MOVW src, dstReg  (load smaller integer and zero-extend to i64)
-		if dst.Kind != OpReg {
-			return true, false, fmt.Errorf("amd64 %s unsupported dst: %q", op, ins.Raw)
-		}
+		// MOVB/MOVW src, dst
 		widthTy := I8
 		if op == "MOVW" {
 			widthTy = I16
@@ -100,9 +97,24 @@ func (c *amd64Ctx) lowerMov(op Op, ins Instr) (ok bool, terminated bool, err err
 		default:
 			return true, false, fmt.Errorf("amd64 %s unsupported src: %q", op, ins.Raw)
 		}
-		z := c.newTmp()
-		fmt.Fprintf(c.b, "  %%%s = zext %s %s to i64\n", z, widthTy, small)
-		return true, false, c.storeReg(dst.Reg, "%"+z)
+		switch dst.Kind {
+		case OpReg:
+			z := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = zext %s %s to i64\n", z, widthTy, small)
+			return true, false, c.storeReg(dst.Reg, "%"+z)
+		case OpFP:
+			return true, false, c.storeFPResult(dst.FPOffset, widthTy, small)
+		case OpMem:
+			addr, err := c.addrFromMem(dst.Mem)
+			if err != nil {
+				return true, false, err
+			}
+			p := c.ptrFromAddrI64(addr)
+			fmt.Fprintf(c.b, "  store %s %s, ptr %s, align 1\n", widthTy, small, p)
+			return true, false, nil
+		default:
+			return true, false, fmt.Errorf("amd64 %s unsupported dst: %q", op, ins.Raw)
+		}
 
 	case "MOVQ":
 		// MOVQ src, dst

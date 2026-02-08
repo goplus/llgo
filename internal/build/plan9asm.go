@@ -370,8 +370,8 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
 			ctx.plan9asmPkgs["internal/bytealg"] = true
 		}
-		// internal/runtime/atomic is translated in ABI mode 0/1 on arm64.
-		if ctx.buildConf.AbiMode != 2 && ctx.buildConf.Goarch == "arm64" {
+		// internal/runtime/atomic is translated in ABI mode 0/1 on arm64/amd64.
+		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
 			ctx.plan9asmPkgs["internal/runtime/atomic"] = true
 		}
 		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
