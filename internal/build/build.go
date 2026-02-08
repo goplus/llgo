@@ -1322,6 +1322,11 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync/atomic" && !plan9asmDisabledByEnv() {
 		return false
 	}
+	// sync can use upstream implementation on arm64/amd64 in ABI mode 0/1
+	// because llgo runtime provides the required sync.runtime_* hooks.
+	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync" {
+		return false
+	}
 	// internal/runtime/syscall is provided by runtime linkname shims on
 	// arm64/amd64 in ABI mode 0/1.
 	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/syscall" {
