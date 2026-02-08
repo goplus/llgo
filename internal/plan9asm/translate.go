@@ -3,6 +3,7 @@ package plan9asm
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -10,14 +11,29 @@ type LLVMType string
 
 const (
 	Void LLVMType = "void"
+	I1   LLVMType = "i1"
+	I8   LLVMType = "i8"
+	I16  LLVMType = "i16"
 	I32  LLVMType = "i32"
 	I64  LLVMType = "i64"
+	Ptr  LLVMType = "ptr"
 )
 
 type FuncSig struct {
-	Name string
-	Args []LLVMType
-	Ret  LLVMType // use Void for void-return
+	Name  string
+	Args  []LLVMType
+	Ret   LLVMType // use Void for void-return
+	Attrs string   // optional function attributes group (e.g. "#0")
+
+	// ArgRegs optionally specifies which architectural registers correspond to
+	// Args for arm64 asm that passes values in non-sequential registers.
+	//
+	// When empty, args are assumed to map to R0..R7 in order (ABIInternal-ish).
+	//
+	// This is used for intra-asm tailcalls like:
+	//   B helper<>(SB)
+	// where helper expects inputs in a custom register assignment.
+	ArgRegs []Reg
 
 	// Frame provides a minimal stack-frame model for resolving name+off(FP)
 	// references in Go/Plan9 assembly into LLVM function args/returns.
@@ -35,7 +51,13 @@ type FrameLayout struct {
 type FrameSlot struct {
 	Offset int64
 	Type   LLVMType
-	Index  int // index into Params/Results tuple
+	Index  int // index into LLVM function arguments (for Params) or results tuple (for Results)
+	// Field is the index of the extracted field within the argument aggregate.
+	// It is used for classic Go asm slots like b_base+0(FP) when the Go-level
+	// parameter is passed as a struct (string/slice header).
+	//
+	// When Field < 0, the slot refers directly to %arg(Index).
+	Field int
 }
 
 type Options struct {
@@ -73,6 +95,63 @@ func Translate(file *File, opt Options) (string, error) {
 	if opt.TargetTriple != "" {
 		fmt.Fprintf(&b, "target triple = %q\n\n", opt.TargetTriple)
 	}
+	// Intrinsics used by the prototype lowering. Declare them up-front so clang/llc
+	// can type-check the module without relying on implicit declarations.
+	if file.Arch == ArchARM64 {
+		b.WriteString("declare i64 @llvm.bitreverse.i64(i64)\n")
+		b.WriteString("declare i64 @llvm.ctlz.i64(i64, i1)\n")
+		b.WriteString("declare i64 @llvm.bswap.i64(i64)\n")
+		// AArch64 CRC32 and CRC32C intrinsics.
+		// Note: B/H forms take the data operand as i32 (low bits used).
+		b.WriteString("declare i32 @llvm.aarch64.crc32b(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32h(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32w(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32x(i32, i64)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32cb(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32ch(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32cw(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.aarch64.crc32cx(i32, i64)\n")
+		b.WriteString("\n")
+		// Attribute group used by some functions to enable optional ISA features.
+		// (Example: "+crc" for hash/crc32 arm64 fast paths.)
+		b.WriteString("attributes #0 = { \"target-features\"=\"+crc\" }\n\n")
+	}
+	if file.Arch == ArchAMD64 && opt.Goarch == "amd64" {
+		// Generic LLVM intrinsics used by amd64 lowering.
+		b.WriteString("declare i64 @llvm.cttz.i64(i64, i1)\n")
+		b.WriteString("declare i32 @llvm.cttz.i32(i32, i1)\n")
+		b.WriteString("declare i64 @llvm.ctlz.i64(i64, i1)\n")
+		b.WriteString("declare i32 @llvm.ctlz.i32(i32, i1)\n")
+		b.WriteString("declare i64 @llvm.ctpop.i64(i64)\n")
+		b.WriteString("declare i32 @llvm.ctpop.i32(i32)\n")
+		b.WriteString("declare i64 @llvm.bswap.i64(i64)\n")
+		b.WriteString("\n")
+		// x86-64 CRC32 (SSE4.2) and PCLMULQDQ intrinsics.
+		b.WriteString("declare i64 @llvm.x86.sse42.crc32.64.64(i64, i64)\n")
+		b.WriteString("declare i32 @llvm.x86.sse42.crc32.32.32(i32, i32)\n")
+		b.WriteString("declare i32 @llvm.x86.sse42.crc32.32.16(i32, i16)\n")
+		b.WriteString("declare i32 @llvm.x86.sse42.crc32.32.8(i32, i8)\n")
+		b.WriteString("declare <2 x i64> @llvm.x86.pclmulqdq(<2 x i64>, <2 x i64>, i8 immarg)\n")
+		// SSE2 helpers used by stdlib asm (e.g. internal/bytealg).
+		b.WriteString("declare i32 @llvm.x86.sse2.pmovmskb.128(<16 x i8>)\n")
+		b.WriteString("\n")
+		// Attribute groups for optional ISA features:
+		// - #0: SSE4.2 CRC32 instruction (Castagnoli fast path)
+		// - #1: PCLMULQDQ + SSE4.1 (IEEE fast path)
+		b.WriteString("attributes #0 = { \"target-features\"=\"+sse4.2,+crc32\" }\n")
+		b.WriteString("attributes #1 = { \"target-features\"=\"+pclmul,+sse4.1\" }\n\n")
+	}
+
+	emitExternSBGlobals(&b, file, resolve)
+
+	if len(file.Data) != 0 || len(file.Globl) != 0 {
+		if err := emitDataGlobals(&b, file, resolve); err != nil {
+			return "", err
+		}
+		b.WriteString("\n")
+	}
+
+	emitExternFuncDecls(&b, file, resolve, opt.Sigs)
 
 	for i := range file.Funcs {
 		fn := &file.Funcs[i]
@@ -90,7 +169,21 @@ func Translate(file *File, opt Options) (string, error) {
 		if sig.Ret == "" {
 			return "", fmt.Errorf("missing return type for %q", name)
 		}
-		if err := translateFunc(&b, *fn, sig); err != nil {
+		if file.Arch == ArchARM64 && funcNeedsARM64CFG(*fn) {
+			if err := translateFuncARM64(&b, *fn, sig, resolve, opt.Sigs); err != nil {
+				return "", fmt.Errorf("%s: %v", name, err)
+			}
+			b.WriteString("\n")
+			continue
+		}
+		if file.Arch == ArchAMD64 && opt.Goarch == "amd64" && funcNeedsAMD64CFG(*fn) {
+			if err := translateFuncAMD64(&b, *fn, sig, resolve, opt.Sigs); err != nil {
+				return "", fmt.Errorf("%s: %v", name, err)
+			}
+			b.WriteString("\n")
+			continue
+		}
+		if err := translateFuncLinear(&b, file.Arch, *fn, sig); err != nil {
 			return "", fmt.Errorf("%s: %v", name, err)
 		}
 		b.WriteString("\n")
@@ -98,7 +191,206 @@ func Translate(file *File, opt Options) (string, error) {
 	return b.String(), nil
 }
 
-func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
+func emitExternFuncDecls(b *strings.Builder, file *File, resolve func(string) string, sigs map[string]FuncSig) {
+	defined := map[string]bool{}
+	for i := range file.Funcs {
+		defined[resolve(file.Funcs[i].Sym)] = true
+	}
+
+	// Deterministic order for tests/debugging.
+	names := make([]string, 0, len(sigs))
+	for name := range sigs {
+		if defined[name] {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		sig := sigs[name]
+		if sig.Ret == "" {
+			continue
+		}
+		fmt.Fprintf(b, "declare %s %s(", sig.Ret, llvmGlobal(name))
+		for i, t := range sig.Args {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(string(t))
+		}
+		b.WriteString(")")
+		if sig.Attrs != "" {
+			b.WriteString(" " + sig.Attrs)
+		}
+		b.WriteString("\n")
+	}
+	if len(names) != 0 {
+		b.WriteString("\n")
+	}
+}
+
+func emitExternSBGlobals(b *strings.Builder, file *File, resolve func(string) string) {
+	// Collect base symbols of SB refs with numeric offsets. These are almost always
+	// global variables whose address is computed via GEP in the lowering.
+	need := map[string]bool{}
+	defined := map[string]bool{}
+
+	// Anything in DATA/GLOBL will be defined in this module.
+	for _, g := range file.Globl {
+		defined[resolve(g.Sym)] = true
+	}
+	for _, d := range file.Data {
+		defined[resolve(d.Sym)] = true
+	}
+
+	for _, fn := range file.Funcs {
+		for _, ins := range fn.Instrs {
+			for _, op := range ins.Args {
+				if op.Kind != OpSym {
+					continue
+				}
+				s := strings.TrimSpace(op.Sym)
+				if !strings.HasSuffix(s, "(SB)") {
+					continue
+				}
+				s = strings.TrimSuffix(s, "(SB)")
+				base, off := splitSymPlusOff(s)
+				if base == "" || off == 0 {
+					continue
+				}
+				name := resolve(base)
+				if name != "" && !defined[name] {
+					need[name] = true
+				}
+			}
+		}
+	}
+
+	if len(need) == 0 {
+		return
+	}
+	for name := range need {
+		fmt.Fprintf(b, "%s = external global i8\n", llvmGlobal(name))
+	}
+	b.WriteString("\n")
+}
+
+func emitDataGlobals(b *strings.Builder, file *File, resolve func(string) string) error {
+	// Merge DATA and GLOBL into resolved symbol -> bytes.
+	type symData struct {
+		size  int64
+		bytes map[int64][]byte // off -> payload
+	}
+
+	syms := map[string]*symData{}
+
+	resolveData := func(sym string) string {
+		// Heuristic: unqualified plain names in a stdlib .s are package-local.
+		// Reuse ResolveSym's local-name behavior by prefixing a Plan9 middle dot.
+		if strings.Contains(sym, "·") || strings.Contains(sym, "/") || strings.Contains(sym, ".") {
+			return resolve(sym)
+		}
+		return resolve("·" + sym)
+	}
+
+	for _, g := range file.Globl {
+		name := resolveData(g.Sym)
+		sd := syms[name]
+		if sd == nil {
+			sd = &symData{bytes: map[int64][]byte{}}
+			syms[name] = sd
+		}
+		if g.Size > sd.size {
+			sd.size = g.Size
+		}
+	}
+
+	for _, d := range file.Data {
+		name := resolveData(d.Sym)
+		sd := syms[name]
+		if sd == nil {
+			sd = &symData{bytes: map[int64][]byte{}}
+			syms[name] = sd
+		}
+		if d.Width <= 0 {
+			return fmt.Errorf("DATA %s: invalid width %d", d.Sym, d.Width)
+		}
+		payload := make([]byte, d.Width)
+		// Plan 9 asm DATA encodes immediates little-endian on amd64/arm64.
+		v := d.Value
+		for i := int64(0); i < d.Width; i++ {
+			payload[i] = byte(v & 0xff)
+			v >>= 8
+		}
+		sd.bytes[d.Off] = payload
+		if end := d.Off + d.Width; end > sd.size {
+			sd.size = end
+		}
+	}
+
+	if len(syms) == 0 {
+		return nil
+	}
+
+	// Deterministic output order.
+	names := make([]string, 0, len(syms))
+	for n := range syms {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		sd := syms[name]
+		if sd.size <= 0 {
+			continue
+		}
+		buf := make([]byte, sd.size)
+		for off, p := range sd.bytes {
+			if off < 0 || off+int64(len(p)) > int64(len(buf)) {
+				return fmt.Errorf("DATA %s: out of bounds off=%d len=%d size=%d", name, off, len(p), len(buf))
+			}
+			copy(buf[off:], p)
+		}
+		align := bestAlign(int64(len(buf)))
+		fmt.Fprintf(b, "%s = constant [%d x i8] %s, align %d\n", llvmGlobal(name), len(buf), llvmI8ArrayInit(buf), align)
+	}
+	return nil
+}
+
+func bestAlign(size int64) int64 {
+	// Conservative alignment guess good enough for stdlib constant tables.
+	switch {
+	case size >= 16 && size%16 == 0:
+		return 16
+	case size >= 8 && size%8 == 0:
+		return 8
+	case size >= 4 && size%4 == 0:
+		return 4
+	case size >= 2 && size%2 == 0:
+		return 2
+	default:
+		return 1
+	}
+}
+
+func llvmI8ArrayInit(b []byte) string {
+	if len(b) == 0 {
+		return "zeroinitializer"
+	}
+	var sb strings.Builder
+	sb.WriteString("[")
+	for i, v := range b {
+		if i != 0 {
+			sb.WriteString(", ")
+		}
+		fmt.Fprintf(&sb, "i8 %d", int(v))
+	}
+	sb.WriteString("]")
+	return sb.String()
+}
+
+func translateFuncLinear(b *strings.Builder, arch Arch, fn Func, sig FuncSig) error {
 	// Function header.
 	fmt.Fprintf(b, "define %s %s(", sig.Ret, llvmGlobal(sig.Name))
 	for i, t := range sig.Args {
@@ -107,7 +399,11 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 		}
 		fmt.Fprintf(b, "%s %%arg%d", t, i)
 	}
-	b.WriteString(") {\n")
+	b.WriteString(")")
+	if sig.Attrs != "" {
+		b.WriteString(" " + sig.Attrs)
+	}
+	b.WriteString(" {\n")
 	b.WriteString("entry:\n")
 
 	// Fast path: void marker functions (TEXT ...; RET; and optionally BYTE).
@@ -136,6 +432,34 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 	reg := map[Reg]ssaVal{}
 	results := make([]ssaVal, len(sig.Frame.Results))
 	haveResult := make([]bool, len(sig.Frame.Results))
+
+	// Initialize a few common arg registers for ABIInternal-style asm.
+	// This is currently best-effort; the prototype primarily targets stdlib
+	// asm that uses FP slots.
+	switch arch {
+	case ArchARM64:
+		if len(sig.ArgRegs) > 0 {
+			for i := 0; i < len(sig.Args) && i < len(sig.ArgRegs); i++ {
+				reg[sig.ArgRegs[i]] = ssaVal{typ: sig.Args[i], val: fmt.Sprintf("%%arg%d", i)}
+			}
+		} else {
+			for i := 0; i < len(sig.Args) && i < 8; i++ {
+				reg[Reg(fmt.Sprintf("R%d", i))] = ssaVal{typ: sig.Args[i], val: fmt.Sprintf("%%arg%d", i)}
+			}
+		}
+	case ArchAMD64:
+		if len(sig.ArgRegs) > 0 {
+			for i := 0; i < len(sig.Args) && i < len(sig.ArgRegs); i++ {
+				reg[sig.ArgRegs[i]] = ssaVal{typ: sig.Args[i], val: fmt.Sprintf("%%arg%d", i)}
+			}
+		} else {
+			// SysV-ish mapping (C ABI): DI, SI, DX, CX, R8, R9.
+			x86 := []Reg{DI, SI, DX, CX, Reg("R8"), Reg("R9")}
+			for i := 0; i < len(sig.Args) && i < len(x86); i++ {
+				reg[x86[i]] = ssaVal{typ: sig.Args[i], val: fmt.Sprintf("%%arg%d", i)}
+			}
+		}
+	}
 	tmp := 0
 	newTmp := func() string {
 		tmp++
@@ -159,6 +483,28 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 			name := newTmp()
 			fmt.Fprintf(b, "  %%%s = zext i32 %s to i64\n", name, v.val)
 			return ssaVal{typ: I64, val: "%" + name}, nil
+		case v.typ == Ptr && to == I64:
+			// stdlib asm often moves pointers through GPRs (e.g. MOVD ptr+0(FP), R0).
+			// Linear lowering models GPRs as integer SSA values, so support ptr<->i64.
+			if !isSSA(v.val) {
+				if v.val == "0" {
+					return ssaVal{typ: I64, val: "0"}, nil
+				}
+				return ssaVal{}, fmt.Errorf("unsupported non-SSA ptr cast source %q", v.val)
+			}
+			name := newTmp()
+			fmt.Fprintf(b, "  %%%s = ptrtoint ptr %s to i64\n", name, v.val)
+			return ssaVal{typ: I64, val: "%" + name}, nil
+		case v.typ == I64 && to == Ptr:
+			src := v.val
+			if !isSSA(src) {
+				name := newTmp()
+				fmt.Fprintf(b, "  %%%s = add i64 %s, 0\n", name, src)
+				src = "%" + name
+			}
+			name := newTmp()
+			fmt.Fprintf(b, "  %%%s = inttoptr i64 %s to ptr\n", name, src)
+			return ssaVal{typ: Ptr, val: "%" + name}, nil
 		default:
 			return ssaVal{}, fmt.Errorf("unsupported cast %s -> %s", v.typ, to)
 		}
@@ -173,13 +519,13 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 		}
 	}
 
-	fpParamIndex := func(off int64) (int, LLVMType, bool) {
+	fpParamSlot := func(off int64) (FrameSlot, bool) {
 		for _, s := range sig.Frame.Params {
 			if s.Offset == off {
-				return s.Index, s.Type, true
+				return s, true
 			}
 		}
-		return 0, "", false
+		return FrameSlot{}, false
 	}
 	fpResultIndex := func(off int64) (int, LLVMType, bool) {
 		for _, s := range sig.Frame.Results {
@@ -203,9 +549,20 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 			}
 			return v, nil
 		case OpFP:
-			idx, ty, ok := fpParamIndex(op.FPOffset)
+			slot, ok := fpParamSlot(op.FPOffset)
 			if ok {
-				return ssaVal{typ: ty, val: fmt.Sprintf("%%arg%d", idx)}, nil
+				idx := slot.Index
+				if idx < 0 || idx >= len(sig.Args) {
+					return ssaVal{}, fmt.Errorf("FP slot %s invalid arg index %d", op.String(), idx)
+				}
+				arg := fmt.Sprintf("%%arg%d", idx)
+				if slot.Field >= 0 {
+					aggTy := sig.Args[idx]
+					name := newTmp()
+					fmt.Fprintf(b, "  %%%s = extractvalue %s %s, %d\n", name, aggTy, arg, slot.Field)
+					return ssaVal{typ: slot.Type, val: "%" + name}, nil
+				}
+				return ssaVal{typ: slot.Type, val: arg}, nil
 			}
 			return ssaVal{}, fmt.Errorf("unsupported FP read slot: %s", op.String())
 		default:
@@ -449,7 +806,7 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 
 		case OpRET:
 			// Return value comes either from explicit result slots (name+off(FP))
-			// or, as a fallback, from AX for scalar returns.
+			// or, as a fallback, from the arch return register for scalar returns.
 			switch {
 			case sig.Ret == Void:
 				b.WriteString("  ret void\n")
@@ -493,8 +850,8 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 				var v ssaVal
 				if len(sig.Frame.Results) == 1 && haveResult[0] {
 					v = results[0]
-				} else if ax, ok := reg[AX]; ok {
-					v = ax
+				} else if rv, ok := reg[archReturnReg(arch)]; ok {
+					v = rv
 				} else {
 					z, err := zero(sig.Ret)
 					if err != nil {
@@ -522,6 +879,13 @@ func translateFunc(b *strings.Builder, fn Func, sig FuncSig) error {
 
 	b.WriteString("}\n")
 	return nil
+}
+
+func archReturnReg(arch Arch) Reg {
+	if arch == ArchARM64 {
+		return Reg("R0")
+	}
+	return AX
 }
 
 var llvmIdentRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)

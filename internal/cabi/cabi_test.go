@@ -372,3 +372,65 @@ entry:
 		t.Errorf("Transformed IR mismatch!\n\nExpected:\n%s\n\nActual:\n%s", expectedFuncIRTrimmed, actualFuncIR)
 	}
 }
+
+// TestModeCFunc_SkipIndirectCallWrapping verifies that ModeCFunc does not
+// rewrite indirect calls. In opaque-pointer IR, indirect callees have empty
+// names and must not be treated as C symbol calls.
+func TestModeCFunc_SkipIndirectCallWrapping(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%Slice = type { ptr, i64, i64 }
+@fp = global { ptr, ptr } zeroinitializer, align 8
+
+define i32 @"pkg.caller"(%Slice %0) {
+entry:
+  %1 = load { ptr, ptr }, ptr @fp, align 8
+  %2 = extractvalue { ptr, ptr } %1, 1
+  %3 = extractvalue { ptr, ptr } %1, 0
+  %4 = call i32 %3(ptr %2, i32 0, %Slice %0)
+  ret i32 %4
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modecfunc_indirect.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeCFunc, "arm64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeCFunc, true)
+	tr.TransformModule("test", mod)
+
+	caller := mod.NamedFunction("pkg.caller")
+	if caller.IsNil() {
+		t.Fatal("caller not found")
+	}
+	ir := caller.String()
+
+	if strings.Contains(ir, "alloca %Slice") {
+		t.Fatalf("indirect call was unexpectedly rewritten:\n%s", ir)
+	}
+	if !strings.Contains(ir, "call i32 %3(ptr %2, i32 0, %Slice %0)") {
+		t.Fatalf("indirect call signature changed unexpectedly:\n%s", ir)
+	}
+}

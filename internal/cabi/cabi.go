@@ -94,7 +94,15 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 			for !bb.IsNil() {
 				instr := bb.FirstInstruction()
 				for !instr.IsNil() {
-					if call := instr.IsACallInst(); !call.IsNil() && p.isCFunc(call.CalledValue().Name()) {
+					if call := instr.IsACallInst(); !call.IsNil() {
+						callee := call.CalledValue()
+						// ModeCFunc only targets direct C symbol calls. Indirect calls
+						// (callee name is empty under opaque pointers) may be Go closure
+						// invocations and must keep Go-level signatures.
+						if callee.IsAFunction().IsNil() || !p.isCFunc(callee.Name()) {
+							instr = llvm.NextInstruction(instr)
+							continue
+						}
 						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
 							callInstrs = append(callInstrs, CallInstr{call, fn})
 						}

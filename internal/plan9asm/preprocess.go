@@ -34,6 +34,7 @@ func preprocess(src string) (string, error) {
 	lines := []string{}
 
 	sc := bufio.NewScanner(strings.NewReader(src))
+	inBlockComment := false
 	var defName string
 	var defBody strings.Builder
 	defCont := false
@@ -59,6 +60,36 @@ func preprocess(src string) (string, error) {
 	for sc.Scan() {
 		lineno++
 		line := sc.Text()
+		// Strip C-style /* ... */ comments (may span lines). Some stdlib asm uses
+		// these in addition to // comments.
+		for {
+			if inBlockComment {
+				if end := strings.Index(line, "*/"); end >= 0 {
+					line = line[end+2:]
+					inBlockComment = false
+					// Continue scanning in case of multiple comment blocks on one line.
+					continue
+				}
+				// Entire line is within a block comment.
+				line = ""
+				break
+			}
+			start := strings.Index(line, "/*")
+			if start < 0 {
+				break
+			}
+			end := strings.Index(line[start+2:], "*/")
+			if end >= 0 {
+				end += start + 2
+				line = line[:start] + line[end+2:]
+				continue
+			}
+			// Unterminated block comment starts here; keep prefix and drop the rest.
+			line = line[:start]
+			inBlockComment = true
+			break
+		}
+		// Strip // comments after block comments.
 		if idx := strings.Index(line, "//"); idx >= 0 {
 			line = line[:idx]
 		}

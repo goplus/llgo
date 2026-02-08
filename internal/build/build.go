@@ -332,7 +332,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 	}
 
-	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
+	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
@@ -359,7 +359,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	progSSA := ssa.NewProgram(initial[0].Fset, buildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
-	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
+	altSSAPkgs(progSSA, patches, altPkgs[1:], conf, verbose)
 
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
@@ -582,6 +582,10 @@ func (c *context) linker() *clang.Cmd {
 // shouldPrintCommands reports whether command tracing should be enabled.
 func (c *context) shouldPrintCommands(verbose bool) bool {
 	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
+}
+
+func (c *context) hasAltPkg(pkgPath string) bool {
+	return hasAltPkgForTarget(c.buildConf, pkgPath)
 }
 
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
@@ -1285,10 +1289,10 @@ const (
 	altPkgPathPrefix = abi.PatchPathPrefix
 )
 
-func altPkgs(initial []*packages.Package, alts ...string) []string {
+func altPkgs(initial []*packages.Package, conf *Config, alts ...string) []string {
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
-			if llruntime.HasAltPkg(p.PkgPath) {
+			if hasAltPkgForTarget(conf, p.PkgPath) {
 				alts = append(alts, altPkgPathPrefix+p.PkgPath)
 			}
 		}
@@ -1296,7 +1300,65 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 	return alts
 }
 
-func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
+func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
+	if !llruntime.HasAltPkg(pkgPath) {
+		return false
+	}
+	// When we enable Plan9 asm translation for a package, we must avoid also
+	// pulling in its alt package (which typically provides pure-Go fallbacks for
+	// the same symbols), otherwise we get duplicate symbol definitions at link.
+	//
+	// hash/crc32 is enabled by default on amd64/arm64 in ABI mode 0/1 unless
+	// explicitly disabled.
+	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && pkgPath == "hash/crc32" && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && !plan9asmDisabledByEnv() {
+		return false
+	}
+	// internal/bytealg is enabled by default on amd64/arm64 in ABI mode 0/1 unless
+	// explicitly disabled.
+	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/bytealg" && !plan9asmDisabledByEnv() {
+		return false
+	}
+	// If a package is explicitly opted in via LLGO_PLAN9ASM_PKGS, prefer Plan9 asm
+	// over alt in ABI mode 0/1 to make targeted bring-up and debugging possible.
+	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && plan9asmEnabledByEnv(pkgPath) {
+		return false
+	}
+	return true
+}
+
+func plan9asmDisabledByEnv() bool {
+	v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+	return v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false")
+}
+
+func plan9asmEnabledByEnv(pkgPath string) bool {
+	v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+	if v == "" {
+		return false
+	}
+	if v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
+		return false
+	}
+	if v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true") {
+		return true
+	}
+	split := func(r rune) bool {
+		switch r {
+		case ',', ';', ' ', '\t', '\n', '\r':
+			return true
+		default:
+			return false
+		}
+	}
+	for _, p := range strings.FieldsFunc(v, split) {
+		if strings.TrimSpace(p) == pkgPath {
+			return true
+		}
+	}
+	return false
+}
+
+func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, conf *Config, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if typs := p.Types; typs != nil && !p.IllTyped {
 			if debugBuild || verbose {
@@ -1305,6 +1367,12 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 			pkgSSA := prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.ID, altPkgPathPrefix) {
 				path := p.ID[len(altPkgPathPrefix):]
+				// Even if an alt package exists and is pulled in as a dependency of other
+				// patches (e.g. runtime/reflect), we should only apply it when it is
+				// enabled for the target (and not overridden by Plan9 asm translation).
+				if !hasAltPkgForTarget(conf, path) {
+					return
+				}
 				patches[path] = cl.Patch{Alt: pkgSSA, Types: typepatch.Clone(typs)}
 				if debugBuild || verbose {
 					log.Println("==> Patching", path)
@@ -1350,7 +1418,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
-			if llruntime.HasAltPkg(pkgPath) {
+			if ctx.hasAltPkg(pkgPath) {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
 				}

@@ -20,11 +20,34 @@ import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
-	"github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 // llgo:skip init
 type _bytealg struct{}
+
+func Compare(a, b []byte) int {
+	la, lb := len(a), len(b)
+	l := la
+	if lb < l {
+		l = lb
+	}
+	if l > 0 {
+		ret := c.Memcmp(unsafe.Pointer(unsafe.SliceData(a)), unsafe.Pointer(unsafe.SliceData(b)), uintptr(l))
+		if ret != 0 {
+			if ret < 0 {
+				return -1
+			}
+			return +1
+		}
+	}
+	if la < lb {
+		return -1
+	}
+	if la > lb {
+		return +1
+	}
+	return 0
+}
 
 func IndexByte(b []byte, ch byte) int {
 	ptr := unsafe.Pointer(unsafe.SliceData(b))
@@ -89,23 +112,6 @@ func IndexString(a, b string) int {
 		}
 	}
 	return -1
-}
-
-// MakeNoZero makes a slice of length and capacity n without zeroing the bytes.
-// It is the caller's responsibility to ensure uninitialized bytes
-// do not leak to the end user.
-func MakeNoZero(n int) (r []byte) {
-	s := (*sliceHead)(unsafe.Pointer(&r))
-	s.data = runtime.AllocU(uintptr(n))
-	s.len = n
-	s.cap = n
-	return
-}
-
-type sliceHead struct {
-	data unsafe.Pointer
-	len  int
-	cap  int
 }
 
 func LastIndexByte(s []byte, c byte) int {
