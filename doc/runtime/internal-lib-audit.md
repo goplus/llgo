@@ -431,9 +431,11 @@ LLGO patch:
     and package patching is disabled.
   - ABI mode 2 (and other arches for now): keeps using
     `runtime/internal/lib/sync/atomic/*`.
-- `runtime/internal/lib/sync/sync.go` uses pthread mutex/rwlock via
-  `runtime/internal/clite/pthread/sync` and exposes a subset of the sync API on
-  top of that runtime.
+- `sync`:
+  - ABI mode 0/1 on `arm64`/`amd64`: package patching is disabled and upstream
+    `sync` is used.
+  - ABI mode 2 (and other arches for now): keeps using
+    `runtime/internal/lib/sync/*`.
 
 Upstream:
 
@@ -444,8 +446,8 @@ Removal analysis:
 
 - `sync/atomic`: for ABI mode 0/1 (`arm64`/`amd64`) this is now switched to
   upstream asm translation; remaining work is ABI mode 2 and other arches.
-- `sync`: not an asm-only problem; removal requires runtime-level integration
-  to match upstream `sync` expectations (or to keep using pthread-based sync).
+- `sync`: for ABI mode 0/1 (`arm64`/`amd64`) this is now switched to upstream
+  package usage; remaining work is ABI mode 2 and other arches.
 
 Plan9 asm candidate:
 
