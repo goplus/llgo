@@ -100,6 +100,9 @@ func (c *arm64Ctx) lowerInstr(bi int, ins Instr, emitBr arm64EmitBr, emitCondBr 
 	if ok, term, err := c.lowerData(op, postInc, ins); ok {
 		return term, err
 	}
+	if ok, term, err := c.lowerAtomic(op, ins); ok {
+		return term, err
+	}
 	if ok, term, err := c.lowerVec(op, postInc, ins); ok {
 		return term, err
 	}

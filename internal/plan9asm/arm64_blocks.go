@@ -30,7 +30,7 @@ func arm64SplitBlocks(fn Func) []arm64Block {
 			op = op[:dot]
 		}
 		switch Op(op) {
-		case "B", "BEQ", "BNE", "BLO", "BHI", "BLT", "BGE", "BLE", "BGT", "BHS", "BLS",
+		case "B", "JMP", "BEQ", "BNE", "BLO", "BHI", "BLT", "BGE", "BLE", "BGT", "BHS", "BLS",
 			"CBZ", "CBNZ", "TBZ", "TBNZ":
 			return true
 		default:

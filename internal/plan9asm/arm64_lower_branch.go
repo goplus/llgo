@@ -140,7 +140,10 @@ func (c *arm64Ctx) tailCallAndRet(symOp Operand) error {
 	callee := c.resolve(s)
 	csig, ok := c.sigs[callee]
 	if !ok {
-		return fmt.Errorf("arm64 tailcall missing signature for %q", callee)
+		// Cross-package trampoline (e.g. sync/atomic -> internal/runtime/atomic).
+		// If we don't have an explicit signature, fall back to caller signature.
+		csig = c.sig
+		csig.Name = callee
 	}
 
 	args := make([]string, 0, len(csig.Args))
