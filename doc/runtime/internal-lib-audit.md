@@ -303,12 +303,9 @@ Removal analysis:
 - Removable if llgo can compile upstream atomics assembly, or if llgo intrinsics
   fully cover upstream semantics (including no-write-barrier behavior).
 - Current status in this branch:
-  - `arm64`, ABI mode 0/1: upstream `.s` translation is enabled by default and
-    the alt patch is disabled.
-  - `amd64`: still patched for now; `atomic_amd64.s` uses lock-prefixed x86
-    forms not fully lowered yet.
-  - `sync/atomic` alt is still kept because llgo currently lacks full intrinsic
-    parity for pointer APIs (for example `CompareAndSwapPointer` symbol paths).
+  - `arm64` and `amd64`, ABI mode 0/1: upstream `.s` translation is enabled by
+    default and the alt patch is disabled.
+  - ABI mode 2 still uses the alt package.
 
 Validation notes:
 
@@ -421,10 +418,11 @@ Purpose: synchronization primitives and atomics used pervasively.
 
 LLGO patch:
 
-- `runtime/internal/lib/sync/atomic/*` and `runtime/internal/lib/sync/atomic/*`
-  route operations to llgo atomic intrinsics:
-  - `llgo.atomicXchg`, `llgo.atomicCmpXchg`, `llgo.atomicAdd`, `llgo.atomicLoad`,
-    `llgo.atomicStore`, and/or `llgo.atomicAnd`/`llgo.atomicOr`.
+- `sync/atomic`:
+  - ABI mode 0/1 on `arm64`/`amd64`: upstream `asm.s` is translated and linked,
+    and package patching is disabled.
+  - ABI mode 2 (and other arches for now): keeps using
+    `runtime/internal/lib/sync/atomic/*`.
 - `runtime/internal/lib/sync/sync.go` uses pthread mutex/rwlock via
   `runtime/internal/clite/pthread/sync` and exposes a subset of the sync API on
   top of that runtime.
@@ -436,8 +434,8 @@ Upstream:
 
 Removal analysis:
 
-- `sync/atomic`: strong Plan 9 asm candidate; can be removed if llgo can compile
-  upstream asm or provide fully-correct Go fallbacks + memory barriers.
+- `sync/atomic`: for ABI mode 0/1 (`arm64`/`amd64`) this is now switched to
+  upstream asm translation; remaining work is ABI mode 2 and other arches.
 - `sync`: not an asm-only problem; removal requires runtime-level integration
   to match upstream `sync` expectations (or to keep using pthread-based sync).
 
