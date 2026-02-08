@@ -47,14 +47,14 @@ func TestStdlibInternalCPU_X86_CompileX86Triples(t *testing.T) {
 			Ret:  cpuidRet,
 			Frame: FrameLayout{
 				Params: []FrameSlot{
-					{Offset: 0, Type: I32, Index: 0}, // eaxArg
-					{Offset: 4, Type: I32, Index: 1}, // ecxArg
+					{Offset: 0, Type: I32, Index: 0, Field: -1}, // eaxArg
+					{Offset: 4, Type: I32, Index: 1, Field: -1}, // ecxArg
 				},
 				Results: []FrameSlot{
-					{Offset: 8, Type: I32, Index: 0},  // eax
-					{Offset: 12, Type: I32, Index: 1}, // ebx
-					{Offset: 16, Type: I32, Index: 2}, // ecx
-					{Offset: 20, Type: I32, Index: 3}, // edx
+					{Offset: 8, Type: I32, Index: 0, Field: -1},  // eax
+					{Offset: 12, Type: I32, Index: 1, Field: -1}, // ebx
+					{Offset: 16, Type: I32, Index: 2, Field: -1}, // ecx
+					{Offset: 20, Type: I32, Index: 3, Field: -1}, // edx
 				},
 			},
 		},
@@ -63,8 +63,8 @@ func TestStdlibInternalCPU_X86_CompileX86Triples(t *testing.T) {
 			Ret:  xgetbvRet,
 			Frame: FrameLayout{
 				Results: []FrameSlot{
-					{Offset: 0, Type: I32, Index: 0}, // eax
-					{Offset: 4, Type: I32, Index: 1}, // edx
+					{Offset: 0, Type: I32, Index: 0, Field: -1}, // eax
+					{Offset: 4, Type: I32, Index: 1, Field: -1}, // edx
 				},
 			},
 		},
@@ -73,7 +73,7 @@ func TestStdlibInternalCPU_X86_CompileX86Triples(t *testing.T) {
 			Ret:  I32,
 			Frame: FrameLayout{
 				Results: []FrameSlot{
-					{Offset: 0, Type: I32, Index: 0},
+					{Offset: 0, Type: I32, Index: 0, Field: -1},
 				},
 			},
 		},
@@ -131,4 +131,3 @@ func TestStdlibInternalCPU_X86_CompileX86Triples(t *testing.T) {
 		t.Fatalf("expected at least one successful llc compilation")
 	}
 }
-

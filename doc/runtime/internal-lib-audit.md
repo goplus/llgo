@@ -89,7 +89,7 @@ Plan9 asm candidate:
 Purpose: CRC-32 checksum (IEEE / Castagnoli / Koopman), used by `hash/crc32`,
 `compress/*`, `archive/zip`, etc.
 
-LLGO patch (current state):
+LLGO patch (baseline):
 
 - `runtime/internal/lib/hash/crc32` provides a full generic Go implementation
   (simple + slicing-by-8) and intentionally avoids per-arch assembly for now.
@@ -109,6 +109,28 @@ Removal analysis:
 Plan9 asm candidate:
 
 - Yes (CRC instructions; no scheduler interaction).
+
+Status notes (this branch):
+
+- Plan 9 asm translation for `hash/crc32` is enabled by default on `arm64` and
+  `amd64` in ABI mode 0 (set `LLGO_PLAN9ASM_PKGS=0` to disable, which re-enables
+  the alt patch to keep builds working).
+- In ABI mode 2, we currently rely on the alt package
+  `runtime/internal/lib/hash/crc32` to avoid slice-ABI mismatches at the asm
+  boundary.
+- On darwin/arm64:
+  - Upstream `crc32_arm64.s` is translated, using `llvm.aarch64.crc32*`
+    intrinsics (with correct operand types for B/H forms).
+  - `dev/llgo.sh test -abi 0 ./test/std/hash/crc32/...` passes.
+- On linux/amd64 (docker):
+  - Upstream `crc32_amd64.s` is translated, including `DATA`/`GLOBL` constant
+    tables and SSE4.2 CRC32 + PCLMULQDQ vector code paths.
+  - `dev/docker.sh amd64 dev/llgo.sh test -abi 0 ./test/std/hash/crc32/...` passes.
+- Implementation details:
+  - `.s` parsing now supports `DATA`/`GLOBL` and C-style `/* ... */` comments.
+  - Result slot FP offsets are computed with a word-aligned padding between args
+    and results to match the Go assembler layout (needed by
+    `castagnoliSSE42Triple`).
 
 ### `internal/abi`
 
@@ -141,13 +163,19 @@ Plan9 asm candidate:
 Purpose: low-level byte/string primitives used by `bytes`, `strings`, `regexp`,
 etc. Upstream uses per-arch assembly for speed.
 
-LLGO patch:
+LLGO patch (baseline):
 
 - `runtime/internal/lib/internal/bytealg/bytealg.go` routes to libc where useful:
   - `IndexByte`, `IndexByteString` use `memchr`
   - `Equal` uses `memcmp`
-  - `MakeNoZero` allocates unzeroed memory via `runtime.AllocU`
+  - `Compare` uses `memcmp` (clamped to -1/0/+1)
   - Other helpers are simple Go loops.
+
+Std tests:
+
+- `test/std/bytes` and `test/std/strings` are copied from `llgo-std-test` to
+  exercise the common fast-path APIs (notably `bytes.Compare` and
+  `strings.Compare`).
 
 Upstream:
 
@@ -156,16 +184,50 @@ Upstream:
 
 Removal analysis:
 
-- Removable if llgo can build upstream `internal/bytealg`:
-  - Add Plan 9 asm compilation (preferred for performance).
-  - Or force the generic fallbacks (requires careful overlays to avoid pulling
-    `.s` into the build graph).
-- `MakeNoZero` semantics must remain correct under llgo GC (no leaking of
-  uninitialized bytes).
+- For darwin/arm64, upstream asm can be used by llgo when Plan 9 asm translation
+  is enabled for this package and the alt patch is disabled to avoid duplicate
+  symbols.
+- `MakeNoZero` must exist (upstream implements it in runtime via `go:linkname`);
+  llgo provides a runtime implementation (currently using `AllocU`).
 
 Plan9 asm candidate:
 
-- Yes (pure CPU ops; does not require scheduler, but must obey Go memory model).
+- Yes, but high effort: amd64 uses SSE/AVX2/SSE4.2 (e.g. `PCMPESTRI`) and arm64
+  uses NEON vector ops. Supporting upstream `.s` without patching likely
+  requires a much more complete Plan 9 asm pipeline than the current minimal
+  prototype.
+
+Status notes (this branch):
+
+- On darwin/arm64, Plan 9 asm translation for `internal/bytealg` is enabled by
+  default in ABI mode 0 (set `LLGO_PLAN9ASM_PKGS=0` to disable):
+  - We translate and compile upstream `.s` files directly (including exported
+    `TEXT ·Foo` stubs). No extra wrappers are generated.
+  - `dev/llgo.sh test -abi 0 ./test/std/bytes/...` and
+    `dev/llgo.sh test -abi 0 ./test/std/strings/...` pass.
+- In ABI mode 2, we currently rely on the alt package
+  `runtime/internal/lib/internal/bytealg` to avoid slice-ABI mismatches at the
+  asm boundary.
+- `runtime.memequal_varlen` is still translate-only (closure ABI via `R26`).
+- The arm64 CFG translator was updated to split blocks at terminators (not just
+  labels), which is required for stdlib-style fallthrough after conditional
+  branches.
+- Minimal NEON clusters implemented so far (arm64, `internal/bytealg/count`):
+  - `VLD1.P`, `VCMEQ`, `VAND`, `VADDP` (mask-style elementwise add),
+    `VUADDLV`, `VEOR`, `VADD` (scalar D[0] accumulate), `VMOV` (broadcast and
+    D[0] extract).
+- Additional arm64 clusters added for `internal/bytealg/indexbyte`:
+  - NZCV flag tracking for `ADDS`/`SUBS`/`CMP` to support carry-based branches
+    (`BHS`/`BLS`/`HI`/`LO`).
+  - Scalar ops: `LSL`, `LSR` (reg shift masked), `NEG`, `RBIT`, `CLZ`.
+  - NEON ops: `VORR`, `VADDP` (pairwise add for `.B16` and `.D2`), `VMOV`
+    broadcast for `.S4`.
+- `internal/build/plan9asm.go` signature/layout logic now supports stdlib-style
+  FP offsets for strings and slices by flattening them into header words:
+  - string: base, len
+  - slice: base, len, cap
+- Actual translation of the bytealg opcode corpus is still incomplete (SIMD,
+  control-flow, and ABIInternal-heavy files remain the blocker).
 
 ### `internal/cpu`
 
