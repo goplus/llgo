@@ -23,30 +23,30 @@ type arm64Ctx struct {
 	usedVRegs map[int]bool
 	vRegSlot  map[int]string // vreg index -> alloca name (<16 x i8>)
 
-	flagsNSlot string
-	flagsZSlot string
-	flagsCSlot string
-	flagsVSlot string
+	flagsNSlot   string
+	flagsZSlot   string
+	flagsCSlot   string
+	flagsVSlot   string
 	flagsWritten bool
 
-	fpParams       map[int64]FrameSlot      // off(FP) -> slot
-	fpResults      []FrameSlot              // result slots (Index is result index)
-	fpResAllocaOff map[int64]string         // off(FP) -> alloca
-	fpResAllocaIdx map[int]string           // result index -> alloca
+	fpParams       map[int64]FrameSlot // off(FP) -> slot
+	fpResults      []FrameSlot         // result slots (Index is result index)
+	fpResAllocaOff map[int64]string    // off(FP) -> alloca
+	fpResAllocaIdx map[int]string      // result index -> alloca
 }
 
 func newARM64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig) *arm64Ctx {
 	c := &arm64Ctx{
-		b:        b,
-		sig:      sig,
-		resolve:  resolve,
-		sigs:     sigs,
-		blocks:   arm64SplitBlocks(fn),
-		usedRegs: map[Reg]bool{},
-		regSlot:  map[Reg]string{},
-		usedVRegs: map[int]bool{},
-		vRegSlot:  map[int]string{},
-		fpParams: map[int64]FrameSlot{},
+		b:              b,
+		sig:            sig,
+		resolve:        resolve,
+		sigs:           sigs,
+		blocks:         arm64SplitBlocks(fn),
+		usedRegs:       map[Reg]bool{},
+		regSlot:        map[Reg]string{},
+		usedVRegs:      map[int]bool{},
+		vRegSlot:       map[int]string{},
+		fpParams:       map[int64]FrameSlot{},
 		fpResAllocaOff: map[int64]string{},
 		fpResAllocaIdx: map[int]string{},
 	}
@@ -358,6 +358,26 @@ func (c *arm64Ctx) loadReg(r Reg) (string, error) {
 	}
 	t := c.newTmp()
 	fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s\n", t, slot)
+	return "%" + t, nil
+}
+
+func (c *arm64Ctx) ptrFromSB(sym string) (ptr string, err error) {
+	base, off, ok := parseSBRef(sym)
+	if !ok {
+		return "", fmt.Errorf("invalid (SB) sym ref: %q", sym)
+	}
+	res := base
+	if strings.Contains(base, "·") || strings.Contains(base, "/") || strings.Contains(base, ".") {
+		res = c.resolve(base)
+	} else {
+		res = c.resolve("·" + base)
+	}
+	p := llvmGlobal(res)
+	if off == 0 {
+		return p, nil
+	}
+	t := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = getelementptr i8, ptr %s, i64 %d\n", t, p, off)
 	return "%" + t, nil
 }
 

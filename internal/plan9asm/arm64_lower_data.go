@@ -25,19 +25,66 @@ func (c *arm64Ctx) lowerData(op Op, postInc bool, ins Instr) (ok bool, terminate
 		}
 
 	case "MOVB":
-		// Minimal: MOVB srcReg, dstReg (zero-extend low byte).
-		if len(ins.Args) != 2 || ins.Args[0].Kind != OpReg || ins.Args[1].Kind != OpReg {
-			return true, false, fmt.Errorf("arm64 MOVB expects reg, reg: %q", ins.Raw)
+		if len(ins.Args) != 2 {
+			return true, false, fmt.Errorf("arm64 MOVB expects 2 operands: %q", ins.Raw)
 		}
-		v, err := c.loadReg(ins.Args[0].Reg)
+		src, dst := ins.Args[0], ins.Args[1]
+		v := ""
+		var err error
+		switch src.Kind {
+		case OpMem:
+			v, err = c.loadMem(src.Mem, 8, postInc)
+		default:
+			v, err = c.eval64(src, false)
+		}
 		if err != nil {
 			return true, false, err
 		}
-		b := c.newTmp()
-		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i8\n", b, v)
-		z := c.newTmp()
-		fmt.Fprintf(c.b, "  %%%s = zext i8 %%%s to i64\n", z, b)
-		return true, false, c.storeReg(ins.Args[1].Reg, "%"+z)
+		switch dst.Kind {
+		case OpReg:
+			b := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i8\n", b, v)
+			z := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = zext i8 %%%s to i64\n", z, b)
+			return true, false, c.storeReg(dst.Reg, "%"+z)
+		case OpMem:
+			return true, false, c.storeMem(dst.Mem, 8, false, v)
+		case OpFP:
+			return true, false, c.storeFPResult64(dst.FPOffset, v)
+		default:
+			return true, false, fmt.Errorf("arm64 MOVB unsupported dst: %q", ins.Raw)
+		}
+
+	case "MOVW":
+		if len(ins.Args) != 2 {
+			return true, false, fmt.Errorf("arm64 MOVW expects 2 operands: %q", ins.Raw)
+		}
+		src, dst := ins.Args[0], ins.Args[1]
+		v := ""
+		var err error
+		switch src.Kind {
+		case OpMem:
+			v, err = c.loadMem(src.Mem, 32, postInc)
+		default:
+			v, err = c.eval64(src, false)
+		}
+		if err != nil {
+			return true, false, err
+		}
+		switch dst.Kind {
+		case OpReg:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t, v)
+			z := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, t)
+			return true, false, c.storeReg(dst.Reg, "%"+z)
+		case OpMem:
+			return true, false, c.storeMem(dst.Mem, 32, false, v)
+		case OpFP:
+			return true, false, c.storeFPResult64(dst.FPOffset, v)
+		default:
+			return true, false, fmt.Errorf("arm64 MOVW unsupported dst: %q", ins.Raw)
+		}
 
 	case "MOVWU":
 		if len(ins.Args) != 2 {
@@ -94,7 +141,7 @@ func (c *arm64Ctx) lowerData(op Op, postInc bool, ins Instr) (ok bool, terminate
 
 	case "MOVBU":
 		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
-			return true, false, fmt.Errorf("arm64 MOVBU expects (mem|fp), reg: %q", ins.Raw)
+			return true, false, fmt.Errorf("arm64 MOVBU expects (mem|fp|sym), reg: %q", ins.Raw)
 		}
 		v := ""
 		var err error
@@ -103,6 +150,16 @@ func (c *arm64Ctx) lowerData(op Op, postInc bool, ins Instr) (ok bool, terminate
 			v, err = c.loadMem(ins.Args[0].Mem, 8, postInc)
 		case OpFP:
 			v, err = c.eval64(ins.Args[0], false)
+		case OpSym:
+			p, perr := c.ptrFromSB(ins.Args[0].Sym)
+			if perr != nil {
+				return true, false, perr
+			}
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = load i8, ptr %s\n", t, p)
+			z := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = zext i8 %%%s to i64\n", z, t)
+			v = "%" + z
 		default:
 			return true, false, fmt.Errorf("arm64 MOVBU unsupported src: %q", ins.Raw)
 		}

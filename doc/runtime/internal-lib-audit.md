@@ -302,6 +302,23 @@ Removal analysis:
 
 - Removable if llgo can compile upstream atomics assembly, or if llgo intrinsics
   fully cover upstream semantics (including no-write-barrier behavior).
+- Current status in this branch:
+  - `arm64`, ABI mode 0/1: upstream `.s` translation is enabled by default and
+    the alt patch is disabled.
+  - `amd64`: still patched for now; `atomic_amd64.s` uses lock-prefixed x86
+    forms not fully lowered yet.
+  - `sync/atomic` alt is still kept because llgo currently lacks full intrinsic
+    parity for pointer APIs (for example `CompareAndSwapPointer` symbol paths).
+
+Validation notes:
+
+- Local darwin/arm64:
+  - `./dev/llgo.sh run -a -abi 0 ./chore/abi0demo` -> `907060870`
+  - `./dev/llgo.sh run -a -abi 1 ./chore/abi0demo` -> `907060870`
+  - `./dev/llgo.sh test -abi 0 ./test/std/hash/crc32/...` PASS
+  - `./dev/llgo.sh test -abi 1 ./test/std/hash/crc32/...` PASS
+- Docker arm64:
+  - `./dev/docker.sh arm64 ./dev/llgo.sh test -abi 0 ./test/std/hash/crc32/...` PASS
 
 Plan9 asm candidate:
 
