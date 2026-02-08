@@ -370,6 +370,10 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
 			ctx.plan9asmPkgs["internal/bytealg"] = true
 		}
+		// internal/runtime/atomic is translated in ABI mode 0/1 on arm64.
+		if ctx.buildConf.AbiMode != 2 && ctx.buildConf.Goarch == "arm64" {
+			ctx.plan9asmPkgs["internal/runtime/atomic"] = true
+		}
 		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
 		// Explicitly disable all asm translation, including defaults.
 		if v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
@@ -635,6 +639,8 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 	}
 
 	for _, fn := range file.Funcs {
+		callerResolved := resolve(stripABISuffix(fn.Sym))
+		callerSig, hasCallerSig := sigs[callerResolved]
 		for _, ins := range fn.Instrs {
 			op := strings.ToUpper(string(ins.Op))
 			switch op {
@@ -658,6 +664,19 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 			if err := addGoDeclSig(base); err != nil {
 				return nil, err
 			}
+			targetResolved := resolve(base)
+			if _, ok := sigs[targetResolved]; ok {
+				continue
+			}
+			if !hasCallerSig {
+				continue
+			}
+			// Cross-package trampoline with no local Go declaration available.
+			// Reuse caller signature as a best-effort extern declaration so
+			// direct tail-jumps like sync/atomic -> internal/runtime/atomic link.
+			fs := callerSig
+			fs.Name = targetResolved
+			sigs[targetResolved] = fs
 		}
 	}
 	return sigs, nil

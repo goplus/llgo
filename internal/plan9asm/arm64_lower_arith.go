@@ -51,7 +51,50 @@ func (c *arm64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		}
 		return true, false, nil
 
-	case "AND", "ANDS", "EOR":
+	case "ADDW":
+		if len(ins.Args) != 2 && len(ins.Args) != 3 {
+			return true, false, fmt.Errorf("arm64 ADDW expects 2 or 3 operands: %q", ins.Raw)
+		}
+		var a, bval string
+		var dst Reg
+		if len(ins.Args) == 2 {
+			a, err = c.eval64(ins.Args[0], false)
+			if err != nil {
+				return true, false, err
+			}
+			if ins.Args[1].Kind != OpReg {
+				return true, false, fmt.Errorf("arm64 ADDW dst must be reg: %q", ins.Raw)
+			}
+			dst = ins.Args[1].Reg
+			bval, err = c.loadReg(dst)
+			if err != nil {
+				return true, false, err
+			}
+		} else {
+			a, err = c.eval64(ins.Args[0], false)
+			if err != nil {
+				return true, false, err
+			}
+			bval, err = c.eval64(ins.Args[1], false)
+			if err != nil {
+				return true, false, err
+			}
+			if ins.Args[2].Kind != OpReg {
+				return true, false, fmt.Errorf("arm64 ADDW dst must be reg: %q", ins.Raw)
+			}
+			dst = ins.Args[2].Reg
+		}
+		ta := c.newTmp()
+		tb := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", ta, a)
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tb, bval)
+		sum := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = add i32 %%%s, %%%s\n", sum, tb, ta)
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, sum)
+		return true, false, c.storeReg(dst, "%"+z)
+
+	case "AND", "ANDS", "EOR", "ORR":
 		if len(ins.Args) != 2 && len(ins.Args) != 3 {
 			return true, false, fmt.Errorf("arm64 %s expects 2 or 3 operands: %q", op, ins.Raw)
 		}
@@ -90,6 +133,8 @@ func (c *arm64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			fmt.Fprintf(c.b, "  %%%s = and i64 %s, %s\n", t, bval, a)
 		case "EOR":
 			fmt.Fprintf(c.b, "  %%%s = xor i64 %s, %s\n", t, bval, a)
+		case "ORR":
+			fmt.Fprintf(c.b, "  %%%s = or i64 %s, %s\n", t, bval, a)
 		}
 		if err := c.storeReg(dst, "%"+t); err != nil {
 			return true, false, err
@@ -158,6 +203,19 @@ func (c *arm64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		at := c.newTmp()
 		fmt.Fprintf(c.b, "  %%%s = and i64 %s, %%%s\n", at, src2, nt)
 		return true, false, c.storeReg(ins.Args[2].Reg, "%"+at)
+
+	case "MVN":
+		// MVN src, dst => dst = ~src
+		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
+			return true, false, fmt.Errorf("arm64 MVN expects src, dstReg: %q", ins.Raw)
+		}
+		src, err := c.eval64(ins.Args[0], false)
+		if err != nil {
+			return true, false, err
+		}
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = xor i64 %s, -1\n", t, src)
+		return true, false, c.storeReg(ins.Args[1].Reg, "%"+t)
 
 	case "CRC32B", "CRC32H", "CRC32W", "CRC32X", "CRC32CB", "CRC32CH", "CRC32CW", "CRC32CX":
 		// CRC32{B,H,W,X} srcReg, dstReg
