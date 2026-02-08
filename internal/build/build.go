@@ -1317,6 +1317,11 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/atomic" && !plan9asmDisabledByEnv() {
 		return false
 	}
+	// sync/atomic is enabled by default on arm64/amd64 in ABI mode 0/1 and
+	// lowered via asm.s -> internal/runtime/atomic TEXT stubs.
+	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync/atomic" && !plan9asmDisabledByEnv() {
+		return false
+	}
 	// If a package is explicitly opted in via LLGO_PLAN9ASM_PKGS, prefer Plan9 asm
 	// over alt in ABI mode 0/1 to make targeted bring-up and debugging possible.
 	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && plan9asmEnabledByEnv(pkgPath) {
