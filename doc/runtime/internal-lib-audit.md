@@ -327,12 +327,15 @@ Purpose: internal helpers for the runtime's map implementation.
 
 LLGO patch:
 
-- `runtime/internal/lib/internal/runtime/maps/maps.go` rebinds runtime hooks via
-  `//go:linkname` to llgo runtime internals:
+- ABI mode 0/1 on `arm64`/`amd64`: package patching is disabled and upstream
+  `internal/runtime/maps` is used.
+- ABI mode 2 (and other arches for now): keeps using
+  `runtime/internal/lib/internal/runtime/maps/maps.go`, which rebinds runtime
+  hooks via `//go:linkname` to llgo runtime internals:
   - `fastrand64`, `fatal`
   - `Typedmemmove`, `Typedmemclr`
   - `newobject`, `newarray`
-- `mapKeyError` currently returns `nil` (possible correctness gap vs upstream).
+  - `mapKeyError` currently returns `nil` (possible correctness gap vs upstream).
 
 Upstream:
 
@@ -340,9 +343,8 @@ Upstream:
 
 Removal analysis:
 
-- Not currently removable unless llgo runtime can expose equivalent internal
-  hooks under upstream names, or we avoid patching by providing a compatible
-  overlay layer.
+- ABI mode 0/1 (`arm64`/`amd64`): removed from alt patching path.
+- ABI mode 2 and other arches: still patched.
 
 Plan9 asm candidate:
 
