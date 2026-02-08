@@ -401,11 +401,15 @@ Purpose: weak pointers support.
 
 LLGO patch:
 
-- `runtime/internal/lib/internal/weak/weak.go` and `runtime/internal/lib/weak/weak.go`
-  declare runtime hooks via `//go:linkname`:
-  - `runtime_registerWeakPointer`
-  - `runtime_makeStrongFromWeak`
-- `weak/weak.go` uses `runtime/internal/clite/sync/atomic` and llgo runtime internals.
+- `internal/weak` remains llgo-only.
+- `weak`:
+  - ABI mode 0/1 on `arm64`/`amd64`: package patching is disabled and upstream
+    `weak` is used.
+  - ABI mode 2 (and other arches for now): keeps using
+    `runtime/internal/lib/weak/weak.go`.
+- Runtime now provides upstream weak hooks via `//go:linkname`:
+  - `weak.runtime_registerWeakPointer`
+  - `weak.runtime_makeStrongFromWeak`
 
 Upstream:
 
@@ -415,8 +419,8 @@ Upstream:
 Removal analysis:
 
 - `internal/weak`: not removable (llgo-only package).
-- `weak`: likely removable only if llgo runtime implements the same public weak
-  pointer runtime hooks as upstream.
+- `weak`: ABI mode 0/1 (`arm64`/`amd64`) removed from alt patching path;
+  ABI mode 2 and other arches remain patched.
 
 Plan9 asm candidate:
 
