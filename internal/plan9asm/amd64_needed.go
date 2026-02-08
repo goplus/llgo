@@ -19,7 +19,24 @@ func funcNeedsAMD64CFG(fn Func) bool {
 		if strings.HasPrefix(op, "MOVO") || strings.HasPrefix(op, "PCLMUL") || strings.HasPrefix(op, "CRC32") || strings.HasPrefix(op, "PXOR") {
 			return true
 		}
+		// Keep the linear path only for the tiny subset it currently lowers.
+		switch Op(op) {
+		case OpTEXT, OpRET, OpBYTE, OpMOVQ, OpMOVL, OpADDQ, OpSUBQ, OpXORQ, OpCPUID, OpXGETBV:
+			// For MOVQ/MOVL, linear lowering supports immediate/reg/FP value flow.
+			// Addressing forms (mem/sym) require CFG lowering.
+			if (op == "MOVQ" || op == "MOVL") && len(ins.Args) == 2 {
+				for _, a := range ins.Args {
+					switch a.Kind {
+					case OpImm, OpReg, OpFP:
+						// ok
+					default:
+						return true
+					}
+				}
+			}
+		default:
+			return true
+		}
 	}
 	return false
 }
-

@@ -38,10 +38,10 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		c.setZFlagFromI64(r)
 		return true, false, nil
 
-	case "XORL":
-		// XORL src, dstReg (32-bit, zero-extend result)
+	case "ADDL", "SUBL", "XORL", "ANDL", "ORL":
+		// 32-bit arithmetic/logical ops: src, dstReg (result zero-extended to i64).
 		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
-			return true, false, fmt.Errorf("amd64 XORL expects src, dstReg: %q", ins.Raw)
+			return true, false, fmt.Errorf("amd64 %s expects src, dstReg: %q", op, ins.Raw)
 		}
 		dst := ins.Args[1].Reg
 		dv64, err := c.loadReg(dst)
@@ -63,10 +63,21 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tr, v64)
 			s32 = "%" + tr
 		default:
-			return true, false, fmt.Errorf("amd64 XORL unsupported src: %q", ins.Raw)
+			return true, false, fmt.Errorf("amd64 %s unsupported src: %q", op, ins.Raw)
 		}
 		x := c.newTmp()
-		fmt.Fprintf(c.b, "  %%%s = xor i32 %%%s, %s\n", x, dtr, s32)
+		switch op {
+		case "ADDL":
+			fmt.Fprintf(c.b, "  %%%s = add i32 %%%s, %s\n", x, dtr, s32)
+		case "SUBL":
+			fmt.Fprintf(c.b, "  %%%s = sub i32 %%%s, %s\n", x, dtr, s32)
+		case "XORL":
+			fmt.Fprintf(c.b, "  %%%s = xor i32 %%%s, %s\n", x, dtr, s32)
+		case "ANDL":
+			fmt.Fprintf(c.b, "  %%%s = and i32 %%%s, %s\n", x, dtr, s32)
+		case "ORL":
+			fmt.Fprintf(c.b, "  %%%s = or i32 %%%s, %s\n", x, dtr, s32)
+		}
 		z := c.newTmp()
 		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, x)
 		out := "%" + z
@@ -229,9 +240,10 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		return true, false, fmt.Errorf("amd64: unsupported bit op %s", op)
 
 	case "SETEQ", "SETGT", "SETHI":
-		// SETcc dstReg: set low byte based on flags; we store 0/1 into the full i64 reg.
-		if len(ins.Args) != 1 || ins.Args[0].Kind != OpReg {
-			return true, false, fmt.Errorf("amd64 %s expects dstReg: %q", op, ins.Raw)
+		// SETcc dst: set byte based on flags.
+		// We support register destinations and FP result slots.
+		if len(ins.Args) != 1 {
+			return true, false, fmt.Errorf("amd64 %s expects one destination: %q", op, ins.Raw)
 		}
 		cond := ""
 		switch op {
@@ -256,9 +268,16 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			fmt.Fprintf(c.b, "  %%%s = xor i1 %%%s, true\n", t2, t1)
 			cond = "%" + t2
 		}
-		sel := c.newTmp()
-		fmt.Fprintf(c.b, "  %%%s = select i1 %s, i64 1, i64 0\n", sel, cond)
-		return true, false, c.storeReg(ins.Args[0].Reg, "%"+sel)
+		switch ins.Args[0].Kind {
+		case OpReg:
+			sel := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = select i1 %s, i64 1, i64 0\n", sel, cond)
+			return true, false, c.storeReg(ins.Args[0].Reg, "%"+sel)
+		case OpFP:
+			return true, false, c.storeFPResult(ins.Args[0].FPOffset, I1, cond)
+		default:
+			return true, false, fmt.Errorf("amd64 %s expects reg or fp destination: %q", op, ins.Raw)
+		}
 
 	case "SHRQ", "SHLQ", "SARQ", "SHLL", "SHRL", "SALQ", "SALL":
 		// Shift ops: srcAmt, dstReg
