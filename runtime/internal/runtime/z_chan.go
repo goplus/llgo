@@ -278,6 +278,10 @@ type ChanOp struct {
 func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
 	for isel = range ops {
 		op := ops[isel]
+		if op.C == nil {
+			// Nil-channel select cases are permanently disabled.
+			continue
+		}
 		if op.Send {
 			if tryOK = ChanTrySend(op.C, op.Val, int(op.Size)); tryOK {
 				return
@@ -296,6 +300,9 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	selOp := new(selectOp) // TODO(xsw): use c.AllocaNew[selectOp]()
 	selOp.init()
 	for _, op := range ops {
+		if op.C == nil {
+			continue
+		}
 		prepareSelect(op.C, selOp)
 	}
 	var tryOK bool
@@ -306,6 +313,9 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 		selOp.wait()
 	}
 	for _, op := range ops {
+		if op.C == nil {
+			continue
+		}
 		endSelect(op.C, selOp)
 	}
 	selOp.end()
