@@ -100,6 +100,9 @@ func (c *amd64Ctx) lowerInstr(bi int, ins Instr, emitBr amd64EmitBr, emitCondBr 
 	if ok, term, err := c.lowerAtomic(Op(op), ins); ok {
 		return term, err
 	}
+	if ok, term, err := c.lowerSyscall(Op(op), ins); ok {
+		return term, err
+	}
 	if ok, term, err := c.lowerMov(Op(op), ins); ok {
 		return term, err
 	}

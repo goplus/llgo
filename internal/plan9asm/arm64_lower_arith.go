@@ -312,6 +312,23 @@ func (c *arm64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		c.setFlagsSub(dst, src, "%"+rt)
 		return true, false, nil
 
+	case "CMN":
+		if len(ins.Args) != 2 {
+			return true, false, fmt.Errorf("arm64 CMN expects 2 operands: %q", ins.Raw)
+		}
+		src, err := c.eval64(ins.Args[0], false)
+		if err != nil {
+			return true, false, err
+		}
+		dst, err := c.eval64(ins.Args[1], false)
+		if err != nil {
+			return true, false, err
+		}
+		rt := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = add i64 %s, %s\n", rt, dst, src)
+		c.setFlagsAdd(dst, src, "%"+rt)
+		return true, false, nil
+
 	case "NEG":
 		// NEG src, dst => dst = -src
 		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
