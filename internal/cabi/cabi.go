@@ -63,10 +63,49 @@ type Transformer struct {
 	sys      TypeInfoSys
 	mode     Mode
 	optimize bool
+	skipFns  map[string]struct{}
 }
 
 func (p *Transformer) isCFunc(name string) bool {
 	return !strings.Contains(name, ".")
+}
+
+// SetSkipFuncs configures function full names that should not be transformed.
+// Names are LLVM symbol names (for example, "internal/bytealg.Compare").
+// The list is applied to both function signature rewriting and call-site rewriting.
+func (p *Transformer) SetSkipFuncs(names []string) {
+	if len(names) == 0 {
+		p.skipFns = nil
+		return
+	}
+	if p.skipFns == nil {
+		p.skipFns = make(map[string]struct{}, len(names))
+	} else {
+		clear(p.skipFns)
+	}
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		p.skipFns[name] = struct{}{}
+	}
+}
+
+func (p *Transformer) shouldSkipFunc(name string) bool {
+	if name == "" || len(p.skipFns) == 0 {
+		return false
+	}
+	_, ok := p.skipFns[name]
+	return ok
+}
+
+func (p *Transformer) shouldSkipCall(call llvm.Value) bool {
+	callee := call.CalledValue()
+	if callee.IsAFunction().IsNil() {
+		return false
+	}
+	return p.shouldSkipFunc(callee.Name())
 }
 
 type CallInstr struct {
@@ -84,7 +123,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 	case ModeCFunc:
 		fn := m.FirstFunction()
 		for !fn.IsNil() {
-			if p.isCFunc(fn.Name()) {
+			if !p.shouldSkipFunc(fn.Name()) && p.isCFunc(fn.Name()) {
 				p.transformFuncCall(m, fn)
 				if p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
 					fns = append(fns, fn)
@@ -95,6 +134,10 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 				instr := bb.FirstInstruction()
 				for !instr.IsNil() {
 					if call := instr.IsACallInst(); !call.IsNil() {
+						if p.shouldSkipCall(call) {
+							instr = llvm.NextInstruction(instr)
+							continue
+						}
 						callee := call.CalledValue()
 						// ModeCFunc only targets direct C symbol calls. Indirect calls
 						// (callee name is empty under opaque pointers) may be Go closure
@@ -116,7 +159,7 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 	case ModeAllFunc:
 		fn := m.FirstFunction()
 		for !fn.IsNil() {
-			if p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
+			if !p.shouldSkipFunc(fn.Name()) && p.isWrapFunctionType(ctx, fn.GlobalValueType()) {
 				fns = append(fns, fn)
 			}
 			bb := fn.FirstBasicBlock()
@@ -124,6 +167,10 @@ func (p *Transformer) TransformModule(path string, m llvm.Module) {
 				instr := bb.FirstInstruction()
 				for !instr.IsNil() {
 					if call := instr.IsACallInst(); !call.IsNil() {
+						if p.shouldSkipCall(call) {
+							instr = llvm.NextInstruction(instr)
+							continue
+						}
 						if p.isWrapFunctionType(ctx, call.CalledFunctionType()) {
 							callInstrs = append(callInstrs, CallInstr{call, fn})
 						}
@@ -219,6 +266,9 @@ func funcNoUnwind(ctx llvm.Context) llvm.Attribute {
 }
 
 func (p *Transformer) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
+	if p.isNoWrapRuntimeHeaderType(typ) {
+		return false
+	}
 	if p.sys != nil {
 		bret := index == 0
 		if p.sys.SkipEmptyParams() && p.isWrapEmptyType(ctx, typ, bret) {
@@ -249,6 +299,15 @@ func (p *Transformer) getEmptyType(ctx llvm.Context, typ llvm.Type, bret bool) (
 }
 
 func (p *Transformer) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
+	if p.isNoWrapRuntimeHeaderType(typ) {
+		return &TypeInfo{
+			Type:  typ,
+			Kind:  AttrNone,
+			Type1: typ,
+			Size:  p.Sizeof(typ),
+			Align: p.Alignof(typ),
+		}
+	}
 	if p.sys != nil {
 		bret := index == 0
 		if p.sys.SkipEmptyParams() {
@@ -259,6 +318,25 @@ func (p *Transformer) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Typ
 		return p.sys.GetTypeInfo(ctx, ftyp, typ, index)
 	}
 	panic("not implment: " + p.arch)
+}
+
+func (p *Transformer) isNoWrapRuntimeHeaderType(typ llvm.Type) bool {
+	if typ.TypeKind() != llvm.StructTypeKind {
+		return false
+	}
+	name := typ.StructName()
+	if name == "" || !strings.Contains(name, "runtime/internal/runtime.") {
+		return false
+	}
+	if i := strings.LastIndexByte(name, '.'); i >= 0 && i+1 < len(name) {
+		name = name[i+1:]
+	}
+	switch name {
+	case "Slice":
+		return true
+	default:
+		return false
+	}
 }
 
 func (p *Transformer) Sizeof(typ llvm.Type) int {
@@ -319,6 +397,9 @@ func (p *Transformer) transformFuncType(ctx llvm.Context, info *FuncInfo) (llvm.
 }
 
 func (p *Transformer) transformFunc(m llvm.Module, fn llvm.Value) bool {
+	if p.shouldSkipFunc(fn.Name()) {
+		return false
+	}
 	ctx := m.Context()
 	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
 	if !info.HasWrap() {
@@ -486,6 +567,9 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 }
 
 func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
+	if p.shouldSkipCall(call) {
+		return false
+	}
 	nfn := call.CalledValue()
 	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
 	if !info.HasWrap() {
