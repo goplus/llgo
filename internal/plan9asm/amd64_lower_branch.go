@@ -10,7 +10,7 @@ func (c *amd64Ctx) lowerBranch(bi int, op Op, ins Instr, emitBr amd64EmitBr, emi
 	case "JMP",
 		"JE", "JEQ", "JZ", "JNE", "JNZ",
 		"JL", "JLT", "JLE", "JGE",
-		"JA", "JAE", "JB", "JBE",
+		"JA", "JAE", "JB", "JBE", "JLS",
 		"JC", "JNC":
 		// ok
 	default:
@@ -108,7 +108,7 @@ func (c *amd64Ctx) lowerBranch(bi int, op Op, ins Instr, emitBr amd64EmitBr, emi
 		t := c.newTmp()
 		fmt.Fprintf(c.b, "  %%%s = xor i1 %s, true\n", t, cf)
 		cond = "%" + t
-	case "JBE":
+	case "JBE", "JLS":
 		cf := c.loadFlag(c.flagsCFSlot)
 		z := c.loadFlag(c.flagsZSlot)
 		t := c.newTmp()
