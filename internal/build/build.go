@@ -230,14 +230,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err := ensureSizeReporting(conf); err != nil {
 		return nil, err
 	}
-	if conf.DCE {
-		if conf.Mode != ModeBuild && conf.Mode != ModeRun {
-			return nil, fmt.Errorf("dce only supports build/run modes")
-		}
-		if conf.BuildMode != BuildModeExe {
-			return nil, fmt.Errorf("dce only supports buildmode=exe")
-		}
-	}
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
 	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)
@@ -259,9 +251,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	if conf.DCE {
-		if isWasmTarget(conf.Goos) || strings.HasPrefix(conf.Target, "wasi") {
-			return nil, fmt.Errorf("dce does not support wasm targets")
-		}
 		conf.ForceRebuild = true
 	}
 
@@ -579,7 +568,7 @@ func (c *context) compiler() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewCompiler(config)
-	cmd.Verbose = c.buildConf.Verbose
+	cmd.Verbose = c.shouldPrintCommands(false)
 	return cmd
 }
 
@@ -592,7 +581,7 @@ func (c *context) linker() *clang.Cmd {
 		c.crossCompile.Linker,
 	)
 	cmd := clang.NewLinker(config)
-	cmd.Verbose = c.buildConf.Verbose
+	cmd.Verbose = c.shouldPrintCommands(false)
 	return cmd
 }
 
@@ -841,6 +830,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		return nil, nil
 	}
 
+	printCmds := ctx.shouldPrintCommands(verbose)
 	var objFiles []string
 	llgoRoot := env.LLGoROOT()
 
@@ -878,7 +868,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		if ctx.buildConf.GenLL {
 			llFile := baseName + ".ll"
 			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
-			if verbose {
+			if printCmds {
 				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
 			}
 			cmd := ctx.compiler()
@@ -888,8 +878,8 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		}
 
 		objFile := baseName + ".o"
-		objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
-		if verbose {
+		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
+		if printCmds {
 			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
 		cmd := ctx.compiler()
@@ -1816,11 +1806,12 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		args = append(args, "-x", "c")
 	}
 
+	printCmds := ctx.shouldPrintCommands(verbose)
 	// If GenLL is enabled, emit .ll for debugging.
 	if ctx.buildConf.GenLL {
 		llFile := baseName + ".ll"
 		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-		if verbose {
+		if printCmds {
 			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
 			fmt.Fprintln(os.Stderr, "clang", llArgs)
 		}
@@ -1831,7 +1822,7 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 
 	objFile := baseName + ".o"
 	objArgs := append(args, "-o", objFile, "-c", cFile)
-	if verbose {
+	if printCmds {
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", objArgs)
 	}
