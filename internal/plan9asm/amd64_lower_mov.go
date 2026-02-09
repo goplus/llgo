@@ -132,6 +132,14 @@ func (c *amd64Ctx) lowerMov(op Op, ins Instr) (ok bool, terminated bool, err err
 					t := c.newTmp()
 					fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s, align 1\n", t, p)
 					v = "%" + t
+				} else if src.Kind == OpSym {
+					p, err2 := c.ptrFromSB(src.Sym)
+					if err2 != nil {
+						return true, false, err2
+					}
+					t := c.newTmp()
+					fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s, align 1\n", t, p)
+					v = "%" + t
 				} else {
 					return true, false, err
 				}

@@ -4,6 +4,28 @@ import "fmt"
 
 func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err error) {
 	switch op {
+	case "PUSHQ":
+		// Stack-manipulation appears in syscall asm stubs (e.g. preserve return
+		// address register around SYSCALL). Lower to the local virtual stack.
+		if len(ins.Args) != 1 {
+			return true, false, fmt.Errorf("amd64 PUSHQ expects src: %q", ins.Raw)
+		}
+		v, err := c.evalI64(ins.Args[0])
+		if err != nil {
+			return true, false, err
+		}
+		c.pushI64(v)
+		return true, false, nil
+	case "POPQ":
+		if len(ins.Args) != 1 || ins.Args[0].Kind != OpReg {
+			return true, false, fmt.Errorf("amd64 POPQ expects dstReg: %q", ins.Raw)
+		}
+		v := c.popI64()
+		if err := c.storeReg(ins.Args[0].Reg, v); err != nil {
+			return true, false, err
+		}
+		return true, false, nil
+
 	case "ADDQ", "SUBQ", "XORQ", "ANDQ", "ORQ":
 		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
 			return true, false, fmt.Errorf("amd64 %s expects src, dstReg: %q", op, ins.Raw)

@@ -17,6 +17,10 @@ type amd64Ctx struct {
 	tmp int
 
 	blocks []amd64Block
+	// Mapping between linear instruction index and block index. Used to
+	// resolve n(PC) branches which are instruction-relative.
+	blockBase  []int
+	blockByIdx map[int]int
 
 	usedRegs map[Reg]bool
 	regSlot  map[Reg]string // gp reg -> alloca name
@@ -31,6 +35,8 @@ type amd64Ctx struct {
 	flagsSltSlot string // last signed-less-than from CMPQ
 	flagsCFSlot  string // last "carry"/below from CMPQ/BTQ
 	flagsWritten bool
+	vstackSlot   string // [64 x i64] virtual stack for PUSHQ/POPQ
+	vspSlot      string // i64 virtual stack pointer (next free slot)
 
 	fpParams       map[int64]FrameSlot // off(FP) -> slot
 	fpResults      []FrameSlot
@@ -54,11 +60,18 @@ func newAMD64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) 
 		fpParams:       map[int64]FrameSlot{},
 		fpResAllocaOff: map[int64]string{},
 		fpResAllocaIdx: map[int]string{},
+		blockByIdx:     map[int]int{},
 	}
 	for _, s := range sig.Frame.Params {
 		c.fpParams[s.Offset] = s
 	}
 	c.fpResults = append([]FrameSlot(nil), sig.Frame.Results...)
+	base := 0
+	for i, blk := range c.blocks {
+		c.blockBase = append(c.blockBase, base)
+		c.blockByIdx[base] = i
+		base += len(blk.instrs)
+	}
 	return c
 }
 
@@ -218,6 +231,19 @@ func (c *amd64Ctx) emitEntryAllocas() error {
 	fmt.Fprintf(c.b, "  %s = alloca i1\n", c.flagsCFSlot)
 	fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.flagsCFSlot)
 
+	// Virtual stack for stack-manipulation instructions used by some stdlib asm
+	// stubs (e.g. syscall rawVfork paths using POPQ/PUSHQ around SYSCALL).
+	// We do not model host stack memory directly; this local stack keeps
+	// lowering deterministic and avoids invalid memory accesses in IR.
+	c.vstackSlot = "%virt_stack"
+	c.vspSlot = "%virt_sp"
+	fmt.Fprintf(c.b, "  %s = alloca [64 x i64]\n", c.vstackSlot)
+	fmt.Fprintf(c.b, "  store [64 x i64] zeroinitializer, ptr %s\n", c.vstackSlot)
+	fmt.Fprintf(c.b, "  %s = alloca i64\n", c.vspSlot)
+	// Seed one synthetic return-address slot so an initial POPQ yields 0 and
+	// subsequent PUSHQ can round-trip through the virtual stack.
+	fmt.Fprintf(c.b, "  store i64 1, ptr %s\n", c.vspSlot)
+
 	for _, r := range c.fpResults {
 		name := fmt.Sprintf("%%fp_ret_%d", r.Index)
 		c.fpResAllocaIdx[r.Index] = name
@@ -295,6 +321,40 @@ func (c *amd64Ctx) emitEntryAllocas() error {
 		fmt.Fprintf(c.b, "  store i64 %s, ptr %s\n", v, slot)
 	}
 	return nil
+}
+
+func (c *amd64Ctx) pushI64(v string) {
+	sp := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s\n", sp, c.vspSlot)
+	full := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = icmp uge i64 %%%s, 64\n", full, sp)
+	idx := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = select i1 %%%s, i64 63, i64 %%%s\n", idx, full, sp)
+	ptr := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = getelementptr inbounds [64 x i64], ptr %s, i32 0, i64 %%%s\n", ptr, c.vstackSlot, idx)
+	fmt.Fprintf(c.b, "  store i64 %s, ptr %%%s\n", v, ptr)
+	inc := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = add i64 %%%s, 1\n", inc, sp)
+	next := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = select i1 %%%s, i64 64, i64 %%%s\n", next, full, inc)
+	fmt.Fprintf(c.b, "  store i64 %%%s, ptr %s\n", next, c.vspSlot)
+}
+
+func (c *amd64Ctx) popI64() string {
+	sp := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s\n", sp, c.vspSlot)
+	empty := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = icmp eq i64 %%%s, 0\n", empty, sp)
+	dec := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = sub i64 %%%s, 1\n", dec, sp)
+	idx := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = select i1 %%%s, i64 0, i64 %%%s\n", idx, empty, dec)
+	fmt.Fprintf(c.b, "  store i64 %%%s, ptr %s\n", idx, c.vspSlot)
+	ptr := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = getelementptr inbounds [64 x i64], ptr %s, i32 0, i64 %%%s\n", ptr, c.vstackSlot, idx)
+	val := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = load i64, ptr %%%s\n", val, ptr)
+	return "%" + val
 }
 
 func amd64ValueAsI64(c *amd64Ctx, ty LLVMType, v string) (out string, ok bool, err error) {
@@ -528,6 +588,18 @@ func (c *amd64Ctx) evalFPToI64(off int64) (string, error) {
 		return "%" + t, nil
 	case I64:
 		return arg, nil
+	case LLVMType("double"):
+		// MOVQ from a float64 FP slot copies raw bits, not numeric conversion.
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast double %s to i64\n", t, arg)
+		return "%" + t, nil
+	case LLVMType("float"):
+		// MOVL/MOVQ from float32 slots use raw IEEE-754 bits.
+		bits := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast float %s to i32\n", bits, arg)
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, bits)
+		return "%" + z, nil
 	default:
 		return "", fmt.Errorf("FP read unsupported type %q at +%d(FP)", ty, off)
 	}
@@ -545,6 +617,16 @@ func (c *amd64Ctx) storeFPResult(off int64, ty LLVMType, v string) error {
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t, v)
 			fmt.Fprintf(c.b, "  store i32 %%%s, ptr %s\n", t, alloca)
+			return nil
+		case ty == I64 && slotTy == LLVMType("double"):
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = bitcast i64 %s to double\n", t, v)
+			fmt.Fprintf(c.b, "  store double %%%s, ptr %s\n", t, alloca)
+			return nil
+		case ty == LLVMType("double") && slotTy == I64:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = bitcast double %s to i64\n", t, v)
+			fmt.Fprintf(c.b, "  store i64 %%%s, ptr %s\n", t, alloca)
 			return nil
 		case ty == I64 && slotTy == I64:
 			// ok

@@ -2,6 +2,10 @@ package plan9asm
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -211,9 +215,194 @@ func parseImm(s string) (int64, bool) {
 	// parsing as uint64 and converting to int64 (two's complement).
 	u, uerr := strconv.ParseUint(v, 0, 64)
 	if uerr != nil {
-		return 0, false
+		// Floating immediates (e.g. $1.0, $6.02e23) are used by some amd64
+		// scalar FP instructions. Keep parser surface small by storing raw
+		// float64 bit-patterns in Imm.
+		if f, ferr := strconv.ParseFloat(v, 64); ferr == nil {
+			return int64(math.Float64bits(f)), true
+		}
+		if f, ok := parseImmFloatExpr(v); ok {
+			return int64(math.Float64bits(f)), true
+		}
+		u, ok := parseImmExpr(v)
+		if !ok {
+			return 0, false
+		}
+		return int64(u), true
 	}
 	return int64(u), true
+}
+
+func parseImmExpr(v string) (uint64, bool) {
+	// Plan9 asm frequently uses C-style unary "~" for bitwise-not in immediates.
+	// Go expressions use "^", so normalize before parsing.
+	exprText := strings.ReplaceAll(strings.TrimSpace(v), "~", "^")
+	if exprText == "" {
+		return 0, false
+	}
+	expr, err := parser.ParseExpr(exprText)
+	if err != nil {
+		return 0, false
+	}
+	return evalImmExpr(expr)
+}
+
+func parseImmFloatExpr(v string) (float64, bool) {
+	exprText := strings.TrimSpace(v)
+	if exprText == "" {
+		return 0, false
+	}
+	expr, err := parser.ParseExpr(exprText)
+	if err != nil {
+		return 0, false
+	}
+	return evalFloatExpr(expr)
+}
+
+func evalFloatExpr(e ast.Expr) (float64, bool) {
+	switch x := e.(type) {
+	case *ast.ParenExpr:
+		return evalFloatExpr(x.X)
+	case *ast.BasicLit:
+		switch x.Kind {
+		case token.FLOAT:
+			f, err := strconv.ParseFloat(x.Value, 64)
+			if err != nil {
+				return 0, false
+			}
+			return f, true
+		case token.INT:
+			i, err := strconv.ParseInt(x.Value, 0, 64)
+			if err != nil {
+				return 0, false
+			}
+			return float64(i), true
+		default:
+			return 0, false
+		}
+	case *ast.UnaryExpr:
+		v, ok := evalFloatExpr(x.X)
+		if !ok {
+			return 0, false
+		}
+		switch x.Op {
+		case token.ADD:
+			return v, true
+		case token.SUB:
+			return -v, true
+		default:
+			return 0, false
+		}
+	case *ast.BinaryExpr:
+		lv, ok := evalFloatExpr(x.X)
+		if !ok {
+			return 0, false
+		}
+		rv, ok := evalFloatExpr(x.Y)
+		if !ok {
+			return 0, false
+		}
+		switch x.Op {
+		case token.ADD:
+			return lv + rv, true
+		case token.SUB:
+			return lv - rv, true
+		case token.MUL:
+			return lv * rv, true
+		case token.QUO:
+			if rv == 0 {
+				return 0, false
+			}
+			return lv / rv, true
+		default:
+			return 0, false
+		}
+	default:
+		return 0, false
+	}
+}
+
+func evalImmExpr(e ast.Expr) (uint64, bool) {
+	switch x := e.(type) {
+	case *ast.ParenExpr:
+		return evalImmExpr(x.X)
+	case *ast.BasicLit:
+		if x.Kind != token.INT {
+			return 0, false
+		}
+		if u, err := strconv.ParseUint(x.Value, 0, 64); err == nil {
+			return u, true
+		}
+		n, err := strconv.ParseInt(x.Value, 0, 64)
+		if err != nil {
+			return 0, false
+		}
+		return uint64(n), true
+	case *ast.UnaryExpr:
+		v, ok := evalImmExpr(x.X)
+		if !ok {
+			return 0, false
+		}
+		switch x.Op {
+		case token.ADD:
+			return v, true
+		case token.SUB:
+			return uint64(0) - v, true
+		case token.XOR:
+			return ^v, true
+		default:
+			return 0, false
+		}
+	case *ast.BinaryExpr:
+		lv, ok := evalImmExpr(x.X)
+		if !ok {
+			return 0, false
+		}
+		rv, ok := evalImmExpr(x.Y)
+		if !ok {
+			return 0, false
+		}
+		switch x.Op {
+		case token.ADD:
+			return lv + rv, true
+		case token.SUB:
+			return lv - rv, true
+		case token.MUL:
+			return lv * rv, true
+		case token.QUO:
+			if rv == 0 {
+				return 0, false
+			}
+			return lv / rv, true
+		case token.REM:
+			if rv == 0 {
+				return 0, false
+			}
+			return lv % rv, true
+		case token.SHL:
+			if rv >= 64 {
+				return 0, true
+			}
+			return lv << rv, true
+		case token.SHR:
+			if rv >= 64 {
+				return 0, true
+			}
+			return lv >> rv, true
+		case token.AND:
+			return lv & rv, true
+		case token.OR:
+			return lv | rv, true
+		case token.XOR:
+			return lv ^ rv, true
+		case token.AND_NOT:
+			return lv &^ rv, true
+		default:
+			return 0, false
+		}
+	default:
+		return 0, false
+	}
 }
 
 func parseFP(s string) (name string, off int64, ok bool) {

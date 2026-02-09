@@ -5,8 +5,33 @@ import (
 	"strings"
 )
 
-func (c *amd64Ctx) lowerBranch(bi int, op Op, ins Instr, emitBr amd64EmitBr, emitCondBr amd64EmitCondBr) (ok bool, terminated bool, err error) {
+func (c *amd64Ctx) lowerBranch(bi int, ii int, op Op, ins Instr, emitBr amd64EmitBr, emitCondBr amd64EmitCondBr) (ok bool, terminated bool, err error) {
 	switch op {
+	case "CALL":
+		// Indirect call via register (used by stdlib vdso/syscall stubs).
+		if len(ins.Args) != 1 || ins.Args[0].Kind != OpReg {
+			return true, false, fmt.Errorf("amd64 CALL expects reg target: %q", ins.Raw)
+		}
+		addr, err := c.loadReg(ins.Args[0].Reg)
+		if err != nil {
+			return true, false, err
+		}
+		fptr := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", fptr, addr)
+		di, _ := c.loadReg(DI)
+		si, _ := c.loadReg(SI)
+		dx, _ := c.loadReg(DX)
+		cx, _ := c.loadReg(CX)
+		r8, _ := c.loadReg(Reg("R8"))
+		r9, _ := c.loadReg(Reg("R9"))
+		ret := c.newTmp()
+		// Model as a generic C-ABI style call carrying register arguments.
+		fmt.Fprintf(c.b, "  %%%s = call i64 %%%s(i64 %s, i64 %s, i64 %s, i64 %s, i64 %s, i64 %s)\n", ret, fptr, di, si, dx, cx, r8, r9)
+		if err := c.storeReg(AX, "%"+ret); err != nil {
+			return true, false, err
+		}
+		return true, false, nil
+
 	case "JMP",
 		"JE", "JEQ", "JZ", "JNE", "JNZ",
 		"JL", "JLT", "JLE", "JGE",
@@ -65,8 +90,10 @@ func (c *amd64Ctx) lowerBranch(bi int, op Op, ins Instr, emitBr amd64EmitBr, emi
 	}
 	fall := c.blocks[bi+1].name
 	if pcRel {
-		tbi := bi + int(pcOff)
-		if tbi < 0 || tbi >= len(c.blocks) {
+		cur := c.blockBase[bi] + ii
+		tgt := cur + int(pcOff)
+		tbi, ok := c.blockByIdx[tgt]
+		if !ok || tbi < 0 || tbi >= len(c.blocks) {
 			return true, false, fmt.Errorf("amd64 %s invalid PC-relative target %d(PC): %q", op, pcOff, ins.Raw)
 		}
 		target = c.blocks[tbi].name
