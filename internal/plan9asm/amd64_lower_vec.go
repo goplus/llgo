@@ -62,24 +62,79 @@ func (c *amd64Ctx) lowerVec(op Op, ins Instr) (ok bool, terminated bool, err err
 		return true, false, nil
 	}
 
-	// MOVQ sym+off(SB), Xn (load low 64 bits into Xn)
+	// MOVQ src, Xn (load low 64 bits into Xn)
 	if op == "MOVQ" && len(ins.Args) == 2 && ins.Args[1].Kind == OpReg {
 		if _, ok := amd64ParseXReg(ins.Args[1].Reg); ok {
-			if ins.Args[0].Kind != OpSym {
-				return true, false, fmt.Errorf("amd64 MOVQ to X reg expects (SB) sym src: %q", ins.Raw)
+			var low string
+			switch ins.Args[0].Kind {
+			case OpImm:
+				low = fmt.Sprintf("%d", ins.Args[0].Imm)
+			case OpReg:
+				v, err := c.loadReg(ins.Args[0].Reg)
+				if err != nil {
+					return true, false, err
+				}
+				low = v
+			case OpFP:
+				v, err := c.evalFPToI64(ins.Args[0].FPOffset)
+				if err != nil {
+					return true, false, err
+				}
+				low = v
+			case OpMem:
+				addr, err := c.addrFromMem(ins.Args[0].Mem)
+				if err != nil {
+					return true, false, err
+				}
+				p := c.ptrFromAddrI64(addr)
+				ld := c.newTmp()
+				fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s, align 1\n", ld, p)
+				low = "%" + ld
+			case OpSym:
+				p, err := c.ptrFromSB(ins.Args[0].Sym)
+				if err != nil {
+					return true, false, err
+				}
+				ld := c.newTmp()
+				fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s, align 1\n", ld, p)
+				low = "%" + ld
+			default:
+				return true, false, fmt.Errorf("amd64 MOVQ to X reg unsupported src: %q", ins.Raw)
 			}
-			p, err := c.ptrFromSB(ins.Args[0].Sym)
-			if err != nil {
-				return true, false, err
-			}
-			ld := c.newTmp()
-			fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s, align 1\n", ld, p)
 			// Build <2 x i64> { low, 0 }.
 			ins0 := c.newTmp()
-			fmt.Fprintf(c.b, "  %%%s = insertelement <2 x i64> zeroinitializer, i64 %%%s, i32 0\n", ins0, ld)
+			fmt.Fprintf(c.b, "  %%%s = insertelement <2 x i64> zeroinitializer, i64 %s, i32 0\n", ins0, low)
 			bc := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = bitcast <2 x i64> %%%s to <16 x i8>\n", bc, ins0)
 			return true, false, c.storeX(ins.Args[1].Reg, "%"+bc)
+		}
+	}
+
+	// MOVQ Xn, dst (extract low 64 bits from Xn).
+	if op == "MOVQ" && len(ins.Args) == 2 && ins.Args[0].Kind == OpReg {
+		if _, ok := amd64ParseXReg(ins.Args[0].Reg); ok {
+			xv, err := c.loadX(ins.Args[0].Reg)
+			if err != nil {
+				return true, false, err
+			}
+			bc := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = bitcast <16 x i8> %s to <2 x i64>\n", bc, xv)
+			lo := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = extractelement <2 x i64> %%%s, i32 0\n", lo, bc)
+			switch ins.Args[1].Kind {
+			case OpReg:
+				return true, false, c.storeReg(ins.Args[1].Reg, "%"+lo)
+			case OpMem:
+				addr, err := c.addrFromMem(ins.Args[1].Mem)
+				if err != nil {
+					return true, false, err
+				}
+				p := c.ptrFromAddrI64(addr)
+				fmt.Fprintf(c.b, "  store i64 %%%s, ptr %s, align 1\n", lo, p)
+				return true, false, nil
+			default:
+				return true, false, fmt.Errorf("amd64 MOVQ from X reg unsupported dst: %q", ins.Raw)
+			}
 		}
 	}
 

@@ -7,16 +7,17 @@ import (
 	"strings"
 )
 
+type ppMacro struct {
+	body string
+}
+
 // preprocess applies a very small preprocessor needed for some stdlib asm:
 //   - strips // comments
 //   - ignores #include
 //   - supports #define NAME <body> with optional single-line continuation via '\'
 //   - expands macros only when a statement is exactly NAME
 func preprocess(src string) (string, error) {
-	type macro struct {
-		body string
-	}
-	macros := map[string]macro{}
+	macros := map[string]ppMacro{}
 
 	type ifState struct {
 		outerActive bool
@@ -50,7 +51,7 @@ func preprocess(src string) (string, error) {
 		if name == "" {
 			return fmt.Errorf("invalid #define with empty name")
 		}
-		macros[name] = macro{body: body}
+		macros[name] = ppMacro{body: body}
 		defName = ""
 		defBody.Reset()
 		defCont = false
@@ -246,8 +247,81 @@ func preprocess(src string) (string, error) {
 			}
 			line = strings.ReplaceAll(line, "$"+name, "$"+body)
 		}
+		// Expand identifiers inside immediate expressions:
+		//   $(Big - 1) -> $(0x433... - 1)
+		line = expandImmExprMacros(line, macros)
 		out.WriteString(line)
 		out.WriteString("\n")
 	}
 	return out.String(), nil
+}
+
+func expandImmExprMacros(line string, macros map[string]ppMacro) string {
+	var out strings.Builder
+	cur := 0
+	for cur < len(line) {
+		rel := strings.Index(line[cur:], "$(")
+		if rel < 0 {
+			out.WriteString(line[cur:])
+			break
+		}
+		i := cur + rel
+		out.WriteString(line[cur:i])
+
+		j := i + 2
+		depth := 1
+		for ; j < len(line); j++ {
+			switch line[j] {
+			case '(':
+				depth++
+			case ')':
+				depth--
+				if depth == 0 {
+					expr := line[i+2 : j]
+					out.WriteString("$(")
+					out.WriteString(replaceMacroIdents(expr, macros))
+					out.WriteByte(')')
+					cur = j + 1
+					goto next
+				}
+			}
+		}
+		// Unmatched ')': copy the rest unchanged.
+		out.WriteString(line[i:])
+		break
+	next:
+	}
+	return out.String()
+}
+
+func replaceMacroIdents(expr string, macros map[string]ppMacro) string {
+	var out strings.Builder
+	for i := 0; i < len(expr); {
+		ch := expr[i]
+		if isIdentStart(ch) {
+			j := i + 1
+			for j < len(expr) && isIdentPart(expr[j]) {
+				j++
+			}
+			name := expr[i:j]
+			if m, ok := macros[name]; ok && strings.TrimSpace(m.body) != "" {
+				out.WriteString(strings.TrimSpace(m.body))
+			} else {
+				out.WriteString(name)
+			}
+			i = j
+			continue
+		}
+		out.WriteByte(ch)
+		i++
+	}
+	return out.String()
+}
+
+func isIdentStart(ch byte) bool {
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+func isIdentPart(ch byte) bool {
+	return isIdentStart(ch) || (ch >= '0' && ch <= '9')
 }

@@ -50,8 +50,8 @@ func (c *amd64Ctx) lowerBlocks() error {
 		}
 
 		terminated := false
-		for _, ins := range blk.instrs {
-			term, err := c.lowerInstr(bi, ins, emitBr, emitCondBr)
+		for ii, ins := range blk.instrs {
+			term, err := c.lowerInstr(bi, ii, ins, emitBr, emitCondBr)
 			if err != nil {
 				return err
 			}
@@ -73,7 +73,7 @@ func (c *amd64Ctx) lowerBlocks() error {
 	return nil
 }
 
-func (c *amd64Ctx) lowerInstr(bi int, ins Instr, emitBr amd64EmitBr, emitCondBr amd64EmitCondBr) (terminated bool, err error) {
+func (c *amd64Ctx) lowerInstr(bi int, ii int, ins Instr, emitBr amd64EmitBr, emitCondBr amd64EmitCondBr) (terminated bool, err error) {
 	op := strings.ToUpper(string(ins.Op))
 	switch Op(op) {
 	case OpTEXT, OpBYTE:
@@ -85,10 +85,13 @@ func (c *amd64Ctx) lowerInstr(bi int, ins Instr, emitBr amd64EmitBr, emitCondBr 
 		return false, nil
 	}
 
-	if ok, term, err := c.lowerBranch(bi, Op(op), ins, emitBr, emitCondBr); ok {
+	if ok, term, err := c.lowerBranch(bi, ii, Op(op), ins, emitBr, emitCondBr); ok {
 		return term, err
 	}
 	if ok, term, err := c.lowerCmpBt(Op(op), ins); ok {
+		return term, err
+	}
+	if ok, term, err := c.lowerFP(Op(op), ins); ok {
 		return term, err
 	}
 	if ok, term, err := c.lowerCrc32(Op(op), ins); ok {
