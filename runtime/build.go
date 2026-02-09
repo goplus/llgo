@@ -15,12 +15,11 @@ func HasAltPkg(path string) (b bool) {
 type none struct{}
 
 var hasAltPkg = map[string]none{
-	"internal/abi":             {},
-	"internal/reflectlite":     {},
-	"internal/runtime/maps":    {},
-	"reflect":                  {},
-	"runtime":                  {},
-	"runtime/internal/syscall": {},
-	"sync":                     {},
-	"syscall/js":               {},
+	"internal/abi":          {},
+	"internal/reflectlite":  {},
+	"internal/runtime/maps": {},
+	"reflect":               {},
+	"runtime":               {},
+	"unique":                {},
+	"syscall/js":            {},
 }
