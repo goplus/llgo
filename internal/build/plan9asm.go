@@ -374,6 +374,10 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
 			ctx.plan9asmPkgs["internal/runtime/atomic"] = true
 		}
+		// internal/runtime/syscall is translated in ABI mode 0/1 on arm64/amd64.
+		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
+			ctx.plan9asmPkgs["internal/runtime/syscall"] = true
+		}
 		// sync/atomic wrappers are simple TEXT/JMP stubs to internal/runtime/atomic.
 		// Keep ABI mode 2 on alt to avoid aggregate ABI mismatches.
 		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {

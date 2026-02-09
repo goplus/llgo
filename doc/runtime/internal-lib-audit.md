@@ -359,10 +359,8 @@ LLGO patch:
 - `runtime/internal/lib/internal/runtime/syscall/syscall_linux_llgo.go` (linux)
   implements `Syscall6` using libc `syscall` and `clite/os.Errno()`.
 - This avoids all upstream `asm_linux_*.s` syscall stubs.
-- For ABI mode 0/1 on `arm64`/`amd64`, we now provide
-  `internal/runtime/syscall.Syscall6` via runtime `//go:linkname` shim
-  (`runtime/internal/lib/runtime/syscall_internal_runtime_llgo.go`), and disable
-  patching for `internal/runtime/syscall` in those modes.
+- ABI mode 0/1 on `arm64`/`amd64`: patching is disabled and upstream
+  `internal/runtime/syscall` asm is translated.
 
 Upstream:
 
@@ -370,12 +368,15 @@ Upstream:
 
 Removal analysis:
 
-- ABI mode 0/1 (`arm64`/`amd64`): removed from alt patching path via runtime
-  shim (still libc-backed, not upstream asm).
+- ABI mode 0/1 (`arm64`/`amd64`): removed from alt patching path via upstream
+  asm translation.
+- Translation status:
+  - `amd64`: `SYSCALL` + `JLS` path is lowered.
+  - `arm64`: `SVC` + `CMN` + `BCC` path is lowered.
+  - Raw syscall instructions are modeled through libc `syscall` + `cliteErrno`
+    normalization in the translator, then existing asm post-processing computes
+    `(r1, r2, errno)` layout.
 - ABI mode 2 and other arches: still patched.
-- Fully removing patching everywhere would still require either complete Plan 9
-  syscall-stub lowering (including raw syscall instructions) or a broader
-  cross-arch runtime shim strategy.
 
 Plan9 asm candidate:
 

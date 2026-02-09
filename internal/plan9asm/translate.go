@@ -98,6 +98,8 @@ func Translate(file *File, opt Options) (string, error) {
 	// Intrinsics used by the prototype lowering. Declare them up-front so clang/llc
 	// can type-check the module without relying on implicit declarations.
 	if file.Arch == ArchARM64 {
+		b.WriteString("declare i64 @syscall(i64, i64, i64, i64, i64, i64, i64)\n")
+		b.WriteString("declare i32 @cliteErrno()\n")
 		b.WriteString("declare i64 @llvm.bitreverse.i64(i64)\n")
 		b.WriteString("declare i64 @llvm.ctlz.i64(i64, i1)\n")
 		b.WriteString("declare i64 @llvm.bswap.i64(i64)\n")
@@ -117,6 +119,8 @@ func Translate(file *File, opt Options) (string, error) {
 		b.WriteString("attributes #0 = { \"target-features\"=\"+crc\" }\n\n")
 	}
 	if file.Arch == ArchAMD64 && opt.Goarch == "amd64" {
+		b.WriteString("declare i64 @syscall(i64, i64, i64, i64, i64, i64, i64)\n")
+		b.WriteString("declare i32 @cliteErrno()\n")
 		// Generic LLVM intrinsics used by amd64 lowering.
 		b.WriteString("declare i64 @llvm.cttz.i64(i64, i1)\n")
 		b.WriteString("declare i32 @llvm.cttz.i32(i32, i1)\n")
