@@ -647,7 +647,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %20 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %15, i64 %13
   %21 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %20, align 8
   %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %21, 0
-  %23 = icmp eq ptr %22, @_llgo_int
+  %23 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int, ptr %22)
   br i1 %23, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -1078,6 +1078,8 @@ _llgo_0:
 }
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.CallSlice(%reflect.Value, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr, ptr)
 
 declare void @reflect.init()
 

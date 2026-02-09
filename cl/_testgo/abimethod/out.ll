@@ -768,7 +768,7 @@ _llgo_0:
   %21 = call ptr %20(ptr %19)
   %22 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %21, align 8
   %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 0
-  %24 = icmp eq ptr %23, @_llgo_int
+  %24 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int, ptr %23)
   br i1 %24, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -1754,5 +1754,7 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr, ptr)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
