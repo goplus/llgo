@@ -1183,9 +1183,10 @@ func graphSummary(g *irgraph.Graph) (nodes, edges, call, ref, reloc int) {
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
+	printCmds := ctx.shouldPrintCommands(verbose)
 	// Handle c-archive mode differently - use ar tool instead of linker
 	if ctx.buildConf.BuildMode == BuildModeCArchive {
-		return ctx.createArchiveFile(app, objFiles, verbose)
+		return ctx.createArchiveFile(app, objFiles, printCmds)
 	}
 
 	buildArgs := []string{"-o", app}
@@ -1204,32 +1205,30 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	var compiledObjFiles []string
-	for _, objFile := range objFiles {
-		switch {
-		case strings.HasSuffix(objFile, ".ll"):
-			oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
-			args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-			if verbose {
-				fmt.Fprintln(os.Stderr, "clang", args)
+	if ctx.buildConf.GenLL {
+		var compiledObjFiles []string
+		for _, objFile := range objFiles {
+			if strings.HasSuffix(objFile, ".ll") {
+				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
+				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+				if printCmds {
+					fmt.Fprintln(os.Stderr, "clang", args)
+				}
+				if err := ctx.compiler().Compile(args...); err != nil {
+					return fmt.Errorf("failed to compile %s: %v", objFile, err)
+				}
+				compiledObjFiles = append(compiledObjFiles, oFile)
+			} else {
+				compiledObjFiles = append(compiledObjFiles, objFile)
 			}
-			if err := ctx.compiler().Compile(args...); err != nil {
-				return fmt.Errorf("failed to compile %s: %v", objFile, err)
-			}
-			compiledObjFiles = append(compiledObjFiles, oFile)
-		default:
-			compiledObjFiles = append(compiledObjFiles, objFile)
 		}
+		objFiles = compiledObjFiles
 	}
-	objFiles = compiledObjFiles
 
 	buildArgs = append(buildArgs, objFiles...)
 
 	cmd := ctx.linker()
-	cmd.Verbose = verbose
-	if verbose {
-		fmt.Fprintf(os.Stderr, "Linking final binary: %s\n", strings.Join(buildArgs, " "))
-	}
+	cmd.Verbose = printCmds
 	return cmd.Link(buildArgs...)
 }
 
