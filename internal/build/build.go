@@ -38,7 +38,6 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
-	gllvm "github.com/goplus/llvm"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
@@ -54,7 +53,7 @@ import (
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
-	gollvm "github.com/goplus/llvm"
+	gllvm "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -1180,6 +1179,38 @@ func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []
 	if len(skip) == 0 {
 		return nil
 	}
+	// syscall has mixed Go + asm on darwin. Cross-package callers must ABI-rewrite
+	// Go entry points; only the package's own build should keep skip entries for
+	// its asm trampolines.
+	if pkgPath != "syscall" {
+		for name := range skip {
+			if strings.HasPrefix(name, "syscall.") {
+				delete(skip, name)
+			}
+		}
+	}
+	// syscall on darwin declares syscall/rawSyscall entry points in Go, but
+	// their implementations are provided by runtime via //go:linkname rather
+	// than package-local Plan9 asm.
+	delete(skip, "syscall.syscall")
+	delete(skip, "syscall.syscall6")
+	delete(skip, "syscall.syscall6X")
+	delete(skip, "syscall.syscallPtr")
+	delete(skip, "syscall.rawSyscall")
+	delete(skip, "syscall.rawSyscall6")
+	// internal/syscall/unix has mixed Go + asm on darwin. Cross-package callers
+	// must ABI-rewrite Go entry points like Fcntl; only the package's own build
+	// should keep skip entries for its asm trampolines.
+	if pkgPath != "internal/syscall/unix" {
+		for name := range skip {
+			if strings.HasPrefix(name, "internal/syscall/unix.") {
+				delete(skip, name)
+			}
+		}
+	}
+	if len(skip) == 0 {
+		return nil
+	}
 	names := make([]string, 0, len(skip))
 	for name := range skip {
 		names = append(names, name)
@@ -1230,7 +1261,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		mod := ret.Module()
 		mod.SetDataLayout(ctx.prog.DataLayout())
 		mod.SetTarget(ctx.prog.Target().Spec().Triple)
-		pbo := gollvm.NewPassBuilderOptions()
+		pbo := gllvm.NewPassBuilderOptions()
 		defer pbo.Dispose()
 		if err := mod.RunPasses("memcpyopt", ctx.prog.TargetMachine(), pbo); err != nil {
 			return fmt.Errorf("run LLVM passes failed for %v: %v", pkgPath, err)
@@ -1249,7 +1280,13 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	} else {
 		aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
 	}
+	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.Package.Syntax, printCmds); err != nil {
+		return err
+	} else {
+		aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
+	}
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
+	aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.Package.Syntax)...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
 		if e != nil {
@@ -1262,7 +1299,13 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		} else {
 			aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
 		}
+		if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.AltPkg.Syntax, printCmds); err != nil {
+			return err
+		} else {
+			aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
+		}
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
+		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
 	}
 	if pkg.ExportFile != "" {
 		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
@@ -1355,49 +1398,7 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	// When we enable Plan9 asm translation for a package, we must avoid also
 	// pulling in its alt package (which typically provides pure-Go fallbacks for
 	// the same symbols), otherwise we get duplicate symbol definitions at link.
-	//
-	// hash/crc32 is enabled by default on amd64/arm64 unless explicitly disabled.
-	if conf != nil && pkgPath == "hash/crc32" && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// internal/bytealg is enabled by default on amd64/arm64 unless explicitly
-	// disabled.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/bytealg" && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// internal/runtime/atomic is enabled by default on arm64/amd64 unless
-	// explicitly disabled.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/atomic" && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// sync/atomic is enabled by default on arm64/amd64 and
-	// lowered via asm.s -> internal/runtime/atomic TEXT stubs.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync/atomic" && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// sync can use upstream implementation on arm64/amd64.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync" {
-		return false
-	}
-	// internal/runtime/syscall is enabled by default on arm64/amd64 unless
-	// explicitly disabled.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/syscall" && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// internal/runtime/maps can use upstream implementation on arm64/amd64.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/maps" {
-		return false
-	}
-	// weak can use upstream implementation on arm64/amd64.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "weak" {
-		return false
-	}
-	// unique can use upstream implementation on arm64/amd64.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "unique" {
-		return false
-	}
-	// internal/weak can use upstream implementation on arm64/amd64.
-	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/weak" {
+	if plan9asmEnabledByDefault(conf, pkgPath) && !plan9asmDisabledByEnv() {
 		return false
 	}
 	// If a package is explicitly opted in via LLGO_PLAN9ASM_PKGS, prefer Plan9 asm
@@ -1438,6 +1439,21 @@ func plan9asmEnabledByEnv(pkgPath string) bool {
 		}
 	}
 	return false
+}
+
+func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
+	if conf == nil {
+		return false
+	}
+	if conf.Goarch != "arm64" && conf.Goarch != "amd64" {
+		return false
+	}
+	switch pkgPath {
+	case "hash/crc32", "internal/bytealg", "internal/runtime/atomic", "internal/runtime/syscall", "sync/atomic":
+		return true
+	default:
+		return false
+	}
 }
 
 func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, conf *Config, verbose bool) {

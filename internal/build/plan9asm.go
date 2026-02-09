@@ -17,6 +17,7 @@ import (
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/plan9asm"
 	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
+	llruntime "github.com/goplus/llgo/runtime"
 )
 
 type Plan9AsmFunctionInfo struct {
@@ -42,15 +43,29 @@ type Plan9AsmFileTranslation struct {
 // NOTE: golang.org/x/tools/go/packages.Package does not expose SFiles, so we
 // query `go list -json` here to get the exact filtered set for GOOS/GOARCH.
 func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbose bool) ([]string, error) {
-	if !ctx.plan9asmEnabled(pkg.PkgPath) {
-		return nil, nil
-	}
-
 	sfiles, err := pkgSFiles(ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
 	if len(sfiles) == 0 {
+		return nil, nil
+	}
+	if !ctx.plan9asmEnabled(pkg.PkgPath) {
+		// Strong policy: selected Plan9 asm must be handled either by
+		// translation or by an explicit runtime alt patch.
+		if !llruntime.HasAltPkg(pkg.PkgPath) {
+			// Some stdlib .s files are placeholders without any TEXT bodies
+			// (e.g. runtime/debug/debug.s). They carry no executable asm and
+			// are safe to ignore.
+			hasText, err := hasAnyTextAsm(ctx, sfiles)
+			if err != nil {
+				return nil, fmt.Errorf("%s: inspect asm files: %w", pkg.PkgPath, err)
+			}
+			if !hasText {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("%s: selected .s files require plan9asm translation; add support or whitelist via runtime/build.go hasAltPkg", pkg.PkgPath)
+		}
 		return nil, nil
 	}
 	if pkg.Types == nil || pkg.Types.Scope() == nil {
@@ -375,10 +390,27 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		// internal/runtime/syscall is translated on arm64/amd64.
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/runtime/syscall"] = true
+			ctx.plan9asmPkgs["internal/syscall/unix"] = true
+			ctx.plan9asmPkgs["crypto/x509/internal/macos"] = true
+		}
+		// internal/runtime/sys has arm64 asm (dit_arm64.s) and empty stubs on
+		// other arch variants selected by go list.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
+			ctx.plan9asmPkgs["internal/runtime/sys"] = true
+		}
+		// math has arm64 asm for exp/floor/modf/dim and no alt package.
+		if ctx.buildConf.Goarch == "arm64" {
+			ctx.plan9asmPkgs["math"] = true
+			ctx.plan9asmPkgs["syscall"] = true
 		}
 		// sync/atomic wrappers are simple TEXT/JMP stubs to internal/runtime/atomic.
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["sync/atomic"] = true
+		}
+		// internal/chacha8rand has large arch asm files; use the generic stub
+		// path (selected in pkgSFiles) on amd64/arm64 for correctness first.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
+			ctx.plan9asmPkgs["internal/chacha8rand"] = true
 		}
 		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
 		// Explicitly disable all asm translation, including defaults.
@@ -451,7 +483,7 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 		declName := sym
 		if v, ok := symToDecl[sym]; ok {
 			declName = v
-		} else if strings.HasPrefix(declName, "·") {
+		} else {
 			declName = strings.TrimPrefix(declName, "·")
 		}
 		// Plan9 middle dot in TEXT name is not a valid Go identifier. For local
@@ -820,6 +852,10 @@ func llvmTypeForGo(t types.Type, goarch string) (plan9asm.LLVMType, error) {
 				return plan9asm.I64, nil
 			}
 			return plan9asm.LLVMType("i32"), nil
+		case types.Float32:
+			return plan9asm.LLVMType("float"), nil
+		case types.Float64:
+			return plan9asm.LLVMType("double"), nil
 		case types.String:
 			// Strings are lowered as (ptr, word) to match stdlib asm conventions.
 			// The actual string header is (ptr, len).
@@ -838,6 +874,8 @@ func llvmTypeForGo(t types.Type, goarch string) (plan9asm.LLVMType, error) {
 			return plan9asm.LLVMType("{ ptr, i64, i64 }"), nil
 		}
 		return plan9asm.LLVMType("{ ptr, i32, i32 }"), nil
+	case *types.Named:
+		return llvmTypeForGo(tt.Underlying(), goarch)
 	default:
 		return "", fmt.Errorf("unsupported type %s", t.String())
 	}
@@ -879,8 +917,8 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	}
 
 	args := []string{"list", "-json"}
-	if ctx.buildConf.Tags != "" {
-		args = append(args, "-tags", ctx.buildConf.Tags)
+	if ctx.conf != nil && len(ctx.conf.BuildFlags) > 0 {
+		args = append(args, ctx.conf.BuildFlags...)
 	}
 	args = append(args, pkg.PkgPath)
 
@@ -907,6 +945,18 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		return nil, fmt.Errorf("go list -json %s: parse: %w", pkg.PkgPath, err)
 	}
 
+	// internal/chacha8rand has highly optimized arch asm on amd64/arm64.
+	// Until full vector lowering lands, force the generic stub entry, which
+	// tail-jumps to block_generic and preserves package behavior.
+	if pkg.PkgPath == "internal/chacha8rand" && lp.Dir != "" {
+		stub := filepath.Join(lp.Dir, "chacha8_stub.s")
+		if _, err := os.Stat(stub); err == nil {
+			paths := []string{stub}
+			ctx.sfilesCache[pkg.ID] = paths
+			return paths, nil
+		}
+	}
+
 	paths := make([]string, 0, len(lp.SFiles))
 	for _, f := range lp.SFiles {
 		if lp.Dir == "" {
@@ -928,6 +978,7 @@ func readFileWithOverlay(overlay map[string][]byte, path string) ([]byte, error)
 }
 
 var abiSuffixRe = regexp.MustCompile(`<ABI[^>]*>$`)
+var reTextDirective = regexp.MustCompile(`(?m)^\s*TEXT\b`)
 
 func stripABISuffix(sym string) string {
 	// Examples:
@@ -935,6 +986,19 @@ func stripABISuffix(sym string) string {
 	//   runtime·cmpstring<ABIInternal> -> runtime·cmpstring
 	// Keep local helper suffix "<>" intact (it does not match this regexp).
 	return abiSuffixRe.ReplaceAllString(sym, "")
+}
+
+func hasAnyTextAsm(ctx *context, files []string) (bool, error) {
+	for _, f := range files {
+		src, err := readFileWithOverlay(ctx.conf.Overlay, f)
+		if err != nil {
+			return false, err
+		}
+		if reTextDirective.Match(src) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // llvmArgsAndFrameSlotsForTuple lowers a Go parameter/result tuple into LLVM
