@@ -38,6 +38,7 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
+	gllvm "github.com/goplus/llvm"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
@@ -1136,6 +1137,57 @@ func is32Bits(goarch string) bool {
 	return goarch == "386" || goarch == "arm" || goarch == "mips" || goarch == "wasm"
 }
 
+func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []string {
+	if ctx == nil || mod.IsNil() || ctx.buildConf == nil {
+		return nil
+	}
+	if ctx.buildConf.AbiMode != cabi.ModeAllFunc {
+		return nil
+	}
+	// Initialize plan9asm package config (defaults + env overrides).
+	_ = ctx.plan9asmEnabled(pkgPath)
+	if len(ctx.plan9asmPkgs) == 0 {
+		return nil
+	}
+	// In "all packages" mode we don't have a stable package set to match against.
+	// Keep behavior conservative and only rely on explicit package lists.
+	if ctx.plan9asmAll {
+		return nil
+	}
+	prefixes := make([]string, 0, len(ctx.plan9asmPkgs))
+	for p := range ctx.plan9asmPkgs {
+		if p == "" {
+			continue
+		}
+		prefixes = append(prefixes, p+".")
+	}
+	if len(prefixes) == 0 {
+		return nil
+	}
+	skip := make(map[string]struct{})
+	fn := mod.FirstFunction()
+	for !fn.IsNil() {
+		if fn.IsDeclaration() {
+			name := fn.Name()
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(name, prefix) {
+					skip[name] = struct{}{}
+					break
+				}
+			}
+		}
+		fn = gllvm.NextFunction(fn)
+	}
+	if len(skip) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(skip))
+	for name := range skip {
+		names = append(names, name)
+	}
+	return names
+}
+
 func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	pkg := aPkg.Package
 	pkgPath := pkg.PkgPath
@@ -1175,7 +1227,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		return nil
 	}
 
+	ctx.cTransformer.SetSkipFuncs(cabiSkipFuncsForPlan9Asm(ctx, pkgPath, ret.Module()))
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+	ctx.cTransformer.SetSkipFuncs(nil)
 
 	// Run LLVM optimization passes (memcpyopt converts load/store to memcpy)
 	if ctx.passOpt {
@@ -1308,24 +1362,23 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	// pulling in its alt package (which typically provides pure-Go fallbacks for
 	// the same symbols), otherwise we get duplicate symbol definitions at link.
 	//
-	// hash/crc32 is enabled by default on amd64/arm64 in ABI mode 0/1 unless
+	// hash/crc32 is enabled by default on amd64/arm64 unless explicitly disabled.
+	if conf != nil && pkgPath == "hash/crc32" && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && !plan9asmDisabledByEnv() {
+		return false
+	}
+	// internal/bytealg is enabled by default on amd64/arm64 unless explicitly
+	// disabled.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/bytealg" && !plan9asmDisabledByEnv() {
+		return false
+	}
+	// internal/runtime/atomic is enabled by default on arm64/amd64 unless
 	// explicitly disabled.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && pkgPath == "hash/crc32" && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && !plan9asmDisabledByEnv() {
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/atomic" && !plan9asmDisabledByEnv() {
 		return false
 	}
-	// internal/bytealg is enabled by default on amd64/arm64 in ABI mode 0/1 unless
-	// explicitly disabled.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/bytealg" && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// internal/runtime/atomic is enabled by default on arm64/amd64 in ABI mode
-	// 0/1 unless explicitly disabled.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/atomic" && !plan9asmDisabledByEnv() {
-		return false
-	}
-	// sync/atomic is enabled by default on arm64/amd64 in ABI mode 0/1 and
+	// sync/atomic is enabled by default on arm64/amd64 and
 	// lowered via asm.s -> internal/runtime/atomic TEXT stubs.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync/atomic" && !plan9asmDisabledByEnv() {
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync/atomic" && !plan9asmDisabledByEnv() {
 		return false
 	}
 	// sync can use upstream implementation on arm64/amd64 in ABI mode 0/1
@@ -1333,9 +1386,9 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync" {
 		return false
 	}
-	// internal/runtime/syscall is enabled by default on arm64/amd64 in ABI mode
-	// 0/1 unless explicitly disabled.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/syscall" && !plan9asmDisabledByEnv() {
+	// internal/runtime/syscall is enabled by default on arm64/amd64 unless
+	// explicitly disabled.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/syscall" && !plan9asmDisabledByEnv() {
 		return false
 	}
 	// internal/runtime/maps can use upstream implementation on arm64/amd64 in
