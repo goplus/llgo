@@ -58,7 +58,11 @@ func (b Builder) markUseIface(t Type) {
 		return
 	}
 	targetName, _ := b.Pkg.abi.TypeName(t.raw.Type)
-	b.Pkg.addReloc(relocgraph.EdgeRelocUseIface, b.Func.impl, llvm.Value{}, 0, "", targetName, "", llvm.Value{})
+	b.Pkg.relocBuilder.AddEdge(RelocRecord{
+		Kind:   relocgraph.EdgeRelocUseIface,
+		Owner:  relocSymID(b.Func.impl, ""),
+		Target: relocSymID(llvm.Value{}, targetName),
+	})
 }
 
 func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
@@ -81,7 +85,14 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 		ftyp := funcType(b.Prog, m.Type())
 		fnTypeName, _ = b.Pkg.abi.TypeName(ftyp)
 	}
-	b.Pkg.addReloc(relocgraph.EdgeRelocUseIfaceMethod, b.Func.impl, llvm.Value{}, int64(idx), infoName, targetName, fnTypeName, llvm.Value{})
+	b.Pkg.relocBuilder.AddEdge(RelocRecord{
+		Kind:   relocgraph.EdgeRelocUseIfaceMethod,
+		Owner:  relocSymID(b.Func.impl, ""),
+		Target: relocSymID(llvm.Value{}, targetName),
+		Addend: int64(idx),
+		Name:   infoName,
+		FnType: relocSymID(llvm.Value{}, fnTypeName),
+	})
 }
 
 // MarkUseNamedMethod records a named method usage for reachability analysis.
@@ -90,7 +101,12 @@ func (b Builder) MarkUseNamedMethod(name string) {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocgraph.EdgeRelocUseNamedMethod, b.Func.impl, llvm.Value{}, 0, name, name, "", llvm.Value{})
+	b.Pkg.relocBuilder.AddEdge(RelocRecord{
+		Kind:   relocgraph.EdgeRelocUseNamedMethod,
+		Owner:  relocSymID(b.Func.impl, ""),
+		Target: relocSymID(llvm.Value{}, name),
+		Name:   name,
+	})
 }
 
 // MarkReflectMethod records a reflect-driven method lookup.
@@ -99,7 +115,11 @@ func (b Builder) MarkReflectMethod() {
 	if !b.canEmitReloc() {
 		return
 	}
-	b.Pkg.addReloc(relocgraph.EdgeRelocReflectMethod, b.Func.impl, b.Func.impl, 0, "", "", "", llvm.Value{})
+	b.Pkg.relocBuilder.AddEdge(RelocRecord{
+		Kind:   relocgraph.EdgeRelocReflectMethod,
+		Owner:  relocSymID(b.Func.impl, ""),
+		Target: relocSymID(b.Func.impl, ""),
+	})
 }
 
 func (b Builder) canEmitReloc() bool {

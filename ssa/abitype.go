@@ -131,7 +131,11 @@ func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
 		return
 	}
 	childName, _ := b.Pkg.abi.TypeName(child)
-	b.Pkg.addReloc(relocgraph.EdgeRelocTypeRef, owner, llvm.Value{}, 0, "", childName, "", llvm.Value{})
+	b.Pkg.relocBuilder.AddEdge(RelocRecord{
+		Kind:   relocgraph.EdgeRelocTypeRef,
+		Owner:  relocSymID(owner, ""),
+		Target: relocSymID(llvm.Value{}, childName),
+	})
 }
 
 func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
@@ -511,9 +515,25 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 			if !token.IsExported(mName) && mPkg != nil {
 				infoName = abi.FullName(mPkg, mName)
 			}
-			pkg.addReloc(relocgraph.EdgeRelocMethodOff, owner, mtypVal, int64(i), infoName, "", "", llvm.Value{})
-			pkg.addReloc(relocgraph.EdgeRelocMethodOff, owner, ifn, int64(i), "", "", "", llvm.Value{})
-			pkg.addReloc(relocgraph.EdgeRelocMethodOff, owner, tfn, int64(i), "", "", "", llvm.Value{})
+			pkg.relocBuilder.AddEdge(RelocRecord{
+				Kind:   relocgraph.EdgeRelocMethodOff,
+				Owner:  relocSymID(owner, ""),
+				Target: relocSymID(mtypVal, ""),
+				Addend: int64(i),
+				Name:   infoName,
+			})
+			pkg.relocBuilder.AddEdge(RelocRecord{
+				Kind:   relocgraph.EdgeRelocMethodOff,
+				Owner:  relocSymID(owner, ""),
+				Target: relocSymID(ifn, ""),
+				Addend: int64(i),
+			})
+			pkg.relocBuilder.AddEdge(RelocRecord{
+				Kind:   relocgraph.EdgeRelocMethodOff,
+				Owner:  relocSymID(owner, ""),
+				Target: relocSymID(tfn, ""),
+				Addend: int64(i),
+			})
 		}
 	}
 	return llvm.ConstArray(ft.ll, fields)

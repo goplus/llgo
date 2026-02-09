@@ -822,18 +822,6 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 
 // reloc helpers -------------------------------------------------------------
 
-// addReloc records a reloc metadata entry in package context.
-func (p Package) addReloc(kind relocgraph.EdgeKind, owner, target llvm.Value, add int64, name, targetName, fnTypeName string, fnType llvm.Value) {
-	p.relocBuilder.AddEdge(RelocRecord{
-		Kind:   kind,
-		Owner:  relocSymID(owner, ""),
-		Target: relocSymID(target, targetName),
-		Addend: add,
-		Name:   name,
-		FnType: relocSymID(fnType, fnTypeName),
-	})
-}
-
 func relocSymID(v llvm.Value, fallback string) relocgraph.SymID {
 	if fallback != "" {
 		return relocgraph.SymID(fallback)
