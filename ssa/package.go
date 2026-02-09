@@ -704,7 +704,7 @@ type aPackage struct {
 
 	export map[string]string // pkgPath.nameInPkg => exportname
 
-	relocRecords []RelocRecord
+	relocBuilder relocgraph.Builder
 }
 
 type Package = *aPackage
@@ -727,12 +727,7 @@ type RelocRecord = relocgraph.Edge
 
 // RelocRecords returns reloc records collected for this package.
 func (p Package) RelocRecords() []RelocRecord {
-	if len(p.relocRecords) == 0 {
-		return nil
-	}
-	out := make([]RelocRecord, len(p.relocRecords))
-	copy(out, p.relocRecords)
-	return out
+	return p.relocBuilder.Edges()
 }
 
 func (p Package) rtFunc(fnName string) Expr {
@@ -847,7 +842,7 @@ func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, n
 	if fnTypeName == "" {
 		fnTypeName = relocSymbolName(fnType)
 	}
-	p.relocRecords = append(p.relocRecords, RelocRecord{
+	p.relocBuilder.AddEdge(RelocRecord{
 		Kind:   kind,
 		Owner:  relocgraph.SymID(ownerName),
 		Target: relocgraph.SymID(targetName),

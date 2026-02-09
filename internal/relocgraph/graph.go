@@ -136,11 +136,87 @@ func BuildModuleEdges(mod llvm.Module, opts Options) []Edge {
 
 // BuildPackageGraph merges module-derived edges and SSA-produced edges.
 func BuildPackageGraph(mod llvm.Module, ssaEdges []Edge, opts Options) *Graph {
-	g := Build(mod, opts)
-	if len(ssaEdges) != 0 {
-		g.AddEdges(ssaEdges, opts)
+	b := NewBuilder(opts)
+	b.AddEdges(ssaEdges)
+	b.AddModule(mod)
+	return b.Graph()
+}
+
+// Builder incrementally collects graph edges from multiple sources
+// (SSA reloc edges and LLVM module call/ref edges).
+type Builder struct {
+	opts    Options
+	graph   *Graph
+	pending []Edge
+}
+
+// NewBuilder returns a graph builder configured with edge filtering options.
+func NewBuilder(opts Options) *Builder {
+	return &Builder{opts: opts}
+}
+
+// AddEdge adds one edge into the builder.
+func (b *Builder) AddEdge(edge Edge) {
+	normalized, ok := normalizeEdge(edge, b.opts)
+	if !ok {
+		return
 	}
-	return g
+	if b.graph != nil {
+		b.graph.appendEdge(normalized)
+		return
+	}
+	b.pending = append(b.pending, normalized)
+}
+
+// AddEdges adds many edges into the builder.
+func (b *Builder) AddEdges(edges []Edge) {
+	for _, edge := range edges {
+		b.AddEdge(edge)
+	}
+}
+
+// AddModule scans one LLVM module and merges its edges into the builder graph.
+func (b *Builder) AddModule(mod llvm.Module) {
+	mg := Build(mod, b.opts)
+	if b.graph == nil {
+		b.graph = mg
+	} else {
+		mergeGraph(b.graph, mg)
+	}
+	if len(b.pending) != 0 {
+		b.graph.AddEdges(b.pending, b.opts)
+		b.pending = nil
+	}
+}
+
+// Edges returns a snapshot of collected edges.
+func (b *Builder) Edges() []Edge {
+	if b.graph != nil {
+		out := make([]Edge, len(b.graph.Relocs))
+		copy(out, b.graph.Relocs)
+		return out
+	}
+	if len(b.pending) == 0 {
+		return nil
+	}
+	out := make([]Edge, len(b.pending))
+	copy(out, b.pending)
+	return out
+}
+
+// Graph materializes and returns the current graph.
+func (b *Builder) Graph() *Graph {
+	if b.graph == nil {
+		b.graph = &Graph{
+			Nodes:  make(map[SymID]*NodeInfo),
+			Relocs: nil,
+		}
+	}
+	if len(b.pending) != 0 {
+		b.graph.AddEdges(b.pending, b.opts)
+		b.pending = nil
+	}
+	return b.graph
 }
 
 // Edge records a symbol dependency edge with optional metadata fields used by
@@ -161,11 +237,27 @@ type RelocRecord = Edge
 // Both module-derived call/ref edges and SSA-produced reloc edges must use this
 // entry point so normalization rules stay consistent.
 func (g *Graph) AddEdge(edge Edge, opts Options) {
-	if edge.Owner == "" {
+	normalized, ok := normalizeEdge(edge, opts)
+	if !ok {
 		return
 	}
+	g.appendEdge(normalized)
+}
+
+func (g *Graph) appendEdge(edge Edge) {
+	g.ensureNode(edge.Owner, false, strings.HasPrefix(string(edge.Owner), "llvm."))
+	if edge.Target != "" {
+		g.ensureNode(edge.Target, false, strings.HasPrefix(string(edge.Target), "llvm."))
+	}
+	g.Relocs = append(g.Relocs, edge)
+}
+
+func normalizeEdge(edge Edge, opts Options) (Edge, bool) {
+	if edge.Owner == "" {
+		return Edge{}, false
+	}
 	if strings.HasPrefix(string(edge.Owner), "llvm.") && !opts.IncludeIntrinsics {
-		return
+		return Edge{}, false
 	}
 	if edge.Kind == EdgeRelocUseNamedMethod && edge.Name == "" {
 		edge.Name = string(edge.Target)
@@ -173,18 +265,15 @@ func (g *Graph) AddEdge(edge Edge, opts Options) {
 	if edge.Target == "" {
 		// methodoff relocs must preserve three-entry-per-method grouping
 		// even when target is empty (skipped methods from other packages).
-		if edge.Kind == EdgeRelocMethodOff {
-			g.ensureNode(edge.Owner, false, strings.HasPrefix(string(edge.Owner), "llvm."))
-			g.Relocs = append(g.Relocs, edge)
+		if edge.Kind != EdgeRelocMethodOff {
+			return Edge{}, false
 		}
-		return
+		return edge, true
 	}
 	if strings.HasPrefix(string(edge.Target), "llvm.") && !opts.IncludeIntrinsics {
-		return
+		return Edge{}, false
 	}
-	g.ensureNode(edge.Owner, false, strings.HasPrefix(string(edge.Owner), "llvm."))
-	g.ensureNode(edge.Target, false, strings.HasPrefix(string(edge.Target), "llvm."))
-	g.Relocs = append(g.Relocs, edge)
+	return edge, true
 }
 
 func (g *Graph) ensureNode(id SymID, isDecl, isIntrinsic bool) {
@@ -310,6 +399,19 @@ func (g *Graph) AddEdges(edges []Edge, opts Options) {
 	for _, e := range edges {
 		g.AddEdge(e, opts)
 	}
+}
+
+func mergeGraph(dst, src *Graph) {
+	if dst == nil || src == nil {
+		return
+	}
+	for id, node := range src.Nodes {
+		if _, ok := dst.Nodes[id]; ok {
+			continue
+		}
+		dst.Nodes[id] = node
+	}
+	dst.Relocs = append(dst.Relocs, src.Relocs...)
 }
 
 func resolveSymbolValue(v llvm.Value) llvm.Value {
