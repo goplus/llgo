@@ -1227,16 +1227,6 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 				return fmt.Errorf("failed to compile %s: %v", objFile, err)
 			}
 			compiledObjFiles = append(compiledObjFiles, oFile)
-		case strings.HasSuffix(objFile, ".bc"):
-			oFile := strings.TrimSuffix(objFile, ".bc") + ".o"
-			args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-			if verbose {
-				fmt.Fprintln(os.Stderr, "clang", args)
-			}
-			if err := ctx.compiler().Compile(args...); err != nil {
-				return fmt.Errorf("failed to compile %s: %v", objFile, err)
-			}
-			compiledObjFiles = append(compiledObjFiles, oFile)
 		default:
 			compiledObjFiles = append(compiledObjFiles, objFile)
 		}
