@@ -603,10 +603,6 @@ func (c *context) shouldPrintCommands(verbose bool) bool {
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
 // This ensures the link step always consumes .a archives regardless of cache state.
 func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
-	if ctx.buildConf.DCE {
-		// In DCE mode we keep raw .bc inputs for linking (no archives).
-		return nil
-	}
 	if len(aPkg.ObjFiles) == 0 {
 		return nil
 	}
@@ -878,48 +874,29 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// If GenLL/DCE is enabled, emit .ll/.bc for debugging
-		if ctx.buildConf.GenLL || ctx.buildConf.DCE {
-			if ctx.buildConf.GenLL {
-				llFile := baseName + ".ll"
-				llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
-				if verbose {
-					fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
-				}
-				cmd := ctx.compiler()
-				if err := cmd.Compile(llArgs...); err != nil {
-					return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
-				}
+		// If GenLL is enabled, emit .ll for debugging.
+		if ctx.buildConf.GenLL {
+			llFile := baseName + ".ll"
+			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
 			}
-			if ctx.buildConf.DCE {
-				bcFile := baseName + ".bc"
-				bcArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-o", bcFile, "-c", srcFile)
-				if verbose {
-					fmt.Fprintf(os.Stderr, "Compiling extra file (bc): clang %s\n", strings.Join(bcArgs, " "))
-				}
-				cmd := ctx.compiler()
-				if err := cmd.Compile(bcArgs...); err != nil {
-					return nil, fmt.Errorf("failed to compile extra file %s to .bc: %w", srcFile, err)
-				}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(llArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
 			}
 		}
 
-		// If DCE is enabled, record the .bc for linking; otherwise compile to .o
-		if ctx.buildConf.DCE {
-			bcFile := baseName + ".bc"
-			objFiles = append(objFiles, bcFile)
-		} else {
-			objFile := baseName + ".o"
-			objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
-			}
-			cmd := ctx.compiler()
-			if err := cmd.Compile(objArgs...); err != nil {
-				return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
-			}
-			objFiles = append(objFiles, objFile)
+		objFile := baseName + ".o"
+		objArgs := append(slices.Clone(baseArgs), "-o", objFile, "-c", srcFile)
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
 		}
+		cmd := ctx.compiler()
+		if err := cmd.Compile(objArgs...); err != nil {
+			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
+		}
+		objFiles = append(objFiles, objFile)
 		os.Remove(baseName) // Remove the temp file we created for naming
 	}
 
@@ -1237,36 +1214,34 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		buildArgs = append(buildArgs, "-gdwarf-4")
 	}
 
-	if ctx.buildConf.DCE || ctx.buildConf.GenLL {
-		var compiledObjFiles []string
-		for _, objFile := range objFiles {
-			switch {
-			case strings.HasSuffix(objFile, ".ll"):
-				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
-				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-				if verbose {
-					fmt.Fprintln(os.Stderr, "clang", args)
-				}
-				if err := ctx.compiler().Compile(args...); err != nil {
-					return fmt.Errorf("failed to compile %s: %v", objFile, err)
-				}
-				compiledObjFiles = append(compiledObjFiles, oFile)
-			case strings.HasSuffix(objFile, ".bc"):
-				oFile := strings.TrimSuffix(objFile, ".bc") + ".o"
-				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-				if verbose {
-					fmt.Fprintln(os.Stderr, "clang", args)
-				}
-				if err := ctx.compiler().Compile(args...); err != nil {
-					return fmt.Errorf("failed to compile %s: %v", objFile, err)
-				}
-				compiledObjFiles = append(compiledObjFiles, oFile)
-			default:
-				compiledObjFiles = append(compiledObjFiles, objFile)
+	var compiledObjFiles []string
+	for _, objFile := range objFiles {
+		switch {
+		case strings.HasSuffix(objFile, ".ll"):
+			oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
+			args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", args)
 			}
+			if err := ctx.compiler().Compile(args...); err != nil {
+				return fmt.Errorf("failed to compile %s: %v", objFile, err)
+			}
+			compiledObjFiles = append(compiledObjFiles, oFile)
+		case strings.HasSuffix(objFile, ".bc"):
+			oFile := strings.TrimSuffix(objFile, ".bc") + ".o"
+			args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
+			if verbose {
+				fmt.Fprintln(os.Stderr, "clang", args)
+			}
+			if err := ctx.compiler().Compile(args...); err != nil {
+				return fmt.Errorf("failed to compile %s: %v", objFile, err)
+			}
+			compiledObjFiles = append(compiledObjFiles, oFile)
+		default:
+			compiledObjFiles = append(compiledObjFiles, objFile)
 		}
-		objFiles = compiledObjFiles
 	}
+	objFiles = compiledObjFiles
 
 	buildArgs = append(buildArgs, objFiles...)
 
@@ -1464,32 +1439,15 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
-	// If GenLL/DCE is enabled, keep copies of the .ll/.bc for debugging
-	if ctx.buildConf.GenLL || ctx.buildConf.DCE {
+	// If GenLL is enabled, keep a copy of the .ll for debugging.
+	if ctx.buildConf.GenLL {
 		if err := os.Chmod(f.Name(), 0644); err != nil {
 			return "", err
 		}
-		if ctx.buildConf.GenLL {
-			llFile := exportFile + ".ll"
-			if err := copyFileAtomic(f.Name(), llFile); err != nil {
-				return "", err
-			}
+		llFile := exportFile + ".ll"
+		if err := copyFileAtomic(f.Name(), llFile); err != nil {
+			return "", err
 		}
-		if ctx.buildConf.DCE {
-			bcFile := exportFile + ".bc"
-			bcArgs := []string{"-emit-llvm", "-o", bcFile, "-c", f.Name(), "-Wno-override-module"}
-			if ctx.buildConf.Verbose {
-				fmt.Fprintln(os.Stderr, "clang", bcArgs)
-			}
-			cmd := ctx.compiler()
-			if err := cmd.Compile(bcArgs...); err != nil {
-				return "", err
-			}
-		}
-	}
-	// If DCE is enabled, return the .bc for linking; otherwise compile .ll to .o
-	if ctx.buildConf.DCE {
-		return exportFile + ".bc", nil
 	}
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
@@ -1868,48 +1826,29 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		args = append(args, "-x", "c")
 	}
 
-	// If GenLL/DCE is enabled, emit .ll/.bc for debugging, then compile to .o
-	if ctx.buildConf.GenLL || ctx.buildConf.DCE {
-		if ctx.buildConf.GenLL {
-			llFile := baseName + ".ll"
-			llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-			if verbose {
-				fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
-				fmt.Fprintln(os.Stderr, "clang", llArgs)
-			}
-			cmd := ctx.compiler()
-			err := cmd.Compile(llArgs...)
-			check(err)
-		}
-		if ctx.buildConf.DCE {
-			bcFile := baseName + ".bc"
-			bcArgs := append(slices.Clone(args), "-emit-llvm", "-o", bcFile, "-c", cFile)
-			if verbose {
-				fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", bcFile, pkgPath)
-				fmt.Fprintln(os.Stderr, "clang", bcArgs)
-			}
-			cmd := ctx.compiler()
-			err := cmd.Compile(bcArgs...)
-			check(err)
-		}
-	}
-
-	// If DCE is enabled, record .bc for linking; otherwise compile to .o
-	if ctx.buildConf.DCE {
-		bcFile := baseName + ".bc"
-		procFile(bcFile)
-	} else {
-		objFile := baseName + ".o"
-		objArgs := append(args, "-o", objFile, "-c", cFile)
+	// If GenLL is enabled, emit .ll for debugging.
+	if ctx.buildConf.GenLL {
+		llFile := baseName + ".ll"
+		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 		if verbose {
-			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
-			fmt.Fprintln(os.Stderr, "clang", objArgs)
+			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
+			fmt.Fprintln(os.Stderr, "clang", llArgs)
 		}
 		cmd := ctx.compiler()
-		err := cmd.Compile(objArgs...)
+		err := cmd.Compile(llArgs...)
 		check(err)
-		procFile(objFile)
 	}
+
+	objFile := baseName + ".o"
+	objArgs := append(args, "-o", objFile, "-c", cFile)
+	if verbose {
+		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
+		fmt.Fprintln(os.Stderr, "clang", objArgs)
+	}
+	cmd := ctx.compiler()
+	err := cmd.Compile(objArgs...)
+	check(err)
+	procFile(objFile)
 }
 
 func pkgExists(initial []*packages.Package, pkg *packages.Package) bool {
