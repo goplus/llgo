@@ -83,7 +83,13 @@ func runExpectDir(root, relDir string) {
 			fmt.Fprintln(os.Stderr, "error:", relPath, err)
 			output = []byte{';'}
 		}
-		check(os.WriteFile(filepath.Join(testDir, "expect.txt"), output, 0644))
+		expectFile := filepath.Join(testDir, "expect.txt")
+		expect, err := os.ReadFile(expectFile)
+		if err != nil || strings.TrimSpace(string(expect)) == ";" {
+			fmt.Fprintln(os.Stderr, "skip", relPath, "(expect is ';')")
+			continue
+		}
+		check(os.WriteFile(expectFile, output, 0644))
 	}
 }
 
