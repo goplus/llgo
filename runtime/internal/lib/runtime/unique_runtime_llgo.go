@@ -1,5 +1,3 @@
-//go:build darwin || linux
-
 package runtime
 
 import _ "unsafe"
@@ -13,4 +11,3 @@ var uniqueMapCleanup func()
 func unique_runtime_registerUniqueMapCleanup(cleanup func()) {
 	uniqueMapCleanup = cleanup
 }
-
