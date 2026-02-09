@@ -1375,9 +1375,8 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync/atomic" && !plan9asmDisabledByEnv() {
 		return false
 	}
-	// sync can use upstream implementation on arm64/amd64 in ABI mode 0/1
-	// because llgo runtime provides the required sync.runtime_* hooks.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync" {
+	// sync can use upstream implementation on arm64/amd64.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "sync" {
 		return false
 	}
 	// internal/runtime/syscall is enabled by default on arm64/amd64 unless
@@ -1385,13 +1384,16 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/syscall" && !plan9asmDisabledByEnv() {
 		return false
 	}
-	// internal/runtime/maps can use upstream implementation on arm64/amd64 in
-	// ABI mode 0/1.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/maps" {
+	// internal/runtime/maps can use upstream implementation on arm64/amd64.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/runtime/maps" {
 		return false
 	}
-	// weak can use upstream implementation on arm64/amd64 in ABI mode 0/1.
-	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "weak" {
+	// weak can use upstream implementation on arm64/amd64.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "weak" {
+		return false
+	}
+	// internal/weak can use upstream implementation on arm64/amd64.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/weak" {
 		return false
 	}
 	// If a package is explicitly opted in via LLGO_PLAN9ASM_PKGS, prefer Plan9 asm
