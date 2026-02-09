@@ -18,6 +18,19 @@ trap cleanup EXIT
 
 export LLGO_ROOT="$workdir"
 
+embed_test_dirs=()
+if [ "$#" -gt 0 ]; then
+	embed_test_dirs=("$@")
+else
+	embed_dirs_raw="${LLGO_EMBED_TEST_DIRS:-empty defer}"
+	embed_dirs_raw="${embed_dirs_raw//,/ }"
+	read -r -a embed_test_dirs <<<"$embed_dirs_raw"
+fi
+if [ "${#embed_test_dirs[@]}" -eq 0 ]; then
+	echo "error: no embed TEST_DIR specified (args or LLGO_EMBED_TEST_DIRS)" >&2
+	exit 2
+fi
+
 log_section() {
 	printf "\n==== %s ====\n" "$1"
 }
@@ -141,6 +154,38 @@ EOF
 	done
 }
 
+run_wasm_cross_compile_test() {
+	local demo_dir="$workdir/_demo/c"
+	(
+		cd "$demo_dir"
+		GOOS=wasip1 GOARCH=wasm llgo build -o hello -tags=nogc -v ./helloc
+		if command -v file >/dev/null 2>&1; then
+			file hello.wasm
+		fi
+
+		if [ -n "${LLGO_WASM_RUNNER:-}" ]; then
+			echo "Using LLGO_WASM_RUNNER: $LLGO_WASM_RUNNER"
+			bash -lc "$LLGO_WASM_RUNNER hello.wasm"
+			return 0
+		fi
+
+		if command -v iwasm >/dev/null 2>&1; then
+			iwasm --stack-size=819200000 --heap-size=800000000 hello.wasm
+			return 0
+		fi
+		if command -v wasmtime >/dev/null 2>&1; then
+			wasmtime run --dir=.::/tmp hello.wasm
+			return 0
+		fi
+		if command -v wasmer >/dev/null 2>&1; then
+			wasmer run hello.wasm
+			return 0
+		fi
+
+		echo "warning: no wasm runner found (iwasm/wasmtime/wasmer), compile-only check passed"
+	)
+}
+
 log_section "Format"
 for dir in . runtime; do
 	pushd "$workdir/$dir" >/dev/null
@@ -192,7 +237,18 @@ fi
 (cd "$workdir" && GOTOOLCHAIN="$repo_gotoolchain" LLGO_DEMO_JOBS="$demo_jobs" bash .github/workflows/test_demo.sh)
 
 log_section "Build targets"
-(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh)
+embed_target_file="${LLGO_EMBED_TARGET_FILE:-}"
+for test_dir in "${embed_test_dirs[@]}"; do
+	echo "Building embed targets for TEST_DIR=$test_dir"
+	if [ -n "$embed_target_file" ]; then
+		(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh "$test_dir" "$embed_target_file")
+	else
+		(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh "$test_dir")
+	fi
+done
+
+log_section "Wasm"
+run_wasm_cross_compile_test
 
 log_section "Hello World"
 hello_logs=()
