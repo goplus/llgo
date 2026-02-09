@@ -201,14 +201,22 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		}
 		switch op {
 		case "BSFQ":
-			// dst = cttz(src) (src assumed non-zero in stdlib usage).
+			// ZF is set when src == 0.
+			zf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp eq i64 %s, 0\n", zf, sv)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", zf, c.flagsZSlot)
+			// dst = cttz(src). Use non-poison form for src==0.
 			call := c.newTmp()
-			fmt.Fprintf(c.b, "  %%%s = call i64 @llvm.cttz.i64(i64 %s, i1 true)\n", call, sv)
+			fmt.Fprintf(c.b, "  %%%s = call i64 @llvm.cttz.i64(i64 %s, i1 false)\n", call, sv)
 			return true, false, c.storeReg(dst, "%"+call)
 		case "BSRQ":
-			// dst = 63 - ctlz(src)
+			// ZF is set when src == 0.
+			zf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp eq i64 %s, 0\n", zf, sv)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", zf, c.flagsZSlot)
+			// dst = 63 - ctlz(src). Use non-poison form for src==0.
 			clz := c.newTmp()
-			fmt.Fprintf(c.b, "  %%%s = call i64 @llvm.ctlz.i64(i64 %s, i1 true)\n", clz, sv)
+			fmt.Fprintf(c.b, "  %%%s = call i64 @llvm.ctlz.i64(i64 %s, i1 false)\n", clz, sv)
 			sub := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = sub i64 63, %%%s\n", sub, clz)
 			return true, false, c.storeReg(dst, "%"+sub)
@@ -217,20 +225,28 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			fmt.Fprintf(c.b, "  %%%s = call i64 @llvm.bswap.i64(i64 %s)\n", call, sv)
 			return true, false, c.storeReg(dst, "%"+call)
 		case "BSFL":
-			// dst = zext(cttz(trunc32(src)))
+			// ZF is set when low 32-bit src == 0.
 			tr := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tr, sv)
+			zf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp eq i32 %%%s, 0\n", zf, tr)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", zf, c.flagsZSlot)
+			// dst = zext(cttz(trunc32(src))). Use non-poison form for src==0.
 			call := c.newTmp()
-			fmt.Fprintf(c.b, "  %%%s = call i32 @llvm.cttz.i32(i32 %%%s, i1 true)\n", call, tr)
+			fmt.Fprintf(c.b, "  %%%s = call i32 @llvm.cttz.i32(i32 %%%s, i1 false)\n", call, tr)
 			z := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, call)
 			return true, false, c.storeReg(dst, "%"+z)
 		case "BSRL":
-			// dst = zext(31 - ctlz(trunc32(src)))
+			// ZF is set when low 32-bit src == 0.
 			tr := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tr, sv)
+			zf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp eq i32 %%%s, 0\n", zf, tr)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", zf, c.flagsZSlot)
+			// dst = zext(31 - ctlz(trunc32(src))). Use non-poison form for src==0.
 			clz := c.newTmp()
-			fmt.Fprintf(c.b, "  %%%s = call i32 @llvm.ctlz.i32(i32 %%%s, i1 true)\n", clz, tr)
+			fmt.Fprintf(c.b, "  %%%s = call i32 @llvm.ctlz.i32(i32 %%%s, i1 false)\n", clz, tr)
 			sub := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = sub i32 31, %%%s\n", sub, clz)
 			z := c.newTmp()

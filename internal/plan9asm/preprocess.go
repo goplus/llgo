@@ -3,6 +3,7 @@ package plan9asm
 import (
 	"bufio"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -221,12 +222,29 @@ func preprocess(src string) (string, error) {
 	}
 
 	// Second pass: expand macro invocations (statement == NAME).
+	macroNames := make([]string, 0, len(macros))
+	for k := range macros {
+		macroNames = append(macroNames, k)
+	}
+	// Expand longer names first to reduce prefix shadowing.
+	sort.Slice(macroNames, func(i, j int) bool { return len(macroNames[i]) > len(macroNames[j]) })
 	var out strings.Builder
 	for _, line := range lines {
 		if m, ok := macros[line]; ok {
 			out.WriteString(m.body)
 			out.WriteString("\n")
 			continue
+		}
+		// Expand immediate macro refs in-place: $NAME -> $<body>.
+		// This is required by stdlib asm like:
+		//   FMOVD $Ln2Hi, F4
+		// where constants are defined by #define.
+		for _, name := range macroNames {
+			body := strings.TrimSpace(macros[name].body)
+			if body == "" {
+				continue
+			}
+			line = strings.ReplaceAll(line, "$"+name, "$"+body)
 		}
 		out.WriteString(line)
 		out.WriteString("\n")

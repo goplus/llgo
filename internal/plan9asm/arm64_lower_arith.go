@@ -4,6 +4,69 @@ import "fmt"
 
 func (c *arm64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err error) {
 	switch op {
+	case "MRS":
+		// MRS <sysreg>, Rn
+		if len(ins.Args) != 2 || ins.Args[0].Kind != OpIdent || ins.Args[1].Kind != OpReg {
+			return true, false, fmt.Errorf("arm64 MRS expects ident, reg: %q", ins.Raw)
+		}
+		sysreg := arm64CanonicalSysReg(ins.Args[0].Ident)
+		dst := ins.Args[1].Reg
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = call i64 asm sideeffect %q, %q()\n", t, "mrs $0, "+sysreg, "=r,~{memory}")
+		return true, false, c.storeReg(dst, "%"+t)
+
+	case "MSR":
+		// MSR src, <sysreg>
+		if len(ins.Args) != 2 || ins.Args[1].Kind != OpIdent {
+			return true, false, fmt.Errorf("arm64 MSR expects src, ident: %q", ins.Raw)
+		}
+		sysreg := arm64CanonicalSysReg(ins.Args[1].Ident)
+		switch ins.Args[0].Kind {
+		case OpImm:
+			imm := ins.Args[0].Imm
+			// Route immediates through a GPR so both ordinary sysregs and aliases
+			// (e.g. DIT) compile on LLVM's inline asm parser.
+			fmt.Fprintf(c.b, "  call void asm sideeffect %q, %q(i64 %d)\n", "msr "+sysreg+", $0", "r,~{memory}", imm)
+			return true, false, nil
+		case OpReg:
+			v, err := c.loadReg(ins.Args[0].Reg)
+			if err != nil {
+				return true, false, err
+			}
+			fmt.Fprintf(c.b, "  call void asm sideeffect %q, %q(i64 %s)\n", "msr "+sysreg+", $0", "r,~{memory}", v)
+			return true, false, nil
+		default:
+			return true, false, fmt.Errorf("arm64 MSR unsupported src operand: %q", ins.Raw)
+		}
+
+	case "UBFX":
+		// UBFX $lsb, srcReg, $width, dstReg
+		if len(ins.Args) != 4 ||
+			ins.Args[0].Kind != OpImm ||
+			ins.Args[1].Kind != OpReg ||
+			ins.Args[2].Kind != OpImm ||
+			ins.Args[3].Kind != OpReg {
+			return true, false, fmt.Errorf("arm64 UBFX expects $lsb, srcReg, $width, dstReg: %q", ins.Raw)
+		}
+		lsb := ins.Args[0].Imm
+		width := ins.Args[2].Imm
+		if lsb < 0 || width <= 0 || width > 64 || lsb > 63 || lsb+width > 64 {
+			return true, false, fmt.Errorf("arm64 UBFX invalid range lsb=%d width=%d: %q", lsb, width, ins.Raw)
+		}
+		src, err := c.loadReg(ins.Args[1].Reg)
+		if err != nil {
+			return true, false, err
+		}
+		sh := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = lshr i64 %s, %d\n", sh, src, lsb)
+		mask := int64(-1)
+		if width < 64 {
+			mask = (int64(1) << width) - 1
+		}
+		out := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = and i64 %%%s, %d\n", out, sh, mask)
+		return true, false, c.storeReg(ins.Args[3].Reg, "%"+out)
+
 	case "ADD", "SUB", "ADDS":
 		if len(ins.Args) != 2 && len(ins.Args) != 3 {
 			return true, false, fmt.Errorf("arm64 %s expects 2 or 3 operands: %q", op, ins.Raw)
@@ -413,4 +476,15 @@ func (c *arm64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		return true, false, c.storeReg(ins.Args[1].Reg, "%"+t)
 	}
 	return false, false, nil
+}
+
+func arm64CanonicalSysReg(name string) string {
+	switch name {
+	case "DIT":
+		// LLVM inline-asm parser on current toolchains does not accept the DIT
+		// alias directly; use its canonical system-register encoding name.
+		return "S3_3_C4_C2_5"
+	default:
+		return name
+	}
 }

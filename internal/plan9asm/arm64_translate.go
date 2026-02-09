@@ -109,6 +109,9 @@ func (c *arm64Ctx) lowerInstr(bi int, ins Instr, emitBr arm64EmitBr, emitCondBr 
 	if ok, term, err := c.lowerArith(op, ins); ok {
 		return term, err
 	}
+	if ok, term, err := c.lowerFP(op, ins); ok {
+		return term, err
+	}
 	if ok, term, err := c.lowerSyscall(op, ins); ok {
 		return term, err
 	}

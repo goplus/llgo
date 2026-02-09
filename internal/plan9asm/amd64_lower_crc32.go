@@ -69,4 +69,3 @@ func (c *amd64Ctx) lowerCrc32(op Op, ins Instr) (ok bool, terminated bool, err e
 	}
 	return true, false, fmt.Errorf("amd64: unknown CRC32 op %s", op)
 }
-
