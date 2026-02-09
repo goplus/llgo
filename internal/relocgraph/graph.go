@@ -157,19 +157,34 @@ type Edge struct {
 // RelocRecord is kept as an alias for SSA call sites.
 type RelocRecord = Edge
 
-// AddEdge inserts or updates an edge in the graph.
-func (g *Graph) AddEdge(from, to SymID, kind EdgeKind) {
-	if from == "" || to == "" {
+// AddEdge inserts one dependency edge into the graph.
+// Both module-derived call/ref edges and SSA-produced reloc edges must use this
+// entry point so normalization rules stay consistent.
+func (g *Graph) AddEdge(edge Edge, opts Options) {
+	if edge.Owner == "" {
 		return
 	}
-	g.ensureNode(from, false, strings.HasPrefix(string(from), "llvm."))
-	g.ensureNode(to, false, strings.HasPrefix(string(to), "llvm."))
-	g.Relocs = append(g.Relocs, Edge{
-		Owner:  from,
-		Target: to,
-		Kind:   kind,
-		Addend: 0,
-	})
+	if strings.HasPrefix(string(edge.Owner), "llvm.") && !opts.IncludeIntrinsics {
+		return
+	}
+	if edge.Kind == EdgeRelocUseNamedMethod && edge.Name == "" {
+		edge.Name = string(edge.Target)
+	}
+	if edge.Target == "" {
+		// methodoff relocs must preserve three-entry-per-method grouping
+		// even when target is empty (skipped methods from other packages).
+		if edge.Kind == EdgeRelocMethodOff {
+			g.ensureNode(edge.Owner, false, strings.HasPrefix(string(edge.Owner), "llvm."))
+			g.Relocs = append(g.Relocs, edge)
+		}
+		return
+	}
+	if strings.HasPrefix(string(edge.Target), "llvm.") && !opts.IncludeIntrinsics {
+		return
+	}
+	g.ensureNode(edge.Owner, false, strings.HasPrefix(string(edge.Owner), "llvm."))
+	g.ensureNode(edge.Target, false, strings.HasPrefix(string(edge.Target), "llvm."))
+	g.Relocs = append(g.Relocs, edge)
 }
 
 func (g *Graph) ensureNode(id SymID, isDecl, isIntrinsic bool) {
@@ -195,26 +210,11 @@ func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) 
 	if name == "" {
 		return
 	}
-	if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
-		return
-	}
-	g.AddEdge(SymID(caller.Name()), SymID(name), EdgeCall)
-}
-
-func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64, name string, fnType SymID) {
-	if owner == "" || target == "" {
-		return
-	}
-	g.ensureNode(owner, false, strings.HasPrefix(string(owner), "llvm."))
-	g.ensureNode(target, false, strings.HasPrefix(string(target), "llvm."))
-	g.Relocs = append(g.Relocs, Edge{
-		Owner:  owner,
-		Target: target,
-		Kind:   kind,
-		Addend: addend,
-		Name:   name,
-		FnType: fnType,
-	})
+	g.AddEdge(Edge{
+		Owner:  SymID(caller.Name()),
+		Target: SymID(name),
+		Kind:   EdgeCall,
+	}, opts)
 }
 
 func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
@@ -236,10 +236,11 @@ func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
 			if name == "" {
 				return
 			}
-			if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
-				return
-			}
-			g.AddEdge(caller, SymID(name), EdgeRef)
+			g.AddEdge(Edge{
+				Owner:  caller,
+				Target: SymID(name),
+				Kind:   EdgeRef,
+			}, opts)
 			return
 		}
 		if gv := resolveGlobalValue(val); !gv.IsNil() {
@@ -247,10 +248,11 @@ func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
 			if name == "" {
 				return
 			}
-			if strings.HasPrefix(name, "llvm.") && !opts.IncludeIntrinsics {
-				return
-			}
-			g.AddEdge(caller, SymID(name), EdgeRef)
+			g.AddEdge(Edge{
+				Owner:  caller,
+				Target: SymID(name),
+				Kind:   EdgeRef,
+			}, opts)
 			return
 		}
 		// Recurse through operands to find nested function pointers.
@@ -305,29 +307,8 @@ func resolveGlobalValue(v llvm.Value) llvm.Value {
 
 // AddEdges injects SSA-collected edges into the graph.
 func (g *Graph) AddEdges(edges []Edge, opts Options) {
-	for _, rec := range edges {
-		if rec.Owner == "" {
-			continue
-		}
-		if strings.HasPrefix(string(rec.Owner), "llvm.") && !opts.IncludeIntrinsics {
-			continue
-		}
-		if rec.Kind == EdgeRelocUseNamedMethod && rec.Name == "" {
-			rec.Name = string(rec.Target)
-		}
-		if rec.Target == "" {
-			// methodoff relocs must preserve three-entry-per-method grouping
-			// even when target is empty (skipped methods from other packages).
-			if rec.Kind == EdgeRelocMethodOff {
-				g.ensureNode(rec.Owner, false, strings.HasPrefix(string(rec.Owner), "llvm."))
-				g.Relocs = append(g.Relocs, rec)
-			}
-			continue
-		}
-		if strings.HasPrefix(string(rec.Target), "llvm.") && !opts.IncludeIntrinsics {
-			continue
-		}
-		g.addRelocEdge(rec.Owner, rec.Target, rec.Kind, rec.Addend, rec.Name, rec.FnType)
+	for _, e := range edges {
+		g.AddEdge(e, opts)
 	}
 }
 
