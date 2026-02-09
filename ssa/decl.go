@@ -211,6 +211,9 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 	if instantiated {
 		fn.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}
+	if _, ok := p.exportNames[name]; ok {
+		fn.SetDLLStorageClass(llvm.DLLExportStorageClass)
+	}
 	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
 	p.fns[name] = ret
 	return ret
