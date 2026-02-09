@@ -360,27 +360,24 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 			"crypto/internal/boring/sig": true,
 			"internal/cpu":               true,
 		}
-		// hash/crc32 is enabled by default on amd64/arm64 in ABI mode 0/1.
-		// ABI mode 2 still relies on alt.
-		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
+		// hash/crc32 is enabled by default on amd64/arm64.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["hash/crc32"] = true
 		}
-		// internal/bytealg can run in ABI mode 0/1 where Go calls preserve
-		// Go-style aggregate calling conventions. ABI mode 2 still relies on alt.
-		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
+		// internal/bytealg is enabled by default on amd64/arm64.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/bytealg"] = true
 		}
-		// internal/runtime/atomic is translated in ABI mode 0/1 on arm64/amd64.
-		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
+		// internal/runtime/atomic is translated on arm64/amd64.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/runtime/atomic"] = true
 		}
-		// internal/runtime/syscall is translated in ABI mode 0/1 on arm64/amd64.
-		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
+		// internal/runtime/syscall is translated on arm64/amd64.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/runtime/syscall"] = true
 		}
 		// sync/atomic wrappers are simple TEXT/JMP stubs to internal/runtime/atomic.
-		// Keep ABI mode 2 on alt to avoid aggregate ABI mismatches.
-		if ctx.buildConf.AbiMode != 2 && (ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64") {
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["sync/atomic"] = true
 		}
 		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
