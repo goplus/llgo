@@ -782,6 +782,12 @@ func extraAsmSigsAndDeclMap(pkgPath string, goarch string) (manual map[string]pl
 				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64},
 				Ret:  plan9asm.I64,
 			}
+			// go1.21 arm64 equal_arm64.s has helper memeqbody<> tail-called by
+			// runtime·memequal/runtime·memequal_varlen and has no Go declaration.
+			manual["internal/bytealg.memeqbody"] = plan9asm.FuncSig{
+				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
+				Ret:  plan9asm.I1,
+			}
 			manual["internal/bytealg.countbytebody"] = plan9asm.FuncSig{
 				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.LLVMType("i8"), plan9asm.Ptr},
 				Ret:     plan9asm.Void,
