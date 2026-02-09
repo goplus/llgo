@@ -82,7 +82,18 @@ func TestStdlibInternalCPU_X86_CompileX86Triples(t *testing.T) {
 	triples := []string{
 		"x86_64-unknown-linux-gnu",
 		"x86_64-apple-macosx",
-		intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH),
+	}
+	if hostTriple := intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH); strings.HasPrefix(hostTriple, "x86_64-") {
+		dup := false
+		for _, t := range triples {
+			if t == hostTriple {
+				dup = true
+				break
+			}
+		}
+		if !dup {
+			triples = append(triples, hostTriple)
+		}
 	}
 
 	compiled := 0

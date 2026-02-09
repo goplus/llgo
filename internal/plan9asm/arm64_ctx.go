@@ -299,6 +299,16 @@ func arm64ValueAsI64(c *arm64Ctx, ty LLVMType, v string) (out string, ok bool, e
 		return "%" + t, true, nil
 	case I64:
 		return v, true, nil
+	case LLVMType("double"):
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast double %s to i64\n", t, v)
+		return "%" + t, true, nil
+	case LLVMType("float"):
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast float %s to i32\n", t, v)
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, t)
+		return "%" + z, true, nil
 	default:
 		return "", false, nil
 	}
@@ -345,6 +355,10 @@ func llvmZeroValue(ty LLVMType) string {
 		return "false"
 	case "i8", "i16", "i32", "i64":
 		return "0"
+	case "float":
+		return "0.000000e+00"
+	case "double":
+		return "0.000000e+00"
 	default:
 		// Fallback for aggregates and other scalar types.
 		return "zeroinitializer"

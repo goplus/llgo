@@ -11,7 +11,7 @@ import (
 	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
 )
 
-func TestStdlibInternalCPU_ARM64_Compile(t *testing.T) {
+func TestStdlibInternalRuntimeSys_ARM64_Compile(t *testing.T) {
 	if runtime.GOARCH != "arm64" {
 		t.Skip("host is not arm64")
 	}
@@ -21,7 +21,7 @@ func TestStdlibInternalCPU_ARM64_Compile(t *testing.T) {
 	}
 
 	goroot := runtime.GOROOT()
-	src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "cpu", "cpu_arm64.s"))
+	src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "runtime", "sys", "dit_arm64.s"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,39 +32,43 @@ func TestStdlibInternalCPU_ARM64_Compile(t *testing.T) {
 	}
 	resolve := func(sym string) string {
 		if strings.HasPrefix(sym, "·") {
-			return "internal/cpu." + strings.TrimPrefix(sym, "·")
+			return "internal/runtime/sys." + strings.TrimPrefix(sym, "·")
 		}
 		return strings.ReplaceAll(sym, "·", ".")
 	}
 	sigs := map[string]FuncSig{
-		"internal/cpu.getisar0": {
-			Name:  "internal/cpu.getisar0",
-			Ret:   I64,
-			Frame: FrameLayout{Results: []FrameSlot{{Offset: 0, Type: I64, Index: 0}}},
+		"internal/runtime/sys.EnableDIT": {
+			Name: "internal/runtime/sys.EnableDIT",
+			Ret:  I1,
+			Frame: FrameLayout{
+				Results: []FrameSlot{{Offset: 0, Type: I1, Index: 0}},
+			},
 		},
-		"internal/cpu.getpfr0": {
-			Name:  "internal/cpu.getpfr0",
-			Ret:   I64,
-			Frame: FrameLayout{Results: []FrameSlot{{Offset: 0, Type: I64, Index: 0}}},
+		"internal/runtime/sys.DITEnabled": {
+			Name: "internal/runtime/sys.DITEnabled",
+			Ret:  I1,
+			Frame: FrameLayout{
+				Results: []FrameSlot{{Offset: 0, Type: I1, Index: 0}},
+			},
 		},
-		"internal/cpu.getMIDR": {
-			Name:  "internal/cpu.getMIDR",
-			Ret:   I64,
-			Frame: FrameLayout{Results: []FrameSlot{{Offset: 0, Type: I64, Index: 0}}},
+		"internal/runtime/sys.DisableDIT": {
+			Name: "internal/runtime/sys.DisableDIT",
+			Ret:  Void,
 		},
 	}
 	ll, err := Translate(file, Options{
 		TargetTriple: intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH),
 		ResolveSym:   resolve,
 		Sigs:         sigs,
+		Goarch:       runtime.GOARCH,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tmp := t.TempDir()
-	llPath := filepath.Join(tmp, "cpu.ll")
-	objPath := filepath.Join(tmp, "cpu.o")
+	llPath := filepath.Join(tmp, "dit.ll")
+	objPath := filepath.Join(tmp, "dit.o")
 	if err := os.WriteFile(llPath, []byte(ll), 0644); err != nil {
 		t.Fatal(err)
 	}

@@ -3,6 +3,7 @@ package plan9asm
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 func (c *arm64Ctx) imm64(n int64) string {
@@ -154,6 +155,18 @@ func (c *arm64Ctx) eval64(op Operand, postInc bool) (string, error) {
 		return c.evalFPAddr64(op)
 	case OpMem:
 		return c.loadMem(op.Mem, 64, postInc)
+	case OpSym:
+		sym := strings.TrimSpace(op.Sym)
+		if strings.HasPrefix(sym, "$") {
+			sym = strings.TrimPrefix(sym, "$")
+		}
+		p, err := c.ptrFromSB(sym)
+		if err != nil {
+			return "", err
+		}
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, p)
+		return "%" + t, nil
 	default:
 		return "", fmt.Errorf("arm64: unsupported operand for i64: %s", op.String())
 	}
@@ -185,6 +198,16 @@ func (c *arm64Ctx) evalFPValue64(op Operand) (string, error) {
 		t := c.newTmp()
 		fmt.Fprintf(c.b, "  %%%s = zext %s %s to i64\n", t, ty, arg)
 		return "%" + t, nil
+	case "double":
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast double %s to i64\n", t, arg)
+		return "%" + t, nil
+	case "float":
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast float %s to i32\n", t, arg)
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, t)
+		return "%" + z, nil
 	case "ptr":
 		t := c.newTmp()
 		fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, arg)
