@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/packages"
@@ -108,6 +109,16 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 			},
 		},
 	}
+	// Go 1.21 arm64 equal_arm64.s contains an extra helper TEXT memeqbody<>.
+	// Newer toolchains inline it into runtime·memequal and drop this symbol.
+	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s")); err == nil {
+		if string(src) != "" && containsTextSymbol(string(src), "memeqbody<>") {
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s")]["internal/bytealg.memeqbody"] = plan9asm.FuncSig{
+				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
+				Ret:  plan9asm.I1,
+			}
+		}
+	}
 
 	for path, wantSigs := range sfiles {
 		tr, err := TranslatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
@@ -136,6 +147,12 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 			}
 		}
 	}
+}
+
+func containsTextSymbol(src, sym string) bool {
+	return strings.Contains(src, "TEXT "+sym+"(SB)") ||
+		strings.Contains(src, "TEXT "+sym+",") ||
+		strings.Contains(src, "\nTEXT "+sym+"(SB)")
 }
 
 func checkSig(got, want plan9asm.FuncSig) error {
