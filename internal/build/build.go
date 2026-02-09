@@ -58,6 +58,7 @@ import (
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	envllvm "github.com/goplus/llgo/xtool/env/llvm"
+	gollvm "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -365,6 +366,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	buildMode := ssaBuildMode
 	cabiOptimize := true
+	passOpt := true
+	if IsDbgEnabled() || mode == ModeGen {
+		passOpt = false
+	}
 	if IsDbgEnabled() {
 		buildMode |= ssa.GlobalDebug
 		cabiOptimize = false
@@ -386,6 +391,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		pkgs:           map[*packages.Package]Package{},
 		pkgByID:        map[string]Package{},
 		output:         output,
+		passOpt:        passOpt,
 		buildConf:      conf,
 		crossCompile:   export,
 		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
@@ -550,6 +556,7 @@ type context struct {
 	mode           Mode
 	nLibdir        int32
 	output         bool
+	passOpt        bool
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
@@ -587,6 +594,10 @@ func (c *context) linker() *clang.Cmd {
 	cmd := clang.NewLinker(config)
 	cmd.Verbose = c.buildConf.Verbose
 	return cmd
+}
+
+func (c *context) shouldPrintCommands(verbose bool) bool {
+	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
 }
 
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
@@ -1392,21 +1403,33 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	if ctx.buildConf.DCE {
 		aPkg.IRGraph = buildPackageIRGraph(ret)
 	}
+	// Run LLVM optimization passes (memcpyopt converts load/store to memcpy)
+	if ctx.passOpt {
+		mod := ret.Module()
+		mod.SetDataLayout(ctx.prog.DataLayout())
+		mod.SetTarget(ctx.prog.Target().Spec().Triple)
+		pbo := gollvm.NewPassBuilderOptions()
+		defer pbo.Dispose()
+		if err := mod.RunPasses("memcpyopt", ctx.prog.TargetMachine(), pbo); err != nil {
+			return fmt.Errorf("run LLVM passes failed for %v: %v", pkgPath, err)
+		}
+	}
 
-	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, verbose)
+	printCmds := ctx.shouldPrintCommands(verbose)
+	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, printCmds)
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
-	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, verbose)...)
+	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
 	if aPkg.AltPkg != nil {
-		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, verbose)
+		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
-		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, verbose)...)
+		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
 	}
 	if pkg.ExportFile != "" {
