@@ -417,9 +417,6 @@ type cacheArchiveMetadata struct {
 
 // saveToCache saves a built package to cache.
 func (c *context) saveToCache(pkg *aPackage) error {
-	if c.buildConf.DCE {
-		return nil
-	}
 	if !cacheEnabled() {
 		return nil
 	}

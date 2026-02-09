@@ -62,6 +62,14 @@ type Graph struct {
 	Relocs []Edge
 }
 
+// NewGraph creates an empty graph with initialized node storage.
+func NewGraph() *Graph {
+	return &Graph{
+		Nodes:  make(map[SymID]*NodeInfo),
+		Relocs: nil,
+	}
+}
+
 // Options controls graph construction.
 type Options struct {
 	IncludeIntrinsics bool
@@ -70,10 +78,7 @@ type Options struct {
 
 // Build constructs a dependency graph from an LLVM module.
 func Build(mod llvm.Module, opts Options) *Graph {
-	g := &Graph{
-		Nodes:  make(map[SymID]*NodeInfo),
-		Relocs: nil,
-	}
+	g := NewGraph()
 	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
 		name := SymID(gv.Name())
 		isIntrinsic := strings.HasPrefix(gv.Name(), "llvm.")
@@ -181,7 +186,7 @@ func (b *Builder) AddModule(mod llvm.Module) {
 	if b.graph == nil {
 		b.graph = mg
 	} else {
-		mergeGraph(b.graph, mg)
+		b.graph.MergeFrom(mg)
 	}
 	if len(b.pending) != 0 {
 		b.graph.AddEdges(b.pending, b.opts)
@@ -207,10 +212,7 @@ func (b *Builder) Edges() []Edge {
 // Graph materializes and returns the current graph.
 func (b *Builder) Graph() *Graph {
 	if b.graph == nil {
-		b.graph = &Graph{
-			Nodes:  make(map[SymID]*NodeInfo),
-			Relocs: nil,
-		}
+		b.graph = NewGraph()
 	}
 	if len(b.pending) != 0 {
 		b.graph.AddEdges(b.pending, b.opts)
@@ -401,17 +403,42 @@ func (g *Graph) AddEdges(edges []Edge, opts Options) {
 	}
 }
 
-func mergeGraph(dst, src *Graph) {
-	if dst == nil || src == nil {
+// MergeFrom merges another graph into g in place.
+func (g *Graph) MergeFrom(src *Graph) {
+	if g == nil || src == nil {
 		return
 	}
-	for id, node := range src.Nodes {
-		if _, ok := dst.Nodes[id]; ok {
+	if g.Nodes == nil {
+		g.Nodes = make(map[SymID]*NodeInfo)
+	}
+	for id, srcNode := range src.Nodes {
+		if srcNode == nil {
 			continue
 		}
-		dst.Nodes[id] = node
+		if dstNode, ok := g.Nodes[id]; ok {
+			// "Declaration-ness" is merged with logical AND:
+			// if any source says this symbol has a real definition
+			// (IsDecl=false), the merged result must be a definition.
+			dstNode.IsDecl = dstNode.IsDecl && srcNode.IsDecl
+			// "Intrinsic-ness" is also merged with logical AND:
+			// if any source observes a non-intrinsic symbol
+			// (IsIntrinsic=false), we should not keep it marked intrinsic.
+			dstNode.IsIntrinsic = dstNode.IsIntrinsic && srcNode.IsIntrinsic
+			continue
+		}
+		n := *srcNode
+		g.Nodes[id] = &n
 	}
-	dst.Relocs = append(dst.Relocs, src.Relocs...)
+	g.Relocs = append(g.Relocs, src.Relocs...)
+}
+
+// MergeAll merges multiple graphs and returns a new graph.
+func MergeAll(graphs ...*Graph) *Graph {
+	merged := NewGraph()
+	for _, g := range graphs {
+		merged.MergeFrom(g)
+	}
+	return merged
 }
 
 func resolveSymbolValue(v llvm.Value) llvm.Value {

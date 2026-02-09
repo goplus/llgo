@@ -925,8 +925,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
 				if aPkg.ArchiveFile != "" {
 					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
-				} else {
-					linkInputs = append(linkInputs, aPkg.ObjFiles...)
 				}
 				return
 			} else {
@@ -942,8 +940,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			if aPkg.ArchiveFile != "" {
 				linkInputs = append(linkInputs, aPkg.ArchiveFile)
-			} else {
-				linkInputs = append(linkInputs, aPkg.ObjFiles...)
 			}
 		}
 	})
@@ -1114,35 +1110,22 @@ func buildPackageIRGraph(pkg llssa.Package) *relocgraph.Graph {
 
 // mergePackageGraphs merges IRGraphs from all packages in ctx.
 func mergePackageGraphs(ctx *context) *relocgraph.Graph {
-	merged := &relocgraph.Graph{
-		Nodes:  make(map[relocgraph.SymID]*relocgraph.NodeInfo),
-		Relocs: nil,
-	}
-	// Merge from all cached packages
+	var graphs []*relocgraph.Graph
+	// Collect from all cached packages.
 	for _, pkg := range ctx.pkgs {
 		if pkg == nil || pkg.IRGraph == nil {
 			continue
 		}
-		for id, node := range pkg.IRGraph.Nodes {
-			if _, ok := merged.Nodes[id]; !ok {
-				merged.Nodes[id] = node
-			}
-		}
-		merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
+		graphs = append(graphs, pkg.IRGraph)
 	}
-	// Merge from entry packages (generated main module, etc.)
+	// Collect from entry packages (generated main module, etc.).
 	for _, pkg := range ctx.entryPkgs {
 		if pkg == nil || pkg.IRGraph == nil {
 			continue
 		}
-		for id, node := range pkg.IRGraph.Nodes {
-			if _, ok := merged.Nodes[id]; !ok {
-				merged.Nodes[id] = node
-			}
-		}
-		merged.Relocs = append(merged.Relocs, pkg.IRGraph.Relocs...)
+		graphs = append(graphs, pkg.IRGraph)
 	}
-	return merged
+	return relocgraph.MergeAll(graphs...)
 }
 
 func graphSummary(g *relocgraph.Graph) (nodes, edges, call, ref, reloc int) {
