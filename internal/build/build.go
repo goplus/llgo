@@ -1398,6 +1398,10 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "weak" {
 		return false
 	}
+	// unique can use upstream implementation on arm64/amd64.
+	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "unique" {
+		return false
+	}
 	// internal/weak can use upstream implementation on arm64/amd64.
 	if conf != nil && (conf.Goarch == "arm64" || conf.Goarch == "amd64") && pkgPath == "internal/weak" {
 		return false
