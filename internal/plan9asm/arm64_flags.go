@@ -157,4 +157,3 @@ func (c *arm64Ctx) condValue(cond string) (string, error) {
 		return "", fmt.Errorf("arm64: unsupported condition %q", cond)
 	}
 }
-

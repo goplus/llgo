@@ -16,4 +16,3 @@ func (c *amd64Ctx) evalI64(op Operand) (string, error) {
 		return "", fmt.Errorf("amd64: unsupported i64 operand: %s", op.String())
 	}
 }
-

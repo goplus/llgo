@@ -7,6 +7,18 @@ import (
 
 func (c *arm64Ctx) lowerBranch(bi int, op Op, ins Instr, emitBr arm64EmitBr, emitCondBr arm64EmitCondBr) (ok bool, terminated bool, err error) {
 	switch op {
+	case "BL", "CALL":
+		if len(ins.Args) != 1 {
+			return true, false, fmt.Errorf("arm64 %s expects 1 operand: %q", op, ins.Raw)
+		}
+		if ins.Args[0].Kind != OpSym || !strings.HasSuffix(ins.Args[0].Sym, "(SB)") {
+			return true, false, fmt.Errorf("arm64 %s expects symbol(SB): %q", op, ins.Raw)
+		}
+		if err := c.callSym(ins.Args[0]); err != nil {
+			return true, false, err
+		}
+		return true, false, nil
+
 	case "B", "JMP":
 		if len(ins.Args) != 1 {
 			return true, false, fmt.Errorf("arm64 B expects 1 operand: %q", ins.Raw)
@@ -128,6 +140,51 @@ func (c *arm64Ctx) lowerBranch(bi int, op Op, ins Instr, emitBr arm64EmitBr, emi
 		return true, true, nil
 	}
 	return false, false, nil
+}
+
+func (c *arm64Ctx) callSym(symOp Operand) error {
+	if symOp.Kind != OpSym {
+		return fmt.Errorf("arm64 call expects sym operand, got %s", symOp.String())
+	}
+	s := strings.TrimSpace(symOp.Sym)
+	if !strings.HasSuffix(s, "(SB)") {
+		return fmt.Errorf("arm64 call expects (SB) symbol, got %q", s)
+	}
+	s = strings.TrimSuffix(s, "(SB)")
+	callee := c.resolve(s)
+	// Syscall stubs invoke runtime entersyscall/exitsyscall around SVC.
+	// llgo runtime does not require these scheduler hooks at this layer.
+	if callee == "runtime.entersyscall" || callee == "runtime.exitsyscall" {
+		return nil
+	}
+	csig, ok := c.sigs[callee]
+	if !ok {
+		// Default for external runtime helpers not discovered in this asm file.
+		csig = FuncSig{Name: callee, Ret: Void}
+	}
+	if len(csig.Args) != 0 {
+		return fmt.Errorf("arm64 call %q with %d args not supported yet", callee, len(csig.Args))
+	}
+	if csig.Ret == Void {
+		fmt.Fprintf(c.b, "  call void %s()\n", llvmGlobal(callee))
+		return nil
+	}
+	t := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = call %s %s()\n", t, csig.Ret, llvmGlobal(callee))
+	switch csig.Ret {
+	case I64:
+		return c.storeReg(Reg("R0"), "%"+t)
+	case I32, I16, I8, I1:
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext %s %%%s to i64\n", z, csig.Ret, t)
+		return c.storeReg(Reg("R0"), "%"+z)
+	case Ptr:
+		p := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %%%s to i64\n", p, t)
+		return c.storeReg(Reg("R0"), "%"+p)
+	default:
+		return fmt.Errorf("arm64 call %q unsupported return type %s", callee, csig.Ret)
+	}
 }
 
 func (c *arm64Ctx) tailCallAndRet(symOp Operand) error {
