@@ -6,7 +6,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/freevars"
 
 @"github.com/goplus/llgo/cl/_testrt/freevars.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/freevars.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -19,13 +19,13 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"({ ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/freevars.main$2", ptr null })
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"({ ptr, ptr } %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1"({ ptr, ptr } %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store { ptr, ptr } %0, ptr %1, align 8
@@ -39,7 +39,7 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$1$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
   %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
@@ -70,21 +70,23 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$2"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/freevars.main$2"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) #0 {
 _llgo_0:
   ret void
 }
 
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/freevars.main$2"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/freevars.main$2"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   tail call void @"github.com/goplus/llgo/cl/_testrt/freevars.main$2"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

@@ -10,7 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/allocacstrs"
 @2 = private unnamed_addr constant [1 x i8] c"c", align 1
 @3 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibc/allocacstrs.init"() {
+define void @"github.com/goplus/llgo/cl/_testlibc/allocacstrs.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibc/allocacstrs.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -23,7 +23,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibc/allocacstrs.main"() {
+define void @"github.com/goplus/llgo/cl/_testlibc/allocacstrs.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %0, i64 0
@@ -84,10 +84,12 @@ _llgo_6:                                          ; preds = %_llgo_4
   br label %_llgo_1
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

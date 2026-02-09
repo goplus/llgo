@@ -4,7 +4,7 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/printf"
 @"github.com/goplus/llgo/cl/_testdata/printf.hello" = global [7 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/printf.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testdata/printf.init"() {
+define void @"github.com/goplus/llgo/cl/_testdata/printf.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/printf.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -24,10 +24,12 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/printf.main"() {
+define void @"github.com/goplus/llgo/cl/_testdata/printf.main"() #0 {
 _llgo_0:
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/printf.hello")
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

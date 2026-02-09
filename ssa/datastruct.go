@@ -342,6 +342,10 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	if lowIsNil {
 		low = prog.IntVal(0, prog.Int())
 	}
+	low = b.fitIntSize(low)
+	if !high.IsNil() {
+		high = b.fitIntSize(high)
+	}
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		if t.Kind() != types.String {
@@ -382,6 +386,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	if max.IsNil() {
 		max = nCap
 	}
+	max = b.fitIntSize(max)
 	ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
 	return
 }

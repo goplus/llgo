@@ -111,6 +111,7 @@ case "$test_dir" in
 			"riscv32"
 			"riscv64"
 			"rp2040"
+			"nintendoswitch" # undefined symbol under lto, should not work when no-lto
 		)
 		;;
 	defer)

@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/complex"
 @1 = private unnamed_addr constant [11 x i8] c"real(3+4i):", align 1
 @2 = private unnamed_addr constant [11 x i8] c"imag(3+4i):", align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/complex.f"({ double, double } %0, { double, double } %1) {
+define void @"github.com/goplus/llgo/cl/_testlibgo/complex.f"({ double, double } %0, { double, double } %1) #0 {
 _llgo_0:
   %2 = call double @"math/cmplx.Abs"({ double, double } %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 10 })
@@ -28,7 +28,7 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/complex.init"() {
+define void @"github.com/goplus/llgo/cl/_testlibgo/complex.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/complex.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -42,18 +42,20 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/complex.main"() {
+define void @"github.com/goplus/llgo/cl/_testlibgo/complex.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testlibgo/complex.f"({ double, double } { double 3.000000e+00, double 4.000000e+00 }, { double, double } { double 3.000000e+00, double 4.000000e+00 })
   ret void
 }
 
-declare double @"math/cmplx.Abs"({ double, double })
+declare double @"math/cmplx.Abs"({ double, double }) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
 
-declare void @"math/cmplx.init"()
+declare void @"math/cmplx.init"() #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

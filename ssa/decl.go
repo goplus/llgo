@@ -214,6 +214,7 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 	if p.isPreservedName(name) {
 		p.markLLVMUsed(fn)
 	}
+	fn.AddFunctionAttr(p.NonLeafAttr)
 	ret := newFunction(fn, t, p, p.Prog, hasFreeVars)
 	p.fns[name] = ret
 	return ret

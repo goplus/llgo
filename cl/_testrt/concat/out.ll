@@ -10,7 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/concat"
 @2 = private unnamed_addr constant [1 x i8] c" ", align 1
 @3 = private unnamed_addr constant [5 x i8] c"World", align 1
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/concat.concat"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/concat.concat"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
@@ -38,14 +38,14 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %2
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/concat.info"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/concat.info"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) #0 {
 _llgo_0:
   %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, %"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
   %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 })
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %2
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/concat.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/concat.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/concat.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -58,7 +58,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/concat.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/concat.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %0, i64 0
@@ -76,12 +76,14 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

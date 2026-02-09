@@ -9,7 +9,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/matrix"
 @__llgo_py.numpy = external global ptr, align 8
 @3 = private unnamed_addr constant [4 x i8] c"add\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/matrix.init"() {
+define void @"github.com/goplus/llgo/cl/_testpy/matrix.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -25,7 +25,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/matrix.main"() {
+define void @"github.com/goplus/llgo/cl/_testpy/matrix.main"() #0 {
 _llgo_0:
   %0 = call ptr @PyList_New(i64 3)
   %1 = call ptr @PyFloat_FromDouble(double 1.000000e+00)
@@ -91,20 +91,22 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/lib/py/numpy.init"()
+declare void @"github.com/goplus/lib/py/numpy.init"() #0
 
-declare ptr @PyList_New(i64)
+declare ptr @PyList_New(i64) #0
 
-declare ptr @PyFloat_FromDouble(double)
+declare ptr @PyFloat_FromDouble(double) #0
 
-declare i32 @PyList_SetItem(ptr, i64, ptr)
+declare i32 @PyList_SetItem(ptr, i64, ptr) #0
 
-declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
+declare ptr @PyObject_CallFunctionObjArgs(ptr, ...) #0
 
-declare ptr @PyObject_Str(ptr)
+declare ptr @PyObject_Str(ptr) #0
 
-declare ptr @PyUnicode_AsUTF8(ptr)
+declare ptr @PyUnicode_AsUTF8(ptr) #0
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
 
-declare void @llgoLoadPyModSyms(ptr, ...)
+declare void @llgoLoadPyModSyms(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/struct"
 @"github.com/goplus/llgo/cl/_testrt/struct.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testrt/struct.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testrt/struct.Foo", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -27,23 +27,23 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/struct.(*Foo).Print"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/struct.(*Foo).Print"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
   call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %1)
   ret void
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/struct._Cgo_ptr"(ptr %0) {
+define ptr @"github.com/goplus/llgo/cl/_testrt/struct._Cgo_ptr"(ptr %0) #0 {
 _llgo_0:
   ret ptr %0
 }
 
-declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-define void @"github.com/goplus/llgo/cl/_testrt/struct.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/struct.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/struct.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -67,7 +67,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/struct.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/struct.main"() #0 {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/cl/_testrt/struct.Foo", align 8
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -81,10 +81,11 @@ _llgo_0:
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, ...) #0
 
-declare void @syscall.init()
+declare void @syscall.init() #0
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { "frame-pointer"="non-leaf" }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) "frame-pointer"="non-leaf" }

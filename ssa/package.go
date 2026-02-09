@@ -439,6 +439,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		export:         make(map[string]string),
 		preserveSyms:   make(map[string]struct{}),
 		llvmUsedValues: make([]llvm.Value, 0, 4),
+		NonLeafAttr:    p.ctx.CreateStringAttribute("frame-pointer", "non-leaf"),
 	}
 	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
@@ -706,6 +707,7 @@ type aPackage struct {
 	export         map[string]string   // pkgPath.nameInPkg => exportname
 	preserveSyms   map[string]struct{} // set of exported symbol names
 	llvmUsedValues []llvm.Value
+	NonLeafAttr    llvm.Attribute
 }
 
 type Package = *aPackage

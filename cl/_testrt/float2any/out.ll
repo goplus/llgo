@@ -21,7 +21,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/float2any"
 @5 = private unnamed_addr constant [36 x i8] c"type assertion any -> float64 failed", align 1
 @6 = private unnamed_addr constant [9 x i8] c"error f64", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = icmp eq ptr %1, @_llgo_float32
@@ -53,7 +53,7 @@ _llgo_4:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/float2any.check64"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/float2any.check64"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
   %2 = icmp eq ptr %1, @_llgo_float64
@@ -84,17 +84,17 @@ _llgo_4:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define float @"github.com/goplus/llgo/cl/_testrt/float2any.f32"() {
+define float @"github.com/goplus/llgo/cl/_testrt/float2any.f32"() #0 {
 _llgo_0:
   ret float 0x400921FB60000000
 }
 
-define double @"github.com/goplus/llgo/cl/_testrt/float2any.f64"() {
+define double @"github.com/goplus/llgo/cl/_testrt/float2any.f64"() #0 {
 _llgo_0:
   ret double 0x400921FB53C8D4F1
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/float2any.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/float2any.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/float2any.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -107,7 +107,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/float2any.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/float2any.main"() #0 {
 _llgo_0:
   %0 = call float @"github.com/goplus/llgo/cl/_testrt/float2any.f32"()
   %1 = bitcast float %0 to i32
@@ -122,38 +122,40 @@ _llgo_0:
   ret void
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.f32equal"(ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.f32equal"(ptr, ptr) #0
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.f32equal"(ptr %0, ptr %1, ptr %2) {
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.f32equal"(ptr %0, ptr %1, ptr %2) #0 {
 _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.f32equal"(ptr %1, ptr %2)
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) #0 {
 _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) #0 {
 _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr, ptr) #0
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr %0, ptr %1, ptr %2) {
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr %0, ptr %1, ptr %2) #0 {
 _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }

@@ -3,7 +3,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/constuptr"
 
 @"github.com/goplus/llgo/cl/_testrt/constuptr.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/constuptr.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/constuptr.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/constuptr.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -16,13 +16,15 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/constuptr.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/constuptr.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr inttoptr (i64 100 to ptr))
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

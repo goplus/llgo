@@ -4,7 +4,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/qsort"
 @"github.com/goplus/llgo/cl/_testrt/qsort.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsort.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsort.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/qsort.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -17,7 +17,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsort.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsort.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -55,7 +55,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsort.main$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsort.main$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -64,10 +64,12 @@ _llgo_0:
   ret i32 %5
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @qsort(ptr, i64, i64, ptr)
+declare void @qsort(ptr, i64, i64, ptr) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

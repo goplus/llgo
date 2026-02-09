@@ -194,23 +194,25 @@ func TestClosureNoCtxValue(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0) {
+define i64 @fn(i64 %0) #0 {
 _llgo_0:
   ret i64 %0
 }
 
-define void @holder() {
+define void @holder() #0 {
 _llgo_0:
   %0 = alloca { ptr, ptr }, align 8
   store { ptr, ptr } { ptr @__llgo_stub.fn, ptr null }, ptr %0, align 8
   ret void
 }
 
-define linkonce i64 @__llgo_stub.fn(ptr %0, i64 %1) {
+define linkonce i64 @__llgo_stub.fn(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = tail call i64 @fn(i64 %1)
   ret i64 %2
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -249,12 +251,12 @@ func TestClosureFuncPtrValue(t *testing.T) {
 	expected := fmt.Sprintf(`; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %%0) {
+define i64 @fn(i64 %%0) #0 {
 _llgo_0:
   ret i64 %%0
 }
 
-define void @holder() {
+define void @holder() #0 {
 _llgo_0:
   %%0 = alloca { ptr, ptr }, align 8
   %%1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
@@ -264,14 +266,16 @@ _llgo_0:
   ret void
 }
 
-define linkonce i64 @%s(ptr %%0, i64 %%1) {
+define linkonce i64 @%s(ptr %%0, i64 %%1) #0 {
 _llgo_0:
   %%2 = load ptr, ptr %%0, align 8
   %%3 = tail call i64 %%2(i64 %%1)
   ret i64 %%3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `, wrapRef, wrapRef)
 	assertPkg(t, pkg, expected)
 }
@@ -295,13 +299,15 @@ func TestCallClosureDynamic(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @caller({ ptr, ptr } %0, i64 %1) {
+define i64 @caller({ ptr, ptr } %0, i64 %1) #0 {
 _llgo_0:
   %2 = extractvalue { ptr, ptr } %0, 1
   %3 = extractvalue { ptr, ptr } %0, 0
   %4 = call i64 %3(ptr %2, i64 %1)
   ret i64 %4
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -339,12 +345,12 @@ func TestMakeClosureWithCtx(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @inner(ptr %0, i64 %1) {
+define i64 @inner(ptr %0, i64 %1) #0 {
 _llgo_0:
   ret i64 %1
 }
 
-define { ptr, ptr } @outer(i64 %0) {
+define { ptr, ptr } @outer(i64 %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
@@ -353,7 +359,9 @@ _llgo_0:
   ret { ptr, ptr } %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -422,7 +430,7 @@ source_filename = "foo/bar"
 
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
 
-define i64 @caller(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+define i64 @caller(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
   %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
@@ -436,7 +444,9 @@ _llgo_0:
   ret i64 %9
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -791,10 +801,12 @@ func TestConst(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i1 @fn() {
+define i1 @fn() #0 {
 _llgo_0:
   ret i1 true
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -848,7 +860,9 @@ func TestDeclFunc(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-declare void @fn(i64)
+declare void @fn(i64) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -865,10 +879,12 @@ func TestBasicFunc(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0, double %1) {
+define i64 @fn(i64 %0, double %1) #0 {
 _llgo_0:
   ret i64 1
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -885,10 +901,12 @@ func TestFuncParam(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0, double %1) {
+define i64 @fn(i64 %0, double %1) #0 {
 _llgo_0:
   ret i64 %0
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -912,16 +930,18 @@ func TestFuncCall(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0, double %1) {
+define i64 @fn(i64 %0, double %1) #0 {
 _llgo_0:
   ret i64 1
 }
 
-define void @main() {
+define void @main() #0 {
 _llgo_0:
   %0 = call i64 @fn(i64 1, double 1.200000e+00)
   ret void
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -943,11 +963,13 @@ source_filename = "foo/bar"
 
 @a = external global i64, align 8
 
-define { i64, double } @fn(double %0) {
+define { i64, double } @fn(double %0) #0 {
 _llgo_0:
   %1 = insertvalue { i64, double } { ptr @a, double undef }, double %0, 1
   ret { i64, double } %1
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -960,10 +982,12 @@ func TestJump(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define void @loop() {
+define void @loop() #0 {
 _llgo_0:
   br label %_llgo_0
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -987,7 +1011,7 @@ func TestIf(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0) {
+define i64 @fn(i64 %0) #0 {
 _llgo_0:
   %1 = icmp sgt i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_2
@@ -998,6 +1022,8 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   ret i64 0
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -1012,7 +1038,9 @@ func TestPrintf(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -1031,11 +1059,13 @@ func TestBinOp(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0, double %1) {
+define i64 @fn(i64 %0, double %1) #0 {
 _llgo_0:
   %2 = add i64 %0, 1
   ret i64 %2
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -1057,13 +1087,15 @@ func TestUnOp(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(ptr %0) {
+define i64 @fn(ptr %0) #0 {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
   %2 = xor i64 %1, 1
   store i64 %2, ptr %0, align 4
   ret i64 %2
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -1112,7 +1144,7 @@ func TestCompareSelect(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i64 @fn(i64 %0, i64 %1, i64 %2) {
+define i64 @fn(i64 %0, i64 %1, i64 %2) #0 {
 _llgo_0:
   %3 = icmp sgt i64 %0, %1
   %4 = select i1 %3, i64 %0, i64 %1
@@ -1120,6 +1152,8 @@ _llgo_0:
   %6 = select i1 %5, i64 %4, i64 %2
   ret i64 %6
 }
+
+attributes #0 = { "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -1237,16 +1271,17 @@ func TestSetjmpReturnsTwice(t *testing.T) {
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
-define i32 @test(ptr %0) {
+define i32 @test(ptr %0) #0 {
 _llgo_0:
   %1 = call i32 @setjmp(ptr %0)
   ret i32 %1
 }
 
 ; Function Attrs: returns_twice
-declare i32 @setjmp(ptr) #0
+declare i32 @setjmp(ptr) #1
 
-attributes #0 = { returns_twice }
+attributes #0 = { "frame-pointer"="non-leaf" }
+attributes #1 = { returns_twice "frame-pointer"="non-leaf" }
 `)
 }
 
@@ -1341,7 +1376,7 @@ func TestAbiTables(t *testing.T) {
 
 	fn := pkg.InitAbiTypes(pkg.Path() + ".init$abitables")
 	s := fn.impl.String()
-	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
+	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() #0 {
 _llgo_0:
   %0 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr @"foo/bar.init$abitables$slice", align 8
   store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, ptr @"github.com/goplus/llgo/runtime/internal/runtime.typelist", align 8

@@ -27,7 +27,7 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/foo"
 @"github.com/goplus/llgo/cl/_testdata/foo.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88$fields" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 1 }, ptr @_llgo_int, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 @6 = private unnamed_addr constant [4 x i8] c"load", align 1
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.Bar"() {
+define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.Bar"() #0 {
 _llgo_0:
   %0 = alloca { i64 }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -40,7 +40,7 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.F"() {
+define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.F"() #0 {
 _llgo_0:
   %0 = alloca { i64 }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -53,7 +53,7 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %0) {
+define ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testdata/foo.Foo", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -63,26 +63,26 @@ _llgo_0:
   ret ptr %3
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb"(ptr %0) {
+define ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, align 8
   %2 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %1)
   ret ptr %2
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %0) #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"(ptr %0) #0 {
 _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/foo.init"() {
+define void @"github.com/goplus/llgo/cl/_testdata/foo.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/foo.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -96,28 +96,29 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) #0 {
 _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr) #0
 
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
+define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) #0 {
 _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %1, ptr %2)
   ret i1 %3
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { "frame-pointer"="non-leaf" }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) "frame-pointer"="non-leaf" }
