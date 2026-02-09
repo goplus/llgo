@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package irgraph
+package relocgraph
 
 import (
 	"strings"
@@ -66,17 +66,6 @@ type Graph struct {
 type Options struct {
 	IncludeIntrinsics bool
 	IncludeDecls      bool
-}
-
-// RelocRecord is a symbol-level relocation-like edge produced by SSA lowering.
-// It is intentionally LLVM-value free so callers can pass package-context data.
-type RelocRecord struct {
-	Kind   int32
-	Owner  string
-	Target string
-	Addend int64
-	Name   string
-	FnType string
 }
 
 // Build constructs a dependency graph from an LLVM module.
@@ -143,6 +132,10 @@ type RelocEdge struct {
 	Name   string // optional info (e.g., iface method name)
 	FnType SymID  // optional func type symbol (e.g., iface method func type)
 }
+
+// RelocRecord is kept as an alias for readability at call sites that append
+// SSA-produced reloc records into a graph.
+type RelocRecord = RelocEdge
 
 // AddEdge inserts or updates an edge in the graph.
 func (g *Graph) AddEdge(from, to SymID, kind EdgeKind) {
@@ -290,78 +283,31 @@ func resolveGlobalValue(v llvm.Value) llvm.Value {
 	return sym
 }
 
-const (
-	relocUseIface       = 1
-	relocUseIfaceMethod = 2
-	relocUseNamedMethod = 3
-	relocMethodOff      = 4
-	relocReflectMethod  = 5
-	relocTypeRef        = 6
-)
-
-func relocKindToEdge(kind int32) (EdgeKind, bool) {
-	switch kind {
-	case relocUseIface:
-		return EdgeRelocUseIface, true
-	case relocUseIfaceMethod:
-		return EdgeRelocUseIfaceMethod, true
-	case relocUseNamedMethod:
-		return EdgeRelocUseNamedMethod, true
-	case relocMethodOff:
-		return EdgeRelocMethodOff, true
-	case relocReflectMethod:
-		return EdgeRelocReflectMethod, true
-	case relocTypeRef:
-		return EdgeRelocTypeRef, true
-	default:
-		return 0, false
-	}
-}
-
-// AddRelocRecords injects SSA-collected reloc records into the graph.
-func (g *Graph) AddRelocRecords(records []RelocRecord, opts Options) {
-	for _, rec := range records {
-		edgeKind, ok := relocKindToEdge(rec.Kind)
-		if !ok {
+// AddRelocs injects SSA-collected reloc edges into the graph.
+func (g *Graph) AddRelocs(relocs []RelocEdge, opts Options) {
+	for _, rec := range relocs {
+		if rec.Owner == "" {
 			continue
 		}
-		ownerID := SymID(rec.Owner)
-		targetID := SymID(rec.Target)
-		if ownerID == "" {
+		if strings.HasPrefix(string(rec.Owner), "llvm.") && !opts.IncludeIntrinsics {
 			continue
 		}
-		if strings.HasPrefix(string(ownerID), "llvm.") && !opts.IncludeIntrinsics {
-			continue
+		if rec.Kind == EdgeRelocUseNamedMethod && rec.Name == "" {
+			rec.Name = string(rec.Target)
 		}
-		if edgeKind == EdgeRelocUseNamedMethod {
-			name := rec.Name
-			if name == "" {
-				name = string(targetID)
-			}
-			if name == "" {
-				continue
-			}
-			g.addRelocEdge(ownerID, SymID(name), edgeKind, rec.Addend, name, "")
-			continue
-		}
-		if targetID == "" {
+		if rec.Target == "" {
 			// methodoff relocs must preserve three-entry-per-method grouping
 			// even when target is empty (skipped methods from other packages).
-			if edgeKind == EdgeRelocMethodOff {
-				g.Relocs = append(g.Relocs, RelocEdge{
-					Owner:  ownerID,
-					Kind:   edgeKind,
-					Addend: rec.Addend,
-					Name:   rec.Name,
-					FnType: SymID(rec.FnType),
-				})
+			if rec.Kind == EdgeRelocMethodOff {
+				g.ensureNode(rec.Owner, false, strings.HasPrefix(string(rec.Owner), "llvm."))
+				g.Relocs = append(g.Relocs, rec)
 			}
 			continue
 		}
-		if strings.HasPrefix(string(targetID), "llvm.") && !opts.IncludeIntrinsics {
+		if strings.HasPrefix(string(rec.Target), "llvm.") && !opts.IncludeIntrinsics {
 			continue
 		}
-		g.addRelocEdge(ownerID, targetID, edgeKind, rec.Addend, rec.Name, SymID(rec.FnType))
+		g.addRelocEdge(rec.Owner, rec.Target, rec.Kind, rec.Addend, rec.Name, rec.FnType)
 	}
 }
 

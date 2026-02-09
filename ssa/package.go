@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -721,15 +722,8 @@ func (p Package) ExportFuncs() map[string]string {
 }
 
 // RelocRecord records one relocation-style edge emitted during SSA lowering.
-// It is consumed by higher-level DCE graph construction without re-parsing LLVM IR.
-type RelocRecord struct {
-	Kind   int32
-	Owner  string
-	Target string
-	Addend int64
-	Name   string
-	FnType string
-}
+// It is consumed directly by higher-level DCE graph construction.
+type RelocRecord = relocgraph.RelocEdge
 
 // RelocRecords returns reloc records collected for this package.
 func (p Package) RelocRecords() []RelocRecord {
@@ -833,15 +827,15 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 
 // reloc helpers -------------------------------------------------------------
 
-type relocKind = int32
+type relocKind = relocgraph.EdgeKind
 
 const (
-	relocUseIface       relocKind = 1
-	relocUseIfaceMethod           = 2
-	relocUseNamedMethod           = 3
-	relocMethodOff                = 4
-	relocReflectMethod            = 5
-	relocTypeRef                  = 6
+	relocUseIface       relocKind = relocgraph.EdgeRelocUseIface
+	relocUseIfaceMethod           = relocgraph.EdgeRelocUseIfaceMethod
+	relocUseNamedMethod           = relocgraph.EdgeRelocUseNamedMethod
+	relocMethodOff                = relocgraph.EdgeRelocMethodOff
+	relocReflectMethod            = relocgraph.EdgeRelocReflectMethod
+	relocTypeRef                  = relocgraph.EdgeRelocTypeRef
 )
 
 // addReloc records a reloc metadata entry in package context.
@@ -854,12 +848,12 @@ func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, n
 		fnTypeName = relocSymbolName(fnType)
 	}
 	p.relocRecords = append(p.relocRecords, RelocRecord{
-		Kind:   int32(kind),
-		Owner:  ownerName,
-		Target: targetName,
+		Kind:   kind,
+		Owner:  relocgraph.SymID(ownerName),
+		Target: relocgraph.SymID(targetName),
 		Addend: add,
 		Name:   name,
-		FnType: fnTypeName,
+		FnType: relocgraph.SymID(fnTypeName),
 	})
 }
 

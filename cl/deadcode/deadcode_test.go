@@ -30,8 +30,8 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/cl/deadcode"
-	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/build"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/qiniu/x/test"
 )
 
@@ -108,7 +108,7 @@ func hasGoFiles(dir string) bool {
 	return false
 }
 
-func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package) {
+func loadPackageGraph(t *testing.T, dir string) (*relocgraph.Graph, []build.Package) {
 	t.Helper()
 	conf := build.NewDefaultConf(build.ModeBuild)
 	conf.DCE = true
@@ -126,27 +126,27 @@ func loadPackageGraph(t *testing.T, dir string) (*irgraph.Graph, []build.Package
 	}
 	graph := mergeGraphs(pkgs)
 	if graph == nil {
-		t.Fatal("missing irgraph output")
+		t.Fatal("missing relocgraph output")
 	}
 	return graph, pkgs
 }
 
-func rootSymbols(pkgs []build.Package) ([]irgraph.SymID, error) {
+func rootSymbols(pkgs []build.Package) ([]relocgraph.SymID, error) {
 	entryCandidates := []string{"main", "_start"}
-	var roots []irgraph.SymID
+	var roots []relocgraph.SymID
 	for _, cand := range entryCandidates {
-		var defs []irgraph.SymID
+		var defs []relocgraph.SymID
 		foundDecl := false
 		for _, pkg := range pkgs {
 			if pkg.Package == nil || pkg.IRGraph == nil {
 				continue
 			}
-			if node, ok := pkg.IRGraph.Nodes[irgraph.SymID(cand)]; ok {
+			if node, ok := pkg.IRGraph.Nodes[relocgraph.SymID(cand)]; ok {
 				if node.IsDecl {
 					foundDecl = true
 					continue
 				}
-				defs = append(defs, irgraph.SymID(cand))
+				defs = append(defs, relocgraph.SymID(cand))
 			}
 		}
 		if len(defs) == 1 {
@@ -221,15 +221,15 @@ func symbolsForPackage(pkg build.Package) []string {
 	return syms
 }
 
-func mergeGraphs(pkgs []build.Package) *irgraph.Graph {
-	var merged *irgraph.Graph
+func mergeGraphs(pkgs []build.Package) *relocgraph.Graph {
+	var merged *relocgraph.Graph
 	for _, pkg := range pkgs {
 		if pkg.IRGraph == nil {
 			continue
 		}
 		if merged == nil {
-			merged = &irgraph.Graph{
-				Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
+			merged = &relocgraph.Graph{
+				Nodes:  make(map[relocgraph.SymID]*relocgraph.NodeInfo),
 				Relocs: nil,
 			}
 		}
@@ -258,19 +258,19 @@ func dumpGraphSummary(t *testing.T, pkg build.Package) {
 	}
 	var callCnt, refCnt, relocCnt int
 	for _, r := range g.Relocs {
-		if r.Kind&irgraph.EdgeCall != 0 {
+		if r.Kind&relocgraph.EdgeCall != 0 {
 			callCnt++
 		}
-		if r.Kind&irgraph.EdgeRef != 0 {
+		if r.Kind&relocgraph.EdgeRef != 0 {
 			refCnt++
 		}
-		if r.Kind&irgraph.EdgeRelocMask != 0 {
+		if r.Kind&relocgraph.EdgeRelocMask != 0 {
 			relocCnt++
 		}
 	}
 	t.Logf("[deadcode] pkg %s: nodes=%d edges=%d call=%d ref=%d reloc=%d", name, len(g.Nodes), countEdges(g), callCnt, refCnt, relocCnt)
 }
 
-func countEdges(g *irgraph.Graph) int {
+func countEdges(g *relocgraph.Graph) int {
 	return len(g.Relocs)
 }

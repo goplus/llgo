@@ -1,13 +1,13 @@
 # IRGraph 用例说明（直连调用边）
 
-本文档说明 `cl/irgraph/_testdata/*` 的用例设计与预期输出。  
+本文档说明 `internal/relocgraph/_testdata/*` 的用例设计与预期输出。  
 目标是覆盖 LLGo 生成 LLVM IR 时的“直接调用边（direct call）”行为，并记录常见的运行时辅助调用（runtime helper）在图中的表现。
 
 ## 生成方式
-- 测试入口：`cl/irgraph/irgraph_test.go`  
+- 测试入口：`internal/relocgraph/relocgraph_test.go`  
 - 每个子目录包含源码与期望输出：`in.go` / `out.txt`  
-- 更新方式：将 `updateTestdata` 临时置 `true`，执行 `go test ./cl/irgraph` 后自动写回 `out.txt`，再改回 `false`。
-  - Reloc 用例位于 `cl/irgraph/_testdata_reloc/*`，更新时需将 `updateRelocTestdata` 置 `true`。
+- 更新方式：将 `updateTestdata` 临时置 `true`，执行 `go test ./internal/relocgraph` 后自动写回 `out.txt`，再改回 `false`。
+  - Reloc 用例位于 `internal/relocgraph/_testdata_reloc/*`，更新时需将 `updateRelocTestdata` 置 `true`。
 
 ## 输出格式
 每行一条边：
@@ -265,7 +265,7 @@ reloc(<kind>) <owner> -> <target>
 
 # Reloc 用例说明（隐式依赖）
 
-以下用例来自 `cl/irgraph/_testdata_reloc/*`，用于验证 **SSA 记录的 reloc 元信息** 是否正确进入 IRGraph。
+以下用例来自 `internal/relocgraph/_testdata_reloc/*`，用于验证 **SSA 记录的 reloc 元信息** 是否正确进入 IRGraph。
 
 ### useiface
 - 目的：类型被转换为接口（UsedInIface）。

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/cl/irgraph"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llvm"
 )
 
@@ -119,25 +119,25 @@ func parseModuleFromFile(t *testing.T, ctx llvm.Context, file string) llvm.Modul
 	return mod
 }
 
-func loadReachMethods(file string) (map[irgraph.SymID]map[int]bool, error) {
+func loadReachMethods(file string) (map[relocgraph.SymID]map[int]bool, error) {
 	raw, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
 	var decoded map[string][]int
 	if len(strings.TrimSpace(string(raw))) == 0 {
-		return map[irgraph.SymID]map[int]bool{}, nil
+		return map[relocgraph.SymID]map[int]bool{}, nil
 	}
 	if err := json.Unmarshal(raw, &decoded); err != nil {
 		return nil, err
 	}
-	reach := make(map[irgraph.SymID]map[int]bool, len(decoded))
+	reach := make(map[relocgraph.SymID]map[int]bool, len(decoded))
 	for typ, idxs := range decoded {
 		m := make(map[int]bool, len(idxs))
 		for _, idx := range idxs {
 			m[idx] = true
 		}
-		reach[irgraph.SymID(typ)] = m
+		reach[relocgraph.SymID(typ)] = m
 	}
 	return reach, nil
 }

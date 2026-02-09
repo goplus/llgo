@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-package irgraph
+package relocgraph_test
 
 import (
 	"bytes"
@@ -36,6 +36,7 @@ import (
 
 	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/relocgraph"
 	llssa "github.com/goplus/llgo/ssa"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/goplus/llvm"
@@ -76,7 +77,7 @@ func TestGraphFromTestdata(t *testing.T) {
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod := compileModuleFromDir(t, pkgDir)
-			graph := Build(mod, Options{})
+			graph := relocgraph.Build(mod, relocgraph.Options{})
 			got := formatGraph(graph)
 			if updateTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
@@ -119,9 +120,9 @@ func TestRelocGraphFromTestdata(t *testing.T) {
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
-			graph := Build(mod, Options{})
-			graph.AddRelocRecords(relocs, Options{})
-			got := formatGraphWithMask(graph, EdgeRelocMask)
+			graph := relocgraph.Build(mod, relocgraph.Options{})
+			graph.AddRelocs(relocs, relocgraph.Options{})
+			got := formatGraphWithMask(graph, relocgraph.EdgeRelocMask)
 			if updateRelocTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)
@@ -150,10 +151,10 @@ func TestBuildRelocRequiresInjection(t *testing.T) {
 		t.Fatal("expected reloc records from package context")
 	}
 
-	g := Build(mod, Options{})
+	g := relocgraph.Build(mod, relocgraph.Options{})
 	baseReloc := 0
 	for _, r := range g.Relocs {
-		if r.Kind&EdgeRelocMask != 0 {
+		if r.Kind&relocgraph.EdgeRelocMask != 0 {
 			baseReloc++
 		}
 	}
@@ -161,31 +162,31 @@ func TestBuildRelocRequiresInjection(t *testing.T) {
 		t.Fatalf("Build should not include reloc edges before injection: got=%d", baseReloc)
 	}
 
-	g.AddRelocRecords(relocs, Options{})
+	g.AddRelocs(relocs, relocgraph.Options{})
 	injectedReloc := 0
 	for _, r := range g.Relocs {
-		if r.Kind&EdgeRelocMask != 0 {
+		if r.Kind&relocgraph.EdgeRelocMask != 0 {
 			injectedReloc++
 		}
 	}
 	if injectedReloc == 0 {
-		t.Fatal("expected reloc edges after AddRelocRecords")
+		t.Fatal("expected reloc edges after AddRelocs")
 	}
 }
 
-func TestAddRelocRecordsMapping(t *testing.T) {
-	g := &Graph{
-		Nodes:  make(map[SymID]*NodeInfo),
+func TestAddRelocs(t *testing.T) {
+	g := &relocgraph.Graph{
+		Nodes:  make(map[relocgraph.SymID]*relocgraph.NodeInfo),
 		Relocs: nil,
 	}
-	g.AddRelocRecords([]RelocRecord{
+	g.AddRelocs([]relocgraph.RelocEdge{
 		{
-			Kind:   relocUseNamedMethod,
+			Kind:   relocgraph.EdgeRelocUseNamedMethod,
 			Owner:  "caller",
 			Target: "Foo",
 		},
 		{
-			Kind:   relocUseIfaceMethod,
+			Kind:   relocgraph.EdgeRelocUseIfaceMethod,
 			Owner:  "caller",
 			Target: "IfaceType",
 			Addend: 2,
@@ -193,26 +194,26 @@ func TestAddRelocRecordsMapping(t *testing.T) {
 			FnType: "Iface.M$type",
 		},
 		{
-			Kind:   relocMethodOff,
+			Kind:   relocgraph.EdgeRelocMethodOff,
 			Owner:  "TypeA",
 			Target: "",
 			Addend: 1,
 			Name:   "Bar",
 		},
-	}, Options{})
+	}, relocgraph.Options{})
 
 	var foundNamed, foundIfaceMethod, foundMethodOff bool
 	for _, r := range g.Relocs {
 		switch r.Kind {
-		case EdgeRelocUseNamedMethod:
+		case relocgraph.EdgeRelocUseNamedMethod:
 			if r.Owner == "caller" && r.Target == "Foo" && r.Name == "Foo" {
 				foundNamed = true
 			}
-		case EdgeRelocUseIfaceMethod:
+		case relocgraph.EdgeRelocUseIfaceMethod:
 			if r.Owner == "caller" && r.Target == "IfaceType" && r.Name == "M" && r.FnType == "Iface.M$type" && r.Addend == 2 {
 				foundIfaceMethod = true
 			}
-		case EdgeRelocMethodOff:
+		case relocgraph.EdgeRelocMethodOff:
 			if r.Owner == "TypeA" && r.Target == "" && r.Name == "Bar" && r.Addend == 1 {
 				foundMethodOff = true
 			}
@@ -251,7 +252,7 @@ func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
 	return mod
 }
 
-func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (llvm.Module, []RelocRecord) {
+func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (llvm.Module, []relocgraph.RelocEdge) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -302,19 +303,7 @@ func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (
 	if !enableReloc {
 		return ret.Module(), nil
 	}
-	src := ret.RelocRecords()
-	relocs := make([]RelocRecord, len(src))
-	for i, r := range src {
-		relocs[i] = RelocRecord{
-			Kind:   r.Kind,
-			Owner:  r.Owner,
-			Target: r.Target,
-			Addend: r.Addend,
-			Name:   r.Name,
-			FnType: r.FnType,
-		}
-	}
-	return ret.Module(), relocs
+	return ret.Module(), ret.RelocRecords()
 }
 
 type testImporter struct {
@@ -340,11 +329,11 @@ func (i *testImporter) ImportFrom(path, dir string, mode types.ImportMode) (*typ
 	return i.base.ImportFrom(path, dir, mode)
 }
 
-func formatGraph(g *Graph) []byte {
-	return formatGraphWithMask(g, EdgeCall|EdgeRef|EdgeRelocMask)
+func formatGraph(g *relocgraph.Graph) []byte {
+	return formatGraphWithMask(g, relocgraph.EdgeCall|relocgraph.EdgeRef|relocgraph.EdgeRelocMask)
 }
 
-func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
+func formatGraphWithMask(g *relocgraph.Graph, mask relocgraph.EdgeKind) []byte {
 	seen := make(map[string]struct{})
 	var lines []string
 	addLine := func(label, from, to string) {
@@ -360,12 +349,12 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 			continue
 		}
 		label := kindLabel(r.Kind)
-		if r.Kind == EdgeRelocMethodOff {
+		if r.Kind == relocgraph.EdgeRelocMethodOff {
 			label = fmt.Sprintf("reloc(methodoff idx=%d)", r.Addend)
 			if r.Name != "" {
 				label = fmt.Sprintf("%s name=%s", label, r.Name)
 			}
-		} else if r.Kind == EdgeRelocUseIfaceMethod && r.Name != "" {
+		} else if r.Kind == relocgraph.EdgeRelocUseIfaceMethod && r.Name != "" {
 			label = fmt.Sprintf("%s name=%s", label, r.Name)
 			if r.FnType != "" {
 				label = fmt.Sprintf("%s fntype=%s", label, r.FnType)
@@ -382,23 +371,23 @@ func formatGraphWithMask(g *Graph, mask EdgeKind) []byte {
 	return buf.Bytes()
 }
 
-func kindLabel(kind EdgeKind) string {
+func kindLabel(kind relocgraph.EdgeKind) string {
 	switch kind {
-	case EdgeCall:
+	case relocgraph.EdgeCall:
 		return "reloc(directcall)"
-	case EdgeRef:
+	case relocgraph.EdgeRef:
 		return "reloc(directref)"
-	case EdgeRelocUseIface:
+	case relocgraph.EdgeRelocUseIface:
 		return "reloc(useiface)"
-	case EdgeRelocUseIfaceMethod:
+	case relocgraph.EdgeRelocUseIfaceMethod:
 		return "reloc(useifacemethod)"
-	case EdgeRelocUseNamedMethod:
+	case relocgraph.EdgeRelocUseNamedMethod:
 		return "reloc(usenamedmethod)"
-	case EdgeRelocMethodOff:
+	case relocgraph.EdgeRelocMethodOff:
 		return "reloc(methodoff)"
-	case EdgeRelocReflectMethod:
+	case relocgraph.EdgeRelocReflectMethod:
 		return "reloc(reflectmethod)"
-	case EdgeRelocTypeRef:
+	case relocgraph.EdgeRelocTypeRef:
 		return "reloc(typeref)"
 	default:
 		return fmt.Sprintf("kind(%d)", kind)

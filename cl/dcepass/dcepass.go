@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/goplus/llgo/cl/irgraph"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llvm"
 )
 
@@ -28,7 +28,7 @@ import (
 type Stats struct {
 	EmittedType         int
 	DroppedMethod       int
-	DroppedMethodDetail map[irgraph.SymID][]int
+	DroppedMethodDetail map[relocgraph.SymID][]int
 }
 
 // Options controls the DCE pass behavior.
@@ -40,14 +40,14 @@ type Options struct{}
 // weak symbols). For each method-bearing type symbol, this function creates or
 // updates a same-name global in dst, and clears Ifn/Tfn for method indices not
 // listed in reachMethods[type].
-func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethods map[irgraph.SymID]map[int]bool, _ Options) (Stats, error) {
+func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethods map[relocgraph.SymID]map[int]bool, _ Options) (Stats, error) {
 	stats := Stats{
-		DroppedMethodDetail: make(map[irgraph.SymID][]int),
+		DroppedMethodDetail: make(map[relocgraph.SymID][]int),
 	}
 	if dst.IsNil() {
 		return stats, nil
 	}
-	emitted := make(map[irgraph.SymID]bool)
+	emitted := make(map[relocgraph.SymID]bool)
 	for _, src := range srcMods {
 		if src.IsNil() {
 			continue
@@ -58,7 +58,7 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethod
 			if name == "" {
 				continue
 			}
-			sym := irgraph.SymID(name)
+			sym := relocgraph.SymID(name)
 			if emitted[sym] {
 				continue
 			}

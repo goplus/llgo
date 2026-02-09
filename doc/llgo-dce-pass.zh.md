@@ -82,5 +82,5 @@ llgo build -dce -v ...
 - DCE 主流程：`internal/build/build.go`
 - DCE Pass：`cl/dcepass/dcepass.go`
 - 可达性分析：`cl/deadcode`
-- 图构建：`cl/irgraph`
+- 图构建：`internal/relocgraph`
 - reloc 元信息：`ssa/` + `doc/ssa-reloc.zh.md`

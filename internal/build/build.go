@@ -43,7 +43,6 @@ import (
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/dcepass"
 	"github.com/goplus/llgo/cl/deadcode"
-	"github.com/goplus/llgo/cl/irgraph"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
@@ -54,6 +53,7 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
@@ -1006,21 +1006,21 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
-func dceEntryRootsFromGraph(g *irgraph.Graph) ([]irgraph.SymID, error) {
+func dceEntryRootsFromGraph(g *relocgraph.Graph) ([]relocgraph.SymID, error) {
 	if g == nil {
 		return nil, fmt.Errorf("dce graph is nil")
 	}
 	candidates := []string{"main", "_start"}
-	var roots []irgraph.SymID
+	var roots []relocgraph.SymID
 	for _, name := range candidates {
-		node, ok := g.Nodes[irgraph.SymID(name)]
+		node, ok := g.Nodes[relocgraph.SymID(name)]
 		if !ok {
 			continue
 		}
 		if node.IsDecl {
 			return nil, fmt.Errorf("dce root %q is declaration only", name)
 		}
-		roots = append(roots, irgraph.SymID(name))
+		roots = append(roots, relocgraph.SymID(name))
 	}
 	if len(roots) == 0 {
 		return nil, fmt.Errorf("dce requires at least one entry root (main/_start)")
@@ -1104,35 +1104,24 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 	return nil
 }
 
-func buildPackageIRGraph(pkg llssa.Package) *irgraph.Graph {
+func buildPackageIRGraph(pkg llssa.Package) *relocgraph.Graph {
 	if pkg == nil {
 		return nil
 	}
-	opts := irgraph.Options{}
-	g := irgraph.Build(pkg.Module(), opts)
+	opts := relocgraph.Options{}
+	g := relocgraph.Build(pkg.Module(), opts)
 	records := pkg.RelocRecords()
 	if len(records) == 0 {
 		return g
 	}
-	relocs := make([]irgraph.RelocRecord, len(records))
-	for i, r := range records {
-		relocs[i] = irgraph.RelocRecord{
-			Kind:   r.Kind,
-			Owner:  r.Owner,
-			Target: r.Target,
-			Addend: r.Addend,
-			Name:   r.Name,
-			FnType: r.FnType,
-		}
-	}
-	g.AddRelocRecords(relocs, opts)
+	g.AddRelocs(records, opts)
 	return g
 }
 
 // mergePackageGraphs merges IRGraphs from all packages in ctx.
-func mergePackageGraphs(ctx *context) *irgraph.Graph {
-	merged := &irgraph.Graph{
-		Nodes:  make(map[irgraph.SymID]*irgraph.NodeInfo),
+func mergePackageGraphs(ctx *context) *relocgraph.Graph {
+	merged := &relocgraph.Graph{
+		Nodes:  make(map[relocgraph.SymID]*relocgraph.NodeInfo),
 		Relocs: nil,
 	}
 	// Merge from all cached packages
@@ -1162,20 +1151,20 @@ func mergePackageGraphs(ctx *context) *irgraph.Graph {
 	return merged
 }
 
-func graphSummary(g *irgraph.Graph) (nodes, edges, call, ref, reloc int) {
+func graphSummary(g *relocgraph.Graph) (nodes, edges, call, ref, reloc int) {
 	if g == nil {
 		return 0, 0, 0, 0, 0
 	}
 	nodes = len(g.Nodes)
 	edges = len(g.Relocs)
 	for _, r := range g.Relocs {
-		if r.Kind&irgraph.EdgeCall != 0 {
+		if r.Kind&relocgraph.EdgeCall != 0 {
 			call++
 		}
-		if r.Kind&irgraph.EdgeRef != 0 {
+		if r.Kind&relocgraph.EdgeRef != 0 {
 			ref++
 		}
-		if r.Kind&irgraph.EdgeRelocMask != 0 {
+		if r.Kind&relocgraph.EdgeRelocMask != 0 {
 			reloc++
 		}
 	}
@@ -1354,9 +1343,6 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
 
-	if ctx.buildConf.DCE {
-		aPkg.IRGraph = buildPackageIRGraph(ret)
-	}
 	// Run LLVM optimization passes (memcpyopt converts load/store to memcpy)
 	if ctx.passOpt {
 		mod := ret.Module()
@@ -1367,6 +1353,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		if err := mod.RunPasses("memcpyopt", ctx.prog.TargetMachine(), pbo); err != nil {
 			return fmt.Errorf("run LLVM passes failed for %v: %v", pkgPath, err)
 		}
+	}
+	if ctx.buildConf.DCE {
+		aPkg.IRGraph = buildPackageIRGraph(ret)
 	}
 
 	printCmds := ctx.shouldPrintCommands(verbose)
@@ -1491,7 +1480,7 @@ type aPackage struct {
 	SSA     *ssa.Package
 	AltPkg  *packages.Cached
 	LPkg    llssa.Package
-	IRGraph *irgraph.Graph
+	IRGraph *relocgraph.Graph
 
 	NeedRt     bool
 	NeedPyInit bool
