@@ -383,23 +383,28 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/bytealg"] = true
 		}
-		// internal/runtime/atomic is translated on arm64/amd64.
+		// runtime/internal/atomic (Go <=1.21) and internal/runtime/atomic
+		// (Go >=1.22) are translated on arm64/amd64.
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/runtime/atomic"] = true
+			ctx.plan9asmPkgs["runtime/internal/atomic"] = true
 		}
-		// internal/runtime/syscall is translated on arm64/amd64.
+		// runtime/internal/syscall (Go <=1.21) and internal/runtime/syscall
+		// (Go >=1.22) are translated on arm64/amd64.
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/runtime/syscall"] = true
+			ctx.plan9asmPkgs["runtime/internal/syscall"] = true
 			ctx.plan9asmPkgs["internal/syscall/unix"] = true
 			ctx.plan9asmPkgs["crypto/x509/internal/macos"] = true
 		}
-		// internal/runtime/sys has arm64 asm (dit_arm64.s) and empty stubs on
-		// other arch variants selected by go list.
+		// runtime/internal/sys (Go <=1.21) and internal/runtime/sys (Go >=1.22)
+		// have arch asm in some releases.
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["internal/runtime/sys"] = true
+			ctx.plan9asmPkgs["runtime/internal/sys"] = true
 		}
-		// math has arm64 asm for exp/floor/modf/dim and no alt package.
-		if ctx.buildConf.Goarch == "arm64" {
+		// math has arch-specific asm and no alt package.
+		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["math"] = true
 			ctx.plan9asmPkgs["syscall"] = true
 		}

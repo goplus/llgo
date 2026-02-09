@@ -129,6 +129,8 @@ func Translate(file *File, opt Options) (string, error) {
 		b.WriteString("declare i64 @llvm.ctpop.i64(i64)\n")
 		b.WriteString("declare i32 @llvm.ctpop.i32(i32)\n")
 		b.WriteString("declare i64 @llvm.bswap.i64(i64)\n")
+		b.WriteString("declare double @llvm.sqrt.f64(double)\n")
+		b.WriteString("declare double @llvm.rint.f64(double)\n")
 		b.WriteString("\n")
 		// x86-64 CRC32 (SSE4.2) and PCLMULQDQ intrinsics.
 		b.WriteString("declare i64 @llvm.x86.sse42.crc32.64.64(i64, i64)\n")
@@ -250,18 +252,30 @@ func emitExternSBGlobals(b *strings.Builder, file *File, resolve func(string) st
 
 	for _, fn := range file.Funcs {
 		for _, ins := range fn.Instrs {
-			for _, op := range ins.Args {
-				if op.Kind != OpSym {
+			opName := strings.ToUpper(string(ins.Op))
+			for _, arg := range ins.Args {
+				if arg.Kind != OpSym {
 					continue
 				}
-				s := strings.TrimSpace(op.Sym)
+				s := strings.TrimSpace(arg.Sym)
 				if !strings.HasSuffix(s, "(SB)") {
 					continue
 				}
 				s = strings.TrimSuffix(s, "(SB)")
 				base, off := splitSymPlusOff(s)
-				if base == "" || off == 0 {
+				if base == "" {
 					continue
+				}
+				if off == 0 {
+					// Bare symbol refs in data-movement ops are usually globals
+					// (e.g. MOVQ runtime·vdsoGettimeofdaySym(SB), AX). Avoid
+					// classifying branch/call targets as globals.
+					switch opName {
+					case "MOVQ", "MOVL", "MOVW", "MOVB", "LEAQ", "MOVD", "MOVOU", "MOVOA", "VMOVDQU":
+						// keep
+					default:
+						continue
+					}
 				}
 				name := resolve(base)
 				if name != "" && !defined[name] {

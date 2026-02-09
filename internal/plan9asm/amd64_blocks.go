@@ -15,6 +15,25 @@ func amd64SplitBlocks(fn Func) []amd64Block {
 	cur := 0
 	anon := 0
 
+	isPCRelTarget := func(ins Instr) (off int64, ok bool) {
+		op := strings.ToUpper(string(ins.Op))
+		switch Op(op) {
+		case "JE", "JEQ", "JZ", "JNE", "JNZ",
+			"JL", "JLT", "JLE", "JG", "JGE",
+			"JB", "JBE", "JA", "JAE",
+			"JNC", "JC":
+		default:
+			return 0, false
+		}
+		if len(ins.Args) != 1 || ins.Args[0].Kind != OpMem {
+			return 0, false
+		}
+		if !strings.EqualFold(string(ins.Args[0].Mem.Base), "PC") {
+			return 0, false
+		}
+		return ins.Args[0].Mem.Off, true
+	}
+
 	startAnon := func() {
 		anon++
 		blocks = append(blocks, amd64Block{name: fmt.Sprintf("anon_%d", anon)})
@@ -38,6 +57,24 @@ func amd64SplitBlocks(fn Func) []amd64Block {
 		}
 	}
 
+	linear := make([]Instr, 0, len(fn.Instrs))
+	for _, ins := range fn.Instrs {
+		if ins.Op == OpLABEL {
+			continue
+		}
+		linear = append(linear, ins)
+	}
+	splitAt := map[int]bool{}
+	for i, ins := range linear {
+		if off, ok := isPCRelTarget(ins); ok {
+			t := i + int(off)
+			if 0 <= t && t < len(linear) {
+				splitAt[t] = true
+			}
+		}
+	}
+
+	li := 0
 	for _, ins := range fn.Instrs {
 		if ins.Op == OpLABEL && len(ins.Args) == 1 && ins.Args[0].Kind == OpLabel {
 			lbl := ins.Args[0].Sym
@@ -49,7 +86,11 @@ func amd64SplitBlocks(fn Func) []amd64Block {
 			cur = len(blocks) - 1
 			continue
 		}
+		if splitAt[li] && len(blocks[cur].instrs) != 0 {
+			startAnon()
+		}
 		blocks[cur].instrs = append(blocks[cur].instrs, ins)
+		li++
 		if isTerminator(ins) {
 			startAnon()
 		}

@@ -1,6 +1,9 @@
 package plan9asm
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 func TestParseBasic(t *testing.T) {
 	src := `
@@ -49,5 +52,58 @@ RET
 	}
 	if got != 2 {
 		t.Fatalf("BYTE count=%d, want 2", got)
+	}
+}
+
+func TestParseImmediateExpr(t *testing.T) {
+	src := `
+TEXT ·ImmExpr(SB),NOSPLIT,$0
+MOVQ $~(1<<63), DX
+MOVQ $(1<<63), AX
+RET
+`
+	file, err := Parse(ArchAMD64, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Funcs) != 1 {
+		t.Fatalf("Funcs=%d, want 1", len(file.Funcs))
+	}
+	if len(file.Funcs[0].Instrs) < 3 {
+		t.Fatalf("instrs=%d, want >=3", len(file.Funcs[0].Instrs))
+	}
+	immMask := file.Funcs[0].Instrs[1].Args[0].Imm
+	if immMask != 0x7fffffffffffffff {
+		t.Fatalf("mask imm=%#x, want %#x", uint64(immMask), uint64(0x7fffffffffffffff))
+	}
+	immSign := file.Funcs[0].Instrs[2].Args[0].Imm
+	if immSign != int64(-9223372036854775808) {
+		t.Fatalf("sign imm=%#x, want %#x", uint64(immSign), uint64(1<<63))
+	}
+}
+
+func TestParseFloatImmediate(t *testing.T) {
+	src := `
+TEXT ·ImmFloat(SB),NOSPLIT,$0
+MOVSD $1.5, X0
+MOVSD $(-1.0), X1
+RET
+`
+	file, err := Parse(ArchAMD64, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Funcs) != 1 || len(file.Funcs[0].Instrs) < 3 {
+		t.Fatalf("unexpected parse shape: funcs=%d instrs=%d", len(file.Funcs), len(file.Funcs[0].Instrs))
+	}
+	got := uint64(file.Funcs[0].Instrs[1].Args[0].Imm)
+	want := math.Float64bits(1.5)
+	if got != want {
+		t.Fatalf("float imm bits=%#x, want %#x", got, want)
+	}
+	gotNeg := uint64(file.Funcs[0].Instrs[2].Args[0].Imm)
+	wantNeg := math.Float64bits(-1.0)
+	if gotNeg != wantNeg {
+		t.Fatalf("neg float imm bits=%#x, want %#x", gotNeg, wantNeg)
 	}
 }
