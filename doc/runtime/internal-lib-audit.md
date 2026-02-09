@@ -282,6 +282,23 @@ Plan9 asm candidate:
 
 - No (dominant issues are ABI/runtime integration, not `.s`).
 
+Status notes (this branch):
+
+- Added runtime-side linkname shims to keep reflect/reflectlite offset and
+  runtime hooks centralized in `runtime` instead of scattering implementations
+  in leaf packages:
+  - `reflect.resolveNameOff`
+  - `reflect.resolveTypeOff`
+  - `internal/reflectlite.resolveNameOff`
+  - `internal/reflectlite.resolveTypeOff`
+  - `internal/reflectlite.unsafe_New`
+  - `internal/reflectlite.ifaceE2I`
+  - `internal/reflectlite.typedmemmove`
+- This removes the previous immediate link errors when trying upstream
+  `internal/reflectlite`, but behavior is still not fully compatible (for
+  example `test/std/time` regresses in `errors.As` paths), so the alt patch is
+  still required for now.
+
 ### `internal/runtime/atomic`
 
 Purpose: runtime-internal atomics, including variants with special GC behavior.
