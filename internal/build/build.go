@@ -38,8 +38,6 @@ import (
 
 	"golang.org/x/tools/go/ssa"
 
-	"github.com/goplus/llvm"
-
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/dcepass"
 	"github.com/goplus/llgo/cl/deadcode"
@@ -57,7 +55,7 @@ import (
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
-	envllvm "github.com/goplus/llgo/xtool/env/llvm"
+	"github.com/goplus/llgo/xtool/env/llvm"
 	gollvm "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
@@ -136,7 +134,7 @@ type Config struct {
 	AbiMode       AbiMode
 	GenExpect     bool // only valid for ModeCmpTest
 	Verbose       bool
-	PrintCommands bool // print executed commands
+	PrintCommands bool
 	GenLL         bool // generate pkg .ll files
 	DCE           bool // enable experimental Go-like link-time DCE (build/run only)
 	CheckLLFiles  bool // check .ll files valid
@@ -370,7 +368,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
 
-	env := envllvm.New("")
+	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
@@ -530,7 +528,7 @@ const (
 )
 
 type context struct {
-	env            *envllvm.Env
+	env            *llvm.Env
 	conf           *packages.Config
 	progSSA        *ssa.Program
 	prog           llssa.Program
@@ -585,6 +583,7 @@ func (c *context) linker() *clang.Cmd {
 	return cmd
 }
 
+// shouldPrintCommands reports whether command tracing should be enabled.
 func (c *context) shouldPrintCommands(verbose bool) bool {
 	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
 }
@@ -864,7 +863,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// If GenLL is enabled, emit .ll for debugging.
+		// If GenLL is enabled, first emit .ll for debugging
 		if ctx.buildConf.GenLL {
 			llFile := baseName + ".ll"
 			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
@@ -877,6 +876,7 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			}
 		}
 
+		// Always compile to .o for linking
 		objFile := baseName + ".o"
 		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
 		if printCmds {
@@ -1028,9 +1028,9 @@ func dceEntryRootsFromGraph(g *relocgraph.Graph) ([]relocgraph.SymID, error) {
 	return roots, nil
 }
 
-func dceSourceModules(pkgs []*aPackage) []llvm.Module {
-	mods := make([]llvm.Module, 0, len(pkgs))
-	seen := make(map[llvm.Module]bool)
+func dceSourceModules(pkgs []*aPackage) []gollvm.Module {
+	mods := make([]gollvm.Module, 0, len(pkgs))
+	seen := make(map[gollvm.Module]bool)
 	for _, pkg := range pkgs {
 		if pkg == nil || pkg.LPkg == nil {
 			continue
@@ -1265,7 +1265,8 @@ func (c *context) createArchiveFile(archivePath string, objFiles []string, verbo
 	args := append([]string{"rcs", tmpName}, objFiles...)
 	arCmd := c.archiver()
 	cmd := exec.Command(arCmd, args...)
-	if len(verbose) > 0 && verbose[0] {
+	printCmds := c.shouldPrintCommands(len(verbose) > 0 && verbose[0])
+	if printCmds {
 		fmt.Fprintf(os.Stderr, "%s %s\n", filepath.Base(arCmd), strings.Join(args, " "))
 	}
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -1401,30 +1402,33 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
-	// If GenLL is enabled, keep a copy of the .ll for debugging.
+	// If GenLL is enabled, keep a copy of the .ll file for debugging
 	if ctx.buildConf.GenLL {
+		llFile := exportFile + ".ll"
 		if err := os.Chmod(f.Name(), 0644); err != nil {
 			return "", err
 		}
-		llFile := exportFile + ".ll"
+		// Copy instead of rename so we can still compile to .o
 		if err := copyFileAtomic(f.Name(), llFile); err != nil {
 			return "", err
 		}
 	}
+	// Always compile .ll to .o for linking
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err
 	}
 	objFile.Close()
 	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
-	if ctx.buildConf.Verbose {
+	if ctx.shouldPrintCommands(false) {
+		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
 	return objFile.Name(), cmd.Compile(args...)
 }
 
-func llcCheck(env *envllvm.Env, exportFile string) (msg string, err error) {
+func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
 	bin := filepath.Join(env.BinDir(), "llc")
 	cmd := exec.Command(bin, "-filetype=null", exportFile)
 	var buf bytes.Buffer
@@ -1788,8 +1792,8 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		args = append(args, "-x", "c")
 	}
 
+	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
 	printCmds := ctx.shouldPrintCommands(verbose)
-	// If GenLL is enabled, emit .ll for debugging.
 	if ctx.buildConf.GenLL {
 		llFile := baseName + ".ll"
 		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
@@ -1802,6 +1806,7 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		check(err)
 	}
 
+	// Always compile to .o for linking
 	objFile := baseName + ".o"
 	objArgs := append(args, "-o", objFile, "-c", cFile)
 	if printCmds {
