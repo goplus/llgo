@@ -14,8 +14,10 @@ assembler language. Instead, we target:
 1. Scan the corpus with:
 
    ```sh
-   go run ./chore/plan9asmscan -pattern std -goos linux -goarch amd64
-   go run ./chore/plan9asmscan -pattern std -goos linux -goarch arm64
+   go run ./chore/plan9asmscan -goos linux -goarch amd64 -format md -out /tmp/scan-linux-amd64.md
+   go run ./chore/plan9asmscan -goos linux -goarch arm64 -format md -out /tmp/scan-linux-arm64.md
+   go run ./chore/plan9asmscan -goos darwin -goarch amd64 -format md -out /tmp/scan-darwin-amd64.md
+   go run ./chore/plan9asmscan -goos darwin -goarch arm64 -format md -out /tmp/scan-darwin-arm64.md
    ```
 
 2. Group opcodes into clusters. A cluster is considered **complete** only when:
@@ -89,3 +91,25 @@ Includes:
 - horizontal reductions (`VADDP`, `VUADDLV`)
 - register moves/extract (`VMOV`, lane forms like `V?.D[0]`)
 
+## Current Scan Snapshot
+
+Generated reports are tracked in:
+
+- `doc/runtime/plan9asm-scan/linux-amd64.md`
+- `doc/runtime/plan9asm-scan/linux-arm64.md`
+- `doc/runtime/plan9asm-scan/darwin-amd64.md`
+- `doc/runtime/plan9asm-scan/darwin-arm64.md`
+
+Priority clusters inferred from current scan:
+
+1. `amd64` scalar+bit rounds for crypto:
+   `ADCQ/SBBQ`, `RORQ/RORL/ROLQ`, `MULQ/MULXQ`, `CMOVQ*`.
+2. `amd64` SIMD crypto set:
+   `AESENC/AESENCLAST/AESDEC/AESKEYGENASSIST`, `VPXOR/VPADDD/VPALIGNR`,
+   `VMOVDQA`, `PSHUFD/PSHUFB`, `VPSRLQ/VPSLLQ`.
+3. `arm64` crypto scalar set:
+   `AESE/AESMC/AESD/AESIMC`, `SHA1*`, `SHA256*`, `STP/LDP*`, `ADCS`.
+4. `arm64` NEON set:
+   `VST1`, `VREV32/VREV64`, `VLD4R` (already identified in `internal/chacha8rand`).
+5. Cross-cutting runtime/syscall stubs:
+   `JMP/CALL/BL` paths that appear in small trampoline files.
