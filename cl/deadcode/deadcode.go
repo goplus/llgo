@@ -59,7 +59,7 @@ type deadcodePass struct {
 	reachable        map[relocgraph.SymID]bool
 	queue            []relocgraph.SymID
 	usedInIface      map[relocgraph.SymID]bool
-	relocsByOwner    map[relocgraph.SymID][]relocgraph.RelocEdge
+	relocsByOwner    map[relocgraph.SymID][]relocgraph.Edge
 	markableMethods  []MethodRef
 	ifaceMethods     map[MethodSig]bool
 	reachableMethods map[relocgraph.SymID]map[int]bool
@@ -92,7 +92,7 @@ func newDeadcodePass(g *relocgraph.Graph, rootCount int) *deadcodePass {
 		reachable:        make(map[relocgraph.SymID]bool),
 		queue:            make([]relocgraph.SymID, 0, rootCount),
 		usedInIface:      make(map[relocgraph.SymID]bool),
-		relocsByOwner:    make(map[relocgraph.SymID][]relocgraph.RelocEdge),
+		relocsByOwner:    make(map[relocgraph.SymID][]relocgraph.Edge),
 		markableMethods:  nil,
 		ifaceMethods:     make(map[MethodSig]bool),
 		reachableMethods: make(map[relocgraph.SymID]map[int]bool),

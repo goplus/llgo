@@ -723,7 +723,7 @@ func (p Package) ExportFuncs() map[string]string {
 
 // RelocRecord records one relocation-style edge emitted during SSA lowering.
 // It is consumed directly by higher-level DCE graph construction.
-type RelocRecord = relocgraph.RelocEdge
+type RelocRecord = relocgraph.Edge
 
 // RelocRecords returns reloc records collected for this package.
 func (p Package) RelocRecords() []RelocRecord {

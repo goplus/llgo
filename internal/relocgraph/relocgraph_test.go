@@ -120,8 +120,7 @@ func TestRelocGraphFromTestdata(t *testing.T) {
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
-			graph := relocgraph.Build(mod, relocgraph.Options{})
-			graph.AddRelocs(relocs, relocgraph.Options{})
+			graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
 			got := formatGraphWithMask(graph, relocgraph.EdgeRelocMask)
 			if updateRelocTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
@@ -162,7 +161,7 @@ func TestBuildRelocRequiresInjection(t *testing.T) {
 		t.Fatalf("Build should not include reloc edges before injection: got=%d", baseReloc)
 	}
 
-	g.AddRelocs(relocs, relocgraph.Options{})
+	g.AddEdges(relocs, relocgraph.Options{})
 	injectedReloc := 0
 	for _, r := range g.Relocs {
 		if r.Kind&relocgraph.EdgeRelocMask != 0 {
@@ -170,16 +169,16 @@ func TestBuildRelocRequiresInjection(t *testing.T) {
 		}
 	}
 	if injectedReloc == 0 {
-		t.Fatal("expected reloc edges after AddRelocs")
+		t.Fatal("expected reloc edges after AddEdges")
 	}
 }
 
-func TestAddRelocs(t *testing.T) {
+func TestAddEdges(t *testing.T) {
 	g := &relocgraph.Graph{
 		Nodes:  make(map[relocgraph.SymID]*relocgraph.NodeInfo),
 		Relocs: nil,
 	}
-	g.AddRelocs([]relocgraph.RelocEdge{
+	g.AddEdges([]relocgraph.Edge{
 		{
 			Kind:   relocgraph.EdgeRelocUseNamedMethod,
 			Owner:  "caller",
@@ -252,7 +251,7 @@ func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
 	return mod
 }
 
-func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (llvm.Module, []relocgraph.RelocEdge) {
+func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (llvm.Module, []relocgraph.Edge) {
 	t.Helper()
 	entries, err := os.ReadDir(dir)
 	if err != nil {

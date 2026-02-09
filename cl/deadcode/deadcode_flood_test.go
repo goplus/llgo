@@ -27,7 +27,7 @@ import (
 )
 
 func TestFloodReachability(t *testing.T) {
-	g := &relocgraph.Graph{Relocs: []relocgraph.RelocEdge{
+	g := &relocgraph.Graph{Relocs: []relocgraph.Edge{
 		{Owner: "A", Target: "B", Kind: relocgraph.EdgeCall},
 		{Owner: "B", Target: "C", Kind: relocgraph.EdgeRef},
 	}}
@@ -39,7 +39,7 @@ func TestFloodMultipleRoots(t *testing.T) {
 	// Simulated shape:
 	//   main.main -> pkgA.Entry -> pkgA.Helper (call)
 	//   plugin.Init -> plugin.Hook (ref)
-	g := &relocgraph.Graph{Relocs: []relocgraph.RelocEdge{
+	g := &relocgraph.Graph{Relocs: []relocgraph.Edge{
 		{Owner: "pkgA.Entry", Target: "pkgA.Helper", Kind: relocgraph.EdgeCall},
 		{Owner: "plugin.Init", Target: "plugin.Hook", Kind: relocgraph.EdgeRef},
 	}}
@@ -51,7 +51,7 @@ func TestFloodUsesCallAndRef(t *testing.T) {
 	// Simulated shape:
 	//   main.A -> lib.DoWork (call)
 	//   main.A -> lib.Config (ref)
-	g := &relocgraph.Graph{Relocs: []relocgraph.RelocEdge{
+	g := &relocgraph.Graph{Relocs: []relocgraph.Edge{
 		{Owner: "main.A", Target: "lib.DoWork", Kind: relocgraph.EdgeCall},
 		{Owner: "main.A", Target: "lib.Config", Kind: relocgraph.EdgeRef},
 	}}
@@ -62,7 +62,7 @@ func TestFloodUsesCallAndRef(t *testing.T) {
 func TestFloodCycle(t *testing.T) {
 	// Simulated shape:
 	//   pkg.Init -> pkg.Step1 -> pkg.Step2 -> pkg.Init (cycle)
-	g := &relocgraph.Graph{Relocs: []relocgraph.RelocEdge{
+	g := &relocgraph.Graph{Relocs: []relocgraph.Edge{
 		{Owner: "pkg.Init", Target: "pkg.Step1", Kind: relocgraph.EdgeCall},
 		{Owner: "pkg.Step1", Target: "pkg.Step2", Kind: relocgraph.EdgeCall},
 		{Owner: "pkg.Step2", Target: "pkg.Init", Kind: relocgraph.EdgeCall},
@@ -93,7 +93,7 @@ func TestUsedInIfacePropagation(t *testing.T) {
 	// - useiface: CallSite -> TypeA (TypeA converted to InterfaceX)
 	// - typeref:  TypeA -> MethodAType / MethodBType (child types to propagate)
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "CallSite", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRef},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRelocUseIface},
@@ -124,7 +124,7 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 	// - methodoff (triples): TypeA -> MethodAType/MethodAIfn/MethodATfn
 	//                         TypeA -> MethodBType/MethodBIfn/MethodBTfn
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "CallSite", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRef},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRelocUseIface},
@@ -160,7 +160,7 @@ func TestUsedInIfaceMethodOffPropagation(t *testing.T) {
 func TestUseIfaceMethodRecorded(t *testing.T) {
 	const ftype = "_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "CallSite", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSite", Target: ftype, Kind: relocgraph.EdgeRelocUseIfaceMethod, Addend: 1, Name: "IfaceSym", FnType: ftype},
 		},
@@ -183,7 +183,7 @@ func TestUseIfaceMethodMarksConcreteMethod(t *testing.T) {
 	//   methodoff triple on T at index 0 (name=M) -> Mtyp/Mifn/Mtfn
 	//   another method (idx=1) should stay unreachable
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "Use", Kind: relocgraph.EdgeCall},
 			{Owner: "Use", Target: "T", Kind: relocgraph.EdgeRef},
 			{Owner: "Use", Target: "T", Kind: relocgraph.EdgeRelocUseIface},
@@ -222,7 +222,7 @@ func TestMarkableMethodsFromChildTypes(t *testing.T) {
 	// methods for TypeA and also for ChildType because it is a child type
 	// reachable from TypeA's type descriptor.
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "CallSite", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRef},
 			{Owner: "TypeA", Target: "ChildType", Kind: relocgraph.EdgeRef},
@@ -259,7 +259,7 @@ func TestIfaceChainCrossPackage(t *testing.T) {
 	//   inside T.M: useiface: T.M -> bpkg.K; useifacemethod: T.M -> bpkg.U (name=N, idx=0)
 	//   methodoff(bpkg.K): idx=0 -> N typ/ifn/tfn, idx=1 -> N2 typ/ifn/tfn
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			// roots
 			{Owner: "main", Target: "Use", Kind: relocgraph.EdgeCall},
 			// IA.M
@@ -303,7 +303,7 @@ func TestMethodOffIgnoredWithoutUseIface(t *testing.T) {
 	// Relocs:
 	// - methodoff triples exist, but no useiface marker is present.
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "CallSite", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRef},
 			{Owner: "TypeA", Target: "MethodAType", Kind: relocgraph.EdgeRelocMethodOff, Addend: 0},
@@ -324,7 +324,7 @@ func TestMethodOffIgnoredWhenCallsiteUnreachable(t *testing.T) {
 	// Simulated shape:
 	//   useiface exists on CallSite, but CallSite is not reachable from roots.
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "Other", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSite", Target: "TypeA", Kind: relocgraph.EdgeRelocUseIface},
 			{Owner: "TypeA", Target: "MethodAType", Kind: relocgraph.EdgeRelocMethodOff, Addend: 0},
@@ -361,7 +361,7 @@ func TestMarkableMethodsMultipleTypes(t *testing.T) {
 	// candidates. Filtering down to only the interface-used methods
 	// happens in later phases.
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "CallSiteA", Kind: relocgraph.EdgeCall},
 			{Owner: "main", Target: "CallSiteB", Kind: relocgraph.EdgeCall},
 			{Owner: "CallSiteA", Target: "TypeA", Kind: relocgraph.EdgeRef},
@@ -466,7 +466,7 @@ func assertReachableMethods(t *testing.T, res Result, want map[string][]int) {
 // all methods of UsedInIface types are kept (reflectSeen = true).
 func TestReflectMethodKeepsAllMethods(t *testing.T) {
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "caller", Kind: relocgraph.EdgeCall},
 			{Owner: "caller", Target: "TypeT", Kind: relocgraph.EdgeRef},
 			{Owner: "caller", Target: "TypeT", Kind: relocgraph.EdgeRelocUseIface},
@@ -492,7 +492,7 @@ func TestReflectMethodKeepsAllMethods(t *testing.T) {
 // keeps only the method with the matching name.
 func TestNamedMethodKeepsSpecificMethod(t *testing.T) {
 	g := &relocgraph.Graph{
-		Relocs: []relocgraph.RelocEdge{
+		Relocs: []relocgraph.Edge{
 			{Owner: "main", Target: "caller", Kind: relocgraph.EdgeCall},
 			{Owner: "caller", Target: "TypeT", Kind: relocgraph.EdgeRef},
 			{Owner: "caller", Target: "TypeT", Kind: relocgraph.EdgeRelocUseIface},

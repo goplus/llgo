@@ -1109,13 +1109,7 @@ func buildPackageIRGraph(pkg llssa.Package) *relocgraph.Graph {
 		return nil
 	}
 	opts := relocgraph.Options{}
-	g := relocgraph.Build(pkg.Module(), opts)
-	records := pkg.RelocRecords()
-	if len(records) == 0 {
-		return g
-	}
-	g.AddRelocs(records, opts)
-	return g
+	return relocgraph.BuildPackageGraph(pkg.Module(), pkg.RelocRecords(), opts)
 }
 
 // mergePackageGraphs merges IRGraphs from all packages in ctx.

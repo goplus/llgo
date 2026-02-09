@@ -59,7 +59,7 @@ type NodeInfo struct {
 // Graph is a directed dependency graph.
 type Graph struct {
 	Nodes  map[SymID]*NodeInfo
-	Relocs []RelocEdge
+	Relocs []Edge
 }
 
 // Options controls graph construction.
@@ -123,8 +123,29 @@ func Build(mod llvm.Module, opts Options) *Graph {
 	return g
 }
 
-// RelocEdge records a relocation-style edge with its addend.
-type RelocEdge struct {
+// BuildModuleEdges scans one LLVM module and returns call/ref edges.
+func BuildModuleEdges(mod llvm.Module, opts Options) []Edge {
+	g := Build(mod, opts)
+	if len(g.Relocs) == 0 {
+		return nil
+	}
+	out := make([]Edge, len(g.Relocs))
+	copy(out, g.Relocs)
+	return out
+}
+
+// BuildPackageGraph merges module-derived edges and SSA-produced edges.
+func BuildPackageGraph(mod llvm.Module, ssaEdges []Edge, opts Options) *Graph {
+	g := Build(mod, opts)
+	if len(ssaEdges) != 0 {
+		g.AddEdges(ssaEdges, opts)
+	}
+	return g
+}
+
+// Edge records a symbol dependency edge with optional metadata fields used by
+// reloc-style records from SSA lowering.
+type Edge struct {
 	Owner  SymID
 	Target SymID
 	Kind   EdgeKind
@@ -133,9 +154,8 @@ type RelocEdge struct {
 	FnType SymID  // optional func type symbol (e.g., iface method func type)
 }
 
-// RelocRecord is kept as an alias for readability at call sites that append
-// SSA-produced reloc records into a graph.
-type RelocRecord = RelocEdge
+// RelocRecord is kept as an alias for SSA call sites.
+type RelocRecord = Edge
 
 // AddEdge inserts or updates an edge in the graph.
 func (g *Graph) AddEdge(from, to SymID, kind EdgeKind) {
@@ -144,7 +164,7 @@ func (g *Graph) AddEdge(from, to SymID, kind EdgeKind) {
 	}
 	g.ensureNode(from, false, strings.HasPrefix(string(from), "llvm."))
 	g.ensureNode(to, false, strings.HasPrefix(string(to), "llvm."))
-	g.Relocs = append(g.Relocs, RelocEdge{
+	g.Relocs = append(g.Relocs, Edge{
 		Owner:  from,
 		Target: to,
 		Kind:   kind,
@@ -187,7 +207,7 @@ func (g *Graph) addRelocEdge(owner, target SymID, kind EdgeKind, addend int64, n
 	}
 	g.ensureNode(owner, false, strings.HasPrefix(string(owner), "llvm."))
 	g.ensureNode(target, false, strings.HasPrefix(string(target), "llvm."))
-	g.Relocs = append(g.Relocs, RelocEdge{
+	g.Relocs = append(g.Relocs, Edge{
 		Owner:  owner,
 		Target: target,
 		Kind:   kind,
@@ -283,9 +303,9 @@ func resolveGlobalValue(v llvm.Value) llvm.Value {
 	return sym
 }
 
-// AddRelocs injects SSA-collected reloc edges into the graph.
-func (g *Graph) AddRelocs(relocs []RelocEdge, opts Options) {
-	for _, rec := range relocs {
+// AddEdges injects SSA-collected edges into the graph.
+func (g *Graph) AddEdges(edges []Edge, opts Options) {
+	for _, rec := range edges {
 		if rec.Owner == "" {
 			continue
 		}
