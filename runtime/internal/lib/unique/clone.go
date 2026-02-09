@@ -64,8 +64,16 @@ func makeCloneSeq(typ *abi.Type) cloneSeq {
 // buildStructCloneSeq populates a cloneSeq for an abi.Type that has Kind abi.Struct.
 func buildStructCloneSeq(typ *abi.Type, seq *cloneSeq, baseOffset uintptr) {
 	styp := typ.StructType()
+	if styp == nil {
+		return
+	}
 	for i := range styp.Fields {
 		f := &styp.Fields[i]
+		if f.Typ == nil {
+			// llgo may see partially materialized field type metadata for some
+			// synthetic/runtime-generated structs; skip unknown fields.
+			continue
+		}
 		switch f.Typ.Kind() {
 		case abi.String:
 			seq.stringOffsets = append(seq.stringOffsets, baseOffset+f.Offset)
@@ -80,6 +88,9 @@ func buildStructCloneSeq(typ *abi.Type, seq *cloneSeq, baseOffset uintptr) {
 // buildArrayCloneSeq populates a cloneSeq for an abi.Type that has Kind abi.Array.
 func buildArrayCloneSeq(typ *abi.Type, seq *cloneSeq, baseOffset uintptr) {
 	atyp := typ.ArrayType()
+	if atyp == nil || atyp.Elem == nil {
+		return
+	}
 	etyp := atyp.Elem
 	offset := baseOffset
 	for i := uintptr(0); i < atyp.Len; i++ {

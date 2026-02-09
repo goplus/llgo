@@ -1,3 +1,5 @@
+//go:build (darwin || linux) && llgo_upstream_weak_unique
+
 package runtime
 
 import _ "unsafe"
