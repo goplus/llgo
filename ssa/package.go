@@ -822,34 +822,23 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 
 // reloc helpers -------------------------------------------------------------
 
-type relocKind = relocgraph.EdgeKind
-
-const (
-	relocUseIface       relocKind = relocgraph.EdgeRelocUseIface
-	relocUseIfaceMethod           = relocgraph.EdgeRelocUseIfaceMethod
-	relocUseNamedMethod           = relocgraph.EdgeRelocUseNamedMethod
-	relocMethodOff                = relocgraph.EdgeRelocMethodOff
-	relocReflectMethod            = relocgraph.EdgeRelocReflectMethod
-	relocTypeRef                  = relocgraph.EdgeRelocTypeRef
-)
-
 // addReloc records a reloc metadata entry in package context.
-func (p Package) addReloc(kind relocKind, owner, target llvm.Value, add int64, name, targetName, fnTypeName string, fnType llvm.Value) {
-	ownerName := relocSymbolName(owner)
-	if targetName == "" {
-		targetName = relocSymbolName(target)
-	}
-	if fnTypeName == "" {
-		fnTypeName = relocSymbolName(fnType)
-	}
+func (p Package) addReloc(kind relocgraph.EdgeKind, owner, target llvm.Value, add int64, name, targetName, fnTypeName string, fnType llvm.Value) {
 	p.relocBuilder.AddEdge(RelocRecord{
 		Kind:   kind,
-		Owner:  relocgraph.SymID(ownerName),
-		Target: relocgraph.SymID(targetName),
+		Owner:  relocSymID(owner, ""),
+		Target: relocSymID(target, targetName),
 		Addend: add,
 		Name:   name,
-		FnType: relocgraph.SymID(fnTypeName),
+		FnType: relocSymID(fnType, fnTypeName),
 	})
+}
+
+func relocSymID(v llvm.Value, fallback string) relocgraph.SymID {
+	if fallback != "" {
+		return relocgraph.SymID(fallback)
+	}
+	return relocgraph.SymID(relocSymbolName(v))
 }
 
 func relocSymbolName(v llvm.Value) string {

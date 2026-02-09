@@ -24,6 +24,7 @@ import (
 	"go/types"
 	"sort"
 
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
@@ -130,7 +131,7 @@ func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
 		return
 	}
 	childName, _ := b.Pkg.abi.TypeName(child)
-	b.Pkg.addReloc(relocTypeRef, owner, llvm.Value{}, 0, "", childName, "", llvm.Value{})
+	b.Pkg.addReloc(relocgraph.EdgeRelocTypeRef, owner, llvm.Value{}, 0, "", childName, "", llvm.Value{})
 }
 
 func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
@@ -510,9 +511,9 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner l
 			if !token.IsExported(mName) && mPkg != nil {
 				infoName = abi.FullName(mPkg, mName)
 			}
-			pkg.addReloc(relocMethodOff, owner, mtypVal, int64(i), infoName, "", "", llvm.Value{})
-			pkg.addReloc(relocMethodOff, owner, ifn, int64(i), "", "", "", llvm.Value{})
-			pkg.addReloc(relocMethodOff, owner, tfn, int64(i), "", "", "", llvm.Value{})
+			pkg.addReloc(relocgraph.EdgeRelocMethodOff, owner, mtypVal, int64(i), infoName, "", "", llvm.Value{})
+			pkg.addReloc(relocgraph.EdgeRelocMethodOff, owner, ifn, int64(i), "", "", "", llvm.Value{})
+			pkg.addReloc(relocgraph.EdgeRelocMethodOff, owner, tfn, int64(i), "", "", "", llvm.Value{})
 		}
 	}
 	return llvm.ConstArray(ft.ll, fields)
