@@ -51,7 +51,6 @@ func init() {
 
 // Set to true to update out.txt files from in.go.
 var updateTestdata = false
-var updateRelocTestdata = false
 
 func TestGraphFromTestdata(t *testing.T) {
 	root, err := os.Getwd()
@@ -96,55 +95,12 @@ func TestGraphFromTestdata(t *testing.T) {
 	}
 }
 
-func TestRelocGraphFromTestdata(t *testing.T) {
-	root, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Getwd failed:", err)
-	}
-	dir := filepath.Join(root, "_testdata_reloc")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			t.Skip("no _testdata_reloc")
-		}
-		t.Fatal("ReadDir failed:", err)
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
-			continue
-		}
-		pkgDir := filepath.Join(dir, entry.Name())
-		t.Run(entry.Name(), func(t *testing.T) {
-			if !hasGoFiles(pkgDir) {
-				t.Skip("no go files")
-			}
-			outPath := filepath.Join(pkgDir, "out.txt")
-			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
-			graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
-			got := formatGraph(graph)
-			if updateRelocTestdata {
-				if err := os.WriteFile(outPath, got, 0644); err != nil {
-					t.Fatalf("WriteFile failed: %v", err)
-				}
-				return
-			}
-			want, err := os.ReadFile(outPath)
-			if err != nil {
-				t.Fatalf("ReadFile failed: %v", err)
-			}
-			if test.Diff(t, outPath+".new", got, want) {
-				t.Fatal("unexpected graph output")
-			}
-		})
-	}
-}
-
 func TestBuildRelocRequiresInjection(t *testing.T) {
 	root, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
 	}
-	pkgDir := filepath.Join(root, "_testdata_reloc", "useiface")
+	pkgDir := filepath.Join(root, "_testdata", "useiface")
 	mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
 	if len(relocs) == 0 {
 		t.Fatal("expected reloc records from package context")
