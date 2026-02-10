@@ -36,3 +36,17 @@ func os_fastrand() uint32 {
 func rand_fastrand64() uint64 {
 	return rand()
 }
+
+// sync_fastrandn is used by older stdlib sync implementations (Go 1.21).
+//
+//go:linkname sync_fastrandn sync.fastrandn
+func sync_fastrandn(n uint32) uint32 {
+	return randn(n)
+}
+
+// net_fastrandu is used by older stdlib net implementations.
+//
+//go:linkname net_fastrandu net.fastrandu
+func net_fastrandu() uint {
+	return uint(fastrand())
+}
