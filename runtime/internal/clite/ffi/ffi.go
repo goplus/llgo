@@ -59,7 +59,7 @@ type Cif struct {
 	RType    *Type
 	Bytes    c.Uint
 	Flags    c.Uint
-	//Extra    c.Uint
+	Extra    c.Uint
 }
 
 //llgo:type C
