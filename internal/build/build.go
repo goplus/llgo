@@ -248,12 +248,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cl.EnableExportRename(true)
 	}
 
-	// DCE is enabled by default, but currently only supported for executable
-	// outputs on non-wasm targets.
+	// DCE is enabled by default, and currently only gated by build mode.
 	if conf.DCE {
 		if conf.BuildMode != BuildModeExe {
-			conf.DCE = false
-		} else if isWasmTarget(conf.Goos) || strings.HasPrefix(conf.Target, "wasi") || strings.HasPrefix(conf.Target, "wasm") {
 			conf.DCE = false
 		}
 	}
@@ -1030,7 +1027,7 @@ func dceEntryRootsFromGraph(g *relocgraph.Graph) ([]relocgraph.SymID, error) {
 	if g == nil {
 		return nil, fmt.Errorf("dce graph is nil")
 	}
-	candidates := []string{"main", "_start"}
+	candidates := []string{"main", "_start", "__main_argc_argv"}
 	var roots []relocgraph.SymID
 	for _, name := range candidates {
 		node, ok := g.Nodes[relocgraph.SymID(name)]
@@ -1043,7 +1040,7 @@ func dceEntryRootsFromGraph(g *relocgraph.Graph) ([]relocgraph.SymID, error) {
 		roots = append(roots, relocgraph.SymID(name))
 	}
 	if len(roots) == 0 {
-		return nil, fmt.Errorf("dce requires at least one entry root (main/_start)")
+		return nil, fmt.Errorf("dce requires at least one entry root (main/_start/__main_argc_argv)")
 	}
 	return roots, nil
 }
