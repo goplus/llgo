@@ -8,29 +8,39 @@ import (
 func (c *amd64Ctx) lowerBranch(bi int, ii int, op Op, ins Instr, emitBr amd64EmitBr, emitCondBr amd64EmitCondBr) (ok bool, terminated bool, err error) {
 	switch op {
 	case "CALL":
-		// Indirect call via register (used by stdlib vdso/syscall stubs).
-		if len(ins.Args) != 1 || ins.Args[0].Kind != OpReg {
-			return true, false, fmt.Errorf("amd64 CALL expects reg target: %q", ins.Raw)
+		if len(ins.Args) != 1 {
+			return true, false, fmt.Errorf("amd64 CALL expects 1 operand: %q", ins.Raw)
 		}
-		addr, err := c.loadReg(ins.Args[0].Reg)
-		if err != nil {
-			return true, false, err
+		switch ins.Args[0].Kind {
+		case OpReg:
+			// Indirect call via register (used by stdlib vdso/syscall stubs).
+			addr, err := c.loadReg(ins.Args[0].Reg)
+			if err != nil {
+				return true, false, err
+			}
+			fptr := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", fptr, addr)
+			di, _ := c.loadReg(DI)
+			si, _ := c.loadReg(SI)
+			dx, _ := c.loadReg(DX)
+			cx, _ := c.loadReg(CX)
+			r8, _ := c.loadReg(Reg("R8"))
+			r9, _ := c.loadReg(Reg("R9"))
+			ret := c.newTmp()
+			// Model as a generic C-ABI style call carrying register arguments.
+			fmt.Fprintf(c.b, "  %%%s = call i64 %%%s(i64 %s, i64 %s, i64 %s, i64 %s, i64 %s, i64 %s)\n", ret, fptr, di, si, dx, cx, r8, r9)
+			if err := c.storeReg(AX, "%"+ret); err != nil {
+				return true, false, err
+			}
+			return true, false, nil
+		case OpSym:
+			if err := c.callSym(ins.Args[0]); err != nil {
+				return true, false, err
+			}
+			return true, false, nil
+		default:
+			return true, false, fmt.Errorf("amd64 CALL expects reg or symbol(SB) target: %q", ins.Raw)
 		}
-		fptr := c.newTmp()
-		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", fptr, addr)
-		di, _ := c.loadReg(DI)
-		si, _ := c.loadReg(SI)
-		dx, _ := c.loadReg(DX)
-		cx, _ := c.loadReg(CX)
-		r8, _ := c.loadReg(Reg("R8"))
-		r9, _ := c.loadReg(Reg("R9"))
-		ret := c.newTmp()
-		// Model as a generic C-ABI style call carrying register arguments.
-		fmt.Fprintf(c.b, "  %%%s = call i64 %%%s(i64 %s, i64 %s, i64 %s, i64 %s, i64 %s, i64 %s)\n", ret, fptr, di, si, dx, cx, r8, r9)
-		if err := c.storeReg(AX, "%"+ret); err != nil {
-			return true, false, err
-		}
-		return true, false, nil
 
 	case "JMP",
 		"JE", "JEQ", "JZ", "JNE", "JNZ",
@@ -165,6 +175,96 @@ func (c *amd64Ctx) lowerBranch(bi int, ii int, op Op, ins Instr, emitBr amd64Emi
 		return true, false, err
 	}
 	return true, true, nil
+}
+
+func (c *amd64Ctx) callSym(symOp Operand) error {
+	if symOp.Kind != OpSym {
+		return fmt.Errorf("amd64 call expects sym operand, got %s", symOp.String())
+	}
+	s := strings.TrimSpace(symOp.Sym)
+	if !strings.HasSuffix(s, "(SB)") {
+		return fmt.Errorf("amd64 call expects (SB) symbol, got %q", s)
+	}
+	s = strings.TrimSuffix(s, "(SB)")
+	callee := c.resolve(s)
+	// Syscall stubs invoke runtime entersyscall/exitsyscall around SYSCALL.
+	// llgo runtime does not require these scheduler hooks at this layer.
+	if callee == "runtime.entersyscall" || callee == "runtime.exitsyscall" {
+		return nil
+	}
+
+	csig, ok := c.sigs[callee]
+	if !ok {
+		// Keep behavior explicit: cross-symbol CALL needs a signature unless it is
+		// a known no-op runtime scheduler hook above.
+		return fmt.Errorf("amd64 call missing signature for %q", callee)
+	}
+
+	args := make([]string, 0, len(csig.Args))
+	for i := 0; i < len(csig.Args); i++ {
+		r := Reg("")
+		if i < len(csig.ArgRegs) {
+			r = csig.ArgRegs[i]
+		} else {
+			x86 := []Reg{DI, SI, DX, CX, Reg("R8"), Reg("R9")}
+			if i >= len(x86) {
+				return fmt.Errorf("amd64 call: missing arg reg for %q arg %d", callee, i)
+			}
+			r = x86[i]
+		}
+		v, err := c.loadReg(r)
+		if err != nil {
+			return err
+		}
+		switch csig.Args[i] {
+		case I64:
+			args = append(args, "i64 "+v)
+		case I1:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i1\n", t, v)
+			args = append(args, "i1 %"+t)
+		case I8:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i8\n", t, v)
+			args = append(args, "i8 %"+t)
+		case I16:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i16\n", t, v)
+			args = append(args, "i16 %"+t)
+		case I32:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t, v)
+			args = append(args, "i32 %"+t)
+		case Ptr:
+			t := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", t, v)
+			args = append(args, "ptr %"+t)
+		default:
+			return fmt.Errorf("amd64 call unsupported arg type %q", csig.Args[i])
+		}
+	}
+
+	if csig.Ret == Void {
+		fmt.Fprintf(c.b, "  call void %s(%s)\n", llvmGlobal(callee), strings.Join(args, ", "))
+		return nil
+	}
+
+	t := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = call %s %s(%s)\n", t, csig.Ret, llvmGlobal(callee), strings.Join(args, ", "))
+	switch csig.Ret {
+	case I64:
+		return c.storeReg(AX, "%"+t)
+	case I1, I8, I16, I32:
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext %s %%%s to i64\n", z, csig.Ret, t)
+		return c.storeReg(AX, "%"+z)
+	case Ptr:
+		p := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %%%s to i64\n", p, t)
+		return c.storeReg(AX, "%"+p)
+	default:
+		return fmt.Errorf("amd64 call %q unsupported return type %s", callee, csig.Ret)
+	}
 }
 
 func (c *amd64Ctx) tailCallAndRet(symOp Operand) error {
