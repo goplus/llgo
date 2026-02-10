@@ -1074,6 +1074,8 @@ var (
 		"reflect.MapOf":              {},
 		"reflect.SliceOf":            {},
 		"reflect.StructOf":           {},
+		"reflect.PointerTo":          {},
+		"reflect.PtrTo":              {},
 		"reflect.Value.Method":       {},
 		"reflect.Value.MethodByName": {},
 	}
