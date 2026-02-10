@@ -3,35 +3,61 @@ package runtime
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
+	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	latomic "github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
 	llrt "github.com/goplus/llgo/runtime/internal/runtime"
 	_ "unsafe"
 )
 
 type weakHandle struct {
-	pfn unsafe.Pointer // func() unsafe.Pointer
+	key  uintptr
+	live uint32
+}
+
+var weakState struct {
+	once psync.Once
+	mu   psync.Mutex
+	m    map[uintptr]*weakHandle
+}
+
+func initWeakState() {
+	weakState.mu.Init(nil)
+	weakState.m = make(map[uintptr]*weakHandle)
 }
 
 func llgoRegisterWeakPointer(p unsafe.Pointer) unsafe.Pointer {
-	n := uintptr(p) ^ 0xffff // hide from simple escape analysis
-	fn := func() unsafe.Pointer {
-		return unsafe.Pointer(n ^ 0xffff)
+	if p == nil {
+		return nil
 	}
-	wh := &weakHandle{
-		pfn: unsafe.Pointer(&fn),
+	weakState.once.Do(initWeakState)
+
+	key := uintptr(p)
+	weakState.mu.Lock()
+	if h := weakState.m[key]; h != nil {
+		weakState.mu.Unlock()
+		return unsafe.Pointer(h)
 	}
+	h := &weakHandle{key: key, live: 1}
+	weakState.m[key] = h
+	weakState.mu.Unlock()
+
 	llrt.AddCleanupPtr(p, func() {
-		atomic.Store(&wh.pfn, nil)
+		latomic.StoreUint32(&h.live, 0)
+		weakState.mu.Lock()
+		if weakState.m[key] == h {
+			delete(weakState.m, key)
+		}
+		weakState.mu.Unlock()
 	})
-	return unsafe.Pointer(wh)
+	return unsafe.Pointer(h)
 }
 
 func llgoMakeStrongFromWeak(u unsafe.Pointer) unsafe.Pointer {
-	wh := (*weakHandle)(u)
-	if pfn := atomic.Load(&wh.pfn); pfn != nil {
-		return (*(*func() unsafe.Pointer)(pfn))()
+	h := (*weakHandle)(u)
+	if h == nil || latomic.LoadUint32(&h.live) == 0 {
+		return nil
 	}
-	return nil
+	return unsafe.Pointer(h.key)
 }
 
 //go:linkname weak_runtime_registerWeakPointer weak.runtime_registerWeakPointer
