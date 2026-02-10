@@ -69,16 +69,16 @@ func TestGraphFromTestdata(t *testing.T) {
 		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
 			continue
 		}
-			pkgDir := filepath.Join(dir, entry.Name())
-			t.Run(entry.Name(), func(t *testing.T) {
-				outPath := filepath.Join(pkgDir, "out.txt")
-				mod, relocs := compileModuleFromDirWithReloc(t, pkgDir)
-				graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
-				got := formatGraph(graph)
-				if updateTestdata {
-					if err := os.WriteFile(outPath, got, 0644); err != nil {
-						t.Fatalf("WriteFile failed: %v", err)
-					}
+		pkgDir := filepath.Join(dir, entry.Name())
+		t.Run(entry.Name(), func(t *testing.T) {
+			outPath := filepath.Join(pkgDir, "out.txt")
+			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir)
+			graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
+			got := formatGraph(graph)
+			if updateTestdata {
+				if err := os.WriteFile(outPath, got, 0644); err != nil {
+					t.Fatalf("WriteFile failed: %v", err)
+				}
 				return
 			}
 			want, err := os.ReadFile(outPath)
