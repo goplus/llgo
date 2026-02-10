@@ -57,7 +57,7 @@ type Handle[T any] struct {
 // Alloc creates a TLS handle backed by pthread TLS.
 func Alloc[T any](destructor func(*T)) Handle[T] {
 	var key pthread.Key
-	if ret := key.Create(slotDestructor[T]); ret != 0 {
+	if ret := key.Create(pthread.KeyDestructor(slotDestructor[T])); ret != 0 {
 		c.Fprintf(c.Stderr, c.Str("tls: pthread_key_create failed (errno=%d)\n"), ret)
 		panic("tls: failed to create thread local storage key")
 	}
