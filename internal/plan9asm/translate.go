@@ -274,7 +274,7 @@ func emitExternSBGlobals(b *strings.Builder, file *File, resolve func(string) st
 					case "JMP", "JE", "JEQ", "JZ", "JNE", "JNZ",
 						"JL", "JLT", "JLE", "JG", "JGT", "JGE",
 						"JB", "JBE", "JA", "JAE", "JLS",
-						"JC", "JNC", "CALL", "BL", "B":
+						"JC", "JNC", "JCC", "CALL", "BL", "B":
 						continue
 					}
 				}
