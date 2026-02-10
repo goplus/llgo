@@ -54,9 +54,6 @@ func (b Builder) unsafeInterface(rawIntf *types.Interface, t Expr, data llvm.Val
 }
 
 func (b Builder) markUseIface(t Type) {
-	if !b.canEmitReloc() {
-		return
-	}
 	targetName, _ := b.Pkg.abi.TypeName(t.raw.Type)
 	b.Pkg.relocBuilder.AddEdge(RelocRecord{
 		Kind:   relocgraph.EdgeRelocUseIface,
@@ -66,14 +63,11 @@ func (b Builder) markUseIface(t Type) {
 }
 
 func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
-	if !b.canEmitReloc() || idx < 0 {
-		return
-	}
 	// Store method index in addend; later passes can map it to the method entry.
 	targetName, _ := b.Pkg.abi.TypeName(rawIntf)
 	fnTypeName := ""
 	infoName := ""
-	if idx < rawIntf.NumMethods() {
+	if uint(idx) < uint(rawIntf.NumMethods()) {
 		m := rawIntf.Method(idx)
 		name := m.Name()
 		if !token.IsExported(name) {
@@ -98,9 +92,6 @@ func (b Builder) markUseIfaceMethod(rawIntf *types.Interface, idx int) {
 // MarkUseNamedMethod records a named method usage for reachability analysis.
 // This corresponds to Go's R_USENAMEDMETHOD reloc.
 func (b Builder) MarkUseNamedMethod(name string) {
-	if !b.canEmitReloc() {
-		return
-	}
 	b.Pkg.relocBuilder.AddEdge(RelocRecord{
 		Kind:   relocgraph.EdgeRelocUseNamedMethod,
 		Owner:  relocSymID(b.Func.impl, ""),
@@ -112,27 +103,11 @@ func (b Builder) MarkUseNamedMethod(name string) {
 // MarkReflectMethod records a reflect-driven method lookup.
 // This corresponds to Go's ReflectMethod attribute (conservatively keep exported methods).
 func (b Builder) MarkReflectMethod() {
-	if !b.canEmitReloc() {
-		return
-	}
 	b.Pkg.relocBuilder.AddEdge(RelocRecord{
 		Kind:   relocgraph.EdgeRelocReflectMethod,
 		Owner:  relocSymID(b.Func.impl, ""),
 		Target: relocSymID(b.Func.impl, ""),
 	})
-}
-
-func (b Builder) canEmitReloc() bool {
-	if b.Pkg == nil || b.Func == nil {
-		return false
-	}
-	rt := b.Prog.runtime()
-	if rt == nil || rt.Scope() == nil {
-		return false
-	}
-	// Export data importers do not include unexported runtime symbols.
-	// Skip reloc emission in that case to avoid triggering missing runtime lookups.
-	return rt.Scope().Lookup("interequal") != nil
 }
 
 func iMethodOf(rawIntf *types.Interface, name string) int {
