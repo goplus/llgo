@@ -11,10 +11,12 @@ import (
 	"go/token"
 	"go/types"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/goplus/gogen/packages"
 	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llvm"
 	gossa "golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 )
@@ -42,6 +44,132 @@ func buildGoSSAPkg(t *testing.T, src string) (*gossa.Package, *token.FileSet, []
 	return ssaPkg, fset, files
 }
 
+func newLLSSAProg(t *testing.T) llssa.Program {
+	t.Helper()
+	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := importer.For("source", nil).Import(llssa.PkgRuntime)
+		if err != nil {
+			t.Fatal("load runtime failed:", err)
+		}
+		return rt
+	})
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	return prog
+}
+
+func mustCompileLLPkgFromSrc(t *testing.T, src string) (llssa.Package, llvm.Module) {
+	t.Helper()
+	ssaPkg, _, files := buildGoSSAPkg(t, src)
+	prog := newLLSSAProg(t)
+	pkg, err := NewPackage(prog, ssaPkg, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return pkg, pkg.Module()
+}
+
+func mustNamedFunction(t *testing.T, m llvm.Module, name string) llvm.Value {
+	t.Helper()
+	fn := m.NamedFunction(name)
+	if fn.IsNil() {
+		t.Fatalf("missing function %q in module", name)
+	}
+	return fn
+}
+
+// -----------------------------------------------------------------------------
+// Instruction-level "normal path" tests (Cfunc/Cmacro/C2func)
+
+func TestCgoInstr_Cfunc(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+import "unsafe"
+
+var _cgo_add unsafe.Pointer
+func _cgo_runtime_cgocall(fn unsafe.Pointer, arg unsafe.Pointer) int
+
+func _Cfunc_add(a int32, b int32) int32 {
+	_cgo_runtime_cgocall(_cgo_add, nil)
+	return 0
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo._Cfunc_add")
+	ir := fn.String()
+	if !strings.Contains(ir, "foo._cgo_add") {
+		t.Fatalf("expected load from foo._cgo_add, got:\n%s", ir)
+	}
+	if !strings.Contains(ir, "call") {
+		t.Fatalf("expected indirect call in Cfunc wrapper, got:\n%s", ir)
+	}
+	if strings.Contains(ir, "cliteErrno") {
+		t.Fatalf("unexpected cliteErrno in Cfunc wrapper, got:\n%s", ir)
+	}
+}
+
+func TestCgoInstr_C2func(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+import (
+	"syscall"
+	"unsafe"
+)
+
+var _ = syscall.Errno(0)
+
+var _cgo_sum unsafe.Pointer
+func _cgo_runtime_cgocall(fn unsafe.Pointer, arg unsafe.Pointer) int
+
+func _C2func_sum(a int32, b int32) (int32, error) {
+	_cgo_runtime_cgocall(_cgo_sum, nil)
+	return 0, nil
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo._C2func_sum")
+	ir := fn.String()
+	if !strings.Contains(ir, "foo._cgo_sum") {
+		t.Fatalf("expected load from foo._cgo_sum, got:\n%s", ir)
+	}
+	if !strings.Contains(ir, "cliteErrno") {
+		t.Fatalf("expected cliteErrno call in C2func wrapper, got:\n%s", ir)
+	}
+	if !strings.Contains(ir, "icmp") {
+		t.Fatalf("expected errno check in C2func wrapper, got:\n%s", ir)
+	}
+}
+
+func TestCgoInstr_Cmacro(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+func _cgo_dummy_ptr_int32(p *int32) {}
+
+func _Cmacro_magic() int32 {
+	var v int32
+	_cgo_dummy_ptr_int32(&v)
+	return 0
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo._Cmacro_magic")
+	ir := fn.String()
+	// Implementation may use heap alloc (AllocZ) instead of alloca; the key is
+	// that the macro path returns by loading from the chosen address.
+	if !strings.Contains(ir, "load i32") || !strings.Contains(ir, "ret i32") {
+		t.Fatalf("expected load+ret in Cmacro wrapper, got:\n%s", ir)
+	}
+	if strings.Contains(ir, "cliteErrno") {
+		t.Fatalf("unexpected cliteErrno in Cmacro wrapper, got:\n%s", ir)
+	}
+}
+
+// -----------------------------------------------------------------------------
+// White-box coverage tests for the highlighted branches in cl/instr.go and cl/compile.go
+
 func findStaticCall(t *testing.T, fn *gossa.Function, name string) *gossa.Call {
 	t.Helper()
 	for _, blk := range fn.Blocks {
@@ -57,20 +185,6 @@ func findStaticCall(t *testing.T, fn *gossa.Function, name string) *gossa.Call {
 	}
 	t.Fatalf("missing call to %s in %s", name, fn.Name())
 	return nil
-}
-
-func newLLSSAProg(t *testing.T) llssa.Program {
-	t.Helper()
-	prog := llssa.NewProgram(nil)
-	prog.SetRuntime(func() *types.Package {
-		rt, err := importer.For("source", nil).Import(llssa.PkgRuntime)
-		if err != nil {
-			t.Fatal("load runtime failed:", err)
-		}
-		return rt
-	})
-	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
-	return prog
 }
 
 func TestCgoCgocall_InitArgsFromParams(t *testing.T) {
