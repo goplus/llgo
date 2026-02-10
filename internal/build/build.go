@@ -39,11 +39,11 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
-	"github.com/goplus/llgo/cl/dcepass"
-	"github.com/goplus/llgo/cl/deadcode"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/dcepass"
+	"github.com/goplus/llgo/internal/deadcode"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"

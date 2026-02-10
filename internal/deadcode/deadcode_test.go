@@ -29,8 +29,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/cl/deadcode"
 	"github.com/goplus/llgo/internal/build"
+	"github.com/goplus/llgo/internal/deadcode"
 	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/qiniu/x/test"
 )
