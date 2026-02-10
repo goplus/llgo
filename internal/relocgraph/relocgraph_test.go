@@ -121,7 +121,7 @@ func TestRelocGraphFromTestdata(t *testing.T) {
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
 			graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
-			got := formatGraphWithMask(graph, relocgraph.EdgeRelocMask)
+			got := formatGraph(graph)
 			if updateRelocTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
 					t.Fatalf("WriteFile failed: %v", err)

@@ -1,3 +1,32 @@
+reloc(directcall) __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal0 -> github.com/goplus/llgo/runtime/internal/runtime.memequal0
+reloc(directcall) __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr -> github.com/goplus/llgo/runtime/internal/runtime.memequalptr
+reloc(directcall) reflectmethodvar.(*T).Foo -> reflectmethodvar.T.Foo
+reloc(directcall) reflectmethodvar.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+reloc(directcall) reflectmethodvar.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directcall) reflectmethodvar.A -> github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes
+reloc(directcall) reflectmethodvar.A -> reflect.Value.MethodByName
+reloc(directcall) reflectmethodvar.A -> reflect.ValueOf
+reloc(directcall) reflectmethodvar.init -> reflect.init
+reloc(directref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr
+reloc(directref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(directref) *_llgo_reflectmethodvar.T -> __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr
+reloc(directref) *_llgo_reflectmethodvar.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(directref) *_llgo_reflectmethodvar.T -> _llgo_reflectmethodvar.T
+reloc(directref) *_llgo_reflectmethodvar.T -> reflectmethodvar.(*T).Foo
+reloc(directref) __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal0 -> github.com/goplus/llgo/runtime/internal/runtime.memequal0
+reloc(directref) __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr -> github.com/goplus/llgo/runtime/internal/runtime.memequalptr
+reloc(directref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(directref) _llgo_reflectmethodvar.T -> *_llgo_reflectmethodvar.T
+reloc(directref) _llgo_reflectmethodvar.T -> __llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal0
+reloc(directref) _llgo_reflectmethodvar.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(directref) _llgo_reflectmethodvar.T -> reflectmethodvar.(*T).Foo
+reloc(directref) _llgo_reflectmethodvar.T -> reflectmethodvar.T.Foo
+reloc(directref) reflectmethodvar.A -> _llgo_reflectmethodvar.T
+reloc(directref) reflectmethodvar.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocU
+reloc(directref) reflectmethodvar.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directref) reflectmethodvar.A -> github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes
+reloc(directref) reflectmethodvar.A -> reflect.ValueOf
+reloc(directref) reflectmethodvar.init -> reflectmethodvar.init$guard
 reloc(methodoff idx=0) *_llgo_reflectmethodvar.T -> reflectmethodvar.(*T).Foo
 reloc(methodoff idx=0) _llgo_reflectmethodvar.T -> reflectmethodvar.(*T).Foo
 reloc(methodoff idx=0) _llgo_reflectmethodvar.T -> reflectmethodvar.T.Foo
