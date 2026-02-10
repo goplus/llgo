@@ -1879,17 +1879,73 @@ func Append(s Value, x ...Value) Value {
 // AppendSlice appends a slice t to a slice s and returns the resulting slice.
 // The slices s and t must have the same element type.
 func AppendSlice(s, t Value) Value {
-	/*
-		s.mustBe(Slice)
-		t.mustBe(Slice)
-		typesMustMatch("reflect.AppendSlice", s.Type().Elem(), t.Type().Elem())
-		ns := s.Len()
-		nt := t.Len()
-		s = s.extendSlice(nt)
-		Copy(s.Slice(ns, ns+nt), t)
-		return s
-	*/
-	panic("todo: reflect.AppendSlice")
+	s.mustBe(Slice)
+	t.mustBe(Slice)
+	if s.typ().Elem() != t.typ().Elem() {
+		panic("reflect.AppendSlice: " + stringFor(s.typ().Elem()) + " != " + stringFor(t.typ().Elem()))
+	}
+	ns := s.Len()
+	nt := t.Len()
+	s = s.extendSlice(nt)
+	Copy(s.Slice(ns, ns+nt), t)
+	return s
+}
+
+// Copy copies the contents of src into dst until either
+// dst has been filled or src has been exhausted.
+// It returns the number of elements copied.
+// Dst and src each must have kind [Slice] or [Array], and
+// dst and src must have the same element type.
+// If dst is an [Array], it panics if [Value.CanSet] returns false.
+//
+// As a special case, src can have kind [String] if the element type of dst is kind [Uint8].
+func Copy(dst, src Value) int {
+	dk := dst.kind()
+	if dk != Array && dk != Slice {
+		panic(&ValueError{"reflect.Copy", dk})
+	}
+	if dk == Array {
+		dst.mustBeAssignable()
+	}
+	dst.mustBeExported()
+
+	sk := src.kind()
+	stringCopy := false
+	if sk != Array && sk != Slice {
+		stringCopy = sk == String && dst.typ().Elem().Kind() == abi.Uint8
+		if !stringCopy {
+			panic(&ValueError{"reflect.Copy", sk})
+		}
+	}
+	src.mustBeExported()
+
+	de := dst.typ().Elem()
+	if !stringCopy {
+		se := src.typ().Elem()
+		if de != se {
+			panic("reflect.Copy: " + stringFor(de) + " != " + stringFor(se))
+		}
+	}
+
+	n := dst.Len()
+	if stringCopy {
+		str := src.String()
+		if len(str) < n {
+			n = len(str)
+		}
+		for i := 0; i < n; i++ {
+			dst.Index(i).SetUint(uint64(str[i]))
+		}
+		return n
+	}
+
+	if src.Len() < n {
+		n = src.Len()
+	}
+	for i := 0; i < n; i++ {
+		dst.Index(i).Set(src.Index(i))
+	}
+	return n
 }
 
 // Zero returns a Value representing the zero value for the specified type.
