@@ -2346,20 +2346,22 @@ func toFFISig(tin, tout []*abi.Type) (*ffi.Signature, error) {
 	for i, in := range tin {
 		args[i] = toFFIType(in)
 	}
-	var ret *ffi.Type
+	return ffi.NewSignature(toFFIRetType(tout), args...)
+}
+
+func toFFIRetType(tout []*abi.Type) *ffi.Type {
 	switch n := len(tout); n {
 	case 0:
-		ret = ffi.TypeVoid
+		return ffi.TypeVoid
 	case 1:
-		ret = toFFIType(tout[0])
+		return toFFIType(tout[0])
 	default:
 		fields := make([]*ffi.Type, n)
 		for i, out := range tout {
 			fields[i] = toFFIType(out)
 		}
-		ret = ffi.StructOf(fields...)
+		return ffi.StructOf(fields...)
 	}
-	return ffi.NewSignature(ret, args...)
 }
 
 func (v Value) closureFunc() *abi.FuncType {
@@ -2468,7 +2470,23 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		panic("reflect.Value.Call: wrong argument count")
 	}
 
-	sig, err := toFFISig(tin, tout)
+	ffiArgs := make([]*ffi.Type, 0, len(tin)+4)
+	for i := 0; i < ioff; i++ {
+		ffiArgs = append(ffiArgs, toFFIType(tin[i]))
+	}
+	for i, arg := range in {
+		typ := tin[ioff+i]
+		if typ.Kind() == abi.Slice {
+			h := (*unsafeheaderSlice)(arg.ptr)
+			ffiArgs = append(ffiArgs, ffi.TypePointer, ffi.TypeInt, ffi.TypeInt)
+			args = append(args, unsafe.Pointer(&h.Data), unsafe.Pointer(&h.Len), unsafe.Pointer(&h.Cap))
+			continue
+		}
+		ffiArgs = append(ffiArgs, toFFIType(typ))
+		args = append(args, toFFIArg(arg, typ))
+	}
+
+	sig, err := ffi.NewSignature(toFFIRetType(tout), ffiArgs...)
 	if err != nil {
 		panic(err)
 	}
@@ -2476,9 +2494,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		v := runtime.AllocZ(sig.RType.Size)
 		ret = unsafe.Pointer(&v)
 	}
-	for i, in := range in {
-		args = append(args, toFFIArg(in, tin[ioff+i]))
-	}
+
 	ffi.Call(sig, fn, ret, args...)
 	switch n := len(tout); n {
 	case 0:
