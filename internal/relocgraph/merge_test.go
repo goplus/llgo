@@ -69,10 +69,10 @@ func TestMergeFromCopiesNodeInfo(t *testing.T) {
 
 func TestMergeAllAppendsEdgesInOrder(t *testing.T) {
 	g1 := NewGraph()
-	g1.AddEdge(Edge{Owner: "A", Target: "B", Kind: EdgeCall}, Options{})
+	g1.AddEdge(Edge{Owner: "A", Target: "B", Kind: EdgeCall})
 
 	g2 := NewGraph()
-	g2.AddEdge(Edge{Owner: "C", Target: "A", Kind: EdgeRef}, Options{})
+	g2.AddEdge(Edge{Owner: "C", Target: "A", Kind: EdgeRef})
 
 	merged := MergeAll(g1, g2)
 

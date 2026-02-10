@@ -73,7 +73,7 @@ func TestGraphFromTestdata(t *testing.T) {
 		t.Run(entry.Name(), func(t *testing.T) {
 			outPath := filepath.Join(pkgDir, "out.txt")
 			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir)
-			graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
+			graph := relocgraph.BuildPackageGraph(mod, relocs)
 			got := formatGraph(graph)
 			if updateTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
@@ -118,7 +118,7 @@ func TestAddEdges(t *testing.T) {
 			Addend: 1,
 			Name:   "Bar",
 		},
-	}, relocgraph.Options{})
+	})
 
 	var foundNamed, foundIfaceMethod, foundMethodOff bool
 	for _, r := range g.Relocs {

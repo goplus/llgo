@@ -17,9 +17,6 @@
 package deadcode
 
 import (
-	"fmt"
-	"os"
-	"sort"
 	"strings"
 
 	"github.com/goplus/llgo/internal/relocgraph"
@@ -32,13 +29,6 @@ type Result struct {
 	MarkableMethods  []MethodRef
 	IfaceMethods     map[MethodSig]bool                // interface methods observed via useifacemethod
 	ReachableMethods map[relocgraph.SymID]map[int]bool // methods confirmed reachable by iface calls
-}
-
-var verbose bool
-
-// SetVerbose enables verbose debugging output during Analyze.
-func SetVerbose(v bool) {
-	verbose = v
 }
 
 // MethodSig identifies a method by name and signature type descriptor.
@@ -79,9 +69,6 @@ func Analyze(g *relocgraph.Graph, roots []relocgraph.SymID) Result {
 		MarkableMethods:  pass.markableMethods,
 		IfaceMethods:     pass.ifaceMethods,
 		ReachableMethods: pass.reachableMethods,
-	}
-	if verbose {
-		logResult(res, roots)
 	}
 	return res
 }
@@ -282,45 +269,5 @@ func (d *deadcodePass) markMethod(m MethodRef) {
 			d.mark(relocs[i+2].Target)
 		}
 		break
-	}
-}
-
-func logResult(res Result, roots []relocgraph.SymID) {
-	fmt.Fprintln(os.Stderr, "[deadcode] roots:", roots)
-	fmt.Fprintf(os.Stderr, "[deadcode] reachable=%d usedInIface=%d ifaceMethods=%d markable=%d reachableMethods=%d\n",
-		len(res.Reachable), len(res.UsedInIface), len(res.IfaceMethods), len(res.MarkableMethods), len(res.ReachableMethods))
-
-	if len(res.ReachableMethods) > 0 {
-		fmt.Fprintln(os.Stderr, "[deadcode] reachable methods:")
-		types := make([]string, 0, len(res.ReachableMethods))
-		for t := range res.ReachableMethods {
-			types = append(types, string(t))
-		}
-		sort.Strings(types)
-		for _, t := range types {
-			idxs := res.ReachableMethods[relocgraph.SymID(t)]
-			var list []int
-			for i := range idxs {
-				list = append(list, i)
-			}
-			sort.Ints(list)
-			fmt.Fprintf(os.Stderr, "  %s -> %v\n", t, list)
-		}
-	}
-	if len(res.IfaceMethods) > 0 {
-		fmt.Fprintln(os.Stderr, "[deadcode] iface method demands:")
-		var ms []MethodSig
-		for m := range res.IfaceMethods {
-			ms = append(ms, m)
-		}
-		sort.Slice(ms, func(i, j int) bool {
-			if ms[i].Name == ms[j].Name {
-				return ms[i].Typ < ms[j].Typ
-			}
-			return ms[i].Name < ms[j].Name
-		})
-		for _, m := range ms {
-			fmt.Fprintf(os.Stderr, "  %s :: %s\n", m.Name, m.Typ)
-		}
 	}
 }

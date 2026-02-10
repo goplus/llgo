@@ -74,78 +74,61 @@ func NewGraph() *Graph {
 	}
 }
 
-// Options controls graph construction.
-type Options struct {
-	IncludeIntrinsics bool
-	IncludeDecls      bool
-}
-
 // Build constructs a dependency graph from an LLVM module.
-func Build(mod llvm.Module, opts Options) *Graph {
+func Build(mod llvm.Module) *Graph {
 	g := NewGraph()
 	for gv := mod.FirstGlobal(); !gv.IsNil(); gv = llvm.NextGlobal(gv) {
 		name := SymID(gv.Name())
 		isIntrinsic := strings.HasPrefix(gv.Name(), "llvm.")
 		g.ensureNode(name, gv.IsDeclaration(), isIntrinsic)
-		if isIntrinsic && !opts.IncludeIntrinsics {
+		if isIntrinsic {
 			continue
 		}
 		// Global initializers can embed function pointers (e.g. func values stored
 		// in globals). Record them as reference edges so they are visible to later
 		// reachability logic even when no direct call exists.
 		if init := gv.Initializer(); !init.IsNil() {
-			g.addRefEdgesFromValue(name, init, opts)
+			g.addRefEdgesFromValue(name, init)
 		}
 	}
 	for fn := mod.FirstFunction(); !fn.IsNil(); fn = llvm.NextFunction(fn) {
 		name := SymID(fn.Name())
 		isIntrinsic := strings.HasPrefix(fn.Name(), "llvm.")
 		g.ensureNode(name, fn.IsDeclaration(), isIntrinsic)
-		if fn.IsDeclaration() && !opts.IncludeDecls {
+		if fn.IsDeclaration() {
 			continue
 		}
-		if isIntrinsic && !opts.IncludeIntrinsics {
+		if isIntrinsic {
 			continue
 		}
 		callerID := SymID(fn.Name())
 		for bb := fn.FirstBasicBlock(); !bb.IsNil(); bb = llvm.NextBasicBlock(bb) {
 			for instr := bb.FirstInstruction(); !instr.IsNil(); instr = llvm.NextInstruction(instr) {
 				if call := instr.IsACallInst(); !call.IsNil() {
-					g.addCallEdge(fn, call.CalledValue(), opts)
+					g.addCallEdge(fn, call.CalledValue())
 					// Scan operands except the callee to capture function pointers
 					// passed as arguments or stored in temporaries.
-					g.addRefEdgesFromOperands(callerID, call, call.CalledValue(), opts)
+					g.addRefEdgesFromOperands(callerID, call, call.CalledValue())
 					continue
 				}
 				if inv := instr.IsAInvokeInst(); !inv.IsNil() {
-					g.addCallEdge(fn, inv.CalledValue(), opts)
+					g.addCallEdge(fn, inv.CalledValue())
 					// Same as call: track non-callee operands as ref edges.
-					g.addRefEdgesFromOperands(callerID, inv, inv.CalledValue(), opts)
+					g.addRefEdgesFromOperands(callerID, inv, inv.CalledValue())
 					continue
 				}
 				// For other instructions, any operand that resolves to a function
 				// value is treated as a reference edge.
-				g.addRefEdgesFromOperands(callerID, instr, llvm.Value{}, opts)
+				g.addRefEdgesFromOperands(callerID, instr, llvm.Value{})
 			}
 		}
 	}
 	return g
 }
 
-// BuildModuleEdges scans one LLVM module and returns call/ref edges.
-func BuildModuleEdges(mod llvm.Module, opts Options) []Edge {
-	g := Build(mod, opts)
-	if len(g.Relocs) == 0 {
-		return nil
-	}
-	out := make([]Edge, len(g.Relocs))
-	copy(out, g.Relocs)
-	return out
-}
-
 // BuildPackageGraph merges module-derived edges and SSA-produced edges.
-func BuildPackageGraph(mod llvm.Module, ssaEdges []Edge, opts Options) *Graph {
-	b := NewBuilder(opts)
+func BuildPackageGraph(mod llvm.Module, ssaEdges []Edge) *Graph {
+	b := NewBuilder()
 	b.AddEdges(ssaEdges)
 	b.AddModule(mod)
 	return b.Graph()
@@ -154,19 +137,18 @@ func BuildPackageGraph(mod llvm.Module, ssaEdges []Edge, opts Options) *Graph {
 // Builder incrementally collects graph edges from multiple sources
 // (SSA reloc edges and LLVM module call/ref edges).
 type Builder struct {
-	opts    Options
 	graph   *Graph
 	pending []Edge
 }
 
-// NewBuilder returns a graph builder configured with edge filtering options.
-func NewBuilder(opts Options) *Builder {
-	return &Builder{opts: opts}
+// NewBuilder returns a graph builder.
+func NewBuilder() *Builder {
+	return &Builder{}
 }
 
 // AddEdge adds one edge into the builder.
 func (b *Builder) AddEdge(edge Edge) {
-	normalized, ok := normalizeEdge(edge, b.opts)
+	normalized, ok := normalizeEdge(edge)
 	if !ok {
 		return
 	}
@@ -186,14 +168,14 @@ func (b *Builder) AddEdges(edges []Edge) {
 
 // AddModule scans one LLVM module and merges its edges into the builder graph.
 func (b *Builder) AddModule(mod llvm.Module) {
-	mg := Build(mod, b.opts)
+	mg := Build(mod)
 	if b.graph == nil {
 		b.graph = mg
 	} else {
 		b.graph.MergeFrom(mg)
 	}
 	if len(b.pending) != 0 {
-		b.graph.AddEdges(b.pending, b.opts)
+		b.graph.AddEdges(b.pending)
 		b.pending = nil
 	}
 }
@@ -219,7 +201,7 @@ func (b *Builder) Graph() *Graph {
 		b.graph = NewGraph()
 	}
 	if len(b.pending) != 0 {
-		b.graph.AddEdges(b.pending, b.opts)
+		b.graph.AddEdges(b.pending)
 		b.pending = nil
 	}
 	return b.graph
@@ -242,8 +224,8 @@ type RelocRecord = Edge
 // AddEdge inserts one dependency edge into the graph.
 // Both module-derived call/ref edges and SSA-produced reloc edges must use this
 // entry point so normalization rules stay consistent.
-func (g *Graph) AddEdge(edge Edge, opts Options) {
-	normalized, ok := normalizeEdge(edge, opts)
+func (g *Graph) AddEdge(edge Edge) {
+	normalized, ok := normalizeEdge(edge)
 	if !ok {
 		return
 	}
@@ -258,11 +240,11 @@ func (g *Graph) appendEdge(edge Edge) {
 	g.Relocs = append(g.Relocs, edge)
 }
 
-func normalizeEdge(edge Edge, opts Options) (Edge, bool) {
+func normalizeEdge(edge Edge) (Edge, bool) {
 	if edge.Owner == "" {
 		return Edge{}, false
 	}
-	if strings.HasPrefix(string(edge.Owner), "llvm.") && !opts.IncludeIntrinsics {
+	if strings.HasPrefix(string(edge.Owner), "llvm.") {
 		return Edge{}, false
 	}
 	if edge.Kind == EdgeRelocUseNamedMethod && edge.Name == "" {
@@ -276,7 +258,7 @@ func normalizeEdge(edge Edge, opts Options) (Edge, bool) {
 		}
 		return edge, true
 	}
-	if strings.HasPrefix(string(edge.Target), "llvm.") && !opts.IncludeIntrinsics {
+	if strings.HasPrefix(string(edge.Target), "llvm.") {
 		return Edge{}, false
 	}
 	return edge, true
@@ -296,7 +278,7 @@ func (g *Graph) ensureNode(id SymID, isDecl, isIntrinsic bool) {
 	}
 }
 
-func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) {
+func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value) {
 	fn := resolveFuncValue(callee)
 	if fn.IsNil() {
 		return
@@ -309,10 +291,10 @@ func (g *Graph) addCallEdge(caller llvm.Value, callee llvm.Value, opts Options) 
 		Owner:  SymID(caller.Name()),
 		Target: SymID(name),
 		Kind:   EdgeCall,
-	}, opts)
+	})
 }
 
-func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
+func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value) {
 	// Walk a value tree (constants + constant expressions) and record any
 	// function pointer it embeds. This captures func values stored in globals,
 	// composite literals, or casted constants.
@@ -335,7 +317,7 @@ func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
 				Owner:  caller,
 				Target: SymID(name),
 				Kind:   EdgeRef,
-			}, opts)
+			})
 			return
 		}
 		if gv := resolveGlobalValue(val); !gv.IsNil() {
@@ -347,7 +329,7 @@ func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
 				Owner:  caller,
 				Target: SymID(name),
 				Kind:   EdgeRef,
-			}, opts)
+			})
 			return
 		}
 		// Recurse through operands to find nested function pointers.
@@ -359,7 +341,7 @@ func (g *Graph) addRefEdgesFromValue(caller SymID, v llvm.Value, opts Options) {
 	walk(v)
 }
 
-func (g *Graph) addRefEdgesFromOperands(caller SymID, v llvm.Value, skip llvm.Value, opts Options) {
+func (g *Graph) addRefEdgesFromOperands(caller SymID, v llvm.Value, skip llvm.Value) {
 	// Scan each operand for function pointers and emit EdgeRef. The "skip"
 	// operand is typically the direct callee, already covered by EdgeCall.
 	n := v.OperandsCount()
@@ -368,7 +350,7 @@ func (g *Graph) addRefEdgesFromOperands(caller SymID, v llvm.Value, skip llvm.Va
 		if !skip.IsNil() && op.C == skip.C {
 			continue
 		}
-		g.addRefEdgesFromValue(caller, op, opts)
+		g.addRefEdgesFromValue(caller, op)
 	}
 }
 
@@ -401,9 +383,9 @@ func resolveGlobalValue(v llvm.Value) llvm.Value {
 }
 
 // AddEdges injects SSA-collected edges into the graph.
-func (g *Graph) AddEdges(edges []Edge, opts Options) {
+func (g *Graph) AddEdges(edges []Edge) {
 	for _, e := range edges {
-		g.AddEdge(e, opts)
+		g.AddEdge(e)
 	}
 }
 

@@ -1099,7 +1099,6 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 		fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
 	}
 
-	deadcode.SetVerbose(verbose)
 	res := deadcode.Analyze(graph, roots)
 
 	srcMods := dceSourceModules(pkgs)
@@ -1131,8 +1130,7 @@ func buildPackageIRGraph(pkg llssa.Package) *relocgraph.Graph {
 	if pkg == nil {
 		return nil
 	}
-	opts := relocgraph.Options{}
-	return relocgraph.BuildPackageGraph(pkg.Module(), pkg.RelocRecords(), opts)
+	return relocgraph.BuildPackageGraph(pkg.Module(), pkg.RelocRecords())
 }
 
 // mergePackageGraphs merges IRGraphs from all packages in ctx.

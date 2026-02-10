@@ -165,14 +165,6 @@ func (e *overrideEmitter) cloneConst(v llvm.Value) (llvm.Value, error) {
 		e.values[v] = clone
 		return clone, nil
 	}
-	if ce := v.IsAConstantExpr(); !ce.IsNil() {
-		clone, err := e.cloneConstExpr(ce)
-		if err != nil {
-			return llvm.Value{}, err
-		}
-		e.values[v] = clone
-		return clone, nil
-	}
 	switch {
 	case !v.IsAConstantStruct().IsNil():
 		ops, err := e.cloneOperands(v)
@@ -198,35 +190,6 @@ func (e *overrideEmitter) cloneOperands(v llvm.Value) ([]llvm.Value, error) {
 		ops[i] = clone
 	}
 	return ops, nil
-}
-
-func (e *overrideEmitter) cloneConstExpr(v llvm.Value) (llvm.Value, error) {
-	ops, err := e.cloneOperands(v)
-	if err != nil {
-		return llvm.Value{}, err
-	}
-	if len(ops) == 0 {
-		return v, nil
-	}
-	switch v.Opcode() {
-	case llvm.BitCast:
-		return llvm.ConstBitCast(ops[0], v.Type()), nil
-	case llvm.PtrToInt:
-		return llvm.ConstPtrToInt(ops[0], v.Type()), nil
-	case llvm.IntToPtr:
-		return llvm.ConstIntToPtr(ops[0], v.Type()), nil
-	case llvm.Trunc:
-		return llvm.ConstTrunc(ops[0], v.Type()), nil
-	case llvm.GetElementPtr:
-		base := ops[0]
-		baseTy := base.Type()
-		if baseTy.TypeKind() != llvm.PointerTypeKind {
-			return llvm.Value{}, fmt.Errorf("gep base is not pointer: %s", baseTy.String())
-		}
-		return llvm.ConstGEP(baseTy.ElementType(), base, ops[1:]), nil
-	default:
-		return llvm.Value{}, fmt.Errorf("unsupported const expr opcode: %v", v.Opcode())
-	}
 }
 
 func (e *overrideEmitter) cloneGlobalValue(v llvm.Value) (llvm.Value, error) {
