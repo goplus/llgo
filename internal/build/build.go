@@ -248,6 +248,30 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cl.EnableExportRename(true)
 	}
 
+	// DCE is enabled by default, but currently only supported for executable
+	// outputs on non-wasm targets.
+	if conf.DCE {
+		if conf.BuildMode != BuildModeExe {
+			conf.DCE = false
+		} else if isWasmTarget(conf.Goos) || strings.HasPrefix(conf.Target, "wasi") || strings.HasPrefix(conf.Target, "wasm") {
+			conf.DCE = false
+		}
+	}
+
+	// DCE currently requires a full per-package reloc graph, which is assembled from:
+	//   1) semantic reloc edges emitted during SSA lowering, and
+	//   2) direct call/ref edges collected from the final LLVM module.
+	//
+	// In a cache-hit path we restore compiled artifacts (.a/.o and link metadata), but we
+	// do not yet restore the LLVM call/ref edge set used to build reloc graphs. That means
+	// cache-hit cannot guarantee a complete graph for whole-program reachability, and using
+	// partial graph data would risk incorrect deadcode results.
+	//
+	// ForceRebuild is therefore intentionally enabled under DCE for correctness: every
+	// package is rebuilt so both SSA and LLVM-side graph inputs are available and merged.
+	//
+	// This is a temporary trade-off. Once reloc graph metadata is persisted with package
+	// archives and can be recovered on cache-hit, this forced rebuild can be removed.
 	if conf.DCE {
 		conf.ForceRebuild = true
 	}
