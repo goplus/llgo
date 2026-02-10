@@ -66,7 +66,13 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethod
 			if init.IsNil() {
 				continue
 			}
-			if _, _, ok := methodArray(init); !ok {
+			methodsVal, _, ok := methodArray(init)
+			if !ok {
+				continue
+			}
+			// Types with zero methods don't benefit from override emission and may
+			// carry platform/patch-specific ABI shape differences. Skip them.
+			if methodsVal.OperandsCount() == 0 {
 				continue
 			}
 			droppedIdx, err := emitter.emitTypeOverride(g, reachMethods[sym])
@@ -127,6 +133,9 @@ func (e *overrideEmitter) emitTypeOverride(srcType llvm.Value, keepIdx map[int]b
 	}
 
 	methodCount := methodsVal.OperandsCount()
+	if methodCount == 0 {
+		return nil, nil
+	}
 	zeroPtr := llvm.ConstPointerNull(elemTy.StructElementTypes()[1])
 	methods := make([]llvm.Value, methodCount)
 	dropped := make([]int, 0, methodCount)
