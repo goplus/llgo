@@ -1023,13 +1023,9 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
-func dceEntryRootsFromGraph(g *relocgraph.Graph, conf *Config) ([]relocgraph.SymID, error) {
+func dceEntryRootsFromGraph(g *relocgraph.Graph, candidates []string) ([]relocgraph.SymID, error) {
 	if g == nil {
 		return nil, fmt.Errorf("dce graph is nil")
-	}
-	candidates := []string{"main", "_start"}
-	if isWasmDCEConfig(conf) {
-		candidates = append(candidates, "__main_argc_argv")
 	}
 	var roots []relocgraph.SymID
 	for _, name := range candidates {
@@ -1046,6 +1042,14 @@ func dceEntryRootsFromGraph(g *relocgraph.Graph, conf *Config) ([]relocgraph.Sym
 		return nil, fmt.Errorf("dce requires at least one entry root (%s)", strings.Join(candidates, "/"))
 	}
 	return roots, nil
+}
+
+func dceEntryRootCandidates(conf *Config) []string {
+	candidates := []string{"main", "_start"}
+	if isWasmDCEConfig(conf) {
+		candidates = append(candidates, "__main_argc_argv")
+	}
+	return candidates
 }
 
 func isWasmDCEConfig(conf *Config) bool {
@@ -1081,7 +1085,7 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 	ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
 
 	graph := mergePackageGraphs(ctx)
-	roots, err := dceEntryRootsFromGraph(graph, ctx.buildConf)
+	roots, err := dceEntryRootsFromGraph(graph, dceEntryRootCandidates(ctx.buildConf))
 	if err != nil {
 		return err
 	}
