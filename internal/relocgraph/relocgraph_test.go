@@ -76,8 +76,8 @@ func TestGraphFromTestdata(t *testing.T) {
 				t.Skip("no go files")
 			}
 			outPath := filepath.Join(pkgDir, "out.txt")
-			mod := compileModuleFromDir(t, pkgDir)
-			graph := relocgraph.Build(mod, relocgraph.Options{})
+			mod, relocs := compileModuleFromDirWithReloc(t, pkgDir, true)
+			graph := relocgraph.BuildPackageGraph(mod, relocs, relocgraph.Options{})
 			got := formatGraph(graph)
 			if updateTestdata {
 				if err := os.WriteFile(outPath, got, 0644); err != nil {
@@ -244,11 +244,6 @@ func hasGoFiles(dir string) bool {
 		}
 	}
 	return false
-}
-
-func compileModuleFromDir(t *testing.T, dir string) llvm.Module {
-	mod, _ := compileModuleFromDirWithReloc(t, dir, false)
-	return mod
 }
 
 func compileModuleFromDirWithReloc(t *testing.T, dir string, enableReloc bool) (llvm.Module, []relocgraph.Edge) {

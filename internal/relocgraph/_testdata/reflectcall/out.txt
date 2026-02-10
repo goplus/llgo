@@ -12,3 +12,6 @@ reloc(directref) _llgo_int -> __llgo_stub.github.com/goplus/llgo/runtime/interna
 reloc(directref) reflectcall.A -> _llgo_int
 reloc(directref) reflectcall.A -> reflect.ValueOf
 reloc(directref) reflectcall.init -> reflectcall.init$guard
+reloc(typeref) *_llgo_int -> _llgo_int
+reloc(typeref) _llgo_int -> *_llgo_int
+reloc(useiface) reflectcall.A -> _llgo_int

@@ -27,3 +27,13 @@ reloc(directref) ifaceassert.A -> github.com/goplus/llgo/runtime/internal/runtim
 reloc(directref) ifaceassert.A -> github.com/goplus/llgo/runtime/internal/runtime.Implements
 reloc(directref) ifaceassert.A -> github.com/goplus/llgo/runtime/internal/runtime.NewItab
 reloc(directref) ifaceassert.init -> ifaceassert.init$guard
+reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(typeref) *_llgo_ifaceassert.I -> _llgo_ifaceassert.I
+reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> *_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(typeref) _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_ifaceassert.I -> *_llgo_ifaceassert.I
+reloc(typeref) _llgo_ifaceassert.I -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(useiface) ifaceassert.A -> _llgo_ifaceassert.I
+reloc(useifacemethod) name=M fntype=_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac ifaceassert.A -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88

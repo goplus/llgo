@@ -33,3 +33,17 @@ reloc(directref) ifacecall.A -> github.com/goplus/llgo/runtime/internal/runtime.
 reloc(directref) ifacecall.A -> github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData
 reloc(directref) ifacecall.A -> github.com/goplus/llgo/runtime/internal/runtime.NewItab
 reloc(directref) ifacecall.init -> ifacecall.init$guard
+reloc(methodoff idx=0) *_llgo_ifacecall.T -> ifacecall.(*T).M
+reloc(methodoff idx=0) _llgo_ifacecall.T -> ifacecall.(*T).M
+reloc(methodoff idx=0) _llgo_ifacecall.T -> ifacecall.T.M
+reloc(methodoff idx=0) name=M *_llgo_ifacecall.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(methodoff idx=0) name=M _llgo_ifacecall.T -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) *_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(typeref) *_llgo_ifacecall.T -> _llgo_ifacecall.T
+reloc(typeref) _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac -> *_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> *_llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
+reloc(typeref) _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88 -> _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+reloc(typeref) _llgo_ifacecall.T -> *_llgo_ifacecall.T
+reloc(useiface) ifacecall.A -> _llgo_ifacecall.T
+reloc(useifacemethod) name=M fntype=_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac ifacecall.A -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88
