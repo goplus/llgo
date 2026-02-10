@@ -120,8 +120,25 @@ func go_callback(i C.int) C.int {
 	return i + 1
 }
 
+func triggerC2func() {
+	s4 := C.s4{a: 1}
+	s8 := C.s8{a: 1, b: 2}
+	s12 := C.s12{a: 1, b: 2, c: 3}
+	s16 := C.s16{a: 1, b: 2, c: 3, d: 4}
+	s20 := C.s20{a: 1, b: 2, c: 3, d: 4, e: 5}
+	r, err := C.test_structs(&s4, &s8, &s12, &s16, &s20)
+	if err != nil {
+		panic(err)
+	}
+	if r != 35 {
+		panic("C2func test_structs failed")
+	}
+	fmt.Println("c2func ok")
+}
+
 func main() {
 	runPy()
+	triggerC2func()
 	f := &C.Foo{a: 1}
 	Foo(f)
 	Bar(f)

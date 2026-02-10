@@ -21,11 +21,13 @@ package cl_test
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
+	"github.com/goplus/llgo/internal/llgen"
 )
 
 func testCompile(t *testing.T, src, expected string) {
@@ -94,6 +96,16 @@ func TestFromTestdata(t *testing.T) {
 
 func TestRunFromTestdata(t *testing.T) {
 	cltest.RunFromDir(t, "", "./_testdata", nil)
+}
+
+func TestCgofullGeneratesC2func(t *testing.T) {
+	ir := llgen.GenFrom("./_testgo/cgofull")
+	if !strings.Contains(ir, "_C2func_test_structs") {
+		t.Fatal("missing _C2func_test_structs in cgofull IR")
+	}
+	if !strings.Contains(ir, "cliteErrno") {
+		t.Fatal("missing cliteErrno call in cgofull IR")
+	}
 }
 
 func TestGoPkgMath(t *testing.T) {
