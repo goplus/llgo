@@ -42,6 +42,11 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethod
 			if name == "" {
 				continue
 			}
+			// llgo type metadata globals are emitted as constants; skip mutable
+			// globals to avoid treating non-metadata tables as method arrays.
+			if !g.IsGlobalConstant() {
+				continue
+			}
 			sym := relocgraph.SymID(name)
 			if emitted[sym] {
 				continue
@@ -175,22 +180,6 @@ func (e *overrideEmitter) cloneConst(v llvm.Value) (llvm.Value, error) {
 			return llvm.Value{}, err
 		}
 		clone := constStructOfType(v.Type(), ops)
-		e.values[v] = clone
-		return clone, nil
-	case !v.IsAConstantArray().IsNil():
-		ops, err := e.cloneOperands(v)
-		if err != nil {
-			return llvm.Value{}, err
-		}
-		clone := llvm.ConstArray(v.Type().ElementType(), ops)
-		e.values[v] = clone
-		return clone, nil
-	case !v.IsAConstantVector().IsNil():
-		ops, err := e.cloneOperands(v)
-		if err != nil {
-			return llvm.Value{}, err
-		}
-		clone := llvm.ConstVector(ops, false)
 		e.values[v] = clone
 		return clone, nil
 	}
