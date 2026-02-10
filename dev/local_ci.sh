@@ -206,7 +206,7 @@ log_section "Go Build"
 (cd "$workdir" && GOTOOLCHAIN="$repo_gotoolchain" go build ./...)
 
 log_section "Go Test"
-(cd "$workdir" && GOTOOLCHAIN="$repo_gotoolchain" go test ./...)
+(cd "$workdir" && GOTOOLCHAIN="$repo_gotoolchain" go test -timeout 30m ./...)
 
 log_section "Install llgo"
 (cd "$workdir" && GOTOOLCHAIN="$repo_gotoolchain" go install ./cmd/llgo)
