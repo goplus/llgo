@@ -137,6 +137,8 @@ type context struct {
 	cgoCalled  bool
 	cgoArgs    []llssa.Expr
 	cgoRet     llssa.Expr
+	cgoErrno   llssa.Expr
+	cgoErrnoTy types.Type
 	cgoSymbols []string
 	rewrites   map[string]string
 }
@@ -265,7 +267,7 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 
 func isCgoExternSymbol(f *ssa.Function) bool {
 	name := f.Name()
-	return isCgoCfunc(name) || isCgoCmacro(name)
+	return isCgoCfunc(name) || isCgoCmacro(name) || isCgoC2func(name)
 }
 
 func isCgoCfpvar(name string) bool {
@@ -274,6 +276,10 @@ func isCgoCfpvar(name string) bool {
 
 func isCgoCfunc(name string) bool {
 	return strings.HasPrefix(name, "_Cfunc_")
+}
+
+func isCgoC2func(name string) bool {
+	return strings.HasPrefix(name, "_C2func_")
 }
 
 func isCgoCmacro(name string) bool {
@@ -337,6 +343,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
 		p.cgoArgs = nil
+		p.cgoErrno = llssa.Nil
 		if isCgo {
 			fn.MakeBlocks(1)
 		} else {
@@ -499,6 +506,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	fnName := block.Parent().Name()
 	cgoReturned := false
 	isCgoCfunc := isCgoCfunc(fnName)
+	isCgoC2 := isCgoC2func(fnName)
 	isCgoCmacro := isCgoCmacro(fnName)
 	for i, instr := range instrs {
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
@@ -506,7 +514,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
 			b.Call(fnOld.Expr)
 		}
-		if isCgoCfunc || isCgoCmacro {
+		if isCgoCfunc || isCgoC2 || isCgoCmacro {
 			switch instr := instr.(type) {
 			case *ssa.Alloc:
 				// return value allocation
@@ -533,6 +541,10 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 					ty := p.type_(instr.Results[0].Type(), llssa.InGo)
 					p.cgoRet.Type = p.prog.Pointer(ty)
 					p.cgoRet = b.Load(p.cgoRet)
+				} else {
+					p.cgoReturn(b, isCgoC2)
+					cgoReturned = true
+					continue
 				}
 				b.Return(p.cgoRet)
 				cgoReturned = true
@@ -542,14 +554,14 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 	}
 	// is cgo cfunc but not return yet, some funcs has multiple blocks
-	if (isCgoCfunc || isCgoCmacro) && !cgoReturned {
+	if (isCgoCfunc || isCgoC2 || isCgoCmacro) && !cgoReturned {
 		if !p.cgoCalled {
 			panic("cgo cfunc not called")
 		}
 		for _, block := range block.Parent().Blocks {
 			for _, instr := range block.Instrs {
 				if _, ok := instr.(*ssa.Return); ok {
-					b.Return(p.cgoRet)
+					p.cgoReturn(b, isCgoC2)
 					goto end
 				}
 			}
@@ -591,6 +603,60 @@ func intVal(v ssa.Value) int64 {
 		}
 	}
 	panic("intVal: ssa.Value is not a const int")
+}
+
+func (p *context) cgoErrnoType() types.Type {
+	if p.cgoErrnoTy != nil {
+		return p.cgoErrnoTy
+	}
+	if pkg := p.goProg.ImportedPackage("syscall"); pkg != nil {
+		if obj := pkg.Pkg.Scope().Lookup("Errno"); obj != nil {
+			p.cgoErrnoTy = obj.Type()
+			return p.cgoErrnoTy
+		}
+	}
+	p.cgoErrnoTy = types.Typ[types.Int32]
+	return p.cgoErrnoTy
+}
+
+func (p *context) cgoReturn(b llssa.Builder, isCgoC2 bool) {
+	if !isCgoC2 {
+		b.Return(p.cgoRet)
+		return
+	}
+	sig := p.fn.Type.RawType().(*types.Signature)
+	if sig.Results().Len() != 2 {
+		panic("cgo C2func should return (result, error)")
+	}
+	p.cgoC2Return(b, p.cgoRet, sig.Results().At(1).Type())
+}
+
+func (p *context) cgoC2Return(b llssa.Builder, ret llssa.Expr, errType types.Type) {
+	errTy := p.type_(errType, llssa.InGo)
+	nilSlot := b.AllocU(errTy)
+	b.Store(nilSlot, p.prog.Zero(errTy))
+	nilErr := b.Load(nilSlot)
+	if p.cgoErrno.IsNil() {
+		b.Return(ret, nilErr)
+		return
+	}
+	i32 := p.type_(types.Typ[types.Int32], llssa.InGo)
+	errno := p.cgoErrno
+	if !types.Identical(errno.RawType(), i32.RawType()) {
+		errno = b.Convert(i32, errno)
+	}
+	zero := p.prog.Zero(i32)
+	cond := b.BinOp(token.NEQ, errno, zero)
+	errnoVal := b.Convert(p.type_(p.cgoErrnoType(), llssa.InGo), errno)
+	errIface := b.MakeInterface(errTy, errnoVal)
+	fn := b.Func
+	errBlk := fn.MakeBlock()
+	okBlk := fn.MakeBlock()
+	b.If(cond, errBlk, okBlk)
+	b.SetBlockEx(errBlk, llssa.AtEnd, false)
+	b.Return(ret, errIface)
+	b.SetBlockEx(okBlk, llssa.AtEnd, false)
+	b.Return(ret, nilErr)
 }
 
 func (p *context) isVArgs(v ssa.Value) (ret []llssa.Expr, ok bool) {

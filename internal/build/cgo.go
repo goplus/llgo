@@ -90,7 +90,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
-	re := regexp.MustCompile(`^(_cgo_[^_]+_(Cfunc|Cmacro)_)(.*)$`)
+	re := regexp.MustCompile(`^(_cgo_[^_]+_(C2func|Cfunc|Cmacro)_)(.*)$`)
 	cgoSymbols := make(map[string]string)
 	mallocFix := false
 	for _, symbolName := range externs {
