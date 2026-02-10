@@ -19,6 +19,7 @@ package cl
 import (
 	"fmt"
 	"go/constant"
+	"go/token"
 	"go/types"
 	"log"
 	"regexp"
@@ -218,11 +219,47 @@ func (p *context) cgoCheckPointer(b llssa.Builder, args []ssa.Value) {
 
 // func _cgo_runtime_cgocall(fn unsafe.Pointer, arg unsafe.Pointer) int
 func (p *context) cgoCgocall(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
+	fnName := p.fn.Name()
+	if dot := strings.LastIndex(fnName, "."); dot >= 0 {
+		fnName = fnName[dot+1:]
+	}
+	isC2 := isCgoC2func(fnName)
+	var sig *types.Signature
+	if isC2 {
+		sig = p.fn.Type.RawType().(*types.Signature)
+	}
+	if len(p.cgoArgs) == 0 && isC2 {
+		n := sig.Params().Len()
+		p.cgoArgs = make([]llssa.Expr, n)
+		for i := 0; i < n; i++ {
+			p.cgoArgs[i] = b.Param(i)
+		}
+	}
+
 	pfn := p.compileValue(b, args[0])
-	pfn.Type = p.prog.Pointer(p.fn.Type)
+	fnTy := p.fn.Type
+	if isC2 {
+		if sig.Results().Len() == 0 {
+			panic("cgo C2func should have at least one result")
+		}
+		directSig := types.NewSignatureType(nil, nil, nil, sig.Params(),
+			types.NewTuple(types.NewVar(token.NoPos, nil, "", sig.Results().At(0).Type())), false)
+		fnTy = p.type_(directSig, llssa.InC)
+	}
+	pfn.Type = p.prog.Pointer(fnTy)
 	fn := b.Load(pfn)
 	p.cgoRet = b.Call(fn, p.cgoArgs...)
-	return p.cgoRet
+
+	if isC2 {
+		errnoSig := types.NewSignatureType(nil, nil, nil, nil,
+			types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])), false)
+		errnoFn := b.Pkg.NewFunc("cliteErrno", errnoSig, llssa.InC)
+		p.cgoErrno = b.Call(errnoFn.Expr)
+		return p.cgoErrno
+	}
+	i32 := p.type_(types.Typ[types.Int32], llssa.InGo)
+	p.cgoErrno = p.prog.Zero(i32)
+	return p.cgoErrno
 }
 
 // -----------------------------------------------------------------------------
@@ -575,7 +612,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoCgoCheckPointer:
 			p.cgoCheckPointer(b, args)
 		case llgoCgoCgocall:
-			p.cgoCgocall(b, args)
+			ret = p.cgoCgocall(b, args)
 		case llgoAdvance:
 			ret = p.advance(b, args)
 		case llgoIndex:
