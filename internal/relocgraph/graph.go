@@ -43,7 +43,11 @@ const (
 	EdgeRelocMethodOff
 	// EdgeRelocReflectMethod marks reflect-based method lookups recorded via reloc metadata.
 	EdgeRelocReflectMethod
-	// EdgeRelocTypeRef marks type descriptor child-type references recorded via reloc metadata.
+	// EdgeRelocTypeRef marks type-descriptor child-type edges recorded during SSA lowering.
+	// This mirrors Go linker's deadcode "UsedInIface child-type propagation" behavior:
+	// when a type is used in interface semantics, its child types participate too.
+	// TODO: after adding IsGoType-style symbol metadata, we can likely replace this
+	// dedicated edge with filtered directref propagation (owner/target both Go types).
 	EdgeRelocTypeRef
 )
 

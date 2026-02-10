@@ -1103,8 +1103,7 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 	res := deadcode.Analyze(graph, roots)
 
 	srcMods := dceSourceModules(pkgs)
-	stats, err := dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, res.ReachableMethods, dcepass.Options{})
-	if err != nil {
+	if err := dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, res.ReachableMethods); err != nil {
 		return err
 	}
 
@@ -1114,7 +1113,6 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 			rmCount += len(m)
 		}
 		fmt.Fprintf(os.Stderr, "[dce] analyze end (reachable=%d reachable_methods=%d)\n", len(res.Reachable), rmCount)
-		fmt.Fprintf(os.Stderr, "[dce] emit overrides (types=%d dropped_methods=%d)\n", stats.EmittedType, stats.DroppedMethod)
 		if rmCount > 0 {
 			for typ, idxs := range res.ReachableMethods {
 				var list []string
@@ -1123,16 +1121,6 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 				}
 				sort.Strings(list)
 				fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
-			}
-		}
-		if len(stats.DroppedMethodDetail) > 0 {
-			for typ, idxs := range stats.DroppedMethodDetail {
-				list := make([]string, len(idxs))
-				for i, v := range idxs {
-					list[i] = fmt.Sprintf("%d", v)
-				}
-				sort.Strings(list)
-				fmt.Fprintf(os.Stderr, "  dropped_method:   %s [%s]\n", typ, strings.Join(list, ","))
 			}
 		}
 	}

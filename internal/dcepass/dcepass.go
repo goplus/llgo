@@ -24,35 +24,19 @@ import (
 	"github.com/goplus/llvm"
 )
 
-// Stats reports basic DCE pass metrics.
-type Stats struct {
-	EmittedType         int
-	DroppedMethod       int
-	DroppedMethodDetail map[relocgraph.SymID][]int
-}
-
-// Options controls the DCE pass behavior.
-type Options struct{}
-
 // EmitStrongTypeOverrides emits method-pruned strong ABI type symbols into dst.
 //
 // srcMods are package modules that contain original ABI type globals (typically
 // weak symbols). For each method-bearing type symbol, this function creates or
 // updates a same-name global in dst, and clears Ifn/Tfn for method indices not
 // listed in reachMethods[type].
-func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethods map[relocgraph.SymID]map[int]bool, _ Options) (Stats, error) {
-	stats := Stats{
-		DroppedMethodDetail: make(map[relocgraph.SymID][]int),
-	}
+func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethods map[relocgraph.SymID]map[int]bool) error {
 	if dst.IsNil() {
-		return stats, nil
+		return fmt.Errorf("destination module is nil")
 	}
 	emitted := make(map[relocgraph.SymID]bool)
+	emitter := newOverrideEmitter(dst)
 	for _, src := range srcMods {
-		if src.IsNil() {
-			continue
-		}
-		emitter := newOverrideEmitter(dst)
 		for g := src.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
 			name := g.Name()
 			if name == "" {
@@ -66,7 +50,7 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethod
 			if init.IsNil() {
 				continue
 			}
-			methodsVal, _, ok := methodArray(init)
+			methodsVal, elemTy, ok := methodArray(init)
 			if !ok {
 				continue
 			}
@@ -75,19 +59,13 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, reachMethod
 			if methodsVal.OperandsCount() == 0 {
 				continue
 			}
-			droppedIdx, err := emitter.emitTypeOverride(g, reachMethods[sym])
-			if err != nil {
-				return stats, fmt.Errorf("emit override %q: %w", name, err)
+			if err := emitter.emitTypeOverride(g, methodsVal, elemTy, reachMethods[sym]); err != nil {
+				return fmt.Errorf("emit override %q: %w", name, err)
 			}
 			emitted[sym] = true
-			stats.EmittedType++
-			if len(droppedIdx) != 0 {
-				stats.DroppedMethod += len(droppedIdx)
-				stats.DroppedMethodDetail[sym] = append(stats.DroppedMethodDetail[sym], droppedIdx...)
-			}
 		}
 	}
-	return stats, nil
+	return nil
 }
 
 type overrideEmitter struct {
@@ -102,63 +80,47 @@ func newOverrideEmitter(dst llvm.Module) *overrideEmitter {
 	}
 }
 
-func (e *overrideEmitter) emitTypeOverride(srcType llvm.Value, keepIdx map[int]bool) ([]int, error) {
+func (e *overrideEmitter) emitTypeOverride(srcType, methodsVal llvm.Value, elemTy llvm.Type, keepIdx map[int]bool) error {
 	init := srcType.Initializer()
-	if init.IsNil() {
-		return nil, nil
-	}
-	methodsVal, elemTy, ok := methodArray(init)
-	if !ok {
-		return nil, nil
-	}
-
 	dstType, err := e.ensureOverrideGlobal(srcType)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Ensure self-references in cloned constants resolve to the override symbol.
 	e.values[srcType] = dstType
 
 	fieldCount := init.OperandsCount()
-	if fieldCount == 0 {
-		return nil, nil
-	}
 	fields := make([]llvm.Value, fieldCount)
 	for i := 0; i < fieldCount-1; i++ {
 		clone, err := e.cloneConst(init.Operand(i))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		fields[i] = clone
 	}
 
 	methodCount := methodsVal.OperandsCount()
-	if methodCount == 0 {
-		return nil, nil
-	}
 	zeroPtr := llvm.ConstPointerNull(elemTy.StructElementTypes()[1])
 	methods := make([]llvm.Value, methodCount)
-	dropped := make([]int, 0, methodCount)
 	for i := 0; i < methodCount; i++ {
 		orig := methodsVal.Operand(i)
 		if keepIdx != nil && keepIdx[i] {
 			clone, err := e.cloneConst(orig)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			methods[i] = clone
 			continue
 		}
 		nameField, err := e.cloneConst(orig.Operand(0))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		mtypField, err := e.cloneConst(orig.Operand(1))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		methods[i] = llvm.ConstNamedStruct(elemTy, []llvm.Value{nameField, mtypField, zeroPtr, zeroPtr})
-		dropped = append(dropped, i)
 	}
 	fields[fieldCount-1] = llvm.ConstArray(elemTy, methods)
 
@@ -167,7 +129,7 @@ func (e *overrideEmitter) emitTypeOverride(srcType llvm.Value, keepIdx map[int]b
 	dstType.SetGlobalConstant(true)
 	dstType.SetLinkage(llvm.ExternalLinkage)
 	copyGlobalAttrs(dstType, srcType)
-	return dropped, nil
+	return nil
 }
 
 func (e *overrideEmitter) ensureOverrideGlobal(src llvm.Value) (llvm.Value, error) {

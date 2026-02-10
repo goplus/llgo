@@ -169,6 +169,10 @@ func (d *deadcodePass) processRelocs(owner relocgraph.SymID) {
 			// Give up on static analysis for methods - keep all exported methods
 			d.reflectSeen = true
 		case relocgraph.EdgeRelocTypeRef:
+			// Mirror Go linker deadcode semantics: if owner type is UsedInIface,
+			// propagate UsedInIface to child types as well.
+			// TODO: optimize by using IsGoType-style symbol metadata and perform
+			// this propagation on filtered directref edges instead of dedicated typeref edges.
 			if d.usedInIface[owner] {
 				d.markUsedInIface(r.Target)
 			}

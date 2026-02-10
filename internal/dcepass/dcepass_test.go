@@ -72,7 +72,7 @@ func runCase(t *testing.T, caseDir string) {
 	dst := ctx.NewModule("dcepass.test")
 	defer dst.Dispose()
 
-	if _, err := EmitStrongTypeOverrides(dst, srcMods, reach, Options{}); err != nil {
+	if err := EmitStrongTypeOverrides(dst, srcMods, reach); err != nil {
 		t.Fatalf("EmitStrongTypeOverrides: %v", err)
 	}
 
@@ -152,10 +152,111 @@ func normalizeIR(ir string) string {
 		if strings.HasPrefix(line, "; ModuleID =") {
 			continue
 		}
-		if strings.TrimSpace(line) == "" {
+		line = strings.TrimSpace(line)
+		if line == "" {
 			continue
 		}
 		lines = append(lines, line)
 	}
 	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func TestMethodArrayValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		src     string
+		wantOK  bool
+		wantLen int
+	}{
+		{
+			name: "no_fields",
+			src: `
+source_filename = "test"
+@g = global {} {}
+`,
+			wantOK: false,
+		},
+		{
+			name: "last_field_not_array",
+			src: `
+source_filename = "test"
+@g = global { i8 } { i8 0 }
+`,
+			wantOK: false,
+		},
+		{
+			name: "array_elem_not_struct",
+			src: `
+source_filename = "test"
+@g = global { [1 x i8] } { [1 x i8] zeroinitializer }
+`,
+			wantOK: false,
+		},
+		{
+			name: "method_struct_wrong_field_count",
+			src: `
+source_filename = "test"
+%"github.com/goplus/llgo/runtime/abi.Method" = type { ptr, ptr, ptr }
+@g = global { [1 x %"github.com/goplus/llgo/runtime/abi.Method"] } { [1 x %"github.com/goplus/llgo/runtime/abi.Method"] zeroinitializer }
+`,
+			wantOK: false,
+		},
+		{
+			name: "method_struct_wrong_name",
+			src: `
+source_filename = "test"
+%"example/Method" = type { ptr, ptr, ptr, ptr }
+@g = global { [1 x %"example/Method"] } { [1 x %"example/Method"] zeroinitializer }
+`,
+			wantOK: false,
+		},
+		{
+			name: "ok",
+			src: `
+source_filename = "test"
+%"github.com/goplus/llgo/runtime/abi.Method" = type { ptr, ptr, ptr, ptr }
+@name = private constant [1 x i8] c"A"
+@g = global { [1 x %"github.com/goplus/llgo/runtime/abi.Method"] } { [1 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { ptr @name, ptr null, ptr null, ptr null }] }
+`,
+			wantOK:  true,
+			wantLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := llvm.NewContext()
+			defer ctx.Dispose()
+
+			mod := parseModuleFromSource(t, ctx, tt.src)
+			defer mod.Dispose()
+
+			g := mod.NamedGlobal("g")
+			if g.IsNil() {
+				t.Fatalf("global g not found")
+			}
+			methodsVal, elemTy, ok := methodArray(g.Initializer())
+			if ok != tt.wantOK {
+				t.Fatalf("methodArray ok=%v, want %v", ok, tt.wantOK)
+			}
+			if !tt.wantOK {
+				return
+			}
+			if methodsVal.OperandsCount() != tt.wantLen {
+				t.Fatalf("method array len=%d, want %d", methodsVal.OperandsCount(), tt.wantLen)
+			}
+			if elemTy.StructName() != "github.com/goplus/llgo/runtime/abi.Method" {
+				t.Fatalf("elem struct name=%q", elemTy.StructName())
+			}
+		})
+	}
+}
+
+func parseModuleFromSource(t *testing.T, ctx llvm.Context, src string) llvm.Module {
+	t.Helper()
+	file := filepath.Join(t.TempDir(), "test.ll")
+	if err := os.WriteFile(file, []byte(strings.TrimSpace(src)+"\n"), 0o644); err != nil {
+		t.Fatalf("write test ll: %v", err)
+	}
+	return parseModuleFromFile(t, ctx, file)
 }
