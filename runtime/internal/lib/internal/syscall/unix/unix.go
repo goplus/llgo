@@ -22,3 +22,13 @@ import (
 
 // llgo:skip path_filestat_get path_create_directory path_readlink path_unlink_file path_remove_directory Fstatat Mkdirat
 type _unix struct{}
+
+func ARC4Random() []byte {
+	panic("todo internal/syscall/unix.ARC4Random")
+}
+
+type GetRandomFlag uintptr
+
+func GetRandom(p []byte, flags GetRandomFlag) (n int, err error) {
+	panic("todo internal/syscall/unix.GetRandom")
+}
