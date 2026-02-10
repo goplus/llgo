@@ -13,11 +13,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
+	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/plan9asm"
 	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
 	llruntime "github.com/goplus/llgo/runtime"
+	gllvm "github.com/goplus/llvm"
 )
 
 type Plan9AsmFunctionInfo struct {
@@ -219,6 +222,151 @@ func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []by
 		Signatures: sigs,
 		Functions:  funcs,
 	}, nil
+}
+
+type plan9AsmSigCacheKey struct {
+	ctx     *context
+	pkgPath string
+}
+
+var plan9AsmSigCache sync.Map // key: plan9AsmSigCacheKey, value: map[string]struct{}
+
+func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, error) {
+	if ctx == nil || pkgPath == "" {
+		return nil, nil
+	}
+	key := plan9AsmSigCacheKey{ctx: ctx, pkgPath: pkgPath}
+	if v, ok := plan9AsmSigCache.Load(key); ok {
+		return v.(map[string]struct{}), nil
+	}
+
+	sigs := make(map[string]struct{})
+	if !ctx.plan9asmEnabled(pkgPath) {
+		plan9AsmSigCache.Store(key, sigs)
+		return sigs, nil
+	}
+
+	var pkg *packages.Package
+	for p := range ctx.pkgs {
+		if p != nil && p.PkgPath == pkgPath {
+			pkg = p
+			break
+		}
+	}
+	if pkg == nil {
+		plan9AsmSigCache.Store(key, sigs)
+		return sigs, nil
+	}
+
+	sfiles, err := pkgSFiles(ctx, pkg)
+	if err != nil {
+		return nil, err
+	}
+	for _, sfile := range sfiles {
+		src, err := readFileWithOverlay(ctx.conf.Overlay, sfile)
+		if err != nil {
+			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
+		}
+		tr, err := translatePlan9AsmSourceForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
+		if err != nil {
+			if strings.Contains(err.Error(), "no TEXT directive found") {
+				continue
+			}
+			return nil, fmt.Errorf("%s: translate %s: %w", pkg.PkgPath, sfile, err)
+		}
+		for name := range tr.Signatures {
+			sigs[name] = struct{}{}
+		}
+	}
+	plan9AsmSigCache.Store(key, sigs)
+	return sigs, nil
+}
+
+func symbolPkgPath(sym string) string {
+	if sym == "" {
+		return ""
+	}
+	pos := strings.LastIndexByte(sym, '.')
+	if pos <= 0 {
+		return ""
+	}
+	return sym[:pos]
+}
+
+func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []string {
+	if ctx == nil || mod.IsNil() || ctx.buildConf == nil {
+		return nil
+	}
+	if ctx.buildConf.AbiMode != cabi.ModeAllFunc {
+		return nil
+	}
+	skip := make(map[string]struct{})
+
+	ownSigs, err := plan9asmSigsForPkg(ctx, pkgPath)
+	check(err)
+	for name := range ownSigs {
+		skip[name] = struct{}{}
+	}
+
+	fn := mod.FirstFunction()
+	for !fn.IsNil() {
+		if fn.IsDeclaration() {
+			name := fn.Name()
+			depPkgPath := symbolPkgPath(name)
+			if depPkgPath != "" && depPkgPath != pkgPath {
+				depSigs, err := plan9asmSigsForPkg(ctx, depPkgPath)
+				check(err)
+				if _, ok := depSigs[name]; ok {
+					skip[name] = struct{}{}
+				}
+			}
+		}
+		fn = gllvm.NextFunction(fn)
+	}
+
+	// syscall has mixed Go + asm on darwin. Cross-package callers must ABI-rewrite
+	// Go entry points; only the package's own build should keep skip entries for
+	// its asm trampolines.
+	if pkgPath != "syscall" {
+		for name := range skip {
+			if strings.HasPrefix(name, "syscall.") {
+				delete(skip, name)
+			}
+		}
+	}
+	// syscall on darwin declares syscall/rawSyscall entry points in Go, but
+	// their implementations are provided by runtime via //go:linkname rather
+	// than package-local Plan9 asm.
+	delete(skip, "syscall.Syscall")
+	delete(skip, "syscall.Syscall6")
+	delete(skip, "syscall.Syscall6X")
+	delete(skip, "syscall.SyscallPtr")
+	delete(skip, "syscall.RawSyscall")
+	delete(skip, "syscall.RawSyscall6")
+	delete(skip, "syscall.syscall")
+	delete(skip, "syscall.syscall6")
+	delete(skip, "syscall.syscall6X")
+	delete(skip, "syscall.syscallPtr")
+	delete(skip, "syscall.rawSyscall")
+	delete(skip, "syscall.rawSyscall6")
+	// internal/syscall/unix has mixed Go + asm on darwin. Cross-package callers
+	// must ABI-rewrite Go entry points like Fcntl; only the package's own build
+	// should keep skip entries for its asm trampolines.
+	if pkgPath != "internal/syscall/unix" {
+		for name := range skip {
+			if strings.HasPrefix(name, "internal/syscall/unix.") {
+				delete(skip, name)
+			}
+		}
+	}
+	if len(skip) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(skip))
+	for name := range skip {
+		names = append(names, name)
+	}
+	return names
 }
 
 func plan9asmResolveSymFunc(pkgPath string) func(sym string) string {
@@ -451,6 +599,69 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		return true
 	}
 	return ctx.plan9asmPkgs[pkgPath]
+}
+
+func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
+	if !llruntime.HasAltPkg(pkgPath) {
+		return false
+	}
+	// When Plan9 asm translation is enabled, avoid also pulling in alt packages
+	// that provide the same symbols as pure-Go fallbacks.
+	if plan9asmEnabledByDefault(conf, pkgPath) && !plan9asmDisabledByEnv() {
+		return false
+	}
+	// In ABI0/1, allow explicit env opt-in to prefer plan9asm over alt.
+	if conf != nil && conf.AbiMode != cabi.ModeAllFunc && plan9asmEnabledByEnv(pkgPath) {
+		return false
+	}
+	return true
+}
+
+func plan9asmDisabledByEnv() bool {
+	v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+	return v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false")
+}
+
+func plan9asmEnabledByEnv(pkgPath string) bool {
+	v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+	if v == "" {
+		return false
+	}
+	if v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
+		return false
+	}
+	if v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true") {
+		return true
+	}
+	split := func(r rune) bool {
+		switch r {
+		case ',', ';', ' ', '\t', '\n', '\r':
+			return true
+		default:
+			return false
+		}
+	}
+	for _, p := range strings.FieldsFunc(v, split) {
+		if strings.TrimSpace(p) == pkgPath {
+			return true
+		}
+	}
+	return false
+}
+
+func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
+	if conf == nil {
+		return false
+	}
+	if conf.Goarch != "arm64" && conf.Goarch != "amd64" {
+		return false
+	}
+	switch pkgPath {
+	case "hash/crc32", "internal/bytealg", "internal/runtime/atomic", "internal/runtime/syscall", "sync/atomic":
+		return true
+	default:
+		return false
+	}
 }
 
 func plan9asmArch(goarch string) (plan9asm.Arch, error) {
@@ -686,9 +897,12 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 		callerSig, hasCallerSig := sigs[callerResolved]
 		for _, ins := range fn.Instrs {
 			op := strings.ToUpper(string(ins.Op))
+			tailJump := false
 			switch op {
 			case "JMP", "B":
-				// ok
+				tailJump = true
+			case "CALL", "BL":
+				// direct call to package-local helper
 			default:
 				continue
 			}
@@ -711,7 +925,7 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 			if _, ok := sigs[targetResolved]; ok {
 				continue
 			}
-			if !hasCallerSig {
+			if !tailJump || !hasCallerSig {
 				continue
 			}
 			// Cross-package trampoline with no local Go declaration available.

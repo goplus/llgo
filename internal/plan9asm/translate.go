@@ -267,13 +267,14 @@ func emitExternSBGlobals(b *strings.Builder, file *File, resolve func(string) st
 					continue
 				}
 				if off == 0 {
-					// Bare symbol refs in data-movement ops are usually globals
-					// (e.g. MOVQ runtime·vdsoGettimeofdaySym(SB), AX). Avoid
-					// classifying branch/call targets as globals.
+					// Bare symbol refs are usually global data addresses
+					// (e.g. MOVQ runtime·vdsoGettimeofdaySym(SB), AX). Exclude only
+					// control-flow ops that use symbol operands as branch/call targets.
 					switch opName {
-					case "MOVQ", "MOVL", "MOVW", "MOVB", "LEAQ", "MOVD", "MOVOU", "MOVOA", "VMOVDQU":
-						// keep
-					default:
+					case "JMP", "JE", "JEQ", "JZ", "JNE", "JNZ",
+						"JL", "JLT", "JLE", "JG", "JGT", "JGE",
+						"JB", "JBE", "JA", "JAE", "JLS",
+						"JC", "JNC", "CALL", "BL", "B":
 						continue
 					}
 				}

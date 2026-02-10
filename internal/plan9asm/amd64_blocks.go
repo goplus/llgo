@@ -19,7 +19,7 @@ func amd64SplitBlocks(fn Func) []amd64Block {
 		op := strings.ToUpper(string(ins.Op))
 		switch Op(op) {
 		case "JE", "JEQ", "JZ", "JNE", "JNZ",
-			"JL", "JLT", "JLE", "JG", "JGE",
+			"JL", "JLT", "JLE", "JG", "JGT", "JGE",
 			"JB", "JBE", "JA", "JAE",
 			"JNC", "JC":
 		default:
@@ -48,7 +48,7 @@ func amd64SplitBlocks(fn Func) []amd64Block {
 		switch Op(op) {
 		case "JMP",
 			"JE", "JEQ", "JZ", "JNE", "JNZ",
-			"JL", "JLT", "JLE", "JG", "JGE",
+			"JL", "JLT", "JLE", "JG", "JGT", "JGE",
 			"JB", "JBE", "JA", "JAE",
 			"JNC", "JC":
 			return true
