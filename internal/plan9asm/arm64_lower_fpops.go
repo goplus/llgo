@@ -279,14 +279,14 @@ func (c *arm64Ctx) evalF64(op Operand) (string, error) {
 		fmt.Fprintf(c.b, "  %%%s = bitcast i64 %s to double\n", t, v64)
 		return "%" + t, nil
 	case OpImm:
-		return strconv.FormatFloat(float64(op.Imm), 'e', -1, 64), nil
+		return formatLLVMFloat64Literal(float64(op.Imm)), nil
 	case OpSym:
 		if strings.HasPrefix(op.Sym, "$") {
 			if fv, ok := arm64ParseDollarFloat(op.Sym); ok {
-				return strconv.FormatFloat(fv, 'e', -1, 64), nil
+				return formatLLVMFloat64Literal(fv), nil
 			}
 			if iv, ok := arm64ParseDollarInt64(op.Sym); ok {
-				return strconv.FormatFloat(float64(iv), 'e', -1, 64), nil
+				return formatLLVMFloat64Literal(float64(iv)), nil
 			}
 		}
 		return "", fmt.Errorf("arm64: unsupported f64 immediate %q", op.String())
