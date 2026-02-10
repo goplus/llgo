@@ -10,7 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/complex"
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/complex.f"({ double, double } %0, { double, double } %1) {
 _llgo_0:
-  %2 = call double @cabs({ double, double } %0)
+  %2 = call double @"math/cmplx.Abs"({ double, double } %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 10 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %2)
@@ -48,7 +48,7 @@ _llgo_0:
   ret void
 }
 
-declare double @cabs({ double, double })
+declare double @"math/cmplx.Abs"({ double, double })
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 

@@ -25,10 +25,7 @@ import (
 // struct uv_async_t
 type Async struct {
 	Handle
-	// On macOS arm64, sizeof uv_async_t is 128 bytes.
-	// Handle is 92 bytes, so we need 36 bytes to fill the gap.
-	// Maybe reserve more for future use.
-	Unused [36]byte
+	Unused [uvAsyncSize - uvHandleSize]byte
 }
 
 // typedef void (*uv_async_cb)(uv_async_t* handle);

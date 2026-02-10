@@ -1,0 +1,1 @@
+// Empty stub to disable Go assembly for llgo builds.

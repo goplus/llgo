@@ -17,3 +17,11 @@ func storePointer(ptr *unsafe.Pointer, new unsafe.Pointer) {
 func StorepNoWB(ptr unsafe.Pointer, val unsafe.Pointer) {
 	atomic.StorePointer((*unsafe.Pointer)(ptr), val)
 }
+
+func LoadAcquintptr(ptr *uintptr) uintptr {
+	return atomic.LoadUintptr(ptr)
+}
+
+func StoreReluintptr(ptr *uintptr, val uintptr) {
+	atomic.StoreUintptr(ptr, val)
+}

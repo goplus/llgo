@@ -13,7 +13,7 @@ type _func struct {
 }
 
 func Stack(buf []byte, all bool) int {
-	panic("todo: runtime.Stack")
+	return 0
 }
 
 func StartTrace() error {
@@ -29,11 +29,10 @@ func StopTrace() {
 }
 
 func SetMutexProfileFraction(rate int) int {
-	panic("todo: runtime.SetMutexProfileFraction")
+	return 0
 }
 
 func SetBlockProfileRate(rate int) {
-	panic("todo: runtime.SetBlockProfileRate")
 }
 
 var MemProfileRate int = 512 * 1024

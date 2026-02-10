@@ -845,7 +845,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 				}
 			case *ssa.Call:
 				if fn, ok := ref.Call.Value.(*ssa.Function); ok {
-					if _, _, ftype := p.funcOf(fn); ftype == llgoFuncAddr { // llgo.funcAddr
+					if _, _, ftype := p.funcOf(fn); ftype == llgoFuncAddr || ftype == llgoFuncPCABI0 { // llgo.funcAddr/funcPCABI0
 						return
 					}
 				}
@@ -1247,6 +1247,9 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		member := m.val
 		switch member := member.(type) {
 		case *ssa.Function:
+			if strings.HasSuffix(member.Name(), "_trampoline") {
+				continue
+			}
 			if member.TypeParams() != nil || member.TypeArgs() != nil {
 				// TODO(xsw): don't compile generic functions
 				// Do not try to build generic (non-instantiated) functions.

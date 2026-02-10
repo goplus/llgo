@@ -246,9 +246,23 @@ func (p Program) Field(typ Type, i int) Type {
 		}
 		panic("Field: basic type doesn't have fields")
 	default:
-		fld = t.(*types.Struct).Field(i)
+		st := t.(*types.Struct)
+		if i < 0 || i >= st.NumFields() {
+			panic(fmt.Sprintf("Field: struct index out of range: idx=%d fields=%d type=%s",
+				i, st.NumFields(), typeStringWithPkg(typ.raw.Type)))
+		}
+		fld = st.Field(i)
 	}
 	return p.rawType(fld.Type())
+}
+
+func typeStringWithPkg(t types.Type) string {
+	return types.TypeString(t, func(p *types.Package) string {
+		if p == nil {
+			return ""
+		}
+		return p.Path()
+	})
 }
 
 func (p Program) rawType(raw types.Type) Type {
