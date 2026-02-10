@@ -212,6 +212,38 @@ func (c *amd64Ctx) lowerMov(op Op, ins Instr) (ok bool, terminated bool, err err
 				return true, false, err
 			}
 			return true, false, c.storeFPResult(dst.FPOffset, I64, v64)
+		case OpMem:
+			var i32v string
+			switch src.Kind {
+			case OpImm:
+				i32v = fmt.Sprintf("%d", int32(src.Imm))
+			case OpReg, OpFP:
+				v64, err := c.evalI64(src)
+				if err != nil {
+					return true, false, err
+				}
+				tr := c.newTmp()
+				fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tr, v64)
+				i32v = "%" + tr
+			case OpMem:
+				addr, err := c.addrFromMem(src.Mem)
+				if err != nil {
+					return true, false, err
+				}
+				p := c.ptrFromAddrI64(addr)
+				ld := c.newTmp()
+				fmt.Fprintf(c.b, "  %%%s = load i32, ptr %s, align 1\n", ld, p)
+				i32v = "%" + ld
+			default:
+				return true, false, fmt.Errorf("amd64 MOVL unsupported src: %q", ins.Raw)
+			}
+			addr, err := c.addrFromMem(dst.Mem)
+			if err != nil {
+				return true, false, err
+			}
+			p := c.ptrFromAddrI64(addr)
+			fmt.Fprintf(c.b, "  store i32 %s, ptr %s, align 1\n", i32v, p)
+			return true, false, nil
 		default:
 			return true, false, fmt.Errorf("amd64 MOVL unsupported dst: %q", ins.Raw)
 		}

@@ -107,3 +107,56 @@ RET
 		t.Fatalf("neg float imm bits=%#x, want %#x", gotNeg, wantNeg)
 	}
 }
+
+func TestParseLegacyScaledOffsetMem(t *testing.T) {
+	src := `
+TEXT ·LegacyMem(SB),NOSPLIT,$0
+MOVL (0*4)(BP), AX
+MOVL (3*4)(SI), R8
+RET
+`
+	file, err := Parse(ArchAMD64, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Funcs) != 1 {
+		t.Fatalf("Funcs=%d, want 1", len(file.Funcs))
+	}
+	if len(file.Funcs[0].Instrs) < 3 {
+		t.Fatalf("instrs=%d, want >=3", len(file.Funcs[0].Instrs))
+	}
+
+	mem0 := file.Funcs[0].Instrs[1].Args[0].Mem
+	if mem0.Base != BP || mem0.Off != 0 {
+		t.Fatalf("first mem=(base=%s,off=%d), want (BP,0)", mem0.Base, mem0.Off)
+	}
+	mem1 := file.Funcs[0].Instrs[2].Args[0].Mem
+	if mem1.Base != SI || mem1.Off != 12 {
+		t.Fatalf("second mem=(base=%s,off=%d), want (SI,12)", mem1.Base, mem1.Off)
+	}
+}
+
+func TestParseFunctionLikeMacroCall(t *testing.T) {
+	src := `
+#define ROUND1(a,b) MOVL a, b; ADDL $1, b
+TEXT ·FnMacro(SB),NOSPLIT,$0
+ROUND1(AX, BX);
+RET
+`
+	file, err := Parse(ArchAMD64, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(file.Funcs) != 1 {
+		t.Fatalf("Funcs=%d, want 1", len(file.Funcs))
+	}
+	if len(file.Funcs[0].Instrs) < 4 {
+		t.Fatalf("instrs=%d, want >=4", len(file.Funcs[0].Instrs))
+	}
+	if file.Funcs[0].Instrs[1].Op != OpMOVL {
+		t.Fatalf("first expanded op=%s, want %s", file.Funcs[0].Instrs[1].Op, OpMOVL)
+	}
+	if file.Funcs[0].Instrs[2].Op != Op("ADDL") {
+		t.Fatalf("second expanded op=%s, want %s", file.Funcs[0].Instrs[2].Op, Op("ADDL"))
+	}
+}
