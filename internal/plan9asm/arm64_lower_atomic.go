@@ -19,6 +19,16 @@ func (c *arm64Ctx) lowerAtomic(op Op, ins Instr) (ok bool, terminated bool, err 
 		if err != nil {
 			return true, false, err
 		}
+		if op == "LDAXRW" || op == "LDAXRB" || op == "LDAXR" {
+			size, err := arm64AtomicTypeSize(ty)
+			if err != nil {
+				return true, false, err
+			}
+			fmt.Fprintf(c.b, "  store i1 true, ptr %s\n", c.exclusiveValidSlot)
+			fmt.Fprintf(c.b, "  store ptr %s, ptr %s\n", ptr, c.exclusivePtrSlot)
+			fmt.Fprintf(c.b, "  store i8 %d, ptr %s\n", size, c.exclusiveSizeSlot)
+			fmt.Fprintf(c.b, "  store i64 %s, ptr %s\n", v, c.exclusiveValueSlot)
+		}
 		return true, false, c.storeReg(ins.Args[1].Reg, v)
 
 	case "STLRW", "STLRB", "STLR":
@@ -42,17 +52,19 @@ func (c *arm64Ctx) lowerAtomic(op Op, ins Instr) (ok bool, terminated bool, err 
 		return true, false, nil
 
 	case "STLXRW", "STLXRB", "STLXR":
-		// Approximation for store-exclusive:
-		// perform an atomic store and report success (status=0).
 		if len(ins.Args) != 3 || ins.Args[0].Kind != OpReg || ins.Args[1].Kind != OpMem || ins.Args[2].Kind != OpReg {
 			return true, false, fmt.Errorf("arm64 %s expects srcReg, mem, statusReg: %q", op, ins.Raw)
 		}
 		ty, align := arm64AtomicStoreExclusiveType(op)
+		size, err := arm64AtomicTypeSize(ty)
+		if err != nil {
+			return true, false, err
+		}
 		src, err := c.loadReg(ins.Args[0].Reg)
 		if err != nil {
 			return true, false, err
 		}
-		v, err := c.atomicTruncFromI64(src, ty)
+		newv, err := c.atomicTruncFromI64(src, ty)
 		if err != nil {
 			return true, false, err
 		}
@@ -60,8 +72,54 @@ func (c *arm64Ctx) lowerAtomic(op Op, ins Instr) (ok bool, terminated bool, err 
 		if err != nil {
 			return true, false, err
 		}
-		fmt.Fprintf(c.b, "  store atomic %s %s, ptr %s seq_cst, align %d\n", ty, v, ptr, align)
-		return true, false, c.storeReg(ins.Args[2].Reg, "0")
+
+		loadedValid := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = load i1, ptr %s\n", loadedValid, c.exclusiveValidSlot)
+		loadedPtr := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = load ptr, ptr %s\n", loadedPtr, c.exclusivePtrSlot)
+		ptrMatch := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = icmp eq ptr %%%s, %s\n", ptrMatch, loadedPtr, ptr)
+		loadedSize := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = load i8, ptr %s\n", loadedSize, c.exclusiveSizeSlot)
+		sizeMatch := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = icmp eq i8 %%%s, %d\n", sizeMatch, loadedSize, size)
+		precond := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = and i1 %%%s, %%%s\n", precond, loadedValid, ptrMatch)
+		canTry := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = and i1 %%%s, %%%s\n", canTry, precond, sizeMatch)
+
+		id := c.newTmp()
+		tryLabel := arm64LLVMBlockName("stlxr_try_" + id)
+		failLabel := arm64LLVMBlockName("stlxr_fail_" + id)
+		mergeLabel := arm64LLVMBlockName("stlxr_merge_" + id)
+
+		fmt.Fprintf(c.b, "  br i1 %%%s, label %%%s, label %%%s\n", canTry, tryLabel, failLabel)
+
+		fmt.Fprintf(c.b, "\n%s:\n", tryLabel)
+		expected64 := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = load i64, ptr %s\n", expected64, c.exclusiveValueSlot)
+		expected, err := c.atomicTruncFromI64("%"+expected64, ty)
+		if err != nil {
+			return true, false, err
+		}
+		cx := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = cmpxchg ptr %s, %s %s, %s %s seq_cst seq_cst, align %d\n", cx, ptr, ty, expected, ty, newv, align)
+		ok := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = extractvalue {%s, i1} %%%s, 1\n", ok, ty, cx)
+		failI1 := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = xor i1 %%%s, true\n", failI1, ok)
+		tryStatus := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i1 %%%s to i64\n", tryStatus, failI1)
+		fmt.Fprintf(c.b, "  br label %%%s\n", mergeLabel)
+
+		fmt.Fprintf(c.b, "\n%s:\n", failLabel)
+		fmt.Fprintf(c.b, "  br label %%%s\n", mergeLabel)
+
+		fmt.Fprintf(c.b, "\n%s:\n", mergeLabel)
+		status := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = phi i64 [ %%%s, %%%s ], [ 1, %%%s ]\n", status, tryStatus, tryLabel, failLabel)
+		fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.exclusiveValidSlot)
+		return true, false, c.storeReg(ins.Args[2].Reg, "%"+status)
 
 	case "SWPALB", "SWPALW", "SWPALD":
 		if len(ins.Args) != 3 || ins.Args[0].Kind != OpReg || ins.Args[1].Kind != OpMem || ins.Args[2].Kind != OpReg {
@@ -222,6 +280,19 @@ func arm64AtomicRMWType(op Op) (LLVMType, error) {
 		return I64, nil
 	default:
 		return "", fmt.Errorf("arm64: unsupported atomic rmw op %s", op)
+	}
+}
+
+func arm64AtomicTypeSize(ty LLVMType) (int, error) {
+	switch ty {
+	case I8:
+		return 1, nil
+	case I32:
+		return 4, nil
+	case I64:
+		return 8, nil
+	default:
+		return 0, fmt.Errorf("arm64: unsupported atomic type size for %s", ty)
 	}
 }
 

@@ -29,6 +29,11 @@ type arm64Ctx struct {
 	flagsVSlot   string
 	flagsWritten bool
 
+	exclusiveValidSlot string
+	exclusivePtrSlot   string
+	exclusiveSizeSlot  string
+	exclusiveValueSlot string
+
 	fpParams       map[int64]FrameSlot // off(FP) -> slot
 	fpResults      []FrameSlot         // result slots (Index is result index)
 	fpResAllocaOff map[int64]string    // off(FP) -> alloca
@@ -192,6 +197,20 @@ func (c *arm64Ctx) emitEntryAllocasAndArgInit() error {
 	fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.flagsCSlot)
 	fmt.Fprintf(c.b, "  %s = alloca i1\n", c.flagsVSlot)
 	fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.flagsVSlot)
+
+	// Exclusive monitor state for LDAXR*/STLXR* lowering.
+	c.exclusiveValidSlot = "%exclusive_valid"
+	c.exclusivePtrSlot = "%exclusive_ptr"
+	c.exclusiveSizeSlot = "%exclusive_size"
+	c.exclusiveValueSlot = "%exclusive_value"
+	fmt.Fprintf(c.b, "  %s = alloca i1\n", c.exclusiveValidSlot)
+	fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.exclusiveValidSlot)
+	fmt.Fprintf(c.b, "  %s = alloca ptr\n", c.exclusivePtrSlot)
+	fmt.Fprintf(c.b, "  store ptr null, ptr %s\n", c.exclusivePtrSlot)
+	fmt.Fprintf(c.b, "  %s = alloca i8\n", c.exclusiveSizeSlot)
+	fmt.Fprintf(c.b, "  store i8 0, ptr %s\n", c.exclusiveSizeSlot)
+	fmt.Fprintf(c.b, "  %s = alloca i64\n", c.exclusiveValueSlot)
+	fmt.Fprintf(c.b, "  store i64 0, ptr %s\n", c.exclusiveValueSlot)
 
 	// Frame result slots: allocate addressable storage so patterns like
 	// `$ret+off(FP)` and `MOVD x, ret+off(FP)` can work.
