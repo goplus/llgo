@@ -1023,11 +1023,14 @@ func isRuntimePkg(pkgPath string) bool {
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
 }
 
-func dceEntryRootsFromGraph(g *relocgraph.Graph) ([]relocgraph.SymID, error) {
+func dceEntryRootsFromGraph(g *relocgraph.Graph, conf *Config) ([]relocgraph.SymID, error) {
 	if g == nil {
 		return nil, fmt.Errorf("dce graph is nil")
 	}
-	candidates := []string{"main", "_start", "__main_argc_argv"}
+	candidates := []string{"main", "_start"}
+	if isWasmDCEConfig(conf) {
+		candidates = append(candidates, "__main_argc_argv")
+	}
 	var roots []relocgraph.SymID
 	for _, name := range candidates {
 		node, ok := g.Nodes[relocgraph.SymID(name)]
@@ -1040,9 +1043,20 @@ func dceEntryRootsFromGraph(g *relocgraph.Graph) ([]relocgraph.SymID, error) {
 		roots = append(roots, relocgraph.SymID(name))
 	}
 	if len(roots) == 0 {
-		return nil, fmt.Errorf("dce requires at least one entry root (main/_start/__main_argc_argv)")
+		return nil, fmt.Errorf("dce requires at least one entry root (%s)", strings.Join(candidates, "/"))
 	}
 	return roots, nil
+}
+
+func isWasmDCEConfig(conf *Config) bool {
+	if conf == nil {
+		return false
+	}
+	if isWasmTarget(conf.Goos) || conf.Goarch == "wasm" {
+		return true
+	}
+	target := strings.ToLower(conf.Target)
+	return strings.HasPrefix(target, "wasi") || strings.HasPrefix(target, "wasm")
 }
 
 func dceSourceModules(pkgs []*aPackage) []gollvm.Module {
@@ -1067,7 +1081,7 @@ func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbo
 	ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
 
 	graph := mergePackageGraphs(ctx)
-	roots, err := dceEntryRootsFromGraph(graph)
+	roots, err := dceEntryRootsFromGraph(graph, ctx.buildConf)
 	if err != nil {
 		return err
 	}
