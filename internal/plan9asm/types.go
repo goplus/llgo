@@ -717,6 +717,16 @@ func parseMem(s string) (MemRef, bool) {
 
 	base, ok := parseReg(baseStr)
 	if !ok {
+		// Legacy Go amd64 asm syntax in older stdlib releases uses
+		// "(N*4)(REG)" for word-indexed offsets.
+		if offPart == "" && strings.HasPrefix(rest, "(") && strings.HasSuffix(rest, ")") {
+			base2 := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(rest, "("), ")"))
+			if br, ok := parseReg(base2); ok {
+				if u, ok := parseImmExpr(baseStr); ok {
+					return MemRef{Base: br, Off: int64(u)}, true
+				}
+			}
+		}
 		// Accept off(index*scale) with no base, e.g. -1(AX*2).
 		idx, scale, ok := parseIndexScale(baseStr)
 		if !ok || rest != "" {
