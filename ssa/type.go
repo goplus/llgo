@@ -518,7 +518,23 @@ func (p Program) llvmNameOf(named *types.Named) (name string) {
 func (p Program) toNamed(raw *types.Named) Type {
 	name := p.llvmNameOf(raw)
 	if typ, ok := p.named[name]; ok {
-		return typ
+		if types.Identical(typ.raw.Type, raw) {
+			return typ
+		}
+		// Some toolchains produce distinct instantiated named types that share
+		// the same object name (e.g. generic local helper structs in stdlib).
+		// Disambiguate instead of reusing an incompatible LLVM named struct.
+		base := name
+		for i := 0; ; i++ {
+			name = fmt.Sprintf("%s#%d", base, i)
+			if typ2, ok2 := p.named[name]; ok2 {
+				if types.Identical(typ2.raw.Type, raw) {
+					return typ2
+				}
+				continue
+			}
+			break
+		}
 	}
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:

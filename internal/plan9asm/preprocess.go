@@ -8,7 +8,8 @@ import (
 )
 
 type ppMacro struct {
-	body string
+	body   string
+	params []string
 }
 
 // preprocess applies a very small preprocessor needed for some stdlib asm:
@@ -38,6 +39,7 @@ func preprocess(src string) (string, error) {
 	sc := bufio.NewScanner(strings.NewReader(src))
 	inBlockComment := false
 	var defName string
+	var defParams []string
 	var defBody strings.Builder
 	defCont := false
 	active := true
@@ -51,8 +53,9 @@ func preprocess(src string) (string, error) {
 		if name == "" {
 			return fmt.Errorf("invalid #define with empty name")
 		}
-		macros[name] = ppMacro{body: body}
+		macros[name] = ppMacro{body: body, params: defParams}
 		defName = ""
+		defParams = nil
 		defBody.Reset()
 		defCont = false
 		return nil
@@ -184,13 +187,12 @@ func preprocess(src string) (string, error) {
 				continue
 			}
 			rest := strings.TrimSpace(strings.TrimPrefix(trim, "#define"))
-			fields := strings.Fields(rest)
-			if len(fields) < 1 {
+			name, params, afterName, err := parseMacroDefine(rest)
+			if err != nil {
 				return "", fmt.Errorf("line %d: invalid #define: %q", lineno, line)
 			}
-			defName = fields[0]
-			afterName := strings.TrimSpace(rest[len(defName):])
-			afterName = strings.TrimSpace(afterName)
+			defName = name
+			defParams = params
 			if strings.HasSuffix(afterName, "\\") {
 				afterName = strings.TrimSpace(strings.TrimSuffix(afterName, "\\"))
 				defBody.WriteString(afterName)
@@ -231,7 +233,28 @@ func preprocess(src string) (string, error) {
 	sort.Slice(macroNames, func(i, j int) bool { return len(macroNames[i]) > len(macroNames[j]) })
 	var out strings.Builder
 	for _, line := range lines {
-		if m, ok := macros[line]; ok {
+		trimLine := strings.TrimSpace(line)
+
+		expanded := false
+		for _, name := range macroNames {
+			m := macros[name]
+			if len(m.params) == 0 {
+				continue
+			}
+			args, ok := parseMacroCall(trimLine, name, len(m.params))
+			if !ok {
+				continue
+			}
+			out.WriteString(replaceMacroParams(m.body, m.params, args))
+			out.WriteString("\n")
+			expanded = true
+			break
+		}
+		if expanded {
+			continue
+		}
+
+		if m, ok := macros[trimLine]; ok && len(m.params) == 0 {
 			out.WriteString(m.body)
 			out.WriteString("\n")
 			continue
@@ -241,7 +264,11 @@ func preprocess(src string) (string, error) {
 		//   FMOVD $Ln2Hi, F4
 		// where constants are defined by #define.
 		for _, name := range macroNames {
-			body := strings.TrimSpace(macros[name].body)
+			m := macros[name]
+			if len(m.params) != 0 {
+				continue
+			}
+			body := strings.TrimSpace(m.body)
 			if body == "" {
 				continue
 			}
@@ -304,7 +331,7 @@ func replaceMacroIdents(expr string, macros map[string]ppMacro) string {
 				j++
 			}
 			name := expr[i:j]
-			if m, ok := macros[name]; ok && strings.TrimSpace(m.body) != "" {
+			if m, ok := macros[name]; ok && len(m.params) == 0 && strings.TrimSpace(m.body) != "" {
 				out.WriteString(strings.TrimSpace(m.body))
 			} else {
 				out.WriteString(name)
@@ -324,4 +351,123 @@ func isIdentStart(ch byte) bool {
 
 func isIdentPart(ch byte) bool {
 	return isIdentStart(ch) || (ch >= '0' && ch <= '9')
+}
+
+func parseMacroDefine(rest string) (name string, params []string, body string, err error) {
+	rest = strings.TrimSpace(rest)
+	if rest == "" {
+		return "", nil, "", fmt.Errorf("empty define")
+	}
+	i := 0
+	for i < len(rest) && isIdentPart(rest[i]) {
+		i++
+	}
+	if i == 0 || !isIdentStart(rest[0]) {
+		return "", nil, "", fmt.Errorf("invalid define name")
+	}
+	name = rest[:i]
+	if i < len(rest) && rest[i] == '(' {
+		j := i + 1
+		depth := 1
+		for ; j < len(rest); j++ {
+			switch rest[j] {
+			case '(':
+				depth++
+			case ')':
+				depth--
+				if depth == 0 {
+					goto done
+				}
+			}
+		}
+		return "", nil, "", fmt.Errorf("unterminated macro params")
+	done:
+		paramText := strings.TrimSpace(rest[i+1 : j])
+		if paramText != "" {
+			for _, p := range strings.Split(paramText, ",") {
+				p = strings.TrimSpace(p)
+				if p == "" {
+					return "", nil, "", fmt.Errorf("empty macro param")
+				}
+				params = append(params, p)
+			}
+		}
+		body = strings.TrimSpace(rest[j+1:])
+		return name, params, body, nil
+	}
+	body = strings.TrimSpace(rest[i:])
+	return name, nil, body, nil
+}
+
+func parseMacroCall(line, name string, wantArgs int) ([]string, bool) {
+	if !strings.HasPrefix(line, name+"(") {
+		return nil, false
+	}
+	start := len(name)
+	j := start
+	depth := 0
+	for ; j < len(line); j++ {
+		switch line[j] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				goto closeFound
+			}
+		}
+	}
+	return nil, false
+closeFound:
+	tail := strings.TrimSpace(line[j+1:])
+	if tail != "" && tail != ";" {
+		return nil, false
+	}
+	argText := strings.TrimSpace(line[start+1 : j])
+	if argText == "" {
+		if wantArgs == 0 {
+			return nil, true
+		}
+		return nil, false
+	}
+	parts := splitTopLevelCSV(argText)
+	if len(parts) != wantArgs {
+		return nil, false
+	}
+	args := make([]string, 0, len(parts))
+	for _, p := range parts {
+		args = append(args, strings.TrimSpace(p))
+	}
+	return args, true
+}
+
+func replaceMacroParams(body string, params, args []string) string {
+	if len(params) == 0 || len(params) != len(args) {
+		return body
+	}
+	m := make(map[string]string, len(params))
+	for i, p := range params {
+		m[p] = args[i]
+	}
+	var out strings.Builder
+	for i := 0; i < len(body); {
+		ch := body[i]
+		if isIdentStart(ch) {
+			j := i + 1
+			for j < len(body) && isIdentPart(body[j]) {
+				j++
+			}
+			name := body[i:j]
+			if rep, ok := m[name]; ok {
+				out.WriteString(rep)
+			} else {
+				out.WriteString(name)
+			}
+			i = j
+			continue
+		}
+		out.WriteByte(ch)
+		i++
+	}
+	return out.String()
 }

@@ -805,6 +805,40 @@ source_filename = "foo/bar"
 `)
 }
 
+func TestNamedStructCollision(t *testing.T) {
+	src := types.NewPackage("bar", "foo/bar")
+	t1 := types.NewNamed(
+		types.NewTypeName(0, src, "Result", nil),
+		types.NewStruct([]*types.Var{
+			types.NewField(0, src, "n", types.Typ[types.Int], false),
+		}, nil),
+		nil,
+	)
+	t2 := types.NewNamed(
+		types.NewTypeName(0, src, "Result", nil),
+		types.NewStruct([]*types.Var{
+			types.NewField(0, src, "ok", types.Typ[types.Bool], false),
+		}, nil),
+		nil,
+	)
+
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	pkg.NewVar("a", types.NewPointer(t1), InGo)
+	pkg.NewVar("b", types.NewPointer(t2), InGo)
+
+	ir := pkg.Module().String()
+	if !strings.Contains(ir, "@a = external global %bar.Result") {
+		t.Fatalf("missing @a type in IR:\n%s", ir)
+	}
+	if strings.Contains(ir, "@b = external global %bar.Result,") {
+		t.Fatalf("name collision not disambiguated for @b:\n%s", ir)
+	}
+	if !strings.Contains(ir, "@b = external global %\"bar.Result#0\"") && !strings.Contains(ir, "@b = external global %bar.Result#0") {
+		t.Fatalf("missing disambiguated @b type in IR:\n%s", ir)
+	}
+}
+
 func TestDeclFunc(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")

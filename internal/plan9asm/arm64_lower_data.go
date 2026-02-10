@@ -197,6 +197,75 @@ func (c *arm64Ctx) lowerData(op Op, postInc bool, ins Instr) (ok bool, terminate
 			return true, false, err
 		}
 		return true, false, nil
+
+	case "LDPW":
+		if len(ins.Args) != 2 || ins.Args[0].Kind != OpMem || ins.Args[1].Kind != OpRegList || len(ins.Args[1].RegList) != 2 {
+			return true, false, fmt.Errorf("arm64 LDPW expects mem, (reg,reg): %q", ins.Raw)
+		}
+		mem := ins.Args[0].Mem
+		addr, base, inc, err := c.addrI64(mem, postInc)
+		if err != nil {
+			return true, false, err
+		}
+		p0t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", p0t, addr)
+		v0t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = load i32, ptr %%%s\n", v0t, p0t)
+		z0t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z0t, v0t)
+		addr2t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = add i64 %s, 4\n", addr2t, addr)
+		p1t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %%%s to ptr\n", p1t, addr2t)
+		v1t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = load i32, ptr %%%s\n", v1t, p1t)
+		z1t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z1t, v1t)
+		if err := c.storeReg(ins.Args[1].RegList[0], "%"+z0t); err != nil {
+			return true, false, err
+		}
+		if err := c.storeReg(ins.Args[1].RegList[1], "%"+z1t); err != nil {
+			return true, false, err
+		}
+		if err := c.updatePostInc(base, inc); err != nil {
+			return true, false, err
+		}
+		return true, false, nil
+
+	case "STPW":
+		if len(ins.Args) != 2 || ins.Args[0].Kind != OpRegList || len(ins.Args[0].RegList) != 2 || ins.Args[1].Kind != OpMem {
+			return true, false, fmt.Errorf("arm64 STPW expects (reg,reg), mem: %q", ins.Raw)
+		}
+		mem := ins.Args[1].Mem
+		addr, base, inc, err := c.addrI64(mem, postInc)
+		if err != nil {
+			return true, false, err
+		}
+		v0, err := c.loadReg(ins.Args[0].RegList[0])
+		if err != nil {
+			return true, false, err
+		}
+		t0 := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t0, v0)
+		p0t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", p0t, addr)
+		fmt.Fprintf(c.b, "  store i32 %%%s, ptr %%%s\n", t0, p0t)
+
+		addr2t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = add i64 %s, 4\n", addr2t, addr)
+		v1, err := c.loadReg(ins.Args[0].RegList[1])
+		if err != nil {
+			return true, false, err
+		}
+		t1 := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t1, v1)
+		p1t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %%%s to ptr\n", p1t, addr2t)
+		fmt.Fprintf(c.b, "  store i32 %%%s, ptr %%%s\n", t1, p1t)
+		if err := c.updatePostInc(base, inc); err != nil {
+			return true, false, err
+		}
+		return true, false, nil
 	}
 	return false, false, nil
 }

@@ -131,37 +131,47 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		c.setZFlagFromI64(out)
 		return true, false, nil
 
-	case "LEAQ":
-		// LEAQ srcAddr, dstReg
+	case "LEAQ", "LEAL":
+		// LEA{Q,L} srcAddr, dstReg
 		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
-			return true, false, fmt.Errorf("amd64 LEAQ expects srcAddr, dstReg: %q", ins.Raw)
+			return true, false, fmt.Errorf("amd64 %s expects srcAddr, dstReg: %q", op, ins.Raw)
 		}
 		dst := ins.Args[1].Reg
+		storeLEA := func(addr string) error {
+			if op == "LEAL" {
+				t := c.newTmp()
+				fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t, addr)
+				z := c.newTmp()
+				fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, t)
+				return c.storeReg(dst, "%"+z)
+			}
+			return c.storeReg(dst, addr)
+		}
 		switch ins.Args[0].Kind {
 		case OpMem:
 			addr, err := c.addrFromMem(ins.Args[0].Mem)
 			if err != nil {
 				return true, false, err
 			}
-			return true, false, c.storeReg(dst, addr)
+			return true, false, storeLEA(addr)
 		case OpFP:
 			// LEA of a return slot, e.g. "LEAQ ret+32(FP), R8".
 			alloca, _, ok := c.fpResultAlloca(ins.Args[0].FPOffset)
 			if !ok {
-				return true, false, fmt.Errorf("amd64 LEAQ unsupported FP slot: %q", ins.Raw)
+				return true, false, fmt.Errorf("amd64 %s unsupported FP slot: %q", op, ins.Raw)
 			}
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, alloca)
-			return true, false, c.storeReg(dst, "%"+t)
+			return true, false, storeLEA("%" + t)
 		case OpFPAddr:
 			// Address of a return slot alloca.
 			alloca, _, ok := c.fpResultAlloca(ins.Args[0].FPOffset)
 			if !ok {
-				return true, false, fmt.Errorf("amd64 LEAQ unsupported FP addr: %q", ins.Raw)
+				return true, false, fmt.Errorf("amd64 %s unsupported FP addr: %q", op, ins.Raw)
 			}
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, alloca)
-			return true, false, c.storeReg(dst, "%"+t)
+			return true, false, storeLEA("%" + t)
 		case OpSym:
 			p, err := c.ptrFromSB(ins.Args[0].Sym)
 			if err != nil {
@@ -169,9 +179,9 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			}
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, p)
-			return true, false, c.storeReg(dst, "%"+t)
+			return true, false, storeLEA("%" + t)
 		default:
-			return true, false, fmt.Errorf("amd64 LEAQ unsupported src: %q", ins.Raw)
+			return true, false, fmt.Errorf("amd64 %s unsupported src: %q", op, ins.Raw)
 		}
 
 	case "POPCNTL", "POPCNTQ":
@@ -376,6 +386,69 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		z := c.newTmp()
 		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, sh)
 		return true, false, c.storeReg(dst, "%"+z)
+
+	case "ROLL":
+		// 32-bit rotate-left: count, dstReg.
+		if len(ins.Args) != 2 || ins.Args[1].Kind != OpReg {
+			return true, false, fmt.Errorf("amd64 ROLL expects count, dstReg: %q", ins.Raw)
+		}
+		dst := ins.Args[1].Reg
+		dv64, err := c.loadReg(dst)
+		if err != nil {
+			return true, false, err
+		}
+		dv32 := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", dv32, dv64)
+
+		var cnt32 string
+		switch ins.Args[0].Kind {
+		case OpImm:
+			cnt32 = fmt.Sprintf("%d", uint32(ins.Args[0].Imm))
+		case OpReg:
+			cv64, err := c.loadReg(ins.Args[0].Reg)
+			if err != nil {
+				return true, false, err
+			}
+			tr := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tr, cv64)
+			cnt32 = "%" + tr
+		default:
+			return true, false, fmt.Errorf("amd64 ROLL unsupported count: %q", ins.Raw)
+		}
+
+		cm := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = and i32 %s, 31\n", cm, cnt32)
+		neg := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = sub i32 32, %%%s\n", neg, cm)
+		nm := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = and i32 %%%s, 31\n", nm, neg)
+		lhs := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = shl i32 %%%s, %%%s\n", lhs, dv32, cm)
+		rhs := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = lshr i32 %%%s, %%%s\n", rhs, dv32, nm)
+		rot := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = or i32 %%%s, %%%s\n", rot, lhs, rhs)
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, rot)
+		return true, false, c.storeReg(dst, "%"+z)
+
+	case "NOTL":
+		// 32-bit bitwise NOT, result zero-extended to 64-bit.
+		if len(ins.Args) != 1 || ins.Args[0].Kind != OpReg {
+			return true, false, fmt.Errorf("amd64 NOTL expects reg: %q", ins.Raw)
+		}
+		r := ins.Args[0].Reg
+		v64, err := c.loadReg(r)
+		if err != nil {
+			return true, false, err
+		}
+		tr := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", tr, v64)
+		x := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = xor i32 %%%s, -1\n", x, tr)
+		z := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = zext i32 %%%s to i64\n", z, x)
+		return true, false, c.storeReg(r, "%"+z)
 
 	case "NEGQ":
 		// NEGQ reg

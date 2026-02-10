@@ -560,6 +560,11 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
 			ctx.plan9asmPkgs["sync/atomic"] = true
 		}
+		// crypto/md5 has arch asm in Go 1.21 that is required by some tools
+		// (e.g. go/importer demo path under old toolchains).
+		if ctx.buildConf.Goarch == "amd64" || ctx.buildConf.Goarch == "arm64" {
+			ctx.plan9asmPkgs["crypto/md5"] = true
+		}
 		// internal/chacha8rand has large arch asm files; use the generic stub
 		// path (selected in pkgSFiles) on amd64/arm64 for correctness first.
 		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
