@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/internal/packages"
-	"github.com/goplus/llgo/internal/plan9asm"
+	"github.com/goplus/plan9asm"
 )
 
 func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {

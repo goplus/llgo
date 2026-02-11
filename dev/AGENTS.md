@@ -107,6 +107,8 @@ go run ./chore/plan9asm \
 
 `-annotate=true` (default) emits source asm line comments before lowered IR blocks.
 
-## 7) Note on `internal/plan9asm` tests
+## 7) Note on `plan9asm` tests
 
-`internal/plan9asm/*_test.go` are marked `//go:build !llgo` and are intended to run with `go test`, not `llgo test`.
+When using the workspace replacement (`go.work`) with `github.com/goplus/plan9asm`,
+its `*_test.go` files are marked `//go:build !llgo` and are intended to run with
+`go test`, not `llgo test`.
