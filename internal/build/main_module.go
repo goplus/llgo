@@ -27,6 +27,7 @@
 package build
 
 import (
+	"go/ast"
 	"go/token"
 	"go/types"
 
@@ -42,6 +43,7 @@ import (
 type genConfig struct {
 	rtInit        bool
 	pyInit        bool
+	abiPrune      bool
 	abiInit       int
 	methodByIndex map[int]none
 	methodByName  map[string]none
@@ -94,23 +96,24 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
-	if !IsDbgEnabled() {
+	if cfg.abiPrune {
 		progSSA := ctx.progSSA
 		chaGraph := cha.CallGraph(progSSA)
-		//vtaGraph := vta.CallGraph(ssautil.AllFunctions(progSSA), chaGraph)
-		//_ = vtaGraph
 		invoked := buildInvokeIndex(chaGraph)
-		mainPkg.PruneAbiTypes(func(sel *types.Selection) bool {
-			method := progSSA.MethodValue(sel)
-			if _, ok := invoked[method]; ok {
+		mainPkg.PruneAbiTypes(cfg.abiInit, func(index int, method *types.Selection) bool {
+			if cfg.abiInit != 0 && ast.IsExported(method.Obj().Name()) {
+				return true
+			}
+			mth := progSSA.MethodValue(method)
+			if _, ok := invoked[mth]; ok {
 				return true
 			}
 			for v := range invoked {
-				if v.Name() == method.Name() {
-					if !types.Identical(prog.PatchType(v.Type().(*types.Signature).Recv().Type()), sel.Type().(*types.Signature).Recv().Type()) {
+				if v.Name() == mth.Name() {
+					if !types.Identical(prog.Patch(v.Type().(*types.Signature).Recv().Type()), method.Type().(*types.Signature).Recv().Type()) {
 						continue
 					}
-					if !types.Identical(prog.PatchType(v.Type()), sel.Type()) {
+					if !types.Identical(prog.Patch(v.Type()), method.Type()) {
 						continue
 					}
 					return true

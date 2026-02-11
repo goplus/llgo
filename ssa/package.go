@@ -213,7 +213,7 @@ type aProgram struct {
 	linkname       map[string]string     // pkgPath.nameInPkg => linkname
 	abiSymbol      map[string]*AbiSymbol // abi symbol name => AbiSymbol
 	abiTypePruning bool
-	methodIsInvoke func(method *types.Selection) bool
+	methodIsInvoke func(index int, method *types.Selection) bool
 
 	invokeMethods map[string]map[types.Type]none
 
@@ -241,7 +241,7 @@ func (p Program) AddInvoke(fn *types.Func) {
 		m = make(map[types.Type]none)
 		p.invokeMethods[name] = m
 	}
-	m[p.patch(fn.Type())] = none{}
+	m[p.Patch(fn.Type())] = none{}
 }
 
 // A Program presents a program.
@@ -315,11 +315,7 @@ func (p Program) SetPatch(patchType func(types.Type) types.Type) {
 	p.patchType = patchType
 }
 
-func (p Program) PatchType(typ types.Type) types.Type {
-	return p.patch(typ)
-}
-
-func (p Program) patch(typ types.Type) types.Type {
+func (p Program) Patch(typ types.Type) types.Type {
 	if p.patchType != nil {
 		return p.patchType(typ)
 	}
@@ -354,7 +350,7 @@ func (p Program) Linkname(name string) (link string, ok bool) {
 	return
 }
 
-func (p Program) resolveLinkname(name string) string {
+func (p Program) ResolveLinkname(name string) string {
 	if link, ok := p.linkname[name]; ok {
 		prefix, ltarget, _ := strings.Cut(link, ".")
 		if prefix != "C" {
