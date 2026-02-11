@@ -6,9 +6,6 @@ x-common-env: &llgo-common-env
   PIP_CACHE_DIR: /root/.cache/pip
   PKG_CONFIG_PATH: /opt/llgo-assets/cargs/lib/pkgconfig
   LLGO_ASSETS_DIR: /opt/llgo-assets
-  http_proxy: http://host.docker.internal:6152
-  https_proxy: http://host.docker.internal:6152
-  NO_PROXY: localhost,127.0.0.1,host.docker.internal
 
 x-common-build: &llgo-build
   context: .
@@ -33,110 +30,6 @@ services:
       - go_mod_amd64:/go/pkg/mod
       - go_cache_amd64:/root/.cache/go-build
       - pip_cache_amd64:/root/.cache/pip
-
-  llgo-dev-amd64-go121:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.21.13
-      target: pydeps
-    platform: linux/amd64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_amd64_go121:/go/pkg/mod
-      - go_cache_amd64_go121:/root/.cache/go-build
-      - pip_cache_amd64_go121:/root/.cache/pip
-
-  llgo-dev-arm64-go121:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.21.13
-      target: base
-    platform: linux/arm64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_arm64_go121:/go/pkg/mod
-      - go_cache_arm64_go121:/root/.cache/go-build
-      - pip_cache_arm64_go121:/root/.cache/pip
-
-  llgo-dev-amd64-go122:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.22.12
-      target: pydeps
-    platform: linux/amd64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_amd64_go122:/go/pkg/mod
-      - go_cache_amd64_go122:/root/.cache/go-build
-      - pip_cache_amd64_go122:/root/.cache/pip
-
-  llgo-dev-amd64-go123:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.23.6
-      target: pydeps
-    platform: linux/amd64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_amd64_go123:/go/pkg/mod
-      - go_cache_amd64_go123:/root/.cache/go-build
-      - pip_cache_amd64_go123:/root/.cache/pip
-
-  llgo-dev-amd64-go125:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.25.2
-      target: pydeps
-    platform: linux/amd64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_amd64_go125:/go/pkg/mod
-      - go_cache_amd64_go125:/root/.cache/go-build
-      - pip_cache_amd64_go125:/root/.cache/pip
-
-  llgo-dev-arm64-go122:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.22.12
-      target: base
-    platform: linux/arm64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_arm64_go122:/go/pkg/mod
-      - go_cache_arm64_go122:/root/.cache/go-build
-      - pip_cache_arm64_go122:/root/.cache/pip
-
-  llgo-dev-arm64-go123:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.23.6
-      target: base
-    platform: linux/arm64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_arm64_go123:/go/pkg/mod
-      - go_cache_arm64_go123:/root/.cache/go-build
-      - pip_cache_arm64_go123:/root/.cache/pip
-
-  llgo-dev-arm64-go125:
-    <<: *llgo-service
-    build:
-      <<: *llgo-build
-      dockerfile: dev/Dockerfile.go1.25.2
-      target: base
-    platform: linux/arm64
-    volumes:
-      - .:/repo:delegated
-      - go_mod_arm64_go125:/go/pkg/mod
-      - go_cache_arm64_go125:/root/.cache/go-build
-      - pip_cache_arm64_go125:/root/.cache/pip
 
   llgo-dev-arm64:
     <<: *llgo-service
@@ -168,33 +61,9 @@ volumes:
   go_mod_amd64: {}
   go_cache_amd64: {}
   pip_cache_amd64: {}
-  go_mod_amd64_go121: {}
-  go_cache_amd64_go121: {}
-  pip_cache_amd64_go121: {}
-  go_mod_amd64_go122: {}
-  go_cache_amd64_go122: {}
-  pip_cache_amd64_go122: {}
-  go_mod_amd64_go123: {}
-  go_cache_amd64_go123: {}
-  pip_cache_amd64_go123: {}
-  go_mod_amd64_go125: {}
-  go_cache_amd64_go125: {}
-  pip_cache_amd64_go125: {}
   go_mod_arm64: {}
   go_cache_arm64: {}
   pip_cache_arm64: {}
-  go_mod_arm64_go121: {}
-  go_cache_arm64_go121: {}
-  pip_cache_arm64_go121: {}
-  go_mod_arm64_go122: {}
-  go_cache_arm64_go122: {}
-  pip_cache_arm64_go122: {}
-  go_mod_arm64_go123: {}
-  go_cache_arm64_go123: {}
-  pip_cache_arm64_go123: {}
-  go_mod_arm64_go125: {}
-  go_cache_arm64_go125: {}
-  pip_cache_arm64_go125: {}
   go_mod_i386: {}
   go_cache_i386: {}
   pip_cache_i386: {}

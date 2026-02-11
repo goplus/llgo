@@ -3,17 +3,13 @@ set -euo pipefail
 
 usage() {
 	cat >&2 <<'EOF'
-usage: dev/docker.sh <arch> [--go=1.21.13|1.22.12|1.23.6|1.25.2] [command...]
+usage: dev/docker.sh <arch> [command...]
 
 arch must be one of: amd64 arm64 i386
 
 Examples:
   ./dev/docker.sh amd64
   ./dev/docker.sh arm64 bash -lc './dev/llgo.sh test ./test/std/os/signal'
-  ./dev/docker.sh amd64 --go=1.21.13 bash -lc 'go version'
-  ./dev/docker.sh arm64 --go=1.22.12 bash -lc 'go version'
-  ./dev/docker.sh amd64 --go=1.23.6 bash -lc 'go version'
-  ./dev/docker.sh arm64 --go=1.25.2 bash -lc 'go version'
 EOF
 	exit 2
 }
@@ -25,46 +21,12 @@ fi
 arch="$1"
 shift || true
 
-go_version=""
-if [[ ${1:-} == --go=* ]]; then
-	go_version="${1#--go=}"
-	shift || true
-fi
-case "$go_version" in
-	1.21|1.21.*) go_version="1.21.13" ;;
-	1.22|1.22.*) go_version="1.22.12" ;;
-	1.23|1.23.*) go_version="1.23.6" ;;
-	1.25|1.25.*) go_version="1.25.2" ;;
-	1.24|1.24.*) go_version="" ;;
-esac
-
 case "$arch" in
 	amd64) service="llgo-dev-amd64" ;;
 	arm64) service="llgo-dev-arm64" ;;
 	i386) service="llgo-dev-i386" ;;
 	*) usage ;;
 esac
-
-if [[ -n "$go_version" ]]; then
-	case "$go_version" in
-		1.21.13)
-			service+="-go121"
-			;;
-		1.22.12)
-			service+="-go122"
-			;;
-		1.23.6)
-			service+="-go123"
-			;;
-		1.25.2)
-			service+="-go125"
-			;;
-		*)
-			echo "error: unsupported Go version: $go_version" >&2
-			exit 2
-			;;
-	esac
-fi
 
 LLGO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 && pwd)"
 host_pwd="$(pwd -P)"
@@ -92,3 +54,4 @@ if [[ $# -eq 0 ]]; then
 else
 	"${compose[@]}" run --rm --workdir "$container_workdir" "$service" "$@"
 fi
+
