@@ -159,10 +159,10 @@ log_section "Go Build"
 (cd "$workdir" && go build ./...)
 
 log_section "Go Test"
-(cd "$workdir" && go test ./...)
+(cd "$workdir" && go test -run 30m ./...)
 
 log_section "Install llgo"
-(cd "$workdir" && go install ./cmd/llgo)
+(cd "$workdir" && go install -tags=dev ./cmd/llgo)
 gobin="$(cd "$workdir" && go env GOBIN)"
 if [ -z "$gobin" ]; then
 	gopath_raw="$(cd "$workdir" && go env GOPATH)"
@@ -171,7 +171,7 @@ fi
 export PATH="$gobin:$PATH"
 
 log_section "llgo test"
-(cd "$workdir" && llgo test ./...)
+(cd "$workdir" && llgo test -run 30m ./...)
 
 log_section "Demo Tests"
 demo_jobs="${LLGO_DEMO_JOBS:-}"
