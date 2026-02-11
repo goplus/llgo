@@ -1,5 +1,5 @@
-//go:build linux && arm64 && !go1.23
-// +build linux,arm64,!go1.23
+//go:build linux && arm64
+// +build linux,arm64
 
 package runtime
 
@@ -9,6 +9,9 @@ import (
 	clitesyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
 	_ "unsafe"
 )
+
+//go:linkname c_syscall C.syscall
+func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
 
 //go:linkname syscall_rawVforkSyscall syscall.rawVforkSyscall
 func syscall_rawVforkSyscall(trap, a1, a2, a3 uintptr) (r1 uintptr, err uintptr) {

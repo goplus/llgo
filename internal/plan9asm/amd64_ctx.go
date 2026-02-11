@@ -42,6 +42,8 @@ type amd64Ctx struct {
 	fpResults      []FrameSlot
 	fpResAllocaOff map[int64]string // off(FP) -> alloca
 	fpResAllocaIdx map[int]string   // result index -> alloca
+	fpResWritten   map[int]bool     // result index -> whether written via +off(FP)
+	fpResAddrTaken map[int]bool     // result index -> address of fp_ret_* escaped
 }
 
 func newAMD64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig) *amd64Ctx {
@@ -60,6 +62,8 @@ func newAMD64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) 
 		fpParams:       map[int64]FrameSlot{},
 		fpResAllocaOff: map[int64]string{},
 		fpResAllocaIdx: map[int]string{},
+		fpResWritten:   map[int]bool{},
+		fpResAddrTaken: map[int]bool{},
 		blockByIdx:     map[int]int{},
 	}
 	for _, s := range sig.Frame.Params {
@@ -503,7 +507,8 @@ func (c *amd64Ctx) setZFlagFromI64(v string) {
 }
 
 func (c *amd64Ctx) setCmpFlags(a, b string) {
-	// Store Z (eq), signed-lt, and CF (unsigned-lt) derived from CMPQ a,b.
+	// Plan 9 CMPQ uses source-destination order for flag interpretation here:
+	// treat CMPQ a,b as deriving less-than from a<b.
 	zt := c.newTmp()
 	fmt.Fprintf(c.b, "  %%%s = icmp eq i64 %s, %s\n", zt, a, b)
 	fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", zt, c.flagsZSlot)
@@ -543,6 +548,15 @@ func (c *amd64Ctx) fpResultAlloca(off int64) (string, LLVMType, bool) {
 		}
 	}
 	return name, "", true
+}
+
+func (c *amd64Ctx) markFPResultAddrTaken(off int64) {
+	for _, r := range c.fpResults {
+		if r.Offset == off {
+			c.fpResAddrTaken[r.Index] = true
+			return
+		}
+	}
 }
 
 func (c *amd64Ctx) evalFPToI64(off int64) (string, error) {
@@ -617,16 +631,34 @@ func (c *amd64Ctx) storeFPResult(off int64, ty LLVMType, v string) error {
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t, v)
 			fmt.Fprintf(c.b, "  store i32 %%%s, ptr %s\n", t, alloca)
+			for _, r := range c.fpResults {
+				if r.Offset == off {
+					c.fpResWritten[r.Index] = true
+					break
+				}
+			}
 			return nil
 		case ty == I64 && slotTy == LLVMType("double"):
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = bitcast i64 %s to double\n", t, v)
 			fmt.Fprintf(c.b, "  store double %%%s, ptr %s\n", t, alloca)
+			for _, r := range c.fpResults {
+				if r.Offset == off {
+					c.fpResWritten[r.Index] = true
+					break
+				}
+			}
 			return nil
 		case ty == LLVMType("double") && slotTy == I64:
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = bitcast double %s to i64\n", t, v)
 			fmt.Fprintf(c.b, "  store i64 %%%s, ptr %s\n", t, alloca)
+			for _, r := range c.fpResults {
+				if r.Offset == off {
+					c.fpResWritten[r.Index] = true
+					break
+				}
+			}
 			return nil
 		case ty == I64 && slotTy == I64:
 			// ok
@@ -635,6 +667,12 @@ func (c *amd64Ctx) storeFPResult(off int64, ty LLVMType, v string) error {
 		}
 	}
 	fmt.Fprintf(c.b, "  store %s %s, ptr %s\n", ty, v, alloca)
+	for _, r := range c.fpResults {
+		if r.Offset == off {
+			c.fpResWritten[r.Index] = true
+			break
+		}
+	}
 	return nil
 }
 
@@ -646,6 +684,62 @@ func (c *amd64Ctx) loadFPResult(slot FrameSlot) (string, error) {
 	t := c.newTmp()
 	fmt.Fprintf(c.b, "  %%%s = load %s, ptr %s\n", t, slot.Type, alloca)
 	return "%" + t, nil
+}
+
+func (c *amd64Ctx) retRegByIndex(i int) (Reg, bool) {
+	// Go internal ABI integer return registers on amd64.
+	retRegs := []Reg{AX, BX, CX, DI, SI, Reg("R8"), Reg("R9"), Reg("R10"), Reg("R11")}
+	if i < 0 || i >= len(retRegs) {
+		return "", false
+	}
+	return retRegs[i], true
+}
+
+func (c *amd64Ctx) loadRetRegTyped(i int, ty LLVMType) (string, error) {
+	r, ok := c.retRegByIndex(i)
+	if !ok {
+		return llvmZeroValue(ty), nil
+	}
+	v, err := c.loadReg(r)
+	if err != nil {
+		return "", err
+	}
+	switch ty {
+	case I64:
+		return v, nil
+	case I32:
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t, v)
+		return "%" + t, nil
+	case I16:
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i16\n", t, v)
+		return "%" + t, nil
+	case I8:
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i8\n", t, v)
+		return "%" + t, nil
+	case I1:
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i1\n", t, v)
+		return "%" + t, nil
+	case Ptr:
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = inttoptr i64 %s to ptr\n", t, v)
+		return "%" + t, nil
+	case LLVMType("double"):
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast i64 %s to double\n", t, v)
+		return "%" + t, nil
+	case LLVMType("float"):
+		t32 := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = trunc i64 %s to i32\n", t32, v)
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast i32 %%%s to float\n", t, t32)
+		return "%" + t, nil
+	default:
+		return "", fmt.Errorf("unsupported return cast to %s", ty)
+	}
 }
 
 func parseSBRef(sym string) (base string, off int64, ok bool) {

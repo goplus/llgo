@@ -160,6 +160,7 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			if !ok {
 				return true, false, fmt.Errorf("amd64 %s unsupported FP slot: %q", op, ins.Raw)
 			}
+			c.markFPResultAddrTaken(ins.Args[0].FPOffset)
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, alloca)
 			return true, false, storeLEA("%" + t)
@@ -169,6 +170,7 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 			if !ok {
 				return true, false, fmt.Errorf("amd64 %s unsupported FP addr: %q", op, ins.Raw)
 			}
+			c.markFPResultAddrTaken(ins.Args[0].FPOffset)
 			t := c.newTmp()
 			fmt.Fprintf(c.b, "  %%%s = ptrtoint ptr %s to i64\n", t, alloca)
 			return true, false, storeLEA("%" + t)
