@@ -836,14 +836,6 @@ func TypeOf(i any) Type {
 		ft := eface.typ.StructType().Fields[0].Typ.FuncType()
 		return toType(&ft.Type)
 	}
-	// Canonicalize pointer types through ptrTo cache so PointerTo(T) and
-	// TypeOf((*T)(nil)) share a stable descriptor even when PtrToThis is not
-	// consistently populated by llgo metadata.
-	if eface.typ.Kind() == abi.Pointer {
-		if elem := eface.typ.Elem(); elem != nil {
-			return toType(toRType(elem).ptrTo())
-		}
-	}
 	// Noescape so this doesn't make i to escape. See the comment
 	// at Value.typ for why this is safe.
 	return toType((*abi.Type)(unsafe.Pointer(eface.typ)))
@@ -874,32 +866,7 @@ func PointerTo(t Type) Type {
 func (t *rtype) ptrTo() *abi.Type {
 	at := &t.t
 	if at.PtrToThis_ != nil {
-		if at.Kind() != abi.Pointer {
-			return at.PtrToThis_
-		}
-		// Pointer kinds may carry an incorrect PtrToThis_ in llgo metadata.
-		// Accept only when it semantically matches "*"+t.String().
-		pp := (*ptrType)(unsafe.Pointer(at.PtrToThis_))
-		if pp != nil && pp.Elem != nil && toRType(pp.Elem).String() == t.String() {
-			return at.PtrToThis_
-		}
-	}
-	// If this descriptor itself does not carry a valid PtrToThis_, try to
-	// borrow one from an equivalent descriptor in typelinks.
-	for _, et := range typesByString(t.String()) {
-		if et == nil || et.Kind() != at.Kind() || et.PtrToThis_ == nil {
-			continue
-		}
-		if at.Kind() == abi.Pointer {
-			if at.Elem() == nil || et.Elem() == nil || toRType(et.Elem()).String() != toRType(at.Elem()).String() {
-				continue
-			}
-		}
-		pp := (*ptrType)(unsafe.Pointer(et.PtrToThis_))
-		if pp == nil || pp.Elem == nil || toRType(pp.Elem).String() != t.String() {
-			continue
-		}
-		return et.PtrToThis_
+		return at.PtrToThis_
 	}
 	// Check the cache.
 	if pi, ok := ptrMap.Load(t); ok {
@@ -913,9 +880,6 @@ func (t *rtype) ptrTo() *abi.Type {
 		if p.Elem != &t.t {
 			continue
 		}
-		if p.Elem == nil {
-			continue
-		}
 		pi, _ := ptrMap.LoadOrStore(t, p)
 		return &pi.(*ptrType).Type
 	}
@@ -927,7 +891,6 @@ func (t *rtype) ptrTo() *abi.Type {
 	pp := *prototype
 
 	pp.Str_ = s
-	pp.TFlag &^= abi.TFlagExtraStar
 	pp.PtrToThis_ = nil
 
 	// For the type structures linked into the binary, the
