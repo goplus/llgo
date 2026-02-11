@@ -8,10 +8,11 @@ import (
 )
 
 type arm64Ctx struct {
-	b       *strings.Builder
-	sig     FuncSig
-	resolve func(string) string
-	sigs    map[string]FuncSig
+	b        *strings.Builder
+	sig      FuncSig
+	resolve  func(string) string
+	sigs     map[string]FuncSig
+	annotate bool
 
 	tmp int
 
@@ -40,12 +41,13 @@ type arm64Ctx struct {
 	fpResAllocaIdx map[int]string      // result index -> alloca
 }
 
-func newARM64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig) *arm64Ctx {
+func newARM64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig, annotate bool) *arm64Ctx {
 	c := &arm64Ctx{
 		b:              b,
 		sig:            sig,
 		resolve:        resolve,
 		sigs:           sigs,
+		annotate:       annotate,
 		blocks:         arm64SplitBlocks(fn),
 		usedRegs:       map[Reg]bool{},
 		regSlot:        map[Reg]string{},
@@ -60,6 +62,13 @@ func newARM64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) 
 	}
 	c.fpResults = append([]FrameSlot(nil), sig.Frame.Results...)
 	return c
+}
+
+func (c *arm64Ctx) emitSourceComment(ins Instr) {
+	if !c.annotate {
+		return
+	}
+	emitIRSourceComment(c.b, ins.Raw)
 }
 
 func (c *arm64Ctx) newTmp() string {

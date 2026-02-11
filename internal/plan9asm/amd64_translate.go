@@ -8,7 +8,7 @@ import (
 type amd64EmitBr func(target string)
 type amd64EmitCondBr func(cond string, target string, fall string) error
 
-func translateFuncAMD64(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig) error {
+func translateFuncAMD64(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig, annotateSource bool) error {
 	fmt.Fprintf(b, "define %s %s(", sig.Ret, llvmGlobal(sig.Name))
 	for i, t := range sig.Args {
 		if i > 0 {
@@ -22,7 +22,7 @@ func translateFuncAMD64(b *strings.Builder, fn Func, sig FuncSig, resolve func(s
 	}
 	b.WriteString(" {\n")
 
-	c := newAMD64Ctx(b, fn, sig, resolve, sigs)
+	c := newAMD64Ctx(b, fn, sig, resolve, sigs, annotateSource)
 	if err := c.emitEntryAllocas(); err != nil {
 		return err
 	}
@@ -51,6 +51,7 @@ func (c *amd64Ctx) lowerBlocks() error {
 
 		terminated := false
 		for ii, ins := range blk.instrs {
+			c.emitSourceComment(ins)
 			term, err := c.lowerInstr(bi, ii, ins, emitBr, emitCondBr)
 			if err != nil {
 				return err
@@ -154,7 +155,7 @@ func (c *amd64Ctx) lowerRET() error {
 		if c.fpResWritten[slot.Index] || c.fpResAddrTaken[slot.Index] {
 			v, err = c.loadFPResult(slot)
 		} else {
-			v, err = c.loadRetRegTyped(slot.Index, slot.Type)
+			v, err = c.loadRetSlotFallback(slot)
 		}
 		if err != nil {
 			return err
@@ -171,7 +172,7 @@ func (c *amd64Ctx) lowerRET() error {
 		if c.fpResWritten[slot.Index] || c.fpResAddrTaken[slot.Index] {
 			v, err = c.loadFPResult(slot)
 		} else {
-			v, err = c.loadRetRegTyped(slot.Index, slot.Type)
+			v, err = c.loadRetSlotFallback(slot)
 		}
 		if err != nil {
 			return err

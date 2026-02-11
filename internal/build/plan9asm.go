@@ -39,6 +39,10 @@ type Plan9AsmFileTranslation struct {
 	Functions []Plan9AsmFunctionInfo `json:"functions"`
 }
 
+type TranslatePlan9AsmOptions struct {
+	AnnotateSource bool
+}
+
 // compilePkgSFiles translates Go/Plan9 assembly files selected by `go list -json`
 // for this package/target into LLVM IR, compiles them to .o, and returns the
 // object files for linking.
@@ -149,6 +153,12 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 //
 // This is intended for debugging ABI/signature mismatches and translator bugs.
 func TranslatePlan9AsmFileForPkg(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte) (*Plan9AsmFileTranslation, error) {
+	return TranslatePlan9AsmFileForPkgWithOptions(pkg, sfile, goos, goarch, overlay, TranslatePlan9AsmOptions{})
+}
+
+// TranslatePlan9AsmFileForPkgWithOptions is the same as
+// TranslatePlan9AsmFileForPkg but allows debug-oriented translation options.
+func TranslatePlan9AsmFileForPkgWithOptions(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte, opt TranslatePlan9AsmOptions) (*Plan9AsmFileTranslation, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("nil package")
 	}
@@ -156,10 +166,14 @@ func TranslatePlan9AsmFileForPkg(pkg *packages.Package, sfile string, goos strin
 	if err != nil {
 		return nil, err
 	}
-	return translatePlan9AsmSourceForPkg(pkg, sfile, src, goos, goarch)
+	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, opt)
 }
 
 func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []byte, goos string, goarch string) (*Plan9AsmFileTranslation, error) {
+	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, TranslatePlan9AsmOptions{})
+}
+
+func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt TranslatePlan9AsmOptions) (*Plan9AsmFileTranslation, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("nil package")
 	}
@@ -200,10 +214,11 @@ func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []by
 		return nil, fmt.Errorf("%s: sigs %s: %w", pkg.PkgPath, sfile, err)
 	}
 	ll, err := plan9asm.Translate(file, plan9asm.Options{
-		TargetTriple: triple,
-		ResolveSym:   resolve,
-		Sigs:         sigs,
-		Goarch:       goarch,
+		TargetTriple:   triple,
+		ResolveSym:     resolve,
+		Sigs:           sigs,
+		Goarch:         goarch,
+		AnnotateSource: opt.AnnotateSource,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: translate %s: %w", pkg.PkgPath, sfile, err)
