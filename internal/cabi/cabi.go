@@ -74,20 +74,9 @@ func (p *Transformer) isCFunc(name string) bool {
 // Names are LLVM symbol names (for example, "internal/bytealg.Compare").
 // The list is applied to both function signature rewriting and call-site rewriting.
 func (p *Transformer) SetSkipFuncs(names []string) {
-	if len(names) == 0 {
-		p.skipFns = nil
-		return
-	}
-	if p.skipFns == nil {
-		p.skipFns = make(map[string]struct{}, len(names))
-	} else {
-		clear(p.skipFns)
-	}
+	p.skipFns = make(map[string]struct{}, len(names))
 	for _, name := range names {
 		name = strings.TrimSpace(name)
-		if name == "" {
-			continue
-		}
 		p.skipFns[name] = struct{}{}
 	}
 }
@@ -397,9 +386,6 @@ func (p *Transformer) transformFuncType(ctx llvm.Context, info *FuncInfo) (llvm.
 }
 
 func (p *Transformer) transformFunc(m llvm.Module, fn llvm.Value) bool {
-	if p.shouldSkipFunc(fn.Name()) {
-		return false
-	}
 	ctx := m.Context()
 	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
 	if !info.HasWrap() {
@@ -567,9 +553,6 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 }
 
 func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
-	if p.shouldSkipCall(call) {
-		return false
-	}
 	nfn := call.CalledValue()
 	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
 	if !info.HasWrap() {
