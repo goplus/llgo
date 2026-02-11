@@ -247,10 +247,11 @@ func filterPlan9AsmFuncs(pkgPath, goos, goarch string, funcs []plan9asm.Func, re
 	keep := funcs[:0]
 	for _, fn := range funcs {
 		resolved := resolve(stripABISuffix(fn.Sym))
-		// Linux/arm64 syscall rawVforkSyscall is provided by runtime via linkname.
-		// Skip the asm body to avoid duplicate definitions and to use the llgo-specific
-		// implementation consistently across supported Go toolchains.
-		if pkgPath == "syscall" && goos == "linux" && goarch == "arm64" && resolved == "syscall.rawVforkSyscall" {
+		// Linux syscall rawVforkSyscall is provided by runtime via linkname on
+		// arches where llgo keeps a dedicated implementation.
+		// Skip the asm body to avoid duplicate definitions and to use the
+		// llgo-specific implementation consistently across supported toolchains.
+		if pkgPath == "syscall" && goos == "linux" && (goarch == "arm64" || goarch == "amd64") && strings.HasSuffix(resolved, "rawVforkSyscall") {
 			continue
 		}
 		keep = append(keep, fn)
