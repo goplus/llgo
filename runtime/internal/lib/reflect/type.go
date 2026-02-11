@@ -836,6 +836,14 @@ func TypeOf(i any) Type {
 		ft := eface.typ.StructType().Fields[0].Typ.FuncType()
 		return toType(&ft.Type)
 	}
+	// Canonicalize pointer types through ptrTo cache so PointerTo(T) and
+	// TypeOf((*T)(nil)) share a stable descriptor even when PtrToThis is not
+	// populated by llgo type metadata.
+	if eface.typ.Kind() == abi.Pointer {
+		if elem := eface.typ.Elem(); elem != nil {
+			return toType(toRType(elem).ptrTo())
+		}
+	}
 	// Noescape so this doesn't make i to escape. See the comment
 	// at Value.typ for why this is safe.
 	return toType((*abi.Type)(unsafe.Pointer(eface.typ)))
@@ -865,7 +873,7 @@ func PointerTo(t Type) Type {
 
 func (t *rtype) ptrTo() *abi.Type {
 	at := &t.t
-	if at.PtrToThis_ != nil {
+	if at.PtrToThis_ != nil && at.Kind() != abi.Pointer {
 		return at.PtrToThis_
 	}
 	// Check the cache.
@@ -877,7 +885,7 @@ func (t *rtype) ptrTo() *abi.Type {
 	s := "*" + t.String()
 	for _, tt := range typesByString(s) {
 		p := (*ptrType)(unsafe.Pointer(tt))
-		if p.Elem != &t.t {
+		if p.Elem != &t.t && (p.Elem == nil || toRType(p.Elem).String() != t.String()) {
 			continue
 		}
 		pi, _ := ptrMap.LoadOrStore(t, p)
@@ -891,6 +899,7 @@ func (t *rtype) ptrTo() *abi.Type {
 	pp := *prototype
 
 	pp.Str_ = s
+	pp.TFlag &^= abi.TFlagExtraStar
 	pp.PtrToThis_ = nil
 
 	// For the type structures linked into the binary, the
