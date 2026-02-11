@@ -358,38 +358,43 @@ func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []
 		fn = gllvm.NextFunction(fn)
 	}
 
-	// syscall has mixed Go + asm on darwin. Cross-package callers must ABI-rewrite
-	// Go entry points; only the package's own build should keep skip entries for
-	// its asm trampolines.
-	if pkgPath != "syscall" {
-		for name := range skip {
-			if strings.HasPrefix(name, "syscall.") {
-				delete(skip, name)
+	// Darwin syscall packages mix Go declarations with runtime-provided
+	// implementations via //go:linkname; only on darwin do we force ABI rewrite
+	// for those Go entry points instead of skipping them as asm symbols.
+	if ctx.buildConf != nil && ctx.buildConf.Goos == "darwin" {
+		// syscall has mixed Go + asm on darwin. Cross-package callers must
+		// ABI-rewrite Go entry points; only the package's own build should keep
+		// skip entries for its asm trampolines.
+		if pkgPath != "syscall" {
+			for name := range skip {
+				if strings.HasPrefix(name, "syscall.") {
+					delete(skip, name)
+				}
 			}
 		}
-	}
-	// syscall on darwin declares syscall/rawSyscall entry points in Go, but
-	// their implementations are provided by runtime via //go:linkname rather
-	// than package-local Plan9 asm.
-	delete(skip, "syscall.Syscall")
-	delete(skip, "syscall.Syscall6")
-	delete(skip, "syscall.Syscall6X")
-	delete(skip, "syscall.SyscallPtr")
-	delete(skip, "syscall.RawSyscall")
-	delete(skip, "syscall.RawSyscall6")
-	delete(skip, "syscall.syscall")
-	delete(skip, "syscall.syscall6")
-	delete(skip, "syscall.syscall6X")
-	delete(skip, "syscall.syscallPtr")
-	delete(skip, "syscall.rawSyscall")
-	delete(skip, "syscall.rawSyscall6")
-	// internal/syscall/unix has mixed Go + asm on darwin. Cross-package callers
-	// must ABI-rewrite Go entry points like Fcntl; only the package's own build
-	// should keep skip entries for its asm trampolines.
-	if pkgPath != "internal/syscall/unix" {
-		for name := range skip {
-			if strings.HasPrefix(name, "internal/syscall/unix.") {
-				delete(skip, name)
+		// syscall on darwin declares syscall/rawSyscall entry points in Go, but
+		// their implementations are provided by runtime via //go:linkname rather
+		// than package-local Plan9 asm.
+		delete(skip, "syscall.Syscall")
+		delete(skip, "syscall.Syscall6")
+		delete(skip, "syscall.Syscall6X")
+		delete(skip, "syscall.SyscallPtr")
+		delete(skip, "syscall.RawSyscall")
+		delete(skip, "syscall.RawSyscall6")
+		delete(skip, "syscall.syscall")
+		delete(skip, "syscall.syscall6")
+		delete(skip, "syscall.syscall6X")
+		delete(skip, "syscall.syscallPtr")
+		delete(skip, "syscall.rawSyscall")
+		delete(skip, "syscall.rawSyscall6")
+		// internal/syscall/unix has mixed Go + asm on darwin. Cross-package
+		// callers must ABI-rewrite Go entry points like Fcntl; only the package's
+		// own build should keep skip entries for its asm trampolines.
+		if pkgPath != "internal/syscall/unix" {
+			for name := range skip {
+				if strings.HasPrefix(name, "internal/syscall/unix.") {
+					delete(skip, name)
+				}
 			}
 		}
 	}
