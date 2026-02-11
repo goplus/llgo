@@ -266,6 +266,75 @@ type plan9AsmSigCacheKey struct {
 
 var plan9AsmSigCache sync.Map // key: plan9AsmSigCacheKey, value: map[string]struct{}
 
+var defaultPlan9AsmPkgs = map[string]none{
+	"crypto/internal/boring/sig": {},
+	"internal/cpu":               {},
+	// arch-gated defaults; enabled only on amd64/arm64 by helper below.
+	"hash/crc32":                 {},
+	"internal/bytealg":           {},
+	"internal/runtime/atomic":    {},
+	"runtime/internal/atomic":    {},
+	"internal/runtime/syscall":   {},
+	"runtime/internal/syscall":   {},
+	"internal/syscall/unix":      {},
+	"crypto/x509/internal/macos": {},
+	"internal/runtime/sys":       {},
+	"runtime/internal/sys":       {},
+	"math":                       {},
+	"syscall":                    {},
+	"sync/atomic":                {},
+	"crypto/md5":                 {},
+	"internal/chacha8rand":       {},
+}
+
+func archSupportsPlan9AsmDefaults(goarch string) bool {
+	return goarch == "arm64" || goarch == "amd64"
+}
+
+type plan9asmPkgsEnvMode int
+
+const (
+	plan9asmEnvDefaults plan9asmPkgsEnvMode = iota
+	plan9asmEnvAll
+	plan9asmEnvNone
+	plan9asmEnvSelected
+)
+
+type plan9asmPkgsEnv struct {
+	mode plan9asmPkgsEnvMode
+	pkgs map[string]bool
+}
+
+func parsePlan9AsmPkgsEnv(raw string) plan9asmPkgsEnv {
+	v := strings.TrimSpace(raw)
+	switch {
+	case v == "":
+		return plan9asmPkgsEnv{mode: plan9asmEnvDefaults}
+	case v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false"):
+		return plan9asmPkgsEnv{mode: plan9asmEnvNone}
+	case v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true"):
+		return plan9asmPkgsEnv{mode: plan9asmEnvAll}
+	default:
+		pkgs := make(map[string]bool)
+		split := func(r rune) bool {
+			switch r {
+			case ',', ';', ' ', '\t', '\n', '\r':
+				return true
+			default:
+				return false
+			}
+		}
+		for _, p := range strings.FieldsFunc(v, split) {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				continue
+			}
+			pkgs[p] = true
+		}
+		return plan9asmPkgsEnv{mode: plan9asmEnvSelected, pkgs: pkgs}
+	}
+}
+
 func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, error) {
 	if ctx == nil || pkgPath == "" {
 		return nil, nil
@@ -563,80 +632,26 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 			"crypto/internal/boring/sig": true,
 			"internal/cpu":               true,
 		}
-		// hash/crc32 is enabled by default on amd64/arm64.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["hash/crc32"] = true
+		if ctx.buildConf != nil && archSupportsPlan9AsmDefaults(ctx.buildConf.Goarch) {
+			for p := range defaultPlan9AsmPkgs {
+				ctx.plan9asmPkgs[p] = true
+			}
 		}
-		// internal/bytealg is enabled by default on amd64/arm64.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["internal/bytealg"] = true
-		}
-		// runtime/internal/atomic (Go <=1.21) and internal/runtime/atomic
-		// (Go >=1.22) are translated on arm64/amd64.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["internal/runtime/atomic"] = true
-			ctx.plan9asmPkgs["runtime/internal/atomic"] = true
-		}
-		// runtime/internal/syscall (Go <=1.21) and internal/runtime/syscall
-		// (Go >=1.22) are translated on arm64/amd64.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["internal/runtime/syscall"] = true
-			ctx.plan9asmPkgs["runtime/internal/syscall"] = true
-			ctx.plan9asmPkgs["internal/syscall/unix"] = true
-			ctx.plan9asmPkgs["crypto/x509/internal/macos"] = true
-		}
-		// runtime/internal/sys (Go <=1.21) and internal/runtime/sys (Go >=1.22)
-		// have arch asm in some releases.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["internal/runtime/sys"] = true
-			ctx.plan9asmPkgs["runtime/internal/sys"] = true
-		}
-		// math has arch-specific asm and no alt package.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["math"] = true
-			ctx.plan9asmPkgs["syscall"] = true
-		}
-		// sync/atomic wrappers are simple TEXT/JMP stubs to internal/runtime/atomic.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["sync/atomic"] = true
-		}
-		// crypto/md5 has arch asm in Go 1.21 that is required by some tools
-		// (e.g. go/importer demo path under old toolchains).
-		if ctx.buildConf.Goarch == "amd64" || ctx.buildConf.Goarch == "arm64" {
-			ctx.plan9asmPkgs["crypto/md5"] = true
-		}
-		// internal/chacha8rand has large arch asm files; use the generic stub
-		// path (selected in pkgSFiles) on amd64/arm64 for correctness first.
-		if ctx.buildConf.Goarch == "arm64" || ctx.buildConf.Goarch == "amd64" {
-			ctx.plan9asmPkgs["internal/chacha8rand"] = true
-		}
-		v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+		cfg := parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS"))
 		// Explicitly disable all asm translation, including defaults.
-		if v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
+		if cfg.mode == plan9asmEnvNone {
 			ctx.plan9asmPkgs = make(map[string]bool)
 			return
 		}
 		// Empty means "defaults only".
-		if v == "" {
+		if cfg.mode == plan9asmEnvDefaults {
 			return
 		}
-		if v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true") {
+		if cfg.mode == plan9asmEnvAll {
 			ctx.plan9asmAll = true
 			return
 		}
-		split := func(r rune) bool {
-			switch r {
-			case ',', ';', ' ', '\t', '\n', '\r':
-				return true
-			default:
-				return false
-			}
-		}
-		for _, p := range strings.FieldsFunc(v, split) {
-			p = strings.TrimSpace(p)
-			if p == "" {
-				continue
-			}
+		for p := range cfg.pkgs {
 			ctx.plan9asmPkgs[p] = true
 		}
 	})
@@ -663,50 +678,26 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 }
 
 func plan9asmDisabledByEnv() bool {
-	v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
-	return v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false")
+	return parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS")).mode == plan9asmEnvNone
 }
 
 func plan9asmEnabledByEnv(pkgPath string) bool {
-	v := strings.TrimSpace(os.Getenv("LLGO_PLAN9ASM_PKGS"))
-	if v == "" {
-		return false
-	}
-	if v == "0" || strings.EqualFold(v, "off") || strings.EqualFold(v, "false") {
-		return false
-	}
-	if v == "*" || strings.EqualFold(v, "all") || strings.EqualFold(v, "on") || strings.EqualFold(v, "true") {
+	cfg := parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+	if cfg.mode == plan9asmEnvAll {
 		return true
 	}
-	split := func(r rune) bool {
-		switch r {
-		case ',', ';', ' ', '\t', '\n', '\r':
-			return true
-		default:
-			return false
-		}
-	}
-	for _, p := range strings.FieldsFunc(v, split) {
-		if strings.TrimSpace(p) == pkgPath {
-			return true
-		}
-	}
-	return false
+	return cfg.mode == plan9asmEnvSelected && cfg.pkgs[pkgPath]
 }
 
 func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	if conf == nil {
 		return false
 	}
-	if conf.Goarch != "arm64" && conf.Goarch != "amd64" {
+	if !archSupportsPlan9AsmDefaults(conf.Goarch) {
 		return false
 	}
-	switch pkgPath {
-	case "hash/crc32", "internal/bytealg", "internal/runtime/atomic", "internal/runtime/syscall", "sync/atomic":
-		return true
-	default:
-		return false
-	}
+	_, ok := defaultPlan9AsmPkgs[pkgPath]
+	return ok
 }
 
 func plan9asmArch(goarch string) (plan9asm.Arch, error) {
@@ -729,7 +720,7 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 		return nil, fmt.Errorf("missing sizes for goarch %q", goarch)
 	}
 
-	manual, symToDecl := extraAsmSigsAndDeclMap(pkg.PkgPath, goarch)
+	manual := extraAsmSigsAndDeclMap(pkg.PkgPath, goarch)
 	linknames := linknameRemoteToLocal(pkg.Syntax)
 
 	for i := range file.Funcs {
@@ -741,12 +732,7 @@ func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym
 			continue
 		}
 
-		declName := sym
-		if v, ok := symToDecl[sym]; ok {
-			declName = v
-		} else {
-			declName = strings.TrimPrefix(declName, "·")
-		}
+		declName := strings.TrimPrefix(sym, "·")
 		// Plan9 middle dot in TEXT name is not a valid Go identifier. For local
 		// symbols we expect "·foo". For non-local TEXT that defines symbols in
 		// other packages (e.g. runtime·cmpstring), declaration lookup in the
@@ -1030,9 +1016,8 @@ func linknameRemoteToLocal(files []*ast.File) map[string]string {
 	return m
 }
 
-func extraAsmSigsAndDeclMap(pkgPath string, goarch string) (manual map[string]plan9asm.FuncSig, symToDecl map[string]string) {
+func extraAsmSigsAndDeclMap(pkgPath string, goarch string) (manual map[string]plan9asm.FuncSig) {
 	manual = map[string]plan9asm.FuncSig{}
-	symToDecl = map[string]string{}
 
 	// internal/bytealg defines a few runtime symbols and asm-only helpers.
 	// The Go package provides linkname declarations that we can use for the
@@ -1098,7 +1083,7 @@ func extraAsmSigsAndDeclMap(pkgPath string, goarch string) (manual map[string]pl
 			}
 		}
 	}
-	return manual, symToDecl
+	return manual
 }
 
 func llvmTypeForGo(t types.Type, goarch string) (plan9asm.LLVMType, error) {
