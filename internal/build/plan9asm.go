@@ -23,7 +23,7 @@ import (
 	"github.com/goplus/plan9asm"
 )
 
-type Plan9AsmFunctionInfo struct {
+type plan9AsmFunctionInfo struct {
 	// TextSymbol is the raw symbol from TEXT (e.g. "·IndexByte",
 	// "runtime·cmpstring<ABIInternal>", "cmpbody<>").
 	TextSymbol string `json:"text_symbol"`
@@ -31,15 +31,15 @@ type Plan9AsmFunctionInfo struct {
 	ResolvedSymbol string `json:"resolved_symbol"`
 }
 
-type Plan9AsmFileTranslation struct {
+type plan9AsmFileTranslation struct {
 	LLVMIR string `json:"-"`
 	// Signatures is the exact symbol->signature map passed to plan9asm.Translate.
 	Signatures map[string]plan9asm.FuncSig `json:"signatures"`
 	// Functions records TEXT symbol resolution for this .s file.
-	Functions []Plan9AsmFunctionInfo `json:"functions"`
+	Functions []plan9AsmFunctionInfo `json:"functions"`
 }
 
-type TranslatePlan9AsmOptions struct {
+type translatePlan9AsmOptions struct {
 	AnnotateSource bool
 }
 
@@ -148,17 +148,17 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 	return objFiles, nil
 }
 
-// TranslatePlan9AsmFileForPkg translates a single Plan9 asm source file using
+// translatePlan9AsmFileForPkg translates a single Plan9 asm source file using
 // the same symbol resolution/signature inference path as normal llgo builds.
 //
 // This is intended for debugging ABI/signature mismatches and translator bugs.
-func TranslatePlan9AsmFileForPkg(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte) (*Plan9AsmFileTranslation, error) {
-	return TranslatePlan9AsmFileForPkgWithOptions(pkg, sfile, goos, goarch, overlay, TranslatePlan9AsmOptions{})
+func translatePlan9AsmFileForPkg(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte) (*plan9AsmFileTranslation, error) {
+	return translatePlan9AsmFileForPkgWithOptions(pkg, sfile, goos, goarch, overlay, translatePlan9AsmOptions{})
 }
 
-// TranslatePlan9AsmFileForPkgWithOptions is the same as
-// TranslatePlan9AsmFileForPkg but allows debug-oriented translation options.
-func TranslatePlan9AsmFileForPkgWithOptions(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte, opt TranslatePlan9AsmOptions) (*Plan9AsmFileTranslation, error) {
+// translatePlan9AsmFileForPkgWithOptions is the same as
+// translatePlan9AsmFileForPkg but allows debug-oriented translation options.
+func translatePlan9AsmFileForPkgWithOptions(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte, opt translatePlan9AsmOptions) (*plan9AsmFileTranslation, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("nil package")
 	}
@@ -169,11 +169,11 @@ func TranslatePlan9AsmFileForPkgWithOptions(pkg *packages.Package, sfile string,
 	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, opt)
 }
 
-func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []byte, goos string, goarch string) (*Plan9AsmFileTranslation, error) {
-	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, TranslatePlan9AsmOptions{})
+func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []byte, goos string, goarch string) (*plan9AsmFileTranslation, error) {
+	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, translatePlan9AsmOptions{})
 }
 
-func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt TranslatePlan9AsmOptions) (*Plan9AsmFileTranslation, error) {
+func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt translatePlan9AsmOptions) (*plan9AsmFileTranslation, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("nil package")
 	}
@@ -224,16 +224,16 @@ func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile strin
 		return nil, fmt.Errorf("%s: translate %s: %w", pkg.PkgPath, sfile, err)
 	}
 
-	funcs := make([]Plan9AsmFunctionInfo, 0, len(file.Funcs))
+	funcs := make([]plan9AsmFunctionInfo, 0, len(file.Funcs))
 	for _, fn := range file.Funcs {
 		sym := stripABISuffix(fn.Sym)
-		funcs = append(funcs, Plan9AsmFunctionInfo{
+		funcs = append(funcs, plan9AsmFunctionInfo{
 			TextSymbol:     fn.Sym,
 			ResolvedSymbol: resolve(sym),
 		})
 	}
 
-	return &Plan9AsmFileTranslation{
+	return &plan9AsmFileTranslation{
 		LLVMIR:     ll,
 		Signatures: sigs,
 		Functions:  funcs,
@@ -266,25 +266,15 @@ type plan9AsmSigCacheKey struct {
 
 var plan9AsmSigCache sync.Map // key: plan9AsmSigCacheKey, value: map[string]struct{}
 
-var defaultPlan9AsmPkgs = map[string]none{
-	"crypto/internal/boring/sig": {},
-	"internal/cpu":               {},
-	// arch-gated defaults; enabled only on amd64/arm64 by helper below.
-	"hash/crc32":                 {},
-	"internal/bytealg":           {},
-	"internal/runtime/atomic":    {},
-	"runtime/internal/atomic":    {},
-	"internal/runtime/syscall":   {},
-	"runtime/internal/syscall":   {},
-	"internal/syscall/unix":      {},
-	"crypto/x509/internal/macos": {},
-	"internal/runtime/sys":       {},
-	"runtime/internal/sys":       {},
-	"math":                       {},
-	"syscall":                    {},
-	"sync/atomic":                {},
-	"crypto/md5":                 {},
-	"internal/chacha8rand":       {},
+var defaultPlan9AsmExcludedPkgs = map[string]none{
+	// Keep alt/runtime implementations for these packages.
+	"internal/abi":          {},
+	"internal/reflectlite":  {},
+	"internal/runtime/maps": {},
+	"reflect":               {},
+	"runtime":               {},
+	"syscall/js":            {},
+	"unique":                {},
 }
 
 func archSupportsPlan9AsmDefaults(goarch string) bool {
@@ -625,38 +615,38 @@ func expandPlan9AsmConsts(src []byte, pkgTypes *types.Package, imports map[strin
 
 func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 	ctx.plan9asmOnce.Do(func() {
-		// Default allowlist: packages we've explicitly validated end-to-end.
-		// This avoids requiring an env var for essential stdlib deps, while still
-		// keeping the blast radius small as plan9asm support grows.
-		ctx.plan9asmPkgs = map[string]bool{
-			"crypto/internal/boring/sig": true,
-			"internal/cpu":               true,
-		}
-		if ctx.buildConf != nil && archSupportsPlan9AsmDefaults(ctx.buildConf.Goarch) {
-			for p := range defaultPlan9AsmPkgs {
+		cfg := parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+		switch cfg.mode {
+		case plan9asmEnvNone:
+			// Explicitly disable all asm translation.
+			ctx.plan9asmAll = false
+			ctx.plan9asmPkgs = make(map[string]bool)
+		case plan9asmEnvAll:
+			ctx.plan9asmPkgs = make(map[string]bool)
+			ctx.plan9asmAll = true
+		case plan9asmEnvSelected:
+			ctx.plan9asmAll = false
+			ctx.plan9asmPkgs = make(map[string]bool, len(cfg.pkgs))
+			for p := range cfg.pkgs {
 				ctx.plan9asmPkgs[p] = true
 			}
-		}
-		cfg := parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS"))
-		// Explicitly disable all asm translation, including defaults.
-		if cfg.mode == plan9asmEnvNone {
+		case plan9asmEnvDefaults:
+			// Default mode: on supported arches, enable translation for all
+			// packages except a small excluded set handled by runtime alt code.
+			if ctx.buildConf != nil && archSupportsPlan9AsmDefaults(ctx.buildConf.Goarch) {
+				ctx.plan9asmAll = true
+				ctx.plan9asmPkgs = make(map[string]bool, len(defaultPlan9AsmExcludedPkgs))
+				for p := range defaultPlan9AsmExcludedPkgs {
+					ctx.plan9asmPkgs[p] = true
+				}
+				return
+			}
+			ctx.plan9asmAll = false
 			ctx.plan9asmPkgs = make(map[string]bool)
-			return
-		}
-		// Empty means "defaults only".
-		if cfg.mode == plan9asmEnvDefaults {
-			return
-		}
-		if cfg.mode == plan9asmEnvAll {
-			ctx.plan9asmAll = true
-			return
-		}
-		for p := range cfg.pkgs {
-			ctx.plan9asmPkgs[p] = true
 		}
 	})
 	if ctx.plan9asmAll {
-		return true
+		return !ctx.plan9asmPkgs[pkgPath]
 	}
 	return ctx.plan9asmPkgs[pkgPath]
 }
@@ -696,8 +686,8 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	if !archSupportsPlan9AsmDefaults(conf.Goarch) {
 		return false
 	}
-	_, ok := defaultPlan9AsmPkgs[pkgPath]
-	return ok
+	_, excluded := defaultPlan9AsmExcludedPkgs[pkgPath]
+	return !excluded
 }
 
 func plan9asmArch(goarch string) (plan9asm.Arch, error) {

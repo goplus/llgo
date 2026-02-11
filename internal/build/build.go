@@ -541,7 +541,8 @@ type context struct {
 	// plan9asm package allowlist parsed from env.
 	plan9asmOnce sync.Once
 	plan9asmAll  bool
-	plan9asmPkgs map[string]bool // pkg path -> enabled
+	// when plan9asmAll=false: enabled set; when plan9asmAll=true: excluded set.
+	plan9asmPkgs map[string]bool
 }
 
 func (c *context) compiler() *clang.Cmd {
