@@ -8,7 +8,7 @@ import (
 type arm64EmitBr func(target string)
 type arm64EmitCondBr func(cond string, target string, fall string) error
 
-func translateFuncARM64(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig) error {
+func translateFuncARM64(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig, annotateSource bool) error {
 	fmt.Fprintf(b, "define %s %s(", sig.Ret, llvmGlobal(sig.Name))
 	for i, t := range sig.Args {
 		if i > 0 {
@@ -22,7 +22,7 @@ func translateFuncARM64(b *strings.Builder, fn Func, sig FuncSig, resolve func(s
 	}
 	b.WriteString(" {\n")
 
-	c := newARM64Ctx(b, fn, sig, resolve, sigs)
+	c := newARM64Ctx(b, fn, sig, resolve, sigs, annotateSource)
 	if err := c.emitEntryAllocasAndArgInit(); err != nil {
 		return err
 	}
@@ -55,6 +55,7 @@ func (c *arm64Ctx) lowerBlocks() error {
 
 		terminated := false
 		for _, ins := range blk.instrs {
+			c.emitSourceComment(ins)
 			term, err := c.lowerInstr(bi, ins, emitBr, emitCondBr)
 			if err != nil {
 				return err

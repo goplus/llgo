@@ -72,6 +72,10 @@ type Options struct {
 
 	// Goarch is used for a few arch-specific translations (e.g. x86 CPUID).
 	Goarch string
+
+	// AnnotateSource emits source asm lines as IR comments before lowering each
+	// instruction, for translation debugging.
+	AnnotateSource bool
 }
 
 // Translate converts a parsed Plan 9 asm File into LLVM IR text (`.ll`).
@@ -176,20 +180,20 @@ func Translate(file *File, opt Options) (string, error) {
 			return "", fmt.Errorf("missing return type for %q", name)
 		}
 		if file.Arch == ArchARM64 && funcNeedsARM64CFG(*fn) {
-			if err := translateFuncARM64(&b, *fn, sig, resolve, opt.Sigs); err != nil {
+			if err := translateFuncARM64(&b, *fn, sig, resolve, opt.Sigs, opt.AnnotateSource); err != nil {
 				return "", fmt.Errorf("%s: %v", name, err)
 			}
 			b.WriteString("\n")
 			continue
 		}
 		if file.Arch == ArchAMD64 && opt.Goarch == "amd64" && funcNeedsAMD64CFG(*fn) {
-			if err := translateFuncAMD64(&b, *fn, sig, resolve, opt.Sigs); err != nil {
+			if err := translateFuncAMD64(&b, *fn, sig, resolve, opt.Sigs, opt.AnnotateSource); err != nil {
 				return "", fmt.Errorf("%s: %v", name, err)
 			}
 			b.WriteString("\n")
 			continue
 		}
-		if err := translateFuncLinear(&b, file.Arch, *fn, sig); err != nil {
+		if err := translateFuncLinear(&b, file.Arch, *fn, sig, opt.AnnotateSource); err != nil {
 			return "", fmt.Errorf("%s: %v", name, err)
 		}
 		b.WriteString("\n")
@@ -409,7 +413,7 @@ func llvmI8ArrayInit(b []byte) string {
 	return sb.String()
 }
 
-func translateFuncLinear(b *strings.Builder, arch Arch, fn Func, sig FuncSig) error {
+func translateFuncLinear(b *strings.Builder, arch Arch, fn Func, sig FuncSig, annotateSource bool) error {
 	// Function header.
 	fmt.Fprintf(b, "define %s %s(", sig.Ret, llvmGlobal(sig.Name))
 	for i, t := range sig.Args {
@@ -621,6 +625,9 @@ func translateFuncLinear(b *strings.Builder, arch Arch, fn Func, sig FuncSig) er
 	}
 
 	for _, ins := range fn.Instrs {
+		if annotateSource {
+			emitIRSourceComment(b, ins.Raw)
+		}
 		switch ins.Op {
 		case OpTEXT:
 			continue

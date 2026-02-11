@@ -11,8 +11,9 @@ type amd64Ctx struct {
 	b   *strings.Builder
 	sig FuncSig
 
-	resolve func(string) string
-	sigs    map[string]FuncSig
+	resolve  func(string) string
+	sigs     map[string]FuncSig
+	annotate bool
 
 	tmp int
 
@@ -46,12 +47,13 @@ type amd64Ctx struct {
 	fpResAddrTaken map[int]bool     // result index -> address of fp_ret_* escaped
 }
 
-func newAMD64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig) *amd64Ctx {
+func newAMD64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) string, sigs map[string]FuncSig, annotate bool) *amd64Ctx {
 	c := &amd64Ctx{
 		b:              b,
 		sig:            sig,
 		resolve:        resolve,
 		sigs:           sigs,
+		annotate:       annotate,
 		blocks:         amd64SplitBlocks(fn),
 		usedRegs:       map[Reg]bool{},
 		regSlot:        map[Reg]string{},
@@ -77,6 +79,13 @@ func newAMD64Ctx(b *strings.Builder, fn Func, sig FuncSig, resolve func(string) 
 		base += len(blk.instrs)
 	}
 	return c
+}
+
+func (c *amd64Ctx) emitSourceComment(ins Instr) {
+	if !c.annotate {
+		return
+	}
+	emitIRSourceComment(c.b, ins.Raw)
 }
 
 func (c *amd64Ctx) newTmp() string {
@@ -686,7 +695,11 @@ func (c *amd64Ctx) loadFPResult(slot FrameSlot) (string, error) {
 	return "%" + t, nil
 }
 
-func (c *amd64Ctx) retRegByIndex(i int) (Reg, bool) {
+func isAMD64FloatRetTy(ty LLVMType) bool {
+	return ty == LLVMType("float") || ty == LLVMType("double")
+}
+
+func (c *amd64Ctx) retIntRegByOrd(i int) (Reg, bool) {
 	// Go internal ABI integer return registers on amd64.
 	retRegs := []Reg{AX, BX, CX, DI, SI, Reg("R8"), Reg("R9"), Reg("R10"), Reg("R11")}
 	if i < 0 || i >= len(retRegs) {
@@ -695,8 +708,8 @@ func (c *amd64Ctx) retRegByIndex(i int) (Reg, bool) {
 	return retRegs[i], true
 }
 
-func (c *amd64Ctx) loadRetRegTyped(i int, ty LLVMType) (string, error) {
-	r, ok := c.retRegByIndex(i)
+func (c *amd64Ctx) loadRetIntRegTyped(ord int, ty LLVMType) (string, error) {
+	r, ok := c.retIntRegByOrd(ord)
 	if !ok {
 		return llvmZeroValue(ty), nil
 	}
@@ -740,6 +753,58 @@ func (c *amd64Ctx) loadRetRegTyped(i int, ty LLVMType) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported return cast to %s", ty)
 	}
+}
+
+func (c *amd64Ctx) loadRetFloatRegTyped(ord int, ty LLVMType) (string, error) {
+	if ord < 0 || ord > 31 {
+		return llvmZeroValue(ty), nil
+	}
+	xv, err := c.loadX(Reg(fmt.Sprintf("X%d", ord)))
+	if err != nil {
+		return "", err
+	}
+	switch ty {
+	case LLVMType("double"):
+		bc := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast <16 x i8> %s to <2 x i64>\n", bc, xv)
+		lo := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = extractelement <2 x i64> %%%s, i32 0\n", lo, bc)
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast i64 %%%s to double\n", t, lo)
+		return "%" + t, nil
+	case LLVMType("float"):
+		bc := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast <16 x i8> %s to <4 x i32>\n", bc, xv)
+		lo := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = extractelement <4 x i32> %%%s, i32 0\n", lo, bc)
+		t := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = bitcast i32 %%%s to float\n", t, lo)
+		return "%" + t, nil
+	default:
+		return "", fmt.Errorf("unsupported float return type %s", ty)
+	}
+}
+
+func (c *amd64Ctx) retClassOrdinal(slot FrameSlot) (isFloat bool, ord int) {
+	isFloat = isAMD64FloatRetTy(slot.Type)
+	ord = 0
+	for _, r := range c.fpResults {
+		if r.Index == slot.Index {
+			return isFloat, ord
+		}
+		if isAMD64FloatRetTy(r.Type) == isFloat {
+			ord++
+		}
+	}
+	return isFloat, ord
+}
+
+func (c *amd64Ctx) loadRetSlotFallback(slot FrameSlot) (string, error) {
+	isFloat, ord := c.retClassOrdinal(slot)
+	if isFloat {
+		return c.loadRetFloatRegTyped(ord, slot.Type)
+	}
+	return c.loadRetIntRegTyped(ord, slot.Type)
 }
 
 func parseSBRef(sym string) (base string, off int64, ok bool) {
