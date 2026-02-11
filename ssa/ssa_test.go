@@ -1330,7 +1330,7 @@ func TestAbiPrune(t *testing.T) {
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Zero(prog.Type(named, InGo))))
 
 	mainpkg := prog.NewPackage("main", "")
-	mainpkg.PruneAbiTypes(nil)
+	mainpkg.PruneAbiTypes(false, nil)
 	s := mainpkg.String()
 	if !strings.Contains(s, `@"*_llgo_foo/bar.Point" = constant { %"github.com/goplus/llgo/runtime/abi.PtrType",`) {
 		t.Fatal("error puretype", s)
@@ -1387,7 +1387,8 @@ func TestAbiTables(t *testing.T) {
 	bNE := fnNE.MakeBody(1)
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 
-	fn := pkg.InitAbiTypes(pkg.Path() + ".init$abitables")
+	mainpkg := prog.NewPackage("main", "")
+	fn := mainpkg.InitAbiTypes(pkg.Path() + ".init$abitables")
 	s := fn.impl.String()
 	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
 _llgo_0:
@@ -1396,5 +1397,68 @@ _llgo_0:
   ret void
 }`) {
 		t.Fatal("error abi tables", s)
+	}
+}
+
+func TestResolveLinkname(t *testing.T) {
+	tests := []struct {
+		name   string
+		link   map[string]string
+		input  string
+		want   string
+		panics bool
+	}{
+		{
+			name: "Normal",
+			link: map[string]string{
+				"foo": "C.bar",
+			},
+			input: "foo",
+			want:  "bar",
+		},
+		{
+			name: "MultipleLinks",
+			link: map[string]string{
+				"foo1": "C.bar1",
+				"foo2": "C.bar2",
+			},
+			input: "foo2",
+			want:  "bar2",
+		},
+		{
+			name:  "NoLink",
+			link:  map[string]string{},
+			input: "foo",
+			want:  "foo",
+		},
+		{
+			name: "InvalidLink",
+			link: map[string]string{
+				"foo": "invalid.bar",
+			},
+			input:  "foo",
+			panics: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.panics {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("want panic")
+					}
+				}()
+			}
+			prog := NewProgram(nil)
+			for k, v := range tt.link {
+				prog.SetLinkname(k, v)
+			}
+			got := prog.ResolveLinkname(tt.input)
+			if !tt.panics {
+				if got != tt.want {
+					t.Errorf("got %q, want %q", got, tt.want)
+				}
+			}
+		})
 	}
 }
