@@ -34,7 +34,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -263,14 +262,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	if conf.Mode == ModeTest {
 		cfg.Mode |= packages.NeedForTest
-	}
-
-	goroot, err := env.GOROOT()
-	check(err)
-	cfg.Overlay = make(map[string][]byte)
-	for file, src := range llruntime.OverlayFiles {
-		overlay := unsafe.Slice(unsafe.StringData(src), len(src))
-		cfg.Overlay[filepath.Join(goroot, "src", file)] = overlay
 	}
 
 	cl.EnableDebug(IsDbgEnabled())
