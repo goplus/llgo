@@ -615,7 +615,7 @@ func expandPlan9AsmConsts(src []byte, pkgTypes *types.Package, imports map[strin
 
 func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 	ctx.plan9asmOnce.Do(func() {
-		cfg := parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+		cfg := parsePlan9AsmPkgsEnv(Plan9ASMPkgs())
 		switch cfg.mode {
 		case plan9asmEnvNone:
 			// Explicitly disable all asm translation.
@@ -668,11 +668,11 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 }
 
 func plan9asmDisabledByEnv() bool {
-	return parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS")).mode == plan9asmEnvNone
+	return parsePlan9AsmPkgsEnv(Plan9ASMPkgs()).mode == plan9asmEnvNone
 }
 
 func plan9asmEnabledByEnv(pkgPath string) bool {
-	cfg := parsePlan9AsmPkgsEnv(os.Getenv("LLGO_PLAN9ASM_PKGS"))
+	cfg := parsePlan9AsmPkgsEnv(Plan9ASMPkgs())
 	if cfg.mode == plan9asmEnvAll {
 		return true
 	}
