@@ -1542,6 +1542,9 @@ const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const llgoFullRpath = "LLGO_FULL_RPATH"
 const llgoBuildCache = "LLGO_BUILD_CACHE"
 
+// for Plan9 asm translation debug
+const llgoPlan9ASMPkgs = "LLGO_PLAN9ASM_PKGS"
+
 const defaultWasmRuntime = "wasmtime"
 
 func defaultEnv(env string, defVal string) string {
@@ -1592,6 +1595,10 @@ func IsWasiThreadsEnabled() bool {
 
 func IsFullRpathEnabled() bool {
 	return isEnvOn(llgoFullRpath, true)
+}
+
+func Plan9ASMPkgs() string {
+	return defaultEnv(llgoPlan9ASMPkgs, "")
 }
 
 func WasmRuntime() string {
