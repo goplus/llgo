@@ -194,6 +194,7 @@ func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []by
 	if err != nil {
 		return nil, fmt.Errorf("%s: parse %s: %w", pkg.PkgPath, sfile, err)
 	}
+	file.Funcs = filterPlan9AsmFuncs(pkg.PkgPath, goos, goarch, file.Funcs, resolve)
 	sigs, err := sigsForAsmFile(pkg, file, resolve, goarch)
 	if err != nil {
 		return nil, fmt.Errorf("%s: sigs %s: %w", pkg.PkgPath, sfile, err)
@@ -222,6 +223,24 @@ func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []by
 		Signatures: sigs,
 		Functions:  funcs,
 	}, nil
+}
+
+func filterPlan9AsmFuncs(pkgPath, goos, goarch string, funcs []plan9asm.Func, resolve func(sym string) string) []plan9asm.Func {
+	if len(funcs) == 0 {
+		return funcs
+	}
+	keep := funcs[:0]
+	for _, fn := range funcs {
+		resolved := resolve(stripABISuffix(fn.Sym))
+		// Linux/arm64 syscall rawVforkSyscall is provided by runtime via linkname.
+		// Skip the asm body to avoid duplicate definitions and to use the llgo-specific
+		// implementation consistently across supported Go toolchains.
+		if pkgPath == "syscall" && goos == "linux" && goarch == "arm64" && resolved == "syscall.rawVforkSyscall" {
+			continue
+		}
+		keep = append(keep, fn)
+	}
+	return keep
 }
 
 type plan9AsmSigCacheKey struct {

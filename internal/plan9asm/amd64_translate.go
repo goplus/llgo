@@ -148,7 +148,14 @@ func (c *amd64Ctx) lowerRET() error {
 	}
 
 	if len(c.fpResults) == 1 {
-		v, err := c.loadFPResult(c.fpResults[0])
+		slot := c.fpResults[0]
+		var v string
+		var err error
+		if c.fpResWritten[slot.Index] || c.fpResAddrTaken[slot.Index] {
+			v, err = c.loadFPResult(slot)
+		} else {
+			v, err = c.loadRetRegTyped(slot.Index, slot.Type)
+		}
 		if err != nil {
 			return err
 		}
@@ -159,7 +166,13 @@ func (c *amd64Ctx) lowerRET() error {
 	cur := "undef"
 	last := ""
 	for _, slot := range c.fpResults {
-		v, err := c.loadFPResult(slot)
+		var v string
+		var err error
+		if c.fpResWritten[slot.Index] || c.fpResAddrTaken[slot.Index] {
+			v, err = c.loadFPResult(slot)
+		} else {
+			v, err = c.loadRetRegTyped(slot.Index, slot.Type)
+		}
 		if err != nil {
 			return err
 		}
