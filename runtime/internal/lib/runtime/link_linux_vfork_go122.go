@@ -1,13 +1,16 @@
-//go:build linux && arm64
-// +build linux,arm64
+//go:build linux && (amd64 || arm64) && go1.22
+// +build linux
+// +build amd64 arm64
+// +build go1.22
 
 package runtime
 
 import (
+	_ "unsafe"
+
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	cliteos "github.com/goplus/llgo/runtime/internal/clite/os"
 	clitesyscall "github.com/goplus/llgo/runtime/internal/clite/syscall"
-	_ "unsafe"
 )
 
 //go:linkname c_syscall C.syscall
