@@ -121,7 +121,7 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 	}
 
 	for path, wantSigs := range sfiles {
-		tr, err := TranslatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
+		tr, err := translatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
 		if err != nil {
 			t.Fatalf("translate %s: %v", path, err)
 		}
@@ -222,7 +222,7 @@ func TestSigsForStdlibInternalBytealgArm64_CoversAllTextSymbols(t *testing.T) {
 			t.Fatalf("unexpected empty funcs: %s", path)
 		}
 
-		tr, err := TranslatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
+		tr, err := translatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
 		if err != nil {
 			t.Fatalf("translate %s: %v", path, err)
 		}
