@@ -427,7 +427,7 @@ func (b Builder) abiUncommonMethods(t types.Type, name string, mset *types.Metho
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
-		if prog.abiTypePruning && !prog.methodIsInvoke(m) {
+		if prog.abiTypePruning && !prog.methodIsInvoke(i, m) {
 			tfn = prog.Nil(prog.VoidPtr()).impl
 			ifn = tfn
 		} else {
@@ -565,9 +565,12 @@ func (p Package) getAbiTypes(name string) Expr {
 	sort.Strings(names)
 	fields := make([]llvm.Value, len(names))
 	for i, name := range names {
-		g := p.doNewVar(name, prog.abiSymbol[name].typ)
-		g.impl.SetLinkage(llvm.ExternalLinkage)
-		g.impl.SetGlobalConstant(true)
+		g := p.VarOf(name)
+		if g == nil {
+			g = p.doNewVar(name, prog.abiSymbol[name].typ)
+			g.impl.SetLinkage(llvm.ExternalLinkage)
+			g.impl.SetGlobalConstant(true)
+		}
 		ptr := Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 			llvm.ConstInt(prog.Int32().ll, 0, false),
 			llvm.ConstInt(prog.Int32().ll, 0, false),
@@ -605,7 +608,7 @@ func (p Package) InitAbiTypes(fname string) Function {
 	return initFn
 }
 
-func (p Package) PruneAbiTypes(methodIsInvoke func(method *types.Selection) bool) {
+func (p Package) PruneAbiTypes(needAbiInit bool, methodIsInvoke func(index int, method *types.Selection) bool) {
 	prog := p.Prog
 	var names []string
 	for k, sym := range prog.abiSymbol {
@@ -615,10 +618,14 @@ func (p Package) PruneAbiTypes(methodIsInvoke func(method *types.Selection) bool
 		names = append(names, k)
 	}
 	sort.Strings(names)
-	p.SetResolveLinkname(prog.resolveLinkname)
+	p.SetResolveLinkname(prog.ResolveLinkname)
 	if methodIsInvoke == nil {
-		methodIsInvoke = func(method *types.Selection) bool {
-			if ms, ok := prog.invokeMethods[method.Obj().Name()]; ok {
+		methodIsInvoke = func(index int, method *types.Selection) bool {
+			name := method.Obj().Name()
+			if needAbiInit && ast.IsExported(name) {
+				return true
+			}
+			if ms, ok := prog.invokeMethods[name]; ok {
 				for m := range ms {
 					if types.Identical(m, method.Type()) {
 						return true
