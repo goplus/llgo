@@ -95,3 +95,42 @@ ok:
 		t.Fatalf("expected conditional branch in IR, got:\n%s", ll)
 	}
 }
+
+func TestAMD64AddlJLEUpdatesSignedFlag(t *testing.T) {
+	src := `
+TEXT ·foo(SB),NOSPLIT,$0-0
+	MOVL $0, BX
+	ADDL $1, BX
+	JLE done
+	RET
+done:
+	RET
+`
+	file, err := Parse(ArchAMD64, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolve := func(sym string) string {
+		sym = strings.TrimSuffix(sym, "<ABIInternal>")
+		sym = strings.TrimSuffix(sym, "<>")
+		if strings.HasPrefix(sym, "·") {
+			return "test/pkg." + strings.TrimPrefix(sym, "·")
+		}
+		sym = strings.ReplaceAll(sym, "∕", "/")
+		return strings.ReplaceAll(sym, "·", ".")
+	}
+	ll, err := Translate(file, Options{
+		TargetTriple: intllvm.GetTargetTriple(runtime.GOOS, runtime.GOARCH),
+		ResolveSym:   resolve,
+		Sigs: map[string]FuncSig{
+			"test/pkg.foo": {Name: "test/pkg.foo", Ret: Void},
+		},
+		Goarch: "amd64",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(ll, "icmp slt i32") {
+		t.Fatalf("expected ADDL to refresh signed flag for JLE, got:\n%s", ll)
+	}
+}

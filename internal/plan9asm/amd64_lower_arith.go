@@ -56,8 +56,19 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		if err := c.storeReg(dst, r); err != nil {
 			return true, false, err
 		}
-		// Keep Z updated for JZ/JNZ patterns.
-		c.setZFlagFromI64(r)
+		switch op {
+		case "ADDQ":
+			cf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp ult i64 %s, %s\n", cf, r, dv)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", cf, c.flagsCFSlot)
+		case "SUBQ":
+			cf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp ult i64 %s, %s\n", cf, dv, src)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", cf, c.flagsCFSlot)
+		default:
+			fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.flagsCFSlot)
+		}
+		c.setZSFlagsFromI64(r)
 		return true, false, nil
 
 	case "ADDL", "SUBL", "XORL", "ANDL", "ORL":
@@ -106,7 +117,19 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		if err := c.storeReg(dst, out); err != nil {
 			return true, false, err
 		}
-		c.setZFlagFromI64(out)
+		switch op {
+		case "ADDL":
+			cf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp ult i32 %%%s, %%%s\n", cf, x, dtr)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", cf, c.flagsCFSlot)
+		case "SUBL":
+			cf := c.newTmp()
+			fmt.Fprintf(c.b, "  %%%s = icmp ult i32 %%%s, %s\n", cf, dtr, s32)
+			fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", cf, c.flagsCFSlot)
+		default:
+			fmt.Fprintf(c.b, "  store i1 false, ptr %s\n", c.flagsCFSlot)
+		}
+		c.setZSFlagsFromI32("%" + x)
 		return true, false, nil
 
 	case "INCQ", "DECQ":
@@ -128,7 +151,7 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		if err := c.storeReg(r, out); err != nil {
 			return true, false, err
 		}
-		c.setZFlagFromI64(out)
+		c.setZSFlagsFromI64(out)
 		return true, false, nil
 
 	case "LEAQ", "LEAL":
@@ -468,7 +491,10 @@ func (c *amd64Ctx) lowerArith(op Op, ins Instr) (ok bool, terminated bool, err e
 		if err := c.storeReg(r, out); err != nil {
 			return true, false, err
 		}
-		c.setZFlagFromI64(out)
+		cf := c.newTmp()
+		fmt.Fprintf(c.b, "  %%%s = icmp ne i64 %s, 0\n", cf, v)
+		fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", cf, c.flagsCFSlot)
+		c.setZSFlagsFromI64(out)
 		return true, false, nil
 	}
 	return false, false, nil

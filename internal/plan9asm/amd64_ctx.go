@@ -515,6 +515,24 @@ func (c *amd64Ctx) setZFlagFromI64(v string) {
 	fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", t, c.flagsZSlot)
 }
 
+func (c *amd64Ctx) setZSFlagsFromI64(v string) {
+	z := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = icmp eq i64 %s, 0\n", z, v)
+	fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", z, c.flagsZSlot)
+	slt := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = icmp slt i64 %s, 0\n", slt, v)
+	fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", slt, c.flagsSltSlot)
+}
+
+func (c *amd64Ctx) setZSFlagsFromI32(v string) {
+	z := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = icmp eq i32 %s, 0\n", z, v)
+	fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", z, c.flagsZSlot)
+	slt := c.newTmp()
+	fmt.Fprintf(c.b, "  %%%s = icmp slt i32 %s, 0\n", slt, v)
+	fmt.Fprintf(c.b, "  store i1 %%%s, ptr %s\n", slt, c.flagsSltSlot)
+}
+
 func (c *amd64Ctx) setCmpFlags(a, b string) {
 	// Plan 9 CMPQ uses source-destination order for flag interpretation here:
 	// treat CMPQ a,b as deriving less-than from a<b.
