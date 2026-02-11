@@ -1,0 +1,4 @@
+reloc(directcall) __llgo_stub.funcptrarg.B -> funcptrarg.B
+reloc(directcall) funcptrarg.A -> funcptrarg.takes
+reloc(directref) funcptrarg.A -> __llgo_stub.funcptrarg.B
+reloc(directref) funcptrarg.init -> funcptrarg.init$guard

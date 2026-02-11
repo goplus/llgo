@@ -1,0 +1,5 @@
+reloc(directcall) initmulti.init -> initmulti.init#1
+reloc(directcall) initmulti.init -> initmulti.init#2
+reloc(directcall) initmulti.init#1 -> initmulti.A
+reloc(directcall) initmulti.init#2 -> initmulti.B
+reloc(directref) initmulti.init -> initmulti.init$guard

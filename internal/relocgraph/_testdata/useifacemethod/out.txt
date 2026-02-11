@@ -1,0 +1,5 @@
+reloc(directcall) useifacemethod.(*T).M -> useifacemethod.T.M
+reloc(directcall) useifacemethod.Use -> github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData
+reloc(directref) useifacemethod.Use -> github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData
+reloc(directref) useifacemethod.init -> useifacemethod.init$guard
+reloc(useifacemethod) name=M fntype=_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac useifacemethod.Use -> _llgo_iface$anEWstLioBmxcO9rxTXClbAzDIEQLw2tApwq0mcSt88

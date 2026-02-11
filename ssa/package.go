@@ -25,6 +25,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -702,6 +703,8 @@ type aPackage struct {
 	NeedAbiInit bool // need load all abi types for reflect make type
 
 	export map[string]string // pkgPath.nameInPkg => exportname
+
+	relocBuilder relocgraph.Builder
 }
 
 type Package = *aPackage
@@ -716,6 +719,15 @@ func (p Package) SetExport(name, export string) {
 
 func (p Package) ExportFuncs() map[string]string {
 	return p.export
+}
+
+// RelocRecord records one relocation-style edge emitted during SSA lowering.
+// It is consumed directly by higher-level DCE graph construction.
+type RelocRecord = relocgraph.Edge
+
+// RelocRecords returns reloc records collected for this package.
+func (p Package) RelocRecords() []RelocRecord {
+	return p.relocBuilder.Edges()
 }
 
 func (p Package) rtFunc(fnName string) Expr {
@@ -806,6 +818,39 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 	}
 	p.strs[v] = ret
 	return
+}
+
+// reloc helpers -------------------------------------------------------------
+
+func relocSymID(v llvm.Value, fallback string) relocgraph.SymID {
+	if fallback != "" {
+		return relocgraph.SymID(fallback)
+	}
+	return relocgraph.SymID(relocSymbolName(v))
+}
+
+func relocSymbolName(v llvm.Value) string {
+	sym := relocSymbolValue(v)
+	if sym.IsNil() {
+		return ""
+	}
+	return sym.Name()
+}
+
+func relocSymbolValue(v llvm.Value) llvm.Value {
+	if v.IsNil() {
+		return llvm.Value{}
+	}
+	if gv := v.IsAGlobalValue(); !gv.IsNil() {
+		return gv
+	}
+	if ce := v.IsAConstantExpr(); !ce.IsNil() {
+		switch ce.Opcode() {
+		case llvm.BitCast, llvm.PtrToInt, llvm.IntToPtr, llvm.GetElementPtr:
+			return relocSymbolValue(ce.Operand(0))
+		}
+	}
+	return llvm.Value{}
 }
 
 // -----------------------------------------------------------------------------

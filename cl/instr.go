@@ -52,6 +52,38 @@ func constBool(v ssa.Value) (ret bool, ok bool) {
 	return
 }
 
+func constStringArg(args []ssa.Value) (ret string, ok bool) {
+	for _, arg := range args {
+		if s, ok := constStr(arg); ok {
+			return s, true
+		}
+	}
+	return
+}
+
+func reflectMethodNameFromCall(call *ssa.CallCommon) (string, bool) {
+	if call == nil {
+		return "", false
+	}
+	if m := call.Method; m != nil {
+		if pkg := m.Pkg(); pkg != nil && pkg.Path() == "reflect" {
+			switch m.Name() {
+			case "Method", "MethodByName":
+				return m.Name(), true
+			}
+		}
+	}
+	if fn, ok := call.Value.(*ssa.Function); ok {
+		if fn.Pkg != nil && fn.Pkg.Pkg != nil && fn.Pkg.Pkg.Path() == "reflect" {
+			switch fn.Name() {
+			case "Method", "MethodByName":
+				return fn.Name(), true
+			}
+		}
+	}
+	return "", false
+}
+
 // func pystr(string) *py.Object
 func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
@@ -671,6 +703,17 @@ func (p *context) pkgNoInit(pkg *types.Package) bool {
 
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
 	cv := call.Value
+	if name, ok := reflectMethodNameFromCall(call); ok {
+		if name == "MethodByName" {
+			if s, ok := constStringArg(call.Args); ok {
+				b.MarkUseNamedMethod(s)
+			} else {
+				b.MarkReflectMethod()
+			}
+		} else {
+			b.MarkReflectMethod()
+		}
+	}
 	if mthd := call.Method; mthd != nil {
 		o := p.compileValue(b, cv)
 		fn := b.Imethod(o, mthd)

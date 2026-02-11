@@ -1,0 +1,4 @@
+reloc(directcall) varinit.init -> varinit.B
+reloc(directref) varinit.init -> varinit.B
+reloc(directref) varinit.init -> varinit.X
+reloc(directref) varinit.init -> varinit.init$guard

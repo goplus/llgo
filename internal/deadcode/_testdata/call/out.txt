@@ -1,0 +1,10 @@
+reach __llgo_argc
+reach __llgo_argv
+reach _start
+reach github.com/goplus/llgo/internal/deadcode/_testdata/call.A
+reach github.com/goplus/llgo/internal/deadcode/_testdata/call.B
+reach github.com/goplus/llgo/internal/deadcode/_testdata/call.init
+reach github.com/goplus/llgo/internal/deadcode/_testdata/call.init$guard
+reach github.com/goplus/llgo/internal/deadcode/_testdata/call.main
+reach main
+reach runtime.init

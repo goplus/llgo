@@ -1,0 +1,4 @@
+reloc(directcall) __llgo_stub.funcptrglobal.B -> funcptrglobal.B
+reloc(directref) funcptrglobal.init -> __llgo_stub.funcptrglobal.B
+reloc(directref) funcptrglobal.init -> funcptrglobal.F
+reloc(directref) funcptrglobal.init -> funcptrglobal.init$guard

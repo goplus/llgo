@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"unsafe"
@@ -41,6 +42,8 @@ import (
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
+	"github.com/goplus/llgo/internal/dcepass"
+	"github.com/goplus/llgo/internal/deadcode"
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
@@ -48,6 +51,7 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/monitor"
 	"github.com/goplus/llgo/internal/packages"
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
@@ -132,6 +136,7 @@ type Config struct {
 	Verbose       bool
 	PrintCommands bool
 	GenLL         bool // generate pkg .ll files
+	DCE           bool // enable experimental Go-like link-time DCE (build/run only)
 	CheckLLFiles  bool // check .ll files valid
 	CheckLinkArgs bool // check linkargs valid
 	ForceEspClang bool // force to use esp-clang
@@ -241,6 +246,31 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	// Enable different export names for TinyGo compatibility when using -target
 	if conf.Target != "" {
 		cl.EnableExportRename(true)
+	}
+
+	// DCE is enabled by default, and currently only gated by build mode.
+	if conf.DCE {
+		if conf.BuildMode != BuildModeExe {
+			conf.DCE = false
+		}
+	}
+
+	// DCE currently requires a full per-package reloc graph, which is assembled from:
+	//   1) semantic reloc edges emitted during SSA lowering, and
+	//   2) direct call/ref edges collected from the final LLVM module.
+	//
+	// In a cache-hit path we restore compiled artifacts (.a/.o and link metadata), but we
+	// do not yet restore the LLVM call/ref edge set used to build reloc graphs. That means
+	// cache-hit cannot guarantee a complete graph for whole-program reachability, and using
+	// partial graph data would risk incorrect deadcode results.
+	//
+	// ForceRebuild is therefore intentionally enabled under DCE for correctness: every
+	// package is rebuilt so both SSA and LLVM-side graph inputs are available and merged.
+	//
+	// This is a temporary trade-off. Once reloc graph metadata is persisted with package
+	// archives and can be recovered on cache-hit, this forced rebuild can be removed.
+	if conf.DCE {
+		conf.ForceRebuild = true
 	}
 
 	verbose := conf.Verbose
@@ -489,6 +519,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		mockable.Exit(1)
 	}
 
+	if conf.DCE && len(ctx.entryPkgs) > 0 {
+		allPkgs = append(allPkgs, ctx.entryPkgs...)
+	}
+
 	return allPkgs, nil
 }
 
@@ -526,6 +560,7 @@ type context struct {
 	initial        []*packages.Package
 	pkgs           map[*packages.Package]Package // cache for lookup
 	pkgByID        map[string]Package            // cache for lookup by pkg.ID
+	entryPkgs      []*aPackage
 	mode           Mode
 	nLibdir        int32
 	output         bool
@@ -872,7 +907,6 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 		if err := cmd.Compile(objArgs...); err != nil {
 			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
 		}
-
 		objFiles = append(objFiles, objFile)
 		os.Remove(baseName) // Remove the temp file we created for naming
 	}
@@ -939,9 +973,13 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
-	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
-	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	if ctx.buildConf.DCE {
+		if err := applyDCEOverrides(ctx, pkgs, entryPkg, verbose); err != nil {
+			return err
+		}
+	}
+	entryObjFile, err := exportObject(ctx, entryPkg.PkgPath, entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
@@ -983,6 +1021,156 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 func isRuntimePkg(pkgPath string) bool {
 	rtRoot := env.LLGoRuntimePkg
 	return pkgPath == rtRoot || strings.HasPrefix(pkgPath, rtRoot+"/")
+}
+
+func dceEntryRootsFromGraph(g *relocgraph.Graph, candidates []string) ([]relocgraph.SymID, error) {
+	if g == nil {
+		return nil, fmt.Errorf("dce graph is nil")
+	}
+	var roots []relocgraph.SymID
+	for _, name := range candidates {
+		node, ok := g.Nodes[relocgraph.SymID(name)]
+		if !ok {
+			continue
+		}
+		if node.IsDecl {
+			return nil, fmt.Errorf("dce root %q is declaration only", name)
+		}
+		roots = append(roots, relocgraph.SymID(name))
+	}
+	if len(roots) == 0 {
+		return nil, fmt.Errorf("dce requires at least one entry root (%s)", strings.Join(candidates, "/"))
+	}
+	return roots, nil
+}
+
+func dceEntryRootCandidates(conf *Config) []string {
+	candidates := []string{"main", "_start"}
+	if isWasmDCEConfig(conf) {
+		candidates = append(candidates, "__main_argc_argv")
+	}
+	return candidates
+}
+
+func isWasmDCEConfig(conf *Config) bool {
+	if conf == nil {
+		return false
+	}
+	if isWasmTarget(conf.Goos) || conf.Goarch == "wasm" {
+		return true
+	}
+	target := strings.ToLower(conf.Target)
+	return strings.HasPrefix(target, "wasi") || strings.HasPrefix(target, "wasm")
+}
+
+func dceSourceModules(pkgs []*aPackage) []gollvm.Module {
+	mods := make([]gollvm.Module, 0, len(pkgs))
+	seen := make(map[gollvm.Module]bool)
+	for _, pkg := range pkgs {
+		if pkg == nil || pkg.LPkg == nil {
+			continue
+		}
+		mod := pkg.LPkg.Module()
+		if mod.IsNil() || seen[mod] {
+			continue
+		}
+		seen[mod] = true
+		mods = append(mods, mod)
+	}
+	return mods
+}
+
+func applyDCEOverrides(ctx *context, pkgs []*aPackage, entryPkg *aPackage, verbose bool) error {
+	entryPkg.IRGraph = buildPackageIRGraph(entryPkg.LPkg)
+	ctx.entryPkgs = append(ctx.entryPkgs, entryPkg)
+
+	graph := mergePackageGraphs(ctx)
+	roots, err := dceEntryRootsFromGraph(graph, dceEntryRootCandidates(ctx.buildConf))
+	if err != nil {
+		return err
+	}
+	if verbose {
+		rootNames := make([]string, 0, len(roots))
+		for _, r := range roots {
+			rootNames = append(rootNames, string(r))
+		}
+		fmt.Fprintf(os.Stderr, "[dce] roots: %s\n", strings.Join(rootNames, ","))
+		nodes, edges, call, ref, reloc := graphSummary(graph)
+		fmt.Fprintf(os.Stderr, "[dce] graph nodes=%d edges=%d call=%d ref=%d reloc=%d\n", nodes, edges, call, ref, reloc)
+	}
+
+	res := deadcode.Analyze(graph, roots)
+
+	srcMods := dceSourceModules(pkgs)
+	if err := dcepass.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, res.ReachableMethods); err != nil {
+		return err
+	}
+
+	if verbose {
+		rmCount := 0
+		for _, m := range res.ReachableMethods {
+			rmCount += len(m)
+		}
+		fmt.Fprintf(os.Stderr, "[dce] analyze end (reachable=%d reachable_methods=%d)\n", len(res.Reachable), rmCount)
+		if rmCount > 0 {
+			for typ, idxs := range res.ReachableMethods {
+				var list []string
+				for idx := range idxs {
+					list = append(list, fmt.Sprintf("%d", idx))
+				}
+				sort.Strings(list)
+				fmt.Fprintf(os.Stderr, "  reachable_method: %s [%s]\n", typ, strings.Join(list, ","))
+			}
+		}
+	}
+	return nil
+}
+
+func buildPackageIRGraph(pkg llssa.Package) *relocgraph.Graph {
+	if pkg == nil {
+		return nil
+	}
+	return relocgraph.BuildPackageGraph(pkg.Module(), pkg.RelocRecords())
+}
+
+// mergePackageGraphs merges IRGraphs from all packages in ctx.
+func mergePackageGraphs(ctx *context) *relocgraph.Graph {
+	var graphs []*relocgraph.Graph
+	// Collect from all cached packages.
+	for _, pkg := range ctx.pkgs {
+		if pkg == nil || pkg.IRGraph == nil {
+			continue
+		}
+		graphs = append(graphs, pkg.IRGraph)
+	}
+	// Collect from entry packages (generated main module, etc.).
+	for _, pkg := range ctx.entryPkgs {
+		if pkg == nil || pkg.IRGraph == nil {
+			continue
+		}
+		graphs = append(graphs, pkg.IRGraph)
+	}
+	return relocgraph.MergeAll(graphs...)
+}
+
+func graphSummary(g *relocgraph.Graph) (nodes, edges, call, ref, reloc int) {
+	if g == nil {
+		return 0, 0, 0, 0, 0
+	}
+	nodes = len(g.Nodes)
+	edges = len(g.Relocs)
+	for _, r := range g.Relocs {
+		if r.Kind&relocgraph.EdgeCall != 0 {
+			call++
+		}
+		if r.Kind&relocgraph.EdgeRef != 0 {
+			ref++
+		}
+		if r.Kind&relocgraph.EdgeRelocMask != 0 {
+			reloc++
+		}
+	}
+	return nodes, edges, call, ref, reloc
 }
 
 func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose bool) error {
@@ -1169,6 +1357,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 			return fmt.Errorf("run LLVM passes failed for %v: %v", pkgPath, err)
 		}
 	}
+	if ctx.buildConf.DCE {
+		aPkg.IRGraph = buildPackageIRGraph(ret)
+	}
 
 	printCmds := ctx.shouldPrintCommands(verbose)
 	cgoLLFiles, cgoLdflags, err := buildCgo(ctx, aPkg, aPkg.Package.Syntax, externs, printCmds)
@@ -1292,9 +1483,10 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 
 type aPackage struct {
 	*packages.Package
-	SSA    *ssa.Package
-	AltPkg *packages.Cached
-	LPkg   llssa.Package
+	SSA     *ssa.Package
+	AltPkg  *packages.Cached
+	LPkg    llssa.Package
+	IRGraph *relocgraph.Graph
 
 	NeedRt     bool
 	NeedPyInit bool

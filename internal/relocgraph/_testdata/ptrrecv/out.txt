@@ -1,0 +1,5 @@
+reloc(directcall) ptrrecv.(*T).M -> ptrrecv.B
+reloc(directcall) ptrrecv.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directcall) ptrrecv.A -> ptrrecv.(*T).M
+reloc(directref) ptrrecv.A -> github.com/goplus/llgo/runtime/internal/runtime.AllocZ
+reloc(directref) ptrrecv.init -> ptrrecv.init$guard

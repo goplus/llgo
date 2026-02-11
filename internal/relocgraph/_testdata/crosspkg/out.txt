@@ -1,0 +1,3 @@
+reloc(directcall) crosspkg.A -> github.com/goplus/llgo/internal/relocgraph/_testdata/crosspkg/foo.B
+reloc(directcall) crosspkg.init -> github.com/goplus/llgo/internal/relocgraph/_testdata/crosspkg/foo.init
+reloc(directref) crosspkg.init -> crosspkg.init$guard

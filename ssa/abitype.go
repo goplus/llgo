@@ -24,6 +24,7 @@ import (
 	"go/types"
 	"sort"
 
+	"github.com/goplus/llgo/internal/relocgraph"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
@@ -123,6 +124,71 @@ func (b Builder) rtClosure(name string) Expr {
 	typ := b.Prog.Type(fn.raw.Type, InGo)
 	fn = checkExpr(fn, typ.raw.Type, b)
 	return fn
+}
+
+func (b Builder) recordTypeRef(owner llvm.Value, child types.Type) {
+	if b.Pkg == nil || owner.IsNil() {
+		return
+	}
+	childName, _ := b.Pkg.abi.TypeName(child)
+	b.Pkg.relocBuilder.AddEdge(RelocRecord{
+		Kind:   relocgraph.EdgeRelocTypeRef,
+		Owner:  relocSymID(owner, ""),
+		Target: relocSymID(llvm.Value{}, childName),
+	})
+}
+
+func (b Builder) recordTypeRefs(owner llvm.Value, t types.Type) {
+	if b.Pkg == nil || owner.IsNil() {
+		return
+	}
+	ut := types.Unalias(t)
+	if named, ok := ut.(*types.Named); ok {
+		// Named types record PtrToThis of the named type itself, but should
+		// only record direct child types from the underlying form.
+		b.recordTypeRef(owner, types.NewPointer(named))
+		b.recordTypeRefsDirect(owner, named.Underlying())
+		return
+	}
+	b.recordTypeRefsDirect(owner, ut)
+	if _, ok := ut.(*types.Pointer); !ok {
+		b.recordTypeRef(owner, types.NewPointer(t))
+	}
+}
+
+func (b Builder) recordTypeRefsDirect(owner llvm.Value, t types.Type) {
+	ut := types.Unalias(t)
+	switch typ := ut.(type) {
+	case *types.Pointer:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Chan:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Slice:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Array:
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Map:
+		b.recordTypeRef(owner, typ.Key())
+		b.recordTypeRef(owner, typ.Elem())
+	case *types.Signature:
+		for i := 0; i < typ.Params().Len(); i++ {
+			b.recordTypeRef(owner, typ.Params().At(i).Type())
+		}
+		for i := 0; i < typ.Results().Len(); i++ {
+			b.recordTypeRef(owner, typ.Results().At(i).Type())
+		}
+	case *types.Struct:
+		for i := 0; i < typ.NumFields(); i++ {
+			b.recordTypeRef(owner, typ.Field(i).Type())
+		}
+	case *types.Interface:
+		n := typ.NumMethods()
+		for i := 0; i < n; i++ {
+			f := typ.Method(i)
+			ftyp := funcType(b.Prog, f.Type())
+			b.recordTypeRef(owner, ftyp)
+		}
+	}
 }
 
 /*
@@ -401,7 +467,7 @@ type Method struct {
 }
 */
 
-func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Value {
+func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet, owner llvm.Value) llvm.Value {
 	prog := b.Prog
 	ft := prog.rtType("Method")
 	n := mset.Len()
@@ -415,6 +481,10 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		m := mset.At(i)
 		obj := m.Obj()
 		mName := obj.Name()
+		mPkg := pkg
+		if !token.IsExported(mName) {
+			mPkg = obj.Pkg()
+		}
 		name := b.Str(mName).impl
 		if !token.IsExported(mName) {
 			name = b.Str(abi.FullName(obj.Pkg(), mName)).impl
@@ -431,10 +501,40 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		var values []llvm.Value
 		values = append(values, name)
 		ftyp := funcType(prog, m.Type())
-		values = append(values, b.abiType(ftyp).impl)
+		mtypVal := b.abiType(ftyp).impl
+		values = append(values, mtypVal)
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+
+		// Record reloc metadata (method offsets).
+		if b.Pkg != nil {
+			pkg := b.Pkg
+			// For unexported methods, use fully qualified name to match useifacemethod relocs.
+			infoName := mName
+			if !token.IsExported(mName) && mPkg != nil {
+				infoName = abi.FullName(mPkg, mName)
+			}
+			pkg.relocBuilder.AddEdge(RelocRecord{
+				Kind:   relocgraph.EdgeRelocMethodOff,
+				Owner:  relocSymID(owner, ""),
+				Target: relocSymID(mtypVal, ""),
+				Addend: int64(i),
+				Name:   infoName,
+			})
+			pkg.relocBuilder.AddEdge(RelocRecord{
+				Kind:   relocgraph.EdgeRelocMethodOff,
+				Owner:  relocSymID(owner, ""),
+				Target: relocSymID(ifn, ""),
+				Addend: int64(i),
+			})
+			pkg.relocBuilder.AddEdge(RelocRecord{
+				Kind:   relocgraph.EdgeRelocMethodOff,
+				Owner:  relocSymID(owner, ""),
+				Target: relocSymID(tfn, ""),
+				Addend: int64(i),
+			})
+		}
 	}
 	return llvm.ConstArray(ft.ll, fields)
 }
@@ -493,6 +593,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			typ = types.NewStruct(fields, nil)
 		}
 		g = pkg.doNewVar(name, prog.Type(types.NewPointer(typ), InGo))
+		b.recordTypeRefs(g.impl, t)
 		fields := b.abiCommonFields(t, name, hasUncommon)
 		if exts := b.abiExtendedFields(t, name); len(exts) != 0 {
 			fields = append([]llvm.Value{
@@ -503,7 +604,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			fields = []llvm.Value{
 				llvm.ConstNamedStruct(prog.Type(rt, InGo).ll, fields),
 				b.abiUncommonType(t, mset),
-				b.abiUncommonMethods(t, mset),
+				b.abiUncommonMethods(t, mset, g.impl),
 			}
 		}
 		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
