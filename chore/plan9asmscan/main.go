@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/goplus/llgo/internal/plan9asm"
+	"github.com/goplus/plan9asm"
 )
 
 type pkgJSON struct {

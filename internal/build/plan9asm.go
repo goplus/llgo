@@ -17,10 +17,10 @@ import (
 
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/packages"
-	"github.com/goplus/llgo/internal/plan9asm"
 	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
 	llruntime "github.com/goplus/llgo/runtime"
 	gllvm "github.com/goplus/llvm"
+	"github.com/goplus/plan9asm"
 )
 
 type Plan9AsmFunctionInfo struct {
