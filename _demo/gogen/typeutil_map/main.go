@@ -7,7 +7,6 @@ import (
 	"go/types"
 	"strings"
 
-	"github.com/goplus/gogen/internal/typesalias"
 	"github.com/goplus/gogen/typeutil"
 )
 
@@ -119,16 +118,12 @@ func testHasherBasicTypes() {
 	}
 	fmt.Println("  Hash(identical structs) match [PASS]")
 
-	if typesalias.Support {
-		obj := types.NewTypeName(token.NoPos, pkg, "AliasInt", nil)
-		alias := typesalias.NewAlias(obj, types.Typ[types.Int])
-		if h.Hash(alias) == 0 {
-			panic("hash alias should be non-zero")
-		}
-		fmt.Println("  Hash(alias) non-zero [PASS]")
-	} else {
-		fmt.Println("  (skipping alias test - not supported)")
+	obj := types.NewTypeName(token.NoPos, pkg, "AliasInt", nil)
+	alias := types.NewAlias(obj, types.Typ[types.Int])
+	if h.Hash(alias) == 0 {
+		panic("hash alias should be non-zero")
 	}
+	fmt.Println("  Hash(alias) non-zero [PASS]")
 }
 
 func main() {

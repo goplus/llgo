@@ -7,8 +7,6 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-
-	"github.com/goplus/gogen/internal/typesalias"
 )
 
 // Minimal subset used by ast_test.go.
@@ -39,7 +37,7 @@ func embedName(typ types.Type) string {
 		return t.Name()
 	case *types.Named:
 		return t.Obj().Name()
-	case *typesalias.Alias:
+	case *types.Alias:
 		return t.Obj().Name()
 	}
 	return ""
@@ -60,7 +58,7 @@ retry:
 		}
 		typ = t.tBound
 		goto retry
-	case *typesalias.Alias:
+	case *types.Alias:
 		return &ast.Ident{Name: t.Obj().Name()}
 	}
 	panic(fmt.Sprintf("TODO: toType unsupported - %T", typ))
@@ -94,7 +92,7 @@ func testToType() {
 
 func testToTypeAlias() {
 	fmt.Println("=== testToTypeAlias ===")
-	alias := typesalias.NewAlias(types.NewTypeName(token.NoPos, nil, "Int", nil), types.Typ[types.Int])
+	alias := types.NewAlias(types.NewTypeName(token.NoPos, nil, "Int", nil), types.Typ[types.Int])
 	expr := toType(alias)
 	if ident, ok := expr.(*ast.Ident); !ok || ident.Name != "Int" {
 		panic(fmt.Sprintf("testToTypeAlias: bad alias %#v", expr))
@@ -111,8 +109,8 @@ func testEmbedName() {
 		{name: "basic type", typ: types.Typ[types.Int], want: "int"},
 		{name: "named type", typ: types.NewNamed(types.NewTypeName(0, nil, "MyInt", nil), types.Typ[types.Int], nil), want: "MyInt"},
 		{name: "pointer to named type", typ: types.NewPointer(types.NewNamed(types.NewTypeName(0, nil, "MyInt", nil), types.Typ[types.Int], nil)), want: "MyInt"},
-		{name: "alias type", typ: typesalias.NewAlias(types.NewTypeName(0, nil, "MyInt", nil), types.Typ[types.Int]), want: "MyInt"},
-		{name: "pointer to alias type", typ: types.NewPointer(typesalias.NewAlias(types.NewTypeName(0, nil, "MyInt", nil), types.Typ[types.Int])), want: "MyInt"},
+		{name: "alias type", typ: types.NewAlias(types.NewTypeName(0, nil, "MyInt", nil), types.Typ[types.Int]), want: "MyInt"},
+		{name: "pointer to alias type", typ: types.NewPointer(types.NewAlias(types.NewTypeName(0, nil, "MyInt", nil), types.Typ[types.Int])), want: "MyInt"},
 		{name: "struct type (anonymous)", typ: types.NewStruct(nil, nil), want: ""},
 	}
 	for _, tt := range tests {

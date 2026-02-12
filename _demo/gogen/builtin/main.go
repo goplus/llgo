@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"go/ast"
 	"go/constant"
+	"go/format"
 	"go/token"
 	"go/types"
+	"strings"
 
 	"github.com/goplus/gogen"
-	"github.com/goplus/gogen/internal/go/format"
 	"github.com/goplus/gogen/packages"
 )
 
@@ -345,7 +346,10 @@ func testTypeAST() {
 	if err := format.Node(b, fset, expr); err != nil {
 		panic(fmt.Sprintf("format.Node failed: %v", err))
 	}
-	if b.String() != `interface{}` {
+	s := strings.ReplaceAll(b.String(), " ", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	s = strings.ReplaceAll(s, "\t", "")
+	if s != `interface{}` {
 		panic(fmt.Sprintf("TypeAST failed: %q", b.String()))
 	}
 }

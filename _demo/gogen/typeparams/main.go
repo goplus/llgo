@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -16,7 +17,6 @@ import (
 	"sync"
 
 	"github.com/goplus/gogen"
-	"github.com/goplus/gogen/internal/goxdbg"
 	"github.com/goplus/gogen/packages"
 )
 
@@ -260,7 +260,11 @@ func checkMethodToFunc(pkg *gogen.Package, typ types.Type, name, code string) {
 			panic(fmt.Sprintf("MethodToFunc: ResultType: %v, Expected: %v", recv.Type(), typ))
 		}
 	}
-	if v := goxdbg.Format(pkg.Fset, ret.Val); v != code {
+	var b bytes.Buffer
+	if err := format.Node(&b, pkg.Fset, ret.Val); err != nil {
+		panic(fmt.Sprintf("format.Node failed: %v", err))
+	}
+	if v := b.String(); v != code {
 		panic(fmt.Sprintf("MethodToFunc:\nResult:\n%s\nExpected:\n%s\n", v, code))
 	}
 }
