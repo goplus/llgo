@@ -29,7 +29,7 @@ func TestGenMainModuleExecutable(t *testing.T) {
 		},
 	}
 	pkg := &packages.Package{PkgPath: "example.com/foo", ExportFile: "foo.a"}
-	mod := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{rtInit: true, pyInit: true, abiInit: true})
+	mod := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{rtInit: true, pyInit: true, abiInit: llssa.ReflectMethodDynamic})
 	if mod.ExportFile != "foo.a-main" {
 		t.Fatalf("unexpected export file: %s", mod.ExportFile)
 	}

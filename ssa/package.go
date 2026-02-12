@@ -727,12 +727,28 @@ type aPackage struct {
 
 	iRoutine int
 
-	NeedRuntime bool
-	NeedPyInit  bool
-	NeedAbiInit bool // need load all abi types for reflect make type
+	NeedRuntime   bool
+	NeedPyInit    bool
+	NeedAbiInit   int // need load all abi types for reflect make type
+	MethodByIndex map[int]none
+	MethodByName  map[string]none
 
 	export map[string]string // pkgPath.nameInPkg => exportname
 }
+
+const (
+	ReflectArrayOf = 1 << iota
+	ReflectChanOf
+	ReflectFuncOf
+	ReflectMapOf
+	ReflectPointerTo
+	ReflectSliceOf
+	ReflectStructOf
+	ReflectMethodByIndex
+	ReflectMethodByName
+	ReflectMethodDynamic
+	ReflectMethodMask = ReflectMethodByIndex | ReflectMethodByName | ReflectMethodDynamic
+)
 
 type Package = *aPackage
 

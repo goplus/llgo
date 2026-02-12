@@ -1330,7 +1330,7 @@ func TestAbiPrune(t *testing.T) {
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Zero(prog.Type(named, InGo))))
 
 	mainpkg := prog.NewPackage("main", "")
-	mainpkg.PruneAbiTypes(false, nil)
+	mainpkg.PruneAbiTypes(ReflectMethodDynamic, nil)
 	s := mainpkg.String()
 	if !strings.Contains(s, `@"*_llgo_foo/bar.Point" = constant { %"github.com/goplus/llgo/runtime/abi.PtrType",`) {
 		t.Fatal("error puretype", s)
@@ -1388,7 +1388,7 @@ func TestAbiTables(t *testing.T) {
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 
 	mainpkg := prog.NewPackage("main", "")
-	fn := mainpkg.InitAbiTypes(pkg.Path() + ".init$abitables")
+	fn := mainpkg.InitAbiTypes(ReflectStructOf, pkg.Path()+".init$abitables")
 	s := fn.impl.String()
 	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
 _llgo_0:
