@@ -554,13 +554,43 @@ type AbiSymbol struct {
 	uncommon bool
 }
 
-func (p Package) getAbiTypes(name string) Expr {
+func (p Package) getAbiTypes(abiInit int, name string) Expr {
 	prog := p.Prog
-	names := make([]string, len(prog.abiSymbol))
-	n := 0
-	for k, _ := range prog.abiSymbol {
-		names[n] = k
-		n++
+	var names []string
+	for k, sym := range prog.abiSymbol {
+		switch sym.raw.(type) {
+		case *types.Array:
+			if abiInit&ReflectArrayOf == 0 {
+				continue
+			}
+		case *types.Chan:
+			if abiInit&ReflectChanOf == 0 {
+				continue
+			}
+		case *types.Signature:
+			if abiInit&ReflectFuncOf == 0 && abiInit&ReflectMethodMask == 0 {
+				continue
+			}
+		case *types.Map:
+			if abiInit&ReflectMapOf == 0 {
+				continue
+			}
+		case *types.Pointer:
+			if abiInit&ReflectPointerTo == 0 {
+				continue
+			}
+		case *types.Slice:
+			if abiInit&ReflectSliceOf == 0 {
+				continue
+			}
+		case *types.Struct:
+			if abiInit&ReflectStructOf == 0 {
+				continue
+			}
+		default:
+			continue
+		}
+		names = append(names, k)
 	}
 	sort.Strings(names)
 	fields := make([]llvm.Value, len(names))
@@ -595,7 +625,7 @@ func (p Package) getAbiTypes(name string) Expr {
 	return g.Expr
 }
 
-func (p Package) InitAbiTypes(fname string) Function {
+func (p Package) InitAbiTypes(abiInit int, fname string) Function {
 	if len(p.Prog.abiSymbol) == 0 {
 		return nil
 	}
@@ -603,12 +633,12 @@ func (p Package) InitAbiTypes(fname string) Function {
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
 	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
-	b.Store(g.Expr, b.Load(p.getAbiTypes(fname)))
+	b.Store(g.Expr, b.Load(p.getAbiTypes(abiInit, fname)))
 	b.Return()
 	return initFn
 }
 
-func (p Package) PruneAbiTypes(needAbiInit bool, methodIsInvoke func(index int, method *types.Selection) bool) {
+func (p Package) PruneAbiTypes(needAbiInit int, methodIsInvoke func(index int, method *types.Selection) bool) {
 	prog := p.Prog
 	var names []string
 	for k, sym := range prog.abiSymbol {
@@ -622,7 +652,7 @@ func (p Package) PruneAbiTypes(needAbiInit bool, methodIsInvoke func(index int, 
 	if methodIsInvoke == nil {
 		methodIsInvoke = func(index int, method *types.Selection) bool {
 			name := method.Obj().Name()
-			if needAbiInit && ast.IsExported(name) {
+			if needAbiInit != 0 && ast.IsExported(name) {
 				return true
 			}
 			if ms, ok := prog.invokeMethods[name]; ok {

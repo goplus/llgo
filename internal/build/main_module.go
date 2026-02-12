@@ -42,10 +42,12 @@ import (
 
 // genConfig controls the code generation behavior for the main module.
 type genConfig struct {
-	rtInit   bool
-	pyInit   bool
-	abiInit  bool
-	abiPrune bool
+	rtInit        bool
+	pyInit        bool
+	abiInit       int
+	abiPrune      bool
+	methodByIndex map[int]none
+	methodByName  map[string]none
 }
 
 // genMainModule generates the main entry module for an llgo program.
@@ -99,15 +101,29 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 		chaGraph := cha.CallGraph(progSSA)
 		invoked := buildInvokeIndex(chaGraph)
 		mainPkg.PruneAbiTypes(cfg.abiInit, func(index int, method *types.Selection) bool {
-			if cfg.abiInit && ast.IsExported(method.Obj().Name()) {
-				return true
+			name := method.Obj().Name()
+			if ast.IsExported(name) {
+				if cfg.abiInit&llssa.ReflectMethodDynamic != 0 {
+					return true
+				} else {
+					if cfg.abiInit&llssa.ReflectMethodByIndex != 0 {
+						if _, ok := cfg.methodByIndex[index]; ok {
+							return true
+						}
+					}
+					if cfg.abiInit&llssa.ReflectMethodByName != 0 {
+						if _, ok := cfg.methodByName[name]; ok {
+							return true
+						}
+					}
+				}
 			}
 			mth := progSSA.MethodValue(method)
 			if _, ok := invoked[mth]; ok {
 				return true
 			}
 			for v := range invoked {
-				if v.Name() == mth.Name() {
+				if v.Name() == name {
 					if !types.Identical(prog.Patch(v.Type().(*types.Signature).Recv().Type()), method.Type().(*types.Signature).Recv().Type()) {
 						continue
 					}
@@ -122,8 +138,8 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 	}
 
 	var abiInit llssa.Function
-	if cfg.abiInit {
-		abiInit = mainPkg.InitAbiTypes("init$abitypes")
+	if cfg.abiInit != 0 {
+		abiInit = mainPkg.InitAbiTypes(cfg.abiInit, "init$abitypes")
 	}
 
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
