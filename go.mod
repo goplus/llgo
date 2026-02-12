@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/goplus/plan9asm v0.0.0-20260211043856-d803f045e1f9
+	github.com/goplus/plan9asm v0.0.0-20260212064924-71ea5584065b
 	github.com/marcinbor85/gohex v0.0.0-20210308104911-55fb1c624d84
 	github.com/mattn/go-tty v0.0.7
 	github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1
