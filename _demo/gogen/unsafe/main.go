@@ -53,10 +53,10 @@ func testUnsafeSlice() {
 		Val(1).Val(2).Val(3).ArrayLit(types.NewArray(types.Typ[types.Int], 3), 3).
 		EndInit(1).
 		NewVarStart(types.NewSlice(types.Typ[types.Int]), "s").
-		Val(pkg.Unsafe().Ref("Slice")).VarVal("v").Val(0).Index(1, false).UnaryOp(token.AND).Val(3).CallWith(2, 0).
+		Val(pkg.Unsafe().Ref("Slice")).VarVal("v").Val(0).Index(1, 0).UnaryOp(token.AND).Val(3).CallWith(2, 0, 0).
 		EndInit(1).
 		NewVarStart(types.NewPointer(types.Typ[types.Int]), "p").
-		Val(pkg.Unsafe().Ref("SliceData")).VarVal("s").CallWith(1, 0).
+		Val(pkg.Unsafe().Ref("SliceData")).VarVal("s").CallWith(1, 0, 0).
 		EndInit(1).
 		End()
 
@@ -82,10 +82,10 @@ func testUnsafeString() {
 		Val('a').Val('b').Val('c').ArrayLit(types.NewArray(types.Typ[types.Byte], 3), 3).
 		EndInit(1).
 		NewVarStart(types.Typ[types.String], "s").
-		Val(pkg.Unsafe().Ref("String")).VarVal("v").Val(0).Index(1, false).UnaryOp(token.AND).Val(3).CallWith(2, 0).
+		Val(pkg.Unsafe().Ref("String")).VarVal("v").Val(0).Index(1, 0).UnaryOp(token.AND).Val(3).CallWith(2, 0, 0).
 		EndInit(1).
 		NewVarStart(types.NewPointer(types.Typ[types.Byte]), "p").
-		Val(pkg.Unsafe().Ref("StringData")).VarVal("s").CallWith(1, 0).
+		Val(pkg.Unsafe().Ref("StringData")).VarVal("s").CallWith(1, 0, 0).
 		EndInit(1).
 		End()
 

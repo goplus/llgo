@@ -33,13 +33,13 @@ func testCircularEmbeddedFieldLookup() {
 	cb.InternalStack().Push(&gogen.Element{Type: typeA})
 	fmt.Println("  Pushed Element{Type: typeA} to stack")
 
-	kind, _ := cb.Member("any", gogen.MemberFlagVal)
+	kind, _ := cb.Member("any", 0, gogen.MemberFlagVal)
 	if kind != gogen.MemberInvalid {
 		panic("Member should return MemberInvalid for circular embedding (MemberFlagVal)")
 	}
 	fmt.Println("  Member('any', MemberFlagVal) = MemberInvalid [PASS]")
 
-	kind, _ = cb.Member("any", gogen.MemberFlagRef)
+	kind, _ = cb.Member("any", 0, gogen.MemberFlagRef)
 	if kind != gogen.MemberInvalid {
 		panic("Member should return MemberInvalid for circular embedding (MemberFlagRef)")
 	}
