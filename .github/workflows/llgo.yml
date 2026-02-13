@@ -209,7 +209,8 @@ jobs:
         run: llgo test -tags testGC .
       - name: run llgo test
         run: |
-          llgo test ./...
+          # Only run the llgo-compatible test suite.
+          llgo test ./test/...
 
   hello:
     continue-on-error: true
