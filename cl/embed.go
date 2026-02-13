@@ -1,11 +1,11 @@
 package cl
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
 	"io/fs"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	llssa "github.com/goplus/llgo/ssa"
+	"golang.org/x/mod/module"
 	"golang.org/x/tools/go/ssa"
 )
 
@@ -49,6 +50,7 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 			continue
 		}
 		pkgDir := filepath.Dir(fileName)
+		hasEmbedImport := fileImportsEmbed(file)
 		for _, decl := range file.Decls {
 			gen, ok := decl.(*ast.GenDecl)
 			if !ok || gen.Tok != token.VAR || len(gen.Specs) != 1 {
@@ -58,14 +60,22 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 			if !ok || len(spec.Names) != 1 {
 				continue
 			}
-			patterns := parseEmbedPatterns(gen.Doc, spec.Doc)
-			if len(patterns) == 0 {
+			patterns, hasDirective, err := parseEmbedPatterns(gen.Doc, spec.Doc)
+			if err != nil {
+				pos := p.fset.PositionFor(spec.Pos(), false)
+				panic(fmt.Sprintf("%s: %v", pos, err))
+			}
+			if !hasDirective {
 				continue
+			}
+			if !hasEmbedImport {
+				pos := p.fset.PositionFor(spec.Pos(), false)
+				panic(fmt.Sprintf("%s: go:embed only allowed in Go files that import \"embed\"", pos))
 			}
 			files, err := resolveEmbedPatterns(pkgDir, patterns)
 			if err != nil {
-				log.Printf("warning: parse //go:embed for %s failed: %v", spec.Names[0].Name, err)
-				continue
+				pos := p.fset.PositionFor(spec.Pos(), false)
+				panic(fmt.Sprintf("%s: %v", pos, err))
 			}
 			byVar[spec.Names[0].Name] = embedVarData{files: files}
 		}
@@ -73,8 +83,20 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 	p.embedMap = byVar
 }
 
-func parseEmbedPatterns(docs ...*ast.CommentGroup) []string {
-	var patterns []string
+func fileImportsEmbed(file *ast.File) bool {
+	for _, imp := range file.Imports {
+		if imp == nil || imp.Path == nil {
+			continue
+		}
+		path, err := strconv.Unquote(imp.Path.Value)
+		if err == nil && path == "embed" {
+			return true
+		}
+	}
+	return false
+}
+
+func parseEmbedPatterns(docs ...*ast.CommentGroup) (patterns []string, hasDirective bool, err error) {
 	for _, doc := range docs {
 		if doc == nil {
 			continue
@@ -84,26 +106,48 @@ func parseEmbedPatterns(docs ...*ast.CommentGroup) []string {
 				continue
 			}
 			line := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
-			if !strings.HasPrefix(line, "go:embed") {
+			args, ok := parseEmbedDirective(line)
+			if !ok {
 				continue
 			}
-			args := strings.TrimSpace(strings.TrimPrefix(line, "go:embed"))
+			hasDirective = true
 			if args == "" {
-				continue
+				return nil, hasDirective, fmt.Errorf("invalid //go:embed: missing pattern")
 			}
-			for _, f := range splitEmbedArgs(args) {
+			fields, err := splitEmbedArgs(args)
+			if err != nil {
+				return nil, hasDirective, err
+			}
+			for _, f := range fields {
 				if uq, err := strconv.Unquote(f); err == nil {
 					patterns = append(patterns, uq)
 				} else {
+					if len(f) > 0 && (f[0] == '"' || f[0] == '`') {
+						return nil, hasDirective, fmt.Errorf("invalid //go:embed quoted pattern %q", f)
+					}
 					patterns = append(patterns, f)
 				}
 			}
 		}
 	}
-	return patterns
+	return patterns, hasDirective, nil
 }
 
-func splitEmbedArgs(s string) []string {
+func parseEmbedDirective(line string) (args string, ok bool) {
+	if !strings.HasPrefix(line, "go:embed") {
+		return "", false
+	}
+	if len(line) == len("go:embed") {
+		return "", true
+	}
+	ch := line[len("go:embed")]
+	if ch != ' ' && ch != '\t' {
+		return "", false
+	}
+	return strings.TrimSpace(line[len("go:embed"):]), true
+}
+
+func splitEmbedArgs(s string) ([]string, error) {
 	var out []string
 	for i := 0; i < len(s); {
 		for i < len(s) && (s[i] == ' ' || s[i] == '\t') {
@@ -116,9 +160,11 @@ func splitEmbedArgs(s string) []string {
 		if s[i] == '"' || s[i] == '`' {
 			quote := s[i]
 			i++
+			closed := false
 			for i < len(s) {
 				if s[i] == quote {
 					i++
+					closed = true
 					break
 				}
 				if quote == '"' && s[i] == '\\' && i+1 < len(s) {
@@ -126,6 +172,9 @@ func splitEmbedArgs(s string) []string {
 					continue
 				}
 				i++
+			}
+			if !closed {
+				return nil, fmt.Errorf("invalid //go:embed quoted pattern")
 			}
 			out = append(out, s[start:i])
 			continue
@@ -135,26 +184,26 @@ func splitEmbedArgs(s string) []string {
 		}
 		out = append(out, s[start:i])
 	}
-	return out
+	return out, nil
 }
 
 func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, error) {
-	seen := make(map[string][]byte)
+	var pat string
 
-	addFile := func(abs string) error {
-		info, err := os.Stat(abs)
-		if err != nil {
-			return err
-		}
-		if info.IsDir() || !info.Mode().IsRegular() {
+	wrapErr := func(err error) error {
+		if err == nil {
 			return nil
 		}
-		rel, err := filepath.Rel(pkgDir, abs)
-		if err != nil {
-			return err
-		}
-		rel = filepath.ToSlash(rel)
-		if strings.HasPrefix(rel, "../") || rel == ".." {
+		return fmt.Errorf("pattern %s: %w", pat, err)
+	}
+
+	seen := make(map[string][]byte)
+	have := make(map[string]int)
+	dirOK := make(map[string]bool)
+	pid := 0
+
+	addFile := func(abs, rel string) error {
+		if _, ok := seen[rel]; ok {
 			return nil
 		}
 		data, err := os.ReadFile(abs)
@@ -165,27 +214,87 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 		return nil
 	}
 
-	for _, pat := range patterns {
+	for _, pat = range patterns {
+		pid++
 		all := false
 		if strings.HasPrefix(pat, "all:") {
 			all = true
 			pat = strings.TrimPrefix(pat, "all:")
 		}
-		abs := filepath.Join(pkgDir, filepath.FromSlash(pat))
-		if hasGlobMeta(pat) {
-			matches, err := filepath.Glob(abs)
-			if err != nil {
-				return nil, err
-			}
-			for _, m := range matches {
-				if err := addEmbedPath(pkgDir, m, all, addFile); err != nil {
-					return nil, err
-				}
-			}
-			continue
+		if _, err := path.Match(pat, ""); err != nil || !validEmbedPattern(pat) {
+			return nil, wrapErr(fmt.Errorf("invalid pattern syntax"))
 		}
-		if err := addEmbedPath(pkgDir, abs, all, addFile); err != nil {
-			return nil, err
+
+		absPattern := filepath.Join(pkgDir, filepath.FromSlash(pat))
+		matches, err := filepath.Glob(absPattern)
+		if err != nil {
+			return nil, wrapErr(err)
+		}
+
+		listCount := 0
+		for _, m := range matches {
+			info, rel, err := checkEmbedPath(pkgDir, m, dirOK)
+			if err != nil {
+				return nil, wrapErr(err)
+			}
+			what := "file"
+			if info.IsDir() {
+				what = "directory"
+			}
+			switch {
+			case info.Mode().IsRegular():
+				if have[rel] != pid {
+					have[rel] = pid
+					listCount++
+				}
+				if err := addFile(m, rel); err != nil {
+					return nil, wrapErr(err)
+				}
+			case info.IsDir():
+				count := 0
+				err := filepath.WalkDir(m, func(cur string, d fs.DirEntry, walkErr error) error {
+					if walkErr != nil {
+						return walkErr
+					}
+					rel, err := embedRelPath(pkgDir, cur)
+					if err != nil {
+						return err
+					}
+					name := d.Name()
+					if cur != m && (isBadEmbedName(name) || ((name[0] == '.' || name[0] == '_') && !all)) {
+						if d.IsDir() {
+							return filepath.SkipDir
+						}
+						return nil
+					}
+					if d.IsDir() {
+						if _, err := os.Stat(filepath.Join(cur, "go.mod")); err == nil {
+							return filepath.SkipDir
+						}
+						return nil
+					}
+					if !d.Type().IsRegular() {
+						return nil
+					}
+					count++
+					if have[rel] != pid {
+						have[rel] = pid
+						listCount++
+					}
+					return addFile(cur, rel)
+				})
+				if err != nil {
+					return nil, wrapErr(err)
+				}
+				if count == 0 {
+					return nil, wrapErr(fmt.Errorf("cannot embed directory %s: contains no embeddable files", rel))
+				}
+			default:
+				return nil, wrapErr(fmt.Errorf("cannot embed irregular %s %s", what, rel))
+			}
+		}
+		if listCount == 0 {
+			return nil, wrapErr(fmt.Errorf("no matching files found"))
 		}
 	}
 
@@ -201,42 +310,76 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 	return out, nil
 }
 
-func hasGlobMeta(pat string) bool {
-	return strings.ContainsAny(pat, "*?[")
+func validEmbedPattern(pattern string) bool {
+	return pattern != "." && fs.ValidPath(pattern)
 }
 
-func addEmbedPath(pkgDir, abs string, all bool, addFile func(abs string) error) error {
-	info, err := os.Stat(abs)
+func embedRelPath(pkgDir, abs string) (string, error) {
+	rel, err := filepath.Rel(pkgDir, abs)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !info.IsDir() {
-		return addFile(abs)
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("path %s is outside package directory", abs)
 	}
-	return filepath.WalkDir(abs, func(cur string, d fs.DirEntry, err error) error {
+	return filepath.ToSlash(rel), nil
+}
+
+func checkEmbedPath(pkgDir, abs string, dirOK map[string]bool) (info fs.FileInfo, rel string, err error) {
+	info, err = os.Lstat(abs)
+	if err != nil {
+		return nil, "", err
+	}
+	rel, err = embedRelPath(pkgDir, abs)
+	if err != nil {
+		return nil, "", err
+	}
+
+	what := "file"
+	if info.IsDir() {
+		what = "directory"
+	}
+
+	for dir := abs; ; dir = filepath.Dir(dir) {
+		r, err := embedRelPath(pkgDir, dir)
 		if err != nil {
-			return err
+			return nil, "", fmt.Errorf("cannot embed %s %s: outside package directory", what, rel)
 		}
-		if cur == abs {
-			return nil
+		if r == "." {
+			break
 		}
-		rel, err := filepath.Rel(pkgDir, cur)
-		if err != nil {
-			return err
+		if dirOK[dir] {
+			break
 		}
-		rel = filepath.ToSlash(rel)
-		base := path.Base(rel)
-		if !all && (strings.HasPrefix(base, ".") || strings.HasPrefix(base, "_")) {
-			if d.IsDir() {
-				return filepath.SkipDir
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return nil, "", fmt.Errorf("cannot embed %s %s: in different module", what, rel)
+		}
+		if dir != abs {
+			if di, err := os.Lstat(dir); err == nil && !di.IsDir() {
+				return nil, "", fmt.Errorf("cannot embed %s %s: in non-directory %s", what, rel, r)
 			}
-			return nil
 		}
-		if d.IsDir() {
-			return nil
+		elem := filepath.Base(dir)
+		if isBadEmbedName(elem) {
+			if dir == abs {
+				return nil, "", fmt.Errorf("cannot embed %s %s: invalid name %s", what, rel, elem)
+			}
+			return nil, "", fmt.Errorf("cannot embed %s %s: in invalid directory %s", what, rel, elem)
 		}
-		return addFile(cur)
-	})
+		dirOK[dir] = true
+	}
+	return info, rel, nil
+}
+
+func isBadEmbedName(name string) bool {
+	if err := module.CheckFilePath(name); err != nil {
+		return true
+	}
+	switch name {
+	case "", ".bzr", ".git", ".hg", ".svn":
+		return true
+	}
+	return false
 }
 
 func isStringType(t types.Type) bool {
