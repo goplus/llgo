@@ -140,18 +140,12 @@ func TestTimeCreationAndFormatting(t *testing.T) {
 		t.Fatalf("AppendFormat prefix missing: %s", appended)
 	}
 	textAppended, err := base.AppendText(nil)
-	if err != nil {
+	if err != nil || len(textAppended) == 0 {
 		t.Fatalf("AppendText failed: %v", err)
 	}
-	if textAppended != nil && len(textAppended) == 0 {
-		t.Fatalf("AppendText failed: empty result")
-	}
 	binAppended, err := base.AppendBinary(nil)
-	if err != nil {
+	if err != nil || len(binAppended) == 0 {
 		t.Fatalf("AppendBinary failed: %v", err)
-	}
-	if binAppended != nil && len(binAppended) == 0 {
-		t.Fatalf("AppendBinary failed: empty result")
 	}
 
 	marshaledBinary, err := base.MarshalBinary()
