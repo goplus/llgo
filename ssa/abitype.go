@@ -342,25 +342,6 @@ func (b Builder) abiUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok b
 	prog := b.Prog
 	switch t := types.Unalias(t).(type) {
 	case *types.Named:
-		// Generic origin types don't have concrete method symbols to link
-		// against (llgo emits instantiated methods). Skip uncommon metadata
-		// for uninstantiated generic named types.
-		if tparams := t.TypeParams(); tparams != nil && tparams.Len() > 0 {
-			targs := t.TypeArgs()
-			if targs == nil || targs.Len() == 0 {
-				return
-			}
-			originLike := true
-			for i := 0; i < targs.Len(); i++ {
-				if _, ok := types.Unalias(targs.At(i)).(*types.TypeParam); !ok {
-					originLike = false
-					break
-				}
-			}
-			if originLike {
-				return
-			}
-		}
 		if _, b := t.Underlying().(*types.Interface); b {
 			return
 		}
@@ -371,33 +352,7 @@ func (b Builder) abiUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok b
 			}
 		}
 		return mset, true
-	case *types.Pointer:
-		// Same as above for pointer receiver method sets on generic origins.
-		if named, isNamed := types.Unalias(t.Elem()).(*types.Named); isNamed {
-			if tparams := named.TypeParams(); tparams != nil && tparams.Len() > 0 {
-				targs := named.TypeArgs()
-				if targs == nil || targs.Len() == 0 {
-					return
-				}
-				originLike := true
-				for i := 0; i < targs.Len(); i++ {
-					if _, isTypeParam := types.Unalias(targs.At(i)).(*types.TypeParam); !isTypeParam {
-						originLike = false
-						break
-					}
-				}
-				if originLike {
-					return
-				}
-			}
-		}
-		if mset := types.NewMethodSet(t); mset.Len() != 0 {
-			if prog.compileMethods != nil {
-				prog.compileMethods(b.Pkg, t)
-			}
-			return mset, true
-		}
-	case *types.Struct:
+	case *types.Struct, *types.Pointer:
 		if mset := types.NewMethodSet(t); mset.Len() != 0 {
 			if prog.compileMethods != nil {
 				prog.compileMethods(b.Pkg, t)
@@ -465,18 +420,11 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 			name = b.Str(abi.FullName(obj.Pkg(), mName)).impl
 		}
 		mSig := m.Type().(*types.Signature)
-		// Build names from the concrete receiver type in MethodSet.
-		// For instantiated generic methods, m.Type().Recv may still carry
-		// the origin receiver and miss type arguments, which causes method
-		// table references like (*T).M to mismatch generated symbols
-		// (*T[...]).M.
-		recvType := m.Recv()
-		nameSig := types.NewSignature(types.NewVar(token.NoPos, pkg, "", recvType), mSig.Params(), mSig.Results(), mSig.Variadic())
 		var tfn, ifn llvm.Value
-		tfn = b.abiMethodFunc(anonymous, pkg, mName, nameSig)
+		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
 		ifn = tfn
-		if _, ok := recvType.Underlying().(*types.Pointer); !ok {
-			pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(recvType))
+		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
+			pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(mSig.Recv().Type()))
 			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
 			ifn = b.abiMethodFunc(anonymous, pkg, mName, pSig)
 		}
