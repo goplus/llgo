@@ -170,7 +170,7 @@ func Instantiate(orig types.Type, t *types.Named) (types.Type, bool) {
 		for i := 0; i < tp.Len(); i++ {
 			targs[i] = tp.At(i)
 		}
-		if typ, err := types.Instantiate(nil, orig, targs, true); err == nil {
+		if typ, err := types.Instantiate(nil, orig, targs, false); err == nil {
 			return typ, true
 		}
 	}
