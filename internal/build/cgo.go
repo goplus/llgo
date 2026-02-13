@@ -405,7 +405,7 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 			cflags:  safesplit.SplitPkgConfigFlags(string(cflags)),
 			ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
 		})
-	case "CFLAGS":
+	case "CPPFLAGS", "CFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:    tag,
 			cflags: safesplit.SplitPkgConfigFlags(arg),
