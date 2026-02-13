@@ -4,6 +4,8 @@ import (
 	"go/ast"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -15,7 +17,13 @@ func TestParseEmbedPatterns(t *testing.T) {
 			{Text: "//go:embed \"space name.txt\""},
 		},
 	}
-	got := parseEmbedPatterns(doc)
+	got, has, err := parseEmbedPatterns(doc)
+	if err != nil {
+		t.Fatalf("parseEmbedPatterns error: %v", err)
+	}
+	if !has {
+		t.Fatalf("parseEmbedPatterns did not detect directive")
+	}
 	want := []string{"testdata/hello.txt", "assets/*.json", "space name.txt"}
 	if len(got) != len(want) {
 		t.Fatalf("pattern count = %d, want %d (%v)", len(got), len(want), got)
@@ -27,7 +35,34 @@ func TestParseEmbedPatterns(t *testing.T) {
 	}
 }
 
-func TestResolveEmbedPatterns(t *testing.T) {
+func TestParseEmbedPatterns_InvalidQuoted(t *testing.T) {
+	doc := &ast.CommentGroup{
+		List: []*ast.Comment{
+			{Text: "//go:embed \"unclosed.txt"},
+		},
+	}
+	_, has, err := parseEmbedPatterns(doc)
+	if !has {
+		t.Fatalf("parseEmbedPatterns should detect directive")
+	}
+	if err == nil {
+		t.Fatalf("parseEmbedPatterns should fail for invalid quoted pattern")
+	}
+}
+
+func TestFileImportsEmbed(t *testing.T) {
+	file := &ast.File{
+		Imports: []*ast.ImportSpec{
+			{Path: &ast.BasicLit{Value: `"fmt"`}},
+			{Path: &ast.BasicLit{Value: `"embed"`}},
+		},
+	}
+	if !fileImportsEmbed(file) {
+		t.Fatalf("fileImportsEmbed = false, want true")
+	}
+}
+
+func TestResolveEmbedPatterns_HiddenAndAll(t *testing.T) {
 	dir := t.TempDir()
 	mustWrite := func(rel, data string) {
 		path := filepath.Join(dir, rel)
@@ -41,6 +76,7 @@ func TestResolveEmbedPatterns(t *testing.T) {
 	mustWrite("testdata/hello.txt", "Hello, World!")
 	mustWrite("testdata/.hidden.txt", "hidden")
 	mustWrite("testdata/sub/world.txt", "world")
+	mustWrite("testdata/sub/.deep.txt", "deep")
 
 	got, err := resolveEmbedPatterns(dir, []string{"testdata"})
 	if err != nil {
@@ -59,6 +95,9 @@ func TestResolveEmbedPatterns(t *testing.T) {
 	if seen["testdata/.hidden.txt"] {
 		t.Fatalf("unexpected hidden file in default mode: %+v", got)
 	}
+	if seen["testdata/sub/.deep.txt"] {
+		t.Fatalf("unexpected hidden nested file in default mode: %+v", got)
+	}
 
 	gotAll, err := resolveEmbedPatterns(dir, []string{"all:testdata"})
 	if err != nil {
@@ -70,6 +109,82 @@ func TestResolveEmbedPatterns(t *testing.T) {
 	}
 	if !seenAll["testdata/.hidden.txt"] {
 		t.Fatalf("missing hidden file in all: mode: %+v", gotAll)
+	}
+	if !seenAll["testdata/sub/.deep.txt"] {
+		t.Fatalf("missing hidden nested file in all: mode: %+v", gotAll)
+	}
+}
+
+func TestResolveEmbedPatterns_Errors(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite := func(rel, data string) {
+		path := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+	mustWrite("data/file.txt", "ok")
+	if err := os.MkdirAll(filepath.Join(dir, "empty"), 0o755); err != nil {
+		t.Fatalf("mkdir empty: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "submod"), 0o755); err != nil {
+		t.Fatalf("mkdir submod: %v", err)
+	}
+	mustWrite("submod/go.mod", "module x\n")
+	mustWrite("submod/a.txt", "submodule")
+
+	cases := []struct {
+		pattern string
+		wantErr string
+	}{
+		{pattern: ".", wantErr: "invalid pattern syntax"},
+		{pattern: "no_such_*.txt", wantErr: "no matching files found"},
+		{pattern: "empty", wantErr: "contains no embeddable files"},
+		{pattern: "submod", wantErr: "in different module"},
+	}
+
+	for _, tc := range cases {
+		_, err := resolveEmbedPatterns(dir, []string{tc.pattern})
+		if err == nil {
+			t.Fatalf("resolveEmbedPatterns(%q) should fail", tc.pattern)
+		}
+		if !strings.Contains(err.Error(), tc.wantErr) {
+			t.Fatalf("resolveEmbedPatterns(%q) error = %v, want substring %q", tc.pattern, err, tc.wantErr)
+		}
+	}
+}
+
+func TestResolveEmbedPatterns_RejectIrregularAndInvalidName(t *testing.T) {
+	dir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		t.Skip("file name with ':' is not portable on windows")
+	}
+
+	mustWrite := func(rel, data string) {
+		path := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", rel, err)
+		}
+		if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+			t.Fatalf("write %s: %v", rel, err)
+		}
+	}
+	mustWrite("bad:name.txt", "bad")
+	_, err := resolveEmbedPatterns(dir, []string{"bad:name.txt"})
+	if err == nil || !strings.Contains(err.Error(), "invalid name") {
+		t.Fatalf("resolveEmbedPatterns invalid-name error = %v, want invalid name", err)
+	}
+
+	mustWrite("target.txt", "ok")
+	if err := os.Symlink(filepath.Join(dir, "target.txt"), filepath.Join(dir, "link.txt")); err != nil {
+		t.Skipf("symlink not supported: %v", err)
+	}
+	_, err = resolveEmbedPatterns(dir, []string{"link.txt"})
+	if err == nil || !strings.Contains(err.Error(), "irregular file") {
+		t.Fatalf("resolveEmbedPatterns irregular-file error = %v, want irregular file", err)
 	}
 }
 
