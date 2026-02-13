@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	embedInitBytes = iota + 1
-	embedInitFS
+	embedInitFS = iota + 1
 )
 
 type embedFileData struct {
@@ -35,7 +34,6 @@ type embedVarData struct {
 type embedInit struct {
 	globalName string
 	kind       int
-	bytes      []byte
 	fsEntries  []embedFileData
 }
 
@@ -465,12 +463,8 @@ func (p *context) tryEmbedGlobalInit(pkg llssa.Package, gbl *ssa.Global, g llssa
 		if len(info.files) != 1 {
 			panic("//go:embed []byte variable must resolve to one file")
 		}
-		p.embedInits = append(p.embedInits, embedInit{
-			globalName: globalName,
-			kind:       embedInitBytes,
-			bytes:      append([]byte(nil), info.files[0].data...),
-		})
-		return false
+		g.Init(pkg.ConstBytes(info.files[0].data))
+		return true
 	case isEmbedFSType(elem):
 		p.embedInits = append(p.embedInits, embedInit{
 			globalName: globalName,
@@ -498,27 +492,10 @@ func (p *context) applyEmbedInits(b llssa.Builder) {
 			continue
 		}
 		switch it.kind {
-		case embedInitBytes:
-			p.applyEmbedBytesInit(b, g, it.bytes)
 		case embedInitFS:
 			p.applyEmbedFSInit(b, g, it.fsEntries)
 		}
 	}
-}
-
-func (p *context) applyEmbedBytesInit(b llssa.Builder, g llssa.Global, data []byte) {
-	sliceType := p.prog.Slice(p.prog.Byte())
-	var ret llssa.Expr
-	if len(data) == 0 {
-		ret = p.prog.Zero(sliceType)
-	} else {
-		elts := make([]llssa.Expr, len(data))
-		for i, v := range data {
-			elts[i] = p.prog.IntVal(uint64(v), p.prog.Byte())
-		}
-		ret = b.SliceLit(sliceType, elts...)
-	}
-	b.Store(g.Expr, ret)
 }
 
 func (p *context) applyEmbedFSInit(b llssa.Builder, g llssa.Global, entries []embedFileData) {

@@ -14,6 +14,9 @@ var content string
 //go:embed testdata/hello.txt
 var contentBytes []byte
 
+//go:embed testdata/hello.txt
+var contentBytesDup []byte
+
 //go:embed testdata
 var contentFS embed.FS
 
@@ -37,6 +40,34 @@ func TestEmbedBytes(t *testing.T) {
 	if string(contentBytes) != string(expected) {
 		t.Errorf("embedded bytes = %q, want %q", contentBytes, expected)
 	}
+}
+
+func TestEmbedBytesWritable(t *testing.T) {
+	if len(contentBytes) == 0 {
+		t.Fatal("embedded bytes should not be empty")
+	}
+	old := contentBytes[0]
+	contentBytes[0] = 'h'
+	if contentBytes[0] != 'h' {
+		t.Fatalf("embedded bytes is not writable")
+	}
+	contentBytes[0] = old
+}
+
+func TestEmbedBytesNotAliasedAcrossVars(t *testing.T) {
+	if len(contentBytes) == 0 || len(contentBytesDup) == 0 {
+		t.Fatal("embedded bytes should not be empty")
+	}
+	oldA := contentBytes[0]
+	oldB := contentBytesDup[0]
+
+	contentBytes[0] = 'X'
+	if contentBytesDup[0] != oldB {
+		t.Fatalf("embedded []byte variables should not share backing storage")
+	}
+
+	contentBytes[0] = oldA
+	contentBytesDup[0] = oldB
 }
 
 func TestEmbedQuotedPattern(t *testing.T) {
