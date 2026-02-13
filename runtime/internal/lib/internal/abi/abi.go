@@ -29,12 +29,6 @@ func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Pointer(x ^ 0)
 }
 
-// Escape forces v through an escape-analysis boundary.
-// llgo currently models this as an identity function.
-func Escape[T any](v T) T {
-	return v
-}
-
 //go:linkname FuncPCABI0 llgo.funcPCABI0
 func FuncPCABI0(f interface{}) uintptr
 

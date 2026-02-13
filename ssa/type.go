@@ -507,51 +507,18 @@ func (p Program) retType(raw *types.Signature) Type {
 
 func (p Program) llvmNameOf(named *types.Named) (name string) {
 	name = NameOf(named)
-	if obj := named.Obj(); obj != nil {
-		parent := obj.Parent()
-		pkg := obj.Pkg()
-		if parent != nil && pkg != nil && !isPkgScope(parent, pkg.Scope()) {
-			index := p.fnnamed[name]
-			p.fnnamed[name] = index + 1
-			name += fmt.Sprintf("#%v", index)
-		}
+	if obj := named.Obj(); obj != nil && obj.Parent() != nil && obj.Parent() != obj.Pkg().Scope() {
+		index := p.fnnamed[name]
+		p.fnnamed[name] = index + 1
+		name += fmt.Sprintf("#%v", index)
 	}
 	return name
-}
-
-func isPkgScope(parent, pkgScope *types.Scope) bool {
-	if parent == pkgScope {
-		return true
-	}
-	if parent == nil || pkgScope == nil {
-		return false
-	}
-	// Some importer paths can materialize equivalent package scopes as distinct
-	// pointers. Keep package-level names stable when scopes describe the same
-	// package scope textually.
-	return parent.String() == pkgScope.String()
 }
 
 func (p Program) toNamed(raw *types.Named) Type {
 	name := p.llvmNameOf(raw)
 	if typ, ok := p.named[name]; ok {
-		if namedTypeEquivalent(typ.raw.Type, raw) || p.namedStructLayoutEquivalent(typ, raw) {
-			return typ
-		}
-		// Some toolchains produce distinct instantiated named types that share
-		// the same object name (e.g. generic local helper structs in stdlib).
-		// Disambiguate instead of reusing an incompatible LLVM named struct.
-		base := name
-		for i := 0; ; i++ {
-			name = fmt.Sprintf("%s#%d", base, i)
-			if typ2, ok2 := p.named[name]; ok2 {
-				if namedTypeEquivalent(typ2.raw.Type, raw) || p.namedStructLayoutEquivalent(typ2, raw) {
-					return typ2
-				}
-				continue
-			}
-			break
-		}
+		return typ
 	}
 	switch t := raw.Underlying().(type) {
 	case *types.Struct:
@@ -564,49 +531,6 @@ func (p Program) toNamed(raw *types.Named) Type {
 		typ := p.rawType(t)
 		return &aType{typ.ll, rawType{raw}, typ.kind}
 	}
-}
-
-func namedTypeEquivalent(a, b types.Type) bool {
-	na, okA := types.Unalias(a).(*types.Named)
-	nb, okB := types.Unalias(b).(*types.Named)
-	if !okA || !okB {
-		return false
-	}
-	if types.Identical(na, nb) {
-		return true
-	}
-	if NameOf(na) != NameOf(nb) {
-		return false
-	}
-	// go/types may materialize the same package/type in distinct instances
-	// (e.g. mixed importer paths across toolchains). Reuse LLVM named structs
-	// when full-name and underlying shape are equivalent.
-	return typeStringWithPkg(na.Underlying()) == typeStringWithPkg(nb.Underlying())
-}
-
-func (p Program) namedStructLayoutEquivalent(existing Type, raw *types.Named) bool {
-	if existing == nil || raw == nil {
-		return false
-	}
-	en, ok := types.Unalias(existing.raw.Type).(*types.Named)
-	if !ok || NameOf(en) != NameOf(raw) {
-		return false
-	}
-	rs, ok := raw.Underlying().(*types.Struct)
-	if !ok {
-		return false
-	}
-	existingFields := existing.ll.StructElementTypes()
-	rawFields := p.toLLVMFields(rs)
-	if len(existingFields) != len(rawFields) {
-		return false
-	}
-	for i := range existingFields {
-		if existingFields[i].String() != rawFields[i].String() {
-			return false
-		}
-	}
-	return true
 }
 
 // NameOf returns the full name of a named type.
