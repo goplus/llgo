@@ -141,6 +141,8 @@ type context struct {
 	cgoErrnoTy types.Type
 	cgoSymbols []string
 	rewrites   map[string]string
+	embedMap   map[string]embedVarData
+	embedInits []embedInit
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -241,6 +243,9 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
+	if p.tryEmbedGlobalInit(pkg, gbl, g, name) {
+		return
+	}
 	if value, ok := p.rewriteValue(name); ok {
 		if p.isStringPtrType(gbl.Type()) {
 			g.Init(pkg.ConstString(value))
@@ -492,6 +497,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	}
 
 	if doModInit {
+		if p.state != pkgInPatch {
+			p.applyEmbedInits(b)
+		}
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
 			instrs = instrs[:last]
@@ -1186,6 +1194,7 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 		cgoSymbols: make([]string, 0, 128),
 		rewrites:   rewrites,
 	}
+	ctx.loadEmbedDirectives(files)
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
