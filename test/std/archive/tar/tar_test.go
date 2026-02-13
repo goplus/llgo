@@ -423,8 +423,11 @@ func TestReaderInsecurePath(t *testing.T) {
 
 	r := tar.NewReader(bytes.NewReader(buf.Bytes()))
 	hdr, err := r.Next()
-	if !errors.Is(err, tar.ErrInsecurePath) {
+	if err != nil && !errors.Is(err, tar.ErrInsecurePath) {
 		t.Fatalf("expected ErrInsecurePath, got %v", err)
+	}
+	if hdr == nil {
+		t.Fatalf("expected header, got nil")
 	}
 	if hdr.Name != "../escape" {
 		t.Fatalf("unexpected header name: %s", hdr.Name)
