@@ -9,7 +9,13 @@ import (
 )
 
 func Caller(skip int) (pc uintptr, file string, line int, ok bool) {
-	panic("todo: runtime.Caller")
+	// llgo currently doesn't have reliable source file/line mapping from PC.
+	// Return a stable placeholder location so stdlib log/testing can proceed.
+	var pcs [1]uintptr
+	if Callers(skip+1, pcs[:]) < 1 {
+		return 0, "", 0, false
+	}
+	return pcs[0], "???", 1, true
 }
 
 func Callers(skip int, pc []uintptr) int {
