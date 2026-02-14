@@ -1844,7 +1844,13 @@ func (v Value) grow(n int) {
 		panic("reflect.Value.Grow: slice overflow")
 	case oldLen+n > p.Cap:
 		t := v.typ().Elem()
-		*p = growslice(*p, n, int(t.Size_))
+		// The linknamed growslice must use the same ABI as runtime slice helpers.
+		// LLGo lowers slice-like values (data,len,cap) as 3 registers, while a
+		// plain 3-word struct may use a different calling convention.
+		// Reinterpret the header as a builtin slice so the call ABI matches.
+		sh := *(*[]byte)(unsafe.Pointer(p))
+		sh = growslice(sh, n, int(t.Size_))
+		*p = *(*unsafeheaderSlice)(unsafe.Pointer(&sh))
 		p.Len = oldLen // set oldLen back
 	}
 }
@@ -2138,7 +2144,7 @@ func verifyNotInHeapPtr(p uintptr) bool {
 }
 
 //go:linkname growslice github.com/goplus/llgo/runtime/internal/runtime.GrowSlice
-func growslice(src unsafeheaderSlice, num, etSize int) unsafeheaderSlice
+func growslice(src []byte, num, etSize int) []byte
 
 // Dummy annotation marking that the value x escapes,
 // for use in cases where the reflect code is so clever that
