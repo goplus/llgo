@@ -29,9 +29,26 @@ var contentAllFS embed.FS
 //go:embed "testdata/space name.txt"
 var contentQuoted string
 
+var (
+	//go:embed testdata/hello.txt
+	blockContent string
+
+	//go:embed "testdata/space name.txt"
+	blockQuoted string
+)
+
 func TestEmbedString(t *testing.T) {
 	if content != "Hello, World!" {
 		t.Errorf("embedded string = %q, want %q", content, "Hello, World!")
+	}
+}
+
+func TestEmbedStringInVarBlock(t *testing.T) {
+	if blockContent != "Hello, World!" {
+		t.Errorf("embedded block string = %q, want %q", blockContent, "Hello, World!")
+	}
+	if blockQuoted != "Space Name" {
+		t.Errorf("embedded block quoted string = %q, want %q", blockQuoted, "Space Name")
 	}
 }
 
