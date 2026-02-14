@@ -70,12 +70,12 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 				pos := p.fset.PositionFor(spec.Pos(), false)
 				panic(fmt.Sprintf("%s: go:embed only allowed in Go files that import \"embed\"", pos))
 			}
-			files, err := resolveEmbedPatterns(pkgDir, patterns)
+			resolvedFiles, err := resolveEmbedPatterns(pkgDir, patterns)
 			if err != nil {
 				pos := p.fset.PositionFor(spec.Pos(), false)
 				panic(fmt.Sprintf("%s: %v", pos, err))
 			}
-			byVar[spec.Names[0].Name] = embedVarData{files: files}
+			byVar[spec.Names[0].Name] = embedVarData{files: resolvedFiles}
 		}
 	}
 	p.embedMap = byVar
@@ -189,9 +189,6 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 	var pat string
 
 	wrapErr := func(err error) error {
-		if err == nil {
-			return nil
-		}
 		return fmt.Errorf("pattern %s: %w", pat, err)
 	}
 
@@ -224,10 +221,7 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 		}
 
 		absPattern := filepath.Join(pkgDir, filepath.FromSlash(pat))
-		matches, err := filepath.Glob(absPattern)
-		if err != nil {
-			return nil, wrapErr(err)
-		}
+		matches, _ := filepath.Glob(absPattern)
 
 		listCount := 0
 		for _, m := range matches {
@@ -254,10 +248,7 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 					if walkErr != nil {
 						return walkErr
 					}
-					rel, err := embedRelPath(pkgDir, cur)
-					if err != nil {
-						return err
-					}
+					rel, _ := embedRelPath(pkgDir, cur)
 					name := d.Name()
 					if cur != m && (isBadEmbedName(name) || ((name[0] == '.' || name[0] == '_') && !all)) {
 						if d.IsDir() {
@@ -309,14 +300,19 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 }
 
 func validEmbedPattern(pattern string) bool {
-	return pattern != "." && fs.ValidPath(pattern)
+	if pattern == "." || !fs.ValidPath(pattern) {
+		return false
+	}
+	for _, elem := range strings.Split(pattern, "/") {
+		if elem == "vendor" {
+			return false
+		}
+	}
+	return true
 }
 
 func embedRelPath(pkgDir, abs string) (string, error) {
-	rel, err := filepath.Rel(pkgDir, abs)
-	if err != nil {
-		return "", err
-	}
+	rel, _ := filepath.Rel(pkgDir, abs)
 	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return "", fmt.Errorf("path %s is outside package directory", abs)
 	}
@@ -339,10 +335,7 @@ func checkEmbedPath(pkgDir, abs string, dirOK map[string]bool) (info fs.FileInfo
 	}
 
 	for dir := abs; ; dir = filepath.Dir(dir) {
-		r, err := embedRelPath(pkgDir, dir)
-		if err != nil {
-			return nil, "", fmt.Errorf("cannot embed %s %s: outside package directory", what, rel)
-		}
+		r, _ := embedRelPath(pkgDir, dir)
 		if r == "." {
 			break
 		}
@@ -351,11 +344,6 @@ func checkEmbedPath(pkgDir, abs string, dirOK map[string]bool) (info fs.FileInfo
 		}
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
 			return nil, "", fmt.Errorf("cannot embed %s %s: in different module", what, rel)
-		}
-		if dir != abs {
-			if di, err := os.Lstat(dir); err == nil && !di.IsDir() {
-				return nil, "", fmt.Errorf("cannot embed %s %s: in non-directory %s", what, rel, r)
-			}
 		}
 		elem := filepath.Base(dir)
 		if isBadEmbedName(elem) {
@@ -447,10 +435,7 @@ func (p *context) tryEmbedGlobalInit(pkg llssa.Package, gbl *ssa.Global, g llssa
 	if !ok || len(info.files) == 0 {
 		return false
 	}
-	ptr, ok := types.Unalias(gbl.Type()).(*types.Pointer)
-	if !ok {
-		return false
-	}
+	ptr := types.Unalias(gbl.Type()).(*types.Pointer)
 	elem := types.Unalias(ptr.Elem())
 	switch {
 	case isStringType(elem):
@@ -498,24 +483,18 @@ func (p *context) applyEmbedInits(b llssa.Builder) {
 	}
 }
 
+const (
+	embedFSFieldFiles   = 0
+	embedFileFieldName  = 0
+	embedFileFieldBytes = 1
+)
+
 func (p *context) applyEmbedFSInit(b llssa.Builder, g llssa.Global, entries []embedFileData) {
-	ptr, ok := g.Expr.Type.RawType().(*types.Pointer)
-	if !ok {
-		return
-	}
+	ptr := g.Expr.Type.RawType().(*types.Pointer)
 	fsTyp := types.Unalias(ptr.Elem())
-	fsStruct, ok := fsTyp.Underlying().(*types.Struct)
-	if !ok || fsStruct.NumFields() == 0 {
-		return
-	}
-	filesPtr, ok := types.Unalias(fsStruct.Field(0).Type()).(*types.Pointer)
-	if !ok {
-		return
-	}
-	filesSlice, ok := types.Unalias(filesPtr.Elem()).(*types.Slice)
-	if !ok {
-		return
-	}
+	fsStruct := fsTyp.Underlying().(*types.Struct)
+	filesPtr := types.Unalias(fsStruct.Field(embedFSFieldFiles).Type()).(*types.Pointer)
+	filesSlice := types.Unalias(filesPtr.Elem()).(*types.Slice)
 	fileTyp := filesSlice.Elem()
 	llFileTyp := p.type_(fileTyp, llssa.InGo)
 	llFilesSliceTyp := p.prog.Slice(llFileTyp)
@@ -525,11 +504,11 @@ func (p *context) applyEmbedFSInit(b llssa.Builder, g llssa.Global, entries []em
 	for i, entry := range entries {
 		idx := p.prog.IntVal(uint64(i), p.prog.Int())
 		elemPtr := b.IndexAddr(files, idx)
-		b.Store(b.FieldAddr(elemPtr, 0), b.Str(entry.name))
-		b.Store(b.FieldAddr(elemPtr, 1), b.Str(string(entry.data)))
+		b.Store(b.FieldAddr(elemPtr, embedFileFieldName), b.Str(entry.name))
+		b.Store(b.FieldAddr(elemPtr, embedFileFieldBytes), b.Str(string(entry.data)))
 	}
 
 	filesPtrVal := b.Alloc(llFilesSliceTyp, true)
 	b.Store(filesPtrVal, files)
-	b.Store(b.FieldAddr(g.Expr, 0), filesPtrVal)
+	b.Store(b.FieldAddr(g.Expr, embedFSFieldFiles), filesPtrVal)
 }

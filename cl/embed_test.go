@@ -14,6 +14,11 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/goplus/gogen/packages"
+	llssa "github.com/goplus/llgo/ssa"
+	gossa "golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 func TestParseEmbedPatterns(t *testing.T) {
@@ -84,6 +89,7 @@ func TestResolveEmbedPatterns_HiddenAndAll(t *testing.T) {
 	mustWrite("testdata/.hidden.txt", "hidden")
 	mustWrite("testdata/sub/world.txt", "world")
 	mustWrite("testdata/sub/.deep.txt", "deep")
+	mustWrite("testdata/.hidden-dir/tip.txt", "tip")
 
 	got, err := resolveEmbedPatterns(dir, []string{"testdata"})
 	if err != nil {
@@ -104,6 +110,9 @@ func TestResolveEmbedPatterns_HiddenAndAll(t *testing.T) {
 	}
 	if seen["testdata/sub/.deep.txt"] {
 		t.Fatalf("unexpected hidden nested file in default mode: %+v", got)
+	}
+	if seen["testdata/.hidden-dir/tip.txt"] {
+		t.Fatalf("unexpected hidden directory file in default mode: %+v", got)
 	}
 
 	gotAll, err := resolveEmbedPatterns(dir, []string{"all:testdata"})
@@ -338,6 +347,40 @@ var s string
 	})
 }
 
+func TestLoadEmbedDirectives_SkipBranches(t *testing.T) {
+	dir := t.TempDir()
+	mainFile := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write hello.txt: %v", err)
+	}
+
+	src := `package foo
+
+import "embed"
+
+var plain string
+
+//go:embed hello.txt
+var a, b string
+
+var (
+	//go:embed hello.txt
+	c string
+	d string
+)
+`
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, mainFile, src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	p := &context{fset: fset}
+	p.loadEmbedDirectives([]*ast.File{f})
+	if len(p.embedMap) != 0 {
+		t.Fatalf("embedMap should stay empty for skipped declarations: %+v", p.embedMap)
+	}
+}
+
 func TestEmbedTypeChecks(t *testing.T) {
 	if !isStringType(types.Typ[types.String]) {
 		t.Fatalf("isStringType(string) = false, want true")
@@ -375,4 +418,301 @@ func TestEmbedTypeChecks(t *testing.T) {
 func TestApplyEmbedInits_NoPending(t *testing.T) {
 	p := &context{}
 	p.applyEmbedInits(nil)
+}
+
+func TestParseEmbedDirective(t *testing.T) {
+	tests := []struct {
+		line     string
+		wantArgs string
+		wantOK   bool
+	}{
+		{line: "go:embed", wantArgs: "", wantOK: true},
+		{line: "go:embed\tfoo.txt", wantArgs: "foo.txt", wantOK: true},
+		{line: "go:embedfoo.txt", wantArgs: "", wantOK: false},
+		{line: "xxgo:embed foo.txt", wantArgs: "", wantOK: false},
+	}
+	for _, tc := range tests {
+		args, ok := parseEmbedDirective(tc.line)
+		if ok != tc.wantOK || args != tc.wantArgs {
+			t.Fatalf("parseEmbedDirective(%q) = (%q,%v), want (%q,%v)", tc.line, args, ok, tc.wantArgs, tc.wantOK)
+		}
+	}
+}
+
+func TestSplitEmbedArgs_TrailingWhitespace(t *testing.T) {
+	got, err := splitEmbedArgs("a\t ")
+	if err != nil {
+		t.Fatalf("splitEmbedArgs error: %v", err)
+	}
+	if len(got) != 1 || got[0] != "a" {
+		t.Fatalf("splitEmbedArgs result = %v, want [a]", got)
+	}
+}
+
+func TestParseEmbedPatterns_ExtraBranches(t *testing.T) {
+	docWithNil := &ast.CommentGroup{
+		List: []*ast.Comment{
+			nil,
+			{Text: "//go:embed plain.txt"},
+		},
+	}
+	patterns, has, err := parseEmbedPatterns(docWithNil)
+	if err != nil || !has || len(patterns) != 1 || patterns[0] != "plain.txt" {
+		t.Fatalf("parseEmbedPatterns nil-comment branch failed: patterns=%v has=%v err=%v", patterns, has, err)
+	}
+
+	docMissing := &ast.CommentGroup{
+		List: []*ast.Comment{{Text: "//go:embed"}},
+	}
+	_, has, err = parseEmbedPatterns(docMissing)
+	if !has || err == nil || !strings.Contains(err.Error(), "missing pattern") {
+		t.Fatalf("missing pattern not rejected, has=%v err=%v", has, err)
+	}
+
+	docBadQuoted := &ast.CommentGroup{
+		List: []*ast.Comment{{Text: "//go:embed \"\\xZZ\""}},
+	}
+	_, has, err = parseEmbedPatterns(docBadQuoted)
+	if !has || err == nil || !strings.Contains(err.Error(), "invalid //go:embed quoted pattern") {
+		t.Fatalf("bad quoted pattern not rejected, has=%v err=%v", has, err)
+	}
+}
+
+func TestFileImportsEmbed_NegativeBranches(t *testing.T) {
+	file := &ast.File{
+		Imports: []*ast.ImportSpec{
+			nil,
+			{Path: nil},
+			{Path: &ast.BasicLit{Value: `bad`}},
+			{Path: &ast.BasicLit{Value: `"fmt"`}},
+		},
+	}
+	if fileImportsEmbed(file) {
+		t.Fatalf("fileImportsEmbed should be false for invalid/non-embed imports")
+	}
+}
+
+func TestValidEmbedPattern(t *testing.T) {
+	tests := []struct {
+		pattern string
+		want    bool
+	}{
+		{pattern: ".", want: false},
+		{pattern: "ok/file.txt", want: true},
+		{pattern: "vendor/file.txt", want: false},
+		{pattern: "a/vendor/file.txt", want: false},
+	}
+	for _, tc := range tests {
+		if got := validEmbedPattern(tc.pattern); got != tc.want {
+			t.Fatalf("validEmbedPattern(%q) = %v, want %v", tc.pattern, got, tc.want)
+		}
+	}
+}
+
+func TestEmbedRelPath_Outside(t *testing.T) {
+	dir := t.TempDir()
+	outside := filepath.Dir(dir)
+	_, err := embedRelPath(dir, outside)
+	if err == nil || !strings.Contains(err.Error(), "outside package directory") {
+		t.Fatalf("embedRelPath outside error = %v", err)
+	}
+}
+
+func TestCheckEmbedPath_ErrorBranches(t *testing.T) {
+	dir := t.TempDir()
+	if _, _, err := checkEmbedPath(dir, filepath.Join(dir, "missing.txt"), map[string]bool{}); err == nil {
+		t.Fatalf("checkEmbedPath should fail for missing file")
+	}
+
+	outDir := t.TempDir()
+	outFile := filepath.Join(outDir, "out.txt")
+	if err := os.WriteFile(outFile, []byte("x"), 0o644); err != nil {
+		t.Fatalf("write outFile: %v", err)
+	}
+	if _, _, err := checkEmbedPath(dir, outFile, map[string]bool{}); err == nil || !strings.Contains(err.Error(), "outside package directory") {
+		t.Fatalf("checkEmbedPath outside error = %v", err)
+	}
+
+	inside := filepath.Join(dir, ".git", "sub", "x.txt")
+	if err := os.MkdirAll(filepath.Dir(inside), 0o755); err != nil {
+		t.Fatalf("mkdir .git/sub: %v", err)
+	}
+	if err := os.WriteFile(inside, []byte("x"), 0o644); err != nil {
+		t.Fatalf("write .git/sub/x.txt: %v", err)
+	}
+	if _, _, err := checkEmbedPath(dir, inside, map[string]bool{}); err == nil || !strings.Contains(err.Error(), "in invalid directory .git") {
+		t.Fatalf("checkEmbedPath invalid dir error = %v", err)
+	}
+}
+
+func TestResolveEmbedPatterns_DuplicateAndReadFailure(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "dup.txt")
+	if err := os.WriteFile(file, []byte("dup"), 0o644); err != nil {
+		t.Fatalf("write dup.txt: %v", err)
+	}
+	got, err := resolveEmbedPatterns(dir, []string{"dup.txt", "dup.txt"})
+	if err != nil {
+		t.Fatalf("resolveEmbedPatterns duplicate pattern failed: %v", err)
+	}
+	if len(got) != 1 || got[0].name != "dup.txt" {
+		t.Fatalf("resolveEmbedPatterns duplicate pattern got: %+v", got)
+	}
+
+	if runtime.GOOS == "windows" {
+		return
+	}
+	noRead := filepath.Join(dir, "noread.txt")
+	if err := os.WriteFile(noRead, []byte("secret"), 0o600); err != nil {
+		t.Fatalf("write noread.txt: %v", err)
+	}
+	if err := os.Chmod(noRead, 0); err != nil {
+		t.Fatalf("chmod noread.txt: %v", err)
+	}
+	defer os.Chmod(noRead, 0o600)
+	if _, err := resolveEmbedPatterns(dir, []string{"noread.txt"}); err == nil {
+		t.Fatalf("resolveEmbedPatterns should fail for unreadable file")
+	}
+}
+
+func TestResolveEmbedPatterns_WalkDirError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory permissions behavior differs on windows")
+	}
+	dir := t.TempDir()
+	root := filepath.Join(dir, "root")
+	locked := filepath.Join(root, "locked")
+	if err := os.MkdirAll(filepath.Join(locked, "sub"), 0o755); err != nil {
+		t.Fatalf("mkdir root/locked/sub: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "ok.txt"), []byte("ok"), 0o644); err != nil {
+		t.Fatalf("write root/ok.txt: %v", err)
+	}
+	if err := os.Chmod(locked, 0); err != nil {
+		t.Fatalf("chmod locked: %v", err)
+	}
+	defer os.Chmod(locked, 0o755)
+
+	if _, err := resolveEmbedPatterns(dir, []string{"root"}); err == nil {
+		t.Fatalf("resolveEmbedPatterns should fail when walk cannot read directory")
+	}
+}
+
+func TestResolveEmbedPatterns_SkipNestedModuleAndIrregularInWalk(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink behavior differs on windows")
+	}
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "tree", "submod"), 0o755); err != nil {
+		t.Fatalf("mkdir tree/submod: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tree", "go.txt"), []byte("go"), 0o644); err != nil {
+		t.Fatalf("write tree/go.txt: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tree", "submod", "go.mod"), []byte("module x\n"), 0o644); err != nil {
+		t.Fatalf("write tree/submod/go.mod: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tree", "submod", "hidden.txt"), []byte("skip"), 0o644); err != nil {
+		t.Fatalf("write tree/submod/hidden.txt: %v", err)
+	}
+	if err := os.Symlink(filepath.Join(dir, "tree", "go.txt"), filepath.Join(dir, "tree", "link")); err != nil {
+		t.Skipf("symlink not supported: %v", err)
+	}
+
+	got, err := resolveEmbedPatterns(dir, []string{"tree"})
+	if err != nil {
+		t.Fatalf("resolveEmbedPatterns(tree): %v", err)
+	}
+	seen := map[string]bool{}
+	for _, item := range got {
+		seen[item.name] = true
+	}
+	if !seen["tree/go.txt"] {
+		t.Fatalf("expected tree/go.txt in result: %+v", got)
+	}
+	if seen["tree/submod/hidden.txt"] {
+		t.Fatalf("submodule file should be skipped: %+v", got)
+	}
+	if seen["tree/link"] {
+		t.Fatalf("irregular symlink should be skipped in walk: %+v", got)
+	}
+}
+
+func TestIsBadEmbedName_Reserved(t *testing.T) {
+	for _, name := range []string{".bzr", ".git", ".hg", ".svn"} {
+		if !isBadEmbedName(name) {
+			t.Fatalf("isBadEmbedName(%q) = false, want true", name)
+		}
+	}
+}
+
+func TestIsEmbedFSType_NoPackage(t *testing.T) {
+	obj := types.NewTypeName(token.NoPos, nil, "FS", nil)
+	typ := types.NewNamed(obj, types.NewStruct(nil, nil), nil)
+	if isEmbedFSType(typ) {
+		t.Fatalf("isEmbedFSType should be false for named type without package")
+	}
+}
+
+func TestTryEmbedGlobalInit_EarlyAndDefaultBranches(t *testing.T) {
+	global := buildTestSSAGlobal(t, "Num", `package foo; var Num int`)
+	p := &context{}
+	if got := p.tryEmbedGlobalInit(nil, global, nil, "foo.Num"); got {
+		t.Fatalf("tryEmbedGlobalInit should return false when embedMap is empty")
+	}
+
+	p.embedMap = map[string]embedVarData{
+		"Other": {files: []embedFileData{{name: "a.txt", data: []byte("a")}}},
+	}
+	if got := p.tryEmbedGlobalInit(nil, global, nil, "foo.Num"); got {
+		t.Fatalf("tryEmbedGlobalInit should return false for missing variable entry")
+	}
+
+	p.embedMap = map[string]embedVarData{
+		"Num": {files: []embedFileData{{name: "a.txt", data: []byte("a")}}},
+	}
+	if got := p.tryEmbedGlobalInit(nil, global, nil, "foo.Num"); got {
+		t.Fatalf("tryEmbedGlobalInit should return false for unsupported element type")
+	}
+}
+
+func TestApplyEmbedInits_SortAndMissingGlobal(t *testing.T) {
+	prog := llssa.NewProgram(nil)
+	pkg := prog.NewPackage("foo", "foo")
+	p := &context{
+		pkg: pkg,
+		embedInits: []embedInit{
+			{globalName: "z", kind: embedInitFS},
+			{globalName: "a", kind: 999},
+		},
+	}
+	p.applyEmbedInits(nil)
+	if p.embedInits != nil {
+		t.Fatalf("applyEmbedInits should clear pending inits")
+	}
+}
+
+func buildTestSSAGlobal(t *testing.T, name, src string) *gossa.Global {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "main.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	imp := packages.NewImporter(fset)
+	pkg := types.NewPackage("foo", "foo")
+	mode := gossa.SanityCheckFunctions | gossa.InstantiateGenerics
+	ssaPkg, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, []*ast.File{f}, mode)
+	if err != nil {
+		t.Fatalf("BuildPackage: %v", err)
+	}
+	member, ok := ssaPkg.Members[name]
+	if !ok {
+		t.Fatalf("missing global %q in ssa package", name)
+	}
+	global, ok := member.(*gossa.Global)
+	if !ok {
+		t.Fatalf("member %q is %T, want *ssa.Global", name, member)
+	}
+	return global
 }
