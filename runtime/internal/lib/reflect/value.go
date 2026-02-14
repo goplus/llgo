@@ -1769,6 +1769,12 @@ func Indirect(v Value) Value {
 	return v.Elem()
 }
 
+func typesMustMatch(what string, t1, t2 Type) {
+	if t1 != t2 {
+		panic(what + ": " + t1.String() + " != " + t2.String())
+	}
+}
+
 // arrayAt returns the i-th element of p,
 // an array whose elements are eltSize bytes wide.
 // The array pointed at by p must have at least i+1 elements:
@@ -1855,6 +1861,64 @@ func AppendSlice(s, t Value) Value {
 		return s
 	*/
 	panic("todo: reflect.AppendSlice")
+}
+
+// Copy copies the contents of src into dst until either
+// dst has been filled or src has been exhausted.
+// It returns the number of elements copied.
+// Dst and src each must have kind Array or Slice, and
+// dst and src must have the same element type.
+// If dst is an Array, it panics if Value.CanSet returns false.
+//
+// As a special case, src can have kind String if the element type of dst is kind Uint8.
+func Copy(dst, src Value) int {
+	dk := dst.kind()
+	if dk != Array && dk != Slice {
+		panic(&ValueError{"reflect.Copy", dk})
+	}
+	if dk == Array {
+		dst.mustBeAssignable()
+	}
+	dst.mustBeExported()
+
+	sk := src.kind()
+	stringCopy := false
+	if sk != Array && sk != Slice {
+		stringCopy = sk == String && dst.typ().Elem().Kind() == abi.Uint8
+		if !stringCopy {
+			panic(&ValueError{"reflect.Copy", sk})
+		}
+	}
+	src.mustBeExported()
+
+	de := dst.typ().Elem()
+	if !stringCopy {
+		se := src.typ().Elem()
+		typesMustMatch("reflect.Copy", toType(de), toType(se))
+	}
+
+	var ds, ss unsafeheaderSlice
+	if dk == Array {
+		ds.Data = dst.ptr
+		ds.Len = dst.Len()
+		ds.Cap = ds.Len
+	} else {
+		ds = *(*unsafeheaderSlice)(dst.ptr)
+	}
+	if sk == Array {
+		ss.Data = src.ptr
+		ss.Len = src.Len()
+		ss.Cap = ss.Len
+	} else if sk == Slice {
+		ss = *(*unsafeheaderSlice)(src.ptr)
+	} else {
+		sh := *(*unsafeheaderString)(src.ptr)
+		ss.Data = sh.Data
+		ss.Len = sh.Len
+		ss.Cap = sh.Len
+	}
+
+	return typedslicecopy(de, ds, ss)
 }
 
 // Zero returns a Value representing the zero value for the specified type.
@@ -2010,6 +2074,13 @@ func typedmemmove(t *abi.Type, dst, src unsafe.Pointer)
 //go:linkname typedmemclr github.com/goplus/llgo/runtime/internal/runtime.Typedmemclr
 func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
 
+// typedslicecopy copies a slice of elemType values from src to dst,
+// returning the number of elements copied.
+//
+//go:noescape
+//go:linkname typedslicecopy github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy
+func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int
+
 /*
 	TODO(xsw):
 
@@ -2018,12 +2089,6 @@ func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
 //
 //go:noescape
 func typedmemclrpartial(t *abi.Type, ptr unsafe.Pointer, off, size uintptr)
-
-// typedslicecopy copies a slice of elemType values from src to dst,
-// returning the number of elements copied.
-//
-//go:noescape
-func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int
 
 // typedarrayclear zeroes the value at ptr of an array of elemType,
 // only clears len elem.
