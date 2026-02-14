@@ -183,7 +183,13 @@ func IfacePtrData(i iface) unsafe.Pointer {
 		panic(errorString("invalid memory address or nil pointer dereference").Error())
 	}
 	if DirectIfaceData(i.tab._type) {
-		return unsafe.Pointer(&i.data)
+		// For direct-iface values, i.data holds the value bits (not a stable
+		// pointer). Interface method calls use the "one-word receiver" ABI which
+		// expects a pointer to the receiver value. We must return a stable
+		// address, not the address of a stack copy of i.
+		p := AllocU(pointerSize)
+		*(*unsafe.Pointer)(p) = i.data
+		return p
 	}
 	return i.data
 }
@@ -192,7 +198,11 @@ func DirectIfaceData(typ *abi.Type) bool {
 	switch typ.Kind() {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
-		abi.Float32, abi.Float64, abi.Array, abi.Struct:
+		abi.Float32, abi.Float64, abi.Array, abi.Struct,
+		// These are single-word values stored directly in iface.data.
+		// For interface method calls, non-pointer receivers still require a
+		// pointer to the stored word.
+		abi.Chan, abi.Func, abi.Map, abi.UnsafePointer:
 		if isDirectIface(typ) {
 			return true
 		}
