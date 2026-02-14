@@ -604,6 +604,14 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 		}
 		return pkg, v, goFunc
 	}
+	// Stdlib compiler intrinsics that are defined as `panic("intrinsic")` in
+	// source form. LLGo doesn't run Go escape analysis, so we can lower these to
+	// a no-op.
+	//
+	// See: $(GOROOT)/src/hash/maphash/maphash.go: escapeForHash.
+	if orgName == "hash/maphash.escapeForHash" {
+		return nil, "skip", llgoInstr
+	}
 	if instr, ok := syncAtomicIntrinsicMap[orgName]; ok {
 		return nil, instr, llgoInstr
 	}
