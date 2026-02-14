@@ -741,7 +741,10 @@ func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
 	chosen := b.impl.CreateExtractValue(ret.impl, 0, "")
 	recvOK := b.impl.CreateExtractValue(ret.impl, 1, "")
 	if !blocking {
-		chosen = llvm.CreateSelect(b.impl, recvOK, chosen, prog.Val(-1).impl)
+		// runtime.TrySelect returns (isel, recvOK, tryOK). recvOK is only meaningful
+		// for receives; selection success is reported by tryOK.
+		tryOK := b.impl.CreateExtractValue(ret.impl, 2, "")
+		chosen = llvm.CreateSelect(b.impl, tryOK, chosen, prog.Val(-1).impl)
 	}
 	results := []llvm.Value{chosen, recvOK}
 	typs := []Type{prog.Int(), prog.Bool()}
