@@ -1,7 +1,14 @@
+//go:build !llgo
+// +build !llgo
+
 package cl
 
 import (
+	"fmt"
 	"go/ast"
+	"go/parser"
+	"go/token"
+	"go/types"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -218,4 +225,154 @@ func TestBuildEmbedFSEntries(t *testing.T) {
 	if pos["testdata/"] >= pos["testdata/hello.txt"] {
 		t.Fatalf("directory entry should precede file entry: %+v", got)
 	}
+}
+
+func TestLoadEmbedDirectives(t *testing.T) {
+	dir := t.TempDir()
+	mainFile := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write hello.txt: %v", err)
+	}
+
+	src := `package foo
+
+import "embed"
+
+//go:embed hello.txt
+var content string
+`
+
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, mainFile, src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+
+	p := &context{fset: fset}
+	p.loadEmbedDirectives([]*ast.File{f})
+	info, ok := p.embedMap["content"]
+	if !ok {
+		t.Fatalf("missing embed var content: %+v", p.embedMap)
+	}
+	if len(info.files) != 1 || info.files[0].name != "hello.txt" {
+		t.Fatalf("unexpected files: %+v", info.files)
+	}
+}
+
+func TestLoadEmbedDirectives_EarlyReturnsAndSkips(t *testing.T) {
+	p := &context{fset: token.NewFileSet()}
+	p.loadEmbedDirectives(nil)
+	if len(p.embedMap) != 0 {
+		t.Fatalf("embedMap should be empty for nil input")
+	}
+
+	f, err := parser.ParseFile(p.fset, "", `package foo`, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	p.loadEmbedDirectives([]*ast.File{f})
+	if len(p.embedMap) != 0 {
+		t.Fatalf("embedMap should stay empty for files without filename")
+	}
+}
+
+func TestLoadEmbedDirectives_Panics(t *testing.T) {
+	mustPanicContains := func(t *testing.T, want string, fn func()) {
+		t.Helper()
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatalf("expected panic containing %q", want)
+			}
+			msg := fmt.Sprint(r)
+			if !strings.Contains(msg, want) {
+				t.Fatalf("panic = %q, want %q", msg, want)
+			}
+		}()
+		fn()
+	}
+
+	makeFile := func(t *testing.T, src string, extras map[string]string) (*context, []*ast.File) {
+		t.Helper()
+		dir := t.TempDir()
+		mainFile := filepath.Join(dir, "main.go")
+		for rel, data := range extras {
+			full := filepath.Join(dir, rel)
+			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+				t.Fatalf("mkdir %s: %v", rel, err)
+			}
+			if err := os.WriteFile(full, []byte(data), 0o644); err != nil {
+				t.Fatalf("write %s: %v", rel, err)
+			}
+		}
+		fset := token.NewFileSet()
+		f, err := parser.ParseFile(fset, mainFile, src, parser.ParseComments)
+		if err != nil {
+			t.Fatalf("ParseFile: %v", err)
+		}
+		return &context{fset: fset}, []*ast.File{f}
+	}
+
+	pMissingImport, filesMissingImport := makeFile(t, `package foo
+
+//go:embed hello.txt
+var s string
+`, map[string]string{"hello.txt": "hi"})
+	mustPanicContains(t, `import "embed"`, func() {
+		pMissingImport.loadEmbedDirectives(filesMissingImport)
+	})
+
+	pNoMatch, filesNoMatch := makeFile(t, `package foo
+import "embed"
+
+//go:embed no_such_file.txt
+var s string
+`, nil)
+	mustPanicContains(t, "no matching files found", func() {
+		pNoMatch.loadEmbedDirectives(filesNoMatch)
+	})
+
+	pInvalid, filesInvalid := makeFile(t, "package foo\nimport \"embed\"\n//go:embed \"bad\nvar s string\n", nil)
+	mustPanicContains(t, "invalid //go:embed quoted pattern", func() {
+		pInvalid.loadEmbedDirectives(filesInvalid)
+	})
+}
+
+func TestEmbedTypeChecks(t *testing.T) {
+	if !isStringType(types.Typ[types.String]) {
+		t.Fatalf("isStringType(string) = false, want true")
+	}
+	typeName := types.NewTypeName(token.NoPos, nil, "MyString", nil)
+	if !isStringType(types.NewNamed(typeName, types.Typ[types.String], nil)) {
+		t.Fatalf("isStringType(named string) = false, want true")
+	}
+	if isStringType(types.Typ[types.Int]) {
+		t.Fatalf("isStringType(int) = true, want false")
+	}
+
+	if !isByteSliceType(types.NewSlice(types.Typ[types.Byte])) {
+		t.Fatalf("isByteSliceType([]byte) = false, want true")
+	}
+	byteAlias := types.NewTypeName(token.NoPos, nil, "MyByte", nil)
+	if !isByteSliceType(types.NewSlice(types.NewNamed(byteAlias, types.Typ[types.Byte], nil))) {
+		t.Fatalf("isByteSliceType([]MyByte) = false, want true")
+	}
+	if isByteSliceType(types.NewSlice(types.Typ[types.Int])) {
+		t.Fatalf("isByteSliceType([]int) = true, want false")
+	}
+
+	embedPkg := types.NewPackage("embed", "embed")
+	fsObj := types.NewTypeName(token.NoPos, embedPkg, "FS", nil)
+	fsType := types.NewNamed(fsObj, types.NewStruct(nil, nil), nil)
+	if !isEmbedFSType(fsType) {
+		t.Fatalf("isEmbedFSType(embed.FS) = false, want true")
+	}
+	if isEmbedFSType(types.Typ[types.String]) {
+		t.Fatalf("isEmbedFSType(string) = true, want false")
+	}
+}
+
+func TestApplyEmbedInits_NoPending(t *testing.T) {
+	p := &context{}
+	p.applyEmbedInits(nil)
 }
