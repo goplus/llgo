@@ -1157,6 +1157,40 @@ source_filename = "global"
 `)
 }
 
+func TestGlobalConstLiterals(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	_ = pkg.ConstString("hello")
+	_ = pkg.ConstString("hello")
+	ir := pkg.String()
+	if strings.Count(ir, `c"hello"`) != 1 {
+		t.Fatalf("ConstString should reuse backing global, got:\n%s", ir)
+	}
+
+	before := pkg.String()
+	_ = pkg.ConstBytes(nil)
+	_ = pkg.ConstBytes([]byte{})
+	_ = pkg.createGlobalBytes(nil)
+	afterEmpty := pkg.String()
+	if afterEmpty != before {
+		t.Fatalf("ConstBytes(empty) should not emit globals:\n%s", afterEmpty)
+	}
+
+	_ = pkg.ConstBytes([]byte("hi"))
+	_ = pkg.ConstBytes([]byte("hi"))
+	ir = pkg.String()
+	if strings.Count(ir, `c"hi"`) != 2 {
+		t.Fatalf("ConstBytes should allocate writable backing each call, got:\n%s", ir)
+	}
+}
+
 func TestSetjmpReturnsTwice(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
