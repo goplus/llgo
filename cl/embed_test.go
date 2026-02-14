@@ -21,6 +21,21 @@ import (
 	"golang.org/x/tools/go/ssa/ssautil"
 )
 
+func mustPanicContains(t *testing.T, want string, fn func()) {
+	t.Helper()
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatalf("expected panic containing %q", want)
+		}
+		msg := fmt.Sprint(r)
+		if !strings.Contains(msg, want) {
+			t.Fatalf("panic = %q, want %q", msg, want)
+		}
+	}()
+	fn()
+}
+
 func TestParseEmbedPatterns(t *testing.T) {
 	doc := &ast.CommentGroup{
 		List: []*ast.Comment{
@@ -286,21 +301,6 @@ func TestLoadEmbedDirectives_EarlyReturnsAndSkips(t *testing.T) {
 }
 
 func TestLoadEmbedDirectives_Panics(t *testing.T) {
-	mustPanicContains := func(t *testing.T, want string, fn func()) {
-		t.Helper()
-		defer func() {
-			r := recover()
-			if r == nil {
-				t.Fatalf("expected panic containing %q", want)
-			}
-			msg := fmt.Sprint(r)
-			if !strings.Contains(msg, want) {
-				t.Fatalf("panic = %q, want %q", msg, want)
-			}
-		}()
-		fn()
-	}
-
 	makeFile := func(t *testing.T, src string, extras map[string]string) (*context, []*ast.File) {
 		t.Helper()
 		dir := t.TempDir()
@@ -326,7 +326,7 @@ func TestLoadEmbedDirectives_Panics(t *testing.T) {
 
 //go:embed hello.txt
 var s string
-`, map[string]string{"hello.txt": "hi"})
+	`, map[string]string{"hello.txt": "hi"})
 	mustPanicContains(t, `import "embed"`, func() {
 		pMissingImport.loadEmbedDirectives(filesMissingImport)
 	})
@@ -336,7 +336,7 @@ import "embed"
 
 //go:embed no_such_file.txt
 var s string
-`, nil)
+	`, nil)
 	mustPanicContains(t, "no matching files found", func() {
 		pNoMatch.loadEmbedDirectives(filesNoMatch)
 	})
@@ -360,7 +360,6 @@ import "embed"
 
 var plain string
 
-	//go:embed hello.txt
 	var a, b string
 
 	var (
@@ -380,7 +379,7 @@ var plain string
 		t.Fatalf("embedMap should load grouped single-name declaration: %+v", p.embedMap)
 	}
 	if _, ok := p.embedMap["a"]; ok {
-		t.Fatalf("multi-name declaration should be skipped: %+v", p.embedMap)
+		t.Fatalf("multi-name declaration without directive should be skipped: %+v", p.embedMap)
 	}
 }
 
@@ -512,7 +511,31 @@ func TestValidEmbedPattern(t *testing.T) {
 	}
 }
 
-func TestLoadEmbedDirectives_BlockLevelDocNotAppliedToGroupedSpecs(t *testing.T) {
+func TestLoadEmbedDirectives_MultiNameVarDirectivePanics(t *testing.T) {
+	dir := t.TempDir()
+	mainFile := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write hello.txt: %v", err)
+	}
+	src := `package foo
+
+import "embed"
+
+//go:embed hello.txt
+var a, b string
+`
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, mainFile, src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	p := &context{fset: fset}
+	mustPanicContains(t, "go:embed cannot apply to multiple vars", func() {
+		p.loadEmbedDirectives([]*ast.File{f})
+	})
+}
+
+func TestLoadEmbedDirectives_GroupLevelDirectiveMisplaced(t *testing.T) {
 	dir := t.TempDir()
 	mainFile := filepath.Join(dir, "main.go")
 	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hello"), 0o644); err != nil {
@@ -534,10 +557,9 @@ var (
 		t.Fatalf("ParseFile: %v", err)
 	}
 	p := &context{fset: fset}
-	p.loadEmbedDirectives([]*ast.File{f})
-	if len(p.embedMap) != 0 {
-		t.Fatalf("group-level doc should not apply to grouped specs: %+v", p.embedMap)
-	}
+	mustPanicContains(t, "misplaced go:embed directive", func() {
+		p.loadEmbedDirectives([]*ast.File{f})
+	})
 }
 
 func TestEmbedRelPath_Outside(t *testing.T) {
@@ -702,9 +724,9 @@ func TestTryEmbedGlobalInit_EarlyAndDefaultBranches(t *testing.T) {
 	p.embedMap = map[string]embedVarData{
 		"Num": {files: []embedFileData{{name: "a.txt", data: []byte("a")}}},
 	}
-	if got := p.tryEmbedGlobalInit(nil, global, nil, "foo.Num"); got {
-		t.Fatalf("tryEmbedGlobalInit should return false for unsupported element type")
-	}
+	mustPanicContains(t, "go:embed cannot apply to var of type int", func() {
+		_ = p.tryEmbedGlobalInit(nil, global, nil, "foo.Num")
+	})
 }
 
 func TestApplyEmbedInits_SortAndMissingGlobal(t *testing.T) {
