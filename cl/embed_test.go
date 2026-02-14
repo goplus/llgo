@@ -360,14 +360,14 @@ import "embed"
 
 var plain string
 
-//go:embed hello.txt
-var a, b string
-
-var (
 	//go:embed hello.txt
-	c string
-	d string
-)
+	var a, b string
+
+	var (
+		//go:embed hello.txt
+		c string
+		d string
+	)
 `
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, mainFile, src, parser.ParseComments)
@@ -376,8 +376,11 @@ var (
 	}
 	p := &context{fset: fset}
 	p.loadEmbedDirectives([]*ast.File{f})
-	if len(p.embedMap) != 0 {
-		t.Fatalf("embedMap should stay empty for skipped declarations: %+v", p.embedMap)
+	if len(p.embedMap) != 1 || len(p.embedMap["c"].files) != 1 {
+		t.Fatalf("embedMap should load grouped single-name declaration: %+v", p.embedMap)
+	}
+	if _, ok := p.embedMap["a"]; ok {
+		t.Fatalf("multi-name declaration should be skipped: %+v", p.embedMap)
 	}
 }
 
@@ -499,13 +502,41 @@ func TestValidEmbedPattern(t *testing.T) {
 	}{
 		{pattern: ".", want: false},
 		{pattern: "ok/file.txt", want: true},
-		{pattern: "vendor/file.txt", want: false},
-		{pattern: "a/vendor/file.txt", want: false},
+		{pattern: "vendor/file.txt", want: true},
+		{pattern: "a/vendor/file.txt", want: true},
 	}
 	for _, tc := range tests {
 		if got := validEmbedPattern(tc.pattern); got != tc.want {
 			t.Fatalf("validEmbedPattern(%q) = %v, want %v", tc.pattern, got, tc.want)
 		}
+	}
+}
+
+func TestLoadEmbedDirectives_BlockLevelDocNotAppliedToGroupedSpecs(t *testing.T) {
+	dir := t.TempDir()
+	mainFile := filepath.Join(dir, "main.go")
+	if err := os.WriteFile(filepath.Join(dir, "hello.txt"), []byte("hello"), 0o644); err != nil {
+		t.Fatalf("write hello.txt: %v", err)
+	}
+	src := `package foo
+
+import "embed"
+
+//go:embed hello.txt
+var (
+	a string
+	b string
+)
+`
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, mainFile, src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile: %v", err)
+	}
+	p := &context{fset: fset}
+	p.loadEmbedDirectives([]*ast.File{f})
+	if len(p.embedMap) != 0 {
+		t.Fatalf("group-level doc should not apply to grouped specs: %+v", p.embedMap)
 	}
 }
 

@@ -51,31 +51,37 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 		hasEmbedImport := fileImportsEmbed(file)
 		for _, decl := range file.Decls {
 			gen, ok := decl.(*ast.GenDecl)
-			if !ok || gen.Tok != token.VAR || len(gen.Specs) != 1 {
+			if !ok || gen.Tok != token.VAR {
 				continue
 			}
-			spec, ok := gen.Specs[0].(*ast.ValueSpec)
-			if !ok || len(spec.Names) != 1 {
-				continue
+			for _, spec0 := range gen.Specs {
+				spec, ok := spec0.(*ast.ValueSpec)
+				if !ok || len(spec.Names) != 1 {
+					continue
+				}
+				docs := []*ast.CommentGroup{spec.Doc}
+				if len(gen.Specs) == 1 {
+					docs = append([]*ast.CommentGroup{gen.Doc}, docs...)
+				}
+				patterns, hasDirective, err := parseEmbedPatterns(docs...)
+				if err != nil {
+					pos := p.fset.PositionFor(spec.Pos(), false)
+					panic(fmt.Sprintf("%s: %v", pos, err))
+				}
+				if !hasDirective {
+					continue
+				}
+				if !hasEmbedImport {
+					pos := p.fset.PositionFor(spec.Pos(), false)
+					panic(fmt.Sprintf("%s: go:embed only allowed in Go files that import \"embed\"", pos))
+				}
+				resolvedFiles, err := resolveEmbedPatterns(pkgDir, patterns)
+				if err != nil {
+					pos := p.fset.PositionFor(spec.Pos(), false)
+					panic(fmt.Sprintf("%s: %v", pos, err))
+				}
+				byVar[spec.Names[0].Name] = embedVarData{files: resolvedFiles}
 			}
-			patterns, hasDirective, err := parseEmbedPatterns(gen.Doc, spec.Doc)
-			if err != nil {
-				pos := p.fset.PositionFor(spec.Pos(), false)
-				panic(fmt.Sprintf("%s: %v", pos, err))
-			}
-			if !hasDirective {
-				continue
-			}
-			if !hasEmbedImport {
-				pos := p.fset.PositionFor(spec.Pos(), false)
-				panic(fmt.Sprintf("%s: go:embed only allowed in Go files that import \"embed\"", pos))
-			}
-			resolvedFiles, err := resolveEmbedPatterns(pkgDir, patterns)
-			if err != nil {
-				pos := p.fset.PositionFor(spec.Pos(), false)
-				panic(fmt.Sprintf("%s: %v", pos, err))
-			}
-			byVar[spec.Names[0].Name] = embedVarData{files: resolvedFiles}
 		}
 	}
 	p.embedMap = byVar
@@ -300,15 +306,7 @@ func resolveEmbedPatterns(pkgDir string, patterns []string) ([]embedFileData, er
 }
 
 func validEmbedPattern(pattern string) bool {
-	if pattern == "." || !fs.ValidPath(pattern) {
-		return false
-	}
-	for _, elem := range strings.Split(pattern, "/") {
-		if elem == "vendor" {
-			return false
-		}
-	}
-	return true
+	return pattern != "." && fs.ValidPath(pattern)
 }
 
 func embedRelPath(pkgDir, abs string) (string, error) {
