@@ -54,9 +54,15 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 			if !ok || gen.Tok != token.VAR {
 				continue
 			}
+			if len(gen.Specs) > 1 {
+				if _, hasDirective, _ := parseEmbedPatterns(gen.Doc); hasDirective {
+					pos := p.fset.PositionFor(gen.Doc.Pos(), false)
+					panic(fmt.Sprintf("%s: misplaced go:embed directive", pos))
+				}
+			}
 			for _, spec0 := range gen.Specs {
 				spec, ok := spec0.(*ast.ValueSpec)
-				if !ok || len(spec.Names) != 1 {
+				if !ok {
 					continue
 				}
 				docs := []*ast.CommentGroup{spec.Doc}
@@ -70,6 +76,10 @@ func (p *context) loadEmbedDirectives(files []*ast.File) {
 				}
 				if !hasDirective {
 					continue
+				}
+				if len(spec.Names) != 1 {
+					pos := p.fset.PositionFor(spec.Pos(), false)
+					panic(fmt.Sprintf("%s: go:embed cannot apply to multiple vars", pos))
 				}
 				if !hasEmbedImport {
 					pos := p.fset.PositionFor(spec.Pos(), false)
@@ -456,7 +466,7 @@ func (p *context) tryEmbedGlobalInit(pkg llssa.Package, gbl *ssa.Global, g llssa
 		})
 		return false
 	default:
-		return false
+		panic(fmt.Sprintf("go:embed cannot apply to var of type %s", elem.String()))
 	}
 }
 
