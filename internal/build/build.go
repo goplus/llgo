@@ -1514,6 +1514,8 @@ func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose 
 		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 		pkgSSA.Build() // TODO(xsw): build concurrently
 	}
+	// Apply local SSA fixups for stdlib compatibility.
+	fixSSAOrder(pkgSSA)
 	return pkgSSA
 }
 
