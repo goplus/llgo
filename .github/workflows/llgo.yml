@@ -234,25 +234,8 @@ jobs:
           fi
           printf '  %s\n' "${selected[@]}"
 
-          # Temporarily skip known flaky/hanging tests (keep this list minimal).
-          skip_pkgs=(
-            "github.com/goplus/llgo/test/std/net/http/httptest"
-          )
-
           # Run per-package and print elapsed time to keep logs readable.
           for pkg in "${selected[@]}"; do
-            skip=false
-            for s in "${skip_pkgs[@]}"; do
-              if [ "${pkg}" = "${s}" ]; then
-                echo "==> skip incompatible package: ${pkg}"
-                skip=true
-                break
-              fi
-            done
-            if [ "${skip}" = true ]; then
-              continue
-            fi
-
             echo "==> llgo test ${pkg}"
             SECONDS=0
             llgo test "${pkg}"
