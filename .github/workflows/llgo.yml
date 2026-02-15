@@ -234,18 +234,8 @@ jobs:
           fi
           printf '  %s\n' "${selected[@]}"
 
-          # Known llgo-incompatible std tests; skip until runtime/stdlib support catches up.
+          # Temporarily skip known flaky/hanging tests (keep this list minimal).
           skip_pkgs=(
-            "github.com/goplus/llgo/test/std/archive/zip"
-            "github.com/goplus/llgo/test/std/context"
-            "github.com/goplus/llgo/test/std/crypto/x509"
-            "github.com/goplus/llgo/test/std/encoding/json"
-            "github.com/goplus/llgo/test/std/flag"
-            "github.com/goplus/llgo/test/std/hash/maphash"
-            "github.com/goplus/llgo/test/std/io"
-            "github.com/goplus/llgo/test/std/io/fs"
-            "github.com/goplus/llgo/test/std/log"
-            "github.com/goplus/llgo/test/std/net"
             "github.com/goplus/llgo/test/std/net/http/httptest"
           )
 
