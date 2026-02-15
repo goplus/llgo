@@ -325,6 +325,14 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 				return
 			}
 
+			// If a deferred call panics while draining loop defers, we must keep
+			// draining the remaining nodes in this frame before unwinding to the
+			// next defer statement. To achieve this, rethrow should resume at the
+			// current stmt block (which is a valid indirectbr destination),
+			// re-entering the drain loop with the next node already popped.
+			drainEntry := b.blk
+			drainEntryAddr := drainEntry.Addr()
+
 			prog := b.Prog
 			condBlk := b.Func.MakeBlock()
 			exitBlk := b.Func.MakeBlock()
@@ -365,6 +373,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 				b.If(match, caseBlks[i], nextBlk)
 
 				b.SetBlockEx(caseBlks[i], AtEnd, true)
+				b.Store(self.rethPtr, drainEntryAddr)
 				b.callDefer(self, c.typ, c.fn, c.args)
 				b.Jump(condBlk)
 			}
