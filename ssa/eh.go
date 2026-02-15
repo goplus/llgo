@@ -156,6 +156,7 @@ func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 
 type aDefer struct {
 	nextBit   int          // next defer bit
+	nextID    uintptr      // next defer statement id
 	data      Expr         // pointer to runtime.Defer
 	bitsPtr   Expr         // pointer to defer bits
 	rethPtr   Expr         // next block of Rethrow
@@ -259,6 +260,8 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	var prog Program
 	var nextbit Expr
 	var self = b.getDefer(kind)
+	id := b.Prog.Val(self.nextID)
+	self.nextID++
 	switch kind {
 	case DeferInCond:
 		prog = b.Prog
@@ -275,7 +278,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	case DeferInLoop:
 		// Loop defers rely on a dedicated drain loop inserted below.
 	}
-	typ := b.saveDeferArgs(self, fn, args)
+	typ := b.saveDeferArgs(self, kind, id, fn, args)
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
 		case DeferInCond:
@@ -302,7 +305,14 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 			b.SetBlockEx(condBlk, AtEnd, true)
 			list := b.Load(self.argsPtr)
 			has := b.BinOp(token.NEQ, list, prog.Nil(prog.VoidPtr()))
-			b.If(has, bodyBlk, exitBlk)
+			idChkBlk := b.Func.MakeBlock()
+			b.If(has, idChkBlk, exitBlk)
+
+			b.SetBlockEx(idChkBlk, AtEnd, true)
+			hdr := prog.Struct(prog.VoidPtr(), prog.Uintptr())
+			hdrData := b.Load(Expr{list.impl, prog.Pointer(hdr)})
+			match := b.BinOp(token.EQL, b.getField(hdrData, 1), id)
+			b.If(match, bodyBlk, exitBlk)
 
 			b.SetBlockEx(bodyBlk, AtEnd, true)
 			b.callDefer(self, typ, fn, args)
@@ -327,12 +337,12 @@ defer.Args = node.prev
 free(node)
 */
 
-func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
-	if fn.kind != vkClosure && len(args) == 0 {
+func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, args []Expr) Type {
+	if kind != DeferInLoop && fn.kind != vkClosure && len(args) == 0 {
 		return nil
 	}
 	prog := b.Prog
-	offset := 1
+	offset := 2 // prev + id
 	if fn.kind == vkClosure {
 		offset++
 	}
@@ -340,9 +350,13 @@ func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 	flds := make([]llvm.Value, len(args)+offset)
 	typs[0] = prog.VoidPtr()
 	flds[0] = b.Load(self.argsPtr).impl
+	typs[1] = prog.Uintptr()
+	flds[1] = id.impl
 	if offset == 2 {
-		typs[1] = fn.Type
-		flds[1] = fn.impl
+		// non-closure
+	} else {
+		typs[2] = fn.Type
+		flds[2] = fn.impl
 	}
 	for i, arg := range args {
 		typs[i+offset] = arg.Type
@@ -369,11 +383,11 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 	b.IfThen(has, func() {
 		ptr := b.Load(self.argsPtr)
 		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
-		offset := 1
+		offset := 2 // prev + id
 		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
 		callFn := fn
 		if callFn.kind == vkClosure {
-			callFn = b.getField(data, 1)
+			callFn = b.getField(data, 2)
 			offset++
 		}
 		for i := 0; i < len(args); i++ {
