@@ -655,17 +655,17 @@ func TestTCPConnWrite(t *testing.T) {
 	}
 	defer ln.Close()
 
+	done := make(chan error, 1)
 	go func() {
 		conn, err := ln.Accept()
 		if err != nil {
-			t.Errorf("Accept error: %v", err)
+			done <- err
 			return
 		}
 		defer conn.Close()
 		buf := make([]byte, 5)
-		if _, err := conn.Read(buf); err != nil {
-			t.Errorf("server Read error: %v", err)
-		}
+		_, err = io.ReadFull(conn, buf)
+		done <- err
 	}()
 
 	conn, err := net.Dial("tcp", ln.Addr().String())
@@ -680,6 +680,10 @@ func TestTCPConnWrite(t *testing.T) {
 	}
 	if n != 5 {
 		t.Errorf("Write = %d, want 5", n)
+	}
+
+	if err := <-done; err != nil {
+		t.Fatalf("server error: %v", err)
 	}
 }
 
