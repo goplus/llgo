@@ -224,7 +224,22 @@ func TypeArgs(typeArgs []types.Type) string {
 }
 
 func typeArgString(t types.Type) string {
-	switch t := types.Unalias(t).(type) {
+	switch t := t.(type) {
+	case *types.Alias:
+		name := t.Obj().Name()
+		if targs := t.TypeArgs(); targs != nil {
+			n := targs.Len()
+			infos := make([]string, n)
+			for i := 0; i < n; i++ {
+				infos[i] = typeArgString(targs.At(i))
+			}
+			name += "[" + strings.Join(infos, ",") + "]"
+		}
+		name += scopeIndices(t.Obj())
+		if pkg := t.Obj().Pkg(); pkg != nil {
+			return PathOf(pkg) + "." + name
+		}
+		return name
 	case *types.Basic:
 		return t.String()
 	case *types.Named:
@@ -419,6 +434,9 @@ func scopeIndex(scope, root *types.Scope, id string) string {
 
 func scopeIndices(obj types.Object) string {
 	pkg := obj.Pkg()
+	if pkg == nil {
+		return ""
+	}
 	if obj.Parent() != pkg.Scope() {
 		return scopeIndex(obj.Parent(), pkg.Scope(), "")
 	}
