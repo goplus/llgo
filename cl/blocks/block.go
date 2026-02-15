@@ -32,7 +32,7 @@ type blockState struct {
 	self   *ssa.BasicBlock
 	preds  int
 	succs  []int
-	loop   bool
+	loop   bool // marks block during findLoop traversal (ordering purposes only)
 	inLoop bool // block participates in a cycle (SCC); defer in this block may execute multiple times
 	always bool
 	reach  bool

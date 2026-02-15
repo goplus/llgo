@@ -165,10 +165,17 @@ type aDefer struct {
 	procBlk   BasicBlock   // deferProc block
 	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
 	rundsNext []BasicBlock // next blocks of RunDefers
-	loopCases []loopDeferCase
-	stmts     []func(bits Expr)
+	// loopDrainerGenerated marks whether we've already generated the loop-defer
+	// drain loop for the current contiguous run of DeferInLoop statements (when
+	// walking defers in reverse order in endDefer).
+	loopDrainerGenerated bool
+	loopCases            []loopDeferCase
+	stmts                []func(bits Expr)
 }
 
+// loopDeferCase represents a defer statement inside a loop.
+// The id uniquely identifies the defer call site for dispatch during drain.
+// typ is the node struct type needed to decode the linked-list node.
 type loopDeferCase struct {
 	id   Expr
 	typ  Type
@@ -293,14 +300,31 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
 		case DeferInCond:
+			// Leaving a run of loop defers; allow the next loop-defer statement
+			// (earlier in source order) to generate its own drainer.
+			self.loopDrainerGenerated = false
 			zero := prog.Val(uintptr(0))
 			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
 			b.IfThen(has, func() {
 				b.callDefer(self, typ, fn, args)
 			})
 		case DeferAlways:
+			// Leaving a run of loop defers; allow the next loop-defer statement
+			// (earlier in source order) to generate its own drainer.
+			self.loopDrainerGenerated = false
 			b.callDefer(self, typ, fn, args)
 		case DeferInLoop:
+			// Only one drainer is needed per contiguous run of loop defers.
+			// (Multiple loop-defer statements inside the same loop share the same
+			// runtime node list and must be drained in strict LIFO order.)
+			if self.loopDrainerGenerated {
+				return
+			}
+			self.loopDrainerGenerated = true
+			if len(self.loopCases) == 0 {
+				return
+			}
+
 			prog := b.Prog
 			condBlk := b.Func.MakeBlock()
 			exitBlk := b.Func.MakeBlock()
@@ -353,11 +377,12 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 /*
 type node struct {
 	prev *node
-	fn   func()
+	id   uintptr // identifies defer statement for dispatch
+	fn   func()  // (only if closure)
 	args ...
 }
 // push
-defer.Args = &node{defer.Args,fn,args...}
+defer.Args = &node{defer.Args, id, fn, args...}
 // pop
 node := defer.Args
 defer.Args = node.prev
@@ -379,9 +404,7 @@ func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, ar
 	flds[0] = b.Load(self.argsPtr).impl
 	typs[1] = prog.Uintptr()
 	flds[1] = id.impl
-	if offset == 2 {
-		// non-closure
-	} else {
+	if fn.kind == vkClosure {
 		typs[2] = fn.Type
 		flds[2] = fn.impl
 	}
