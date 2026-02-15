@@ -156,6 +156,7 @@ func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 
 type aDefer struct {
 	nextBit   int          // next defer bit
+	nextID    uintptr      // next defer statement id
 	data      Expr         // pointer to runtime.Defer
 	bitsPtr   Expr         // pointer to defer bits
 	rethPtr   Expr         // next block of Rethrow
@@ -164,7 +165,15 @@ type aDefer struct {
 	procBlk   BasicBlock   // deferProc block
 	panicBlk  BasicBlock   // panic block (runDefers and rethrow)
 	rundsNext []BasicBlock // next blocks of RunDefers
+	loopCases []loopDeferCase
 	stmts     []func(bits Expr)
+}
+
+type loopDeferCase struct {
+	id   Expr
+	typ  Type
+	fn   Expr
+	args []Expr
 }
 
 const (
@@ -259,6 +268,8 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	var prog Program
 	var nextbit Expr
 	var self = b.getDefer(kind)
+	id := b.Prog.Val(self.nextID)
+	self.nextID++
 	switch kind {
 	case DeferInCond:
 		prog = b.Prog
@@ -275,7 +286,10 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	case DeferInLoop:
 		// Loop defers rely on a dedicated drain loop inserted below.
 	}
-	typ := b.saveDeferArgs(self, fn, args)
+	typ := b.saveDeferArgs(self, kind, id, fn, args)
+	if kind == DeferInLoop {
+		self.loopCases = append(self.loopCases, loopDeferCase{id: id, typ: typ, fn: fn, args: args})
+	}
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
 		case DeferInCond:
@@ -289,24 +303,47 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 		case DeferInLoop:
 			prog := b.Prog
 			condBlk := b.Func.MakeBlock()
-			bodyBlk := b.Func.MakeBlock()
 			exitBlk := b.Func.MakeBlock()
+			idBlk := b.Func.MakeBlock()
 			// Control flow:
 			//   condBlk: check argsPtr for non-nil to see if there's work to drain.
-			//   bodyBlk: execute a single defer node, then jump back to condBlk.
-			//   exitBlk: reached when the list is empty (argsPtr == nil).
-			// This mirrors runtime's linked-list unwinding semantics for loop defers.
+			//   idBlk:   load node id and dispatch to the matching loop defer statement.
+			//   exitBlk: reached when list is empty or head doesn't belong to any loop defer.
 
-			// jump to condition check before executing
 			b.Jump(condBlk)
 			b.SetBlockEx(condBlk, AtEnd, true)
 			list := b.Load(self.argsPtr)
 			has := b.BinOp(token.NEQ, list, prog.Nil(prog.VoidPtr()))
-			b.If(has, bodyBlk, exitBlk)
+			b.If(has, idBlk, exitBlk)
 
-			b.SetBlockEx(bodyBlk, AtEnd, true)
-			b.callDefer(self, typ, fn, args)
-			b.Jump(condBlk)
+			b.SetBlockEx(idBlk, AtEnd, true)
+			hdr := prog.Struct(prog.VoidPtr(), prog.Uintptr())
+			hdrData := b.Load(Expr{list.impl, prog.Pointer(hdr)})
+			nodeID := b.getField(hdrData, 1)
+
+			cases := self.loopCases
+			chkBlks := make([]BasicBlock, len(cases))
+			caseBlks := make([]BasicBlock, len(cases))
+			for i := range cases {
+				chkBlks[i] = b.Func.MakeBlock()
+				caseBlks[i] = b.Func.MakeBlock()
+			}
+
+			// Start dispatch chain.
+			b.Jump(chkBlks[0])
+			for i, c := range cases {
+				nextBlk := exitBlk
+				if i+1 < len(cases) {
+					nextBlk = chkBlks[i+1]
+				}
+				b.SetBlockEx(chkBlks[i], AtEnd, true)
+				match := b.BinOp(token.EQL, nodeID, c.id)
+				b.If(match, caseBlks[i], nextBlk)
+
+				b.SetBlockEx(caseBlks[i], AtEnd, true)
+				b.callDefer(self, c.typ, c.fn, c.args)
+				b.Jump(condBlk)
+			}
 
 			b.SetBlockEx(exitBlk, AtEnd, true)
 		}
@@ -327,12 +364,12 @@ defer.Args = node.prev
 free(node)
 */
 
-func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
-	if fn.kind != vkClosure && len(args) == 0 {
+func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, args []Expr) Type {
+	if kind != DeferInLoop && fn.kind != vkClosure && len(args) == 0 {
 		return nil
 	}
 	prog := b.Prog
-	offset := 1
+	offset := 2 // prev + id
 	if fn.kind == vkClosure {
 		offset++
 	}
@@ -340,9 +377,13 @@ func (b Builder) saveDeferArgs(self *aDefer, fn Expr, args []Expr) Type {
 	flds := make([]llvm.Value, len(args)+offset)
 	typs[0] = prog.VoidPtr()
 	flds[0] = b.Load(self.argsPtr).impl
+	typs[1] = prog.Uintptr()
+	flds[1] = id.impl
 	if offset == 2 {
-		typs[1] = fn.Type
-		flds[1] = fn.impl
+		// non-closure
+	} else {
+		typs[2] = fn.Type
+		flds[2] = fn.impl
 	}
 	for i, arg := range args {
 		typs[i+offset] = arg.Type
@@ -369,11 +410,11 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 	b.IfThen(has, func() {
 		ptr := b.Load(self.argsPtr)
 		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
-		offset := 1
+		offset := 2 // prev + id
 		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
 		callFn := fn
 		if callFn.kind == vkClosure {
-			callFn = b.getField(data, 1)
+			callFn = b.getField(data, 2)
 			offset++
 		}
 		for i := 0; i < len(args); i++ {
