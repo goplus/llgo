@@ -208,7 +208,7 @@ func NamedName(t *types.Named) string {
 		n := targs.Len()
 		infos := make([]string, n)
 		for i := 0; i < n; i++ {
-			infos[i] = types.TypeString(targs.At(i), PathOf)
+			infos[i] = typeArgString(targs.At(i))
 		}
 		return t.Obj().Name() + "[" + strings.Join(infos, ",") + "]"
 	}
@@ -218,9 +218,48 @@ func NamedName(t *types.Named) string {
 func TypeArgs(typeArgs []types.Type) string {
 	targs := make([]string, len(typeArgs))
 	for i, t := range typeArgs {
-		targs[i] = types.TypeString(t, PathOf)
+		targs[i] = typeArgString(t)
 	}
 	return "[" + strings.Join(targs, ",") + "]"
+}
+
+func typeArgString(t types.Type) string {
+	switch t := types.Unalias(t).(type) {
+	case *types.Basic:
+		return t.String()
+	case *types.Named:
+		name := t.Obj().Name()
+		if targs := t.TypeArgs(); targs != nil {
+			n := targs.Len()
+			infos := make([]string, n)
+			for i := 0; i < n; i++ {
+				infos[i] = typeArgString(targs.At(i))
+			}
+			name += "[" + strings.Join(infos, ",") + "]"
+		}
+		// Distinct local types may share the same object name (e.g. in stdlib
+		// tests). Disambiguate them in symbol names using stable scope indices.
+		name += scopeIndices(t.Obj())
+		if pkg := t.Obj().Pkg(); pkg != nil {
+			return PathOf(pkg) + "." + name
+		}
+		return name
+	case *types.Pointer:
+		return "*" + typeArgString(t.Elem())
+	case *types.Slice:
+		return "[]" + typeArgString(t.Elem())
+	case *types.Array:
+		return fmt.Sprintf("[%v]%s", t.Len(), typeArgString(t.Elem()))
+	case *types.Map:
+		return fmt.Sprintf("map[%s]%s", typeArgString(t.Key()), typeArgString(t.Elem()))
+	case *types.Chan:
+		_, s := ChanDir(t.Dir())
+		return fmt.Sprintf("%s %s", s, typeArgString(t.Elem()))
+	default:
+		// Fallback for rare type arguments (e.g. signature/interface/struct).
+		// Collisions are mainly caused by local named types, handled above.
+		return types.TypeString(t, PathOf)
+	}
 }
 
 const (
