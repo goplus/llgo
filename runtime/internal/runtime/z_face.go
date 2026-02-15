@@ -211,6 +211,56 @@ func MatchesClosure(T, V *abi.Type) bool {
 	return T.StructType().Fields[0].Typ == V.StructType().Fields[0].Typ
 }
 
+// MatchConcreteType reports whether dynamic type V satisfies a concrete
+// type assertion target T.
+//
+// Fast path is pointer identity. For llgo, equivalent pointer-chain types may
+// occasionally be materialized as distinct descriptors; in that case we accept
+// pointer-chain structural equality to preserve assertion behavior.
+func MatchConcreteType(T, V *abi.Type) bool {
+	if T == V {
+		return true
+	}
+	if T == nil || V == nil || T.Kind() != V.Kind() {
+		return false
+	}
+	if T.Kind() != abi.Pointer {
+		return false
+	}
+	return matchPointerChainType(T, V)
+}
+
+func matchPointerChainType(T, V *abi.Type) bool {
+	for {
+		if T == V {
+			return true
+		}
+		if T == nil || V == nil || T.Kind() != abi.Pointer || V.Kind() != abi.Pointer {
+			return false
+		}
+
+		te := T.Elem()
+		ve := V.Elem()
+		if te == ve {
+			return true
+		}
+		if te == nil || ve == nil {
+			return false
+		}
+		if te.Kind() != ve.Kind() || te.Hash != ve.Hash || te.Size() != ve.Size() {
+			return false
+		}
+		if te.String() != ve.String() {
+			return false
+		}
+
+		if te.Kind() != abi.Pointer {
+			return true
+		}
+		T, V = te, ve
+	}
+}
+
 // Implements reports whether the type V implements the interface type T.
 func Implements(T, V *abi.Type) bool {
 	if V == nil {

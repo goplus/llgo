@@ -100,12 +100,3 @@ func fcntl(fd int32, cmd int32, arg int32) (int32, int32) {
 	}
 	return int32(r), 0
 }
-
-//go:linkname c_syscall C.syscall
-func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
-
-//go:linkname syscall_rawSyscallNoError syscall.rawSyscallNoError
-func syscall_rawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr) {
-	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
-	return uintptr(r), 0
-}

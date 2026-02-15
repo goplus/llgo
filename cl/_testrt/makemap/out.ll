@@ -436,7 +436,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %41 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 1
   %42 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 2
   %43 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, 0
-  %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1"
+  %44 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr %43)
   br i1 %44, label %_llgo_7, label %_llgo_8
 
 _llgo_3:                                          ; preds = %_llgo_6
@@ -546,7 +546,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %37 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %47, 1
   %38 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %47, 2
   %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %37, 0
-  %40 = icmp eq ptr %39, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K"
+  %40 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr %39)
   br i1 %40, label %_llgo_7, label %_llgo_8
 
 _llgo_3:                                          ; preds = %_llgo_6
@@ -667,7 +667,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %41 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 1
   %42 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 2
   %43 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, 0
-  %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2"
+  %44 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr %43)
   br i1 %44, label %_llgo_7, label %_llgo_8
 
 _llgo_3:                                          ; preds = %_llgo_6
@@ -942,6 +942,8 @@ _llgo_0:
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr, ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

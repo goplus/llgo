@@ -26,7 +26,7 @@ failed_cases=""
 run_case() {
   local dir="$1"
   echo "Testing $dir"
-  if (cd "$dir" && llgo run .); then
+  if (cd "$dir" && GOWORK=off llgo run .); then
     echo "PASS"
   else
     echo "FAIL"
