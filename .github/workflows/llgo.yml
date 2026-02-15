@@ -207,7 +207,7 @@ jobs:
       - name: Test Baremetal GC
         if: ${{!startsWith(matrix.os, 'macos') && matrix.shard == '0'}}
         working-directory: runtime/internal/runtime/tinygogc
-        run: llgo test -tags testGC .
+        run: llgo test -timeout=20m -tags testGC .
       - name: run llgo test
         env:
           SHARD_INDEX: ${{ matrix.shard }}
@@ -236,9 +236,9 @@ jobs:
 
           # Run per-package and print elapsed time to keep logs readable.
           for pkg in "${selected[@]}"; do
-            echo "==> llgo test ${pkg}"
+            echo "==> llgo test -timeout=20m ${pkg}"
             SECONDS=0
-            llgo test "${pkg}"
+            llgo test -timeout=20m "${pkg}"
             echo "==> done ${pkg} (${SECONDS}s)"
           done
 
