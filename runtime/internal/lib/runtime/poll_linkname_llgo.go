@@ -182,6 +182,7 @@ func poll_runtime_pollWait(ctx uintptr, mode int) int {
 	if mode == 'w' {
 		ev = pollOut
 	}
+	const maxWaitMs c.Int = 1000 // Ensure close/unblock is observed even if wake pipe misses.
 	for {
 		if latomic.LoadUint32(&pd.closing) != 0 {
 			return pollErrClosing
@@ -190,6 +191,13 @@ func poll_runtime_pollWait(ctx uintptr, mode int) int {
 		timeout, derr := pollTimeoutMs(pollDeadline(pd, mode))
 		if derr != pollNoError {
 			return derr
+		}
+		// Avoid indefinite poll waits so close/unblock is always observed in
+		// bounded time, even on platforms where closing the fd doesn't wake poll.
+		allowTimeout := true
+		if timeout < 0 || timeout > maxWaitMs {
+			timeout = maxWaitMs
+			allowTimeout = false
 		}
 
 		var fds [2]pollfd
@@ -206,7 +214,10 @@ func poll_runtime_pollWait(ctx uintptr, mode int) int {
 			return pollNoError
 		}
 		if n == 0 {
-			return pollErrTimeout
+			if allowTimeout {
+				return pollErrTimeout
+			}
+			continue
 		}
 
 		// Wake pipe readable: drain and re-check state/deadline.
