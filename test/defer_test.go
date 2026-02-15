@@ -17,9 +17,12 @@
 package test
 
 import (
+	"bytes"
 	"reflect"
 	"strconv"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // runLoopDefers exercises a defer statement inside a loop and relies on
@@ -346,4 +349,66 @@ func TestDeferMethodFuncLiteral(t *testing.T) {
 		t.Fatalf("expected SetEmitFunc to record closure")
 	}
 	rec.last(0) // ensure stored callback is callable
+}
+
+func runLoopDeferTwoStatementsInterleaved() (order []byte) {
+	for i := 0; i < 2; i++ {
+		ii := byte('0' + i)
+		defer func() { order = append(order, 'A', ii) }()
+		defer func() { order = append(order, 'B', ii) }()
+	}
+	return
+}
+
+func TestDeferInLoopTwoStatementsInterleaved(t *testing.T) {
+	got := runLoopDeferTwoStatementsInterleaved()
+	want := []byte{'B', '1', 'A', '1', 'B', '0', 'A', '0'}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("unexpected interleaved loop defer order: got %q, want %q", got, want)
+	}
+}
+
+var loopDeferNoArgsNonClosureCounter atomic.Int32
+
+func incLoopDeferNoArgsNonClosure() {
+	loopDeferNoArgsNonClosureCounter.Add(1)
+}
+
+func runLoopDeferNoArgsNonClosure(n int) {
+	for i := 0; i < n; i++ {
+		defer incLoopDeferNoArgsNonClosure()
+	}
+}
+
+func TestDeferInLoopNoArgsNonClosureRunsPerIteration(t *testing.T) {
+	loopDeferNoArgsNonClosureCounter.Store(0)
+	const n = 3
+	runLoopDeferNoArgsNonClosure(n)
+	if got := loopDeferNoArgsNonClosureCounter.Load(); got != n {
+		t.Fatalf("unexpected loop defer count: got %d, want %d", got, n)
+	}
+}
+
+var loopDeferOuterRan atomic.Int32
+
+func recordLoopDeferOuterTimer(_ *time.Timer) {
+	loopDeferOuterRan.Add(1)
+}
+
+func runLoopDeferTimerStopWithOuterDefer() {
+	var zero time.Timer
+	defer recordLoopDeferOuterTimer(&zero)
+
+	for i := 0; i < 1; i++ {
+		t := time.NewTimer(time.Hour)
+		defer t.Stop()
+	}
+}
+
+func TestDeferInLoopDoesNotDrainOtherDefers(t *testing.T) {
+	loopDeferOuterRan.Store(0)
+	runLoopDeferTimerStopWithOuterDefer()
+	if got := loopDeferOuterRan.Load(); got != 1 {
+		t.Fatalf("outer defer was not executed: got %d, want %d", got, 1)
+	}
 }
