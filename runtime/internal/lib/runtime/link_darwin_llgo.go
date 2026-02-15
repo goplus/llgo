@@ -8,6 +8,13 @@ import (
 	_ "unsafe"
 )
 
+// os.Executable (darwin) expects runtime to populate os.executablePath.
+// Upstream Go runtime sets this during startup; llgo sets it from argv[0],
+// which is sufficient for stdlib os tests.
+//
+//go:linkname executablePath os.executablePath
+var executablePath string
+
 //go:linkname os_runtime_args os.runtime_args
 func os_runtime_args() []string {
 	argc := int(c.Argc)
@@ -24,6 +31,9 @@ func os_runtime_args() []string {
 			break
 		}
 		args = append(args, c.GoString(p))
+	}
+	if len(args) > 0 && executablePath == "" {
+		executablePath = args[0]
 	}
 	return args
 }
