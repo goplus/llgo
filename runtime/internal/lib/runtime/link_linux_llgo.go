@@ -45,11 +45,17 @@ func syscall_runtime_envs() []string {
 //go:linkname syscall_runtimeSetenv syscall.runtimeSetenv
 func syscall_runtimeSetenv(key, value string) {
 	cliteos.Setenv(c.AllocaCStr(key), c.AllocaCStr(value), 1)
+	if key == "GODEBUG" {
+		godebugEnvChanged(value)
+	}
 }
 
 //go:linkname syscall_runtimeUnsetenv syscall.runtimeUnsetenv
 func syscall_runtimeUnsetenv(key string) {
 	cliteos.Unsetenv(c.AllocaCStr(key))
+	if key == "GODEBUG" {
+		godebugEnvChanged("")
+	}
 }
 
 //go:linkname os_beforeExit os.runtime_beforeExit
@@ -99,13 +105,4 @@ func fcntl(fd int32, cmd int32, arg int32) (int32, int32) {
 		return -1, int32(cliteos.Errno())
 	}
 	return int32(r), 0
-}
-
-//go:linkname c_syscall C.syscall
-func c_syscall(sysno c.Long, __llgo_va_list ...any) c.Long
-
-//go:linkname syscall_rawSyscallNoError syscall.rawSyscallNoError
-func syscall_rawSyscallNoError(trap, a1, a2, a3 uintptr) (r1, r2 uintptr) {
-	r := c_syscall(c.Long(trap), c.Long(a1), c.Long(a2), c.Long(a3))
-	return uintptr(r), 0
 }

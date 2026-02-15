@@ -170,7 +170,10 @@ func Instantiate(orig types.Type, t *types.Named) (types.Type, bool) {
 		for i := 0; i < tp.Len(); i++ {
 			targs[i] = tp.At(i)
 		}
-		if typ, err := types.Instantiate(nil, orig, targs, true); err == nil {
+		// Use validate=false because the newly created type parameters may not
+		// match the original constraint references. The original type was already
+		// validated by the Go type checker, so we can skip validation here.
+		if typ, err := types.Instantiate(nil, orig, targs, false); err == nil {
 			return typ, true
 		}
 	}

@@ -44,6 +44,20 @@ func (pkg Package) ConstString(value string) Expr {
 	return Expr{cv, styp}
 }
 
+// ConstBytes creates an SSA expression for a []byte backed by writable static data.
+// Each call gets its own backing store, matching []byte mutability semantics.
+func (pkg Package) ConstBytes(value []byte) Expr {
+	prog := pkg.Prog
+	styp := prog.Slice(prog.Byte())
+	if len(value) == 0 {
+		return prog.Zero(styp)
+	}
+	data := pkg.createGlobalBytes(value)
+	n := prog.IntVal(uint64(len(value)), prog.Int())
+	cv := llvm.ConstNamedStruct(styp.ll, []llvm.Value{data, n.impl, n.impl})
+	return Expr{cv, styp}
+}
+
 // Undefined global string var by names
 func (pkg Package) Undefined(names ...string) error {
 	prog := pkg.Prog
