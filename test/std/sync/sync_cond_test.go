@@ -78,6 +78,7 @@ func TestCondWait(t *testing.T) {
 
 	// Test basic Wait functionality
 	woken := false
+	mu.Lock()
 	go func() {
 		mu.Lock()
 		woken = true
@@ -85,8 +86,9 @@ func TestCondWait(t *testing.T) {
 		mu.Unlock()
 	}()
 
-	mu.Lock()
-	cond.Wait()
+	for !woken {
+		cond.Wait()
+	}
 	mu.Unlock()
 
 	if !woken {
