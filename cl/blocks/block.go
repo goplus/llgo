@@ -33,13 +33,16 @@ type blockState struct {
 	preds  int
 	succs  []int
 	loop   bool
+	inLoop bool // block participates in a cycle (SCC); defer in this block may execute multiple times
 	always bool
 	reach  bool
 	fdel   bool
 }
 
 func (p *blockState) kind() llssa.DoAction {
-	if p.loop {
+	// Defer semantics depend on whether the block can be re-entered (loop),
+	// not whether it was selected as a "loop path" by the ordering algorithm.
+	if p.inLoop {
 		return llssa.DeferInLoop
 	}
 	if p.always {
@@ -112,6 +115,8 @@ func Infos(blks []*ssa.BasicBlock) []Info {
 		}
 	}
 
+	markInLoop(states)
+
 	path := make([]int, 0, n)
 	if states[0].preds != 0 {
 		if loop := findLoop(states, path, 0, 0); len(loop) > 0 {
@@ -179,3 +184,83 @@ func find(path []int, fv int) int {
 }
 
 // -----------------------------------------------------------------------------
+
+// markInLoop marks blocks that belong to a cycle using SCC detection.
+// This is used for defer classification: a defer in a loop can execute multiple
+// times and must be handled with DeferInLoop semantics even if the block isn't
+// on the specific "loop path" selected for compilation ordering.
+func markInLoop(states []*blockState) {
+	n := len(states)
+	// Tarjan SCC.
+	index := 0
+	indices := make([]int, n)
+	lowlink := make([]int, n)
+	onStack := make([]bool, n)
+	for i := range indices {
+		indices[i] = -1
+	}
+	stack := make([]int, 0, n)
+
+	var strongconnect func(v int)
+	strongconnect = func(v int) {
+		indices[v] = index
+		lowlink[v] = index
+		index++
+		stack = append(stack, v)
+		onStack[v] = true
+
+		for _, w := range states[v].succs {
+			if indices[w] == -1 {
+				strongconnect(w)
+				if lowlink[w] < lowlink[v] {
+					lowlink[v] = lowlink[w]
+				}
+				continue
+			}
+			if onStack[w] && indices[w] < lowlink[v] {
+				lowlink[v] = indices[w]
+			}
+		}
+
+		if lowlink[v] != indices[v] {
+			return
+		}
+
+		// v is the root of an SCC; pop it.
+		scc := make([]int, 0, 4)
+		for {
+			w := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+			onStack[w] = false
+			scc = append(scc, w)
+			if w == v {
+				break
+			}
+		}
+
+		inLoop := false
+		if len(scc) > 1 {
+			inLoop = true
+		} else {
+			// Single-node SCC is a loop only if it has a self-edge.
+			only := scc[0]
+			for _, succ := range states[only].succs {
+				if succ == only {
+					inLoop = true
+					break
+				}
+			}
+		}
+		if inLoop {
+			for _, i := range scc {
+				states[i].inLoop = true
+			}
+		}
+	}
+
+	for v := 0; v < n; v++ {
+		if indices[v] == -1 {
+			strongconnect(v)
+		}
+	}
+}
