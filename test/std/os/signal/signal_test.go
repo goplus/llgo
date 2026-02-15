@@ -16,7 +16,7 @@ func TestNotify(t *testing.T) {
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGUSR1)
+	signal.Notify(c, syscall.SIGWINCH)
 	defer signal.Stop(c)
 
 	proc, err := os.FindProcess(os.Getpid())
@@ -24,15 +24,15 @@ func TestNotify(t *testing.T) {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
 
 	select {
 	case sig := <-c:
-		if sig != syscall.SIGUSR1 {
-			t.Errorf("Received signal %v, want SIGUSR1", sig)
+		if sig != syscall.SIGWINCH {
+			t.Errorf("Received signal %v, want SIGWINCH", sig)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("Timeout waiting for signal")
@@ -45,7 +45,7 @@ func TestNotifyMultipleSignals(t *testing.T) {
 	}
 
 	c := make(chan os.Signal, 2)
-	signal.Notify(c, syscall.SIGUSR1, syscall.SIGUSR2)
+	signal.Notify(c, syscall.SIGWINCH, syscall.SIGCHLD)
 	defer signal.Stop(c)
 
 	proc, err := os.FindProcess(os.Getpid())
@@ -53,15 +53,15 @@ func TestNotifyMultipleSignals(t *testing.T) {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
-		t.Fatalf("Signal SIGUSR1 error: %v", err)
+		t.Fatalf("Signal SIGWINCH error: %v", err)
 	}
 
 	select {
 	case sig := <-c:
-		if sig != syscall.SIGUSR1 {
-			t.Errorf("First signal = %v, want SIGUSR1", sig)
+		if sig != syscall.SIGWINCH {
+			t.Errorf("First signal = %v, want SIGWINCH", sig)
 		}
 	case <-time.After(time.Second):
 		t.Fatal("Timeout waiting for first signal")
@@ -74,7 +74,7 @@ func TestStop(t *testing.T) {
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGUSR1)
+	signal.Notify(c, syscall.SIGWINCH)
 	signal.Stop(c)
 
 	proc, err := os.FindProcess(os.Getpid())
@@ -82,7 +82,7 @@ func TestStop(t *testing.T) {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
@@ -100,15 +100,15 @@ func TestReset(t *testing.T) {
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGUSR1)
-	signal.Reset(syscall.SIGUSR1)
+	signal.Notify(c, syscall.SIGWINCH)
+	signal.Reset(syscall.SIGWINCH)
 
 	proc, err := os.FindProcess(os.Getpid())
 	if err != nil {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestResetAll(t *testing.T) {
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGUSR1)
+	signal.Notify(c, syscall.SIGWINCH)
 	signal.Reset()
 
 	proc, err := os.FindProcess(os.Getpid())
@@ -134,7 +134,7 @@ func TestResetAll(t *testing.T) {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
@@ -151,15 +151,15 @@ func TestIgnore(t *testing.T) {
 		t.Skip("Skipping on Windows and Plan 9")
 	}
 
-	signal.Ignore(syscall.SIGUSR1)
-	defer signal.Reset(syscall.SIGUSR1)
+	signal.Ignore(syscall.SIGWINCH)
+	defer signal.Reset(syscall.SIGWINCH)
 
 	proc, err := os.FindProcess(os.Getpid())
 	if err != nil {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
@@ -172,18 +172,18 @@ func TestIgnored(t *testing.T) {
 		t.Skip("Skipping on Windows and Plan 9")
 	}
 
-	wasIgnored := signal.Ignored(syscall.SIGUSR1)
+	wasIgnored := signal.Ignored(syscall.SIGWINCH)
 
-	signal.Ignore(syscall.SIGUSR1)
-	defer signal.Reset(syscall.SIGUSR1)
+	signal.Ignore(syscall.SIGWINCH)
+	defer signal.Reset(syscall.SIGWINCH)
 
-	if !signal.Ignored(syscall.SIGUSR1) {
-		t.Error("Expected SIGUSR1 to be ignored after Ignore()")
+	if !signal.Ignored(syscall.SIGWINCH) {
+		t.Error("Expected SIGWINCH to be ignored after Ignore()")
 	}
 
-	signal.Reset(syscall.SIGUSR1)
+	signal.Reset(syscall.SIGWINCH)
 
-	afterReset := signal.Ignored(syscall.SIGUSR1)
+	afterReset := signal.Ignored(syscall.SIGWINCH)
 	if afterReset != wasIgnored {
 		t.Logf("Signal ignored state changed after Reset: was=%v, after=%v", wasIgnored, afterReset)
 	}
@@ -194,7 +194,7 @@ func TestNotifyContext(t *testing.T) {
 		t.Skip("Skipping on Windows and Plan 9")
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGUSR1)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGWINCH)
 	defer stop()
 
 	select {
@@ -208,7 +208,7 @@ func TestNotifyContext(t *testing.T) {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestNotifyContextStop(t *testing.T) {
 		t.Skip("Skipping on Windows and Plan 9")
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGUSR1)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGWINCH)
 
 	stop()
 
@@ -244,8 +244,8 @@ func TestMultipleChannels(t *testing.T) {
 	c1 := make(chan os.Signal, 1)
 	c2 := make(chan os.Signal, 1)
 
-	signal.Notify(c1, syscall.SIGUSR1)
-	signal.Notify(c2, syscall.SIGUSR1)
+	signal.Notify(c1, syscall.SIGWINCH)
+	signal.Notify(c2, syscall.SIGWINCH)
 	defer signal.Stop(c1)
 	defer signal.Stop(c2)
 
@@ -254,7 +254,7 @@ func TestMultipleChannels(t *testing.T) {
 		t.Fatalf("FindProcess error: %v", err)
 	}
 
-	err = proc.Signal(syscall.SIGUSR1)
+	err = proc.Signal(syscall.SIGWINCH)
 	if err != nil {
 		t.Fatalf("Signal error: %v", err)
 	}
