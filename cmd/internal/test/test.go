@@ -44,6 +44,19 @@ func runCmd(cmd *base.Command, args []string) {
 		mockable.Exit(1)
 	}
 
+	// Match `go test` behavior: set testing.Testing() to true by forcing the
+	// stdlib testing package's testBinary marker to "1" in test binaries.
+	// See `var testBinary` in $GOROOT/src/testing/testing.go.
+	if conf.GlobalRewrites == nil {
+		conf.GlobalRewrites = make(map[string]build.Rewrites)
+	}
+	vars := conf.GlobalRewrites["testing"]
+	if vars == nil {
+		vars = make(build.Rewrites)
+		conf.GlobalRewrites["testing"] = vars
+	}
+	vars["testBinary"] = "1"
+
 	// Build test binary arguments from flags
 	conf.RunArgs = buildTestArgs(testBinaryArgs)
 
