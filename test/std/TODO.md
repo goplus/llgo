@@ -160,7 +160,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] index/suffixarray
 - [ ] log/slog
 - [ ] log/syslog
-- [ ] math/cmplx
+- [x] math/cmplx
 - [ ] net/http/cgi
 - [ ] net/http/cookiejar
 - [ ] net/http/fcgi
