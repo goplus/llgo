@@ -136,7 +136,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] debug/plan9obj
 - [x] encoding/ascii85
 - [x] encoding/base32
-- [ ] encoding/gob
+- [x] encoding/gob
 - [x] encoding/xml
 - [x] expvar
 - [ ] go/ast
