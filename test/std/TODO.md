@@ -143,7 +143,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] go/doc
 - [ ] go/doc/comment
 - [x] go/format
-- [ ] go/importer
+- [x] go/importer
 - [ ] go/printer
 - [ ] go/types
 - [x] hash/crc64
