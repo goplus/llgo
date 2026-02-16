@@ -1,8 +1,10 @@
 package httputil_test
 
 import (
+	"bufio"
 	"bytes"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -105,6 +107,16 @@ func TestReverseProxy(t *testing.T) {
 	}
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "http://front.example/direct", nil)
+	proxy.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("direct ServeHTTP status = %d, want 200", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "GET /direct") {
+		t.Fatalf("unexpected direct ServeHTTP body: %q", rr.Body.String())
+	}
+
 	front := httptest.NewServer(proxy)
 	defer front.Close()
 
@@ -134,27 +146,165 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = httputil.NewSingleHostReverseProxy
 	_ = httputil.NewServerConn
 
-	_ = (*httputil.ClientConn).Close
-	_ = (*httputil.ClientConn).Do
-	_ = (*httputil.ClientConn).Hijack
-	_ = (*httputil.ClientConn).Pending
-	_ = (*httputil.ClientConn).Read
-	_ = (*httputil.ClientConn).Write
-
-	_ = (*httputil.ProxyRequest).SetURL
-	_ = (*httputil.ProxyRequest).SetXForwarded
-	_ = (*httputil.ReverseProxy).ServeHTTP
-
-	_ = (*httputil.ServerConn).Close
-	_ = (*httputil.ServerConn).Hijack
-	_ = (*httputil.ServerConn).Pending
-	_ = (*httputil.ServerConn).Read
-	_ = (*httputil.ServerConn).Write
-
 	var _ httputil.BufferPool = bytePool{}
 
 	_ = httputil.ClientConn{}
 	_ = httputil.ProxyRequest{}
 	_ = httputil.ReverseProxy{}
 	_ = httputil.ServerConn{}
+}
+
+func TestClientConnMethods(t *testing.T) {
+	sconn, cconn := net.Pipe()
+	defer sconn.Close()
+	defer cconn.Close()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		br := bufio.NewReader(sconn)
+
+		req1, err := http.ReadRequest(br)
+		if err != nil {
+			t.Errorf("server ReadRequest #1: %v", err)
+			return
+		}
+		_ = req1.Body.Close()
+		if req1.URL.Path != "/one" {
+			t.Errorf("path #1 = %q, want /one", req1.URL.Path)
+			return
+		}
+		_, _ = io.WriteString(sconn, "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok")
+
+		req2, err := http.ReadRequest(br)
+		if err != nil {
+			t.Errorf("server ReadRequest #2: %v", err)
+			return
+		}
+		_ = req2.Body.Close()
+		if req2.URL.Path != "/two" {
+			t.Errorf("path #2 = %q, want /two", req2.URL.Path)
+			return
+		}
+		_, _ = io.WriteString(sconn, "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\npong")
+	}()
+
+	cc := httputil.NewClientConn(cconn, nil)
+	req1, _ := http.NewRequest(http.MethodGet, "http://example.com/one", nil)
+	if err := cc.Write(req1); err != nil {
+		t.Fatalf("ClientConn.Write: %v", err)
+	}
+	if cc.Pending() < 0 {
+		t.Fatalf("ClientConn.Pending = %d, want >= 0", cc.Pending())
+	}
+	resp1, err := cc.Read(req1)
+	if err != nil {
+		t.Fatalf("ClientConn.Read: %v", err)
+	}
+	body1, _ := io.ReadAll(resp1.Body)
+	_ = resp1.Body.Close()
+	if string(body1) != "ok" {
+		t.Fatalf("Read body = %q, want %q", body1, "ok")
+	}
+
+	req2, _ := http.NewRequest(http.MethodGet, "http://example.com/two", nil)
+	resp2, err := cc.Do(req2)
+	if err != nil {
+		t.Fatalf("ClientConn.Do: %v", err)
+	}
+	body2, _ := io.ReadAll(resp2.Body)
+	_ = resp2.Body.Close()
+	if string(body2) != "pong" {
+		t.Fatalf("Do body = %q, want %q", body2, "pong")
+	}
+
+	hijackedConn, hijackedReader := cc.Hijack()
+	if hijackedConn == nil || hijackedReader == nil {
+		t.Fatal("ClientConn.Hijack returned nil")
+	}
+	_ = hijackedConn.Close()
+	<-done
+}
+
+func TestClientConnCloseAndProxyConn(t *testing.T) {
+	sconn1, cconn1 := net.Pipe()
+	cc1 := httputil.NewClientConn(cconn1, nil)
+	if err := cc1.Close(); err != nil {
+		t.Fatalf("ClientConn.Close: %v", err)
+	}
+	_ = sconn1.Close()
+
+	sconn2, cconn2 := net.Pipe()
+	cc2 := httputil.NewProxyClientConn(cconn2, nil)
+	if err := cc2.Close(); err != nil {
+		t.Fatalf("ProxyClientConn.Close: %v", err)
+	}
+	_ = sconn2.Close()
+}
+
+func TestServerConnMethods(t *testing.T) {
+	sconn, cconn := net.Pipe()
+	defer sconn.Close()
+	defer cconn.Close()
+
+	sc := httputil.NewServerConn(sconn, nil)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_, _ = io.WriteString(cconn, "GET /x HTTP/1.1\r\nHost: example.com\r\n\r\n")
+		br := bufio.NewReader(cconn)
+		resp, err := http.ReadResponse(br, nil)
+		if err != nil {
+			t.Errorf("client ReadResponse: %v", err)
+			return
+		}
+		body, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if string(body) != "srv" {
+			t.Errorf("response body = %q, want %q", body, "srv")
+			return
+		}
+	}()
+
+	req, err := sc.Read()
+	if err != nil {
+		t.Fatalf("ServerConn.Read: %v", err)
+	}
+	if req.URL.Path != "/x" {
+		t.Fatalf("request path = %q, want /x", req.URL.Path)
+	}
+	if sc.Pending() < 0 {
+		t.Fatalf("ServerConn.Pending = %d, want >= 0", sc.Pending())
+	}
+
+	resp := &http.Response{
+		StatusCode:    200,
+		Status:        "200 OK",
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		ContentLength: 3,
+		Header:        make(http.Header),
+		Body:          io.NopCloser(strings.NewReader("srv")),
+	}
+	resp.Header.Set("Content-Length", "3")
+	resp.Header.Set("Content-Type", "text/plain")
+	if err := sc.Write(req, resp); err != nil {
+		t.Fatalf("ServerConn.Write: %v", err)
+	}
+	<-done
+
+	hc, hr := sc.Hijack()
+	if hc == nil || hr == nil {
+		t.Fatal("ServerConn.Hijack returned nil")
+	}
+	_ = hc.Close()
+}
+
+func TestServerConnClose(t *testing.T) {
+	sconn, cconn := net.Pipe()
+	sc := httputil.NewServerConn(sconn, nil)
+	if err := sc.Close(); err != nil {
+		t.Fatalf("ServerConn.Close: %v", err)
+	}
+	_ = cconn.Close()
 }
