@@ -179,4 +179,4 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] syscall
 - [ ] testing/quick
 - [ ] testing/slogtest
-- [ ] time/tzdata
+- [x] time/tzdata
