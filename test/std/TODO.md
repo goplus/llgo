@@ -135,7 +135,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] debug/pe
 - [ ] debug/plan9obj
 - [x] encoding/ascii85
-- [ ] encoding/base32
+- [x] encoding/base32
 - [ ] encoding/gob
 - [ ] encoding/xml
 - [ ] expvar
