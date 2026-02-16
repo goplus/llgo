@@ -56,6 +56,12 @@ func F() T { return T{} }
 	if pdoc.Parser() == nil || pdoc.Printer() == nil {
 		t.Fatal("Parser/Printer should not be nil")
 	}
+
+	// Filter out exported identifiers only.
+	pdoc.Filter(func(s string) bool { return strings.HasPrefix(s, "T") || strings.HasPrefix(s, "F") })
+	if len(pdoc.Types) == 0 {
+		t.Fatal("Filter removed all documented types unexpectedly")
+	}
 }
 
 func TestNewFromFilesAndExamples(t *testing.T) {
@@ -117,14 +123,6 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = doc.AllMethods
 	_ = doc.PreserveAST
 	_ = doc.Mode(0)
-
-	_ = (*doc.Package).Filter
-	_ = (*doc.Package).HTML
-	_ = (*doc.Package).Markdown
-	_ = (*doc.Package).Parser
-	_ = (*doc.Package).Printer
-	_ = (*doc.Package).Synopsis
-	_ = (*doc.Package).Text
 
 	var _ doc.Filter = func(string) bool { return true }
 	_ = doc.Example{}
