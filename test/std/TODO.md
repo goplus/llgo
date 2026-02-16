@@ -129,7 +129,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] database/sql/driver
 - [x] debug/buildinfo
 - [x] debug/dwarf
-- [ ] debug/elf
+- [x] debug/elf
 - [x] debug/gosym
 - [x] debug/macho
 - [x] debug/pe
