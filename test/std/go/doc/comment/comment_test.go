@@ -103,7 +103,10 @@ func TestPublicAPISymbols(t *testing.T) {
 	}
 
 	_ = &comment.LinkDef{Text: "x", URL: "y", Used: true}
-	_ = &comment.ListItem{Number: "1", Content: []comment.Block{&comment.Paragraph{Text: []comment.Text{comment.Plain("item")}}}}
+	item := &comment.ListItem{Number: "1", Content: []comment.Block{&comment.Paragraph{Text: []comment.Text{comment.Plain("item")}}}}
+	if item.Number != "1" || len(item.Content) != 1 {
+		t.Fatalf("ListItem fields mismatch: %+v", item)
+	}
 
 	if strings.TrimSpace(string((&comment.Printer{}).Text(d))) == "" {
 		t.Fatal("text output should not be blank")
