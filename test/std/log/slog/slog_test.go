@@ -78,8 +78,14 @@ func TestTextAndJSONHandlers(t *testing.T) {
 	if !strings.Contains(jsonBuf.String(), `"n":3`) {
 		t.Fatalf("JSON output missing attr: %q", jsonBuf.String())
 	}
-	_ = jh.WithAttrs([]slog.Attr{slog.String("a", "b")})
-	_ = jh.WithGroup("g")
+	jhWithAttrs := jh.WithAttrs([]slog.Attr{slog.String("a", "b")})
+	if jhWithAttrs == nil {
+		t.Fatal("JSONHandler.WithAttrs returned nil")
+	}
+	jhWithGroup := jh.WithGroup("g")
+	if jhWithGroup == nil {
+		t.Fatal("JSONHandler.WithGroup returned nil")
+	}
 }
 
 func TestLoggerTopLevelAndMethods(t *testing.T) {
@@ -194,7 +200,10 @@ func TestLevelAndLevelVar(t *testing.T) {
 	}
 
 	old := slog.SetLogLoggerLevel(slog.LevelInfo)
-	_ = slog.SetLogLoggerLevel(old)
+	prev := slog.SetLogLoggerLevel(old)
+	if prev != slog.LevelInfo {
+		t.Fatalf("SetLogLoggerLevel restore returned %v, want %v", prev, slog.LevelInfo)
+	}
 }
 
 func TestRecordAttrAndValue(t *testing.T) {
@@ -228,7 +237,9 @@ func TestRecordAttrAndValue(t *testing.T) {
 	seen := map[string]bool{}
 	r.Attrs(func(a slog.Attr) bool {
 		seen[a.Key] = true
-		_ = a.String()
+		if a.String() == "" {
+			t.Fatalf("Attr.String empty for key %q", a.Key)
+		}
 		return true
 	})
 	if !seen["k"] || !seen["i"] {
@@ -258,8 +269,12 @@ func TestRecordAttrAndValue(t *testing.T) {
 		if v.Kind().String() == "" {
 			t.Fatalf("Kind.String empty for value: %v", v)
 		}
-		_ = v.String()
-		_ = v.Any()
+		if v.String() == "" {
+			t.Fatalf("Value.String empty for kind: %v", v.Kind())
+		}
+		if v.Any() == nil {
+			t.Fatalf("Value.Any returned nil for kind: %v", v.Kind())
+		}
 	}
 	if !slog.BoolValue(true).Bool() {
 		t.Fatal("BoolValue.Bool false")
@@ -324,5 +339,7 @@ func TestNewLogLoggerAndInterfaces(t *testing.T) {
 	}
 
 	// Keep package log reachable through slog redirection path.
-	_ = log.Flags()
+	if log.Flags() < 0 {
+		t.Fatalf("log.Flags should be non-negative, got %d", log.Flags())
+	}
 }
