@@ -879,5 +879,7 @@ func TestFlagSetInit(t *testing.T) {
 
 	// Test ErrorHandling field
 	fs2 := flag.NewFlagSet("test2", flag.PanicOnError)
-	_ = fs2.ErrorHandling()
+	if got := fs2.ErrorHandling(); got != flag.PanicOnError {
+		t.Fatalf("ErrorHandling = %v, want %v", got, flag.PanicOnError)
+	}
 }
