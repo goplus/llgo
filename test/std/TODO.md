@@ -125,7 +125,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] crypto/hkdf
 - [x] crypto/mlkem
 - [x] crypto/pbkdf2
-- [ ] database/sql
+- [x] database/sql
 - [x] database/sql/driver
 - [x] debug/buildinfo
 - [ ] debug/dwarf
