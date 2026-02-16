@@ -91,11 +91,14 @@ func TestTSkip(t *testing.T) {
 }
 
 func TestShortAndVerbose(t *testing.T) {
-	// Test Short() - just call it
-	_ = testing.Short()
-
-	// Test Verbose() - just call it
-	_ = testing.Verbose()
+	short := testing.Short()
+	verbose := testing.Verbose()
+	if short {
+		t.Log("short mode enabled")
+	}
+	if verbose {
+		t.Log("verbose mode enabled")
+	}
 
 	// Test Testing() - should return true since we're in a test
 	if !testing.Testing() {
@@ -150,7 +153,9 @@ func BenchmarkBMethods(b *testing.B) {
 		b.Error("Name is empty")
 	}
 
-	_ = b.Elapsed()
+	if elapsed := b.Elapsed(); elapsed < 0 {
+		b.Fatalf("Elapsed should be non-negative, got %v", elapsed)
+	}
 
 	if b.Failed() {
 		b.Log("Benchmark failed")
