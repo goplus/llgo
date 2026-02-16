@@ -1,6 +1,7 @@
 package x509_test
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -545,7 +546,9 @@ func TestEncryptDecryptPEMBlock(t *testing.T) {
 	data := []byte("test data for encryption")
 	password := []byte("password")
 
-	block, err := x509.EncryptPEMBlock(rand.Reader, "TEST", data, password, x509.PEMCipherAES256)
+	// Use deterministic IV to avoid flaky padding checks when decrypting with a wrong password.
+	iv := make([]byte, 16) // AES block size.
+	block, err := x509.EncryptPEMBlock(bytes.NewReader(iv), "TEST", data, password, x509.PEMCipherAES256)
 	if err != nil {
 		t.Errorf("EncryptPEMBlock failed: %v", err)
 	}
