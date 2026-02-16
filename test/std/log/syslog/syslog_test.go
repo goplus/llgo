@@ -2,7 +2,9 @@ package syslog_test
 
 import (
 	"log/syslog"
+	"net"
 	"testing"
+	"time"
 )
 
 func TestPriorityConstants(t *testing.T) {
@@ -60,15 +62,70 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = syslog.NewLogger
 	_ = syslog.Dial
 	_ = syslog.New
+}
 
-	_ = (*syslog.Writer).Alert
-	_ = (*syslog.Writer).Close
-	_ = (*syslog.Writer).Crit
-	_ = (*syslog.Writer).Debug
-	_ = (*syslog.Writer).Emerg
-	_ = (*syslog.Writer).Err
-	_ = (*syslog.Writer).Info
-	_ = (*syslog.Writer).Notice
-	_ = (*syslog.Writer).Warning
-	_ = (*syslog.Writer).Write
+func TestWriterMethodsOverUDP(t *testing.T) {
+	pc, err := net.ListenPacket("udp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("ListenPacket: %v", err)
+	}
+	defer pc.Close()
+
+	const wantMessages = 9
+	recvDone := make(chan int, 1)
+	go func() {
+		_ = pc.SetReadDeadline(time.Now().Add(2 * time.Second))
+		buf := make([]byte, 2048)
+		count := 0
+		for count < wantMessages {
+			n, _, err := pc.ReadFrom(buf)
+			if err != nil {
+				break
+			}
+			if n > 0 {
+				count++
+			}
+		}
+		recvDone <- count
+	}()
+
+	w, err := syslog.Dial("udp", pc.LocalAddr().String(), syslog.LOG_INFO|syslog.LOG_LOCAL0, "llgo-test")
+	if err != nil {
+		t.Fatalf("Dial: %v", err)
+	}
+	if err := w.Alert("alert"); err != nil {
+		t.Fatalf("Alert: %v", err)
+	}
+	if err := w.Crit("crit"); err != nil {
+		t.Fatalf("Crit: %v", err)
+	}
+	if err := w.Debug("debug"); err != nil {
+		t.Fatalf("Debug: %v", err)
+	}
+	if err := w.Emerg("emerg"); err != nil {
+		t.Fatalf("Emerg: %v", err)
+	}
+	if err := w.Err("err"); err != nil {
+		t.Fatalf("Err: %v", err)
+	}
+	if err := w.Info("info"); err != nil {
+		t.Fatalf("Info: %v", err)
+	}
+	if err := w.Notice("notice"); err != nil {
+		t.Fatalf("Notice: %v", err)
+	}
+	if err := w.Warning("warning"); err != nil {
+		t.Fatalf("Warning: %v", err)
+	}
+	if _, err := w.Write([]byte("write")); err != nil {
+		t.Fatalf("Write: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+
+	got := <-recvDone
+	if got < wantMessages {
+		t.Fatalf("received %d syslog datagrams, want at least %d", got, wantMessages)
+	}
 }
