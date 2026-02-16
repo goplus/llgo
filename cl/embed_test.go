@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/internal/goembed"
 	llssa "github.com/goplus/llgo/ssa"
 	gossa "golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -44,7 +45,7 @@ func TestParseEmbedPatterns(t *testing.T) {
 			{Text: "//go:embed \"space name.txt\""},
 		},
 	}
-	got, has, err := parseEmbedPatterns(doc)
+	got, has, err := goembed.ParsePatterns(doc)
 	if err != nil {
 		t.Fatalf("parseEmbedPatterns error: %v", err)
 	}
@@ -68,7 +69,7 @@ func TestParseEmbedPatterns_InvalidQuoted(t *testing.T) {
 			{Text: "//go:embed \"unclosed.txt"},
 		},
 	}
-	_, has, err := parseEmbedPatterns(doc)
+	_, has, err := goembed.ParsePatterns(doc)
 	if !has {
 		t.Fatalf("parseEmbedPatterns should detect directive")
 	}
@@ -84,7 +85,7 @@ func TestFileImportsEmbed(t *testing.T) {
 			{Path: &ast.BasicLit{Value: `"embed"`}},
 		},
 	}
-	if !fileImportsEmbed(file) {
+	if !goembed.FileImportsEmbed(file) {
 		t.Fatalf("fileImportsEmbed = false, want true")
 	}
 }
@@ -106,13 +107,13 @@ func TestResolveEmbedPatterns_HiddenAndAll(t *testing.T) {
 	mustWrite("testdata/sub/.deep.txt", "deep")
 	mustWrite("testdata/.hidden-dir/tip.txt", "tip")
 
-	got, err := resolveEmbedPatterns(dir, []string{"testdata"})
+	got, err := goembed.ResolvePatterns(dir, []string{"testdata"})
 	if err != nil {
 		t.Fatalf("resolveEmbedPatterns: %v", err)
 	}
 	seen := map[string]bool{}
 	for _, f := range got {
-		seen[f.name] = true
+		seen[f.Name] = true
 	}
 	if !seen["testdata/hello.txt"] {
 		t.Fatalf("missing embedded file testdata/hello.txt: %+v", got)
@@ -130,13 +131,13 @@ func TestResolveEmbedPatterns_HiddenAndAll(t *testing.T) {
 		t.Fatalf("unexpected hidden directory file in default mode: %+v", got)
 	}
 
-	gotAll, err := resolveEmbedPatterns(dir, []string{"all:testdata"})
+	gotAll, err := goembed.ResolvePatterns(dir, []string{"all:testdata"})
 	if err != nil {
 		t.Fatalf("resolveEmbedPatterns(all:): %v", err)
 	}
 	seenAll := map[string]bool{}
 	for _, f := range gotAll {
-		seenAll[f.name] = true
+		seenAll[f.Name] = true
 	}
 	if !seenAll["testdata/.hidden.txt"] {
 		t.Fatalf("missing hidden file in all: mode: %+v", gotAll)
@@ -178,7 +179,7 @@ func TestResolveEmbedPatterns_Errors(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		_, err := resolveEmbedPatterns(dir, []string{tc.pattern})
+		_, err := goembed.ResolvePatterns(dir, []string{tc.pattern})
 		if err == nil {
 			t.Fatalf("resolveEmbedPatterns(%q) should fail", tc.pattern)
 		}
@@ -204,7 +205,7 @@ func TestResolveEmbedPatterns_RejectIrregularAndInvalidName(t *testing.T) {
 		}
 	}
 	mustWrite("bad:name.txt", "bad")
-	_, err := resolveEmbedPatterns(dir, []string{"bad:name.txt"})
+	_, err := goembed.ResolvePatterns(dir, []string{"bad:name.txt"})
 	if err == nil || !strings.Contains(err.Error(), "invalid name") {
 		t.Fatalf("resolveEmbedPatterns invalid-name error = %v, want invalid name", err)
 	}
@@ -213,21 +214,21 @@ func TestResolveEmbedPatterns_RejectIrregularAndInvalidName(t *testing.T) {
 	if err := os.Symlink(filepath.Join(dir, "target.txt"), filepath.Join(dir, "link.txt")); err != nil {
 		t.Skipf("symlink not supported: %v", err)
 	}
-	_, err = resolveEmbedPatterns(dir, []string{"link.txt"})
+	_, err = goembed.ResolvePatterns(dir, []string{"link.txt"})
 	if err == nil || !strings.Contains(err.Error(), "irregular file") {
 		t.Fatalf("resolveEmbedPatterns irregular-file error = %v, want irregular file", err)
 	}
 }
 
 func TestBuildEmbedFSEntries(t *testing.T) {
-	files := []embedFileData{
-		{name: "testdata/hello.txt", data: []byte("hello")},
-		{name: "assets/static/app.js", data: []byte("app")},
+	files := []goembed.FileData{
+		{Name: "testdata/hello.txt", Data: []byte("hello")},
+		{Name: "assets/static/app.js", Data: []byte("app")},
 	}
-	got := buildEmbedFSEntries(files)
+	got := goembed.BuildFSEntries(files)
 	seen := map[string]bool{}
 	for _, e := range got {
-		seen[e.name] = true
+		seen[e.Name] = true
 	}
 	for _, name := range []string{
 		"assets/",
@@ -244,7 +245,7 @@ func TestBuildEmbedFSEntries(t *testing.T) {
 	// root directories should be listed before child files in split(dir, elem) order.
 	pos := map[string]int{}
 	for i, e := range got {
-		pos[e.name] = i
+		pos[e.Name] = i
 	}
 	if pos["testdata/"] >= pos["testdata/hello.txt"] {
 		t.Fatalf("directory entry should precede file entry: %+v", got)
@@ -272,36 +273,44 @@ var content string
 		t.Fatalf("ParseFile: %v", err)
 	}
 
-	p := &context{fset: fset}
-	p.loadEmbedDirectives([]*ast.File{f})
-	info, ok := p.embedMap["content"]
-	if !ok {
-		t.Fatalf("missing embed var content: %+v", p.embedMap)
+	embedMap, err := goembed.LoadDirectives(fset, []*ast.File{f})
+	if err != nil {
+		t.Fatalf("LoadDirectives: %v", err)
 	}
-	if len(info.files) != 1 || info.files[0].name != "hello.txt" {
-		t.Fatalf("unexpected files: %+v", info.files)
+	info, ok := embedMap["content"]
+	if !ok {
+		t.Fatalf("missing embed var content: %+v", embedMap)
+	}
+	if len(info.Files) != 1 || info.Files[0].Name != "hello.txt" {
+		t.Fatalf("unexpected files: %+v", info.Files)
 	}
 }
 
 func TestLoadEmbedDirectives_EarlyReturnsAndSkips(t *testing.T) {
-	p := &context{fset: token.NewFileSet()}
-	p.loadEmbedDirectives(nil)
-	if len(p.embedMap) != 0 {
+	fset := token.NewFileSet()
+	embedMap, err := goembed.LoadDirectives(fset, nil)
+	if err != nil {
+		t.Fatalf("LoadDirectives(nil): %v", err)
+	}
+	if len(embedMap) != 0 {
 		t.Fatalf("embedMap should be empty for nil input")
 	}
 
-	f, err := parser.ParseFile(p.fset, "", `package foo`, parser.ParseComments)
+	f, err := parser.ParseFile(fset, "", `package foo`, parser.ParseComments)
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
 	}
-	p.loadEmbedDirectives([]*ast.File{f})
-	if len(p.embedMap) != 0 {
+	embedMap, err = goembed.LoadDirectives(fset, []*ast.File{f})
+	if err != nil {
+		t.Fatalf("LoadDirectives: %v", err)
+	}
+	if len(embedMap) != 0 {
 		t.Fatalf("embedMap should stay empty for files without filename")
 	}
 }
 
 func TestLoadEmbedDirectives_Panics(t *testing.T) {
-	makeFile := func(t *testing.T, src string, extras map[string]string) (*context, []*ast.File) {
+	makeFile := func(t *testing.T, src string, extras map[string]string) (*token.FileSet, []*ast.File) {
 		t.Helper()
 		dir := t.TempDir()
 		mainFile := filepath.Join(dir, "main.go")
@@ -319,32 +328,35 @@ func TestLoadEmbedDirectives_Panics(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ParseFile: %v", err)
 		}
-		return &context{fset: fset}, []*ast.File{f}
+		return fset, []*ast.File{f}
 	}
 
-	pMissingImport, filesMissingImport := makeFile(t, `package foo
+	fsetMissingImport, filesMissingImport := makeFile(t, `package foo
 
 //go:embed hello.txt
 var s string
 	`, map[string]string{"hello.txt": "hi"})
-	mustPanicContains(t, `import "embed"`, func() {
-		pMissingImport.loadEmbedDirectives(filesMissingImport)
-	})
+	_, err := goembed.LoadDirectives(fsetMissingImport, filesMissingImport)
+	if err == nil || !strings.Contains(err.Error(), `import "embed"`) {
+		t.Fatalf("LoadDirectives missing-import error = %v", err)
+	}
 
-	pNoMatch, filesNoMatch := makeFile(t, `package foo
+	fsetNoMatch, filesNoMatch := makeFile(t, `package foo
 import "embed"
 
 //go:embed no_such_file.txt
 var s string
 	`, nil)
-	mustPanicContains(t, "no matching files found", func() {
-		pNoMatch.loadEmbedDirectives(filesNoMatch)
-	})
+	_, err = goembed.LoadDirectives(fsetNoMatch, filesNoMatch)
+	if err == nil || !strings.Contains(err.Error(), "no matching files found") {
+		t.Fatalf("LoadDirectives no-match error = %v", err)
+	}
 
-	pInvalid, filesInvalid := makeFile(t, "package foo\nimport \"embed\"\n//go:embed \"bad\nvar s string\n", nil)
-	mustPanicContains(t, "invalid //go:embed quoted pattern", func() {
-		pInvalid.loadEmbedDirectives(filesInvalid)
-	})
+	fsetInvalid, filesInvalid := makeFile(t, "package foo\nimport \"embed\"\n//go:embed \"bad\nvar s string\n", nil)
+	_, err = goembed.LoadDirectives(fsetInvalid, filesInvalid)
+	if err == nil || !strings.Contains(err.Error(), "invalid //go:embed quoted pattern") {
+		t.Fatalf("LoadDirectives invalid-pattern error = %v", err)
+	}
 }
 
 func TestLoadEmbedDirectives_SkipBranches(t *testing.T) {
@@ -373,13 +385,15 @@ var plain string
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
 	}
-	p := &context{fset: fset}
-	p.loadEmbedDirectives([]*ast.File{f})
-	if len(p.embedMap) != 1 || len(p.embedMap["c"].files) != 1 {
-		t.Fatalf("embedMap should load grouped single-name declaration: %+v", p.embedMap)
+	embedMap, err := goembed.LoadDirectives(fset, []*ast.File{f})
+	if err != nil {
+		t.Fatalf("LoadDirectives: %v", err)
 	}
-	if _, ok := p.embedMap["a"]; ok {
-		t.Fatalf("multi-name declaration without directive should be skipped: %+v", p.embedMap)
+	if len(embedMap) != 1 || len(embedMap["c"].Files) != 1 {
+		t.Fatalf("embedMap should load grouped single-name declaration: %+v", embedMap)
+	}
+	if _, ok := embedMap["a"]; ok {
+		t.Fatalf("multi-name declaration without directive should be skipped: %+v", embedMap)
 	}
 }
 
@@ -434,7 +448,7 @@ func TestParseEmbedDirective(t *testing.T) {
 		{line: "xxgo:embed foo.txt", wantArgs: "", wantOK: false},
 	}
 	for _, tc := range tests {
-		args, ok := parseEmbedDirective(tc.line)
+		args, ok := goembed.ParseDirective(tc.line)
 		if ok != tc.wantOK || args != tc.wantArgs {
 			t.Fatalf("parseEmbedDirective(%q) = (%q,%v), want (%q,%v)", tc.line, args, ok, tc.wantArgs, tc.wantOK)
 		}
@@ -442,7 +456,7 @@ func TestParseEmbedDirective(t *testing.T) {
 }
 
 func TestSplitEmbedArgs_TrailingWhitespace(t *testing.T) {
-	got, err := splitEmbedArgs("a\t ")
+	got, err := goembed.SplitArgs("a\t ")
 	if err != nil {
 		t.Fatalf("splitEmbedArgs error: %v", err)
 	}
@@ -458,7 +472,7 @@ func TestParseEmbedPatterns_ExtraBranches(t *testing.T) {
 			{Text: "//go:embed plain.txt"},
 		},
 	}
-	patterns, has, err := parseEmbedPatterns(docWithNil)
+	patterns, has, err := goembed.ParsePatterns(docWithNil)
 	if err != nil || !has || len(patterns) != 1 || patterns[0] != "plain.txt" {
 		t.Fatalf("parseEmbedPatterns nil-comment branch failed: patterns=%v has=%v err=%v", patterns, has, err)
 	}
@@ -466,7 +480,7 @@ func TestParseEmbedPatterns_ExtraBranches(t *testing.T) {
 	docMissing := &ast.CommentGroup{
 		List: []*ast.Comment{{Text: "//go:embed"}},
 	}
-	_, has, err = parseEmbedPatterns(docMissing)
+	_, has, err = goembed.ParsePatterns(docMissing)
 	if !has || err == nil || !strings.Contains(err.Error(), "missing pattern") {
 		t.Fatalf("missing pattern not rejected, has=%v err=%v", has, err)
 	}
@@ -474,7 +488,7 @@ func TestParseEmbedPatterns_ExtraBranches(t *testing.T) {
 	docBadQuoted := &ast.CommentGroup{
 		List: []*ast.Comment{{Text: "//go:embed \"\\xZZ\""}},
 	}
-	_, has, err = parseEmbedPatterns(docBadQuoted)
+	_, has, err = goembed.ParsePatterns(docBadQuoted)
 	if !has || err == nil || !strings.Contains(err.Error(), "invalid //go:embed quoted pattern") {
 		t.Fatalf("bad quoted pattern not rejected, has=%v err=%v", has, err)
 	}
@@ -489,7 +503,7 @@ func TestFileImportsEmbed_NegativeBranches(t *testing.T) {
 			{Path: &ast.BasicLit{Value: `"fmt"`}},
 		},
 	}
-	if fileImportsEmbed(file) {
+	if goembed.FileImportsEmbed(file) {
 		t.Fatalf("fileImportsEmbed should be false for invalid/non-embed imports")
 	}
 }
@@ -505,7 +519,7 @@ func TestValidEmbedPattern(t *testing.T) {
 		{pattern: "a/vendor/file.txt", want: true},
 	}
 	for _, tc := range tests {
-		if got := validEmbedPattern(tc.pattern); got != tc.want {
+		if got := goembed.ValidPattern(tc.pattern); got != tc.want {
 			t.Fatalf("validEmbedPattern(%q) = %v, want %v", tc.pattern, got, tc.want)
 		}
 	}
@@ -529,10 +543,10 @@ var a, b string
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
 	}
-	p := &context{fset: fset}
-	mustPanicContains(t, "go:embed cannot apply to multiple vars", func() {
-		p.loadEmbedDirectives([]*ast.File{f})
-	})
+	_, err = goembed.LoadDirectives(fset, []*ast.File{f})
+	if err == nil || !strings.Contains(err.Error(), "go:embed cannot apply to multiple vars") {
+		t.Fatalf("LoadDirectives multi-name error = %v", err)
+	}
 }
 
 func TestLoadEmbedDirectives_GroupLevelDirectiveMisplaced(t *testing.T) {
@@ -556,16 +570,16 @@ var (
 	if err != nil {
 		t.Fatalf("ParseFile: %v", err)
 	}
-	p := &context{fset: fset}
-	mustPanicContains(t, "misplaced go:embed directive", func() {
-		p.loadEmbedDirectives([]*ast.File{f})
-	})
+	_, err = goembed.LoadDirectives(fset, []*ast.File{f})
+	if err == nil || !strings.Contains(err.Error(), "misplaced go:embed directive") {
+		t.Fatalf("LoadDirectives misplaced-directive error = %v", err)
+	}
 }
 
 func TestEmbedRelPath_Outside(t *testing.T) {
 	dir := t.TempDir()
 	outside := filepath.Dir(dir)
-	_, err := embedRelPath(dir, outside)
+	_, err := goembed.RelPath(dir, outside)
 	if err == nil || !strings.Contains(err.Error(), "outside package directory") {
 		t.Fatalf("embedRelPath outside error = %v", err)
 	}
@@ -573,7 +587,7 @@ func TestEmbedRelPath_Outside(t *testing.T) {
 
 func TestCheckEmbedPath_ErrorBranches(t *testing.T) {
 	dir := t.TempDir()
-	if _, _, err := checkEmbedPath(dir, filepath.Join(dir, "missing.txt"), map[string]bool{}); err == nil {
+	if _, _, err := goembed.CheckPath(dir, filepath.Join(dir, "missing.txt"), map[string]bool{}); err == nil {
 		t.Fatalf("checkEmbedPath should fail for missing file")
 	}
 
@@ -582,7 +596,7 @@ func TestCheckEmbedPath_ErrorBranches(t *testing.T) {
 	if err := os.WriteFile(outFile, []byte("x"), 0o644); err != nil {
 		t.Fatalf("write outFile: %v", err)
 	}
-	if _, _, err := checkEmbedPath(dir, outFile, map[string]bool{}); err == nil || !strings.Contains(err.Error(), "outside package directory") {
+	if _, _, err := goembed.CheckPath(dir, outFile, map[string]bool{}); err == nil || !strings.Contains(err.Error(), "outside package directory") {
 		t.Fatalf("checkEmbedPath outside error = %v", err)
 	}
 
@@ -593,7 +607,7 @@ func TestCheckEmbedPath_ErrorBranches(t *testing.T) {
 	if err := os.WriteFile(inside, []byte("x"), 0o644); err != nil {
 		t.Fatalf("write .git/sub/x.txt: %v", err)
 	}
-	if _, _, err := checkEmbedPath(dir, inside, map[string]bool{}); err == nil || !strings.Contains(err.Error(), "in invalid directory .git") {
+	if _, _, err := goembed.CheckPath(dir, inside, map[string]bool{}); err == nil || !strings.Contains(err.Error(), "in invalid directory .git") {
 		t.Fatalf("checkEmbedPath invalid dir error = %v", err)
 	}
 }
@@ -604,11 +618,11 @@ func TestResolveEmbedPatterns_DuplicateAndReadFailure(t *testing.T) {
 	if err := os.WriteFile(file, []byte("dup"), 0o644); err != nil {
 		t.Fatalf("write dup.txt: %v", err)
 	}
-	got, err := resolveEmbedPatterns(dir, []string{"dup.txt", "dup.txt"})
+	got, err := goembed.ResolvePatterns(dir, []string{"dup.txt", "dup.txt"})
 	if err != nil {
 		t.Fatalf("resolveEmbedPatterns duplicate pattern failed: %v", err)
 	}
-	if len(got) != 1 || got[0].name != "dup.txt" {
+	if len(got) != 1 || got[0].Name != "dup.txt" {
 		t.Fatalf("resolveEmbedPatterns duplicate pattern got: %+v", got)
 	}
 
@@ -623,7 +637,7 @@ func TestResolveEmbedPatterns_DuplicateAndReadFailure(t *testing.T) {
 		t.Fatalf("chmod noread.txt: %v", err)
 	}
 	defer os.Chmod(noRead, 0o600)
-	if _, err := resolveEmbedPatterns(dir, []string{"noread.txt"}); err == nil {
+	if _, err := goembed.ResolvePatterns(dir, []string{"noread.txt"}); err == nil {
 		t.Fatalf("resolveEmbedPatterns should fail for unreadable file")
 	}
 }
@@ -646,7 +660,7 @@ func TestResolveEmbedPatterns_WalkDirError(t *testing.T) {
 	}
 	defer os.Chmod(locked, 0o755)
 
-	if _, err := resolveEmbedPatterns(dir, []string{"root"}); err == nil {
+	if _, err := goembed.ResolvePatterns(dir, []string{"root"}); err == nil {
 		t.Fatalf("resolveEmbedPatterns should fail when walk cannot read directory")
 	}
 }
@@ -672,13 +686,13 @@ func TestResolveEmbedPatterns_SkipNestedModuleAndIrregularInWalk(t *testing.T) {
 		t.Skipf("symlink not supported: %v", err)
 	}
 
-	got, err := resolveEmbedPatterns(dir, []string{"tree"})
+	got, err := goembed.ResolvePatterns(dir, []string{"tree"})
 	if err != nil {
 		t.Fatalf("resolveEmbedPatterns(tree): %v", err)
 	}
 	seen := map[string]bool{}
 	for _, item := range got {
-		seen[item.name] = true
+		seen[item.Name] = true
 	}
 	if !seen["tree/go.txt"] {
 		t.Fatalf("expected tree/go.txt in result: %+v", got)
@@ -693,7 +707,7 @@ func TestResolveEmbedPatterns_SkipNestedModuleAndIrregularInWalk(t *testing.T) {
 
 func TestIsBadEmbedName_Reserved(t *testing.T) {
 	for _, name := range []string{".bzr", ".git", ".hg", ".svn"} {
-		if !isBadEmbedName(name) {
+		if !goembed.IsBadName(name) {
 			t.Fatalf("isBadEmbedName(%q) = false, want true", name)
 		}
 	}
@@ -714,15 +728,15 @@ func TestTryEmbedGlobalInit_EarlyAndDefaultBranches(t *testing.T) {
 		t.Fatalf("tryEmbedGlobalInit should return false when embedMap is empty")
 	}
 
-	p.embedMap = map[string]embedVarData{
-		"Other": {files: []embedFileData{{name: "a.txt", data: []byte("a")}}},
+	p.embedMap = goembed.VarMap{
+		"Other": {Files: []goembed.FileData{{Name: "a.txt", Data: []byte("a")}}},
 	}
 	if got := p.tryEmbedGlobalInit(nil, global, nil, "foo.Num"); got {
 		t.Fatalf("tryEmbedGlobalInit should return false for missing variable entry")
 	}
 
-	p.embedMap = map[string]embedVarData{
-		"Num": {files: []embedFileData{{name: "a.txt", data: []byte("a")}}},
+	p.embedMap = goembed.VarMap{
+		"Num": {Files: []goembed.FileData{{Name: "a.txt", Data: []byte("a")}}},
 	}
 	mustPanicContains(t, "go:embed cannot apply to var of type int", func() {
 		_ = p.tryEmbedGlobalInit(nil, global, nil, "foo.Num")

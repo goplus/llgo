@@ -44,6 +44,7 @@ import (
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/firmware"
 	"github.com/goplus/llgo/internal/flash"
+	"github.com/goplus/llgo/internal/goembed"
 	"github.com/goplus/llgo/internal/header"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/monitor"
@@ -1140,13 +1141,18 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	if showDetail {
 		llssa.SetDebug(llssa.DbgFlagAll)
 		cl.SetDebug(cl.DbgFlagAll)
+		defer func() {
+			llssa.SetDebug(0)
+			cl.SetDebug(0)
+		}()
 	}
 
-	ret, externs, err := cl.NewPackageEx(ctx.prog, ctx.patches, aPkg.rewriteVars, aPkg.SSA, syntax)
-	if showDetail {
-		llssa.SetDebug(0)
-		cl.SetDebug(0)
+	embedMap, err := goembed.LoadDirectives(ctx.conf.Fset, syntax)
+	if err != nil {
+		return fmt.Errorf("load go:embed directives for %s failed: %w", pkgPath, err)
 	}
+
+	ret, externs, err := cl.NewPackageExWithEmbed(ctx.prog, ctx.patches, aPkg.rewriteVars, aPkg.SSA, syntax, embedMap)
 	check(err)
 
 	aPkg.LPkg = ret
