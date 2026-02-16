@@ -1,0 +1,194 @@
+# Std Test TODO
+
+Checklist for `test/std` coverage.
+
+- Public std packages tracked: 172
+- Done (tracked tests committed): 109
+- Pending: 63
+
+Mark as done only after package tests are migrated, enabled for llgo, and committed.
+
+## Migration Set (from ../llgo-std-test/test/std)
+
+- Total: 110
+- Done: 108
+- Pending: 2
+
+- [x] archive/tar
+- [x] archive/zip
+- [x] bufio
+- [x] bytes
+- [x] cmp
+- [x] compress/flate
+- [x] compress/gzip
+- [x] compress/zlib
+- [x] container/heap
+- [x] container/list
+- [x] context
+- [x] crypto
+- [x] crypto/aes
+- [x] crypto/cipher
+- [x] crypto/des
+- [x] crypto/dsa
+- [x] crypto/ecdh
+- [x] crypto/ecdsa
+- [x] crypto/ed25519
+- [x] crypto/elliptic
+- [x] crypto/hmac
+- [x] crypto/md5
+- [x] crypto/rand
+- [x] crypto/rc4
+- [x] crypto/rsa
+- [x] crypto/sha1
+- [x] crypto/sha256
+- [x] crypto/sha3
+- [x] crypto/sha512
+- [x] crypto/subtle
+- [x] crypto/tls
+- [x] crypto/x509
+- [x] crypto/x509/pkix
+- [x] embed
+- [x] encoding
+- [x] encoding/asn1
+- [x] encoding/base64
+- [x] encoding/binary
+- [x] encoding/csv
+- [x] encoding/hex
+- [x] encoding/json
+- [x] encoding/pem
+- [x] errors
+- [x] flag
+- [x] fmt
+- [x] go/build
+- [x] go/build/constraint
+- [x] go/constant
+- [x] go/parser
+- [x] go/scanner
+- [x] go/token
+- [x] go/version
+- [x] hash
+- [x] hash/adler32
+- [x] hash/crc32
+- [x] hash/maphash
+- [x] io
+- [x] io/fs
+- [x] io/ioutil
+- [x] iter
+- [x] log
+- [x] maps
+- [x] math
+- [x] math/big
+- [x] math/bits
+- [x] math/rand
+- [x] math/rand/v2
+- [x] mime
+- [x] mime/multipart
+- [x] mime/quotedprintable
+- [x] net
+- [x] net/http
+- [x] net/http/httptest
+- [x] net/http/httptrace
+- [x] net/netip
+- [x] net/textproto
+- [x] net/url
+- [x] os
+- [x] os/exec
+- [x] os/signal
+- [x] os/user
+- [x] path
+- [x] path/filepath
+- [x] reflect
+- [x] regexp
+- [x] regexp/syntax
+- [ ] runtime
+- [ ] runtime/debug
+- [x] runtime/pprof
+- [x] runtime/trace
+- [x] slices
+- [x] sort
+- [x] strconv
+- [x] strings
+- [x] sync
+- [x] sync/atomic
+- [x] testing
+- [x] testing/fstest
+- [x] testing/iotest
+- [x] text/scanner
+- [x] text/tabwriter
+- [x] text/template
+- [x] text/template/parse
+- [x] time
+- [x] unicode
+- [x] unicode/utf16
+- [x] unicode/utf8
+- [x] unique
+- [x] unsafe
+- [x] weak
+## Additional Public Std Packages (not in llgo-std-test)
+
+- Total: 62
+- Done: 1
+- Pending: 61
+
+- [ ] compress/bzip2
+- [ ] compress/lzw
+- [x] container/ring
+- [ ] crypto/fips140
+- [ ] crypto/hkdf
+- [ ] crypto/mlkem
+- [ ] crypto/pbkdf2
+- [ ] database/sql
+- [ ] database/sql/driver
+- [ ] debug/buildinfo
+- [ ] debug/dwarf
+- [ ] debug/elf
+- [ ] debug/gosym
+- [ ] debug/macho
+- [ ] debug/pe
+- [ ] debug/plan9obj
+- [ ] encoding/ascii85
+- [ ] encoding/base32
+- [ ] encoding/gob
+- [ ] encoding/xml
+- [ ] expvar
+- [ ] go/ast
+- [ ] go/doc
+- [ ] go/doc/comment
+- [ ] go/format
+- [ ] go/importer
+- [ ] go/printer
+- [ ] go/types
+- [ ] hash/crc64
+- [ ] hash/fnv
+- [ ] html
+- [ ] html/template
+- [ ] image
+- [ ] image/color
+- [ ] image/color/palette
+- [ ] image/draw
+- [ ] image/gif
+- [ ] image/jpeg
+- [ ] image/png
+- [ ] index/suffixarray
+- [ ] log/slog
+- [ ] log/syslog
+- [ ] math/cmplx
+- [ ] net/http/cgi
+- [ ] net/http/cookiejar
+- [ ] net/http/fcgi
+- [ ] net/http/httputil
+- [ ] net/http/pprof
+- [ ] net/mail
+- [ ] net/rpc
+- [ ] net/rpc/jsonrpc
+- [ ] net/smtp
+- [ ] plugin
+- [ ] runtime/cgo
+- [ ] runtime/coverage
+- [ ] runtime/metrics
+- [ ] runtime/race
+- [ ] structs
+- [ ] syscall
+- [ ] testing/quick
+- [ ] testing/slogtest
+- [ ] time/tzdata
