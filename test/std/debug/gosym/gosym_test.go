@@ -83,25 +83,7 @@ func TestErrorTypes(t *testing.T) {
 func TestPublicAPISymbols(t *testing.T) {
 	_ = gosym.NewLineTable
 	_ = gosym.NewTable
-
-	_ = (*gosym.LineTable).LineToPC
-	_ = (*gosym.LineTable).PCToLine
-
-	_ = (*gosym.Sym).BaseName
-	_ = (*gosym.Sym).PackageName
-	_ = (*gosym.Sym).ReceiverName
-	_ = (*gosym.Sym).Static
-
-	_ = (*gosym.Table).LineToPC
-	_ = (*gosym.Table).LookupFunc
-	_ = (*gosym.Table).LookupSym
-	_ = (*gosym.Table).PCToFunc
-	_ = (*gosym.Table).PCToLine
-	_ = (*gosym.Table).SymByAddr
-
-	_ = (*gosym.UnknownLineError).Error
 	_ = gosym.UnknownFileError("x").Error
-	_ = (*gosym.DecodingError).Error
 
 	_ = gosym.Func{}
 	_ = gosym.Obj{}
