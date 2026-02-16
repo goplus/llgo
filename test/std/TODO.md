@@ -157,7 +157,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] image/gif
 - [ ] image/jpeg
 - [ ] image/png
-- [ ] index/suffixarray
+- [x] index/suffixarray
 - [ ] log/slog
 - [ ] log/syslog
 - [x] math/cmplx
