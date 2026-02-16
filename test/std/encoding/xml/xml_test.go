@@ -81,8 +81,13 @@ func TestDecoderEncoderAndTokens(t *testing.T) {
 		t.Fatal("did not see StartElement")
 	}
 
-	_ = dec.InputOffset()
-	_, _ = dec.InputPos()
+	if dec.InputOffset() <= 0 {
+		t.Fatalf("InputOffset should be positive after token reads, got %d", dec.InputOffset())
+	}
+	line, col := dec.InputPos()
+	if line <= 0 || col <= 0 {
+		t.Fatalf("InputPos should be positive, got line=%d col=%d", line, col)
+	}
 
 	tr := &tokenSliceReader{toks: []xml.Token{xml.StartElement{Name: xml.Name{Local: "x"}}, xml.EndElement{Name: xml.Name{Local: "x"}}}}
 	dec2 := xml.NewTokenDecoder(tr)
@@ -164,13 +169,28 @@ func TestEscapeAndCopies(t *testing.T) {
 	}
 
 	se := xml.StartElement{Name: xml.Name{Local: "n"}, Attr: []xml.Attr{{Name: xml.Name{Local: "k"}, Value: "v"}}}
-	_ = se.Copy()
-	_ = se.End()
-	_ = xml.CharData("x").Copy()
-	_ = xml.Comment("x").Copy()
-	_ = xml.ProcInst{Target: "xml", Inst: []byte("version=\"1.0\"")}.Copy()
-	_ = xml.Directive("x").Copy()
-	_ = xml.CopyToken(se)
+	if copied := se.Copy(); !reflect.DeepEqual(copied, se) {
+		t.Fatalf("StartElement.Copy mismatch: got %#v, want %#v", copied, se)
+	}
+	if end := se.End(); end.Name.Local != "n" {
+		t.Fatalf("StartElement.End mismatch: got %+v", end)
+	}
+	if copied := xml.CharData("x").Copy(); string(copied) != "x" {
+		t.Fatalf("CharData.Copy mismatch: got %q", string(copied))
+	}
+	if copied := xml.Comment("x").Copy(); string(copied) != "x" {
+		t.Fatalf("Comment.Copy mismatch: got %q", string(copied))
+	}
+	proc := xml.ProcInst{Target: "xml", Inst: []byte("version=\"1.0\"")}
+	if copied := proc.Copy(); copied.Target != proc.Target || !bytes.Equal(copied.Inst, proc.Inst) {
+		t.Fatalf("ProcInst.Copy mismatch: got %#v, want %#v", copied, proc)
+	}
+	if copied := xml.Directive("x").Copy(); string(copied) != "x" {
+		t.Fatalf("Directive.Copy mismatch: got %q", string(copied))
+	}
+	if copiedTok := xml.CopyToken(se); !reflect.DeepEqual(copiedTok, se) {
+		t.Fatalf("CopyToken mismatch: got %#v, want %#v", copiedTok, se)
+	}
 }
 
 func TestErrorsAndSymbols(t *testing.T) {
@@ -213,14 +233,22 @@ func TestErrorsAndSymbols(t *testing.T) {
 	_ = xml.Attr{}
 	_ = xml.StartElement{}
 	_ = xml.EndElement{}
-	_ = xml.CharData("x")
-	_ = xml.Comment("x")
+	if string(xml.CharData("x")) != "x" {
+		t.Fatal("CharData conversion mismatch")
+	}
+	if string(xml.Comment("x")) != "x" {
+		t.Fatal("Comment conversion mismatch")
+	}
 	_ = xml.ProcInst{}
-	_ = xml.Directive("x")
+	if string(xml.Directive("x")) != "x" {
+		t.Fatal("Directive conversion mismatch")
+	}
 	_ = xml.Decoder{}
 	_ = xml.Encoder{}
 	_ = xml.SyntaxError{}
-	_ = xml.UnmarshalError("")
+	if got := xml.UnmarshalError("").Error(); got != "" {
+		t.Fatalf("UnmarshalError(\"\").Error() = %q, want empty", got)
+	}
 	_ = xml.UnsupportedTypeError{}
 	_ = xml.TagPathError{}
 
