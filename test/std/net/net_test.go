@@ -1015,7 +1015,9 @@ func TestDialerDialContext(t *testing.T) {
 func TestDialerMultipathTCP(t *testing.T) {
 	d := &net.Dialer{}
 	d.SetMultipathTCP(true)
-	_ = d.MultipathTCP()
+	if !d.MultipathTCP() {
+		t.Error("Dialer.MultipathTCP() = false after SetMultipathTCP(true)")
+	}
 }
 
 func TestBuffersRead(t *testing.T) {
@@ -1543,7 +1545,9 @@ func TestDNSErrorMethods(t *testing.T) {
 	if e.Temporary() {
 		t.Error("DNSError.Temporary() = true for non-temporary error")
 	}
-	_ = e.Unwrap()
+	if e.Unwrap() != nil {
+		t.Error("DNSError.Unwrap() should be nil for plain DNSError")
+	}
 }
 
 func TestDNSConfigErrorMethods(t *testing.T) {
@@ -1650,7 +1654,9 @@ func TestTCPConnMultipathTCP(t *testing.T) {
 	tcpConn := conn.(*net.TCPConn)
 	defer tcpConn.Close()
 
-	_, _ = tcpConn.MultipathTCP()
+	if _, err := tcpConn.MultipathTCP(); err != nil {
+		t.Logf("TCPConn.MultipathTCP() error: %v", err)
+	}
 }
 
 func TestTCPListenerAcceptTCP(t *testing.T) {
