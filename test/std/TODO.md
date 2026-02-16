@@ -162,7 +162,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] log/syslog
 - [x] math/cmplx
 - [ ] net/http/cgi
-- [ ] net/http/cookiejar
+- [x] net/http/cookiejar
 - [ ] net/http/fcgi
 - [ ] net/http/httputil
 - [ ] net/http/pprof
