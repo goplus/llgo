@@ -1350,10 +1350,18 @@ func TestStartProcess(t *testing.T) {
 			if str := state.String(); str == "" {
 				t.Error("ProcessState.String() returned empty")
 			}
-			_ = state.SystemTime()
-			_ = state.UserTime()
-			_ = state.Sys()
-			_ = state.SysUsage()
+			if sys := state.SystemTime(); sys < 0 {
+				t.Errorf("ProcessState.SystemTime() = %v, want >= 0", sys)
+			}
+			if user := state.UserTime(); user < 0 {
+				t.Errorf("ProcessState.UserTime() = %v, want >= 0", user)
+			}
+			if state.Sys() == nil {
+				t.Log("ProcessState.Sys() returned nil")
+			}
+			if state.SysUsage() == nil {
+				t.Log("ProcessState.SysUsage() returned nil")
+			}
 		}
 
 		err = proc.Release()
