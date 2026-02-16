@@ -137,7 +137,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] encoding/ascii85
 - [x] encoding/base32
 - [ ] encoding/gob
-- [ ] encoding/xml
+- [x] encoding/xml
 - [x] expvar
 - [ ] go/ast
 - [x] go/doc
