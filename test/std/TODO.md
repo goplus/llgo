@@ -150,7 +150,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] hash/fnv
 - [x] html
 - [ ] html/template
-- [ ] image
+- [x] image
 - [x] image/color
 - [x] image/color/palette
 - [x] image/draw
