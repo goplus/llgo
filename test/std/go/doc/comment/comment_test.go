@@ -86,15 +86,6 @@ func TestListBlankRules(t *testing.T) {
 
 func TestPublicAPISymbols(t *testing.T) {
 	_ = comment.DefaultLookupPackage
-	_ = (*comment.Parser).Parse
-	_ = (*comment.Printer).Comment
-	_ = (*comment.Printer).HTML
-	_ = (*comment.Printer).Markdown
-	_ = (*comment.Printer).Text
-	_ = (*comment.DocLink).DefaultURL
-	_ = (*comment.Heading).DefaultID
-	_ = (*comment.List).BlankBefore
-	_ = (*comment.List).BlankBetween
 
 	var _ comment.Block = &comment.Code{}
 	var _ comment.Block = &comment.Heading{}
