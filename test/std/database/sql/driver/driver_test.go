@@ -135,8 +135,13 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = driver.String
 	_ = driver.DefaultParameterConverter
 	_ = driver.ResultNoRows
-	_ = driver.RowsAffected(0).LastInsertId
-	_ = driver.RowsAffected(0).RowsAffected
+	ra0 := driver.RowsAffected(0)
+	if v, err := ra0.RowsAffected(); err != nil || v != 0 {
+		t.Fatalf("RowsAffected(0).RowsAffected = (%v,%v)", v, err)
+	}
+	if _, err := ra0.LastInsertId(); err == nil {
+		t.Fatal("RowsAffected(0).LastInsertId should fail")
+	}
 	_ = driver.NotNull{}.ConvertValue
 	_ = driver.Null{}.ConvertValue
 
@@ -174,10 +179,20 @@ func TestPublicAPISymbols(t *testing.T) {
 	var _ driver.Result = driver.RowsAffected(1)
 	var _ driver.Valuer = stubValuer{}
 
-	_ = driver.IsolationLevel(0)
 	_ = driver.NamedValue{}
 	_ = driver.TxOptions{}
-	_ = driver.Value(nil)
+	lvl := driver.IsolationLevel(0)
+	if lvl != 0 {
+		t.Fatalf("IsolationLevel conversion mismatch: got %v, want 0", lvl)
+	}
+	txOpts := driver.TxOptions{Isolation: lvl, ReadOnly: true}
+	if txOpts.Isolation != lvl || !txOpts.ReadOnly {
+		t.Fatalf("TxOptions assignment mismatch: %+v", txOpts)
+	}
+	var v driver.Value = int64(7)
+	if got, ok := v.(int64); !ok || got != 7 {
+		t.Fatalf("driver.Value type/assertion mismatch: got (%T)%v", v, v)
+	}
 	_ = driver.NotNull{}
 	_ = driver.Null{}
 }
