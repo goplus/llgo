@@ -166,7 +166,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] net/http/fcgi
 - [ ] net/http/httputil
 - [ ] net/http/pprof
-- [ ] net/mail
+- [x] net/mail
 - [ ] net/rpc
 - [ ] net/rpc/jsonrpc
 - [ ] net/smtp
