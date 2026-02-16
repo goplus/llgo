@@ -2,6 +2,10 @@ package cgi_test
 
 import (
 	"net/http/cgi"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -43,7 +47,37 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = cgi.Request
 	_ = cgi.RequestFromMap
 	_ = cgi.Serve
-	_ = (*cgi.Handler).ServeHTTP
 
 	_ = cgi.Handler{}
+}
+
+func TestHandlerServeHTTP(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "app.sh")
+	content := "#!/bin/sh\n" +
+		"echo \"Status: 200 OK\"\n" +
+		"echo \"Content-Type: text/plain\"\n" +
+		"echo\n" +
+		"echo \"method=$REQUEST_METHOD query=$QUERY_STRING\"\n"
+	if err := os.WriteFile(script, []byte(content), 0o755); err != nil {
+		t.Fatalf("WriteFile script: %v", err)
+	}
+
+	h := &cgi.Handler{
+		Path: script,
+		Root: "/cgi-bin",
+		Dir:  dir,
+	}
+	req := httptest.NewRequest("GET", "http://example.com/cgi-bin/app.sh?x=1&y=2", nil)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+
+	res := w.Result()
+	if res.StatusCode != 200 {
+		t.Fatalf("status = %d, want 200", res.StatusCode)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "method=GET") || !strings.Contains(body, "query=x=1&y=2") {
+		t.Fatalf("unexpected body: %q", body)
+	}
 }
