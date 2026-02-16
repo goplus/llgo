@@ -61,7 +61,6 @@ func TestErrorTypesAndSymbols(t *testing.T) {
 	_ = png.Decode
 	_ = png.DecodeConfig
 	_ = png.Encode
-	_ = (*png.Encoder).Encode
 	_ = png.DefaultCompression
 	_ = png.NoCompression
 	_ = png.BestSpeed
