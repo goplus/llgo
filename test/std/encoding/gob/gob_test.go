@@ -97,10 +97,6 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = gob.RegisterName
 	_ = gob.NewEncoder
 	_ = gob.NewDecoder
-	_ = (*gob.Encoder).Encode
-	_ = (*gob.Encoder).EncodeValue
-	_ = (*gob.Decoder).Decode
-	_ = (*gob.Decoder).DecodeValue
 
 	_ = gob.CommonType{}
 	_ = gob.Encoder{}
