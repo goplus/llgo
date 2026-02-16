@@ -164,7 +164,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] net/http/cgi
 - [x] net/http/cookiejar
 - [x] net/http/fcgi
-- [ ] net/http/httputil
+- [x] net/http/httputil
 - [x] net/http/pprof
 - [x] net/mail
 - [x] net/rpc
