@@ -154,7 +154,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] image/color
 - [x] image/color/palette
 - [ ] image/draw
-- [ ] image/gif
+- [x] image/gif
 - [x] image/jpeg
 - [x] image/png
 - [x] index/suffixarray
