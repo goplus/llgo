@@ -235,7 +235,9 @@ func TestTimeCreationAndFormatting(t *testing.T) {
 	}
 
 	start, end := inFixed.ZoneBounds()
-	_ = start.Before(end) || start.Equal(end)
+	if !(start.Before(end) || start.Equal(end)) {
+		t.Fatal("ZoneBounds returned invalid order")
+	}
 	if name, offset := inFixed.Zone(); name == "" || offset != 3600 {
 		t.Fatalf("Zone information incorrect: %s %d", name, offset)
 	}

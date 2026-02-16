@@ -13,8 +13,12 @@ func TestPipeReadWrite(t *testing.T) {
 		t.Fatalf("Pipe: %v", err)
 	}
 	defer func() {
-		_ = syscall.Close(fds[0])
-		_ = syscall.Close(fds[1])
+		if err := syscall.Close(fds[0]); err != nil {
+			t.Errorf("Close(read fd): %v", err)
+		}
+		if err := syscall.Close(fds[1]); err != nil {
+			t.Errorf("Close(write fd): %v", err)
+		}
 	}()
 
 	msg := []byte("llgo-syscall-pipe")

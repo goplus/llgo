@@ -25,7 +25,11 @@ func TestUnixConnMethodCoverage(t *testing.T) {
 		t.Fatalf("ListenUnix error: %v", err)
 	}
 	ln.SetUnlinkOnClose(true)
-	t.Cleanup(func() { _ = ln.Close() })
+	t.Cleanup(func() {
+		if err := ln.Close(); err != nil {
+			t.Errorf("ln.Close: %v", err)
+		}
+	})
 	if ln.Addr() == nil {
 		t.Error("UnixListener Addr returned nil")
 	}
@@ -196,7 +200,11 @@ func TestUnixConnMethodCoverage(t *testing.T) {
 		t.Fatalf("DialUnix unixgram error: %v", err)
 	}
 	defer clientGram.Close()
-	t.Cleanup(func() { _ = os.Remove(clientGramPath) })
+	t.Cleanup(func() {
+		if err := os.Remove(clientGramPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+			t.Errorf("Remove(%q): %v", clientGramPath, err)
+		}
+	})
 	if err := clientGram.SetDeadline(time.Now().Add(time.Second)); err != nil {
 		t.Errorf("unixgram client SetDeadline: %v", err)
 	}

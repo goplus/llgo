@@ -70,7 +70,11 @@ func TestTempDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TempDir error: %v", err)
 	}
-	t.Cleanup(func() { _ = os.RemoveAll(temp) })
+	t.Cleanup(func() {
+		if err := os.RemoveAll(temp); err != nil {
+			t.Errorf("RemoveAll(%q): %v", temp, err)
+		}
+	})
 
 	info, err := os.Stat(temp)
 	if err != nil {
@@ -92,8 +96,12 @@ func TestTempFile(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		name := f.Name()
-		f.Close()
-		_ = os.Remove(name)
+		if err := f.Close(); err != nil {
+			t.Errorf("TempFile.Close: %v", err)
+		}
+		if err := os.Remove(name); err != nil && !os.IsNotExist(err) {
+			t.Errorf("Remove(%q): %v", name, err)
+		}
 	})
 
 	if !strings.HasPrefix(filepath.Base(f.Name()), "ioutil-file-") {

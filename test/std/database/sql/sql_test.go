@@ -23,7 +23,11 @@ func openTestDB(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatalf("sql.Open: %v", err)
 	}
-	t.Cleanup(func() { _ = db.Close() })
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("db.Close: %v", err)
+		}
+	})
 	return db
 }
 
@@ -178,13 +182,21 @@ func TestConnAndStmt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Conn: %v", err)
 	}
-	defer func() { _ = conn.Close() }()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			t.Errorf("conn.Close: %v", err)
+		}
+	}()
 
 	stmt, err := conn.PrepareContext(context.Background(), "onecol")
 	if err != nil {
 		t.Fatalf("PrepareContext: %v", err)
 	}
-	defer func() { _ = stmt.Close() }()
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			t.Errorf("stmt.Close: %v", err)
+		}
+	}()
 
 	var got string
 	if err := stmt.QueryRowContext(context.Background()).Scan(&got); err != nil {

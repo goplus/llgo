@@ -344,13 +344,15 @@ func TestValueError(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			if ve, ok := r.(*reflect.ValueError); ok {
-				_ = ve.Error()
+				if ve.Error() == "" {
+					t.Fatal("ValueError.Error returned empty")
+				}
 			}
 		}
 	}()
 
 	v := reflect.ValueOf("string")
-	_ = v.Int() // Should panic with ValueError
+	v.Int() // Should panic with ValueError
 }
 
 // Test Value.Convert
@@ -454,7 +456,10 @@ func TestValueInterfaceData(t *testing.T) {
 	v := reflect.ValueOf(&i).Elem()
 
 	// InterfaceData is deprecated but we test it exists
-	_ = v.InterfaceData()
+	data := v.InterfaceData()
+	if data[0] == 0 && data[1] == 0 {
+		t.Fatal("InterfaceData returned zero words")
+	}
 }
 
 // Test Value.SetPointer

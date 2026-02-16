@@ -74,7 +74,10 @@ func TestWriterMethodsOverUDP(t *testing.T) {
 	const wantMessages = 9
 	recvDone := make(chan int, 1)
 	go func() {
-		_ = pc.SetReadDeadline(time.Now().Add(2 * time.Second))
+		if err := pc.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+			recvDone <- 0
+			return
+		}
 		buf := make([]byte, 2048)
 		count := 0
 		for count < wantMessages {

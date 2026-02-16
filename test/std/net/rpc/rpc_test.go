@@ -55,7 +55,9 @@ func TestPipeRPC(t *testing.T) {
 		t.Fatalf("reply2 = %d, want 42", reply2)
 	}
 
-	_ = client.Close()
+	if err := client.Close(); err != nil && err != rpc.ErrShutdown {
+		t.Fatalf("second Close: %v", err)
+	}
 }
 
 func TestPublicAPISymbols(t *testing.T) {
@@ -148,7 +150,9 @@ func TestServerAccept(t *testing.T) {
 	if reply != 11 {
 		t.Fatalf("reply = %d, want 11", reply)
 	}
-	_ = client.Close()
+	if err := client.Close(); err != nil && err != rpc.ErrShutdown {
+		t.Fatalf("second Close: %v", err)
+	}
 	<-done
 }
 

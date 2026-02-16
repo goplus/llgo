@@ -64,7 +64,9 @@ func TestScannerUsage(t *testing.T) {
 	var tokens []rune
 	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
 		tokens = append(tokens, tok)
-		_ = s.TokenText()
+		if s.TokenText() == "" {
+			t.Fatal("TokenText returned empty")
+		}
 	}
 	if len(tokens) == 0 {
 		t.Fatal("expected tokens to be scanned")

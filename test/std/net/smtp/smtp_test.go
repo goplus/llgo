@@ -227,7 +227,9 @@ func newSMTPClient(t *testing.T, serve func(conn net.Conn)) (*smtp.Client, chan 
 
 	client, err := smtp.NewClient(cconn, "localhost")
 	if err != nil {
-		_ = cconn.Close()
+		if cerr := cconn.Close(); cerr != nil {
+			t.Logf("close cconn after NewClient failure: %v", cerr)
+		}
 		t.Fatalf("NewClient: %v", err)
 	}
 	return client, done
