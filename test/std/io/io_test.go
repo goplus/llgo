@@ -194,7 +194,9 @@ func TestPipeAndErrSentinels(t *testing.T) {
 	}
 
 	closedR, closedW := io.Pipe()
-	_ = closedR.Close()
+	if err := closedR.Close(); err != nil {
+		t.Fatalf("closedR.Close() err %v", err)
+	}
 	if _, err := io.WriteString(closedW, "x"); !errors.Is(err, io.ErrClosedPipe) {
 		t.Fatalf("expected ErrClosedPipe got %v", err)
 	}
@@ -375,8 +377,12 @@ func TestDiscardAndInterfaces(t *testing.T) {
 		w *io.PipeWriter
 	}
 	deadlinePipe.r, deadlinePipe.w = io.Pipe()
-	_ = deadlinePipe.w.CloseWithError(io.ErrClosedPipe)
-	_ = deadlinePipe.r.Close()
+	if err := deadlinePipe.w.CloseWithError(io.ErrClosedPipe); err != nil {
+		t.Fatalf("PipeWriter.CloseWithError err %v", err)
+	}
+	if err := deadlinePipe.r.Close(); err != nil {
+		t.Fatalf("PipeReader.Close err %v", err)
+	}
 
 	var _ io.Closer = io.NopCloser(strings.NewReader("c"))
 	var _ io.ReadCloser = io.NopCloser(strings.NewReader("rc"))
