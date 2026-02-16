@@ -122,7 +122,9 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = doc.AllDecls
 	_ = doc.AllMethods
 	_ = doc.PreserveAST
-	_ = doc.Mode(0)
+	if doc.Mode(0) != 0 {
+		t.Fatalf("Mode conversion mismatch: got %v, want 0", doc.Mode(0))
+	}
 
 	var _ doc.Filter = func(string) bool { return true }
 	_ = doc.Example{}
