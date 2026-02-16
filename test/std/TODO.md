@@ -139,7 +139,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] encoding/gob
 - [x] encoding/xml
 - [x] expvar
-- [ ] go/ast
+- [x] go/ast
 - [x] go/doc
 - [x] go/doc/comment
 - [x] go/format
