@@ -97,7 +97,10 @@ func TestProxyRequestHelpers(t *testing.T) {
 
 func TestReverseProxy(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, r.Method+" "+r.URL.Path)
+		body := r.Method + " " + r.URL.Path
+		if n, err := io.WriteString(w, body); err != nil || n != len(body) {
+			t.Errorf("WriteString response = (%d, %v), want (%d, nil)", n, err, len(body))
+		}
 	}))
 	defer backend.Close()
 
@@ -169,24 +172,37 @@ func TestClientConnMethods(t *testing.T) {
 			t.Errorf("server ReadRequest #1: %v", err)
 			return
 		}
-		_ = req1.Body.Close()
+		if err := req1.Body.Close(); err != nil {
+			t.Errorf("req1.Body.Close: %v", err)
+			return
+		}
 		if req1.URL.Path != "/one" {
 			t.Errorf("path #1 = %q, want /one", req1.URL.Path)
 			return
 		}
-		_, _ = io.WriteString(sconn, "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok")
+		resp1 := "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok"
+		if n, err := io.WriteString(sconn, resp1); err != nil || n != len(resp1) {
+			t.Errorf("server WriteString #1 = (%d, %v), want (%d, nil)", n, err, len(resp1))
+			return
+		}
 
 		req2, err := http.ReadRequest(br)
 		if err != nil {
 			t.Errorf("server ReadRequest #2: %v", err)
 			return
 		}
-		_ = req2.Body.Close()
+		if err := req2.Body.Close(); err != nil {
+			t.Errorf("req2.Body.Close: %v", err)
+			return
+		}
 		if req2.URL.Path != "/two" {
 			t.Errorf("path #2 = %q, want /two", req2.URL.Path)
 			return
 		}
-		_, _ = io.WriteString(sconn, "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\npong")
+		resp2 := "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\npong"
+		if n, err := io.WriteString(sconn, resp2); err != nil || n != len(resp2) {
+			t.Errorf("server WriteString #2 = (%d, %v), want (%d, nil)", n, err, len(resp2))
+		}
 	}()
 
 	cc := httputil.NewClientConn(cconn, nil)
@@ -202,7 +218,9 @@ func TestClientConnMethods(t *testing.T) {
 		t.Fatalf("ClientConn.Read: %v", err)
 	}
 	body1, _ := io.ReadAll(resp1.Body)
-	_ = resp1.Body.Close()
+	if err := resp1.Body.Close(); err != nil {
+		t.Fatalf("resp1.Body.Close: %v", err)
+	}
 	if string(body1) != "ok" {
 		t.Fatalf("Read body = %q, want %q", body1, "ok")
 	}
@@ -213,7 +231,9 @@ func TestClientConnMethods(t *testing.T) {
 		t.Fatalf("ClientConn.Do: %v", err)
 	}
 	body2, _ := io.ReadAll(resp2.Body)
-	_ = resp2.Body.Close()
+	if err := resp2.Body.Close(); err != nil {
+		t.Fatalf("resp2.Body.Close: %v", err)
+	}
 	if string(body2) != "pong" {
 		t.Fatalf("Do body = %q, want %q", body2, "pong")
 	}
@@ -222,7 +242,9 @@ func TestClientConnMethods(t *testing.T) {
 	if hijackedConn == nil || hijackedReader == nil {
 		t.Fatal("ClientConn.Hijack returned nil")
 	}
-	_ = hijackedConn.Close()
+	if err := hijackedConn.Close(); err != nil {
+		t.Fatalf("hijackedConn.Close: %v", err)
+	}
 	<-done
 }
 
@@ -232,14 +254,18 @@ func TestClientConnCloseAndProxyConn(t *testing.T) {
 	if err := cc1.Close(); err != nil {
 		t.Fatalf("ClientConn.Close: %v", err)
 	}
-	_ = sconn1.Close()
+	if err := sconn1.Close(); err != nil {
+		t.Fatalf("sconn1.Close: %v", err)
+	}
 
 	sconn2, cconn2 := net.Pipe()
 	cc2 := httputil.NewProxyClientConn(cconn2, nil)
 	if err := cc2.Close(); err != nil {
 		t.Fatalf("ProxyClientConn.Close: %v", err)
 	}
-	_ = sconn2.Close()
+	if err := sconn2.Close(); err != nil {
+		t.Fatalf("sconn2.Close: %v", err)
+	}
 }
 
 func TestServerConnMethods(t *testing.T) {
@@ -251,7 +277,11 @@ func TestServerConnMethods(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		_, _ = io.WriteString(cconn, "GET /x HTTP/1.1\r\nHost: example.com\r\n\r\n")
+		reqText := "GET /x HTTP/1.1\r\nHost: example.com\r\n\r\n"
+		if n, err := io.WriteString(cconn, reqText); err != nil || n != len(reqText) {
+			t.Errorf("client WriteString request = (%d, %v), want (%d, nil)", n, err, len(reqText))
+			return
+		}
 		br := bufio.NewReader(cconn)
 		resp, err := http.ReadResponse(br, nil)
 		if err != nil {
@@ -259,7 +289,10 @@ func TestServerConnMethods(t *testing.T) {
 			return
 		}
 		body, _ := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("resp.Body.Close: %v", err)
+			return
+		}
 		if string(body) != "srv" {
 			t.Errorf("response body = %q, want %q", body, "srv")
 			return
@@ -297,7 +330,9 @@ func TestServerConnMethods(t *testing.T) {
 	if hc == nil || hr == nil {
 		t.Fatal("ServerConn.Hijack returned nil")
 	}
-	_ = hc.Close()
+	if err := hc.Close(); err != nil {
+		t.Fatalf("hijacked server conn close: %v", err)
+	}
 }
 
 func TestServerConnClose(t *testing.T) {
@@ -306,5 +341,7 @@ func TestServerConnClose(t *testing.T) {
 	if err := sc.Close(); err != nil {
 		t.Fatalf("ServerConn.Close: %v", err)
 	}
-	_ = cconn.Close()
+	if err := cconn.Close(); err != nil {
+		t.Fatalf("cconn.Close: %v", err)
+	}
 }
