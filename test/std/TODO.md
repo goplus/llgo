@@ -123,7 +123,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] container/ring
 - [ ] crypto/fips140
 - [x] crypto/hkdf
-- [ ] crypto/mlkem
+- [x] crypto/mlkem
 - [x] crypto/pbkdf2
 - [ ] database/sql
 - [ ] database/sql/driver
