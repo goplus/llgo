@@ -148,7 +148,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] go/types
 - [x] hash/crc64
 - [x] hash/fnv
-- [ ] html
+- [x] html
 - [ ] html/template
 - [ ] image
 - [ ] image/color
