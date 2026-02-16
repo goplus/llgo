@@ -502,11 +502,16 @@ func TestAEADInterface(t *testing.T) {
 	// Verify it implements AEAD interface
 	var _ cipher.AEAD = gcm
 
-	// Test required methods exist
-	_ = gcm.NonceSize()
-	_ = gcm.Overhead()
+	nonceSize := gcm.NonceSize()
+	if nonceSize != 12 {
+		t.Fatalf("GCM NonceSize = %d, want 12", nonceSize)
+	}
+	overhead := gcm.Overhead()
+	if overhead != 16 {
+		t.Fatalf("GCM Overhead = %d, want 16", overhead)
+	}
 
-	nonce := make([]byte, gcm.NonceSize())
+	nonce := make([]byte, nonceSize)
 	plaintext := []byte("test")
 
 	// Test Seal
