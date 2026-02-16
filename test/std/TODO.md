@@ -153,7 +153,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] image
 - [ ] image/color
 - [x] image/color/palette
-- [ ] image/draw
+- [x] image/draw
 - [x] image/gif
 - [x] image/jpeg
 - [x] image/png
