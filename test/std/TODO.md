@@ -149,7 +149,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] hash/crc64
 - [x] hash/fnv
 - [x] html
-- [ ] html/template
+- [x] html/template
 - [x] image
 - [x] image/color
 - [x] image/color/palette
