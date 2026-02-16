@@ -34,7 +34,11 @@ func TestOpenNewFileAndSections(t *testing.T) {
 	if err != nil {
 		t.Fatalf("pe.Open: %v", err)
 	}
-	defer func() { _ = f.Close() }()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("pe.File.Close: %v", err)
+		}
+	}()
 
 	if f.FileHeader.Machine != pe.IMAGE_FILE_MACHINE_AMD64 {
 		t.Fatalf("Machine = %#x, want %#x", f.FileHeader.Machine, pe.IMAGE_FILE_MACHINE_AMD64)
@@ -61,13 +65,19 @@ func TestOpenNewFileAndSections(t *testing.T) {
 	if _, err := f.ImportedSymbols(); err != nil {
 		t.Fatalf("ImportedSymbols: %v", err)
 	}
-	_, _ = f.DWARF()
+	if d, err := f.DWARF(); err != nil || d == nil {
+		t.Fatalf("File.DWARF = (%v, %v), want non-nil data and nil err", d, err)
+	}
 
 	file, err := os.Open(exe)
 	if err != nil {
 		t.Fatalf("os.Open fixture: %v", err)
 	}
-	defer func() { _ = file.Close() }()
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Errorf("fixture file close: %v", err)
+		}
+	}()
 	f2, err := pe.NewFile(file)
 	if err != nil {
 		t.Fatalf("pe.NewFile: %v", err)
@@ -303,5 +313,8 @@ func TestConstantsAndTypesSanity(t *testing.T) {
 	_ = pe.Reloc{}
 	_ = pe.Symbol{}
 	_ = pe.COFFSymbolAuxFormat5{}
-	_ = pe.StringTable(bytes.Repeat([]byte{0}, 4))
+	st := pe.StringTable(bytes.Repeat([]byte{0}, 4))
+	if len(st) != 4 {
+		t.Fatalf("StringTable conversion length = %d, want 4", len(st))
+	}
 }
