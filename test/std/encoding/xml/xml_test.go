@@ -97,8 +97,40 @@ func TestDecoderEncoderAndTokens(t *testing.T) {
 		t.Fatalf("Skip: %v", err)
 	}
 
+	dec4 := xml.NewDecoder(strings.NewReader(`<person><name>Eve</name><age>18</age></person>`))
+	var p Person
+	if err := dec4.Decode(&p); err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if p.Name != "Eve" || p.Age != 18 {
+		t.Fatalf("Decode result = %+v", p)
+	}
+
+	dec5 := xml.NewDecoder(strings.NewReader(`<root><person><name>Ken</name><age>28</age></person></root>`))
+	if _, err := dec5.Token(); err != nil { // <root>
+		t.Fatalf("Token root: %v", err)
+	}
+	tok, err := dec5.Token() // <person>
+	if err != nil {
+		t.Fatalf("Token person: %v", err)
+	}
+	start, ok := tok.(xml.StartElement)
+	if !ok {
+		t.Fatalf("token type = %T, want StartElement", tok)
+	}
+	var p2 Person
+	if err := dec5.DecodeElement(&p2, &start); err != nil {
+		t.Fatalf("DecodeElement: %v", err)
+	}
+	if p2.Name != "Ken" || p2.Age != 28 {
+		t.Fatalf("DecodeElement result = %+v", p2)
+	}
+
 	var buf bytes.Buffer
 	enc := xml.NewEncoder(&buf)
+	if err := enc.Encode(Person{Name: "Tom", Age: 30}); err != nil {
+		t.Fatalf("Encode: %v", err)
+	}
 	enc.Indent("", "  ")
 	if err := enc.EncodeElement(struct {
 		Value string `xml:",chardata"`
@@ -168,20 +200,6 @@ func TestErrorsAndSymbols(t *testing.T) {
 	_ = xml.NewTokenDecoder
 	_ = xml.NewEncoder
 	_ = xml.CopyToken
-
-	_ = (*xml.Decoder).Decode
-	_ = (*xml.Decoder).DecodeElement
-	_ = (*xml.Decoder).Token
-	_ = (*xml.Decoder).RawToken
-	_ = (*xml.Decoder).Skip
-	_ = (*xml.Decoder).InputOffset
-	_ = (*xml.Decoder).InputPos
-	_ = (*xml.Encoder).Encode
-	_ = (*xml.Encoder).EncodeElement
-	_ = (*xml.Encoder).EncodeToken
-	_ = (*xml.Encoder).Indent
-	_ = (*xml.Encoder).Flush
-	_ = (*xml.Encoder).Close
 
 	var _ xml.Token = xml.StartElement{}
 	var _ xml.Token = xml.EndElement{}
