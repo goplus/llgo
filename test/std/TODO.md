@@ -146,7 +146,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] go/importer
 - [ ] go/printer
 - [ ] go/types
-- [ ] hash/crc64
+- [x] hash/crc64
 - [x] hash/fnv
 - [ ] html
 - [ ] html/template
