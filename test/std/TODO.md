@@ -152,7 +152,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] html/template
 - [ ] image
 - [ ] image/color
-- [ ] image/color/palette
+- [x] image/color/palette
 - [ ] image/draw
 - [ ] image/gif
 - [ ] image/jpeg
