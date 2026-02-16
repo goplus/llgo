@@ -168,7 +168,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] net/http/pprof
 - [x] net/mail
 - [ ] net/rpc
-- [ ] net/rpc/jsonrpc
+- [x] net/rpc/jsonrpc
 - [ ] net/smtp
 - [ ] plugin
 - [ ] runtime/cgo
