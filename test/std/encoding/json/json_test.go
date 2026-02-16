@@ -5,10 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+var errBadMarshal = errors.New("marshal failed")
+
+type badMarshaler struct{}
+
+func (badMarshaler) MarshalJSON() ([]byte, error) {
+	return nil, errBadMarshal
+}
 
 // Test basic Marshal/Unmarshal
 func TestMarshalUnmarshal(t *testing.T) {
@@ -383,12 +392,25 @@ func TestErrors(t *testing.T) {
 		t.Error("Should return UnsupportedTypeError for channel")
 	}
 
-	// UnsupportedValueError - just check the type exists
-	// (hard to trigger in practice with modern Go)
-	_ = (*json.UnsupportedValueError)(nil)
+	// UnsupportedValueError
+	_, err = json.Marshal(math.NaN())
+	var unsupportedValueErr *json.UnsupportedValueError
+	if !errors.As(err, &unsupportedValueErr) {
+		t.Error("Should return UnsupportedValueError for NaN")
+	}
+	if unsupportedValueErr != nil && unsupportedValueErr.Str == "" {
+		t.Error("UnsupportedValueError should have Str set")
+	}
 
-	// MarshalerError - harder to trigger naturally, so just check the type exists
-	_ = (*json.MarshalerError)(nil)
+	// MarshalerError
+	_, err = json.Marshal(badMarshaler{})
+	var marshalerErr *json.MarshalerError
+	if !errors.As(err, &marshalerErr) {
+		t.Error("Should return MarshalerError for failing Marshaler")
+	}
+	if marshalerErr != nil && !errors.Is(marshalerErr.Unwrap(), errBadMarshal) {
+		t.Errorf("MarshalerError should wrap errBadMarshal, got %v", marshalerErr.Unwrap())
+	}
 }
 
 // Test struct tags
