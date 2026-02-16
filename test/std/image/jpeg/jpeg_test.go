@@ -57,8 +57,12 @@ func TestErrorTypesAndSymbols(t *testing.T) {
 	_ = jpeg.Encode
 
 	_ = jpeg.Options{}
-	_ = jpeg.FormatError("x")
-	_ = jpeg.UnsupportedError("x")
+	if got := jpeg.FormatError("x").Error(); !strings.Contains(got, "x") {
+		t.Fatalf("FormatError.Error() = %q", got)
+	}
+	if got := jpeg.UnsupportedError("x").Error(); !strings.Contains(got, "x") {
+		t.Fatalf("UnsupportedError.Error() = %q", got)
+	}
 
 	var _ jpeg.Reader = bytes.NewReader(nil)
 }
