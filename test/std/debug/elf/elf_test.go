@@ -33,7 +33,11 @@ func TestOpenELFAndCoreMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("elf.Open: %v", err)
 	}
-	defer func() { _ = f.Close() }()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("elf.File.Close: %v", err)
+		}
+	}()
 
 	if f.Class == elf.ELFCLASSNONE {
 		t.Fatalf("unexpected ELF class: %v", f.Class)
@@ -87,13 +91,19 @@ func TestOpenELFAndCoreMethods(t *testing.T) {
 	if _, err := f.DynamicVersionNeeds(); err != nil && !errors.Is(err, elf.ErrNoSymbols) {
 		t.Fatalf("File.DynamicVersionNeeds: %v", err)
 	}
-	_, _ = f.DWARF()
+	if d, err := f.DWARF(); err != nil || d == nil {
+		t.Fatalf("File.DWARF = (%v, %v), want non-nil data and nil err", d, err)
+	}
 
 	rf, err := os.Open(bin)
 	if err != nil {
 		t.Fatalf("os.Open fixture: %v", err)
 	}
-	defer func() { _ = rf.Close() }()
+	defer func() {
+		if err := rf.Close(); err != nil {
+			t.Errorf("fixture file close: %v", err)
+		}
+	}()
 	f2, err := elf.NewFile(rf)
 	if err != nil {
 		t.Fatalf("elf.NewFile: %v", err)
@@ -246,7 +256,9 @@ func TestStructsAndErrorType(t *testing.T) {
 	_ = elf.Dyn64{}
 	_ = elf.DynamicVersion{}
 	_ = elf.DynamicVersionDep{}
-	_ = elf.DynamicVersionFlag(elf.VER_FLG_BASE)
+	if flag := elf.DynamicVersionFlag(elf.VER_FLG_BASE); flag != elf.VER_FLG_BASE {
+		t.Fatalf("DynamicVersionFlag conversion mismatch: got %v, want %v", flag, elf.VER_FLG_BASE)
+	}
 	_ = elf.DynamicVersionNeed{}
 	_ = elf.File{}
 	_ = elf.FileHeader{}
