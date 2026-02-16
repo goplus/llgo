@@ -59,7 +59,9 @@ func TestPublicAPISymbols(t *testing.T) {
 	_ = draw.FloydSteinberg
 	_ = draw.Over
 	_ = draw.Src
-	_ = draw.Op(0).Draw
+	if draw.Op(0) != draw.Over {
+		t.Fatalf("Op(0) should be Over, got %v", draw.Op(0))
+	}
 
 	var _ draw.Image = image.NewRGBA(image.Rect(0, 0, 1, 1))
 	var _ draw.RGBA64Image = image.NewRGBA64(image.Rect(0, 0, 1, 1))
