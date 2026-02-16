@@ -18,6 +18,7 @@ var hasAltPkg = map[string]none{
 	"internal/abi":          {},
 	"internal/reflectlite":  {},
 	"internal/runtime/maps": {},
+	"iter":                  {},
 	"reflect":               {},
 	"runtime":               {},
 	"unique":                {},
