@@ -133,7 +133,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] debug/gosym
 - [ ] debug/macho
 - [ ] debug/pe
-- [ ] debug/plan9obj
+- [x] debug/plan9obj
 - [x] encoding/ascii85
 - [x] encoding/base32
 - [ ] encoding/gob
