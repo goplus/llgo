@@ -14,7 +14,11 @@ func TestUDPConnMethodCoverage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListenUDP error: %v", err)
 	}
-	t.Cleanup(func() { _ = server.Close() })
+	t.Cleanup(func() {
+		if err := server.Close(); err != nil {
+			t.Errorf("server.Close: %v", err)
+		}
+	})
 
 	if err := server.SetReadBuffer(4096); err != nil {
 		t.Errorf("server SetReadBuffer: %v", err)

@@ -320,5 +320,5 @@ func TestIPConnFile(t *testing.T) {
 		}
 	}()
 
-	_, _ = ipConn.File()
+	ipConn.File()
 }

@@ -15,7 +15,11 @@ func TestTCPConnMethodCoverage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListenTCP error: %v", err)
 	}
-	t.Cleanup(func() { _ = ln.Close() })
+	t.Cleanup(func() {
+		if err := ln.Close(); err != nil {
+			t.Errorf("ln.Close: %v", err)
+		}
+	})
 
 	if lf, err := ln.File(); err == nil {
 		defer lf.Close()
@@ -119,7 +123,11 @@ func TestTCPConnMethodCoverage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DialTCP error: %v", err)
 	}
-	t.Cleanup(func() { _ = (*net.TCPConn).Close(client) })
+	t.Cleanup(func() {
+		if err := (*net.TCPConn).Close(client); err != nil {
+			t.Errorf("client.Close: %v", err)
+		}
+	})
 
 	if err := (*net.TCPConn).SetReadBuffer(client, 4096); err != nil {
 		t.Errorf("client SetReadBuffer: %v", err)

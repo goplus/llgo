@@ -63,7 +63,9 @@ func TestKindConstants(t *testing.T) {
 	}
 
 	for _, k := range kinds {
-		_ = k.String()
+		if k.String() == "" {
+			t.Fatalf("Kind(%d).String returned empty", k)
+		}
 	}
 }
 
@@ -155,7 +157,9 @@ func TestChanDir(t *testing.T) {
 	_ = reflect.BothDir
 
 	dir := reflect.BothDir
-	_ = dir.String()
+	if dir.String() == "" {
+		t.Fatal("ChanDir.String returned empty")
+	}
 }
 
 // Test Ptr constant

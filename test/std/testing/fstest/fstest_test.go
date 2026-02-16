@@ -409,7 +409,10 @@ func TestMapFSSeek(t *testing.T) {
 		t.Fatalf("SeekEnd failed: pos=%d err=%v", pos, err)
 	}
 
-	n, _ = f.Read(buf)
+	n, err = f.Read(buf)
+	if err != nil && !errors.Is(err, io.EOF) {
+		t.Fatalf("Read after SeekEnd failed: %v", err)
+	}
 	if string(buf[:n]) != "789" {
 		t.Fatalf("Read after SeekEnd got %q", buf[:n])
 	}

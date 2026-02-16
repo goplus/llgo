@@ -338,7 +338,10 @@ func TestRequestMethods(t *testing.T) {
 	}
 
 	// Test FormValue (requires ParseForm)
-	req, _ = http.NewRequest("POST", "http://example.com", strings.NewReader("key=value"))
+	req, err = http.NewRequest("POST", "http://example.com", strings.NewReader("key=value"))
+	if err != nil {
+		t.Fatalf("NewRequest failed: %v", err)
+	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.ParseForm()
 	if req.FormValue("key") != "value" {
@@ -591,7 +594,10 @@ func TestMaxBytesReader(t *testing.T) {
 // Test Error function
 func TestError(t *testing.T) {
 	w := httptest.NewRecorder()
-	_ = httptest.NewRequest("GET", "http://example.com", nil)
+	req := httptest.NewRequest("GET", "http://example.com", nil)
+	if req == nil {
+		t.Fatal("httptest.NewRequest returned nil")
+	}
 	http.Error(w, "test error", http.StatusBadRequest)
 
 	if w.Code != http.StatusBadRequest {

@@ -17,7 +17,11 @@ func TestOpenSeekReadWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	defer func() { _ = syscall.Close(fd) }()
+	defer func() {
+		if err := syscall.Close(fd); err != nil {
+			t.Errorf("Close(fd): %v", err)
+		}
+	}()
 
 	payload := []byte("hello-syscall")
 	n, err := syscall.Write(fd, payload)
