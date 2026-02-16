@@ -31,7 +31,11 @@ func TestOpenMachoFixtureAndCoreMethods(t *testing.T) {
 	if err != nil {
 		t.Fatalf("macho.Open: %v", err)
 	}
-	defer func() { _ = f.Close() }()
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Errorf("macho.File.Close: %v", err)
+		}
+	}()
 
 	if f.Section("__text") == nil {
 		t.Fatal("Section(__text)=nil")
@@ -69,13 +73,19 @@ func TestOpenMachoFixtureAndCoreMethods(t *testing.T) {
 	if _, err := f.ImportedSymbols(); err != nil {
 		t.Fatalf("ImportedSymbols: %v", err)
 	}
-	_, _ = f.DWARF()
+	if d, err := f.DWARF(); err != nil || d == nil {
+		t.Fatalf("File.DWARF = (%v, %v), want non-nil data and nil err", d, err)
+	}
 
 	rf, err := os.Open(bin)
 	if err != nil {
 		t.Fatalf("os.Open fixture: %v", err)
 	}
-	defer func() { _ = rf.Close() }()
+	defer func() {
+		if err := rf.Close(); err != nil {
+			t.Errorf("fixture file close: %v", err)
+		}
+	}()
 	f2, err := macho.NewFile(rf)
 	if err != nil {
 		t.Fatalf("macho.NewFile: %v", err)
