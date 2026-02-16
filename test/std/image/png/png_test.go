@@ -67,9 +67,16 @@ func TestErrorTypesAndSymbols(t *testing.T) {
 	_ = png.BestCompression
 
 	_ = png.Encoder{}
-	_ = png.CompressionLevel(0)
-	_ = png.FormatError("x")
-	_ = png.UnsupportedError("x")
+	level := png.CompressionLevel(0)
+	if level != 0 {
+		t.Fatalf("CompressionLevel conversion mismatch: got %v, want 0", level)
+	}
+	if got := png.FormatError("x").Error(); !strings.Contains(got, "x") {
+		t.Fatalf("FormatError.Error() = %q", got)
+	}
+	if got := png.UnsupportedError("x").Error(); !strings.Contains(got, "x") {
+		t.Fatalf("UnsupportedError.Error() = %q", got)
+	}
 
 	var _ *png.EncoderBuffer
 	var _ png.EncoderBufferPool = dummyPool{}
