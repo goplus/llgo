@@ -131,7 +131,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] debug/dwarf
 - [ ] debug/elf
 - [x] debug/gosym
-- [ ] debug/macho
+- [x] debug/macho
 - [x] debug/pe
 - [x] debug/plan9obj
 - [x] encoding/ascii85
