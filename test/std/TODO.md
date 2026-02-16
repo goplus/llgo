@@ -161,7 +161,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] log/slog
 - [ ] log/syslog
 - [x] math/cmplx
-- [ ] net/http/cgi
+- [x] net/http/cgi
 - [x] net/http/cookiejar
 - [ ] net/http/fcgi
 - [ ] net/http/httputil
