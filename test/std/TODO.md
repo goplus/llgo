@@ -2,17 +2,9 @@
 
 Checklist for `test/std` coverage.
 
-- Public std packages tracked: 172
-- Done (tracked tests committed): 110
-- Pending: 62
-
 Mark as done only after package tests are migrated, enabled for llgo, and committed.
 
 ## Migration Set (from ../llgo-std-test/test/std)
-
-- Total: 110
-- Done: 108
-- Pending: 2
 
 - [x] archive/tar
 - [x] archive/zip
@@ -126,12 +118,8 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] weak
 ## Additional Public Std Packages (not in llgo-std-test)
 
-- Total: 62
-- Done: 2
-- Pending: 60
-
 - [x] compress/bzip2
-- [ ] compress/lzw
+- [x] compress/lzw
 - [x] container/ring
 - [ ] crypto/fips140
 - [ ] crypto/hkdf
