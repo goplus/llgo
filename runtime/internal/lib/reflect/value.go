@@ -498,12 +498,16 @@ func (v Value) capNonSlice() int {
 // Close closes the channel v.
 // It panics if v's Kind is not Chan.
 func (v Value) Close() {
-	/* TODO(xsw):
 	v.mustBe(Chan)
 	v.mustBeExported()
-	chanclose(v.pointer())
-	*/
-	panic("todo: reflect.Value.Close")
+	tt := (*chanType)(unsafe.Pointer(v.typ()))
+	if ChanDir(tt.Dir)&SendDir == 0 {
+		panic("reflect: close of receive-only channel")
+	}
+	if v.pointer() == nil {
+		panic("close of nil channel")
+	}
+	runtime.ChanClose((*runtime.Chan)(v.pointer()))
 }
 
 // CanComplex reports whether Complex can be used without panicking.
@@ -1150,7 +1154,6 @@ func (v Value) Recv() (x Value, ok bool) {
 // internal recv, possibly non-blocking (nb).
 // v is known to be a channel.
 func (v Value) recv(nb bool) (val Value, ok bool) {
-	/* TODO(xsw):
 	tt := (*chanType)(unsafe.Pointer(v.typ()))
 	if ChanDir(tt.Dir)&RecvDir == 0 {
 		panic("reflect: recv on send-only channel")
@@ -1165,13 +1168,25 @@ func (v Value) recv(nb bool) (val Value, ok bool) {
 	} else {
 		p = unsafe.Pointer(&val.ptr)
 	}
-	selected, ok := chanrecv(v.pointer(), nb, p)
+	ch := (*runtime.Chan)(v.pointer())
+	if ch == nil {
+		if nb {
+			return Value{}, false
+		}
+		select {}
+	}
+	selected := true
+	if nb {
+		var tryOK bool
+		ok, tryOK = runtime.ChanTryRecv(ch, p, int(t.Size()))
+		selected = tryOK
+	} else {
+		ok = runtime.ChanRecv(ch, p, int(t.Size()))
+	}
 	if !selected {
 		val = Value{}
 	}
 	return
-	*/
-	panic("todo: reflect.Value.recv")
 }
 
 // Send sends x on the channel v.
@@ -1186,7 +1201,6 @@ func (v Value) Send(x Value) {
 // internal send, possibly non-blocking.
 // v is known to be a channel.
 func (v Value) send(x Value, nb bool) (selected bool) {
-	/* TODO(xsw):
 	tt := (*chanType)(unsafe.Pointer(v.typ()))
 	if ChanDir(tt.Dir)&SendDir == 0 {
 		panic("reflect: send on recv-only channel")
@@ -1199,9 +1213,20 @@ func (v Value) send(x Value, nb bool) (selected bool) {
 	} else {
 		p = unsafe.Pointer(&x.ptr)
 	}
-	return chansend(v.pointer(), p, nb)
-	*/
-	panic("todo: reflect.Value.send")
+	ch := (*runtime.Chan)(v.pointer())
+	if ch == nil {
+		if nb {
+			return false
+		}
+		select {}
+	}
+	if nb {
+		return runtime.ChanTrySend(ch, p, int(tt.Elem.Size()))
+	}
+	if !runtime.ChanSend(ch, p, int(tt.Elem.Size())) {
+		panic("send on closed channel")
+	}
+	return true
 }
 
 // Set assigns x to the value v.
@@ -1564,12 +1589,9 @@ func (v Value) stringNonString() string {
 // If the receive cannot finish without blocking, x is the zero Value and ok is false.
 // If the channel is closed, x is the zero value for the channel's element type and ok is false.
 func (v Value) TryRecv() (x Value, ok bool) {
-	/* TODO(xsw):
 	v.mustBe(Chan)
 	v.mustBeExported()
 	return v.recv(true)
-	*/
-	panic("todo: reflect.Value.TryRecv")
 }
 
 // TrySend attempts to send x on the channel v but will not block.
@@ -1577,12 +1599,9 @@ func (v Value) TryRecv() (x Value, ok bool) {
 // It reports whether the value was sent.
 // As in Go, x's value must be assignable to the channel's element type.
 func (v Value) TrySend(x Value) bool {
-	/* TODO(xsw):
 	v.mustBe(Chan)
 	v.mustBeExported()
 	return v.send(x, true)
-	*/
-	panic("todo: reflect.Value.TrySend")
 }
 
 // Type returns v's type.
@@ -3343,7 +3362,15 @@ func (v Value) Clear() {
 	switch v.Kind() {
 	case Slice:
 		sh := *(*unsafeheaderSlice)(v.ptr)
-		sliceclear(v.typ(), sh)
+		if sh.Len == 0 || sh.Data == nil {
+			return
+		}
+		st := (*sliceType)(unsafe.Pointer(v.typ()))
+		elem := st.Elem
+		step := elem.Size()
+		for i := 0; i < sh.Len; i++ {
+			typedmemclr(elem, unsafe.Add(sh.Data, uintptr(i)*step))
+		}
 	case Map:
 		mapclear(v.typ(), v.pointer())
 	default:
