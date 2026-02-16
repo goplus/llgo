@@ -33,7 +33,11 @@ func loadDWARF(t *testing.T) *dwarf.Data {
 	if err != nil {
 		t.Fatalf("elf.Open: %v", err)
 	}
-	defer func() { _ = ef.Close() }()
+	defer func() {
+		if err := ef.Close(); err != nil {
+			t.Errorf("elf.File.Close: %v", err)
+		}
+	}()
 	d, err := ef.DWARF()
 	if err != nil {
 		t.Fatalf("elf.DWARF: %v", err)
@@ -86,7 +90,9 @@ func TestReaderLineAndDataMethods(t *testing.T) {
 		t.Fatalf("Reader.Seek mismatch: got %#v want offset %#v", e, cu.Offset)
 	}
 	r.SkipChildren()
-	_, _ = r.SeekPC(0)
+	if entry, err := r.SeekPC(0); err == nil && entry == nil {
+		t.Fatal("Reader.SeekPC returned nil entry with nil error")
+	}
 
 	lr, err := d.LineReader(cu)
 	if err != nil {
@@ -103,7 +109,9 @@ func TestReaderLineAndDataMethods(t *testing.T) {
 	pos := lr.Tell()
 	lr.Reset()
 	lr.Seek(pos)
-	_ = lr.SeekPC(le.Address, &le)
+	if err := lr.SeekPC(le.Address, &le); err != nil {
+		t.Fatalf("LineReader.SeekPC: %v", err)
+	}
 	for i := 0; i < 3; i++ {
 		err = lr.Next(&le)
 		if err == io.EOF {
@@ -239,7 +247,9 @@ func TestTypeStructsAndStringers(t *testing.T) {
 	_ = dwarf.LineReaderPos{}
 	_ = dwarf.Reader{}
 	_ = dwarf.Data{}
-	_ = dwarf.Offset(0)
+	if dwarf.Offset(0) != 0 {
+		t.Fatalf("Offset conversion mismatch: got %v", dwarf.Offset(0))
+	}
 	_ = dwarf.Entry{}
 }
 
