@@ -141,7 +141,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] expvar
 - [ ] go/ast
 - [ ] go/doc
-- [ ] go/doc/comment
+- [x] go/doc/comment
 - [x] go/format
 - [x] go/importer
 - [x] go/printer
