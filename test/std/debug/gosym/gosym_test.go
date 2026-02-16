@@ -33,8 +33,12 @@ func TestTableAndLineTableBasics(t *testing.T) {
 	if lt == nil {
 		t.Fatal("NewLineTable returned nil")
 	}
-	_ = lt.PCToLine(0x1000)
-	_ = lt.LineToPC(1, 0x2000)
+	if line := lt.PCToLine(0x1000); line < 0 {
+		t.Fatalf("PCToLine returned negative line: %d", line)
+	}
+	if pc := lt.LineToPC(1, 0x2000); pc > 0x2000 {
+		t.Fatalf("LineToPC returned out-of-range pc: %#x", pc)
+	}
 
 	if _, err := gosym.NewTable(nil, lt); err == nil {
 		// Keep this call as API/behavior coverage. Empty symtab is expected to be invalid.
@@ -83,7 +87,9 @@ func TestErrorTypes(t *testing.T) {
 func TestPublicAPISymbols(t *testing.T) {
 	_ = gosym.NewLineTable
 	_ = gosym.NewTable
-	_ = gosym.UnknownFileError("x").Error
+	if msg := gosym.UnknownFileError("x").Error(); !strings.Contains(msg, "x") {
+		t.Fatalf("UnknownFileError.Error() = %q", msg)
+	}
 
 	_ = gosym.Func{}
 	_ = gosym.Obj{}
