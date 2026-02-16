@@ -126,7 +126,9 @@ func TestPublicAPISymbolCoverage(t *testing.T) {
 	_ = image.Config{}
 	_ = image.Point{}
 	_ = image.Rectangle{}
-	_ = image.YCbCrSubsampleRatio(0)
+	if image.YCbCrSubsampleRatio(0) != 0 {
+		t.Fatalf("YCbCrSubsampleRatio conversion mismatch: got %v", image.YCbCrSubsampleRatio(0))
+	}
 	_ = image.Alpha{}
 	_ = image.Alpha16{}
 	_ = image.CMYK{}
@@ -152,9 +154,19 @@ func TestPublicAPISymbolCoverage(t *testing.T) {
 	var _ image.PalettedImage = (*image.Paletted)(nil)
 	var _ image.RGBA64Image = (*image.RGBA)(nil)
 
-	_ = image.Image(nil)
-	_ = image.PalettedImage(nil)
-	_ = image.RGBA64Image(nil)
+	zeroRatio := image.YCbCrSubsampleRatio(0)
+	if zeroRatio != 0 {
+		t.Fatalf("YCbCrSubsampleRatio conversion mismatch: got %v, want 0", zeroRatio)
+	}
+	if image.Image(nil) != nil {
+		t.Fatal("image.Image(nil) should be nil")
+	}
+	if image.PalettedImage(nil) != nil {
+		t.Fatal("image.PalettedImage(nil) should be nil")
+	}
+	if image.RGBA64Image(nil) != nil {
+		t.Fatal("image.RGBA64Image(nil) should be nil")
+	}
 }
 
 func TestConcreteMethodCoverage(t *testing.T) {
