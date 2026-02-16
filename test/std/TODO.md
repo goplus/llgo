@@ -122,7 +122,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] compress/lzw
 - [x] container/ring
 - [ ] crypto/fips140
-- [ ] crypto/hkdf
+- [x] crypto/hkdf
 - [ ] crypto/mlkem
 - [ ] crypto/pbkdf2
 - [ ] database/sql
