@@ -169,7 +169,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] net/mail
 - [x] net/rpc
 - [x] net/rpc/jsonrpc
-- [ ] net/smtp
+- [x] net/smtp
 - [ ] plugin
 - [ ] runtime/cgo
 - [ ] runtime/coverage
