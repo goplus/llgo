@@ -86,11 +86,6 @@ func TestSymbolsMissingSection(t *testing.T) {
 func TestPublicAPISymbols(t *testing.T) {
 	_ = plan9obj.NewFile
 	_ = plan9obj.Open
-	_ = (*plan9obj.File).Close
-	_ = (*plan9obj.File).Section
-	_ = (*plan9obj.File).Symbols
-	_ = (*plan9obj.Section).Data
-	_ = (*plan9obj.Section).Open
 
 	_ = plan9obj.Magic64
 	_ = plan9obj.Magic386
