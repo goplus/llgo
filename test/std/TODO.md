@@ -176,7 +176,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [ ] runtime/metrics
 - [ ] runtime/race
 - [x] structs
-- [ ] syscall
+- [x] syscall
 - [x] testing/quick
 - [x] testing/slogtest
 - [x] time/tzdata
