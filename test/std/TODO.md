@@ -163,7 +163,7 @@ Mark as done only after package tests are migrated, enabled for llgo, and commit
 - [x] math/cmplx
 - [x] net/http/cgi
 - [x] net/http/cookiejar
-- [ ] net/http/fcgi
+- [x] net/http/fcgi
 - [ ] net/http/httputil
 - [ ] net/http/pprof
 - [x] net/mail
