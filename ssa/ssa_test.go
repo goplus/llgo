@@ -1261,6 +1261,82 @@ func TestTargetMachineAndDataLayout(t *testing.T) {
 	}
 }
 
+func TestAbiPrune(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	emptyType := prog.Type(emptyIface, InGo)
+
+	makeFn := func(name string, x Expr) {
+		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
+		fn := pkg.NewFunc(name, sig, InGo)
+		b := fn.MakeBody(1)
+		iface := b.MakeInterface(emptyType, x)
+		b.Return(iface)
+	}
+
+	makeFn("intIface", prog.Val(1))
+	makeFn("ptrIface", prog.Nil(prog.VoidPtr()))
+	makeFn("floatIface", prog.FloatVal(3.5, prog.Float32()))
+
+	st := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "a", types.Typ[types.Int]),
+		types.NewVar(0, nil, "b", types.Typ[types.Int]),
+	}, nil)
+	makeFn("structIface", prog.Zero(prog.Type(st, InGo)))
+
+	single := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "v", types.Typ[types.Int]),
+	}, nil)
+	makeFn("singleFieldIface", prog.Zero(prog.Type(single, InGo)))
+
+	pkgTypes := types.NewPackage("foo/bar", "bar")
+	obj := types.NewTypeName(token.NoPos, pkgTypes, "Point", nil)
+	named := types.NewNamed(obj, types.Typ[types.Int], nil)
+	msig := types.NewSignatureType(types.NewVar(0, pkgTypes, "", named), nil, nil, nil, nil, false)
+	mthd := types.NewFunc(0, pkgTypes, "M", msig)
+	mthd2 := types.NewFunc(0, pkgTypes, "m2", msig)
+	named.AddMethod(mthd)
+	named.AddMethod(mthd2)
+	prog.AddInvoke(mthd)
+	pkgTypes.Scope().Insert(obj)
+
+	anonStruct := types.NewStruct(
+		[]*types.Var{
+			types.NewField(0, pkgTypes, "", named, true),
+			types.NewField(0, pkgTypes, "Age", types.Typ[types.Int], false),
+			types.NewField(0, pkgTypes, "Tags", types.NewSlice(types.Typ[types.String]), false),
+		}, nil,
+	)
+	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	rawMeth := types.NewFunc(0, pkgTypes, "M", rawSig)
+	nonEmpty := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
+	nonEmpty.Complete()
+	nonEmptyType := prog.Type(nonEmpty, InGo)
+	sigNE := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", nonEmpty)), false)
+	fnNE := pkg.NewFunc("nonEmptyIface", sigNE, InGo)
+	bNE := fnNE.MakeBody(1)
+	bNE.MakeInterface(nonEmptyType, prog.Zero(prog.Type(anonStruct, InGo)))
+	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Zero(prog.Type(named, InGo))))
+
+	mainpkg := prog.NewPackage("main", "")
+	mainpkg.PruneAbiTypes(ReflectMethodDynamic, nil)
+	s := mainpkg.String()
+	if !strings.Contains(s, `@"*_llgo_foo/bar.Point" = constant { %"github.com/goplus/llgo/runtime/abi.PtrType",`) {
+		t.Fatal("error puretype", s)
+	}
+}
+
 func TestAbiTables(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
@@ -1311,7 +1387,8 @@ func TestAbiTables(t *testing.T) {
 	bNE := fnNE.MakeBody(1)
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 
-	fn := pkg.InitAbiTypes(pkg.Path() + ".init$abitables")
+	mainpkg := prog.NewPackage("main", "")
+	fn := mainpkg.InitAbiTypes(ReflectStructOf, pkg.Path()+".init$abitables")
 	s := fn.impl.String()
 	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
 _llgo_0:
@@ -1320,5 +1397,68 @@ _llgo_0:
   ret void
 }`) {
 		t.Fatal("error abi tables", s)
+	}
+}
+
+func TestResolveLinkname(t *testing.T) {
+	tests := []struct {
+		name   string
+		link   map[string]string
+		input  string
+		want   string
+		panics bool
+	}{
+		{
+			name: "Normal",
+			link: map[string]string{
+				"foo": "C.bar",
+			},
+			input: "foo",
+			want:  "bar",
+		},
+		{
+			name: "MultipleLinks",
+			link: map[string]string{
+				"foo1": "C.bar1",
+				"foo2": "C.bar2",
+			},
+			input: "foo2",
+			want:  "bar2",
+		},
+		{
+			name:  "NoLink",
+			link:  map[string]string{},
+			input: "foo",
+			want:  "foo",
+		},
+		{
+			name: "InvalidLink",
+			link: map[string]string{
+				"foo": "invalid.bar",
+			},
+			input:  "foo",
+			panics: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.panics {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Error("want panic")
+					}
+				}()
+			}
+			prog := NewProgram(nil)
+			for k, v := range tt.link {
+				prog.SetLinkname(k, v)
+			}
+			got := prog.ResolveLinkname(tt.input)
+			if !tt.panics {
+				if got != tt.want {
+					t.Errorf("got %q, want %q", got, tt.want)
+				}
+			}
+		})
 	}
 }
