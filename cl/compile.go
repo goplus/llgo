@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
+	"github.com/goplus/llgo/internal/goembed"
 	"github.com/goplus/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
 
@@ -141,6 +142,8 @@ type context struct {
 	cgoErrnoTy types.Type
 	cgoSymbols []string
 	rewrites   map[string]string
+	embedMap   goembed.VarMap
+	embedInits []embedInit
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -241,6 +244,9 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 		log.Println("==> NewVar", name, typ)
 	}
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
+	if p.tryEmbedGlobalInit(pkg, gbl, g, name) {
+		return
+	}
 	if value, ok := p.rewriteValue(name); ok {
 		if p.isStringPtrType(gbl.Type()) {
 			g.Init(pkg.ConstString(value))
@@ -492,6 +498,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	}
 
 	if doModInit {
+		if p.state != pkgInPatch {
+			p.applyEmbedInits(b)
+		}
 		if pyModInit = p.pyMod != ""; pyModInit {
 			last = len(instrs) - 1
 			instrs = instrs[:last]
@@ -1152,6 +1161,17 @@ func NewPackage(prog llssa.Program, pkg *ssa.Package, files []*ast.File) (ret ll
 // The rewrites map uses short variable names (without package qualifier) and
 // only affects string-typed globals defined in the current package.
 func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File) (ret llssa.Package, externs []string, err error) {
+	return newPackageEx(prog, patches, rewrites, pkg, files, nil)
+}
+
+// NewPackageExWithEmbed compiles a package using pre-loaded go:embed metadata.
+//
+// This avoids re-scanning directives when the caller already loaded them.
+func NewPackageExWithEmbed(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File, embedMap goembed.VarMap) (ret llssa.Package, externs []string, err error) {
+	return newPackageEx(prog, patches, rewrites, pkg, files, &embedMap)
+}
+
+func newPackageEx(prog llssa.Program, patches Patches, rewrites map[string]string, pkg *ssa.Package, files []*ast.File, embedMap *goembed.VarMap) (ret llssa.Package, externs []string, err error) {
 	pkgProg := pkg.Prog
 	pkgTypes := pkg.Pkg
 	oldTypes := pkgTypes
@@ -1185,6 +1205,14 @@ func NewPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 		},
 		cgoSymbols: make([]string, 0, 128),
 		rewrites:   rewrites,
+	}
+	if embedMap != nil {
+		ctx.embedMap = *embedMap
+	} else {
+		ctx.embedMap, err = goembed.LoadDirectives(ctx.fset, files)
+		if err != nil {
+			panic(err)
+		}
 	}
 	ctx.initPyModule()
 	ctx.initFiles(pkgPath, files, pkgName == "C")

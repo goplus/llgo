@@ -808,6 +808,19 @@ func (p Package) createGlobalStr(v string) (ret llvm.Value) {
 	return
 }
 
+func (p Package) createGlobalBytes(v []byte) (ret llvm.Value) {
+	prog := p.Prog
+	if len(v) == 0 {
+		return llvm.ConstNull(prog.CStr().ll)
+	}
+	typ := llvm.ArrayType(prog.tyInt8(), len(v))
+	global := llvm.AddGlobal(p.mod, typ, "")
+	global.SetInitializer(prog.ctx.ConstString(string(v), false))
+	global.SetLinkage(llvm.PrivateLinkage)
+	global.SetAlignment(1)
+	return llvm.ConstInBoundsGEP(typ, global, []llvm.Value{prog.Val(0).impl})
+}
+
 // -----------------------------------------------------------------------------
 
 /*
