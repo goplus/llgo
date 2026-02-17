@@ -19,7 +19,7 @@ concurrency:
 jobs:
   test:
     continue-on-error: true
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         os:
@@ -69,13 +69,22 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-      - name: Test
+      - name: Test (no emulator)
         if: ${{!startsWith(matrix.os, 'macos')}}
-        run: go test -timeout 30m ./...
+        env:
+          LLGO_EMBED_TESTS: "0"
+        run: go test -timeout 60m ./...
 
-      - name: Test with coverage
+      - name: Test with coverage (no emulator)
         if: startsWith(matrix.os, 'macos')
-        run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
+        env:
+          LLGO_EMBED_TESTS: "0"
+        run: go test -timeout 60m -coverprofile="coverage.txt" -covermode=atomic ./...
+
+      - name: Test ESP32-C3 emulator runs
+        env:
+          LLGO_EMBED_TESTS: "1"
+        run: go test -timeout 60m -v ./cl -run 'TestRunESP32C3'
 
       - name: Check std symbol coverage
         run: bash doc/_readme/scripts/check_std_cover.sh
