@@ -50,4 +50,9 @@ func TestDeferInLoopIR(t *testing.T) {
 	if !strings.Contains(ir, "icmp ne ptr") {
 		t.Fatalf("expected loop defer condition in IR, got:\n%s", ir)
 	}
+	// Loop defers must record each execution (even with no args) so the drain loop
+	// can run deferred calls the correct number of times.
+	if !strings.Contains(ir, "FreeDeferNode") {
+		t.Fatalf("expected loop defer node free in IR, got:\n%s", ir)
+	}
 }
