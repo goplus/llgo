@@ -335,6 +335,25 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
+	checkAltDeps := func(paths []string, pkgs []*packages.Package) ([]string, []*packages.Package) {
+		altMap := make(map[string]none)
+		for _, v := range paths {
+			altMap[v] = none{}
+		}
+		init := pkgs
+		for {
+			deps := checkAltPkgs(altMap, init)
+			if len(deps) == 0 {
+				break
+			}
+			init, err := packages.LoadEx(dedup, sizes, cfg, deps...)
+			check(err)
+			paths = append(paths, deps...)
+			pkgs = append(pkgs, init...)
+		}
+		return paths, pkgs
+	}
+	altPkgPaths, altPkgs = checkAltDeps(altPkgPaths, altPkgs)
 
 	prog.SetRuntime(func() *types.Package {
 		return altPkgs[0].Types
@@ -1271,6 +1290,21 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 		if p.Types != nil && !p.IllTyped {
 			if llruntime.HasAltPkg(p.PkgPath) {
 				alts = append(alts, altPkgPathPrefix+p.PkgPath)
+			}
+		}
+	})
+	return alts
+}
+
+func checkAltPkgs(m map[string]none, initial []*packages.Package, alts ...string) []string {
+	packages.Visit(initial, nil, func(p *packages.Package) {
+		if p.Types != nil && !p.IllTyped {
+			if _, ok := hasAltPkg[p.PkgPath]; ok {
+				pkgPath := altPkgPathPrefix + p.PkgPath
+				if _, ok := m[pkgPath]; !ok {
+					m[pkgPath] = none{}
+					alts = append(alts, pkgPath)
+				}
 			}
 		}
 	})
