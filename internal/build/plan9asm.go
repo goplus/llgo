@@ -395,6 +395,9 @@ func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []
 		return nil
 	}
 	skip := make(map[string]struct{})
+	// Linkname entry used by reflect.Copy. ABI2 wrapping this symbol can
+	// mismatch runtime's concrete signature in mixed type-name scenarios.
+	skip["github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy"] = struct{}{}
 
 	ownSigs, err := plan9asmSigsForPkg(ctx, pkgPath)
 	check(err)
