@@ -117,7 +117,16 @@ func (v Value) typ() *abi.Type {
 	// types, held in the central map). So there is no need to
 	// escape types. noescape here help avoid unnecessary escape
 	// of v.
-	return (*abi.Type)(unsafe.Pointer(v.typ_))
+	t := (*abi.Type)(unsafe.Pointer(v.typ_))
+	if t == nil {
+		return nil
+	}
+	if t.Kind() == abi.Pointer {
+		if elem := t.Elem(); elem != nil {
+			t = toRType(elem).ptrTo()
+		}
+	}
+	return t
 }
 
 // pointer returns the underlying pointer represented by v.
@@ -169,8 +178,37 @@ func packEface(v Value) any {
 	// to have any operation between the e.word and e.typ assignments
 	// that would let the garbage collector observe the partially-built
 	// interface value.
+	t = canonicalizeDynamicType(t)
 	e.typ = t
 	return i
+}
+
+func canonicalizeDynamicType(t *abi.Type) *abi.Type {
+	if t == nil {
+		return nil
+	}
+	if t.Kind() != abi.Pointer {
+		return t
+	}
+	elem := t.Elem()
+	if elem == nil {
+		return t
+	}
+	elemName := toRType(elem).String()
+	name := toRType(t).String()
+	for _, tt := range typesByString(name) {
+		if tt == nil || tt.Kind() != abi.Pointer {
+			continue
+		}
+		p := (*ptrType)(unsafe.Pointer(tt))
+		if p.Elem == nil {
+			continue
+		}
+		if toRType(p.Elem).String() == elemName {
+			return tt
+		}
+	}
+	return t
 }
 
 // unpackEface converts the empty interface i to a Value.
@@ -498,12 +536,16 @@ func (v Value) capNonSlice() int {
 // Close closes the channel v.
 // It panics if v's Kind is not Chan.
 func (v Value) Close() {
-	/* TODO(xsw):
 	v.mustBe(Chan)
 	v.mustBeExported()
-	chanclose(v.pointer())
-	*/
-	panic("todo: reflect.Value.Close")
+	tt := (*chanType)(unsafe.Pointer(v.typ()))
+	if ChanDir(tt.Dir)&SendDir == 0 {
+		panic("reflect: close of receive-only channel")
+	}
+	if v.pointer() == nil {
+		panic("close of nil channel")
+	}
+	runtime.ChanClose((*runtime.Chan)(v.pointer()))
 }
 
 // CanComplex reports whether Complex can be used without panicking.
@@ -1150,7 +1192,6 @@ func (v Value) Recv() (x Value, ok bool) {
 // internal recv, possibly non-blocking (nb).
 // v is known to be a channel.
 func (v Value) recv(nb bool) (val Value, ok bool) {
-	/* TODO(xsw):
 	tt := (*chanType)(unsafe.Pointer(v.typ()))
 	if ChanDir(tt.Dir)&RecvDir == 0 {
 		panic("reflect: recv on send-only channel")
@@ -1165,13 +1206,25 @@ func (v Value) recv(nb bool) (val Value, ok bool) {
 	} else {
 		p = unsafe.Pointer(&val.ptr)
 	}
-	selected, ok := chanrecv(v.pointer(), nb, p)
+	ch := (*runtime.Chan)(v.pointer())
+	if ch == nil {
+		if nb {
+			return Value{}, false
+		}
+		select {}
+	}
+	selected := true
+	if nb {
+		var tryOK bool
+		ok, tryOK = runtime.ChanTryRecv(ch, p, int(t.Size()))
+		selected = tryOK
+	} else {
+		ok = runtime.ChanRecv(ch, p, int(t.Size()))
+	}
 	if !selected {
 		val = Value{}
 	}
 	return
-	*/
-	panic("todo: reflect.Value.recv")
 }
 
 // Send sends x on the channel v.
@@ -1186,7 +1239,6 @@ func (v Value) Send(x Value) {
 // internal send, possibly non-blocking.
 // v is known to be a channel.
 func (v Value) send(x Value, nb bool) (selected bool) {
-	/* TODO(xsw):
 	tt := (*chanType)(unsafe.Pointer(v.typ()))
 	if ChanDir(tt.Dir)&SendDir == 0 {
 		panic("reflect: send on recv-only channel")
@@ -1199,9 +1251,20 @@ func (v Value) send(x Value, nb bool) (selected bool) {
 	} else {
 		p = unsafe.Pointer(&x.ptr)
 	}
-	return chansend(v.pointer(), p, nb)
-	*/
-	panic("todo: reflect.Value.send")
+	ch := (*runtime.Chan)(v.pointer())
+	if ch == nil {
+		if nb {
+			return false
+		}
+		select {}
+	}
+	if nb {
+		return runtime.ChanTrySend(ch, p, int(tt.Elem.Size()))
+	}
+	if !runtime.ChanSend(ch, p, int(tt.Elem.Size())) {
+		panic("send on closed channel")
+	}
+	return true
 }
 
 // Set assigns x to the value v.
@@ -1564,12 +1627,9 @@ func (v Value) stringNonString() string {
 // If the receive cannot finish without blocking, x is the zero Value and ok is false.
 // If the channel is closed, x is the zero value for the channel's element type and ok is false.
 func (v Value) TryRecv() (x Value, ok bool) {
-	/* TODO(xsw):
 	v.mustBe(Chan)
 	v.mustBeExported()
 	return v.recv(true)
-	*/
-	panic("todo: reflect.Value.TryRecv")
 }
 
 // TrySend attempts to send x on the channel v but will not block.
@@ -1577,12 +1637,9 @@ func (v Value) TryRecv() (x Value, ok bool) {
 // It reports whether the value was sent.
 // As in Go, x's value must be assignable to the channel's element type.
 func (v Value) TrySend(x Value) bool {
-	/* TODO(xsw):
 	v.mustBe(Chan)
 	v.mustBeExported()
 	return v.send(x, true)
-	*/
-	panic("todo: reflect.Value.TrySend")
 }
 
 // Type returns v's type.
@@ -1809,7 +1866,13 @@ func (v Value) grow(n int) {
 		panic("reflect.Value.Grow: slice overflow")
 	case oldLen+n > p.Cap:
 		t := v.typ().Elem()
-		*p = growslice(*p, n, int(t.Size_))
+		// The linknamed growslice must use the same ABI as runtime slice helpers.
+		// LLGo lowers slice-like values (data,len,cap) as 3 registers, while a
+		// plain 3-word struct may use a different calling convention.
+		// Reinterpret the header as a builtin slice so the call ABI matches.
+		sh := *(*[]byte)(unsafe.Pointer(p))
+		sh = growslice(sh, n, int(t.Size_))
+		*p = *(*unsafeheaderSlice)(unsafe.Pointer(&sh))
 		p.Len = oldLen // set oldLen back
 	}
 }
@@ -1850,17 +1913,16 @@ func Append(s Value, x ...Value) Value {
 // AppendSlice appends a slice t to a slice s and returns the resulting slice.
 // The slices s and t must have the same element type.
 func AppendSlice(s, t Value) Value {
-	/*
-		s.mustBe(Slice)
-		t.mustBe(Slice)
-		typesMustMatch("reflect.AppendSlice", s.Type().Elem(), t.Type().Elem())
-		ns := s.Len()
-		nt := t.Len()
-		s = s.extendSlice(nt)
-		Copy(s.Slice(ns, ns+nt), t)
-		return s
-	*/
-	panic("todo: reflect.AppendSlice")
+	s.mustBe(Slice)
+	t.mustBe(Slice)
+	if s.typ().Elem() != t.typ().Elem() {
+		panic("reflect.AppendSlice: " + stringFor(s.typ().Elem()) + " != " + stringFor(t.typ().Elem()))
+	}
+	ns := s.Len()
+	nt := t.Len()
+	s = s.extendSlice(nt)
+	Copy(s.Slice(ns, ns+nt), t)
+	return s
 }
 
 // Copy copies the contents of src into dst until either
@@ -2104,7 +2166,7 @@ func verifyNotInHeapPtr(p uintptr) bool {
 }
 
 //go:linkname growslice github.com/goplus/llgo/runtime/internal/runtime.GrowSlice
-func growslice(src unsafeheaderSlice, num, etSize int) unsafeheaderSlice
+func growslice(src []byte, num, etSize int) []byte
 
 // Dummy annotation marking that the value x escapes,
 // for use in cases where the reflect code is so clever that
@@ -2320,20 +2382,22 @@ func toFFISig(tin, tout []*abi.Type) (*ffi.Signature, error) {
 	for i, in := range tin {
 		args[i] = toFFIType(in)
 	}
-	var ret *ffi.Type
+	return ffi.NewSignature(toFFIRetType(tout), args...)
+}
+
+func toFFIRetType(tout []*abi.Type) *ffi.Type {
 	switch n := len(tout); n {
 	case 0:
-		ret = ffi.TypeVoid
+		return ffi.TypeVoid
 	case 1:
-		ret = toFFIType(tout[0])
+		return toFFIType(tout[0])
 	default:
 		fields := make([]*ffi.Type, n)
 		for i, out := range tout {
 			fields[i] = toFFIType(out)
 		}
-		ret = ffi.StructOf(fields...)
+		return ffi.StructOf(fields...)
 	}
-	return ffi.NewSignature(ret, args...)
 }
 
 func (v Value) closureFunc() *abi.FuncType {
@@ -2442,7 +2506,23 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		panic("reflect.Value.Call: wrong argument count")
 	}
 
-	sig, err := toFFISig(tin, tout)
+	ffiArgs := make([]*ffi.Type, 0, len(tin)+4)
+	for i := 0; i < ioff; i++ {
+		ffiArgs = append(ffiArgs, toFFIType(tin[i]))
+	}
+	for i, arg := range in {
+		typ := tin[ioff+i]
+		if typ.Kind() == abi.Slice {
+			h := (*unsafeheaderSlice)(arg.ptr)
+			ffiArgs = append(ffiArgs, ffi.TypePointer, ffi.TypeInt, ffi.TypeInt)
+			args = append(args, unsafe.Pointer(&h.Data), unsafe.Pointer(&h.Len), unsafe.Pointer(&h.Cap))
+			continue
+		}
+		ffiArgs = append(ffiArgs, toFFIType(typ))
+		args = append(args, toFFIArg(arg, typ))
+	}
+
+	sig, err := ffi.NewSignature(toFFIRetType(tout), ffiArgs...)
 	if err != nil {
 		panic(err)
 	}
@@ -2450,9 +2530,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		v := runtime.AllocZ(sig.RType.Size)
 		ret = unsafe.Pointer(&v)
 	}
-	for i, in := range in {
-		args = append(args, toFFIArg(in, tin[ioff+i]))
-	}
+
 	ffi.Call(sig, fn, ret, args...)
 	switch n := len(tout); n {
 	case 0:
@@ -3322,7 +3400,15 @@ func (v Value) Clear() {
 	switch v.Kind() {
 	case Slice:
 		sh := *(*unsafeheaderSlice)(v.ptr)
-		sliceclear(v.typ(), sh)
+		if sh.Len == 0 || sh.Data == nil {
+			return
+		}
+		st := (*sliceType)(unsafe.Pointer(v.typ()))
+		elem := st.Elem
+		step := elem.Size()
+		for i := 0; i < sh.Len; i++ {
+			typedmemclr(elem, unsafe.Add(sh.Data, uintptr(i)*step))
+		}
 	case Map:
 		mapclear(v.typ(), v.pointer())
 	default:

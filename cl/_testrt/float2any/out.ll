@@ -24,7 +24,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/float2any"
 define void @"github.com/goplus/llgo/cl/_testrt/float2any.check32"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %2 = icmp eq ptr %1, @_llgo_float32
+  %2 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_float32, ptr %1)
   br i1 %2, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -56,7 +56,7 @@ _llgo_4:                                          ; preds = %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/float2any.check64"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %2 = icmp eq ptr %1, @_llgo_float64
+  %2 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_float64, ptr %1)
   br i1 %2, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_3
@@ -137,6 +137,8 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr, ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 

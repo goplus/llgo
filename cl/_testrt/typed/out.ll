@@ -49,7 +49,7 @@ _llgo_0:
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %0, align 8
   %1 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.T", ptr undef }, ptr %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, 0
-  %3 = icmp eq ptr %2, @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.T"
+  %3 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.T", ptr %2)
   br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
@@ -58,7 +58,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %1, 0
-  %7 = icmp eq ptr %6, @_llgo_string
+  %7 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_string, ptr %6)
   br i1 %7, label %_llgo_3, label %_llgo_4
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -99,7 +99,7 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
   %23 = alloca [2 x i64], align 8
   call void @llvm.memset(ptr %23, i8 0, i64 16, i1 false)
   %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 0
-  %25 = icmp eq ptr %24, @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A"
+  %25 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A", ptr %24)
   br i1 %25, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
@@ -147,6 +147,8 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

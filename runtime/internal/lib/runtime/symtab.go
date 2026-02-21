@@ -78,6 +78,33 @@ func safeGoString(s *c.Char, defaultStr string) string {
 	return c.GoString(s)
 }
 
+func uintptrHex(v uintptr) string {
+	const hexdigits = "0123456789abcdef"
+	var digits [16]byte
+	i := len(digits)
+	for v > 0 {
+		i--
+		digits[i] = hexdigits[v&0xf]
+		v >>= 4
+	}
+	if i == len(digits) {
+		i--
+		digits[i] = '0'
+	}
+	out := make([]byte, 2+len(digits)-i)
+	out[0] = '0'
+	out[1] = 'x'
+	copy(out[2:], digits[i:])
+	return string(out)
+}
+
+func unknownFunctionName(pc uintptr) string {
+	// Use a stable PC-based placeholder instead of a constant string.
+	// Some stdlib code (e.g. testing cleanup stack mapping) compares function
+	// names and can loop if too many frames share the same placeholder.
+	return "pc=" + uintptrHex(pc)
+}
+
 func (ci *Frames) Next() (frame Frame, more bool) {
 	for len(ci.frames) < 2 {
 		// Find the next frame.
@@ -94,12 +121,24 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 		}
 		info := &clitedebug.Info{}
 		if clitedebug.Addrinfo(unsafe.Pointer(pc), info) == 0 {
-			break
+			ci.frames = append(ci.frames, Frame{
+				PC:        pc,
+				Function:  unknownFunctionName(pc),
+				File:      "",
+				Line:      0,
+				startLine: 0,
+				Entry:     0,
+			})
+			continue
+		}
+		fn := safeGoString(info.Sname, "")
+		if fn == "" {
+			fn = unknownFunctionName(pc)
 		}
 		ci.frames = append(ci.frames, Frame{
 			PC:        pc,
-			Function:  safeGoString(info.Fname, "<unknown function>"),
-			File:      safeGoString(info.Sname, "<unknown file>"),
+			Function:  fn,
+			File:      "",
 			Line:      0,
 			startLine: 0,
 			Entry:     uintptr(info.Saddr),

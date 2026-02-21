@@ -542,6 +542,11 @@ func (p *context) atomicCmpXchg(b llssa.Builder, args []ssa.Value) llssa.Expr {
 	panic("atomicCmpXchg(addr *T, old, new T) T: invalid arguments")
 }
 
+func (p *context) atomicCmpXchgOK(b llssa.Builder, args []ssa.Value) llssa.Expr {
+	ret := p.atomicCmpXchg(b, args)
+	return b.Extract(ret, 1)
+}
+
 // -----------------------------------------------------------------------------
 
 var llgoInstrs = map[string]int{
@@ -567,9 +572,10 @@ var llgoInstrs = map[string]int{
 	"deferData":   llgoDeferData,
 	"unreachable": llgoUnreachable,
 
-	"atomicLoad":    llgoAtomicLoad,
-	"atomicStore":   llgoAtomicStore,
-	"atomicCmpXchg": llgoAtomicCmpXchg,
+	"atomicLoad":      llgoAtomicLoad,
+	"atomicStore":     llgoAtomicStore,
+	"atomicCmpXchg":   llgoAtomicCmpXchg,
+	"atomicCmpXchgOK": llgoAtomicCmpXchgOK,
 
 	"atomicXchg": int(llgoAtomicXchg),
 	"atomicAdd":  int(llgoAtomicAdd),
@@ -765,6 +771,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.atomicStore(b, args)
 		case llgoAtomicCmpXchg:
 			ret = p.atomicCmpXchg(b, args)
+		case llgoAtomicCmpXchgOK:
+			ret = p.atomicCmpXchgOK(b, args)
 		case llgoSigsetjmp:
 			ret = p.sigsetjmp(b, args)
 		case llgoSiglongjmp:

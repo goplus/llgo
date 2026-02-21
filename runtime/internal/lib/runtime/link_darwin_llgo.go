@@ -8,6 +8,13 @@ import (
 	_ "unsafe"
 )
 
+// os.Executable (darwin) expects runtime to populate os.executablePath.
+// Upstream Go runtime sets this during startup; llgo sets it from argv[0],
+// which is sufficient for stdlib os tests.
+//
+//go:linkname executablePath os.executablePath
+var executablePath string
+
 //go:linkname os_runtime_args os.runtime_args
 func os_runtime_args() []string {
 	argc := int(c.Argc)
@@ -24,6 +31,9 @@ func os_runtime_args() []string {
 			break
 		}
 		args = append(args, c.GoString(p))
+	}
+	if len(args) > 0 && executablePath == "" {
+		executablePath = args[0]
 	}
 	return args
 }
@@ -43,11 +53,17 @@ func syscall_runtime_envs() []string {
 //go:linkname syscall_runtimeSetenv syscall.runtimeSetenv
 func syscall_runtimeSetenv(key, value string) {
 	cliteos.Setenv(c.AllocaCStr(key), c.AllocaCStr(value), 1)
+	if key == "GODEBUG" {
+		godebugEnvChanged(value)
+	}
 }
 
 //go:linkname syscall_runtimeUnsetenv syscall.runtimeUnsetenv
 func syscall_runtimeUnsetenv(key string) {
 	cliteos.Unsetenv(c.AllocaCStr(key))
+	if key == "GODEBUG" {
+		godebugEnvChanged("")
+	}
 }
 
 //go:linkname os_beforeExit os.runtime_beforeExit

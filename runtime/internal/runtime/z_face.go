@@ -183,7 +183,13 @@ func IfacePtrData(i iface) unsafe.Pointer {
 		panic(errorString("invalid memory address or nil pointer dereference").Error())
 	}
 	if DirectIfaceData(i.tab._type) {
-		return unsafe.Pointer(&i.data)
+		// For direct-iface values, i.data holds the value bits (not a stable
+		// pointer). Interface method calls use the "one-word receiver" ABI which
+		// expects a pointer to the receiver value. We must return a stable
+		// address, not the address of a stack copy of i.
+		p := AllocU(pointerSize)
+		*(*unsafe.Pointer)(p) = i.data
+		return p
 	}
 	return i.data
 }
@@ -192,7 +198,11 @@ func DirectIfaceData(typ *abi.Type) bool {
 	switch typ.Kind() {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
 		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
-		abi.Float32, abi.Float64, abi.Array, abi.Struct:
+		abi.Float32, abi.Float64, abi.Array, abi.Struct,
+		// These are single-word values stored directly in iface.data.
+		// For interface method calls, non-pointer receivers still require a
+		// pointer to the stored word.
+		abi.Chan, abi.Func, abi.Map, abi.UnsafePointer:
 		if isDirectIface(typ) {
 			return true
 		}
@@ -209,6 +219,56 @@ func MatchesClosure(T, V *abi.Type) bool {
 		return false
 	}
 	return T.StructType().Fields[0].Typ == V.StructType().Fields[0].Typ
+}
+
+// MatchConcreteType reports whether dynamic type V satisfies a concrete
+// type assertion target T.
+//
+// Fast path is pointer identity. For llgo, equivalent pointer-chain types may
+// occasionally be materialized as distinct descriptors; in that case we accept
+// pointer-chain structural equality to preserve assertion behavior.
+func MatchConcreteType(T, V *abi.Type) bool {
+	if T == V {
+		return true
+	}
+	if T == nil || V == nil || T.Kind() != V.Kind() {
+		return false
+	}
+	if T.Kind() != abi.Pointer {
+		return false
+	}
+	return matchPointerChainType(T, V)
+}
+
+func matchPointerChainType(T, V *abi.Type) bool {
+	for {
+		if T == V {
+			return true
+		}
+		if T == nil || V == nil || T.Kind() != abi.Pointer || V.Kind() != abi.Pointer {
+			return false
+		}
+
+		te := T.Elem()
+		ve := V.Elem()
+		if te == ve {
+			return true
+		}
+		if te == nil || ve == nil {
+			return false
+		}
+		if te.Kind() != ve.Kind() || te.Hash != ve.Hash || te.Size() != ve.Size() {
+			return false
+		}
+		if te.String() != ve.String() {
+			return false
+		}
+
+		if te.Kind() != abi.Pointer {
+			return true
+		}
+		T, V = te, ve
+	}
 }
 
 // Implements reports whether the type V implements the interface type T.

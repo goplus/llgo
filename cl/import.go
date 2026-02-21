@@ -412,20 +412,28 @@ func typesFuncName(pkgPath string, fn *types.Func) (fullName, inPkgName string) 
 // - func: pkg.name
 // - method: pkg.(T).name, pkg.(*T).name
 func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
+	// Closures in methods can be nested (closure inside closure inside method).
+	// Walking only one Parent() loses the receiver for deeper nests, producing
+	// names like "pkg.marshal$1$1" that can collide across receiver types.
+	// Walk parents until we find a receiver or a thunk/bound pattern.
 	var recv *types.Var
-	parent := fn.Parent()
-	if parent != nil { // closure in method
-		recv = parent.Signature.Recv()
-	} else {
-		recv = fn.Signature.Recv()
+	for f := fn; f != nil; f = f.Parent() {
+		recv = f.Signature.Recv()
+		if recv != nil {
+			break
+		}
+		name := f.Name()
 		// check $thunk and $bound
-		if recv == nil && strings.HasSuffix(fn.Name(), "$thunk") {
-			// For thunks, extract receiver from first parameter
-			if params := fn.Signature.Params(); params.Len() > 0 {
+		if strings.HasSuffix(name, "$thunk") {
+			// For thunks, extract receiver from first parameter.
+			if params := f.Signature.Params(); params.Len() > 0 {
 				recv = params.At(0)
+				break
 			}
-		} else if recv == nil && strings.HasSuffix(fn.Name(), "$bound") && len(fn.FreeVars) == 1 {
-			recv = types.NewVar(token.NoPos, nil, "", fn.FreeVars[0].Type())
+		} else if strings.HasSuffix(name, "$bound") && len(f.FreeVars) == 1 {
+			// For bound method wrappers, synthesize receiver var from free var type.
+			recv = types.NewVar(token.NoPos, nil, "", f.FreeVars[0].Type())
+			break
 		}
 	}
 	var fnName string
@@ -515,11 +523,12 @@ const (
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
 	llgoCgoCgocall      = llgoCgoBase + 0x7
 
-	llgoAsm        = llgoInstrBase + 0x40
-	llgoStackSave  = llgoInstrBase + 0x41
-	llgoFuncPCABI0 = llgoInstrBase + 0x42
-	llgoSkip       = llgoInstrBase + 0x43
-	llgoSyscall    = llgoInstrBase + 0x44
+	llgoAsm             = llgoInstrBase + 0x40
+	llgoStackSave       = llgoInstrBase + 0x41
+	llgoFuncPCABI0      = llgoInstrBase + 0x42
+	llgoSkip            = llgoInstrBase + 0x43
+	llgoSyscall         = llgoInstrBase + 0x44
+	llgoAtomicCmpXchgOK = llgoInstrBase + 0x45
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
@@ -549,6 +558,15 @@ func extractTrampolineCName(name string) string {
 	base := strings.TrimSuffix(name, "_trampoline")
 	base = strings.TrimPrefix(base, "libc_")
 	return base
+}
+
+var syncAtomicIntrinsicMap = map[string]string{
+	// In upstream sync/atomic, pointer helpers are declarations without
+	// per-arch TEXT stubs. Treat them as llgo intrinsics directly.
+	"sync/atomic.LoadPointer":           "atomicLoad",
+	"sync/atomic.StorePointer":          "atomicStore",
+	"sync/atomic.SwapPointer":           "atomicXchg",
+	"sync/atomic.CompareAndSwapPointer": "atomicCmpXchgOK",
 }
 
 func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
@@ -593,6 +611,17 @@ func (p *context) funcName(fn *ssa.Function) (*types.Package, string, int) {
 			return nil, v[5:], llgoInstr
 		}
 		return pkg, v, goFunc
+	}
+	// Stdlib compiler intrinsics that are defined as `panic("intrinsic")` in
+	// source form. LLGo doesn't run Go escape analysis, so we can lower these to
+	// a no-op.
+	//
+	// See: $(GOROOT)/src/hash/maphash/maphash.go: escapeForHash.
+	if orgName == "hash/maphash.escapeForHash" {
+		return nil, "skip", llgoInstr
+	}
+	if instr, ok := syncAtomicIntrinsicMap[orgName]; ok {
+		return nil, instr, llgoInstr
 	}
 	return pkg, funcName(pkg, fn, false), goFunc
 }
