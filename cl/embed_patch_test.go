@@ -6,6 +6,7 @@ package cl
 import (
 	"testing"
 
+	"github.com/goplus/llgo/internal/goembed"
 	llssa "github.com/goplus/llgo/ssa"
 )
 
@@ -22,7 +23,7 @@ func TestApplyEmbedInits_NoInitAndMissingGlobal(t *testing.T) {
 		{
 			globalName: "missing",
 			kind:       embedInitFS,
-			fsEntries:  []embedFileData{{name: "a.txt", data: []byte("a")}},
+			fsEntries:  []goembed.FileData{{Name: "a.txt", Data: []byte("a")}},
 		},
 	}
 	c.applyEmbedInits(nil)
