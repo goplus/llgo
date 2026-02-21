@@ -1900,63 +1900,6 @@ func AppendSlice(s, t Value) Value {
 // Copy copies the contents of src into dst until either
 // dst has been filled or src has been exhausted.
 // It returns the number of elements copied.
-// Dst and src each must have kind [Slice] or [Array], and
-// dst and src must have the same element type.
-// If dst is an [Array], it panics if [Value.CanSet] returns false.
-//
-// As a special case, src can have kind [String] if the element type of dst is kind [Uint8].
-func Copy(dst, src Value) int {
-	dk := dst.kind()
-	if dk != Array && dk != Slice {
-		panic(&ValueError{"reflect.Copy", dk})
-	}
-	if dk == Array {
-		dst.mustBeAssignable()
-	}
-	dst.mustBeExported()
-
-	sk := src.kind()
-	stringCopy := false
-	if sk != Array && sk != Slice {
-		stringCopy = sk == String && dst.typ().Elem().Kind() == abi.Uint8
-		if !stringCopy {
-			panic(&ValueError{"reflect.Copy", sk})
-		}
-	}
-	src.mustBeExported()
-
-	de := dst.typ().Elem()
-	if !stringCopy {
-		se := src.typ().Elem()
-		if de != se {
-			panic("reflect.Copy: " + stringFor(de) + " != " + stringFor(se))
-		}
-	}
-
-	n := dst.Len()
-	if stringCopy {
-		str := src.String()
-		if len(str) < n {
-			n = len(str)
-		}
-		for i := 0; i < n; i++ {
-			dst.Index(i).SetUint(uint64(str[i]))
-		}
-		return n
-	}
-
-	if src.Len() < n {
-		n = src.Len()
-	}
-	for i := 0; i < n; i++ {
-		dst.Index(i).Set(src.Index(i))
-	}
-	return n
-}
-
-// Copy copies the contents of src into dst until either
-// dst has been filled or src has been exhausted.
-// It returns the number of elements copied.
 // Dst and src each must have kind Array or Slice, and
 // dst and src must have the same element type.
 // If dst is an Array, it panics if Value.CanSet returns false.
