@@ -274,7 +274,7 @@ _llgo_0:
 define void @"github.com/goplus/llgo/cl/_testdata/print.printany"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %2 = icmp eq ptr %1, @_llgo_bool
+  %2 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_bool, ptr %1)
   br i1 %2, label %_llgo_35, label %_llgo_36
 
 _llgo_1:                                          ; preds = %_llgo_34, %_llgo_85, %_llgo_32, %_llgo_30, %_llgo_28, %_llgo_26, %_llgo_24, %_llgo_22, %_llgo_20, %_llgo_18, %_llgo_16, %_llgo_14, %_llgo_12, %_llgo_10, %_llgo_8, %_llgo_6, %_llgo_4, %_llgo_2
@@ -286,7 +286,7 @@ _llgo_2:                                          ; preds = %_llgo_37
 
 _llgo_3:                                          ; preds = %_llgo_37
   %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %4 = icmp eq ptr %3, @_llgo_int
+  %4 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int, ptr %3)
   br i1 %4, label %_llgo_38, label %_llgo_39
 
 _llgo_4:                                          ; preds = %_llgo_40
@@ -295,7 +295,7 @@ _llgo_4:                                          ; preds = %_llgo_40
 
 _llgo_5:                                          ; preds = %_llgo_40
   %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %6 = icmp eq ptr %5, @_llgo_int8
+  %6 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int8, ptr %5)
   br i1 %6, label %_llgo_41, label %_llgo_42
 
 _llgo_6:                                          ; preds = %_llgo_43
@@ -305,7 +305,7 @@ _llgo_6:                                          ; preds = %_llgo_43
 
 _llgo_7:                                          ; preds = %_llgo_43
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %9 = icmp eq ptr %8, @_llgo_int16
+  %9 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int16, ptr %8)
   br i1 %9, label %_llgo_44, label %_llgo_45
 
 _llgo_8:                                          ; preds = %_llgo_46
@@ -315,7 +315,7 @@ _llgo_8:                                          ; preds = %_llgo_46
 
 _llgo_9:                                          ; preds = %_llgo_46
   %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %12 = icmp eq ptr %11, @_llgo_int32
+  %12 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int32, ptr %11)
   br i1 %12, label %_llgo_47, label %_llgo_48
 
 _llgo_10:                                         ; preds = %_llgo_49
@@ -325,7 +325,7 @@ _llgo_10:                                         ; preds = %_llgo_49
 
 _llgo_11:                                         ; preds = %_llgo_49
   %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %15 = icmp eq ptr %14, @_llgo_int64
+  %15 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_int64, ptr %14)
   br i1 %15, label %_llgo_50, label %_llgo_51
 
 _llgo_12:                                         ; preds = %_llgo_52
@@ -334,7 +334,7 @@ _llgo_12:                                         ; preds = %_llgo_52
 
 _llgo_13:                                         ; preds = %_llgo_52
   %16 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %17 = icmp eq ptr %16, @_llgo_uint
+  %17 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_uint, ptr %16)
   br i1 %17, label %_llgo_53, label %_llgo_54
 
 _llgo_14:                                         ; preds = %_llgo_55
@@ -343,7 +343,7 @@ _llgo_14:                                         ; preds = %_llgo_55
 
 _llgo_15:                                         ; preds = %_llgo_55
   %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %19 = icmp eq ptr %18, @_llgo_uint8
+  %19 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_uint8, ptr %18)
   br i1 %19, label %_llgo_56, label %_llgo_57
 
 _llgo_16:                                         ; preds = %_llgo_58
@@ -353,7 +353,7 @@ _llgo_16:                                         ; preds = %_llgo_58
 
 _llgo_17:                                         ; preds = %_llgo_58
   %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %22 = icmp eq ptr %21, @_llgo_uint16
+  %22 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_uint16, ptr %21)
   br i1 %22, label %_llgo_59, label %_llgo_60
 
 _llgo_18:                                         ; preds = %_llgo_61
@@ -363,7 +363,7 @@ _llgo_18:                                         ; preds = %_llgo_61
 
 _llgo_19:                                         ; preds = %_llgo_61
   %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %25 = icmp eq ptr %24, @_llgo_uint32
+  %25 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_uint32, ptr %24)
   br i1 %25, label %_llgo_62, label %_llgo_63
 
 _llgo_20:                                         ; preds = %_llgo_64
@@ -373,7 +373,7 @@ _llgo_20:                                         ; preds = %_llgo_64
 
 _llgo_21:                                         ; preds = %_llgo_64
   %27 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %28 = icmp eq ptr %27, @_llgo_uint64
+  %28 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_uint64, ptr %27)
   br i1 %28, label %_llgo_65, label %_llgo_66
 
 _llgo_22:                                         ; preds = %_llgo_67
@@ -382,7 +382,7 @@ _llgo_22:                                         ; preds = %_llgo_67
 
 _llgo_23:                                         ; preds = %_llgo_67
   %29 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %30 = icmp eq ptr %29, @_llgo_uintptr
+  %30 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_uintptr, ptr %29)
   br i1 %30, label %_llgo_68, label %_llgo_69
 
 _llgo_24:                                         ; preds = %_llgo_70
@@ -391,7 +391,7 @@ _llgo_24:                                         ; preds = %_llgo_70
 
 _llgo_25:                                         ; preds = %_llgo_70
   %31 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %32 = icmp eq ptr %31, @_llgo_float32
+  %32 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_float32, ptr %31)
   br i1 %32, label %_llgo_71, label %_llgo_72
 
 _llgo_26:                                         ; preds = %_llgo_73
@@ -401,7 +401,7 @@ _llgo_26:                                         ; preds = %_llgo_73
 
 _llgo_27:                                         ; preds = %_llgo_73
   %34 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %35 = icmp eq ptr %34, @_llgo_float64
+  %35 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_float64, ptr %34)
   br i1 %35, label %_llgo_74, label %_llgo_75
 
 _llgo_28:                                         ; preds = %_llgo_76
@@ -410,7 +410,7 @@ _llgo_28:                                         ; preds = %_llgo_76
 
 _llgo_29:                                         ; preds = %_llgo_76
   %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %37 = icmp eq ptr %36, @_llgo_complex64
+  %37 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_complex64, ptr %36)
   br i1 %37, label %_llgo_77, label %_llgo_78
 
 _llgo_30:                                         ; preds = %_llgo_79
@@ -426,7 +426,7 @@ _llgo_30:                                         ; preds = %_llgo_79
 
 _llgo_31:                                         ; preds = %_llgo_79
   %42 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %43 = icmp eq ptr %42, @_llgo_complex128
+  %43 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_complex128, ptr %42)
   br i1 %43, label %_llgo_80, label %_llgo_81
 
 _llgo_32:                                         ; preds = %_llgo_82
@@ -440,7 +440,7 @@ _llgo_32:                                         ; preds = %_llgo_82
 
 _llgo_33:                                         ; preds = %_llgo_82
   %46 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, 0
-  %47 = icmp eq ptr %46, @_llgo_string
+  %47 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr @_llgo_string, ptr %46)
   br i1 %47, label %_llgo_83, label %_llgo_84
 
 _llgo_34:                                         ; preds = %_llgo_85
@@ -1196,6 +1196,8 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.c128equal"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.MatchConcreteType"(ptr, ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.c64equal"(ptr, ptr)
 

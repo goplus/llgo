@@ -109,6 +109,13 @@ func runtime_SemacquireMutex(addr *uint32, _ bool, _ int) {
 	semaAcquire(addr)
 }
 
+// sync_runtime_SemacquireMutex is used by older stdlib sync implementations.
+//
+//go:linkname sync_runtime_SemacquireMutex sync.runtime_SemacquireMutex
+func sync_runtime_SemacquireMutex(addr *uint32, lifo bool, skipframes int) {
+	runtime_SemacquireMutex(addr, lifo, skipframes)
+}
+
 // runtime_Semrelease is used by internal/sync via linkname.
 func runtime_Semrelease(addr *uint32, _ bool, _ int) {
 	semaRelease(addr)
@@ -123,6 +130,45 @@ func poll_runtime_Semrelease(addr *uint32) {
 func runtime_canSpin(_ int) bool { return false }
 func runtime_doSpin()            {}
 func runtime_nanotime() int64    { return runtimeNano() }
+
+// sync_runtime_canSpin/sync_runtime_doSpin/sync_runtime_nanotime are used by
+// older stdlib sync implementations.
+//
+//go:linkname sync_runtime_canSpin sync.runtime_canSpin
+func sync_runtime_canSpin(i int) bool { return runtime_canSpin(i) }
+
+//go:linkname sync_runtime_doSpin sync.runtime_doSpin
+func sync_runtime_doSpin() { runtime_doSpin() }
+
+//go:linkname sync_runtime_nanotime sync.runtime_nanotime
+func sync_runtime_nanotime() int64 { return runtime_nanotime() }
+
+// internal/sync uses these runtime hooks on Go 1.24+.
+//
+//go:linkname internal_sync_runtime_canSpin internal/sync.runtime_canSpin
+func internal_sync_runtime_canSpin(i int) bool { return runtime_canSpin(i) }
+
+//go:linkname internal_sync_runtime_doSpin internal/sync.runtime_doSpin
+func internal_sync_runtime_doSpin() { runtime_doSpin() }
+
+//go:linkname internal_sync_runtime_nanotime internal/sync.runtime_nanotime
+func internal_sync_runtime_nanotime() int64 { return runtime_nanotime() }
+
+//go:linkname internal_sync_runtime_SemacquireMutex internal/sync.runtime_SemacquireMutex
+func internal_sync_runtime_SemacquireMutex(addr *uint32, lifo bool, skipframes int) {
+	runtime_SemacquireMutex(addr, lifo, skipframes)
+}
+
+//go:linkname internal_sync_runtime_Semrelease internal/sync.runtime_Semrelease
+func internal_sync_runtime_Semrelease(addr *uint32, handoff bool, skipframes int) {
+	runtime_Semrelease(addr, handoff, skipframes)
+}
+
+//go:linkname internal_sync_throw internal/sync.throw
+func internal_sync_throw(s string) { throw(s) }
+
+//go:linkname internal_sync_fatal internal/sync.fatal
+func internal_sync_fatal(s string) { fatal(s) }
 
 // notifyList matches sync.notifyList size/layout.
 type notifyList struct {

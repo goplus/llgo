@@ -32,8 +32,8 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
-	"unsafe"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -53,7 +53,7 @@ import (
 	"github.com/goplus/llgo/ssa/abi"
 	xenv "github.com/goplus/llgo/xtool/env"
 	"github.com/goplus/llgo/xtool/env/llvm"
-	gollvm "github.com/goplus/llvm"
+	gllvm "github.com/goplus/llvm"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	llssa "github.com/goplus/llgo/ssa"
@@ -264,14 +264,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cfg.Mode |= packages.NeedForTest
 	}
 
-	goroot, err := env.GOROOT()
-	check(err)
-	cfg.Overlay = make(map[string][]byte)
-	for file, src := range llruntime.OverlayFiles {
-		overlay := unsafe.Slice(unsafe.StringData(src), len(src))
-		cfg.Overlay[filepath.Join(goroot, "src", file)] = overlay
-	}
-
 	cl.EnableDebug(IsDbgEnabled())
 	cl.EnableDbgSyms(IsDbgSymsEnabled())
 	cl.EnableTrace(IsTraceEnabled())
@@ -331,7 +323,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 	}
 
-	altPkgPaths := altPkgs(initial, llssa.PkgRuntime)
+	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	check(err)
@@ -358,7 +350,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	progSSA := ssa.NewProgram(initial[0].Fset, buildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
-	altSSAPkgs(progSSA, patches, altPkgs[1:], verbose)
+	altSSAPkgs(progSSA, patches, altPkgs[1:], conf, verbose)
 
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
@@ -542,6 +534,15 @@ type context struct {
 	// Cache related fields
 	cacheManager *cacheManager
 	llvmVersion  string
+
+	// go list derived file lists (SFiles, etc.)
+	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
+
+	// plan9asm package allowlist parsed from env.
+	plan9asmOnce sync.Once
+	plan9asmAll  bool
+	// when plan9asmAll=false: enabled set; when plan9asmAll=true: excluded set.
+	plan9asmPkgs map[string]bool
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -573,6 +574,10 @@ func (c *context) linker() *clang.Cmd {
 // shouldPrintCommands reports whether command tracing should be enabled.
 func (c *context) shouldPrintCommands(verbose bool) bool {
 	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
+}
+
+func (c *context) hasAltPkg(pkgPath string) bool {
+	return hasAltPkgForTarget(c.buildConf, pkgPath)
 }
 
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
@@ -1162,14 +1167,16 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		return nil
 	}
 
+	ctx.cTransformer.SetSkipFuncs(cabiSkipFuncsForPlan9Asm(ctx, pkgPath, ret.Module()))
 	ctx.cTransformer.TransformModule(ret.Path(), ret.Module())
+	ctx.cTransformer.SetSkipFuncs(nil)
 
 	// Run LLVM optimization passes (memcpyopt converts load/store to memcpy)
 	if ctx.passOpt {
 		mod := ret.Module()
 		mod.SetDataLayout(ctx.prog.DataLayout())
 		mod.SetTarget(ctx.prog.Target().Spec().Triple)
-		pbo := gollvm.NewPassBuilderOptions()
+		pbo := gllvm.NewPassBuilderOptions()
 		defer pbo.Dispose()
 		if err := mod.RunPasses("memcpyopt", ctx.prog.TargetMachine(), pbo); err != nil {
 			return fmt.Errorf("run LLVM passes failed for %v: %v", pkgPath, err)
@@ -1183,7 +1190,18 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
+	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, printCmds); err != nil {
+		return err
+	} else {
+		aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
+	}
+	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.Package.Syntax, printCmds); err != nil {
+		return err
+	} else {
+		aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
+	}
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
+	aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.Package.Syntax)...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
 		if e != nil {
@@ -1191,7 +1209,18 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		}
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
 		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
+		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, aPkg.AltPkg.Package, printCmds); err != nil {
+			return err
+		} else {
+			aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
+		}
+		if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.AltPkg.Syntax, printCmds); err != nil {
+			return err
+		} else {
+			aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
+		}
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
+		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
 	}
 	if pkg.ExportFile != "" {
 		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
@@ -1266,10 +1295,10 @@ const (
 	altPkgPathPrefix = abi.PatchPathPrefix
 )
 
-func altPkgs(initial []*packages.Package, alts ...string) []string {
+func altPkgs(initial []*packages.Package, conf *Config, alts ...string) []string {
 	packages.Visit(initial, nil, func(p *packages.Package) {
 		if p.Types != nil && !p.IllTyped {
-			if llruntime.HasAltPkg(p.PkgPath) {
+			if hasAltPkgForTarget(conf, p.PkgPath) {
 				alts = append(alts, altPkgPathPrefix+p.PkgPath)
 			}
 		}
@@ -1277,7 +1306,7 @@ func altPkgs(initial []*packages.Package, alts ...string) []string {
 	return alts
 }
 
-func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, verbose bool) {
+func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, conf *Config, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if typs := p.Types; typs != nil && !p.IllTyped {
 			if debugBuild || verbose {
@@ -1286,6 +1315,12 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 			pkgSSA := prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
 			if strings.HasPrefix(p.ID, altPkgPathPrefix) {
 				path := p.ID[len(altPkgPathPrefix):]
+				// Even if an alt package exists and is pulled in as a dependency of other
+				// patches (e.g. runtime/reflect), we should only apply it when it is
+				// enabled for the target (and not overridden by Plan9 asm translation).
+				if !hasAltPkgForTarget(conf, path) {
+					return
+				}
 				patches[path] = cl.Patch{Alt: pkgSSA, Types: typepatch.Clone(typs)}
 				if debugBuild || verbose {
 					log.Println("==> Patching", path)
@@ -1331,7 +1366,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			}
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
-			if llruntime.HasAltPkg(pkgPath) {
+			if ctx.hasAltPkg(pkgPath) {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
 				}
@@ -1513,6 +1548,9 @@ const llgoStdioNobuf = "LLGO_STDIO_NOBUF"
 const llgoFullRpath = "LLGO_FULL_RPATH"
 const llgoBuildCache = "LLGO_BUILD_CACHE"
 
+// for Plan9 asm translation debug
+const llgoPlan9ASMPkgs = "LLGO_PLAN9ASM_PKGS"
+
 const defaultWasmRuntime = "wasmtime"
 
 func defaultEnv(env string, defVal string) string {
@@ -1563,6 +1601,10 @@ func IsWasiThreadsEnabled() bool {
 
 func IsFullRpathEnabled() bool {
 	return isEnvOn(llgoFullRpath, true)
+}
+
+func Plan9ASMPkgs() string {
+	return defaultEnv(llgoPlan9ASMPkgs, "")
 }
 
 func WasmRuntime() string {

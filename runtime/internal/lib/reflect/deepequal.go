@@ -9,7 +9,7 @@ package reflect
 import (
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/internal/lib/internal/bytealg"
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
 // During deepValueEqual, must keep track of checks that are
@@ -20,6 +20,13 @@ type visit struct {
 	a1  unsafe.Pointer
 	a2  unsafe.Pointer
 	typ Type
+}
+
+func equal(a, b []byte) bool {
+	if n := len(a); n == len(b) {
+		return c.Memcmp(unsafe.Pointer(unsafe.SliceData(a)), unsafe.Pointer(unsafe.SliceData(b)), uintptr(n)) == 0
+	}
+	return false
 }
 
 // Tests for deep equality using reflected types. The map argument tracks
@@ -108,7 +115,7 @@ func deepValueEqual(v1, v2 Value, visited map[visit]bool) bool {
 		}
 		// Special case for []byte, which is common.
 		if v1.Type().Elem().Kind() == Uint8 {
-			return bytealg.Equal(v1.Bytes(), v2.Bytes())
+			return equal(v1.Bytes(), v2.Bytes())
 		}
 		for i := 0; i < v1.Len(); i++ {
 			if !deepValueEqual(v1.Index(i), v2.Index(i), visited) {
