@@ -514,6 +514,20 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 		default:
 			idx := mathOpIdx(op, kind)
 			if llop := mathOpToLLVM[idx]; llop != 0 {
+				// Go requires integer division/modulo by zero to panic.
+				// LLVM's integer div/rem are undefined on zero divisor, so
+				// we insert an explicit runtime check here.
+				if (op == token.QUO || op == token.REM) && (kind == vkSigned || kind == vkUnsigned) {
+					needsCheck := true
+					if rv := y.impl.IsAConstantInt(); !rv.IsNil() {
+						needsCheck = rv.ZExtValue() == 0
+					}
+					if needsCheck {
+						zero := llvm.ConstInt(y.ll, 0, false)
+						check := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero), b.Prog.Bool()}
+						b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), check)
+					}
+				}
 				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 			}
 		}

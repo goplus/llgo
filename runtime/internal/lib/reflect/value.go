@@ -117,7 +117,13 @@ func (v Value) typ() *abi.Type {
 	// types, held in the central map). So there is no need to
 	// escape types. noescape here help avoid unnecessary escape
 	// of v.
-	return (*abi.Type)(unsafe.Pointer(v.typ_))
+	t := (*abi.Type)(unsafe.Pointer(v.typ_))
+	if t.Kind() == abi.Pointer {
+		if elem := t.Elem(); elem != nil {
+			t = toRType(elem).ptrTo()
+		}
+	}
+	return t
 }
 
 // pointer returns the underlying pointer represented by v.
@@ -169,8 +175,37 @@ func packEface(v Value) any {
 	// to have any operation between the e.word and e.typ assignments
 	// that would let the garbage collector observe the partially-built
 	// interface value.
+	t = canonicalizeDynamicType(t)
 	e.typ = t
 	return i
+}
+
+func canonicalizeDynamicType(t *abi.Type) *abi.Type {
+	if t == nil {
+		return nil
+	}
+	if t.Kind() != abi.Pointer {
+		return t
+	}
+	elem := t.Elem()
+	if elem == nil {
+		return t
+	}
+	elemName := toRType(elem).String()
+	name := toRType(t).String()
+	for _, tt := range typesByString(name) {
+		if tt == nil || tt.Kind() != abi.Pointer {
+			continue
+		}
+		p := (*ptrType)(unsafe.Pointer(tt))
+		if p.Elem == nil {
+			continue
+		}
+		if toRType(p.Elem).String() == elemName {
+			return tt
+		}
+	}
+	return t
 }
 
 // unpackEface converts the empty interface i to a Value.
@@ -1850,17 +1885,16 @@ func Append(s Value, x ...Value) Value {
 // AppendSlice appends a slice t to a slice s and returns the resulting slice.
 // The slices s and t must have the same element type.
 func AppendSlice(s, t Value) Value {
-	/*
-		s.mustBe(Slice)
-		t.mustBe(Slice)
-		typesMustMatch("reflect.AppendSlice", s.Type().Elem(), t.Type().Elem())
-		ns := s.Len()
-		nt := t.Len()
-		s = s.extendSlice(nt)
-		Copy(s.Slice(ns, ns+nt), t)
-		return s
-	*/
-	panic("todo: reflect.AppendSlice")
+	s.mustBe(Slice)
+	t.mustBe(Slice)
+	if s.typ().Elem() != t.typ().Elem() {
+		panic("reflect.AppendSlice: " + stringFor(s.typ().Elem()) + " != " + stringFor(t.typ().Elem()))
+	}
+	ns := s.Len()
+	nt := t.Len()
+	s = s.extendSlice(nt)
+	Copy(s.Slice(ns, ns+nt), t)
+	return s
 }
 
 // Copy copies the contents of src into dst until either
@@ -2320,20 +2354,22 @@ func toFFISig(tin, tout []*abi.Type) (*ffi.Signature, error) {
 	for i, in := range tin {
 		args[i] = toFFIType(in)
 	}
-	var ret *ffi.Type
+	return ffi.NewSignature(toFFIRetType(tout), args...)
+}
+
+func toFFIRetType(tout []*abi.Type) *ffi.Type {
 	switch n := len(tout); n {
 	case 0:
-		ret = ffi.TypeVoid
+		return ffi.TypeVoid
 	case 1:
-		ret = toFFIType(tout[0])
+		return toFFIType(tout[0])
 	default:
 		fields := make([]*ffi.Type, n)
 		for i, out := range tout {
 			fields[i] = toFFIType(out)
 		}
-		ret = ffi.StructOf(fields...)
+		return ffi.StructOf(fields...)
 	}
-	return ffi.NewSignature(ret, args...)
 }
 
 func (v Value) closureFunc() *abi.FuncType {
@@ -2442,7 +2478,23 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		panic("reflect.Value.Call: wrong argument count")
 	}
 
-	sig, err := toFFISig(tin, tout)
+	ffiArgs := make([]*ffi.Type, 0, len(tin)+4)
+	for i := 0; i < ioff; i++ {
+		ffiArgs = append(ffiArgs, toFFIType(tin[i]))
+	}
+	for i, arg := range in {
+		typ := tin[ioff+i]
+		if typ.Kind() == abi.Slice {
+			h := (*unsafeheaderSlice)(arg.ptr)
+			ffiArgs = append(ffiArgs, ffi.TypePointer, ffi.TypeInt, ffi.TypeInt)
+			args = append(args, unsafe.Pointer(&h.Data), unsafe.Pointer(&h.Len), unsafe.Pointer(&h.Cap))
+			continue
+		}
+		ffiArgs = append(ffiArgs, toFFIType(typ))
+		args = append(args, toFFIArg(arg, typ))
+	}
+
+	sig, err := ffi.NewSignature(toFFIRetType(tout), ffiArgs...)
 	if err != nil {
 		panic(err)
 	}
@@ -2450,9 +2502,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		v := runtime.AllocZ(sig.RType.Size)
 		ret = unsafe.Pointer(&v)
 	}
-	for i, in := range in {
-		args = append(args, toFFIArg(in, tin[ioff+i]))
-	}
+
 	ffi.Call(sig, fn, ret, args...)
 	switch n := len(tout); n {
 	case 0:

@@ -108,8 +108,11 @@ func (attr *Attr) SetStackAddr(stackAddr c.Pointer) c.Int { return 0 }
 
 type Key c.Uint
 
+//llgo:type C
+type KeyDestructor func(c.Pointer)
+
 // llgo:link (*Key).Create C.pthread_key_create
-func (key *Key) Create(destructor func(c.Pointer)) c.Int { return 0 }
+func (key *Key) Create(destructor KeyDestructor) c.Int { return 0 }
 
 // llgo:link Key.Delete C.pthread_key_delete
 func (key Key) Delete() c.Int { return 0 }

@@ -372,3 +372,279 @@ entry:
 		t.Errorf("Transformed IR mismatch!\n\nExpected:\n%s\n\nActual:\n%s", expectedFuncIRTrimmed, actualFuncIR)
 	}
 }
+
+// TestModeCFunc_SkipIndirectCallWrapping verifies that ModeCFunc does not
+// rewrite indirect calls. In opaque-pointer IR, indirect callees have empty
+// names and must not be treated as C symbol calls.
+func TestModeCFunc_SkipIndirectCallWrapping(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%Slice = type { ptr, i64, i64 }
+@fp = global { ptr, ptr } zeroinitializer, align 8
+
+define i32 @"pkg.caller"(%Slice %0) {
+entry:
+  %1 = load { ptr, ptr }, ptr @fp, align 8
+  %2 = extractvalue { ptr, ptr } %1, 1
+  %3 = extractvalue { ptr, ptr } %1, 0
+  %4 = call i32 %3(ptr %2, i32 0, %Slice %0)
+  ret i32 %4
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modecfunc_indirect.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeCFunc, "arm64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeCFunc, true)
+	tr.TransformModule("test", mod)
+
+	caller := mod.NamedFunction("pkg.caller")
+	if caller.IsNil() {
+		t.Fatal("caller not found")
+	}
+	ir := caller.String()
+
+	if strings.Contains(ir, "alloca %Slice") {
+		t.Fatalf("indirect call was unexpectedly rewritten:\n%s", ir)
+	}
+	if !strings.Contains(ir, "call i32 %3(ptr %2, i32 0, %Slice %0)") {
+		t.Fatalf("indirect call signature changed unexpectedly:\n%s", ir)
+	}
+}
+
+// TestModeAllFunc_SkipFuncs verifies function-level opt-out in ModeAllFunc.
+func TestModeAllFunc_SkipFuncs(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%Big = type { i64, i64, i64 }
+
+declare i64 @"pkg.asm"(i64, %Big)
+
+define i64 @"pkg.caller"(i64 %0) {
+entry:
+  %1 = call i64 @"pkg.asm"(i64 %0, %Big zeroinitializer)
+  ret i64 %1
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modeall_skipfuncs.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeAllFunc, "arm64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.SetSkipFuncs([]string{"pkg.asm"})
+	tr.TransformModule("test", mod)
+
+	asm := mod.NamedFunction("pkg.asm")
+	if asm.IsNil() {
+		t.Fatal("pkg.asm not found")
+	}
+	asmHead := strings.SplitN(asm.String(), "\n", 2)[0]
+	if strings.Contains(asmHead, "byval(") || strings.Contains(asmHead, "sret(") {
+		t.Fatalf("pkg.asm should not be wrapped:\n%s", asm.String())
+	}
+	if !strings.Contains(asmHead, "%Big") {
+		t.Fatalf("pkg.asm signature unexpectedly changed:\n%s", asm.String())
+	}
+
+	caller := mod.NamedFunction("pkg.caller")
+	if caller.IsNil() {
+		t.Fatal("pkg.caller not found")
+	}
+	ir := caller.String()
+	if strings.Contains(ir, "alloca %Big") {
+		t.Fatalf("call to skipped function was unexpectedly rewritten:\n%s", ir)
+	}
+	if !strings.Contains(ir, "call i64 @pkg.asm(i64 %0, %Big") {
+		t.Fatalf("call to skipped function signature changed unexpectedly:\n%s", ir)
+	}
+}
+
+func TestModeAllFunc_SkipTypedslicecopy(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%reflect.unsafeheaderSlice = type { ptr, i64, i64 }
+%Big = type { i64, i64, i64 }
+
+declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy"(ptr, %reflect.unsafeheaderSlice, %reflect.unsafeheaderSlice)
+
+define i64 @"pkg.copy"(%reflect.unsafeheaderSlice %0, %reflect.unsafeheaderSlice %1, %Big %2) {
+entry:
+  %3 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy"(ptr null, %reflect.unsafeheaderSlice %0, %reflect.unsafeheaderSlice %1)
+  ret i64 %3
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modeall_skip_typedslicecopy.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeAllFunc, "arm64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.SetSkipFuncs([]string{"github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy"})
+	tr.TransformModule("test", mod)
+
+	callee := mod.NamedFunction("github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy")
+	if callee.IsNil() {
+		t.Fatal("Typedslicecopy declaration not found")
+	}
+	head := strings.SplitN(callee.String(), "\n", 2)[0]
+	if !strings.Contains(head, "%reflect.unsafeheaderSlice") {
+		t.Fatalf("Typedslicecopy declaration unexpectedly rewritten:\n%s", callee.String())
+	}
+	if strings.Contains(head, "byval(") || strings.Contains(head, "ptr, ptr, ptr") {
+		t.Fatalf("Typedslicecopy declaration should keep original struct args:\n%s", callee.String())
+	}
+
+	copyFn := mod.NamedFunction("pkg.copy")
+	if copyFn.IsNil() {
+		t.Fatal("pkg.copy not found")
+	}
+	ir := copyFn.String()
+	if !strings.Contains(ir, `call i64 @"github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy"(ptr`) {
+		t.Fatalf("call to Typedslicecopy missing:\n%s", ir)
+	}
+	if !strings.Contains(ir, "%reflect.unsafeheaderSlice") {
+		t.Fatalf("call to Typedslicecopy unexpectedly rewritten to pointer args:\n%s", ir)
+	}
+}
+
+// TestModeAllFunc_RuntimeSliceNoWrap verifies that runtime Slice is preserved in
+// ABI2 transformation, while unrelated
+// large aggregates are still wrapped as needed.
+func TestModeAllFunc_RuntimeSliceNoWrap(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
+%Big = type { i64, i64, i64 }
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"pkg.keep"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+entry:
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0
+}
+
+define i64 @"pkg.mixed"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, %Big %1) {
+entry:
+  ret i64 0
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "runtime_slice_nowrap.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeAllFunc, "amd64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.TransformModule("test", mod)
+
+	keep := mod.NamedFunction("pkg.keep")
+	if keep.IsNil() {
+		t.Fatal("pkg.keep not found")
+	}
+	keepHead := strings.SplitN(keep.String(), "\n", 2)[0]
+	if !strings.Contains(keepHead, `%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0`) {
+		t.Fatalf("runtime slice param unexpectedly rewritten:\n%s", keep.String())
+	}
+	if strings.Contains(keepHead, "sret(") || strings.Contains(keepHead, "byval(") {
+		t.Fatalf("runtime slice function should not use sret/byval:\n%s", keep.String())
+	}
+
+	mixed := mod.NamedFunction("pkg.mixed")
+	if mixed.IsNil() {
+		t.Fatal("pkg.mixed not found")
+	}
+	mixedHead := strings.SplitN(mixed.String(), "\n", 2)[0]
+	if !strings.Contains(mixedHead, `%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0`) {
+		t.Fatalf("runtime slice param unexpectedly rewritten in mixed function:\n%s", mixed.String())
+	}
+	if !strings.Contains(mixedHead, "byval(%Big)") {
+		t.Fatalf("non-runtime large aggregate should still be wrapped:\n%s", mixed.String())
+	}
+}
