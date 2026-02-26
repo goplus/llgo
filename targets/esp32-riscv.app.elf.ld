@@ -104,6 +104,11 @@ SECTIONS
     . += ORIGIN(iram_seg) == ORIGIN(dram_seg) ? 0 : _iram_end - _iram_start;
   } > dram_seg
 
+  /* Stack must be placed after .dram0.dummy so that the IRAM gap is applied
+   * first, preventing the stack from overlapping with IRAM text in physical
+   * memory (IRAM and DRAM alias the same SRAM via different buses).
+   * See issue: https://github.com/goplus/llgo/issues/1656
+   */
   .stack (NOLOAD) :
   {
     . = ALIGN(16);
