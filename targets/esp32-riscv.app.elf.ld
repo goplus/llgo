@@ -94,13 +94,6 @@ SECTIONS
     _iram_end = .;
   } > iram_seg
 
-  .stack (NOLOAD) :
-  {
-    . = ALIGN(16);
-    . += 16K;
-    __stack = .;
-  } > dram_seg
-
   /**
    * This section is required to skip .iram0.text area because iram0_0_seg and
    * dram0_0_seg reflect the same address space on different buses.
@@ -109,6 +102,13 @@ SECTIONS
   {
     /* Add a gap only in case we have separate iram/dram regions */
     . += ORIGIN(iram_seg) == ORIGIN(dram_seg) ? 0 : _iram_end - _iram_start;
+  } > dram_seg
+
+  .stack (NOLOAD) :
+  {
+    . = ALIGN(16);
+    . += 16K;
+    __stack = .;
   } > dram_seg
 
   .data          :
