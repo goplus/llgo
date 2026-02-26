@@ -41,6 +41,7 @@ jobs:
       matrix:
         os:
           - macos-latest
+          - macos-15-intel
           - ubuntu-latest
         llvm: [19]
         go: ["1.21.13", "1.24.2"]
