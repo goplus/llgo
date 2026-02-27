@@ -2,6 +2,7 @@
 source_filename = "github.com/goplus/llgo/cl/_testdata/cpkg"
 
 @"github.com/goplus/llgo/cl/_testdata/cpkg.init$guard" = global i1 false, align 1
+@llvm.compiler.used = appending global [2 x ptr] [ptr @Double, ptr @add], section "llvm.metadata"
 
 define double @Double(double %0) {
 _llgo_0:
