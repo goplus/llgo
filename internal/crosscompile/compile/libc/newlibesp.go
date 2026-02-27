@@ -1074,7 +1074,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
 					"-D_LIBGLOSS",
-					"-DQEMU_SEMIHOSTING",
+					"-DQEMU_SEMIHOSTING_EXIT_ONLY",
 					"-isystem" + filepath.Join(libcDir, "include"),
 					"-I" + filepath.Join(baseDir, "libgloss"),
 					// TODO(MeteorsLiu): support riscv
