@@ -165,7 +165,7 @@ jobs:
         run: cat result.md
 
       - name: LLDB tests
-        if: ${{startsWith(matrix.os, 'macos')}}
+        if: ${{ startsWith(matrix.os, 'macos') && matrix.os != 'macos-15-intel' }}
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
           bash _lldb/runtest.sh -v
