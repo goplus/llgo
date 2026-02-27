@@ -468,13 +468,16 @@ func (p *context) syscallIntrinsic(b llssa.Builder, args []ssa.Value, results *t
 	return b.Aggregate(tuple, r1, r2, err)
 }
 
-// darwinTrampolineCNameMap maps syscall functions that require LLGo wrapper functions on Darwin.
-// These functions use variadic C arguments which require special handling in LLVM's C ABI.
+// darwinTrampolineCNameMap maps syscall trampolines to LLGo C wrappers on Darwin.
+// Wrappers keep the syscall uintptr ABI stable and avoid Darwin-specific symbol/ABI mismatches.
 var darwinTrampolineCNameMap = map[string]string{
-	"open":   "llgo_open",
-	"openat": "llgo_openat",
-	"fcntl":  "llgo_fcntl",
-	"ioctl":  "llgo_ioctl",
+	"open":      "llgo_open",
+	"openat":    "llgo_openat",
+	"fcntl":     "llgo_fcntl",
+	"ioctl":     "llgo_ioctl",
+	"fdopendir": "llgo_fdopendir",
+	"closedir":  "llgo_closedir",
+	"readdir_r": "llgo_readdir_r",
 }
 
 func (p *context) remapTrampolineCName(name string) string {
