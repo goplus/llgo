@@ -12,8 +12,13 @@ fi
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 
+# Temporary baseline check: run gogen error_msg with Go first,
+# so CI can quickly tell whether failures are from Go itself or llgo.
+echo "Baseline (go run) ./_demo/gogen/error_msg"
+(cd "./_demo/gogen/error_msg" && go run .)
+
 cases=()
-for d in ./_demo/go/* ./_demo/py/* ./_demo/c/*; do
+for d in ./_demo/go/* ./_demo/py/* ./_demo/c/* ./_demo/gogen/*; do
   if [ -d "$d" ] && [ -n "$(ls "$d"/*.go 2>/dev/null)" ]; then
     cases+=("$d")
   fi
