@@ -106,60 +106,25 @@ func TestRunESP32C3Emulator(t *testing.T) {
 	conf.ForceRebuild = true
 
 	ignore := []string{
-		"./_testgo/abimethod",          // link errors (faccessat/getrlimit/setrlimit, ffi_*, ldexp, __atomic_*), plus DRAM overflow; https://github.com/goplus/llgo/issues/1569
-		"./_testgo/alias",              // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/cgobasic",           // build constraints exclude all Go files (cgo)
-		"./_testgo/cgocfiles",          // build constraints exclude all Go files (cgo)
-		"./_testgo/cgodefer",           // build constraints exclude all Go files (cgo)
-		"./_testgo/cgofull",            // build constraints exclude all Go files (cgo)
-		"./_testgo/cgomacro",           // build constraints exclude all Go files (cgo)
-		"./_testgo/cgopython",          // build constraints exclude all Go files (cgo)
-		"./_testgo/chan",               // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/closure",            // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/closure2",           // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/closureall",         // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/constconv",          // QEMU hits Instruction access fault and hangs
-		"./_testgo/defer1",             // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/defer2",             // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/defer3",             // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/defer4",             // QEMU hits Store/AMO access fault and hangs
-		"./_testgo/defer5",             // QEMU hits Store/AMO access fault and hangs
-		"./_testgo/deferclosure",       // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/defercomplex",       // QEMU hits Load access fault and hangs
-		"./_testgo/deferloop",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/embedunexport-1598", // QEMU hits Load access fault and hangs
-		"./_testgo/errors",             // QEMU hits Instruction access fault and hangs
-		"./_testgo/goexit",             // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/goroutine",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/ifaceconv",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/ifaceprom",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/indexerr",           // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/interface",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/interface1370",      // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/invoke",             // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/makeslice",          // QEMU hits Store/AMO access fault and hangs
-		"./_testgo/multiret",           // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/print",              // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/reader",             // QEMU timeout (no expected output)
-		"./_testgo/reflect",            // link errors (__atomic_*, ffi_*) plus DRAM overflow
-		"./_testgo/reflectconv",        // link errors (faccessat/getrlimit/setrlimit, __atomic_*, ffi_*, ldexp) plus DRAM overflow
-		"./_testgo/reflectfn",          // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __atomic_*, ffi_*) plus DRAM overflow
-		"./_testgo/reflectmkfn",        // link errors (__atomic_*, ffi_*) plus DRAM overflow
-		"./_testgo/rewrite",            // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __atomic_*, ffi_*) plus DRAM overflow
-		"./_testgo/runextest",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/runtest",            // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/select",             // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/selects",            // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/sigsegv",            // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/strucintf",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/struczero",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/syncmap",            // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __atomic_*, ffi_*) plus DRAM overflow
-		"./_testgo/tpindex",            // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/tpinst",             // QEMU hits Load access fault and hangs
-		"./_testgo/tpnamed",            // QEMU hits Instruction access fault and hangs
-		"./_testgo/tprecurfn",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/tptypes",            // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testgo/typerecur",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
+		"./_testgo/abimethod",   // link errors (faccessat/getrlimit/setrlimit, ffi_*, ldexp, __atomic_*), plus DRAM overflow; https://github.com/goplus/llgo/issues/1569
+		"./_testgo/cgobasic",    // build constraints exclude all Go files (cgo)
+		"./_testgo/cgocfiles",   // build constraints exclude all Go files (cgo)
+		"./_testgo/cgodefer",    // build constraints exclude all Go files (cgo)
+		"./_testgo/cgofull",     // build constraints exclude all Go files (cgo)
+		"./_testgo/cgomacro",    // build constraints exclude all Go files (cgo)
+		"./_testgo/cgopython",   // build constraints exclude all Go files (cgo)
+		"./_testgo/chan",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
+		"./_testgo/goexit",      // QEMU hits Illegal instruction (Guru Meditation) and hangs
+		"./_testgo/reader",      // QEMU timeout (no expected output)
+		"./_testgo/reflect",     // link errors (__atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/reflectconv", // link errors (faccessat/getrlimit/setrlimit, __atomic_*, ffi_*, ldexp) plus DRAM overflow
+		"./_testgo/reflectfn",   // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/reflectmkfn", // link errors (__atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/rewrite",     // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/select",      // QEMU hits Illegal instruction (Guru Meditation) and hangs
+		"./_testgo/selects",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
+		"./_testgo/syncmap",     // link errors (faccessat/getrlimit/setrlimit, fdopendir/pread/pwrite, ldexp, __atomic_*, ffi_*) plus DRAM overflow
+		"./_testgo/tpnamed",     // QEMU hits Instruction access fault and hangs
 	}
 	cltest.RunFromDir(t, "", "./_testgo", ignore,
 		cltest.WithRunConfig(conf),
@@ -178,7 +143,6 @@ func TestRunESP32C3Libc(t *testing.T) {
 		"./_testlibc/argv",     // QEMU hits Load access fault and hangs
 		"./_testlibc/atomic",   // link errors (__atomic_*)
 		"./_testlibc/complex",  // link errors (cabsf)
-		"./_testlibc/defer",    // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testlibc/demangle", // link args not supported (-Wl,...) and missing -lLLVM-19
 		"./_testlibc/once",     // pthread/sync build constraints exclude Go files (sync.Once)
 		"./_testlibc/setjmp",   // link errors (stderr)
@@ -198,49 +162,17 @@ func TestRunESP32C3Testrt(t *testing.T) {
 	conf.ForceRebuild = true
 
 	ignore := []string{
-		"./_testrt/abinamed",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/asm",          // QEMU hits Instruction access fault and hangs
-		"./_testrt/asmfull",      // inline asm not supported (instruction mnemonic)
-		"./_testrt/any",          // QEMU does not auto-exit under go test subtest (runEmuCmd cmd.Wait hangs)
-		"./_testrt/builtin",      // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/cast",         // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/closureconv",  // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/complex",      // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/concat",       // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/constuptr",    // QEMU hits Load access fault and hangs
-		"./_testrt/cvar",         // QEMU hits Instruction access fault and hangs
-		"./_testrt/closureiface", // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/eface",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/fprintf",      // link errors (__stderrp)
-		"./_testrt/float2any",    // CI timeout: emulator may hang and not auto-exit in subtest run
-		"./_testrt/funcaddr",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/funcdecl",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/gotypes",      // QEMU hits Instruction access fault and hangs
-		"./_testrt/hello",        // build constraints exclude all Go files in libc
-		"./_testrt/index",        // QEMU hits Load access fault and hangs
-		"./_testrt/intgen",       // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/len",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/linkname",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/makemap",      // link errors (__atomic_fetch_or_4)
-		"./_testrt/map",          // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/mask",         // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/methodthunk",  // QEMU hits Load access fault and hangs
-		"./_testrt/namedslice",   // CI timeout: emulator may hang and not auto-exit in subtest run
-		"./_testrt/nextblock",    // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/qsort",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/qsortfn",      // QEMU hits Instruction access fault and hangs
-		"./_testrt/slice2array",  // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/stacksave",    // QEMU hits Load access fault and hangs
-		"./_testrt/strlen",       // llgo panic: index out of range in build.Do
-		"./_testrt/struct",       // llgo panic: index out of range in build.Do
-		"./_testrt/tpabi",        // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/tpfunc",       // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/tpmethod",     // QEMU hits Instruction access fault and hangs
-		"./_testrt/tpunsafe",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
-		"./_testrt/typalias",     // llgo panic: index out of range in build.Do
-		"./_testrt/typed",        // QEMU hits Load access fault and hangs
-		"./_testrt/unreachable",  // QEMU hits Instruction access fault and hangs
-		"./_testrt/vamethod",     // QEMU hits Illegal instruction (Guru Meditation) and hangs
+		"./_testrt/asm",         // QEMU hits Instruction access fault and hangs
+		"./_testrt/asmfull",     // inline asm not supported (instruction mnemonic)
+		"./_testrt/cvar",        // QEMU hits Instruction access fault and hangs
+		"./_testrt/fprintf",     // link errors (__stderrp)
+		"./_testrt/gotypes",     // QEMU hits Instruction access fault and hangs
+		"./_testrt/hello",       // build constraints exclude all Go files in libc
+		"./_testrt/makemap",     // link errors (__atomic_fetch_or_4)
+		"./_testrt/strlen",      // llgo panic: index out of range in build.Do
+		"./_testrt/struct",      // llgo panic: index out of range in build.Do
+		"./_testrt/typalias",    // llgo panic: index out of range in build.Do
+		"./_testrt/unreachable", // QEMU hits Instruction access fault and hangs
 	}
 	cltest.RunFromDir(t, "", "./_testrt", ignore,
 		cltest.WithRunConfig(conf),
@@ -256,14 +188,10 @@ func TestRunESP32C3Testdata(t *testing.T) {
 	conf.ForceRebuild = true
 
 	ignore := []string{
-		"./_testdata/cpkgimp", // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testdata/debug",   // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testdata/fncall",  // QEMU hits Instruction access fault and hangs
-		"./_testdata/print",   // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testdata/untyped", // QEMU hits Instruction access fault and hangs
-		"./_testdata/utf8",    // QEMU hits Illegal instruction (Guru Meditation) and hangs
 		"./_testdata/varinit", // QEMU hits Instruction access fault and hangs
-		"./_testdata/vargs",   // CI timeout: emulator may hang and not auto-exit in subtest run
 	}
 	cltest.RunFromDir(t, "", "./_testdata", ignore,
 		cltest.WithRunConfig(conf),
