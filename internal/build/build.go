@@ -138,6 +138,7 @@ type Config struct {
 	ForceEspClang bool // force to use esp-clang
 	ForceRebuild  bool // force rebuilding of packages that are already up-to-date
 	Tags          string
+	LinkMapFile   string // Linker map output path; use "auto" for <output>.map
 	SizeReport    bool   // print size report after successful build
 	SizeFormat    string // size report format: text,json (default text)
 	SizeLevel     string // size aggregation level: full,module,package (default module)
@@ -1000,6 +1001,12 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 
 	buildArgs := []string{"-o", app}
 	buildArgs = append(buildArgs, linkArgs...)
+	if mapFile, mapArgs := ctx.resolveLinkMapArgs(app); len(mapArgs) > 0 {
+		buildArgs = append(buildArgs, mapArgs...)
+		if printCmds {
+			fmt.Fprintf(os.Stderr, "Link map: %s\n", mapFile)
+		}
+	}
 
 	// Add build mode specific linker arguments
 	switch ctx.buildConf.BuildMode {
@@ -1039,6 +1046,42 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	cmd := ctx.linker()
 	cmd.Verbose = printCmds
 	return cmd.Link(buildArgs...)
+}
+
+func (c *context) resolveLinkMapArgs(outputPath string) (string, []string) {
+	mapFile := strings.TrimSpace(c.buildConf.LinkMapFile)
+	if mapFile == "" {
+		return "", nil
+	}
+	if mapFile == "auto" {
+		ext := filepath.Ext(outputPath)
+		if ext != "" {
+			mapFile = strings.TrimSuffix(outputPath, ext) + ".map"
+		} else {
+			mapFile = outputPath + ".map"
+		}
+	}
+	if useCompilerDriverMapFlags(c.crossCompile.Linker, c.crossCompile.CC) {
+		return mapFile, []string{"-Xlinker", "-Map=" + mapFile}
+	}
+	return mapFile, []string{"-Map=" + mapFile}
+}
+
+func useCompilerDriverMapFlags(linker, cc string) bool {
+	tool := linker
+	if tool == "" {
+		tool = cc
+	}
+	if tool == "" {
+		// Default tool is clang when nothing is specified.
+		return true
+	}
+	base := strings.ToLower(filepath.Base(tool))
+	return strings.Contains(base, "clang") ||
+		strings.Contains(base, "gcc") ||
+		base == "cc" ||
+		base == "c++" ||
+		strings.HasSuffix(base, "g++")
 }
 
 // archiver returns the archiving tool to use for the current context.
