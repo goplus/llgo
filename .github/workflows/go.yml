@@ -69,13 +69,22 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-      - name: Test
+      - name: Test (no emulator)
         if: ${{!startsWith(matrix.os, 'macos')}}
+        env:
+          LLGO_EMBED_TESTS: "0"
         run: go test -timeout 30m ./...
 
-      - name: Test with coverage
+      - name: Test with coverage (no emulator)
         if: startsWith(matrix.os, 'macos')
+        env:
+          LLGO_EMBED_TESTS: "0"
         run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
+
+      - name: Test ESP32-C3 emulator runs
+        env:
+          LLGO_EMBED_TESTS: "1"
+        run: go test -v ./cl -run 'TestRunESP32C3'
 
       - name: Check std symbol coverage
         run: bash doc/_readme/scripts/check_std_cover.sh
