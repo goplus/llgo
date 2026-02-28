@@ -40,6 +40,7 @@ package main
 import "github.com/goplus/lib/c"
 
 func main() {
+    println("Hello World\n")
 	c.Printf(c.Str("Hello World\n"))
 }
 EOF
