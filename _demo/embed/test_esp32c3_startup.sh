@@ -12,6 +12,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # Create temp dir inside _demo/embed/ to use existing go.mod
 TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
 mkdir -p "$TEMP_DIR"
@@ -23,6 +24,63 @@ cleanup() {
     rm -rf "$TEMP_DIR"
 }
 trap cleanup EXIT
+
+filter_emulator_output() {
+    # Keep output after "entry 0x..." when boot logs are present.
+    # If no entry marker exists, keep full output.
+    awk '
+    BEGIN { found = 0; n = 0; m = 0 }
+    /^entry 0x[0-9a-fA-F]+$/ { found = 1; next }
+    {
+        if (found) {
+            out[++n] = $0
+        } else {
+            pre[++m] = $0
+        }
+    }
+    END {
+        if (found) {
+            last = n
+            while (last > 0 && out[last] == "") { last-- }
+            for (i = 1; i <= last; i++) { print out[i] }
+            exit
+        }
+        last = m
+        while (last > 0 && pre[last] == "") { last-- }
+        for (i = 1; i <= last; i++) { print pre[i] }
+    }'
+}
+
+run_case_and_compare() {
+    local case_dir="$1"
+    local expected="$2"
+    local raw_output
+    local actual
+
+    echo "Running: llgo run -a -target=esp32c3-basic -emulator $case_dir"
+    if ! raw_output=$(llgo run -a -target=esp32c3-basic -emulator "$case_dir" 2>&1); then
+        echo "✗ FAIL: command failed for $case_dir"
+        echo "$raw_output"
+        return 1
+    fi
+
+    actual=$(printf "%s\n" "$raw_output" | tr -d '\r' | filter_emulator_output)
+    if [ "$actual" = "$expected" ]; then
+        echo "✓ PASS: $case_dir"
+        return 0
+    fi
+
+    echo "✗ FAIL: output mismatch for $case_dir"
+    echo "Expected:"
+    printf "%s\n" "$expected"
+    echo ""
+    echo "Got:"
+    printf "%s\n" "$actual"
+    echo ""
+    echo "Diff:"
+    diff -u <(printf "%s\n" "$expected") <(printf "%s\n" "$actual") || true
+    return 1
+}
 
 # Check if esptool.py is installed
 # esptool.py is required to parse ESP32-C3 BIN file format and verify
@@ -251,11 +309,24 @@ else
 fi
 
 echo ""
+echo "=== Test 5: ESP32-C3 float output regressions (temporary) ==="
+# Temporary location: this regression block is intentionally placed here.
+# It will be moved to unified cl tests in a follow-up ESP32-C3 test PR,
+# then removed from this startup script.
+pushd "$REPO_ROOT" > /dev/null
+run_case_and_compare "./cl/_testgo/alias" "+5.000000e+00 +8.000000e+00"
+run_case_and_compare "./cl/_testgo/multiret" "1 +2.000000e+00"
+run_case_and_compare "./cl/_testgo/struczero" $'0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true'
+run_case_and_compare "./cl/_testdata/cpkgimp" "3 +6.280000e+00"
+popd > /dev/null
+
+echo ""
 echo "=== All Tests Passed ==="
 echo "✓ ESP32-C3 uses newlib startup (_start calls __libc_init_array)"
 echo "✓ .init_array merged into .rodata section"
 echo "✓ .rodata (including .init_array) included in BIN file"
 echo "✓ QEMU output ends with Hello World"
+echo "✓ ESP32-C3 float output regression cases match expected output"
 echo "✓ Constructor function pointers will be correctly flashed to ESP32-C3"
 
 exit 0
