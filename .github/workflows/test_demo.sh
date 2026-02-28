@@ -40,10 +40,10 @@ if [ "$mode" = "embedded" ]; then
 fi
 
 ignore_esp32c3_basic=(
-  "./_demo/go/mkdirdemo" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/c/asmcall" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/mkdirdemo" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/c/asmcall" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/c/asmfullcall" # compile error: undefined: verify
-  "./_demo/c/cargs" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/c/cargs" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/c/catomic" # link error: ld.lld: error: undefined symbol: __atomic_store
   "./_demo/c/cexec" # link error: ld.lld: error: undefined symbol: execlp
   "./_demo/c/cgofull" # fast fail: build constraints exclude all Go files (cgo)
@@ -56,7 +56,7 @@ ignore_esp32c3_basic=(
   "./_demo/c/crand" # fast fail: build constraints exclude all Go files (lib/c/time)
   "./_demo/c/ctime" # fast fail: build constraints exclude all Go files (lib/c/time)
   "./_demo/c/getcwd" # timeout: emulator panic (Load access fault), no auto-exit
-  "./_demo/c/hello" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/c/hello" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/c/llama2-c" # fast fail: build constraints exclude all Go files (lib/c/time)
   "./_demo/c/netdbdemo" # link error: ld.lld: error: undefined symbol: getaddrinfo
   "./_demo/c/setjmp" # build SSA failed: cannot build SSA for github.com/goplus/lib/c/setjmp
@@ -65,45 +65,45 @@ ignore_esp32c3_basic=(
   "./_demo/c/stacksave" # fast fail: build constraints exclude all Go files
   "./_demo/c/syncdebug" # fast fail: build constraints exclude all Go files (pthread/sync)
   "./_demo/c/thread" # link error: ld.lld: error: undefined symbol: GC_pthread_create
-  "./_demo/go/abimethod" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/async" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/async/timeout" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/checkfile" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/commandrun" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/abimethod" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/async" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/async/timeout" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/checkfile" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/commandrun" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/go/cgo" # fast fail: build constraints exclude all Go files (cgo)
-  "./_demo/go/embedunexport-1598" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/embedunexport-1598" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/go/export" # link error: ld.lld: error: undefined symbol: __atomic_fetch_or_4
-  "./_demo/go/failed/stacktrace" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/gobuild" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/gobuild-1389" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/goimporter-1389" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/failed/stacktrace" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/gobuild" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/gobuild-1389" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/goimporter-1389" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/go/goroutine" # timeout: emulator did not auto-exit
-  "./_demo/go/gotime" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/gotoken" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/gotypes" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/logdemo" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/maphash" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/mimeheader" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/netip" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/osfile" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/oslookpath" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/oswritestring" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/randcrypt" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/randdemo" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/readdir" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectfunc" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectindirect" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectcopy" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectmethod" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectmake" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectname-1412" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/reflectpointerto" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/sync" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/syscall" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/sysexec" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/texttemplate" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/timedur" # fast fail: missing runtime/internal/lib modules (go get suggested)
-  "./_demo/go/timer" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/gotime" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/gotoken" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/gotypes" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/logdemo" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/maphash" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/mimeheader" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/netip" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/osfile" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/oslookpath" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/oswritestring" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/randcrypt" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/randdemo" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/readdir" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectfunc" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectindirect" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectcopy" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectmethod" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectmake" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectname-1412" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/reflectpointerto" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/sync" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/syscall" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/sysexec" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/texttemplate" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/timedur" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
+  "./_demo/go/timer" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
 )
 
 should_ignore() {
