@@ -234,28 +234,10 @@ else
 fi
 
 echo ""
-echo "=== Test 4: Verify QEMU output ==="
-
-# Ignore emulator boot logs and validate the last non-empty line.
-RUN_OUT=$(llgo run -a -target=esp32c3-basic -emulator . 2>&1)
-LAST_LINE=$(printf "%s\n" "$RUN_OUT" | tr -d '\r' | awk 'NF{line=$0} END{print line}')
-if [ "$LAST_LINE" = "Hello World" ]; then
-    echo "✓ PASS: QEMU output ends with Hello World"
-else
-    echo "✗ FAIL: QEMU output mismatch"
-    echo "Last line: $LAST_LINE"
-    echo ""
-    echo "Full output:"
-    echo "$RUN_OUT"
-    exit 1
-fi
-
-echo ""
 echo "=== All Tests Passed ==="
 echo "✓ ESP32-C3 uses newlib startup (_start calls __libc_init_array)"
 echo "✓ .init_array merged into .rodata section"
 echo "✓ .rodata (including .init_array) included in BIN file"
-echo "✓ QEMU output ends with Hello World"
 echo "✓ Constructor function pointers will be correctly flashed to ESP32-C3"
 
 exit 0

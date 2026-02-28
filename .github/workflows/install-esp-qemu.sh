@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Installation directory (from argument or default)
 INSTALL_DIR="${1:-.cache/qemu}"
@@ -36,23 +36,32 @@ case "$OS" in
     ;;
 esac
 
-# Download URL
+RELEASE_TAG="esp-develop-9.2.2-20250817"
 VERSION="esp_develop_9.2.2_20250817"
-FILENAME="qemu-riscv32-softmmu-${VERSION}-${PLATFORM}.tar.xz"
-URL="https://github.com/espressif/qemu/releases/download/esp-develop-9.2.2-20250817/${FILENAME}"
+PACKAGES=(
+  "qemu-riscv32-softmmu-${VERSION}-${PLATFORM}.tar.xz"
+  "qemu-xtensa-softmmu-${VERSION}-${PLATFORM}.tar.xz"
+)
 
 echo "Detected platform: $PLATFORM"
 echo "Installing to: ${INSTALL_DIR}"
-echo "Downloading ESP32 RISC-V QEMU from: $URL"
 
 # Download and extract
+rm -rf "$INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
-curl -fsSL "$URL" | tar -xJ -C "$INSTALL_DIR" --strip-components=1
+
+for filename in "${PACKAGES[@]}"; do
+  url="https://github.com/espressif/qemu/releases/download/${RELEASE_TAG}/${filename}"
+  echo "Downloading: $url"
+  curl -fsSL "$url" | tar -xJ -C "$INSTALL_DIR" --strip-components=1
+done
 
 # Verify installation
-if [ ! -f "${INSTALL_DIR}/bin/qemu-system-riscv32" ]; then
-  echo "Error: qemu-system-riscv32 not found after extraction"
-  exit 1
-fi
+for exe in qemu-system-riscv32 qemu-system-xtensa; do
+  if [ ! -x "${INSTALL_DIR}/bin/${exe}" ]; then
+    echo "Error: ${exe} not found after extraction"
+    exit 1
+  fi
+done
 
-echo "ESP32 RISC-V QEMU installed successfully to: ${INSTALL_DIR}"
+echo "ESP QEMU (riscv32 + xtensa) installed successfully to: ${INSTALL_DIR}"
