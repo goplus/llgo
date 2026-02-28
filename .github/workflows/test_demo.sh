@@ -40,12 +40,9 @@ if [ "$mode" = "embedded" ]; then
 fi
 
 ignore_esp32c3_basic=(
-  "./_demo/go/defer"
   "./_demo/go/mkdirdemo"
   "./_demo/c/asmcall"
   "./_demo/c/asmfullcall"
-  "./_demo/c/cabi"
-  "./_demo/c/cabisret"
   "./_demo/c/cargs"
   "./_demo/c/catomic"
   "./_demo/c/cexec"
@@ -58,14 +55,10 @@ ignore_esp32c3_basic=(
   "./_demo/c/cppstr"
   "./_demo/c/crand"
   "./_demo/c/ctime"
-  "./_demo/c/fcntl"
-  "./_demo/c/genints"
   "./_demo/c/getcwd"
   "./_demo/c/hello"
-  "./_demo/c/linkname"
   "./_demo/c/llama2-c"
   "./_demo/c/netdbdemo"
-  "./_demo/c/qsort"
   "./_demo/c/setjmp"
   "./_demo/c/socket/client"
   "./_demo/c/socket/server"
@@ -77,7 +70,6 @@ ignore_esp32c3_basic=(
   "./_demo/go/async/timeout" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
   "./_demo/go/checkfile"
   "./_demo/go/commandrun"
-  "./_demo/go/complex"
   "./_demo/go/cgo" # fast fail: build constraints exclude all Go files for esp32c3-basic
   "./_demo/go/embedunexport-1598" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
   "./_demo/go/export"
@@ -89,14 +81,9 @@ ignore_esp32c3_basic=(
   "./_demo/go/gotime"
   "./_demo/go/gotoken"
   "./_demo/go/gotypes"
-  "./_demo/go/ifaceconv"
-  "./_demo/go/ifaceprom-1559" # timeout: emulator boots then hits "Guru Meditation Error: Illegal instruction" and never auto-exits
   "./_demo/go/ifaceprom-1599"
-  "./_demo/go/issue1538"
-  "./_demo/go/issue1538-floatcvtuint-over"
   "./_demo/go/logdemo"
   "./_demo/go/maphash"
-  "./_demo/go/math"
   "./_demo/go/mimeheader"
   "./_demo/go/netip"
   "./_demo/go/osfile"
@@ -112,8 +99,6 @@ ignore_esp32c3_basic=(
   "./_demo/go/reflectmake"
   "./_demo/go/reflectname-1412"
   "./_demo/go/reflectpointerto" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/return-1605" # timeout: emulator boots then hits "Guru Meditation Error: Illegal instruction" and never auto-exits
-  "./_demo/go/statefn"
   "./_demo/go/sync"
   "./_demo/go/syscall" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
   "./_demo/go/sysexec"
