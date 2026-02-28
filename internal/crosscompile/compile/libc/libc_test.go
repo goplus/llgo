@@ -333,8 +333,8 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 	}
 
 	// Test Groups configuration
-	if len(config.Groups) != 4 {
-		t.Errorf("Expected 4 groups, got %d", len(config.Groups))
+	if len(config.Groups) != 5 {
+		t.Errorf("Expected 5 groups, got %d", len(config.Groups))
 	} else {
 		// Group 0: libsemihost
 		group0 := config.Groups[0]
@@ -462,6 +462,29 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 		}
 		if len(group0.CCFlags) == 0 {
 			t.Error("Expected non-empty CCFlags in group0")
+		}
+
+		// Group 4: libm
+		group4 := config.Groups[4]
+		expectedOutput4 := "libm-" + target + ".a"
+		if group4.OutputFileName != expectedOutput4 {
+			t.Errorf("Group4 OutputFileName expected '%s', got '%s'", expectedOutput4, group4.OutputFileName)
+		}
+		sampleFiles4 := []string{
+			filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c"),
+			filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c"),
+		}
+		for _, sample := range sampleFiles4 {
+			found := false
+			for _, file := range group4.Files {
+				if file == sample {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected file '%s' not found in group4 files", sample)
+			}
 		}
 	}
 }
@@ -623,8 +646,8 @@ func TestGroupConfiguration(t *testing.T) {
 
 	t.Run("RISCV_GroupCount", func(t *testing.T) {
 		config := getNewlibESP32ConfigRISCV(baseDir, target)
-		if len(config.Groups) != 4 {
-			t.Errorf("Expected 4 groups for RISCV, got %d", len(config.Groups))
+		if len(config.Groups) != 5 {
+			t.Errorf("Expected 5 groups for RISCV, got %d", len(config.Groups))
 		}
 	})
 
@@ -642,6 +665,7 @@ func TestGroupConfiguration(t *testing.T) {
 			"libcrt0-" + target + ".a",
 			"libgloss-" + target + ".a",
 			"libc-" + target + ".a",
+			"libm-" + target + ".a",
 		}
 
 		for i, group := range config.Groups {

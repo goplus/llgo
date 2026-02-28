@@ -3,6 +3,7 @@ package libc
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
@@ -38,6 +39,7 @@ func GetNewlibESP32Config() compile.LibConfig {
 
 func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
+	libmFiles := getNewlibESP32LibmFiles(baseDir, "riscv")
 
 	libcIncludeDir := []string{
 		"-isystem" + filepath.Join(libcDir, "include"),
@@ -1044,6 +1046,26 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					"-Wno-unused-command-line-argument",
 				}),
 			},
+			{
+				// Build full RISCV libm so nano printf float path and
+				// future math-dependent runtime/tests share one library.
+				OutputFileName: fmt.Sprintf("libm-%s.a", target),
+				Files:          libmFiles,
+				CFlags: []string{
+					"-DHAVE_CONFIG_H",
+					"-D_IEEE_LIBM",
+					"-isystem" + filepath.Join(libcDir, "include"),
+					"-I" + filepath.Join(baseDir, "newlib"),
+					"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
+					"-I" + filepath.Join(baseDir, "newlib", "libm", "math"),
+					"-I" + filepath.Join(baseDir, "newlib", "libm", "mathfp"),
+					"-I" + filepath.Join(baseDir, "newlib", "libm", "complex"),
+					"-I" + filepath.Join(baseDir, "newlib", "libm", "fenv"),
+					"-I" + filepath.Join(baseDir, "newlib", "libm", "machine", "riscv"),
+				},
+				LDFlags: _libcLDFlags,
+				CCFlags: _libcCCFlags,
+			},
 		},
 	}
 }
@@ -2032,4 +2054,39 @@ func GetNewlibESP32CompileConfig(baseDir, target, mcpu string) compile.CompileCo
 		return getNewlibESP32ConfigRISCV(baseDir, target)
 	}
 	return getNewlibESP32ConfigXtensa(baseDir, target)
+}
+
+func getNewlibESP32LibmFiles(baseDir, arch string) []string {
+	libmDir := filepath.Join(baseDir, "newlib", "libm")
+	dirs := []string{
+		filepath.Join(libmDir, "common"),
+		filepath.Join(libmDir, "math"),
+		filepath.Join(libmDir, "mathfp"),
+		filepath.Join(libmDir, "complex"),
+		filepath.Join(libmDir, "fenv"),
+	}
+	if arch != "" {
+		dirs = append(dirs, filepath.Join(libmDir, "machine", arch))
+	}
+
+	addSortedGlob := func(out []string, pattern string) []string {
+		matches, _ := filepath.Glob(pattern)
+		sort.Strings(matches)
+		return append(out, matches...)
+	}
+
+	files := make([]string, 0, 512)
+	for _, dir := range dirs {
+		files = addSortedGlob(files, filepath.Join(dir, "*.c"))
+		files = addSortedGlob(files, filepath.Join(dir, "*.S"))
+	}
+	if len(files) != 0 {
+		return files
+	}
+
+	// Keep tests deterministic when baseDir does not exist.
+	return []string{
+		filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c"),
+		filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c"),
+	}
 }
