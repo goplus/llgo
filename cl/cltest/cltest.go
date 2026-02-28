@@ -29,6 +29,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -77,9 +78,48 @@ func FromDir(t *testing.T, sel, relDir string) {
 	}
 }
 
+type runOptions struct {
+	conf   *build.Config
+	filter func(string) string
+}
+
+// RunOption customizes RunFromDir behavior.
+type RunOption func(*runOptions)
+
+// WithRunConfig uses the provided build config for test runs.
+func WithRunConfig(conf *build.Config) RunOption {
+	return func(opts *runOptions) {
+		opts.conf = conf
+	}
+}
+
+// WithOutputFilter applies a filter to output before comparison.
+func WithOutputFilter(filter func(string) string) RunOption {
+	return func(opts *runOptions) {
+		opts.filter = filter
+	}
+}
+
+// FilterEmulatorOutput strips emulator boot logs by returning output after "entry 0x...".
+func FilterEmulatorOutput(output string) string {
+	output = strings.ReplaceAll(output, "\r\n", "\n")
+	output = strings.ReplaceAll(output, "\r", "")
+	lines := strings.Split(output, "\n")
+	entryPattern := regexp.MustCompile(`^entry 0x[0-9a-fA-F]+$`)
+	for i, line := range lines {
+		if entryPattern.MatchString(strings.TrimSpace(line)) {
+			if i+1 < len(lines) {
+				return strings.Join(lines[i+1:], "\n")
+			}
+			return ""
+		}
+	}
+	return output
+}
+
 // RunFromDir executes tests under relDir, skipping any relPkg entries in ignore.
 // ignore entries should be relative package paths (e.g., "./_testgo/invoke").
-func RunFromDir(t *testing.T, sel, relDir string, ignore []string) {
+func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOption) {
 	rootDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -88,6 +128,10 @@ func RunFromDir(t *testing.T, sel, relDir string, ignore []string) {
 	ignoreSet := make(map[string]struct{}, len(ignore))
 	for _, item := range ignore {
 		ignoreSet[item] = struct{}{}
+	}
+	options := runOptions{}
+	for _, opt := range opts {
+		opt(&options)
 	}
 	fis, err := os.ReadDir(dir)
 	if err != nil {
@@ -111,7 +155,7 @@ func RunFromDir(t *testing.T, sel, relDir string, ignore []string) {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
-			testRunFrom(t, pkgDir, relPkg, sel)
+			testRunFrom(t, pkgDir, relPkg, sel, options)
 		})
 	}
 }
@@ -167,7 +211,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	}
 }
 
-func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
+func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
@@ -183,9 +227,18 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 		return
 	}
 
-	output, err := RunAndCapture(relPkg, pkgDir)
+	var output []byte
+	if opts.conf != nil {
+		output, err = RunAndCaptureWithConf(relPkg, pkgDir, opts.conf)
+	} else {
+		output, err = RunAndCapture(relPkg, pkgDir)
+	}
 	if err != nil {
+		t.Logf("raw output:\n%s", string(output))
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	if opts.filter != nil {
+		output = []byte(opts.filter(string(output)))
 	}
 	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
 		t.Fatal("unexpected output")
@@ -193,6 +246,13 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string) {
 }
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.ForceRebuild = true
+	return RunAndCaptureWithConf(relPkg, pkgDir, conf)
+}
+
+// RunAndCaptureWithConf runs llgo with a custom build config and captures output.
+func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -210,8 +270,10 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 		}
 	}()
 
-	conf := build.NewDefaultConf(build.ModeRun)
-	conf.ForceRebuild = true
+	if conf == nil {
+		return nil, fmt.Errorf("build config is nil")
+	}
+	localConf := *conf
 
 	originalStdout := os.Stdout
 	originalStderr := os.Stderr
@@ -266,7 +328,7 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 				panic(r)
 			}
 		}()
-		_, runErr = build.Do([]string{relPkg}, conf)
+		_, runErr = build.Do([]string{relPkg}, &localConf)
 	}()
 
 	_ = w.Close()
