@@ -5,7 +5,6 @@
 #include <sys/ioctl.h>
 #include <stdint.h>
 
-
 int cliteClearenv()
 {
 	extern char **environ;
@@ -18,18 +17,25 @@ int cliteClearenv()
 
 int cliteErrno() { return errno; }
 
-int llgo_open(const char *path, int flags, int mode) {
-	return open(path, flags, mode);
+// Darwin syscall trampolines are called from llgo with uintptr-typed
+// signatures. Use uintptr_t in both params and return to avoid ABI mismatch
+// between C int return values and Go uintptr error checks.
+uintptr_t llgo_open(uintptr_t path, uintptr_t flags, uintptr_t mode) {
+	int ret = open((const char *)path, (int)flags, (int)mode);
+	return (uintptr_t)(intptr_t)ret;
 }
 
-int llgo_openat(int dirfd, const char *path, int flags, int mode) {
-	return openat(dirfd, path, flags, mode);
+uintptr_t llgo_openat(uintptr_t dirfd, uintptr_t path, uintptr_t flags, uintptr_t mode) {
+	int ret = openat((int)dirfd, (const char *)path, (int)flags, (int)mode);
+	return (uintptr_t)(intptr_t)ret;
 }
 
-int llgo_fcntl(int fd, int cmd, uintptr_t arg) {
-	return fcntl(fd, cmd, (long)arg);
+uintptr_t llgo_fcntl(uintptr_t fd, uintptr_t cmd, uintptr_t arg) {
+	int ret = fcntl((int)fd, (int)cmd, (long)arg);
+	return (uintptr_t)(intptr_t)ret;
 }
 
-int llgo_ioctl(int fd, uintptr_t req, uintptr_t arg) {
-	return ioctl(fd, (unsigned long)req, (void *)arg);
+uintptr_t llgo_ioctl(uintptr_t fd, uintptr_t req, uintptr_t arg) {
+	int ret = ioctl((int)fd, (unsigned long)req, (void *)arg);
+	return (uintptr_t)(intptr_t)ret;
 }

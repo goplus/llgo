@@ -41,6 +41,7 @@ jobs:
       matrix:
         os:
           - macos-latest
+          - macos-15-intel
           - ubuntu-latest
         llvm: [19]
         go: ["1.21.13", "1.24.2"]
@@ -61,7 +62,12 @@ jobs:
       - name: Download platform-specific demo libs
         run: |
           if ${{ startsWith(matrix.os, 'macos') }}; then
-            DEMO_PKG="cargs_darwin_arm64.zip"
+            # Use uname -m to detect actual CPU architecture
+            if [[ "$(uname -m)" == "x86_64" ]]; then
+              DEMO_PKG="cargs_darwin_amd64.zip"
+            else
+              DEMO_PKG="cargs_darwin_arm64.zip"
+            fi
           else
             DEMO_PKG="cargs_linux_amd64.zip"
           fi
@@ -159,7 +165,7 @@ jobs:
         run: cat result.md
 
       - name: LLDB tests
-        if: ${{startsWith(matrix.os, 'macos')}}
+        if: ${{ startsWith(matrix.os, 'macos') && matrix.os != 'macos-15-intel' }}
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
           bash _lldb/runtest.sh -v
