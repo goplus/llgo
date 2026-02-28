@@ -31,12 +31,11 @@ import (
 	"go/token"
 	"go/types"
 
-	"golang.org/x/tools/go/callgraph/cha"
-
 	"github.com/goplus/llgo/internal/packages"
 	llssa "github.com/goplus/llgo/ssa"
 	llvm "github.com/goplus/llvm"
 	"golang.org/x/tools/go/callgraph"
+	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/ssa"
 )
 
