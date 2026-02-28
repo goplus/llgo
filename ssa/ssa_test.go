@@ -107,6 +107,24 @@ func TestPointerSize(t *testing.T) {
 	}
 }
 
+func TestNewFuncExDLLExport(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("main", "main")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+
+	// mark the exported name before function creation so NewFuncEx can set dll storage
+	pkg.SetExport("main.Foo", "Foo")
+	exported := pkg.NewFunc("Foo", sig, InGo)
+	if got := exported.impl.DLLStorageClass(); got != llvm.DLLExportStorageClass {
+		t.Fatalf("exported function storage class = %v, want %v", got, llvm.DLLExportStorageClass)
+	}
+
+	normal := pkg.NewFunc("Bar", sig, InGo)
+	if got := normal.impl.DLLStorageClass(); got != llvm.DefaultStorageClass {
+		t.Fatalf("non-exported function storage class = %v, want %v", got, llvm.DefaultStorageClass)
+	}
+}
+
 func TestSetBlock(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {

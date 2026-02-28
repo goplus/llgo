@@ -436,7 +436,8 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		mod: mod, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
-		export: make(map[string]string),
+		export:      make(map[string]string),
+		exportNames: make(map[string]struct{}),
 	}
 	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
@@ -701,7 +702,8 @@ type aPackage struct {
 	NeedPyInit  bool
 	NeedAbiInit bool // need load all abi types for reflect make type
 
-	export map[string]string // pkgPath.nameInPkg => exportname
+	export      map[string]string   // pkgPath.nameInPkg => exportname
+	exportNames map[string]struct{} // set of exported symbol names
 }
 
 type Package = *aPackage
@@ -712,6 +714,7 @@ func (p Package) Module() llvm.Module {
 
 func (p Package) SetExport(name, export string) {
 	p.export[name] = export
+	p.exportNames[export] = struct{}{}
 }
 
 func (p Package) ExportFuncs() map[string]string {

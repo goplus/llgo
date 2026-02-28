@@ -3,13 +3,13 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/cpkg"
 
 @"github.com/goplus/llgo/cl/_testdata/cpkg.init$guard" = global i1 false, align 1
 
-define double @Double(double %0) {
+define dllexport double @Double(double %0) {
 _llgo_0:
   %1 = fmul double 2.000000e+00, %0
   ret double %1
 }
 
-define i64 @add(i64 %0, i64 %1) {
+define dllexport i64 @add(i64 %0, i64 %1) {
 _llgo_0:
   %2 = call i64 @"github.com/goplus/llgo/cl/_testdata/cpkg.add"(i64 %0, i64 %1)
   ret i64 %2
