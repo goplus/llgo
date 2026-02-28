@@ -1,0 +1,259 @@
+package xml_test
+
+import (
+	"bytes"
+	"encoding/xml"
+	"io"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+type Person struct {
+	XMLName xml.Name `xml:"person"`
+	Name    string   `xml:"name"`
+	Age     int      `xml:"age"`
+}
+
+type tokenSliceReader struct {
+	toks []xml.Token
+	i    int
+}
+
+func (r *tokenSliceReader) Token() (xml.Token, error) {
+	if r.i >= len(r.toks) {
+		return nil, io.EOF
+	}
+	t := r.toks[r.i]
+	r.i++
+	return t, nil
+}
+
+func TestMarshalUnmarshal(t *testing.T) {
+	p := Person{Name: "Alice", Age: 20}
+	data, err := xml.Marshal(p)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if !bytes.Contains(data, []byte("<name>Alice</name>")) {
+		t.Fatalf("unexpected marshal output: %q", data)
+	}
+
+	dataIndent, err := xml.MarshalIndent(p, "", "  ")
+	if err != nil {
+		t.Fatalf("MarshalIndent: %v", err)
+	}
+	if !bytes.Contains(dataIndent, []byte("\n")) {
+		t.Fatalf("expected indented output, got: %q", dataIndent)
+	}
+
+	var out Person
+	if err := xml.Unmarshal(data, &out); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	if out.Name != "Alice" || out.Age != 20 {
+		t.Fatalf("unmarshal result = %+v", out)
+	}
+}
+
+func TestDecoderEncoderAndTokens(t *testing.T) {
+	input := strings.NewReader(`<person><name>Bob</name><age>30</age></person>`)
+	dec := xml.NewDecoder(input)
+	if dec == nil {
+		t.Fatal("NewDecoder returned nil")
+	}
+
+	var sawStart bool
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("Token: %v", err)
+		}
+		switch tok.(type) {
+		case xml.StartElement:
+			sawStart = true
+		}
+	}
+	if !sawStart {
+		t.Fatal("did not see StartElement")
+	}
+
+	if dec.InputOffset() <= 0 {
+		t.Fatalf("InputOffset should be positive after token reads, got %d", dec.InputOffset())
+	}
+	line, col := dec.InputPos()
+	if line <= 0 || col <= 0 {
+		t.Fatalf("InputPos should be positive, got line=%d col=%d", line, col)
+	}
+
+	tr := &tokenSliceReader{toks: []xml.Token{xml.StartElement{Name: xml.Name{Local: "x"}}, xml.EndElement{Name: xml.Name{Local: "x"}}}}
+	dec2 := xml.NewTokenDecoder(tr)
+	if _, err := dec2.RawToken(); err != nil {
+		t.Fatalf("RawToken: %v", err)
+	}
+	dec3 := xml.NewDecoder(strings.NewReader(`<a><b></b></a>`))
+	if _, err := dec3.Token(); err != nil { // consume <a>
+		t.Fatalf("Token before Skip: %v", err)
+	}
+	if err := dec3.Skip(); err != nil { // skip to </a>
+		t.Fatalf("Skip: %v", err)
+	}
+
+	dec4 := xml.NewDecoder(strings.NewReader(`<person><name>Eve</name><age>18</age></person>`))
+	var p Person
+	if err := dec4.Decode(&p); err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if p.Name != "Eve" || p.Age != 18 {
+		t.Fatalf("Decode result = %+v", p)
+	}
+
+	dec5 := xml.NewDecoder(strings.NewReader(`<root><person><name>Ken</name><age>28</age></person></root>`))
+	if _, err := dec5.Token(); err != nil { // <root>
+		t.Fatalf("Token root: %v", err)
+	}
+	tok, err := dec5.Token() // <person>
+	if err != nil {
+		t.Fatalf("Token person: %v", err)
+	}
+	start, ok := tok.(xml.StartElement)
+	if !ok {
+		t.Fatalf("token type = %T, want StartElement", tok)
+	}
+	var p2 Person
+	if err := dec5.DecodeElement(&p2, &start); err != nil {
+		t.Fatalf("DecodeElement: %v", err)
+	}
+	if p2.Name != "Ken" || p2.Age != 28 {
+		t.Fatalf("DecodeElement result = %+v", p2)
+	}
+
+	var buf bytes.Buffer
+	enc := xml.NewEncoder(&buf)
+	if err := enc.Encode(Person{Name: "Tom", Age: 30}); err != nil {
+		t.Fatalf("Encode: %v", err)
+	}
+	enc.Indent("", "  ")
+	if err := enc.EncodeElement(struct {
+		Value string `xml:",chardata"`
+	}{Value: "v"}, xml.StartElement{Name: xml.Name{Local: "x"}}); err != nil {
+		t.Fatalf("EncodeElement: %v", err)
+	}
+	if err := enc.EncodeToken(xml.Comment("c")); err != nil {
+		t.Fatalf("EncodeToken: %v", err)
+	}
+	if err := enc.Flush(); err != nil {
+		t.Fatalf("Flush: %v", err)
+	}
+	if err := enc.Close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if buf.Len() == 0 {
+		t.Fatal("encoder output is empty")
+	}
+}
+
+func TestEscapeAndCopies(t *testing.T) {
+	var escaped bytes.Buffer
+	xml.Escape(&escaped, []byte(`<a&b>`))
+	if !strings.Contains(escaped.String(), "&lt;") {
+		t.Fatalf("Escape output: %q", escaped.String())
+	}
+
+	escaped.Reset()
+	if err := xml.EscapeText(&escaped, []byte(`<x>`)); err != nil {
+		t.Fatalf("EscapeText: %v", err)
+	}
+
+	se := xml.StartElement{Name: xml.Name{Local: "n"}, Attr: []xml.Attr{{Name: xml.Name{Local: "k"}, Value: "v"}}}
+	if copied := se.Copy(); !reflect.DeepEqual(copied, se) {
+		t.Fatalf("StartElement.Copy mismatch: got %#v, want %#v", copied, se)
+	}
+	if end := se.End(); end.Name.Local != "n" {
+		t.Fatalf("StartElement.End mismatch: got %+v", end)
+	}
+	if copied := xml.CharData("x").Copy(); string(copied) != "x" {
+		t.Fatalf("CharData.Copy mismatch: got %q", string(copied))
+	}
+	if copied := xml.Comment("x").Copy(); string(copied) != "x" {
+		t.Fatalf("Comment.Copy mismatch: got %q", string(copied))
+	}
+	proc := xml.ProcInst{Target: "xml", Inst: []byte("version=\"1.0\"")}
+	if copied := proc.Copy(); copied.Target != proc.Target || !bytes.Equal(copied.Inst, proc.Inst) {
+		t.Fatalf("ProcInst.Copy mismatch: got %#v, want %#v", copied, proc)
+	}
+	if copied := xml.Directive("x").Copy(); string(copied) != "x" {
+		t.Fatalf("Directive.Copy mismatch: got %q", string(copied))
+	}
+	if copiedTok := xml.CopyToken(se); !reflect.DeepEqual(copiedTok, se) {
+		t.Fatalf("CopyToken mismatch: got %#v, want %#v", copiedTok, se)
+	}
+}
+
+func TestErrorsAndSymbols(t *testing.T) {
+	if got := (&xml.SyntaxError{}).Error(); got == "" {
+		t.Fatal("SyntaxError.Error() is empty")
+	}
+	if got := (&xml.UnsupportedTypeError{Type: reflect.TypeOf(make(chan int))}).Error(); got == "" {
+		t.Fatal("UnsupportedTypeError.Error() is empty")
+	}
+	if got := xml.UnmarshalError("x").Error(); got != "x" {
+		t.Fatalf("UnmarshalError.Error() = %q", got)
+	}
+	if got := (&xml.TagPathError{}).Error(); got == "" {
+		t.Fatal("TagPathError.Error() is empty")
+	}
+
+	_ = xml.Header
+	_ = xml.HTMLAutoClose
+	_ = xml.HTMLEntity
+
+	_ = xml.Escape
+	_ = xml.EscapeText
+	_ = xml.Marshal
+	_ = xml.MarshalIndent
+	_ = xml.Unmarshal
+	_ = xml.NewDecoder
+	_ = xml.NewTokenDecoder
+	_ = xml.NewEncoder
+	_ = xml.CopyToken
+
+	var _ xml.Token = xml.StartElement{}
+	var _ xml.Token = xml.EndElement{}
+	var _ xml.Token = xml.CharData("x")
+	var _ xml.Token = xml.Comment("x")
+	var _ xml.Token = xml.Directive("x")
+	var _ xml.Token = xml.ProcInst{}
+	var _ xml.TokenReader = &tokenSliceReader{}
+
+	_ = xml.Name{}
+	_ = xml.Attr{}
+	_ = xml.StartElement{}
+	_ = xml.EndElement{}
+	if string(xml.CharData("x")) != "x" {
+		t.Fatal("CharData conversion mismatch")
+	}
+	if string(xml.Comment("x")) != "x" {
+		t.Fatal("Comment conversion mismatch")
+	}
+	_ = xml.ProcInst{}
+	if string(xml.Directive("x")) != "x" {
+		t.Fatal("Directive conversion mismatch")
+	}
+	_ = xml.Decoder{}
+	_ = xml.Encoder{}
+	_ = xml.SyntaxError{}
+	if got := xml.UnmarshalError("").Error(); got != "" {
+		t.Fatalf("UnmarshalError(\"\").Error() = %q, want empty", got)
+	}
+	_ = xml.UnsupportedTypeError{}
+	_ = xml.TagPathError{}
+
+	var _ xml.Marshaler
+	var _ xml.MarshalerAttr
+	var _ xml.Unmarshaler
+	var _ xml.UnmarshalerAttr
+}

@@ -303,7 +303,7 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 		if op.C == nil {
 			continue
 		}
-		prepareSelect(op.C, selOp)
+		prepareSelect(op.C, selOp, op.Send)
 	}
 	var tryOK bool
 	for {
@@ -316,20 +316,37 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 		if op.C == nil {
 			continue
 		}
-		endSelect(op.C, selOp)
+		endSelect(op.C, selOp, op.Send)
 	}
 	selOp.end()
 	return
 }
 
-func prepareSelect(c *Chan, selOp *selectOp) {
+func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	c.mutex.Lock()
+	// Unbuffered channel select support:
+	// ChanTryRecv uses c.sends to decide whether a recv can proceed (without
+	// blocking forever). If both sides use select, ChanTrySend/ChanTryRecv won't
+	// see each other unless select-send contributes to c.sends.
+	//
+	// This is intentionally minimal and targets common stdlib patterns (e.g.
+	// net.Pipe) to avoid deadlocks.
+	if c.cap == 0 && isSend {
+		c.sends++
+	}
 	c.sops = append(c.sops, selOp)
+	if c.cap == 0 && isSend {
+		// A newly-registered select-send can make a select-recv runnable.
+		notifyOps(c)
+	}
 	c.mutex.Unlock()
 }
 
-func endSelect(c *Chan, selOp *selectOp) {
+func endSelect(c *Chan, selOp *selectOp, isSend bool) {
 	c.mutex.Lock()
+	if c.cap == 0 && isSend {
+		c.sends--
+	}
 	for i, op := range c.sops {
 		if op == selOp {
 			c.sops = append(c.sops[:i], c.sops[i+1:]...)

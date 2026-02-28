@@ -78,21 +78,18 @@ func TestCondWait(t *testing.T) {
 
 	// Test basic Wait functionality
 	woken := false
-	done := make(chan struct{})
+	mu.Lock()
 	go func() {
 		mu.Lock()
 		woken = true
 		cond.Signal()
 		mu.Unlock()
-		close(done)
 	}()
 
-	mu.Lock()
 	for !woken {
 		cond.Wait()
 	}
 	mu.Unlock()
-	<-done
 
 	if !woken {
 		t.Fatal("Wait should have returned after Signal")

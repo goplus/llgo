@@ -271,6 +271,7 @@ var defaultPlan9AsmExcludedPkgs = map[string]none{
 	"internal/abi":          {},
 	"internal/reflectlite":  {},
 	"internal/runtime/maps": {},
+	"iter":                  {},
 	"reflect":               {},
 	"runtime":               {},
 	"syscall/js":            {},
