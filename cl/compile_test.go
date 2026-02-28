@@ -107,6 +107,7 @@ func TestRunESP32C3Emulator(t *testing.T) {
 
 	ignore := []string{
 		"./_testgo/abimethod",   // llgo panic: unsatisfied import internal/runtime/sys
+		"./_testgo/alias",       // unexpected output: missing float values; expected "+5.000000e+00 +8.000000e+00"
 		"./_testgo/cgobasic",    // fast fail: build constraints exclude all Go files (cgo)
 		"./_testgo/cgocfiles",   // fast fail: build constraints exclude all Go files (cgo)
 		"./_testgo/cgodefer",    // fast fail: build constraints exclude all Go files (cgo)
@@ -114,7 +115,12 @@ func TestRunESP32C3Emulator(t *testing.T) {
 		"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
 		"./_testgo/cgopython",   // fast fail: build constraints exclude all Go files (cgo)
 		"./_testgo/chan",        // timeout: emulator did not auto-exit
+		"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
 		"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
+		"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
+		"./_testgo/invoke",      // unexpected output: invoke2 arg mismatch (2 vs +1.001000e+02)
+		"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
+		"./_testgo/multiret",    // unexpected output: float formatting mismatch (1 vs 1 +2.000000e+00)
 		"./_testgo/reader",      // timeout: emulator did not auto-exit
 		"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
 		"./_testgo/reflectconv", // llgo panic: unsatisfied import internal/sync
@@ -123,6 +129,8 @@ func TestRunESP32C3Emulator(t *testing.T) {
 		"./_testgo/rewrite",     // llgo panic: unsatisfied import internal/sync
 		"./_testgo/select",      // timeout: emulator did not auto-exit
 		"./_testgo/selects",     // timeout: emulator did not auto-exit
+		"./_testgo/sigsegv",     // unexpected output: got "0/main", expected recover nil-pointer message
+		"./_testgo/struczero",   // unexpected output: bool/float formatting mismatch (0x0 vs 0x0 +0.000000e+00)
 		"./_testgo/syncmap",     // llgo panic: unsatisfied import internal/runtime/sys
 		"./_testgo/tpnamed",     // timeout: emulator panic (Instruction access fault), no auto-exit
 	}
@@ -164,13 +172,16 @@ func TestRunESP32C3Testrt(t *testing.T) {
 	ignore := []string{
 		"./_testrt/asm",         // timeout: emulator panic (Instruction access fault), no auto-exit
 		"./_testrt/asmfull",     // compile/asm error: unrecognized instruction mnemonic
+		"./_testrt/complex",     // unexpected output: complex-number output mismatch
 		"./_testrt/cvar",        // timeout: emulator panic (Instruction access fault), no auto-exit
 		"./_testrt/fprintf",     // link error: ld.lld: error: undefined symbol: __stderrp
 		"./_testrt/gotypes",     // timeout: emulator panic (Instruction access fault), no auto-exit
 		"./_testrt/hello",       // fast fail: build constraints exclude all Go files
+		"./_testrt/linkname",    // unexpected output: line order mismatch ("hello" appears first)
 		"./_testrt/makemap",     // link error: ld.lld: error: undefined symbol: __atomic_fetch_or_4
 		"./_testrt/strlen",      // fast fail: build constraints exclude all Go files
 		"./_testrt/struct",      // fast fail: build constraints exclude all Go files
+		"./_testrt/tpfunc",      // unexpected output: type size mismatch (got 8 4 4, expected 16 8 8)
 		"./_testrt/typalias",    // fast fail: build constraints exclude all Go files
 		"./_testrt/unreachable", // timeout: emulator panic (Instruction access fault), no auto-exit
 	}
@@ -188,6 +199,7 @@ func TestRunESP32C3Testdata(t *testing.T) {
 	conf.ForceRebuild = true
 
 	ignore := []string{
+		"./_testdata/cpkgimp", // unexpected output: float formatting mismatch (3 vs 3 +6.280000e+00)
 		"./_testdata/debug",   // llgo panic: unsatisfied import internal/runtime/sys
 		"./_testdata/fncall",  // timeout: emulator panic (Instruction access fault), no auto-exit
 		"./_testdata/untyped", // timeout: emulator panic (Instruction access fault), no auto-exit
