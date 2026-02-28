@@ -40,71 +40,70 @@ if [ "$mode" = "embedded" ]; then
 fi
 
 ignore_esp32c3_basic=(
-  "./_demo/go/mkdirdemo"
-  "./_demo/c/asmcall"
-  "./_demo/c/asmfullcall"
-  "./_demo/c/cargs"
-  "./_demo/c/catomic"
-  "./_demo/c/cexec"
-  "./_demo/c/cgofull"
-  "./_demo/c/cgofull/pymod1"
-  "./_demo/c/cgofull/pymod2"
-  "./_demo/c/concat"
-  "./_demo/c/cppintf"
-  "./_demo/c/cppmintf"
-  "./_demo/c/cppstr"
-  "./_demo/c/crand"
-  "./_demo/c/ctime"
-  "./_demo/c/getcwd"
-  "./_demo/c/hello"
-  "./_demo/c/llama2-c"
-  "./_demo/c/netdbdemo"
-  "./_demo/c/setjmp"
-  "./_demo/c/socket/client"
-  "./_demo/c/socket/server"
-  "./_demo/c/stacksave"
-  "./_demo/c/syncdebug"
-  "./_demo/c/thread"
-  "./_demo/go/abimethod"
-  "./_demo/go/async"
-  "./_demo/go/async/timeout" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/checkfile"
-  "./_demo/go/commandrun"
-  "./_demo/go/cgo" # fast fail: build constraints exclude all Go files for esp32c3-basic
-  "./_demo/go/embedunexport-1598" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/export"
-  "./_demo/go/failed/stacktrace"
-  "./_demo/go/gobuild"
-  "./_demo/go/gobuild-1389"
-  "./_demo/go/goimporter-1389"
-  "./_demo/go/goroutine"
-  "./_demo/go/gotime"
-  "./_demo/go/gotoken"
-  "./_demo/go/gotypes"
-  "./_demo/go/ifaceprom-1599"
-  "./_demo/go/logdemo"
-  "./_demo/go/maphash"
-  "./_demo/go/mimeheader"
-  "./_demo/go/netip"
-  "./_demo/go/osfile"
-  "./_demo/go/oslookpath"
-  "./_demo/go/oswritestring"
-  "./_demo/go/randcrypt"
-  "./_demo/go/randdemo"
-  "./_demo/go/readdir"
-  "./_demo/go/reflectfunc"
-  "./_demo/go/reflectindirect"
-  "./_demo/go/reflectcopy" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/reflectmethod" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/reflectmake"
-  "./_demo/go/reflectname-1412"
-  "./_demo/go/reflectpointerto" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/sync"
-  "./_demo/go/syscall" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
-  "./_demo/go/sysexec"
-  "./_demo/go/texttemplate"
-  "./_demo/go/timedur"
-  "./_demo/go/timer"
+  "./_demo/go/mkdirdemo" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/c/asmcall" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/c/asmfullcall" # compile error: undefined: verify
+  "./_demo/c/cargs" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/c/catomic" # link error: ld.lld: error: undefined symbol: __atomic_store
+  "./_demo/c/cexec" # link error: ld.lld: error: undefined symbol: execlp
+  "./_demo/c/cgofull" # fast fail: build constraints exclude all Go files (cgo)
+  "./_demo/c/cgofull/pymod1" # fast fail: build constraints exclude all Go files (cgo)
+  "./_demo/c/cgofull/pymod2" # fast fail: build constraints exclude all Go files (cgo)
+  "./_demo/c/concat" # link error: ld.lld: error: undefined symbol: stderr
+  "./_demo/c/cppintf" # link error: ld.lld: error: undefined symbol: sqrt
+  "./_demo/c/cppmintf" # link error: ld.lld: error: undefined symbol: sqrt
+  "./_demo/c/cppstr" # compile error: C++ <string> header not found
+  "./_demo/c/crand" # fast fail: build constraints exclude all Go files (lib/c/time)
+  "./_demo/c/ctime" # fast fail: build constraints exclude all Go files (lib/c/time)
+  "./_demo/c/getcwd" # timeout: emulator panic (Load access fault), no auto-exit
+  "./_demo/c/hello" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/c/llama2-c" # fast fail: build constraints exclude all Go files (lib/c/time)
+  "./_demo/c/netdbdemo" # link error: ld.lld: error: undefined symbol: getaddrinfo
+  "./_demo/c/setjmp" # build SSA failed: cannot build SSA for github.com/goplus/lib/c/setjmp
+  "./_demo/c/socket/client" # link error: ld.lld: error: undefined symbol: socket
+  "./_demo/c/socket/server" # link error: ld.lld: error: undefined symbol: socket
+  "./_demo/c/stacksave" # fast fail: build constraints exclude all Go files
+  "./_demo/c/syncdebug" # fast fail: build constraints exclude all Go files (pthread/sync)
+  "./_demo/c/thread" # link error: ld.lld: error: undefined symbol: GC_pthread_create
+  "./_demo/go/abimethod" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/async" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/async/timeout" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/checkfile" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/commandrun" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/cgo" # fast fail: build constraints exclude all Go files (cgo)
+  "./_demo/go/embedunexport-1598" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/export" # link error: ld.lld: error: undefined symbol: __atomic_fetch_or_4
+  "./_demo/go/failed/stacktrace" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/gobuild" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/gobuild-1389" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/goimporter-1389" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/goroutine" # timeout: emulator did not auto-exit
+  "./_demo/go/gotime" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/gotoken" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/gotypes" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/logdemo" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/maphash" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/mimeheader" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/netip" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/osfile" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/oslookpath" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/oswritestring" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/randcrypt" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/randdemo" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/readdir" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectfunc" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectindirect" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectcopy" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectmethod" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectmake" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectname-1412" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/reflectpointerto" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/sync" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/syscall" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/sysexec" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/texttemplate" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/timedur" # fast fail: missing runtime/internal/lib modules (go get suggested)
+  "./_demo/go/timer" # fast fail: missing runtime/internal/lib modules (go get suggested)
 )
 
 should_ignore() {
