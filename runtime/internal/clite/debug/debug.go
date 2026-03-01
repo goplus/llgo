@@ -35,6 +35,7 @@ type Frame struct {
 	Name   string
 }
 
+//go:noinline
 func StackTrace(skip int, fn func(fr *Frame) bool) {
 	stacktrace(c.Int(1+skip), unsafe.Pointer(&fn), func(ctx, pc, offset, sp unsafe.Pointer, name *c.Char) c.Int {
 		fn := *(*func(fr *Frame) bool)(ctx)

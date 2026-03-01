@@ -271,6 +271,8 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 				export.LDFLAGS,
 				"-Xlinker", "-dead_strip",
 			)
+			export.CCFLAGS = append(export.CCFLAGS, []string{"-fno-omit-frame-pointer", "-mno-omit-leaf-frame-pointer"}...)
+
 		case "windows": // lld-link (Windows)
 			// TODO(lijie): Add options for Windows.
 		default: // ld.lld (Unix)
