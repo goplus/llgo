@@ -946,7 +946,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
-	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
+	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{
+		rtInit:   needRuntime,
+		pyInit:   needPyInit,
+		abiInit:  needAbiInit,
+		abiPrune: !IsDbgEnabled(),
+	})
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
