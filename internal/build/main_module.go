@@ -27,21 +27,34 @@
 package build
 
 import (
+	"go/ast"
 	"go/token"
 	"go/types"
 
 	"github.com/goplus/llgo/internal/packages"
-	llvm "github.com/goplus/llvm"
-
 	llssa "github.com/goplus/llgo/ssa"
+	llvm "github.com/goplus/llvm"
+	"golang.org/x/tools/go/callgraph"
+	"golang.org/x/tools/go/callgraph/cha"
+	"golang.org/x/tools/go/ssa"
 )
+
+// genConfig controls the code generation behavior for the main module.
+type genConfig struct {
+	rtInit        bool
+	pyInit        bool
+	abiInit       int
+	abiPrune      bool
+	methodByIndex map[int]none
+	methodByName  map[string]none
+}
 
 // genMainModule generates the main entry module for an llgo program.
 //
 // The module contains argc/argv globals and, for executable build modes,
 // the entry function that wires initialization and main. For C archive or
 // shared library modes, only the globals are emitted.
-func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRuntime, needPyInit, needAbiInit bool) Package {
+func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *genConfig) Package {
 	prog := ctx.prog
 	mainPkg := prog.NewPackage("", pkg.ID+".main")
 
@@ -73,18 +86,66 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	defineWeakNoArgStub(mainPkg, "syscall.init")
 
 	var pyInit llssa.Function
-	if needPyInit {
+	if cfg.pyInit {
 		pyInit = declareNoArgFunc(mainPkg, "Py_Initialize")
 	}
 
 	var rtInit llssa.Function
-	if needRuntime {
+	if cfg.rtInit {
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
 	}
 
+	if cfg.abiPrune {
+		progSSA := ctx.progSSA
+		/*
+			// RTA has issues parsing the patch package
+			res := buildRTAResult(progSSA)
+			invoked := buildInvokeIndex(res.CallGraph)
+		*/
+		cg := cha.CallGraph(progSSA)
+		invoked := buildInvokeIndex(cg)
+		mainPkg.PruneAbiTypes(cfg.abiInit, func(index int, method *types.Selection) bool {
+			name := method.Obj().Name()
+			if ast.IsExported(name) {
+				if cfg.abiInit&llssa.ReflectMethodDynamic != 0 {
+					return true
+				} else {
+					if cfg.abiInit&llssa.ReflectMethodByIndex != 0 {
+						if _, ok := cfg.methodByIndex[index]; ok {
+							return true
+						}
+					}
+					if cfg.abiInit&llssa.ReflectMethodByName != 0 {
+						if _, ok := cfg.methodByName[name]; ok {
+							return true
+						}
+					}
+				}
+			}
+			mth := progSSA.MethodValue(method)
+			if _, ok := invoked[mth]; ok {
+				return true
+			}
+			mtyp := method.Type()
+			for v := range invoked {
+				if v.Name() == mth.Name() {
+					vtyp := v.Type()
+					if !types.Identical(prog.Patch(vtyp.(*types.Signature).Recv().Type()), mtyp.(*types.Signature).Recv().Type()) {
+						continue
+					}
+					if !types.Identical(prog.Patch(vtyp), mtyp) {
+						continue
+					}
+					return true
+				}
+			}
+			return false
+		})
+	}
+
 	var abiInit llssa.Function
-	if needAbiInit {
-		abiInit = mainPkg.InitAbiTypes("init$abitypes")
+	if cfg.abiInit != 0 {
+		abiInit = mainPkg.InitAbiTypes(cfg.abiInit, "init$abitypes")
 	}
 
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
@@ -97,6 +158,38 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 	}
 
 	return mainAPkg
+}
+
+/*
+func buildRTAResult(progSSA *ssa.Program) *rta.Result {
+	var roots []*ssa.Function
+	for _, pkg := range progSSA.AllPackages() {
+		if pkg.Pkg.Name() == "main" {
+			if fn := pkg.Func("main"); fn != nil {
+				roots = append(roots, fn)
+			}
+		}
+		if fn := pkg.Func("init"); fn != nil {
+			roots = append(roots, fn)
+		}
+	}
+	res := rta.Analyze(roots, true)
+	return res
+}
+*/
+
+func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
+	invoked := make(map[*ssa.Function]bool)
+	for _, node := range cg.Nodes {
+		for _, out := range node.Out {
+			if out.Callee != nil && out.Callee.Func != nil {
+				if out.Site != nil && out.Site.Common().IsInvoke() {
+					invoked[out.Callee.Func] = true
+				}
+			}
+		}
+	}
+	return invoked
 }
 
 // defineEntryFunction creates the program's entry function. The name is

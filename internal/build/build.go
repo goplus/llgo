@@ -889,7 +889,9 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
 	needRuntime := false
 	needPyInit := false
-	needAbiInit := false
+	var needAbiInit int
+	methodByIndex := make(map[int]none)
+	methodByName := make(map[string]none)
 	allPkgs := []*packages.Package{pkg}
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
@@ -926,10 +928,13 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 				needRuntime = needRuntime || need1
 				needPyInit = needPyInit || need2
 			}
-			if aPkg.LPkg.NeedAbiInit {
-				needAbiInit = true
+			needAbiInit |= aPkg.LPkg.NeedAbiInit
+			for k, _ := range aPkg.LPkg.MethodByIndex {
+				methodByIndex[k] = none{}
 			}
-
+			for k, _ := range aPkg.LPkg.MethodByName {
+				methodByName[k] = none{}
+			}
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
 			if aPkg.ArchiveFile != "" {
 				linkInputs = append(linkInputs, aPkg.ArchiveFile)
@@ -946,7 +951,14 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
-	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
+	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{
+		rtInit:        needRuntime,
+		pyInit:        needPyInit,
+		abiInit:       needAbiInit,
+		abiPrune:      !IsDbgEnabled(),
+		methodByIndex: methodByIndex,
+		methodByName:  methodByName,
+	})
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err

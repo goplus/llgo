@@ -447,69 +447,6 @@ func TestErrVarOf(t *testing.T) {
 	ctx.varOf(nil, g)
 }
 
-func TestContextResolveLinkname(t *testing.T) {
-	tests := []struct {
-		name   string
-		link   map[string]string
-		input  string
-		want   string
-		panics bool
-	}{
-		{
-			name: "Normal",
-			link: map[string]string{
-				"foo": "C.bar",
-			},
-			input: "foo",
-			want:  "bar",
-		},
-		{
-			name: "MultipleLinks",
-			link: map[string]string{
-				"foo1": "C.bar1",
-				"foo2": "C.bar2",
-			},
-			input: "foo2",
-			want:  "bar2",
-		},
-		{
-			name:  "NoLink",
-			link:  map[string]string{},
-			input: "foo",
-			want:  "foo",
-		},
-		{
-			name: "InvalidLink",
-			link: map[string]string{
-				"foo": "invalid.bar",
-			},
-			input:  "foo",
-			panics: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.panics {
-				defer func() {
-					if r := recover(); r == nil {
-						t.Error("want panic")
-					}
-				}()
-			}
-			ctx := &context{prog: llssa.NewProgram(nil)}
-			for k, v := range tt.link {
-				ctx.prog.SetLinkname(k, v)
-			}
-			got := ctx.resolveLinkname(tt.input)
-			if !tt.panics {
-				if got != tt.want {
-					t.Errorf("got %q, want %q", got, tt.want)
-				}
-			}
-		})
-	}
-}
-
 func TestInstantiate(t *testing.T) {
 	obj := types.NewTypeName(0, nil, "T", nil)
 	named := types.NewNamed(obj, types.Typ[types.Int], nil)

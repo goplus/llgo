@@ -1218,7 +1218,7 @@ func newPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 	ctx.initFiles(pkgPath, files, pkgName == "C")
 	ctx.prog.SetPatch(ctx.patchType)
 	ctx.prog.SetCompileMethods(ctx.checkCompileMethods)
-	ret.SetResolveLinkname(ctx.resolveLinkname)
+	ret.SetResolveLinkname(ctx.prog.ResolveLinkname)
 
 	if hasPatch {
 		skips := ctx.skips
@@ -1347,17 +1347,6 @@ func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 func instantiate(orig types.Type, t *types.Named) (typ types.Type) {
 	typ, _ = llssa.Instantiate(orig, t)
 	return
-}
-
-func (p *context) resolveLinkname(name string) string {
-	if link, ok := p.prog.Linkname(name); ok {
-		prefix, ltarget, _ := strings.Cut(link, ".")
-		if prefix != "C" {
-			panic("resolveLinkname: invalid link: " + link)
-		}
-		return ltarget
-	}
-	return name
 }
 
 // checkCompileMethods ensures that all methods attached to the given type
