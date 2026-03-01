@@ -31,13 +31,13 @@ import (
 	"go/token"
 	"go/types"
 
+	"golang.org/x/tools/go/callgraph/rta"
+
 	"github.com/goplus/llgo/internal/packages"
+	llssa "github.com/goplus/llgo/ssa"
 	llvm "github.com/goplus/llvm"
 	"golang.org/x/tools/go/callgraph"
-	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/ssa"
-
-	llssa "github.com/goplus/llgo/ssa"
 )
 
 type genConfig struct {
@@ -98,8 +98,8 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 
 	if cfg.abiPrune {
 		progSSA := ctx.progSSA
-		chaGraph := cha.CallGraph(progSSA)
-		invoked := buildInvokeIndex(chaGraph)
+		res := buildRTAResult(progSSA)
+		invoked := buildInvokeIndex(res.CallGraph)
 		mainPkg.PruneAbiTypes(cfg.abiInit, func(index int, method *types.Selection) bool {
 			if cfg.abiInit != 0 && ast.IsExported(method.Obj().Name()) {
 				return true
@@ -108,12 +108,14 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 			if _, ok := invoked[mth]; ok {
 				return true
 			}
+			mtyp := method.Type()
 			for v := range invoked {
 				if v.Name() == mth.Name() {
-					if !types.Identical(prog.Patch(v.Type().(*types.Signature).Recv().Type()), method.Type().(*types.Signature).Recv().Type()) {
+					vtyp := v.Type()
+					if !types.Identical(prog.Patch(vtyp.(*types.Signature).Recv().Type()), mtyp.(*types.Signature).Recv().Type()) {
 						continue
 					}
-					if !types.Identical(prog.Patch(v.Type()), method.Type()) {
+					if !types.Identical(prog.Patch(vtyp), mtyp) {
 						continue
 					}
 					return true
@@ -180,6 +182,22 @@ func filterAbiSymbol(abiInit int, sym *llssa.AbiSymbol) bool {
 		}
 	}
 	return false
+}
+
+func buildRTAResult(progSSA *ssa.Program) *rta.Result {
+	var roots []*ssa.Function
+	for _, pkg := range progSSA.AllPackages() {
+		if pkg.Pkg.Name() == "main" {
+			if fn := pkg.Func("main"); fn != nil {
+				roots = append(roots, fn)
+			}
+		}
+		if fn := pkg.Func("init"); fn != nil {
+			roots = append(roots, fn)
+		}
+	}
+	res := rta.Analyze(roots, true)
+	return res
 }
 
 func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
