@@ -18,8 +18,10 @@ package ssa
 
 import (
 	"go/constant"
+	"go/token"
 	"go/types"
 	"log"
+	"strconv"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -63,10 +65,9 @@ func iMethodOf(rawIntf *types.Interface, name string) int {
 	return -1
 }
 
-// Imethod returns closure of an interface method.
-func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
-	prog := b.Prog
-	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
+const invokeThunkPrefix = "__llgo_invoke."
+
+func invokeMethodSig(rawIntf *types.Interface, method *types.Func) *types.Signature {
 	sig := method.Type().(*types.Signature)
 	if sig.Recv() == nil && sig.Params().Len() > 0 {
 		pt := types.Unalias(sig.Params().At(0).Type())
@@ -79,6 +80,59 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 			sig = types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
 		}
 	}
+	return sig
+}
+
+func (p Package) invokeThunkName(rawIntf *types.Interface, methodName string, methodIdx int) string {
+	ifaceName, _ := p.abi.InterfaceName(rawIntf)
+	return invokeThunkPrefix + ifaceName + "$m" + strconv.Itoa(methodIdx) + "." + methodName
+}
+
+func (p Package) invokeThunk(rawIntf *types.Interface, method *types.Func, sig *types.Signature) Function {
+	methodName := method.Name()
+	methodIdx := iMethodOf(rawIntf, methodName)
+	if methodIdx < 0 {
+		panic("invokeThunk: interface method not found: " + methodName)
+	}
+	name := p.invokeThunkName(rawIntf, methodName, methodIdx)
+	if thunk := p.FuncOf(name); thunk != nil {
+		return thunk
+	}
+
+	n := sig.Params().Len()
+	vars := make([]*types.Var, 1, n+1)
+	vars[0] = types.NewParam(token.NoPos, nil, "", rawIntf)
+	for i := 0; i < n; i++ {
+		vars = append(vars, sig.Params().At(i))
+	}
+	thunkSig := types.NewSignatureType(nil, nil, nil, types.NewTuple(vars...), sig.Results(), sig.Variadic())
+	thunk := p.NewFunc(name, thunkSig, InGo)
+	thunk.impl.SetLinkage(llvm.WeakODRLinkage)
+
+	b := thunk.MakeBody(1)
+	fn := b.Imethod(thunk.Param(0), method)
+	args := make([]Expr, n)
+	for i := 0; i < n; i++ {
+		args[i] = thunk.Param(i + 1)
+	}
+	ret := b.Call(fn, args...)
+	closureWrapReturn(b, sig, ret)
+	return thunk
+}
+
+// InvokeThunk returns an invoke thunk function for an interface method call.
+// The returned thunk has signature: func(interface, ...methodArgs) ...results.
+func (b Builder) InvokeThunk(intf Expr, method *types.Func) Expr {
+	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
+	sig := invokeMethodSig(rawIntf, method)
+	return b.Pkg.invokeThunk(rawIntf, method, sig).Expr
+}
+
+// Imethod returns closure of an interface method.
+func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
+	prog := b.Prog
+	rawIntf := intf.raw.Type.Underlying().(*types.Interface)
+	sig := invokeMethodSig(rawIntf, method)
 	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)

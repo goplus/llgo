@@ -249,16 +249,8 @@ define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int
 _llgo_0:
   %2 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
   %3 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %2, 0
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
-  %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3, 0
-  %6 = getelementptr ptr, ptr %5, i64 3
-  %7 = load ptr, ptr %6, align 8
-  %8 = insertvalue { ptr, ptr } undef, ptr %7, 0
-  %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
-  %10 = extractvalue { ptr, ptr } %9, 1
-  %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call i64 %11(ptr %10, i64 %1)
-  ret i64 %12
+  %4 = call i64 @"__llgo_invoke._llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A$m0.Add"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3, i64 %1)
+  ret i64 %4
 }
 
 declare double @sqrt(double)
@@ -269,6 +261,20 @@ define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/closureall.m
 _llgo_0:
   %2 = tail call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.makeNoFree$1"(i64 %1)
   ret i64 %2
+}
+
+define weak_odr i64 @"__llgo_invoke._llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A$m0.Add"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, i64 %1) {
+_llgo_0:
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %4 = getelementptr ptr, ptr %3, i64 3
+  %5 = load ptr, ptr %4, align 8
+  %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
+  %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  %10 = tail call i64 %9(ptr %8, i64 %1)
+  ret i64 %10
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")

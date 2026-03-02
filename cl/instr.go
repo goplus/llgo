@@ -679,12 +679,20 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	cv := call.Value
 	if mthd := call.Method; mthd != nil {
 		o := p.compileValue(b, cv)
-		fn := b.Imethod(o, mthd)
 		hasVArg := fnNormal
 		if llssa.HasNameValist(call.Signature()) {
 			hasVArg = fnHasVArg
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
+		if hasVArg == fnHasVArg {
+			// Keep variadic invoke on the legacy closure path for now.
+			// The thunk split is currently for non-variadic invoke calls.
+			fn := b.Imethod(o, mthd)
+			ret = b.Do(act, fn, args...)
+			return
+		}
+		fn := b.InvokeThunk(o, mthd)
+		args = append([]llssa.Expr{o}, args...)
 		ret = b.Do(act, fn, args...)
 		return
 	}

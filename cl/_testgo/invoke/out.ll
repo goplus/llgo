@@ -243,16 +243,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/invoke.invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %3 = getelementptr ptr, ptr %2, i64 3
-  %4 = load ptr, ptr %3, align 8
-  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
-  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call i64 %8(ptr %7)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %9)
+  %1 = call i64 @"__llgo_invoke._llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0$m0.Invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -434,6 +426,20 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+
+define weak_odr i64 @"__llgo_invoke._llgo_iface$uRUteI7wmSy7y7ODhGzk0FdDaxGKMhVSSu6HZEv9aa0$m0.Invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %3 = getelementptr ptr, ptr %2, i64 3
+  %4 = load ptr, ptr %3, align 8
+  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
+  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  %9 = tail call i64 %8(ptr %7)
+  ret i64 %9
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 

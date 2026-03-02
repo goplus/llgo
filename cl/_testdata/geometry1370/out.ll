@@ -60,15 +60,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, i64 %1) {
 _llgo_0:
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %4 = getelementptr ptr, ptr %3, i64 4
-  %5 = load ptr, ptr %4, align 8
-  %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
-  %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
-  %8 = extractvalue { ptr, ptr } %7, 1
-  %9 = extractvalue { ptr, ptr } %7, 0
-  call void %9(ptr %8, i64 %1)
+  call void @"__llgo_invoke.github.com/goplus/llgo/cl/_testdata/geometry1370.iface$OopIVfjRcxQr1gmJyGi5G7hHt__vH05AREEM7PthH9o$m1.setID"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, i64 %1)
   ret void
 }
 
@@ -86,5 +78,19 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+define weak_odr void @"__llgo_invoke.github.com/goplus/llgo/cl/_testdata/geometry1370.iface$OopIVfjRcxQr1gmJyGi5G7hHt__vH05AREEM7PthH9o$m1.setID"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, i64 %1) {
+_llgo_0:
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %4 = getelementptr ptr, ptr %3, i64 4
+  %5 = load ptr, ptr %4, align 8
+  %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
+  %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  tail call void %9(ptr %8, i64 %1)
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")

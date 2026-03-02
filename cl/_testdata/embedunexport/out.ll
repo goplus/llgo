@@ -32,15 +32,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %3 = getelementptr ptr, ptr %2, i64 4
-  %4 = load ptr, ptr %3, align 8
-  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
-  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  call void %8(ptr %7, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 8 })
+  call void @"__llgo_invoke.github.com/goplus/llgo/cl/_testdata/embedunexport.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E$m1.setName"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 8 })
   ret void
 }
 
@@ -58,5 +50,19 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+define weak_odr void @"__llgo_invoke.github.com/goplus/llgo/cl/_testdata/embedunexport.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E$m1.setName"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+_llgo_0:
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %4 = getelementptr ptr, ptr %3, i64 4
+  %5 = load ptr, ptr %4, align 8
+  %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
+  %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  tail call void %9(ptr %8, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")

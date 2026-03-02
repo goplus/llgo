@@ -95,16 +95,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/mapclosure"
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/mapclosure.demo"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %3 = getelementptr ptr, ptr %2, i64 3
-  %4 = load ptr, ptr %3, align 8
-  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
-  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %8(ptr %7)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %9
+  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"__llgo_invoke._llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U$m0.String"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %1
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/mapclosure.init"() {
@@ -182,6 +174,20 @@ _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
   %2 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %1, align 8
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %2
+}
+
+define weak_odr %"github.com/goplus/llgo/runtime/internal/runtime.String" @"__llgo_invoke._llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U$m0.String"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %3 = getelementptr ptr, ptr %2, i64 3
+  %4 = load ptr, ptr %3, align 8
+  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
+  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  %9 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.String" %8(ptr %7)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %9
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")

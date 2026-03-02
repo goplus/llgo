@@ -108,15 +108,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/tpmethod.main"() {
 _llgo_0:
   %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.ReadFile"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 7 })
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %3 = getelementptr ptr, ptr %2, i64 3
-  %4 = load ptr, ptr %3, align 8
-  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
-  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  call void %8(ptr %7, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.main$1", ptr null })
+  call void @"__llgo_invoke._llgo_iface$XcsCI4xRViVu44YvSfJySCCik7Xq487CpVScS6LGI70$m0.Then"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.main$1", ptr null })
   ret void
 }
 
@@ -147,6 +139,20 @@ _llgo_0:
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+define weak_odr void @"__llgo_invoke._llgo_iface$XcsCI4xRViVu44YvSfJySCCik7Xq487CpVScS6LGI70$m0.Then"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, { ptr, ptr } %1) {
+_llgo_0:
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %3 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %4 = getelementptr ptr, ptr %3, i64 3
+  %5 = load ptr, ptr %4, align 8
+  %6 = insertvalue { ptr, ptr } undef, ptr %5, 0
+  %7 = insertvalue { ptr, ptr } %6, ptr %2, 1
+  %8 = extractvalue { ptr, ptr } %7, 1
+  %9 = extractvalue { ptr, ptr } %7, 0
+  tail call void %9(ptr %8, { ptr, ptr } %1)
+  ret void
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 

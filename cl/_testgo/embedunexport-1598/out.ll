@@ -110,16 +110,8 @@ _llgo_0:
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %3, 0
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, ptr %1, 1
   call void @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %5)
-  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %5)
-  %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5, 0
-  %8 = getelementptr ptr, ptr %7, i64 3
-  %9 = load ptr, ptr %8, align 8
-  %10 = insertvalue { ptr, ptr } undef, ptr %9, 0
-  %11 = insertvalue { ptr, ptr } %10, ptr %6, 1
-  %12 = extractvalue { ptr, ptr } %11, 1
-  %13 = extractvalue { ptr, ptr } %11, 0
-  %14 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %13(ptr %12)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %14)
+  %6 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"__llgo_invoke.github.com/goplus/llgo/cl/_testgo/embedunexport-1598.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E$m0.Name"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -166,6 +158,20 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
 declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+
+define weak_odr %"github.com/goplus/llgo/runtime/internal/runtime.String" @"__llgo_invoke.github.com/goplus/llgo/cl/_testgo/embedunexport-1598.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E$m0.Name"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+_llgo_0:
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
+  %3 = getelementptr ptr, ptr %2, i64 3
+  %4 = load ptr, ptr %3, align 8
+  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
+  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
+  %7 = extractvalue { ptr, ptr } %6, 1
+  %8 = extractvalue { ptr, ptr } %6, 0
+  %9 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.String" %8(ptr %7)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %9
+}
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
