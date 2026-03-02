@@ -648,6 +648,7 @@ func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	bitcodeFiles, nativeInputs := splitBitcodeAndNativeInputs(aPkg.ObjFiles)
 	aPkg.ObjFiles = nil
+	aPkg.NativeLinkInputs = nil
 
 	if len(bitcodeFiles) > 0 {
 		mergedBitcode, err := mergeBitcodeFiles(aPkg.PkgPath, bitcodeFiles)
@@ -669,7 +670,7 @@ func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 			os.Remove(archivePath)
 			return fmt.Errorf("create native archive for %s: %w", aPkg.PkgPath, err)
 		}
-		aPkg.ArchiveFile = archivePath
+		aPkg.NativeLinkInputs = []string{archivePath}
 	}
 	return nil
 }
@@ -1034,9 +1035,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 				if aPkg.BitcodeFile != "" {
 					rtBitcodeInputs = append(rtBitcodeInputs, aPkg.BitcodeFile)
 				}
-				if aPkg.ArchiveFile != "" {
-					rtNativeInputs = append(rtNativeInputs, aPkg.ArchiveFile)
-				}
+				rtNativeInputs = append(rtNativeInputs, aPkg.NativeLinkInputs...)
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -1052,9 +1051,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			if aPkg.BitcodeFile != "" {
 				linkBitcodeInputs = append(linkBitcodeInputs, aPkg.BitcodeFile)
 			}
-			if aPkg.ArchiveFile != "" {
-				nativeLinkInputs = append(nativeLinkInputs, aPkg.ArchiveFile)
-			}
+			nativeLinkInputs = append(nativeLinkInputs, aPkg.NativeLinkInputs...)
 		}
 	})
 
@@ -1475,8 +1472,9 @@ type aPackage struct {
 	LinkArgs    []string
 	ObjFiles    []string // per-file outputs before normalization (.bc/.o)
 	BitcodeFile string   // merged package bitcode (.bc)
-	ArchiveFile string   // optional native archive (.a) for non-bitcode objects
-	rewriteVars map[string]string
+	// optional native link inputs for non-bitcode objects (typically one temp .a)
+	NativeLinkInputs []string
+	rewriteVars      map[string]string
 
 	// Cache related fields
 	Fingerprint string // fingerprint digest
@@ -1506,16 +1504,17 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			}
 			rewrites := collectRewriteVars(ctx, pkgPath)
 			aPkg := &aPackage{
-				Package:     p,
-				SSA:         ssaPkg,
-				AltPkg:      altPkg,
-				LPkg:        nil,
-				NeedRt:      false,
-				NeedPyInit:  false,
-				LinkArgs:    nil,
-				ObjFiles:    nil,
-				BitcodeFile: "",
-				rewriteVars: rewrites,
+				Package:          p,
+				SSA:              ssaPkg,
+				AltPkg:           altPkg,
+				LPkg:             nil,
+				NeedRt:           false,
+				NeedPyInit:       false,
+				LinkArgs:         nil,
+				ObjFiles:         nil,
+				BitcodeFile:      "",
+				NativeLinkInputs: nil,
+				rewriteVars:      rewrites,
 			}
 			ctx.pkgs[p] = aPkg
 			ctx.pkgByID[p.ID] = aPkg

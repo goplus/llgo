@@ -349,7 +349,9 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	// Use cached package bitcode for final LLVM API linking.
 	pkg.BitcodeFile = paths.Bitcode
 	if _, err := os.Stat(paths.Archive); err == nil {
-		pkg.ArchiveFile = paths.Archive
+		pkg.NativeLinkInputs = []string{paths.Archive}
+	} else {
+		pkg.NativeLinkInputs = nil
 	}
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
@@ -454,8 +456,12 @@ func (c *context) saveToCache(pkg *aPackage) error {
 	if err := copyFileAtomic(pkg.BitcodeFile, paths.Bitcode); err != nil {
 		return err
 	}
-	if pkg.ArchiveFile != "" {
-		if err := copyFileAtomic(pkg.ArchiveFile, paths.Archive); err != nil {
+	if len(pkg.NativeLinkInputs) > 0 {
+		if len(pkg.NativeLinkInputs) == 1 && strings.HasSuffix(pkg.NativeLinkInputs[0], ".a") {
+			if err := copyFileAtomic(pkg.NativeLinkInputs[0], paths.Archive); err != nil {
+				return err
+			}
+		} else if err := c.createArchiveFile(paths.Archive, pkg.NativeLinkInputs); err != nil {
 			return err
 		}
 	}

@@ -438,7 +438,7 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 
 	// Clear fields to verify they are not loaded from cache.
 	pkg.BitcodeFile = ""
-	pkg.ArchiveFile = ""
+	pkg.NativeLinkInputs = nil
 	pkg.CacheHit = false
 
 	if ctx.tryLoadFromCache(pkg) {
@@ -451,6 +451,9 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 
 	if pkg.BitcodeFile != "" {
 		t.Error("BitcodeFile should not be populated when ForceRebuild is enabled")
+	}
+	if len(pkg.NativeLinkInputs) != 0 {
+		t.Error("NativeLinkInputs should not be populated when ForceRebuild is enabled")
 	}
 }
 
