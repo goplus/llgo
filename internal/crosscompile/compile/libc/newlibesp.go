@@ -79,13 +79,25 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 		"-idirafter" + filepath.Join(baseDir, "include"),
 		"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
 	}
+	libmExportLDFlags := []string{"-u", "_printf_float"}
 	libmLDFlags := append([]string{}, _libcLDFlags...)
-	// newlib/README (--enable-newlib-nano-formatted-io) requires explicit
-	// link of `_printf_float` (or `_scanf_float`) when float formatted I/O is needed.
-	libmLDFlags = append(libmLDFlags, "-u", "_printf_float")
+	// newlib README (section `--enable-newlib-nano-formatted-io`) states:
+	// 1) float formatted I/O support is split into weak symbols and not linked by default;
+	// 2) programs requiring float formatted I/O must explicitly request
+	//    `_printf_float` or `_scanf_float` via the linker `-u` option.
+	//
+	// Source references in goplus/newlib:
+	// - newlib/README:415-424, 461-465
+	// - newlib/libc/stdio/nano-vfprintf_local.h: `_printf_float` is weak
+	// - newlib/libc/stdio/nano-vfprintf.c: checks `_printf_float == NULL`
+	//
+	// Keep `-u _printf_float` here so esp32c3-basic float `%f/%e/%g` paths stay enabled
+	// without requiring per-target json ldflags overrides.
+	libmLDFlags = append(libmLDFlags, libmExportLDFlags...)
 
 	return compile.CompileConfig{
-		ExportCFlags: libcIncludeDir,
+		ExportCFlags:  libcIncludeDir,
+		ExportLDFlags: libmExportLDFlags,
 		Groups: []compile.CompileGroup{
 			{
 				OutputFileName: fmt.Sprintf("libsemihost-%s.a", target),

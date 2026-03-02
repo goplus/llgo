@@ -618,6 +618,7 @@ func UseTarget(targetName string) (export Export, err error) {
 			return
 		}
 		cflags = append(cflags, compileConfig.ExportCFlags...)
+		ldflags = append(ldflags, compileConfig.ExportLDFlags...)
 		ldflags = append(ldflags, libcLDFlags...)
 
 		libcIncludeDir = compileConfig.ExportCFlags
