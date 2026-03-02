@@ -329,8 +329,8 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	cm := c.ensureCacheManager()
 	paths := cm.PackagePaths(c.targetTriple(), pkg.PkgPath, pkg.Fingerprint)
 
-	// Check if archive file exists
-	if _, err := os.Stat(paths.Archive); err != nil {
+	// Check if bitcode cache exists.
+	if _, err := os.Stat(paths.Bitcode); err != nil {
 		return false
 	}
 
@@ -346,8 +346,11 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 		return false
 	}
 
-	// Use the .a archive directly for linking (no extraction needed)
-	pkg.ArchiveFile = paths.Archive
+	// Use cached package bitcode for final LLVM API linking.
+	pkg.BitcodeFile = paths.Bitcode
+	if _, err := os.Stat(paths.Archive); err == nil {
+		pkg.ArchiveFile = paths.Archive
+	}
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
 	pkg.NeedPyInit = meta.NeedPyInit
@@ -444,18 +447,17 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
-	// If ArchiveFile is already set (from normalizeToArchive), copy it to cache
+	// Package bitcode is mandatory for bitcode LTO cache entries.
+	if pkg.BitcodeFile == "" {
+		return nil
+	}
+	if err := copyFileAtomic(pkg.BitcodeFile, paths.Bitcode); err != nil {
+		return err
+	}
 	if pkg.ArchiveFile != "" {
 		if err := copyFileAtomic(pkg.ArchiveFile, paths.Archive); err != nil {
 			return err
 		}
-	} else if len(pkg.ObjFiles) > 0 {
-		// Otherwise, create archive from object files
-		if err := c.createArchiveFile(paths.Archive, pkg.ObjFiles); err != nil {
-			return err
-		}
-	} else {
-		return nil
 	}
 
 	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).

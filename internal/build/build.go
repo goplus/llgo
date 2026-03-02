@@ -363,6 +363,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		pkgByID:        map[string]Package{},
 		output:         output,
 		passOpt:        passOpt,
+		bitcodeLTO:     true,
 		buildConf:      conf,
 		crossCompile:   export,
 		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
@@ -543,6 +544,9 @@ type context struct {
 	plan9asmAll  bool
 	// when plan9asmAll=false: enabled set; when plan9asmAll=true: excluded set.
 	plan9asmPkgs map[string]bool
+
+	// Enable package bitcode outputs and final LLVM API linking.
+	bitcodeLTO bool
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -580,28 +584,126 @@ func (c *context) hasAltPkg(pkgPath string) bool {
 	return hasAltPkgForTarget(c.buildConf, pkgPath)
 }
 
-// normalizeToArchive creates an archive from object files and sets ArchiveFile.
-// This ensures the link step always consumes .a archives regardless of cache state.
-func normalizeToArchive(ctx *context, aPkg *aPackage, verbose bool) error {
+func splitBitcodeAndNativeInputs(inputs []string) (bitcodeFiles []string, nativeInputs []string) {
+	for _, input := range inputs {
+		if strings.HasSuffix(input, ".bc") {
+			bitcodeFiles = append(bitcodeFiles, input)
+			continue
+		}
+		nativeInputs = append(nativeInputs, input)
+	}
+	return
+}
+
+func tempNamePrefix(moduleName string) string {
+	name := strings.ReplaceAll(moduleName, "/", "_")
+	name = strings.ReplaceAll(name, "\\", "_")
+	name = strings.ReplaceAll(name, ":", "_")
+	name = strings.ReplaceAll(name, ".", "_")
+	if name == "" {
+		return "llgo"
+	}
+	return name
+}
+
+func mergeBitcodeFiles(moduleName string, bitcodeFiles []string) (string, error) {
+	if len(bitcodeFiles) == 0 {
+		return "", nil
+	}
+	if len(bitcodeFiles) == 1 {
+		return bitcodeFiles[0], nil
+	}
+
+	ctx := gllvm.NewContext()
+	defer ctx.Dispose()
+
+	mod, err := ctx.ParseBitcodeFile(bitcodeFiles[0])
+	if err != nil {
+		return "", fmt.Errorf("parse bitcode %s: %w", bitcodeFiles[0], err)
+	}
+	defer mod.Dispose()
+
+	for _, bitcodeFile := range bitcodeFiles[1:] {
+		srcMod, err := ctx.ParseBitcodeFile(bitcodeFile)
+		if err != nil {
+			return "", fmt.Errorf("parse bitcode %s: %w", bitcodeFile, err)
+		}
+		if err := gllvm.LinkModules(mod, srcMod); err != nil {
+			return "", fmt.Errorf("link bitcode module %s: %w", bitcodeFile, err)
+		}
+	}
+
+	out, err := os.CreateTemp("", tempNamePrefix(moduleName)+"-*.bc")
+	if err != nil {
+		return "", fmt.Errorf("create merged bitcode file: %w", err)
+	}
+	defer out.Close()
+
+	if err := gllvm.WriteBitcodeToFile(mod, out); err != nil {
+		return "", fmt.Errorf("write merged bitcode file: %w", err)
+	}
+	return out.Name(), nil
+}
+
+func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 	if len(aPkg.ObjFiles) == 0 {
 		return nil
 	}
 
-	archiveFile, err := os.CreateTemp("", "pkg-*.a")
-	if err != nil {
-		return fmt.Errorf("create temp archive: %w", err)
-	}
-	archiveFile.Close()
-	archivePath := archiveFile.Name()
-
-	if err := ctx.createArchiveFile(archivePath, aPkg.ObjFiles, verbose); err != nil {
-		os.Remove(archivePath)
-		return fmt.Errorf("create archive for %s: %w", aPkg.PkgPath, err)
-	}
-
+	bitcodeFiles, nativeInputs := splitBitcodeAndNativeInputs(aPkg.ObjFiles)
 	aPkg.ObjFiles = nil
-	aPkg.ArchiveFile = archivePath
+
+	if len(bitcodeFiles) > 0 {
+		mergedBitcode, err := mergeBitcodeFiles(aPkg.PkgPath, bitcodeFiles)
+		if err != nil {
+			return fmt.Errorf("merge bitcode for %s: %w", aPkg.PkgPath, err)
+		}
+		aPkg.BitcodeFile = mergedBitcode
+	}
+
+	if len(nativeInputs) > 0 {
+		archiveFile, err := os.CreateTemp("", "pkg-native-*.a")
+		if err != nil {
+			return fmt.Errorf("create temp native archive: %w", err)
+		}
+		archiveFile.Close()
+		archivePath := archiveFile.Name()
+
+		if err := ctx.createArchiveFile(archivePath, nativeInputs, verbose); err != nil {
+			os.Remove(archivePath)
+			return fmt.Errorf("create native archive for %s: %w", aPkg.PkgPath, err)
+		}
+		aPkg.ArchiveFile = archivePath
+	}
 	return nil
+}
+
+func compileLinkedBitcodeToObject(ctx *context, moduleName string, bitcodeFiles []string, verbose bool) (string, error) {
+	if len(bitcodeFiles) == 0 {
+		return "", nil
+	}
+
+	mergedBitcode, err := mergeBitcodeFiles(moduleName, bitcodeFiles)
+	if err != nil {
+		return "", err
+	}
+
+	objFile, err := os.CreateTemp("", tempNamePrefix(moduleName)+"-*.o")
+	if err != nil {
+		return "", fmt.Errorf("create linked object temp file: %w", err)
+	}
+	objFile.Close()
+
+	args := []string{"-o", objFile.Name(), "-c", mergedBitcode, "-Wno-override-module"}
+	if ctx.shouldPrintCommands(verbose) {
+		fmt.Fprintf(os.Stderr, "# compiling linked bitcode for %s\n", moduleName)
+		fmt.Fprintln(os.Stderr, "clang", args)
+	}
+	if err := ctx.compiler().Compile(args...); err != nil {
+		return "", fmt.Errorf("compile linked bitcode for %s: %w", moduleName, err)
+	}
+
+	return objFile.Name(), nil
 }
 
 func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, error) {
@@ -648,7 +750,7 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return err
 				}
 				if !aPkg.CacheHit {
-					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+					if err := normalizePackageOutputs(ctx, aPkg, verbose); err != nil {
 						return err
 					}
 					if kind == cl.PkgLinkExtern {
@@ -683,7 +785,7 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			needRuntime = needRuntime || aPkg.NeedRt
 			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
-				if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+				if err := normalizePackageOutputs(ctx, aPkg, verbose); err != nil {
 					return err
 				}
 				if err := ctx.saveToCache(aPkg); err != nil && verbose {
@@ -815,14 +917,15 @@ func validateRewriteInput(pkg, varName, value string) {
 	}
 }
 
-// compileExtraFiles compiles extra files (.s/.c) from target configuration and returns object files
+// compileExtraFiles compiles extra files (.s/.c) from target configuration and returns link inputs.
+// C-like files are emitted as .bc for LTO while assembly remains .o.
 func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 	if len(ctx.crossCompile.ExtraFiles) == 0 {
 		return nil, nil
 	}
 
 	printCmds := ctx.shouldPrintCommands(verbose)
-	var objFiles []string
+	var linkInputs []string
 	llgoRoot := env.LLGoROOT()
 
 	for _, extraFile := range ctx.crossCompile.ExtraFiles {
@@ -855,8 +958,10 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			baseArgs = append(baseArgs, "-x", "assembler-with-cpp")
 		}
 
-		// If GenLL is enabled, first emit .ll for debugging
-		if ctx.buildConf.GenLL {
+		emitBitcode := ext != ".S" && ext != ".s"
+
+		// If GenLL is enabled, first emit .ll for debugging.
+		if ctx.buildConf.GenLL && emitBitcode {
 			llFile := baseName + ".ll"
 			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
 			if printCmds {
@@ -868,22 +973,33 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			}
 		}
 
-		// Always compile to .o for linking
-		objFile := baseName + ".o"
-		objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
-		if printCmds {
-			fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
+		if emitBitcode {
+			bcFile := baseName + ".bc"
+			bcArgs := append(baseArgs, "-emit-llvm", "-o", bcFile, "-c", srcFile)
+			if printCmds {
+				fmt.Fprintf(os.Stderr, "Compiling extra file (bc): clang %s\n", strings.Join(bcArgs, " "))
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(bcArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s to .bc: %w", srcFile, err)
+			}
+			linkInputs = append(linkInputs, bcFile)
+		} else {
+			objFile := baseName + ".o"
+			objArgs := append(baseArgs, "-o", objFile, "-c", srcFile)
+			if printCmds {
+				fmt.Fprintf(os.Stderr, "Compiling extra file: clang %s\n", strings.Join(objArgs, " "))
+			}
+			cmd := ctx.compiler()
+			if err := cmd.Compile(objArgs...); err != nil {
+				return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
+			}
+			linkInputs = append(linkInputs, objFile)
 		}
-		cmd := ctx.compiler()
-		if err := cmd.Compile(objArgs...); err != nil {
-			return nil, fmt.Errorf("failed to compile extra file %s: %w", srcFile, err)
-		}
-
-		objFiles = append(objFiles, objFile)
 		os.Remove(baseName) // Remove the temp file we created for naming
 	}
 
-	return objFiles, nil
+	return linkInputs, nil
 }
 
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
@@ -894,10 +1010,13 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
 	}
-	// linkInputs contains .a archives from all packages and .o files from main module
-	var linkInputs []string
+	// Bitcode modules are linked together first using LLVM APIs, then compiled to
+	// one native object and linked with native archives/objects.
+	var linkBitcodeInputs []string
+	var nativeLinkInputs []string
 	var linkArgs []string
-	var rtLinkInputs []string
+	var rtBitcodeInputs []string
+	var rtNativeInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
@@ -916,8 +1035,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
+				if aPkg.BitcodeFile != "" {
+					rtBitcodeInputs = append(rtBitcodeInputs, aPkg.BitcodeFile)
+				}
 				if aPkg.ArchiveFile != "" {
-					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
+					rtNativeInputs = append(rtNativeInputs, aPkg.ArchiveFile)
 				}
 				return
 			} else {
@@ -931,8 +1053,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
+			if aPkg.BitcodeFile != "" {
+				linkBitcodeInputs = append(linkBitcodeInputs, aPkg.BitcodeFile)
+			}
 			if aPkg.ArchiveFile != "" {
-				linkInputs = append(linkInputs, aPkg.ArchiveFile)
+				nativeLinkInputs = append(nativeLinkInputs, aPkg.ArchiveFile)
 			}
 		}
 	})
@@ -940,25 +1065,40 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// Only link runtime objects when needed (or for host builds where runtime is always required).
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
 		linkArgs = append(linkArgs, rtLinkArgs...)
-		linkInputs = append(linkInputs, rtLinkInputs...)
+		linkBitcodeInputs = append(linkBitcodeInputs, rtBitcodeInputs...)
+		nativeLinkInputs = append(nativeLinkInputs, rtNativeInputs...)
 	}
 
 	// Generate main module file (needed for global variables even in library modes)
-	// This is compiled directly to .o and added to linkInputs (not cached)
+	// This is compiled to .bc and included in the program-level bitcode link (not cached).
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
-	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	entryBitcodeFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
-	linkInputs = append(linkInputs, entryObjFile)
+	linkBitcodeInputs = append(linkBitcodeInputs, entryBitcodeFile)
 
 	// Compile extra files from target configuration
-	extraObjFiles, err := compileExtraFiles(ctx, verbose)
+	extraLinkInputs, err := compileExtraFiles(ctx, verbose)
 	if err != nil {
 		return err
 	}
-	linkInputs = append(linkInputs, extraObjFiles...)
+	extraBitcodeInputs, extraNativeInputs := splitBitcodeAndNativeInputs(extraLinkInputs)
+	linkBitcodeInputs = append(linkBitcodeInputs, extraBitcodeInputs...)
+	nativeLinkInputs = append(nativeLinkInputs, extraNativeInputs...)
+
+	if ctx.bitcodeLTO {
+		programObjFile, err := compileLinkedBitcodeToObject(ctx, pkg.PkgPath, linkBitcodeInputs, verbose)
+		if err != nil {
+			return err
+		}
+		if programObjFile != "" {
+			nativeLinkInputs = append(nativeLinkInputs, programObjFile)
+		}
+	} else {
+		nativeLinkInputs = append(nativeLinkInputs, linkBitcodeInputs...)
+	}
 
 	if IsFullRpathEnabled() {
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
@@ -977,7 +1117,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		}
 	}
 
-	err = linkObjFiles(ctx, outputPath, linkInputs, linkArgs, verbose)
+	err = linkObjFiles(ctx, outputPath, nativeLinkInputs, linkArgs, verbose)
 	if err != nil {
 		return err
 	}
@@ -1260,24 +1400,24 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 		if err := os.Chmod(f.Name(), 0644); err != nil {
 			return "", err
 		}
-		// Copy instead of rename so we can still compile to .o
+		// Copy instead of rename so we can still compile to .bc
 		if err := copyFileAtomic(f.Name(), llFile); err != nil {
 			return "", err
 		}
 	}
-	// Always compile .ll to .o for linking
-	objFile, err := os.CreateTemp("", base+"-*.o")
+	// Compile .ll to .bc for program-level bitcode linking.
+	bitcodeFile, err := os.CreateTemp("", base+"-*.bc")
 	if err != nil {
 		return "", err
 	}
-	objFile.Close()
-	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
+	bitcodeFile.Close()
+	args := []string{"-o", bitcodeFile.Name(), "-emit-llvm", "-c", f.Name(), "-Wno-override-module"}
 	if ctx.shouldPrintCommands(false) {
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
 	cmd := ctx.compiler()
-	return objFile.Name(), cmd.Compile(args...)
+	return bitcodeFile.Name(), cmd.Compile(args...)
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
@@ -1341,8 +1481,9 @@ type aPackage struct {
 	NeedPyInit bool
 
 	LinkArgs    []string
-	ObjFiles    []string // object files: .o or .ll (output of compiler, input to archiver)
-	ArchiveFile string   // archive file: .a (output of archiver, used for linking)
+	ObjFiles    []string // per-file outputs before normalization (.bc/.o)
+	BitcodeFile string   // merged package bitcode (.bc)
+	ArchiveFile string   // optional native archive (.a) for non-bitcode objects
 	rewriteVars map[string]string
 
 	// Cache related fields
@@ -1381,6 +1522,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 				NeedPyInit:  false,
 				LinkArgs:    nil,
 				ObjFiles:    nil,
+				BitcodeFile: "",
 				rewriteVars: rewrites,
 			}
 			ctx.pkgs[p] = aPkg
@@ -1650,17 +1792,20 @@ func clFiles(ctx *context, files string, pkg *packages.Package, procFile func(li
 func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFile func(linkFile string), verbose bool) {
 	baseName := expFile + filepath.Base(cFile)
 	ext := filepath.Ext(cFile)
+	compileArgs := slices.Clone(args)
 
 	// default clang++ will use c++ to compile c file,will cause symbol be mangled
 	if ext == ".c" {
-		args = append(args, "-x", "c")
+		compileArgs = append(compileArgs, "-x", "c")
 	}
 
-	// If GenLL is enabled, first emit .ll for debugging, then compile to .o
+	emitBitcode := ext != ".S" && ext != ".s"
+
+	// If GenLL is enabled, first emit .ll for debugging.
 	printCmds := ctx.shouldPrintCommands(verbose)
-	if ctx.buildConf.GenLL {
+	if ctx.buildConf.GenLL && emitBitcode {
 		llFile := baseName + ".ll"
-		llArgs := append(slices.Clone(args), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
+		llArgs := append(slices.Clone(compileArgs), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
 		if printCmds {
 			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
 			fmt.Fprintln(os.Stderr, "clang", llArgs)
@@ -1670,9 +1815,22 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		check(err)
 	}
 
-	// Always compile to .o for linking
+	if emitBitcode {
+		bcFile := baseName + ".bc"
+		bcArgs := append(compileArgs, "-emit-llvm", "-o", bcFile, "-c", cFile)
+		if printCmds {
+			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", bcFile, pkgPath)
+			fmt.Fprintln(os.Stderr, "clang", bcArgs)
+		}
+		cmd := ctx.compiler()
+		err := cmd.Compile(bcArgs...)
+		check(err)
+		procFile(bcFile)
+		return
+	}
+
 	objFile := baseName + ".o"
-	objArgs := append(args, "-o", objFile, "-c", cFile)
+	objArgs := append(compileArgs, "-o", objFile, "-c", cFile)
 	if printCmds {
 		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objFile, pkgPath)
 		fmt.Fprintln(os.Stderr, "clang", objArgs)

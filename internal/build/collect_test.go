@@ -411,15 +411,14 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 		}(),
 	}
 
-	// Create a temporary .o file
-	objFile, err := os.CreateTemp(td, "test-*.o")
+	// Create a temporary .bc file
+	bcFile, err := os.CreateTemp(td, "test-*.bc")
 	if err != nil {
 		t.Fatalf("CreateTemp: %v", err)
 	}
-	objFile.WriteString("fake object file")
-	objFile.Close()
-
-	pkg.ObjFiles = []string{objFile.Name()}
+	bcFile.WriteString("fake bitcode file")
+	bcFile.Close()
+	pkg.BitcodeFile = bcFile.Name()
 
 	// First save to cache
 	ctx.buildConf.ForceRebuild = false
@@ -430,15 +429,15 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 	// Verify cache exists
 	cm := ctx.ensureCacheManager()
 	paths := cm.PackagePaths("arm64-apple-darwin", "example.com/cached", "test123")
-	if _, err := os.Stat(paths.Archive); err != nil {
+	if _, err := os.Stat(paths.Bitcode); err != nil {
 		t.Fatalf("cache should exist: %v", err)
 	}
 
 	// Now enable ForceRebuild and try to load
 	ctx.buildConf.ForceRebuild = true
 
-	// Clear ObjFiles to verify it's not loaded from cache
-	pkg.ObjFiles = nil
+	// Clear fields to verify they are not loaded from cache.
+	pkg.BitcodeFile = ""
 	pkg.ArchiveFile = ""
 	pkg.CacheHit = false
 
@@ -450,8 +449,8 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 		t.Error("CacheHit should remain false when ForceRebuild is enabled")
 	}
 
-	if pkg.ArchiveFile != "" {
-		t.Error("ArchiveFile should not be populated when ForceRebuild is enabled")
+	if pkg.BitcodeFile != "" {
+		t.Error("BitcodeFile should not be populated when ForceRebuild is enabled")
 	}
 }
 
@@ -511,19 +510,19 @@ func TestSaveToCache_Success(t *testing.T) {
 		},
 	}
 
-	// Create a temporary .o file
-	objFile, err := os.CreateTemp(td, "test-*.o")
+	// Create a temporary .bc file
+	bcFile, err := os.CreateTemp(td, "test-*.bc")
 	if err != nil {
 		t.Fatalf("CreateTemp: %v", err)
 	}
-	objFile.WriteString("fake object file")
-	objFile.Close()
+	bcFile.WriteString("fake bitcode file")
+	bcFile.Close()
 
 	pkg := &aPackage{
 		Package: &packages.Package{
 			PkgPath: "example.com/lib",
 			Name:    "lib",
-			GoFiles: []string{objFile.Name()}, // Add GoFiles for manifest generation
+			GoFiles: []string{bcFile.Name()}, // Add GoFiles for manifest generation
 		},
 		Fingerprint: "def456",
 		Manifest: func() string {
@@ -532,7 +531,7 @@ func TestSaveToCache_Success(t *testing.T) {
 			m.pkg.PkgPath = "example.com/lib"
 			return m.Build()
 		}(),
-		ObjFiles: []string{objFile.Name()},
+		BitcodeFile: bcFile.Name(),
 	}
 
 	if err := ctx.saveToCache(pkg); err != nil {
@@ -559,9 +558,9 @@ func TestSaveToCache_Success(t *testing.T) {
 		t.Errorf("metadata should be empty when no link args/runtime flags")
 	}
 
-	// Check archive exists
-	if _, err := os.Stat(paths.Archive); err != nil {
-		t.Errorf("archive should exist: %v", err)
+	// Check bitcode exists
+	if _, err := os.Stat(paths.Bitcode); err != nil {
+		t.Errorf("bitcode should exist: %v", err)
 	}
 }
 
