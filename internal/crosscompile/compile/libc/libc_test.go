@@ -332,17 +332,6 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 			}
 		}
 	}
-	expectedLDExportFlags := []string{"-u", "_printf_float"}
-	if len(config.ExportLDFlags) != len(expectedLDExportFlags) {
-		t.Errorf("Expected %d ExportLDFlags, got %d", len(expectedLDExportFlags), len(config.ExportLDFlags))
-	} else {
-		for i, expected := range expectedLDExportFlags {
-			if config.ExportLDFlags[i] != expected {
-				t.Errorf("ExportLDFlags[%d] mismatch. Expected '%s', got '%s'", i, expected, config.ExportLDFlags[i])
-			}
-		}
-	}
-
 	// Test Groups configuration
 	if len(config.Groups) != 6 {
 		t.Errorf("Expected 6 groups, got %d", len(config.Groups))

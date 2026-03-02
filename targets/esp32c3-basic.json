@@ -10,6 +10,10 @@
 	"serial": "usb",
 	"rtlib": "compiler-rt",
 	"libc": "newlib-esp32",
+	"ldflags": [
+		"-u",
+		"_printf_float"
+	],
 	"linkerscript": "targets/esp32c3.memory.ld",
 	"binary-format": "esp32c3",
 	"flash-command": "esptool.py --chip=esp32c3 --port {port} write_flash 0x0 {bin}",

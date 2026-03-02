@@ -99,9 +99,8 @@ func (g CompileGroup) Compile(
 
 // CompileConfig represents compilation configuration
 type CompileConfig struct {
-	Groups        []CompileGroup
-	ExportCFlags  []string
-	ExportLDFlags []string
+	Groups       []CompileGroup
+	ExportCFlags []string
 }
 
 type LibConfig struct {
