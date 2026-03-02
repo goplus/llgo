@@ -12,7 +12,6 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # Create temp dir inside _demo/embed/ to use existing go.mod
 TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
 mkdir -p "$TEMP_DIR"
@@ -310,14 +309,8 @@ fi
 
 echo ""
 echo "=== Test 5: ESP32-C3 float output regressions (temporary) ==="
-# Temporary location: this regression block is intentionally placed here.
-# It will be moved to unified cl tests in a follow-up ESP32-C3 test PR,
-# then removed from this startup script.
-pushd "$REPO_ROOT" > /dev/null
-run_case_and_compare "./cl/_testgo/alias" "+5.000000e+00 +8.000000e+00"
-run_case_and_compare "./cl/_testgo/multiret" "1 +2.000000e+00"
-run_case_and_compare "./cl/_testgo/struczero" $'0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true'
-run_case_and_compare "./cl/_testdata/cpkgimp" "3 +6.280000e+00"
+pushd "$SCRIPT_DIR" > /dev/null
+run_case_and_compare "./esp32c3/float-1664" $'+5.000000e+00 +8.000000e+00\n1 +2.000000e+00\n0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true\n3 +6.280000e+00'
 popd > /dev/null
 
 echo ""
