@@ -363,7 +363,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		pkgByID:        map[string]Package{},
 		output:         output,
 		passOpt:        passOpt,
-		bitcodeLTO:     true,
 		buildConf:      conf,
 		crossCompile:   export,
 		cTransformer:   cabi.NewTransformer(prog, export.LLVMTarget, export.TargetABI, conf.AbiMode, cabiOptimize),
@@ -544,9 +543,6 @@ type context struct {
 	plan9asmAll  bool
 	// when plan9asmAll=false: enabled set; when plan9asmAll=true: excluded set.
 	plan9asmPkgs map[string]bool
-
-	// Enable package bitcode outputs and final LLVM API linking.
-	bitcodeLTO bool
 }
 
 func (c *context) compiler() *clang.Cmd {
@@ -1088,16 +1084,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	linkBitcodeInputs = append(linkBitcodeInputs, extraBitcodeInputs...)
 	nativeLinkInputs = append(nativeLinkInputs, extraNativeInputs...)
 
-	if ctx.bitcodeLTO {
-		programObjFile, err := compileLinkedBitcodeToObject(ctx, pkg.PkgPath, linkBitcodeInputs, verbose)
-		if err != nil {
-			return err
-		}
-		if programObjFile != "" {
-			nativeLinkInputs = append(nativeLinkInputs, programObjFile)
-		}
-	} else {
-		nativeLinkInputs = append(nativeLinkInputs, linkBitcodeInputs...)
+	programObjFile, err := compileLinkedBitcodeToObject(ctx, pkg.PkgPath, linkBitcodeInputs, verbose)
+	if err != nil {
+		return err
+	}
+	if programObjFile != "" {
+		nativeLinkInputs = append(nativeLinkInputs, programObjFile)
 	}
 
 	if IsFullRpathEnabled() {
