@@ -492,11 +492,8 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 		if !slices.Contains(group4.CFlags, "-fno-math-errno") {
 			t.Errorf("Expected group4 CFlags to contain -fno-math-errno")
 		}
-		if !slices.Contains(group4.LDFlags, "-u") {
-			t.Errorf("Expected group4 LDFlags to contain -u")
-		}
-		if !slices.Contains(group4.LDFlags, "_printf_float") {
-			t.Errorf("Expected group4 LDFlags to contain _printf_float")
+		if slices.Contains(group4.LDFlags, "-u") || slices.Contains(group4.LDFlags, "_printf_float") {
+			t.Errorf("Expected group4 LDFlags not to contain -u/_printf_float; this is configured by external target ldflags")
 		}
 
 		// Group 5: libm (default flags)
@@ -511,11 +508,8 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 		if slices.Contains(group5.CFlags, "-fno-math-errno") {
 			t.Errorf("Expected group5 CFlags not to contain -fno-math-errno")
 		}
-		if !slices.Contains(group5.LDFlags, "-u") {
-			t.Errorf("Expected group5 LDFlags to contain -u")
-		}
-		if !slices.Contains(group5.LDFlags, "_printf_float") {
-			t.Errorf("Expected group5 LDFlags to contain _printf_float")
+		if slices.Contains(group5.LDFlags, "-u") || slices.Contains(group5.LDFlags, "_printf_float") {
+			t.Errorf("Expected group5 LDFlags not to contain -u/_printf_float; this is configured by external target ldflags")
 		}
 
 		totalLibmFiles := len(group4.Files) + len(group5.Files)

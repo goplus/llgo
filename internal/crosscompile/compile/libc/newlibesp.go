@@ -36,6 +36,15 @@ func GetNewlibESP32Config() compile.LibConfig {
 	}
 }
 
+// getNewlibESP32ConfigRISCV returns RISCV newlib compile groups.
+//
+// Note on float formatted I/O:
+// goplus/newlib README (`--enable-newlib-nano-formatted-io`) documents that
+// float printf/scanf support is gated by weak symbols and must be requested
+// explicitly via linker `-u _printf_float` / `-u _scanf_float`.
+// Therefore this config does not inject `-u _printf_float` here; it must be
+// declared by the external target/link config (for esp32c3-basic see
+// targets/esp32c3-basic.json).
 func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 
@@ -72,18 +81,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 		"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
 	}
 	libmLDFlags := append([]string{}, _libcLDFlags...)
-	// newlib README (section `--enable-newlib-nano-formatted-io`) states:
-	// 1) float formatted I/O support is split into weak symbols and not linked by default;
-	// 2) programs requiring float formatted I/O must explicitly request
-	//    `_printf_float` or `_scanf_float` via the linker `-u` option.
-	//
-	// Source references in goplus/newlib:
-	// - newlib/README:415-424, 461-465
-	// - newlib/libc/stdio/nano-vfprintf_local.h: `_printf_float` is weak
-	// - newlib/libc/stdio/nano-vfprintf.c: checks `_printf_float == NULL`
-	// We keep `-u _printf_float` in this libm compile group, and esp32c3-basic target
-	// json also keeps the same linker flag for final link behavior.
-	libmLDFlags = append(libmLDFlags, "-u", "_printf_float")
 
 	return compile.CompileConfig{
 		ExportCFlags: libcIncludeDir,
