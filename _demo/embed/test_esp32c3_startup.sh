@@ -24,29 +24,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-filter_emulator_output() {
-    # Keep output after "entry 0x..." when boot logs are present.
-    # If no entry marker exists, keep full output.
-    awk '
-    BEGIN { found = 0; n = 0; m = 0 }
-    /^entry 0x[0-9a-fA-F]+$/ { found = 1; next }
-    {
-        if (found) {
-            out[++n] = $0
-        } else {
-            pre[++m] = $0
-        }
-    }
+extract_last_nonempty_lines() {
+    local n="$1"
+    awk -v n="$n" '
+    NF { out[++count] = $0 }
     END {
-        if (found) {
-            last = n
-            while (last > 0 && out[last] == "") { last-- }
-            for (i = 1; i <= last; i++) { print out[i] }
+        if (n <= 0 || count == 0) {
             exit
         }
-        last = m
-        while (last > 0 && pre[last] == "") { last-- }
-        for (i = 1; i <= last; i++) { print pre[i] }
+        start = count - n + 1
+        if (start < 1) {
+            start = 1
+        }
+        for (i = start; i <= count; i++) {
+            print out[i]
+        }
     }'
 }
 
@@ -55,6 +47,7 @@ run_case_and_compare() {
     local expected="$2"
     local raw_output
     local actual
+    local expected_lines
 
     echo "Running: llgo run -a -target=esp32c3-basic -emulator $case_dir"
     if ! raw_output=$(llgo run -a -target=esp32c3-basic -emulator "$case_dir" 2>&1); then
@@ -63,7 +56,8 @@ run_case_and_compare() {
         return 1
     fi
 
-    actual=$(printf "%s\n" "$raw_output" | tr -d '\r' | filter_emulator_output)
+    expected_lines=$(printf "%s\n" "$expected" | awk 'NF { n++ } END { print n + 0 }')
+    actual=$(printf "%s\n" "$raw_output" | tr -d '\r' | extract_last_nonempty_lines "$expected_lines")
     if [ "$actual" = "$expected" ]; then
         echo "✓ PASS: $case_dir"
         return 0
