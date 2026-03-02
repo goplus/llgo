@@ -22,17 +22,9 @@ type CompileOptions struct {
 type CompileGroup struct {
 	OutputFileName string
 	Files          []string // List of source files to compile
-	FileEntries    []CompileFile
 	CFlags         []string // C compiler flags
 	CCFlags        []string
 	LDFlags        []string // Linker flags
-}
-
-// CompileFile represents a source file with optional per-file flags.
-type CompileFile struct {
-	Path    string
-	CFlags  []string
-	CCFlags []string
 }
 
 // IsCompiled checks if the compile group has already been compiled by verifying
@@ -61,39 +53,23 @@ func (g CompileGroup) Compile(
 	compileCCFlags := append(slices.Clone(options.CCFLAGS), g.CCFlags...)
 	compileCFFlags := append(slices.Clone(options.CFLAGS), g.CFlags...)
 
+	cfg := clang.NewConfig(options.CC, compileCCFlags, compileCFFlags, compileLDFlags, options.Linker)
+
 	var objFiles []string
+
+	compiler := clang.NewCompiler(cfg)
+
+	compiler.Verbose = true
 
 	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
 	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, archive)
 
-	fileEntries := make([]CompileFile, 0, len(g.FileEntries))
-	if len(g.FileEntries) != 0 {
-		fileEntries = append(fileEntries, g.FileEntries...)
-	} else {
-		fileEntries = make([]CompileFile, 0, len(g.Files))
-		for _, file := range g.Files {
-			fileEntries = append(fileEntries, CompileFile{Path: file})
-		}
-	}
-
-	for _, entry := range fileEntries {
-		file := entry.Path
+	for _, file := range g.Files {
 		var tempObjFile *os.File
 		tempObjFile, err = os.CreateTemp(tmpCompileDir, fmt.Sprintf("%s*.o", strings.ReplaceAll(file, string(os.PathSeparator), "-")))
 		if err != nil {
 			return
 		}
-
-		cfg := clang.NewConfig(
-			options.CC,
-			append(slices.Clone(compileCCFlags), entry.CCFlags...),
-			append(slices.Clone(compileCFFlags), entry.CFlags...),
-			compileLDFlags,
-			options.Linker,
-		)
-
-		compiler := clang.NewCompiler(cfg)
-		compiler.Verbose = true
 
 		lang := "c"
 		if filepath.Ext(file) == ".S" {
