@@ -138,6 +138,30 @@ func TestCollectSkipNamesByDoc(t *testing.T) {
 	)
 }
 
+func TestInitNoInlineByDoc(t *testing.T) {
+	ctx := &context{}
+	doc := parseComments(t, `
+		// ordinary comment
+		//go:noinline
+	`)
+	if ok := ctx.initNoInlineByDoc(doc, "foo.slow"); !ok {
+		t.Fatal("initNoInlineByDoc = false, want true")
+	}
+	if _, ok := ctx.noinlineFns["foo.slow"]; !ok {
+		t.Fatal("missing noinline function marker")
+	}
+}
+
+func TestInitNoInlineByDocNil(t *testing.T) {
+	ctx := &context{}
+	if ctx.initNoInlineByDoc(nil, "foo.slow") {
+		t.Fatal("initNoInlineByDoc(nil) = true, want false")
+	}
+	if ctx.noinlineFns != nil {
+		t.Fatal("expected noinlineFns to stay nil")
+	}
+}
+
 func parseComments(t *testing.T, text string) *ast.CommentGroup {
 	t.Helper()
 	var comments []*ast.Comment

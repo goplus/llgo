@@ -180,6 +180,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
+				p.initNoInlineByDoc(decl.Doc, fullName)
 				if !p.initLinknameByDoc(decl.Doc, fullName, inPkgName, false) && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
 					if decl.Recv == nil && token.IsExported(inPkgName) {
@@ -215,6 +216,22 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 			}
 		}
 	}
+}
+
+func (p *context) initNoInlineByDoc(doc *ast.CommentGroup, fullName string) bool {
+	if doc == nil {
+		return false
+	}
+	for _, comment := range doc.List {
+		if strings.TrimSpace(comment.Text) == "//go:noinline" {
+			if p.noinlineFns == nil {
+				p.noinlineFns = make(map[string]none)
+			}
+			p.noinlineFns[fullName] = none{}
+			return true
+		}
+	}
+	return false
 }
 
 // Collect skip names and skip other annotations, such as go: and llgo:
@@ -438,6 +455,25 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 		fnName = fn.Name()
 	}
 	return llssa.FuncName(pkg, fnName, recv, org)
+}
+
+func (p *context) hasNoInline(fn *ssa.Function) bool {
+	if p == nil || p.noinlineFns == nil {
+		return false
+	}
+	pkgTypes, _, _ := p.funcName(fn)
+	if pkgTypes == nil {
+		return false
+	}
+	if _, ok := p.noinlineFns[funcName(pkgTypes, fn, false)]; ok {
+		return true
+	}
+	if origin := fn.Origin(); origin != nil {
+		if _, ok := p.noinlineFns[funcName(pkgTypes, origin, true)]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func checkCgo(fnName string) bool {

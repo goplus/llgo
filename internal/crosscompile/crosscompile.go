@@ -225,8 +225,9 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			"-Wl,--error-limit=0",
 			"-fuse-ld=lld",
 			// Enable ICF (Identical Code Folding) to reduce binary size
-			"-Xlinker",
-			"--icf=safe",
+			"-Wl,--icf=safe",
+			// Enable ThinLTO, Using default lto kind(thinlto).
+			"-Wl,--lto-O0",
 		}
 		if clangRoot != "" {
 			clangLib := filepath.Join(clangRoot, "lib")
@@ -249,6 +250,7 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 		export.CCFLAGS = []string{
 			"-Qunused-arguments",
 			"-Wno-unused-command-line-argument",
+			"-flto=thin",
 		}
 
 		// Add sysroot for macOS only
@@ -269,6 +271,8 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 				export.LDFLAGS,
 				"-Xlinker", "-dead_strip",
 			)
+			export.CCFLAGS = append(export.CCFLAGS, []string{"-fno-omit-frame-pointer", "-mno-omit-leaf-frame-pointer"}...)
+
 		case "windows": // lld-link (Windows)
 			// TODO(lijie): Add options for Windows.
 		default: // ld.lld (Unix)
@@ -499,6 +503,13 @@ func UseTarget(targetName string) (export Export, err error) {
 	expandedCFlags := env.ExpandEnvSlice(config.CFlags, envs)
 	cflags = append(cflags, expandedCFlags...)
 
+	if config.Linker == "ld.lld" {
+		// Enable ThinLTO, Using default lto kind(thinlto).
+		ldflags = append(ldflags, "--lto-O0")
+		cflags = append(cflags, "-flto=thin")
+		ccflags = append(ccflags, "-flto=thin")
+	}
+
 	// The following parameters are inspired by tinygo/builder/library.go
 	// Handle CPU configuration
 	if cpu != "" {
@@ -545,6 +556,8 @@ func UseTarget(targetName string) (export Export, err error) {
 		ccflags = append(ccflags, "-fforce-enable-int128")
 	case "riscv64":
 		ccflags = append(ccflags, "-march=rv64gc")
+		// codegen option should be added to ldflags for lto
+		ldflags = append(ldflags, "-mllvm", "-march=rv64gc")
 	case "mips":
 		ccflags = append(ccflags, "-fno-pic")
 	}
@@ -574,9 +587,13 @@ func UseTarget(targetName string) (export Export, err error) {
 	// Handle code generation configuration
 	if config.CodeModel != "" {
 		ccflags = append(ccflags, "-mcmodel="+config.CodeModel)
+		// codegen option should be added to ldflags for lto
+		ldflags = append(ldflags, "-mllvm", "-code-model="+config.CodeModel)
 	}
 	if config.TargetABI != "" {
 		ccflags = append(ccflags, "-mabi="+config.TargetABI)
+		// codegen option should be added to ldflags for lto
+		ldflags = append(ldflags, "-mllvm", "-target-abi="+config.TargetABI)
 	}
 	if config.RelocationModel != "" {
 		switch config.RelocationModel {

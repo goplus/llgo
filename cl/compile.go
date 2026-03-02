@@ -119,6 +119,7 @@ type context struct {
 	goPkg       *ssa.Package
 	pyMod       string
 	skips       map[string]none
+	noinlineFns map[string]none
 	loaded      map[*types.Package]*pkgInfo // loaded packages
 	bvals       map[ssa.Value]llssa.Expr    // block values
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
@@ -307,6 +308,12 @@ func isInstance(f *ssa.Function) bool {
 	return false
 }
 
+func (p *context) applyNoInline(fn llssa.Function, f *ssa.Function) {
+	if disableInline || p.hasNoInline(f) {
+		fn.Inline(llssa.NoInline)
+	}
+}
+
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
@@ -341,9 +348,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	if fn == nil {
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
-		if disableInline {
-			fn.Inline(llssa.NoInline)
-		}
+		p.applyNoInline(fn, f)
 	}
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {

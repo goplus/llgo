@@ -108,6 +108,16 @@ func TestCgofullGeneratesC2func(t *testing.T) {
 	}
 }
 
+func TestNoInlineDirectiveGeneratesLLVMAttribute(t *testing.T) {
+	ir := llgen.GenFrom("./_testgo/noinline")
+	if !strings.Contains(ir, "define i64 @\"github.com/goplus/llgo/cl/_testgo/noinline.slow\"() #0") {
+		t.Fatal("missing noinline function definition")
+	}
+	if !strings.Contains(ir, "attributes #0 = { noinline }") {
+		t.Fatal("missing noinline attribute group")
+	}
+}
+
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
 	_, err := build.Do([]string{"math"}, conf)
