@@ -37,7 +37,15 @@ func makeESPFirmareImage(infile, outfile, format string) error {
 	// sections, not true ELF segments (similar to how esptool does it).
 	var segments []*espImageSegment
 	for _, section := range inf.Sections {
-		if section.Type != elf.SHT_PROGBITS || section.Size == 0 || section.Flags&elf.SHF_ALLOC == 0 {
+		if section.Size == 0 || section.Flags&elf.SHF_ALLOC == 0 {
+			continue
+		}
+		switch section.Type {
+		case elf.SHT_PROGBITS, elf.SHT_INIT_ARRAY, elf.SHT_PREINIT_ARRAY, elf.SHT_FINI_ARRAY:
+			// Keep allocatable data sections that may contain startup tables.
+			// With some linker layouts, .rodata can be emitted as INIT/PREINIT/FINI_ARRAY
+			// type when constructor arrays are merged into it.
+		default:
 			continue
 		}
 		data, err := section.Data()
