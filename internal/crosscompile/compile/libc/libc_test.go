@@ -486,6 +486,26 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 				t.Errorf("Expected file '%s' not found in group4 files", sample)
 			}
 		}
+		if len(group4.Files) != 410 {
+			t.Errorf("Expected 410 libm files from riscv32-esp-elf build list, got %d", len(group4.Files))
+		}
+		if len(group4.FileEntries) != 410 {
+			t.Errorf("Expected 410 libm file entries, got %d", len(group4.FileEntries))
+		}
+
+		// libm list should follow the riscv32-esp-elf build selection and
+		// must not include stale mathfp/legacy entries.
+		for _, disallow := range []string{
+			filepath.Join(baseDir, "newlib", "libm", "mathfp", "s_sqrt.c"),
+			filepath.Join(baseDir, "newlib", "libm", "common", "isgreater.c"),
+			filepath.Join(baseDir, "newlib", "libm", "fenv", "fenv_stub.c"),
+		} {
+			for _, file := range group4.Files {
+				if file == disallow {
+					t.Errorf("Unexpected file '%s' found in group4 files", disallow)
+				}
+			}
+		}
 	}
 }
 

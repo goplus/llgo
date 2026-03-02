@@ -3,7 +3,6 @@ package libc
 import (
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
@@ -40,6 +39,7 @@ func GetNewlibESP32Config() compile.LibConfig {
 func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 	libcDir := filepath.Join(baseDir, "newlib", "libc")
 	libmFiles := getNewlibESP32LibmFiles(baseDir, "riscv")
+	libmFileEntries := getNewlibESP32LibmFileEntries(baseDir, "riscv")
 
 	libcIncludeDir := []string{
 		"-isystem" + filepath.Join(libcDir, "include"),
@@ -1051,17 +1051,32 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 				// future math-dependent runtime/tests share one library.
 				OutputFileName: fmt.Sprintf("libm-%s.a", target),
 				Files:          libmFiles,
+				FileEntries:    libmFileEntries,
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
-					"-D_IEEE_LIBM",
+					"-D_LIBC",
+					"-DHAVE_NANOSLEEP",
+					"-D_NO_GLOB",
+					"-D_NO_EXECVE",
+					"-D_NO_GETLOGIN",
+					"-D_NO_GETPWENT",
+					"-D_NO_GETUT",
+					"-D_NO_GETPASS",
+					"-D_NO_SIGSET",
+					"-D_NO_WORDEXP",
+					"-D_NO_POPEN",
+					"-D_NO_POSIX_SPAWN",
+					"-DHAVE_FCNTL",
+					"-DHAVE_BLKSIZE",
+					"-DHAVE_OPENDIR",
+					"-DHAVE_RENAME",
+					"-DGETREENT_PROVIDED",
+					"-DSIGNAL_PROVIDED",
+					"-D__ESP__",
 					"-isystem" + filepath.Join(libcDir, "include"),
 					"-I" + filepath.Join(baseDir, "newlib"),
+					"-idirafter" + filepath.Join(baseDir, "include"),
 					"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
-					"-I" + filepath.Join(baseDir, "newlib", "libm", "math"),
-					"-I" + filepath.Join(baseDir, "newlib", "libm", "mathfp"),
-					"-I" + filepath.Join(baseDir, "newlib", "libm", "complex"),
-					"-I" + filepath.Join(baseDir, "newlib", "libm", "fenv"),
-					"-I" + filepath.Join(baseDir, "newlib", "libm", "machine", "riscv"),
 				},
 				LDFlags: _libcLDFlags,
 				CCFlags: _libcCCFlags,
@@ -2056,37 +2071,35 @@ func GetNewlibESP32CompileConfig(baseDir, target, mcpu string) compile.CompileCo
 	return getNewlibESP32ConfigXtensa(baseDir, target)
 }
 
+func getNewlibESP32LibmFileEntries(baseDir, arch string) []compile.CompileFile {
+	// Keep deterministic behavior for unsupported architectures.
+	if arch != "riscv" {
+		return []compile.CompileFile{
+			{Path: filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c")},
+			{Path: filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c")},
+		}
+	}
+
+	entries := make([]compile.CompileFile, 0, 512)
+	for _, group := range newlibESP32RISCVLibmFileGroups {
+		for _, rel := range group.relativeFiles {
+			entry := compile.CompileFile{
+				Path: filepath.Join(baseDir, "newlib", rel),
+			}
+			if len(group.extraCFlags) != 0 {
+				entry.CFlags = append([]string{}, group.extraCFlags...)
+			}
+			entries = append(entries, entry)
+		}
+	}
+	return entries
+}
+
 func getNewlibESP32LibmFiles(baseDir, arch string) []string {
-	libmDir := filepath.Join(baseDir, "newlib", "libm")
-	dirs := []string{
-		filepath.Join(libmDir, "common"),
-		filepath.Join(libmDir, "math"),
-		filepath.Join(libmDir, "mathfp"),
-		filepath.Join(libmDir, "complex"),
-		filepath.Join(libmDir, "fenv"),
+	entries := getNewlibESP32LibmFileEntries(baseDir, arch)
+	files := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		files = append(files, entry.Path)
 	}
-	if arch != "" {
-		dirs = append(dirs, filepath.Join(libmDir, "machine", arch))
-	}
-
-	addSortedGlob := func(out []string, pattern string) []string {
-		matches, _ := filepath.Glob(pattern)
-		sort.Strings(matches)
-		return append(out, matches...)
-	}
-
-	files := make([]string, 0, 512)
-	for _, dir := range dirs {
-		files = addSortedGlob(files, filepath.Join(dir, "*.c"))
-		files = addSortedGlob(files, filepath.Join(dir, "*.S"))
-	}
-	if len(files) != 0 {
-		return files
-	}
-
-	// Keep tests deterministic when baseDir does not exist.
-	return []string{
-		filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c"),
-		filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c"),
-	}
+	return files
 }
