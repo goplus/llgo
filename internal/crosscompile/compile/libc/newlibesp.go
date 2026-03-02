@@ -41,8 +41,9 @@ func GetNewlibESP32Config() compile.LibConfig {
 // Note on float formatted I/O:
 // goplus/newlib README (`--enable-newlib-nano-formatted-io`) documents that
 // float printf/scanf support is gated by weak symbols and must be requested
-// explicitly via linker `-u _printf_float` / `-u _scanf_float`.
-// Therefore this config does not inject `-u _printf_float` here; it must be
+// explicitly via linker `-u _printf_float` / `-u _scanf_float`
+// (single-arg equivalent: `--undefined=_printf_float`).
+// Therefore this config does not inject this flag here; it must be
 // declared by the external target/link config (for esp32c3-basic see
 // targets/esp32c3-basic.json).
 func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
@@ -80,8 +81,6 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 		"-idirafter" + filepath.Join(baseDir, "include"),
 		"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
 	}
-	libmLDFlags := append([]string{}, _libcLDFlags...)
-
 	return compile.CompileConfig{
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
@@ -1242,7 +1241,7 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					"-fbuiltin",
 					"-fno-math-errno",
 				),
-				LDFlags: append([]string{}, libmLDFlags...),
+				LDFlags: _libcLDFlags,
 				CCFlags: _libcCCFlags,
 			},
 			{
@@ -1508,7 +1507,7 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "newlib", "libm", "math", "wrf_lgamma.c"),
 				},
 				CFlags:  append([]string{}, libmCommonCFlags...),
-				LDFlags: append([]string{}, libmLDFlags...),
+				LDFlags: _libcLDFlags,
 				CCFlags: _libcCCFlags,
 			},
 		},
