@@ -11,6 +11,16 @@ import (
 	"testing"
 )
 
+func findScriptCommandLine(text, prefix string) (string, bool) {
+	for _, raw := range strings.Split(text, "\n") {
+		line := strings.TrimSpace(raw)
+		if strings.HasPrefix(line, prefix) {
+			return line, true
+		}
+	}
+	return "", false
+}
+
 func TestLocalCIScriptUsesTimeoutNotRun(t *testing.T) {
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
@@ -22,16 +32,30 @@ func TestLocalCIScriptUsesTimeoutNotRun(t *testing.T) {
 		t.Fatalf("read %s: %v", script, err)
 	}
 	text := string(data)
-	if strings.Contains(text, "go test -run 30m ./...") {
-		t.Fatalf("%s still uses invalid go test -run 30m form", script)
+	goLine, ok := findScriptCommandLine(text, `(cd "$workdir" && go test `)
+	if !ok {
+		t.Fatalf("%s missing go test command line", script)
 	}
-	if strings.Contains(text, "llgo test -run 30m ./...") {
-		t.Fatalf("%s still uses invalid llgo test -run 30m form", script)
+	llgoLine, ok := findScriptCommandLine(text, `(cd "$workdir" && llgo test `)
+	if !ok {
+		t.Fatalf("%s missing llgo test command line", script)
 	}
-	if !strings.Contains(text, "go test -timeout 30m ./...") {
-		t.Fatalf("%s missing go test -timeout 30m", script)
-	}
-	if !strings.Contains(text, "llgo test -timeout 30m ./...") {
-		t.Fatalf("%s missing llgo test -timeout 30m", script)
-	}
+
+	t.Run("go test uses timeout", func(t *testing.T) {
+		if strings.Contains(goLine, "-run ") {
+			t.Errorf("go test command still uses -run: %q", goLine)
+		}
+		if !strings.Contains(goLine, "-timeout ") {
+			t.Errorf("go test command missing -timeout: %q", goLine)
+		}
+	})
+
+	t.Run("llgo test uses timeout", func(t *testing.T) {
+		if strings.Contains(llgoLine, "-run ") {
+			t.Errorf("llgo test command still uses -run: %q", llgoLine)
+		}
+		if !strings.Contains(llgoLine, "-timeout ") {
+			t.Errorf("llgo test command missing -timeout: %q", llgoLine)
+		}
+	})
 }
