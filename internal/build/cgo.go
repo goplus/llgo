@@ -416,6 +416,8 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 			tag:     tag,
 			ldflags: safesplit.SplitPkgConfigFlags(arg),
 		})
+	default:
+		err = fmt.Errorf("unsupported cgo flag type: %s", flag)
 	}
 	return
 }
