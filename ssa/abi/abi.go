@@ -223,42 +223,33 @@ func TypeArgs(typeArgs []types.Type) string {
 	return "[" + strings.Join(targs, ",") + "]"
 }
 
+func namedLikeTypeArgString(obj types.Object, targs *types.TypeList) string {
+	name := obj.Name()
+	if targs != nil {
+		n := targs.Len()
+		infos := make([]string, n)
+		for i := 0; i < n; i++ {
+			infos[i] = typeArgString(targs.At(i))
+		}
+		name += "[" + strings.Join(infos, ",") + "]"
+	}
+	// Distinct local types may share the same object name (e.g. in stdlib
+	// tests). Disambiguate them in symbol names using stable scope indices.
+	name += scopeIndices(obj)
+	if pkg := obj.Pkg(); pkg != nil {
+		return PathOf(pkg) + "." + name
+	}
+	return name
+}
+
 func typeArgString(t types.Type) string {
 	switch t := t.(type) {
 	case *types.Alias:
-		name := t.Obj().Name()
-		if targs := t.TypeArgs(); targs != nil {
-			n := targs.Len()
-			infos := make([]string, n)
-			for i := 0; i < n; i++ {
-				infos[i] = typeArgString(targs.At(i))
-			}
-			name += "[" + strings.Join(infos, ",") + "]"
-		}
-		name += scopeIndices(t.Obj())
-		if pkg := t.Obj().Pkg(); pkg != nil {
-			return PathOf(pkg) + "." + name
-		}
-		return name
+		return namedLikeTypeArgString(t.Obj(), t.TypeArgs())
 	case *types.Basic:
 		return t.String()
 	case *types.Named:
-		name := t.Obj().Name()
-		if targs := t.TypeArgs(); targs != nil {
-			n := targs.Len()
-			infos := make([]string, n)
-			for i := 0; i < n; i++ {
-				infos[i] = typeArgString(targs.At(i))
-			}
-			name += "[" + strings.Join(infos, ",") + "]"
-		}
-		// Distinct local types may share the same object name (e.g. in stdlib
-		// tests). Disambiguate them in symbol names using stable scope indices.
-		name += scopeIndices(t.Obj())
-		if pkg := t.Obj().Pkg(); pkg != nil {
-			return PathOf(pkg) + "." + name
-		}
-		return name
+		return namedLikeTypeArgString(t.Obj(), t.TypeArgs())
 	case *types.Pointer:
 		return "*" + typeArgString(t.Elem())
 	case *types.Slice:
