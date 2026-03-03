@@ -50,11 +50,8 @@ func runCmd(cmd *base.Command, args []string) {
 	if conf.GlobalRewrites == nil {
 		conf.GlobalRewrites = make(map[string]build.Rewrites)
 	}
-	vars := conf.GlobalRewrites["testing"]
-	if vars == nil {
-		vars = make(build.Rewrites)
-		conf.GlobalRewrites["testing"] = vars
-	}
+	vars := make(build.Rewrites)
+	conf.GlobalRewrites["testing"] = vars
 	vars["testBinary"] = "1"
 
 	// Build test binary arguments from flags
