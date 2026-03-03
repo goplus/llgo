@@ -489,7 +489,7 @@ func needLink(pkg *packages.Package, mode Mode) bool {
 }
 
 func filterTestPackages(initial []*packages.Package, outFile string) ([]*packages.Package, error) {
-	filtered := make([]*packages.Package, 0, len(initial))
+	filtered := initial[:0]
 	for _, pkg := range initial {
 		if needLink(pkg, ModeTest) {
 			filtered = append(filtered, pkg)
