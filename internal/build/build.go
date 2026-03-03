@@ -592,11 +592,8 @@ func splitBitcodeAndNativeInputs(inputs []string) (bitcodeFiles []string, native
 }
 
 func tempNamePrefix(moduleName string) string {
-	name := strings.ReplaceAll(moduleName, "/", "_")
-	name = strings.ReplaceAll(name, "\\", "_")
-	name = strings.ReplaceAll(name, ":", "_")
-	name = strings.ReplaceAll(name, ".", "_")
-	if name == "" {
+	name := path.Base(moduleName)
+	if name == "" || name == "." || name == "/" {
 		return "llgo"
 	}
 	return name
@@ -641,6 +638,47 @@ func mergeBitcodeFiles(moduleName string, bitcodeFiles []string) (string, error)
 	return out.Name(), nil
 }
 
+func mergeBitcodeFilesWithIR(moduleName string, bitcodeFiles []string) (string, string, error) {
+	if len(bitcodeFiles) == 0 {
+		return "", "", nil
+	}
+
+	ctx := gllvm.NewContext()
+	defer ctx.Dispose()
+
+	mod, err := ctx.ParseBitcodeFile(bitcodeFiles[0])
+	if err != nil {
+		return "", "", fmt.Errorf("parse bitcode %s: %w", bitcodeFiles[0], err)
+	}
+	defer mod.Dispose()
+
+	for _, bitcodeFile := range bitcodeFiles[1:] {
+		srcMod, err := ctx.ParseBitcodeFile(bitcodeFile)
+		if err != nil {
+			return "", "", fmt.Errorf("parse bitcode %s: %w", bitcodeFile, err)
+		}
+		if err := gllvm.LinkModules(mod, srcMod); err != nil {
+			return "", "", fmt.Errorf("link bitcode module %s: %w", bitcodeFile, err)
+		}
+	}
+
+	ir := mod.String()
+	if len(bitcodeFiles) == 1 {
+		return bitcodeFiles[0], ir, nil
+	}
+
+	out, err := os.CreateTemp("", tempNamePrefix(moduleName)+"-*.bc")
+	if err != nil {
+		return "", "", fmt.Errorf("create merged bitcode file: %w", err)
+	}
+	defer out.Close()
+
+	if err := gllvm.WriteBitcodeToFile(mod, out); err != nil {
+		return "", "", fmt.Errorf("write merged bitcode file: %w", err)
+	}
+	return out.Name(), ir, nil
+}
+
 func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 	if len(aPkg.ObjFiles) == 0 {
 		return nil
@@ -680,9 +718,20 @@ func compileLinkedBitcodeToObject(ctx *context, moduleName string, bitcodeFiles 
 		return "", nil
 	}
 
-	mergedBitcode, err := mergeBitcodeFiles(moduleName, bitcodeFiles)
+	mergedBitcode, linkedModuleIR, err := mergeBitcodeFilesWithIR(moduleName, bitcodeFiles)
 	if err != nil {
 		return "", err
+	}
+	printCmds := ctx.shouldPrintCommands(verbose)
+
+	// In verbose mode, emit the final linked module as .ll beside the .bc so
+	// users can inspect exactly what will be compiled to native object code.
+	if printCmds {
+		linkedLL := strings.TrimSuffix(mergedBitcode, filepath.Ext(mergedBitcode)) + ".ll"
+		fmt.Fprintf(os.Stderr, "# emitting linked bitcode ll for %s: %s\n", moduleName, linkedLL)
+		if err := os.WriteFile(linkedLL, []byte(linkedModuleIR), 0o644); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: failed to emit linked bitcode ll for %s: %v\n", moduleName, err)
+		}
 	}
 
 	objFile, err := os.CreateTemp("", tempNamePrefix(moduleName)+"-*.o")
@@ -692,7 +741,7 @@ func compileLinkedBitcodeToObject(ctx *context, moduleName string, bitcodeFiles 
 	objFile.Close()
 
 	args := []string{"-o", objFile.Name(), "-c", mergedBitcode, "-Wno-override-module"}
-	if ctx.shouldPrintCommands(verbose) {
+	if printCmds {
 		fmt.Fprintf(os.Stderr, "# compiling linked bitcode for %s\n", moduleName)
 		fmt.Fprintln(os.Stderr, "clang", args)
 	}
