@@ -296,7 +296,15 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	check(err)
 	mode := conf.Mode
-	if len(initial) > 1 {
+	if mode == ModeTest {
+		initial, err = filterTestPackages(initial, conf.OutFile)
+		if err != nil {
+			return nil, err
+		}
+		if len(initial) == 0 {
+			return nil, nil
+		}
+	} else if len(initial) > 1 {
 		switch mode {
 		case ModeBuild:
 			if conf.OutFile != "" {
@@ -308,18 +316,6 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			}
 		case ModeRun:
 			return nil, fmt.Errorf("cannot run multiple packages")
-		case ModeTest:
-			newInitial := make([]*packages.Package, 0, len(initial))
-			for _, pkg := range initial {
-				if needLink(pkg, mode) {
-					newInitial = append(newInitial, pkg)
-				}
-			}
-			initial = newInitial
-			// Check -o flag after filtering to only test packages
-			if len(initial) > 1 && conf.OutFile != "" {
-				return nil, fmt.Errorf("cannot use -o flag with multiple packages")
-			}
 		}
 	}
 
@@ -490,6 +486,19 @@ func needLink(pkg *packages.Package, mode Mode) bool {
 		return strings.HasSuffix(pkg.ID, ".test")
 	}
 	return pkg.Name == "main"
+}
+
+func filterTestPackages(initial []*packages.Package, outFile string) ([]*packages.Package, error) {
+	filtered := make([]*packages.Package, 0, len(initial))
+	for _, pkg := range initial {
+		if needLink(pkg, ModeTest) {
+			filtered = append(filtered, pkg)
+		}
+	}
+	if len(filtered) > 1 && outFile != "" {
+		return nil, fmt.Errorf("cannot use -o flag with multiple packages")
+	}
+	return filtered, nil
 }
 
 func (p Package) setNeedRuntimeOrPyInit(needRuntime, needPyInit bool) {
