@@ -679,6 +679,22 @@ func mergeBitcodeFilesWithIR(moduleName string, bitcodeFiles []string) (string, 
 	return out.Name(), ir, nil
 }
 
+func writeLLVMIRFromBitcode(bitcodeFile, llFile string) error {
+	ctx := gllvm.NewContext()
+	defer ctx.Dispose()
+
+	mod, err := ctx.ParseBitcodeFile(bitcodeFile)
+	if err != nil {
+		return fmt.Errorf("parse bitcode %s: %w", bitcodeFile, err)
+	}
+	defer mod.Dispose()
+
+	if err := os.WriteFile(llFile, []byte(mod.String()), 0o644); err != nil {
+		return fmt.Errorf("write ll file %s: %w", llFile, err)
+	}
+	return nil
+}
+
 func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 	if len(aPkg.ObjFiles) == 0 {
 		return nil
@@ -1006,19 +1022,6 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 
 		emitBitcode := ext != ".S" && ext != ".s"
 
-		// If GenLL is enabled, first emit .ll for debugging.
-		if ctx.buildConf.GenLL && emitBitcode {
-			llFile := baseName + ".ll"
-			llArgs := append(slices.Clone(baseArgs), "-emit-llvm", "-S", "-o", llFile, "-c", srcFile)
-			if printCmds {
-				fmt.Fprintf(os.Stderr, "Compiling extra file (ll): clang %s\n", strings.Join(llArgs, " "))
-			}
-			cmd := ctx.compiler()
-			if err := cmd.Compile(llArgs...); err != nil {
-				return nil, fmt.Errorf("failed to compile extra file %s to .ll: %w", srcFile, err)
-			}
-		}
-
 		if emitBitcode {
 			bcFile := baseName + ".bc"
 			bcArgs := append(baseArgs, "-emit-llvm", "-o", bcFile, "-c", srcFile)
@@ -1028,6 +1031,15 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 			cmd := ctx.compiler()
 			if err := cmd.Compile(bcArgs...); err != nil {
 				return nil, fmt.Errorf("failed to compile extra file %s to .bc: %w", srcFile, err)
+			}
+			if ctx.buildConf.GenLL {
+				llFile := baseName + ".ll"
+				if printCmds {
+					fmt.Fprintf(os.Stderr, "Emitting extra file (ll): %s (from %s)\n", llFile, bcFile)
+				}
+				if err := writeLLVMIRFromBitcode(bcFile, llFile); err != nil {
+					return nil, fmt.Errorf("failed to emit extra file %s to .ll: %w", srcFile, err)
+				}
 			}
 			linkInputs = append(linkInputs, bcFile)
 		} else {
@@ -1190,26 +1202,6 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	// Add common linker arguments based on target OS and architecture
 	if IsDbgSymsEnabled() {
 		buildArgs = append(buildArgs, "-gdwarf-4")
-	}
-
-	if ctx.buildConf.GenLL {
-		var compiledObjFiles []string
-		for _, objFile := range objFiles {
-			if strings.HasSuffix(objFile, ".ll") {
-				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
-				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
-				if printCmds {
-					fmt.Fprintln(os.Stderr, "clang", args)
-				}
-				if err := ctx.compiler().Compile(args...); err != nil {
-					return fmt.Errorf("failed to compile %s: %v", objFile, err)
-				}
-				compiledObjFiles = append(compiledObjFiles, oFile)
-			} else {
-				compiledObjFiles = append(compiledObjFiles, objFile)
-			}
-		}
-		objFiles = compiledObjFiles
 	}
 
 	buildArgs = append(buildArgs, objFiles...)
@@ -1841,20 +1833,7 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 
 	emitBitcode := ext != ".S" && ext != ".s"
 
-	// If GenLL is enabled, first emit .ll for debugging.
 	printCmds := ctx.shouldPrintCommands(verbose)
-	if ctx.buildConf.GenLL && emitBitcode {
-		llFile := baseName + ".ll"
-		llArgs := append(slices.Clone(compileArgs), "-emit-llvm", "-S", "-o", llFile, "-c", cFile)
-		if printCmds {
-			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", llFile, pkgPath)
-			fmt.Fprintln(os.Stderr, "clang", llArgs)
-		}
-		cmd := ctx.compiler()
-		err := cmd.Compile(llArgs...)
-		check(err)
-	}
-
 	if emitBitcode {
 		bcFile := baseName + ".bc"
 		bcArgs := append(compileArgs, "-emit-llvm", "-o", bcFile, "-c", cFile)
@@ -1865,6 +1844,14 @@ func clFile(ctx *context, args []string, cFile, expFile, pkgPath string, procFil
 		cmd := ctx.compiler()
 		err := cmd.Compile(bcArgs...)
 		check(err)
+		if ctx.buildConf.GenLL {
+			llFile := baseName + ".ll"
+			if printCmds {
+				fmt.Fprintf(os.Stderr, "# emitting %s for pkg: %s (from %s)\n", llFile, pkgPath, bcFile)
+			}
+			err := writeLLVMIRFromBitcode(bcFile, llFile)
+			check(err)
+		}
 		procFile(bcFile)
 		return
 	}
