@@ -357,6 +357,7 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 // #cgo pkg-config: python3
 // #cgo windows CFLAGS: -IC:/Python312/include
 // #cgo windows LDFLAGS: -LC:/Python312/libs -lpython312
+// #cgo linux CPPFLAGS: -I/usr/lib/llvm-19/include -D_GNU_SOURCE
 // #cgo CFLAGS: -I/usr/include/python3.12
 // #cgo LDFLAGS: -L/usr/lib/python3.12/config-3.12-x86_64-linux-gnu -lpython3.12
 func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
