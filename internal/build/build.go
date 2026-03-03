@@ -1119,7 +1119,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// This is compiled to .bc and included in the program-level bitcode link (not cached).
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
-	entryBitcodeFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	entryBitcodeFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, entryPkg.LPkg.Module())
 	if err != nil {
 		return err
 	}
@@ -1385,7 +1385,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
 	}
 	if pkg.ExportFile != "" {
-		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
+		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, ret.Module())
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
@@ -1397,49 +1397,59 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	return nil
 }
 
-func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
+func exportObject(ctx *context, pkgPath string, exportFile string, mod gllvm.Module) (string, error) {
 	base := filepath.Base(exportFile)
-	f, err := os.CreateTemp("", base+"-*.ll")
-	if err != nil {
-		return "", err
-	}
-	if _, err := f.Write(data); err != nil {
-		f.Close()
-		return "", err
-	}
-	err = f.Close()
-	if err != nil {
-		return exportFile, err
-	}
-	if ctx.buildConf.CheckLLFiles {
-		if msg, err := llcCheck(ctx.env, f.Name()); err != nil {
-			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
+	if ctx.buildConf.CheckLLFiles || ctx.buildConf.GenLL {
+		llText := mod.String()
+		if ctx.buildConf.CheckLLFiles {
+			irFile, err := os.CreateTemp("", base+"-*.ll")
+			if err != nil {
+				return "", err
+			}
+			irPath := irFile.Name()
+			if _, err := irFile.WriteString(llText); err != nil {
+				irFile.Close()
+				os.Remove(irPath)
+				return "", err
+			}
+			if err := irFile.Close(); err != nil {
+				os.Remove(irPath)
+				return "", err
+			}
+			defer os.Remove(irPath)
+			if msg, err := llcCheck(ctx.env, irPath); err != nil {
+				fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, irPath, msg)
+			}
+		}
+		// If GenLL is enabled, keep a copy of the module .ll for debugging.
+		if ctx.buildConf.GenLL {
+			llFile := exportFile + ".ll"
+			if err := os.WriteFile(llFile, []byte(llText), 0o644); err != nil {
+				return "", err
+			}
 		}
 	}
-	// If GenLL is enabled, keep a copy of the .ll file for debugging
-	if ctx.buildConf.GenLL {
-		llFile := exportFile + ".ll"
-		if err := os.Chmod(f.Name(), 0644); err != nil {
-			return "", err
-		}
-		// Copy instead of rename so we can still compile to .bc
-		if err := copyFileAtomic(f.Name(), llFile); err != nil {
-			return "", err
-		}
-	}
-	// Compile .ll to .bc for program-level bitcode linking.
+
+	// Emit bitcode directly from the in-memory LLVM module.
 	bitcodeFile, err := os.CreateTemp("", base+"-*.bc")
 	if err != nil {
 		return "", err
 	}
-	bitcodeFile.Close()
-	args := []string{"-o", bitcodeFile.Name(), "-emit-llvm", "-c", f.Name(), "-Wno-override-module"}
-	if ctx.shouldPrintCommands(false) {
-		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
-		fmt.Fprintln(os.Stderr, "clang", args)
+	bitcodePath := bitcodeFile.Name()
+	if err := gllvm.WriteBitcodeToFile(mod, bitcodeFile); err != nil {
+		bitcodeFile.Close()
+		os.Remove(bitcodePath)
+		return "", err
 	}
-	cmd := ctx.compiler()
-	return bitcodeFile.Name(), cmd.Compile(args...)
+	if err := bitcodeFile.Close(); err != nil {
+		os.Remove(bitcodePath)
+		return "", err
+	}
+
+	if ctx.shouldPrintCommands(false) {
+		fmt.Fprintf(os.Stderr, "# emitting %s for pkg: %s\n", bitcodePath, pkgPath)
+	}
+	return bitcodePath, nil
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
