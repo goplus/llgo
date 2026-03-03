@@ -415,26 +415,24 @@ func funcName(pkg *types.Package, fn *ssa.Function, org bool) string {
 	// Closures in methods can be nested (closure inside closure inside method).
 	// Walking only one Parent() loses the receiver for deeper nests, producing
 	// names like "pkg.marshal$1$1" that can collide across receiver types.
-	// Walk parents until we find a receiver or a thunk/bound pattern.
+	// Walk parents until we find a receiver.
 	var recv *types.Var
 	for f := fn; f != nil; f = f.Parent() {
 		recv = f.Signature.Recv()
 		if recv != nil {
 			break
 		}
-		name := f.Name()
-		// check $thunk and $bound
-		if strings.HasSuffix(name, "$thunk") {
-			// For thunks, extract receiver from first parameter.
-			if params := f.Signature.Params(); params.Len() > 0 {
-				recv = params.At(0)
-				break
-			}
-		} else if strings.HasSuffix(name, "$bound") && len(f.FreeVars) == 1 {
-			// For bound method wrappers, synthesize receiver var from free var type.
-			recv = types.NewVar(token.NoPos, nil, "", f.FreeVars[0].Type())
-			break
+	}
+	// For wrappers, fall back to metadata available on fn itself.
+	name := fn.Name()
+	if recv == nil && strings.HasSuffix(name, "$thunk") {
+		// For thunks, extract receiver from first parameter.
+		if params := fn.Signature.Params(); params.Len() > 0 {
+			recv = params.At(0)
 		}
+	} else if recv == nil && strings.HasSuffix(name, "$bound") && len(fn.FreeVars) == 1 {
+		// For bound method wrappers, synthesize receiver var from free var type.
+		recv = types.NewVar(token.NoPos, nil, "", fn.FreeVars[0].Type())
 	}
 	var fnName string
 	if org := fn.Origin(); org != nil {
