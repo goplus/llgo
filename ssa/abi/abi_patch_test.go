@@ -46,7 +46,7 @@ func TestTypeArgs_FormatsCommonKinds(t *testing.T) {
 		local,
 		aliasInt,
 	})
-	const want = "[byte,*int,[]string,[2]int,map[string]int,chan int,chan<- int,<-chan int,chan (<-chan int),Local,int]"
+	const want = "[byte,*int,[]string,[2]int,map[string]int,chan int,chan<- int,<-chan int,chan (<-chan int),Local,example.com/p.AliasInt]"
 	if got != want {
 		t.Fatalf("TypeArgs = %q, want %q", got, want)
 	}
@@ -73,8 +73,8 @@ func TestNamedName_UsesTypeArgString(t *testing.T) {
 		t.Fatalf("Instantiate with alias failed: %v", err)
 	}
 	gotAlias := NamedName(instAlias.(*types.Named))
-	if !strings.Contains(gotAlias, "int") {
-		t.Fatalf("NamedName(%s) = %q, want canonicalized alias arg", instAlias.String(), gotAlias)
+	if !strings.Contains(gotAlias, "example.com/p.AliasInt") {
+		t.Fatalf("NamedName(%s) = %q, want preserved alias name", instAlias.String(), gotAlias)
 	}
 }
 
