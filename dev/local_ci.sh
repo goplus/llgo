@@ -159,7 +159,7 @@ log_section "Go Build"
 (cd "$workdir" && go build ./...)
 
 log_section "Go Test"
-(cd "$workdir" && go test -run 30m ./...)
+(cd "$workdir" && go test -timeout 30m ./...)
 
 log_section "Install llgo"
 (cd "$workdir" && go install -tags=dev ./cmd/llgo)
@@ -171,7 +171,7 @@ fi
 export PATH="$gobin:$PATH"
 
 log_section "llgo test"
-(cd "$workdir" && llgo test -run 30m ./...)
+(cd "$workdir" && llgo test -timeout 30m ./...)
 
 log_section "Demo Tests"
 demo_jobs="${LLGO_DEMO_JOBS:-}"
