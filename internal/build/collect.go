@@ -346,12 +346,10 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 		return false
 	}
 
-	// Use cached package bitcode for final LLVM API linking.
-	pkg.BitcodeFile = paths.Bitcode
+	// Use cached package link inputs for final linking.
+	pkg.ObjFiles = []string{paths.Bitcode}
 	if _, err := os.Stat(paths.Archive); err == nil {
-		pkg.NativeLinkInputs = []string{paths.Archive}
-	} else {
-		pkg.NativeLinkInputs = nil
+		pkg.ObjFiles = append(pkg.ObjFiles, paths.Archive)
 	}
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
@@ -449,19 +447,28 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
+	bitcodeFiles, nativeInputs := splitBitcodeAndNativeInputs(pkg.ObjFiles)
 	// Package bitcode is mandatory for bitcode LTO cache entries.
-	if pkg.BitcodeFile == "" {
+	if len(bitcodeFiles) == 0 {
 		return nil
 	}
-	if err := copyFileAtomic(pkg.BitcodeFile, paths.Bitcode); err != nil {
+	pkgBitcode := bitcodeFiles[0]
+	if len(bitcodeFiles) > 1 {
+		merged, err := mergeBitcodeFiles(pkg.PkgPath, bitcodeFiles)
+		if err != nil {
+			return fmt.Errorf("merge bitcode for cache %s: %w", pkg.PkgPath, err)
+		}
+		pkgBitcode = merged
+	}
+	if err := copyFileAtomic(pkgBitcode, paths.Bitcode); err != nil {
 		return err
 	}
-	if len(pkg.NativeLinkInputs) > 0 {
-		if len(pkg.NativeLinkInputs) == 1 && strings.HasSuffix(pkg.NativeLinkInputs[0], ".a") {
-			if err := copyFileAtomic(pkg.NativeLinkInputs[0], paths.Archive); err != nil {
+	if len(nativeInputs) > 0 {
+		if len(nativeInputs) == 1 && strings.HasSuffix(nativeInputs[0], ".a") {
+			if err := copyFileAtomic(nativeInputs[0], paths.Archive); err != nil {
 				return err
 			}
-		} else if err := c.createArchiveFile(paths.Archive, pkg.NativeLinkInputs); err != nil {
+		} else if err := c.createArchiveFile(paths.Archive, nativeInputs); err != nil {
 			return err
 		}
 	}

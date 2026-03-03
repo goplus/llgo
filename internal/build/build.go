@@ -701,15 +701,14 @@ func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 
 	bitcodeFiles, nativeInputs := splitBitcodeAndNativeInputs(aPkg.ObjFiles)
-	aPkg.ObjFiles = nil
-	aPkg.NativeLinkInputs = nil
+	var normalized []string
 
 	if len(bitcodeFiles) > 0 {
 		mergedBitcode, err := mergeBitcodeFiles(aPkg.PkgPath, bitcodeFiles)
 		if err != nil {
 			return fmt.Errorf("merge bitcode for %s: %w", aPkg.PkgPath, err)
 		}
-		aPkg.BitcodeFile = mergedBitcode
+		normalized = append(normalized, mergedBitcode)
 	}
 
 	if len(nativeInputs) > 0 {
@@ -724,8 +723,9 @@ func normalizePackageOutputs(ctx *context, aPkg *aPackage, verbose bool) error {
 			os.Remove(archivePath)
 			return fmt.Errorf("create native archive for %s: %w", aPkg.PkgPath, err)
 		}
-		aPkg.NativeLinkInputs = []string{archivePath}
+		normalized = append(normalized, archivePath)
 	}
+	aPkg.ObjFiles = normalized
 	return nil
 }
 
@@ -1068,13 +1068,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
 	}
-	// Bitcode modules are linked together first using LLVM APIs, then compiled to
-	// one native object and linked with native archives/objects.
-	var linkBitcodeInputs []string
-	var nativeLinkInputs []string
+	// Package link inputs are collected first, then split into bitcode/native
+	// before the program-level bitcode link and final native link.
+	var pkgLinkInputs []string
 	var linkArgs []string
-	var rtBitcodeInputs []string
-	var rtNativeInputs []string
+	var rtPkgLinkInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
 	packages.Visit(allPkgs, nil, func(p *packages.Package) {
@@ -1093,10 +1091,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			// Defer linking runtime packages unless we actually need the runtime.
 			if isRuntimePkg(p.PkgPath) {
 				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				if aPkg.BitcodeFile != "" {
-					rtBitcodeInputs = append(rtBitcodeInputs, aPkg.BitcodeFile)
-				}
-				rtNativeInputs = append(rtNativeInputs, aPkg.NativeLinkInputs...)
+				rtPkgLinkInputs = append(rtPkgLinkInputs, aPkg.ObjFiles...)
 				return
 			} else {
 				// Only let non-runtime packages influence whether runtime is needed.
@@ -1109,19 +1104,16 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			}
 
 			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			if aPkg.BitcodeFile != "" {
-				linkBitcodeInputs = append(linkBitcodeInputs, aPkg.BitcodeFile)
-			}
-			nativeLinkInputs = append(nativeLinkInputs, aPkg.NativeLinkInputs...)
+			pkgLinkInputs = append(pkgLinkInputs, aPkg.ObjFiles...)
 		}
 	})
 
 	// Only link runtime objects when needed (or for host builds where runtime is always required).
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
 		linkArgs = append(linkArgs, rtLinkArgs...)
-		linkBitcodeInputs = append(linkBitcodeInputs, rtBitcodeInputs...)
-		nativeLinkInputs = append(nativeLinkInputs, rtNativeInputs...)
+		pkgLinkInputs = append(pkgLinkInputs, rtPkgLinkInputs...)
 	}
+	linkBitcodeInputs, nativeLinkInputs := splitBitcodeAndNativeInputs(pkgLinkInputs)
 
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled to .bc and included in the program-level bitcode link (not cached).
@@ -1511,11 +1503,8 @@ type aPackage struct {
 	NeedPyInit bool
 
 	LinkArgs    []string
-	ObjFiles    []string // per-file outputs before normalization (.bc/.o)
-	BitcodeFile string   // merged package bitcode (.bc)
-	// optional native link inputs for non-bitcode objects (typically one temp .a)
-	NativeLinkInputs []string
-	rewriteVars      map[string]string
+	ObjFiles    []string // normalized package link inputs (.bc and optional native .a)
+	rewriteVars map[string]string
 
 	// Cache related fields
 	Fingerprint string // fingerprint digest
@@ -1545,17 +1534,15 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			}
 			rewrites := collectRewriteVars(ctx, pkgPath)
 			aPkg := &aPackage{
-				Package:          p,
-				SSA:              ssaPkg,
-				AltPkg:           altPkg,
-				LPkg:             nil,
-				NeedRt:           false,
-				NeedPyInit:       false,
-				LinkArgs:         nil,
-				ObjFiles:         nil,
-				BitcodeFile:      "",
-				NativeLinkInputs: nil,
-				rewriteVars:      rewrites,
+				Package:     p,
+				SSA:         ssaPkg,
+				AltPkg:      altPkg,
+				LPkg:        nil,
+				NeedRt:      false,
+				NeedPyInit:  false,
+				LinkArgs:    nil,
+				ObjFiles:    nil,
+				rewriteVars: rewrites,
 			}
 			ctx.pkgs[p] = aPkg
 			ctx.pkgByID[p.ID] = aPkg

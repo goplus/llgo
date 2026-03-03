@@ -418,7 +418,7 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 	}
 	bcFile.WriteString("fake bitcode file")
 	bcFile.Close()
-	pkg.BitcodeFile = bcFile.Name()
+	pkg.ObjFiles = []string{bcFile.Name()}
 
 	// First save to cache
 	ctx.buildConf.ForceRebuild = false
@@ -437,8 +437,7 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 	ctx.buildConf.ForceRebuild = true
 
 	// Clear fields to verify they are not loaded from cache.
-	pkg.BitcodeFile = ""
-	pkg.NativeLinkInputs = nil
+	pkg.ObjFiles = nil
 	pkg.CacheHit = false
 
 	if ctx.tryLoadFromCache(pkg) {
@@ -449,11 +448,8 @@ func TestTryLoadFromCache_ForceRebuild(t *testing.T) {
 		t.Error("CacheHit should remain false when ForceRebuild is enabled")
 	}
 
-	if pkg.BitcodeFile != "" {
-		t.Error("BitcodeFile should not be populated when ForceRebuild is enabled")
-	}
-	if len(pkg.NativeLinkInputs) != 0 {
-		t.Error("NativeLinkInputs should not be populated when ForceRebuild is enabled")
+	if len(pkg.ObjFiles) != 0 {
+		t.Error("ObjFiles should not be populated when ForceRebuild is enabled")
 	}
 }
 
@@ -534,7 +530,7 @@ func TestSaveToCache_Success(t *testing.T) {
 			m.pkg.PkgPath = "example.com/lib"
 			return m.Build()
 		}(),
-		BitcodeFile: bcFile.Name(),
+		ObjFiles: []string{bcFile.Name()},
 	}
 
 	if err := ctx.saveToCache(pkg); err != nil {
