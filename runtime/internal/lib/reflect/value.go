@@ -117,16 +117,7 @@ func (v Value) typ() *abi.Type {
 	// types, held in the central map). So there is no need to
 	// escape types. noescape here help avoid unnecessary escape
 	// of v.
-	t := (*abi.Type)(unsafe.Pointer(v.typ_))
-	if t == nil {
-		return nil
-	}
-	if t.Kind() == abi.Pointer {
-		if elem := t.Elem(); elem != nil {
-			t = toRType(elem).ptrTo()
-		}
-	}
-	return t
+	return (*abi.Type)(unsafe.Pointer(v.typ_))
 }
 
 // pointer returns the underlying pointer represented by v.
@@ -178,37 +169,8 @@ func packEface(v Value) any {
 	// to have any operation between the e.word and e.typ assignments
 	// that would let the garbage collector observe the partially-built
 	// interface value.
-	t = canonicalizeDynamicType(t)
 	e.typ = t
 	return i
-}
-
-func canonicalizeDynamicType(t *abi.Type) *abi.Type {
-	if t == nil {
-		return nil
-	}
-	if t.Kind() != abi.Pointer {
-		return t
-	}
-	elem := t.Elem()
-	if elem == nil {
-		return t
-	}
-	elemName := toRType(elem).String()
-	name := toRType(t).String()
-	for _, tt := range typesByString(name) {
-		if tt == nil || tt.Kind() != abi.Pointer {
-			continue
-		}
-		p := (*ptrType)(unsafe.Pointer(tt))
-		if p.Elem == nil {
-			continue
-		}
-		if toRType(p.Elem).String() == elemName {
-			return tt
-		}
-	}
-	return t
 }
 
 // unpackEface converts the empty interface i to a Value.
