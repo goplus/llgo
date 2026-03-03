@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"go/constant"
+	"go/token"
 	"go/types"
 	"log"
 
@@ -265,7 +266,7 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 			eq = b.InlineCall(b.Pkg.rtFunc("MatchesClosure"), tabi, tx)
 			val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
 		} else {
-			eq = b.InlineCall(b.Pkg.rtFunc("MatchConcreteType"), tabi, tx)
+			eq = b.BinOp(token.EQL, tx, tabi)
 			val = func() Expr { return b.valFromData(assertedTyp, b.faceData(x.impl)) }
 		}
 	}
