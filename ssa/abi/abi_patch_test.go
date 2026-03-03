@@ -39,11 +39,14 @@ func TestTypeArgs_FormatsCommonKinds(t *testing.T) {
 		types.NewSlice(types.Typ[types.String]),
 		types.NewArray(types.Typ[types.Int], 2),
 		types.NewMap(types.Typ[types.String], types.Typ[types.Int]),
+		types.NewChan(types.SendRecv, types.Typ[types.Int]),
 		types.NewChan(types.SendOnly, types.Typ[types.Int]),
+		types.NewChan(types.RecvOnly, types.Typ[types.Int]),
+		types.NewChan(types.SendRecv, types.NewChan(types.RecvOnly, types.Typ[types.Int])),
 		local,
 		aliasInt,
 	})
-	const want = "[byte,*int,[]string,[2]int,map[string]int,chan<- int,Local,example.com/p.AliasInt]"
+	const want = "[byte,*int,[]string,[2]int,map[string]int,chan int,chan<- int,<-chan int,chan (<-chan int),Local,example.com/p.AliasInt]"
 	if got != want {
 		t.Fatalf("TypeArgs = %q, want %q", got, want)
 	}

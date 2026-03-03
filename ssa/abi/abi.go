@@ -260,7 +260,16 @@ func typeArgString(t types.Type) string {
 		return fmt.Sprintf("map[%s]%s", typeArgString(t.Key()), typeArgString(t.Elem()))
 	case *types.Chan:
 		_, s := ChanDir(t.Dir())
-		return fmt.Sprintf("%s %s", s, typeArgString(t.Elem()))
+		elem := t.Elem()
+		elemStr := typeArgString(elem)
+		// Keep canonical channel formatting for nested directional channels.
+		// Example: chan (<-chan int), not "chan <-chan int" (ambiguous).
+		if t.Dir() == types.SendRecv {
+			if ch, ok := elem.(*types.Chan); ok && ch.Dir() == types.RecvOnly {
+				elemStr = "(" + elemStr + ")"
+			}
+		}
+		return fmt.Sprintf("%s %s", s, elemStr)
 	default:
 		// Fallback for rare type arguments (e.g. signature/interface/struct).
 		// Collisions are mainly caused by local named types, handled above.
