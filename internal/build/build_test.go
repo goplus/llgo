@@ -118,6 +118,23 @@ func TestFilterTestPackages(t *testing.T) {
 		}
 	})
 
+	t.Run("retain test packages", func(t *testing.T) {
+		initial := []*packages.Package{
+			pkg("foo"),
+			pkg("foo.test"),
+		}
+		filtered, err := filterTestPackages(initial, "")
+		if err != nil {
+			t.Fatalf("filterTestPackages returned unexpected error: %v", err)
+		}
+		if len(filtered) != 1 {
+			t.Fatalf("len(filtered) = %d, want 1", len(filtered))
+		}
+		if filtered[0].ID != "foo.test" {
+			t.Fatalf("filtered[0].ID = %q, want %q", filtered[0].ID, "foo.test")
+		}
+	})
+
 	t.Run("multiple test packages with output file", func(t *testing.T) {
 		initial := []*packages.Package{
 			pkg("a.test"),
