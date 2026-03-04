@@ -94,16 +94,17 @@ func fixSSAOrderBlock(b *ssa.BasicBlock) {
 			continue
 		}
 
-		// If the loaded value is used by any instruction before lastCallIdx, we
-		// can't move it.
-		usedBeforeCall := false
-		for i := loadIdx + 1; i <= lastCallIdx; i++ {
+		// If the loaded value is used by any instruction between its current
+		// position and the return (excluding return itself), moving it may place
+		// its definition after one of those uses and break SSA form.
+		usedBeforeReturn := false
+		for i := loadIdx + 1; i < retIdx; i++ {
 			if instrUsesValue(b.Instrs[i], u) {
-				usedBeforeCall = true
+				usedBeforeReturn = true
 				break
 			}
 		}
-		if usedBeforeCall {
+		if usedBeforeReturn {
 			continue
 		}
 
