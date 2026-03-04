@@ -320,8 +320,8 @@ func TestScopeIndicesAndTypeArgFallbackCoverage(t *testing.T) {
 	aliasObj := types.NewTypeName(token.NoPos, aliasPkg, "AliasInt", nil)
 	aliasPkg.Scope().Insert(aliasObj)
 	alias := types.NewAlias(aliasObj, types.Typ[types.Int])
-	if got := TypeArgs([]types.Type{alias}); got != "[example.com/alias.AliasInt]" {
-		t.Fatalf("TypeArgs(alias)=%q, want %q", got, "[example.com/alias.AliasInt]")
+	if got := TypeArgs([]types.Type{alias}); got != "[int]" {
+		t.Fatalf("TypeArgs(alias)=%q, want %q", got, "[int]")
 	}
 
 	tpObj := types.NewTypeName(token.NoPos, aliasPkg, "T", nil)

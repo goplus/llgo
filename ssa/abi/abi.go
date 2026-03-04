@@ -245,6 +245,13 @@ func namedLikeTypeArgString(obj types.Object, targs *types.TypeList) string {
 func typeArgString(t types.Type) string {
 	switch t := t.(type) {
 	case *types.Alias:
+		ut := types.Unalias(t)
+		if _, ok := ut.(*types.Basic); ok {
+			// Canonicalize basic aliases so identical instantiations
+			// (e.g. int vs type A = int) produce one spelling.
+			return typeArgString(ut)
+		}
+		// Keep non-basic alias names to preserve existing symbol spellings.
 		return namedLikeTypeArgString(t.Obj(), t.TypeArgs())
 	case *types.Basic:
 		return t.String()
