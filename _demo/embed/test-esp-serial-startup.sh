@@ -84,6 +84,14 @@ import "github.com/goplus/lib/c"
 
 func main() {
 	c.Printf(c.Str("Hello World\n"))
+	s := "hello"
+	var idx int64 = 1
+	tail := s[idx:]
+	if len(tail) == 4 && tail[0] == 'e' && tail[1] == 'l' && tail[2] == 'l' && tail[3] == 'o' {
+		c.Printf(c.Str("slice64 ok\n"))
+	} else {
+		c.Printf(c.Str("slice64 bad\n"))
+	}
 }
 EOGO
 
@@ -93,10 +101,10 @@ echo ""
 echo "=== ESP Serial Smoke Tests: Build + Emulator Run ==="
 
 build_target "esp32c3" "$ESP32C3_PREFIX" "ESP32-C3"
-run_emulator_smoke "esp32c3-basic" "ESP32-C3" "Hello World"
+run_emulator_smoke "esp32c3-basic" "ESP32-C3" "slice64 ok"
 
 build_target "esp32" "$ESP32_PREFIX" "ESP32"
-run_emulator_smoke "esp32" "ESP32" "Hello World"
+run_emulator_smoke "esp32" "ESP32" "slice64 ok"
 
 echo ""
 echo "=== Smoke Tests Passed ==="
