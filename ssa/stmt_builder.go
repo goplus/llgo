@@ -130,6 +130,17 @@ func (b Builder) SetBlockEx(blk BasicBlock, pos InsertPoint, setBlk bool) {
 	default:
 		panic("SetBlockEx: invalid pos")
 	}
+	// Some synthesized instructions (for example defer lowering) may be emitted
+	// without a source instruction position. Seed a function-scope debug
+	// location after changing insert point so those instructions still carry a
+	// valid !dbg in debug builds.
+	if sp := b.Func.impl.Subprogram(); sp.C != nil {
+		line := sp.SubprogramLine()
+		if line == 0 {
+			line = 1
+		}
+		b.impl.SetCurrentDebugLocation(line, 0, sp, llvm.Metadata{})
+	}
 	if setBlk {
 		b.blk = blk
 	}

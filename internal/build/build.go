@@ -757,6 +757,9 @@ func compileLinkedBitcodeToObject(ctx *context, moduleName string, bitcodeFiles 
 	objFile.Close()
 
 	args := []string{"-o", objFile.Name(), "-c", mergedBitcode, "-Wno-override-module"}
+	if IsDbgSymsEnabled() {
+		args = append(args, "-gdwarf-4")
+	}
 	if printCmds {
 		fmt.Fprintf(os.Stderr, "# compiling linked bitcode for %s\n", moduleName)
 		fmt.Fprintln(os.Stderr, "clang", args)
@@ -1200,7 +1203,33 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 
 	cmd := ctx.linker()
 	cmd.Verbose = printCmds
-	return cmd.Link(buildArgs...)
+	if err := cmd.Link(buildArgs...); err != nil {
+		return err
+	}
+	if err := emitDarwinDSYMIfNeeded(ctx, app, printCmds); err != nil {
+		return err
+	}
+	return nil
+}
+
+func emitDarwinDSYMIfNeeded(ctx *context, app string, verbose bool) error {
+	if !IsDbgSymsEnabled() || ctx.buildConf.Goos != "darwin" || runtime.GOOS != "darwin" {
+		return nil
+	}
+	if ctx.buildConf.BuildMode != BuildModeExe {
+		return nil
+	}
+	dsymutil, err := exec.LookPath("dsymutil")
+	if err != nil {
+		return fmt.Errorf("dsymutil not found for debug-symbol build: %w", err)
+	}
+	cmd := exec.Command(dsymutil, app)
+	if verbose {
+		fmt.Fprintln(os.Stderr, cmd.String())
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 // archiver returns the archiving tool to use for the current context.
