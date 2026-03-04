@@ -339,3 +339,38 @@ func TestScopeIndicesAndTypeArgFallbackCoverage(t *testing.T) {
 		t.Fatalf("TypeArgs(generic alias instance)=%q, want %q", got, "[[]int]")
 	}
 }
+
+func TestNamedLikeTypeArgStringCoverage(t *testing.T) {
+	// pkg=nil and targs=nil
+	plainObj := types.NewTypeName(token.NoPos, nil, "Plain", nil)
+	if got := namedLikeTypeArgString(plainObj, nil); got != "Plain" {
+		t.Fatalf("namedLikeTypeArgString(pkg=nil,targs=nil)=%q, want %q", got, "Plain")
+	}
+
+	pkg := types.NewPackage("example.com/namedlike", "namedlike")
+	root := pkg.Scope()
+	child := types.NewScope(root, token.NoPos, token.NoPos, "child")
+	localObj := types.NewTypeName(token.NoPos, pkg, "Local", nil)
+	child.Insert(localObj)
+
+	// pkg!=nil and targs=nil
+	if got := namedLikeTypeArgString(localObj, nil); !strings.HasPrefix(got, "example.com/namedlike.Local.") {
+		t.Fatalf("namedLikeTypeArgString(local,nil)=%q, want prefix %q", got, "example.com/namedlike.Local.")
+	}
+
+	// pkg!=nil and targs!=nil
+	tpObj := types.NewTypeName(token.NoPos, pkg, "T", nil)
+	tp := types.NewTypeParam(tpObj, types.Universe.Lookup("any").Type().Underlying().(*types.Interface))
+	genObj := types.NewTypeName(token.NoPos, pkg, "Box", nil)
+	root.Insert(genObj)
+	gen := types.NewNamed(genObj, types.NewStruct(nil, nil), nil)
+	gen.SetTypeParams([]*types.TypeParam{tp})
+	inst, err := types.Instantiate(types.NewContext(), gen, []types.Type{types.Typ[types.Int]}, false)
+	if err != nil {
+		t.Fatalf("Instantiate(Box[int]) failed: %v", err)
+	}
+	got := namedLikeTypeArgString(localObj, inst.(*types.Named).TypeArgs())
+	if !strings.HasPrefix(got, "example.com/namedlike.Local[int].") {
+		t.Fatalf("namedLikeTypeArgString(local,[int])=%q, want prefix %q", got, "example.com/namedlike.Local[int].")
+	}
+}
