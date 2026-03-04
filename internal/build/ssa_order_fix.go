@@ -2,6 +2,7 @@ package build
 
 import (
 	"go/token"
+	"go/types"
 
 	"golang.org/x/tools/go/ssa"
 )
@@ -23,12 +24,43 @@ import (
 // to after any intervening calls that use the same alloc pointer, matching the
 // behavior of the Go compiler for the stdlib cases we rely on (e.g. crypto/x509.ParseOID).
 func fixSSAOrder(pkg *ssa.Package) {
-	for _, mem := range pkg.Members {
-		fn, ok := mem.(*ssa.Function)
-		if !ok {
-			continue
+	if pkg == nil {
+		return
+	}
+	visited := make(map[*ssa.Function]struct{})
+	visitFn := func(fn *ssa.Function) {
+		if fn == nil {
+			return
 		}
+		if _, ok := visited[fn]; ok {
+			return
+		}
+		visited[fn] = struct{}{}
 		fixSSAOrderFunc(fn)
+	}
+
+	for _, mem := range pkg.Members {
+		switch m := mem.(type) {
+		case *ssa.Function:
+			visitFn(m)
+		case *ssa.Type:
+			if tn, ok := m.Object().(*types.TypeName); ok {
+				fixSSAOrderMethods(pkg, tn.Type(), visitFn)
+				fixSSAOrderMethods(pkg, types.NewPointer(tn.Type()), visitFn)
+			}
+		}
+	}
+}
+
+func fixSSAOrderMethods(pkg *ssa.Package, typ types.Type, visitFn func(*ssa.Function)) {
+	if pkg == nil || pkg.Prog == nil || typ == nil {
+		return
+	}
+	mset := pkg.Prog.MethodSets.MethodSet(typ)
+	for i, n := 0, mset.Len(); i < n; i++ {
+		if fn := pkg.Prog.MethodValue(mset.At(i)); fn != nil {
+			visitFn(fn)
+		}
 	}
 }
 
@@ -94,6 +126,19 @@ func fixSSAOrderBlock(b *ssa.BasicBlock) {
 			continue
 		}
 
+		// Bail if the alloc is written between the load and return.
+		// Moving the load could otherwise observe a different value.
+		writtenBeforeReturn := false
+		for i := loadIdx + 1; i < retIdx; i++ {
+			if storeWritesAlloc(b.Instrs[i], alloc) {
+				writtenBeforeReturn = true
+				break
+			}
+		}
+		if writtenBeforeReturn {
+			continue
+		}
+
 		// If the loaded value is used by any instruction between its current
 		// position and the return (excluding return itself), moving it may place
 		// its definition after one of those uses and break SSA form.
@@ -137,12 +182,46 @@ func instrUsesValue(ins ssa.Instruction, v ssa.Value) bool {
 }
 
 func callUsesValue(ci ssa.CallInstruction, v ssa.Value) bool {
+	if ci == nil || v == nil {
+		return false
+	}
 	c := ci.Common()
 	if c == nil {
 		return false
 	}
-	for _, a := range c.Args {
-		if a == v {
+	for _, op := range c.Operands(nil) {
+		if op != nil && *op == v {
+			return true
+		}
+	}
+	return false
+}
+
+func storeWritesAlloc(ins ssa.Instruction, alloc *ssa.Alloc) bool {
+	store, ok := ins.(*ssa.Store)
+	if !ok || store == nil || alloc == nil {
+		return false
+	}
+	return valueDependsOn(store.Addr, alloc, map[ssa.Value]struct{}{})
+}
+
+func valueDependsOn(v, target ssa.Value, seen map[ssa.Value]struct{}) bool {
+	if v == nil || target == nil {
+		return false
+	}
+	if v == target {
+		return true
+	}
+	if _, ok := seen[v]; ok {
+		return false
+	}
+	seen[v] = struct{}{}
+	ins, ok := v.(ssa.Instruction)
+	if !ok || ins == nil {
+		return false
+	}
+	for _, op := range ins.Operands(nil) {
+		if op != nil && valueDependsOn(*op, target, seen) {
 			return true
 		}
 	}
