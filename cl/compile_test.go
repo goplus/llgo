@@ -199,11 +199,7 @@ func TestRunESP32C3Testdata(t *testing.T) {
 	conf.ForceRebuild = true
 
 	ignore := []string{
-		"./_testdata/cpkgimp", // unexpected output: float formatting mismatch (3 vs 3 +6.280000e+00)
-		"./_testdata/debug",   // llgo panic: unsatisfied import internal/runtime/sys
-		"./_testdata/fncall",  // timeout: emulator panic (Instruction access fault), no auto-exit
-		"./_testdata/untyped", // timeout: emulator panic (Instruction access fault), no auto-exit
-		"./_testdata/varinit", // timeout: emulator panic (Instruction access fault), no auto-exit
+		"./_testdata/debug", // llgo panic: unsatisfied import internal/runtime/sys
 	}
 	cltest.RunFromDir(t, "", "./_testdata", ignore,
 		cltest.WithRunConfig(conf),
