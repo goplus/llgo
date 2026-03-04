@@ -6,8 +6,8 @@
 #
 # Verifies:
 # 1. _start uses newlib's __libc_init_array (not TinyGo's start.S)
-# 2. .init_array section is merged into .rodata section
-# 3. .rodata (including .init_array) is included in BIN file
+# 2. __init_array_start symbol is present in ELF
+# 3. __init_array_start is included in BIN load segments
 
 set -e
 
@@ -24,9 +24,60 @@ cleanup() {
 }
 trap cleanup EXIT
 
+extract_last_nonempty_lines() {
+    local n="$1"
+    awk -v n="$n" '
+    NF { out[++count] = $0 }
+    END {
+        if (n <= 0 || count == 0) {
+            exit
+        }
+        start = count - n + 1
+        if (start < 1) {
+            start = 1
+        }
+        for (i = start; i <= count; i++) {
+            print out[i]
+        }
+    }'
+}
+
+run_case_and_compare() {
+    local case_dir="$1"
+    local expected="$2"
+    local raw_output
+    local actual
+    local expected_lines
+
+    echo "Running: llgo run -a -target=esp32c3-basic -emulator $case_dir"
+    if ! raw_output=$(llgo run -a -target=esp32c3-basic -emulator "$case_dir" 2>&1); then
+        echo "✗ FAIL: command failed for $case_dir"
+        echo "$raw_output"
+        return 1
+    fi
+
+    expected_lines=$(printf "%s\n" "$expected" | awk 'NF { n++ } END { print n + 0 }')
+    actual=$(printf "%s\n" "$raw_output" | tr -d '\r' | extract_last_nonempty_lines "$expected_lines")
+    if [ "$actual" = "$expected" ]; then
+        echo "✓ PASS: $case_dir"
+        return 0
+    fi
+
+    echo "✗ FAIL: output mismatch for $case_dir"
+    echo "Expected:"
+    printf "%s\n" "$expected"
+    echo ""
+    echo "Got:"
+    printf "%s\n" "$actual"
+    echo ""
+    echo "Diff:"
+    diff -u <(printf "%s\n" "$expected") <(printf "%s\n" "$actual") || true
+    return 1
+}
+
 # Check if esptool.py is installed
 # esptool.py is required to parse ESP32-C3 BIN file format and verify
-# that .rodata segment (containing .init_array) is included in the firmware
+# that constructor-related data is included in the firmware
 if ! command -v esptool.py &> /dev/null; then
     echo "✗ FAIL: esptool.py not found"
     echo "Please install: pip3 install esptool==5.1.0"
@@ -77,50 +128,10 @@ else
 fi
 
 echo ""
-echo "=== Test 2: Verify .init_array merged into .rodata (ELF) ==="
-
-# Get .rodata section information from ELF file
-# The .rodata section should contain the merged .init_array data
-#
-# Real output from: llvm-readelf -S "$TEST_ELF"
-#
-# Section Headers:
-#   [Nr] Name              Type            Address  Off    Size   ES Flg Lk Inf Al
-#   [ 2] .rodata           PROGBITS        4038042c 00142c 00003c 00 WAMS  0   0  4
-#   |  |                   |               |        |      |
-#   $1 $2                  $4              $5       $6     $7
-#   [  2]                  PROGBITS        4038042c 00142c 00003c
-#      (section number)    (type)          (ADDR)   (off)  (SIZE)
-#
-# IMPORTANT: Note the space between '[' and '2]' - they are TWO separate fields!
-#
-# Field breakdown (awk splits on whitespace):
-#   $1 = [           (opening bracket - yes, it's a separate field!)
-#   $2 = 2]          (section number with closing bracket)
-#   $3 = .rodata     (section name)
-#   $4 = PROGBITS    (section type)
-#   $5 = 4038042c    (address - THIS IS WHAT WE EXTRACT for RODATA_ADDR)
-#   $6 = 00142c      (file offset)
-#   $7 = 00003c      (size - THIS IS WHAT WE EXTRACT for RODATA_SIZE)
-#   $8 = 00          (entry size)
-#
-# We use: awk '{print "0x"$5}' to extract address (4038042c → 0x4038042c)
-#         awk '{print "0x"$7}' to extract size (00003c → 0x00003c)
-RODATA_INFO=$(llvm-readelf -S "$TEST_ELF" | grep "\.rodata")
-if [ -z "$RODATA_INFO" ]; then
-    echo "✗ FAIL: .rodata section not found"
-    exit 1
-fi
-
-RODATA_ADDR=$(echo "$RODATA_INFO" | awk '{print "0x"$5}')
-RODATA_SIZE=$(echo "$RODATA_INFO" | awk '{print "0x"$7}')
-RODATA_END=$(printf "0x%x" $((RODATA_ADDR + RODATA_SIZE)))
-
-echo ".rodata section: start=$RODATA_ADDR, size=$RODATA_SIZE, end=$RODATA_END"
+echo "=== Test 2: Verify __init_array_start symbol (ELF) ==="
 
 # Get __init_array_start symbol address
-# This symbol marks where .init_array was placed by the linker script
-# It should point to an address within the .rodata section
+# This symbol marks where .init_array is placed by the linker script
 #
 # Real output from: llvm-nm "$TEST_ELF"
 #
@@ -140,30 +151,24 @@ if [ -z "$INIT_ARRAY_START" ]; then
     exit 1
 fi
 
-echo "__init_array_start: $INIT_ARRAY_START"
-
-# Verify that __init_array_start address falls within .rodata section bounds
-# This confirms the linker script successfully merged .init_array into .rodata
+echo "✓ PASS: __init_array_start found at $INIT_ARRAY_START"
 INIT_ADDR_DEC=$((INIT_ARRAY_START))
-RODATA_ADDR_DEC=$((RODATA_ADDR))
-RODATA_END_DEC=$((RODATA_END))
 
-if [ $INIT_ADDR_DEC -ge $RODATA_ADDR_DEC ] && [ $INIT_ADDR_DEC -lt $RODATA_END_DEC ]; then
-    OFFSET=$((INIT_ADDR_DEC - RODATA_ADDR_DEC))
-    echo "✓ PASS: __init_array_start is within .rodata (offset: +0x$(printf '%x' $OFFSET))"
-else
-    echo "✗ FAIL: __init_array_start is NOT within .rodata"
-    echo "        .rodata: [$RODATA_ADDR, $RODATA_END)"
-    echo "        __init_array_start: $INIT_ARRAY_START"
+INIT_ARRAY_INFO=$(llvm-readelf -S "$TEST_ELF" | grep "\.init_array")
+if [ -z "$INIT_ARRAY_INFO" ]; then
+    echo "✗ FAIL: .init_array section not found"
     exit 1
 fi
+INIT_ARRAY_SIZE=$(echo "$INIT_ARRAY_INFO" | awk '{print "0x"$7}')
+INIT_ARRAY_SIZE_DEC=$((INIT_ARRAY_SIZE))
+echo ".init_array section size: $INIT_ARRAY_SIZE"
 
 echo ""
-echo "=== Test 3: Verify .rodata included in BIN file ==="
+echo "=== Test 3: Verify __init_array_start included in BIN file ==="
 
 # Get BIN file segment information using esptool.py
-# ESP32-C3 BIN files contain multiple segments with load addresses
-# We need to verify that .rodata segment exists in the BIN file
+# ESP32-C3 BIN files contain multiple segments with load addresses.
+# We need to verify the __init_array_start address is covered by one segment.
 #
 # Real output from: esptool.py --chip esp32c3 image_info test.bin
 #
@@ -193,44 +198,32 @@ if ! BIN_INFO=$(esptool.py --chip esp32c3 image_info "$TEST_BIN" 2>&1); then
     exit 1
 fi
 
-# Find the segment containing .rodata by matching its load address
-# Strip leading "0x" and zeros from address for grepping
-RODATA_ADDR_CLEAN=$(echo "$RODATA_ADDR" | sed 's/^0x0*//')
-RODATA_SEG=$(echo "$BIN_INFO" | grep -i "$RODATA_ADDR_CLEAN")
-
-if [ -z "$RODATA_SEG" ]; then
-    echo "✗ FAIL: .rodata segment not found in BIN file"
-    echo "Looking for address: $RODATA_ADDR"
-    echo ""
-    echo "BIN segments:"
-    echo "$BIN_INFO" | grep -A20 "Segments Information"
-    exit 1
-fi
-
-# Extract segment information from esptool.py output
-# Format: Segment_Number Length Load_Address ...
-# We parse these three fields to determine segment boundaries
-SEG_NUM=$(echo "$RODATA_SEG" | awk '{print $1}')
-SEG_LEN=$(echo "$RODATA_SEG" | awk '{print $2}')
-SEG_LOAD=$(echo "$RODATA_SEG" | awk '{print $3}')
-
-SEG_LEN_DEC=$((SEG_LEN))
-SEG_LOAD_DEC=$((SEG_LOAD))
-SEG_END=$((SEG_LOAD_DEC + SEG_LEN_DEC))
-
-echo "BIN Segment $SEG_NUM: start=$SEG_LOAD, length=$SEG_LEN, end=$(printf '0x%x' $SEG_END)"
-
-# Verify that __init_array_start falls within this BIN segment
-# This confirms that .init_array data (merged into .rodata) will be
-# correctly flashed to ESP32-C3 and available at runtime
-if [ $INIT_ADDR_DEC -ge $SEG_LOAD_DEC ] && [ $INIT_ADDR_DEC -lt $SEG_END ]; then
-    OFFSET=$((INIT_ADDR_DEC - SEG_LOAD_DEC))
-    echo "✓ PASS: __init_array_start is within BIN Segment $SEG_NUM (offset: +0x$(printf '%x' $OFFSET))"
+FOUND_SEG=0
+if [ $INIT_ARRAY_SIZE_DEC -eq 0 ]; then
+    echo "✓ PASS: .init_array is empty; no constructor payload needs BIN segment coverage"
 else
-    echo "✗ FAIL: __init_array_start is NOT within BIN segment"
-    echo "        Segment range: [$SEG_LOAD, $(printf '0x%x' $SEG_END))"
-    echo "        __init_array_start: $INIT_ARRAY_START"
-    exit 1
+    INIT_ARRAY_END_DEC=$((INIT_ADDR_DEC + INIT_ARRAY_SIZE_DEC))
+    while read -r SEG_NUM SEG_LEN SEG_LOAD; do
+        SEG_LEN_DEC=$((SEG_LEN))
+        SEG_LOAD_DEC=$((SEG_LOAD))
+        SEG_END=$((SEG_LOAD_DEC + SEG_LEN_DEC))
+        if [ $INIT_ADDR_DEC -ge $SEG_LOAD_DEC ] && [ $INIT_ARRAY_END_DEC -le $SEG_END ]; then
+            OFFSET=$((INIT_ADDR_DEC - SEG_LOAD_DEC))
+            echo "✓ PASS: .init_array is within BIN Segment $SEG_NUM (offset: +0x$(printf '%x' $OFFSET), size: $INIT_ARRAY_SIZE)"
+            echo "        Segment range: [$SEG_LOAD, $(printf '0x%x' $SEG_END))"
+            FOUND_SEG=1
+            break
+        fi
+    done < <(echo "$BIN_INFO" | awk '$1 ~ /^[0-9]+$/ && $2 ~ /^0x/ && $3 ~ /^0x/ {print $1, $2, $3}')
+
+    if [ $FOUND_SEG -eq 0 ]; then
+        echo "✗ FAIL: .init_array payload is NOT within any BIN segment"
+        echo "        .init_array range: [$INIT_ARRAY_START, $(printf '0x%x' $INIT_ARRAY_END_DEC))"
+        echo ""
+        echo "BIN segments:"
+        echo "$BIN_INFO" | grep -A20 "Segments Information"
+        exit 1
+    fi
 fi
 
 echo ""
@@ -251,11 +244,18 @@ else
 fi
 
 echo ""
+echo "=== Test 5: ESP32-C3 float output regressions (temporary) ==="
+pushd "$SCRIPT_DIR" > /dev/null
+run_case_and_compare "./esp32c3/float-1664" $'+5.000000e+00 +8.000000e+00\n1 +2.000000e+00\n0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true\n3 +6.280000e+00'
+popd > /dev/null
+
+echo ""
 echo "=== All Tests Passed ==="
 echo "✓ ESP32-C3 uses newlib startup (_start calls __libc_init_array)"
-echo "✓ .init_array merged into .rodata section"
-echo "✓ .rodata (including .init_array) included in BIN file"
+echo "✓ __init_array_start symbol exists in ELF"
+echo "✓ .init_array payload is correctly handled in BIN (or empty)"
 echo "✓ QEMU output ends with Hello World"
+echo "✓ ESP32-C3 float output regression cases match expected output"
 echo "✓ Constructor function pointers will be correctly flashed to ESP32-C3"
 
 exit 0

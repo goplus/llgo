@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/packages"
 )
 
 func TestMain(m *testing.M) {
@@ -96,6 +97,57 @@ func TestExtest(t *testing.T) {
 
 func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
+}
+
+func TestFilterTestPackages(t *testing.T) {
+	pkg := func(id string) *packages.Package {
+		return &packages.Package{ID: id}
+	}
+
+	t.Run("empty after filtering", func(t *testing.T) {
+		initial := []*packages.Package{
+			pkg("github.com/goplus/llgo/chore/ardump"),
+			pkg("github.com/goplus/llgo/chore/ardump [github.com/goplus/llgo/chore/ardump.test]"),
+		}
+		filtered, err := filterTestPackages(initial, "")
+		if err != nil {
+			t.Fatalf("filterTestPackages returned unexpected error: %v", err)
+		}
+		if len(filtered) != 0 {
+			t.Fatalf("len(filtered) = %d, want 0", len(filtered))
+		}
+	})
+
+	t.Run("retain test packages", func(t *testing.T) {
+		initial := []*packages.Package{
+			pkg("foo"),
+			pkg("foo.test"),
+		}
+		filtered, err := filterTestPackages(initial, "")
+		if err != nil {
+			t.Fatalf("filterTestPackages returned unexpected error: %v", err)
+		}
+		if len(filtered) != 1 {
+			t.Fatalf("len(filtered) = %d, want 1", len(filtered))
+		}
+		if filtered[0].ID != "foo.test" {
+			t.Fatalf("filtered[0].ID = %q, want %q", filtered[0].ID, "foo.test")
+		}
+	})
+
+	t.Run("multiple test packages with output file", func(t *testing.T) {
+		initial := []*packages.Package{
+			pkg("a.test"),
+			pkg("b.test"),
+		}
+		_, err := filterTestPackages(initial, "/tmp/out")
+		if err == nil {
+			t.Fatal("expected error for -o with multiple test packages, got nil")
+		}
+		if !strings.Contains(err.Error(), "cannot use -o flag with multiple packages") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 const (

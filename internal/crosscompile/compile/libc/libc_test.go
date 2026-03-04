@@ -4,6 +4,7 @@ package libc
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -331,10 +332,9 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 			}
 		}
 	}
-
 	// Test Groups configuration
-	if len(config.Groups) != 4 {
-		t.Errorf("Expected 4 groups, got %d", len(config.Groups))
+	if len(config.Groups) != 6 {
+		t.Errorf("Expected 6 groups, got %d", len(config.Groups))
 	} else {
 		// Group 0: libsemihost
 		group0 := config.Groups[0]
@@ -462,6 +462,74 @@ func TestGetNewlibESP32ConfigRISCV(t *testing.T) {
 		}
 		if len(group0.CCFlags) == 0 {
 			t.Error("Expected non-empty CCFlags in group0")
+		}
+
+		// Group 4: libm (extra flags)
+		group4 := config.Groups[4]
+		expectedOutput4 := "libm-fbuiltin_fno_math_errno-" + target + ".a"
+		if group4.OutputFileName != expectedOutput4 {
+			t.Errorf("Group4 OutputFileName expected '%s', got '%s'", expectedOutput4, group4.OutputFileName)
+		}
+		sampleFiles4 := []string{
+			filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c"),
+			filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c"),
+		}
+		for _, sample := range sampleFiles4 {
+			found := false
+			for _, file := range group4.Files {
+				if file == sample {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected file '%s' not found in group4 files", sample)
+			}
+		}
+		if !slices.Contains(group4.CFlags, "-fbuiltin") {
+			t.Errorf("Expected group4 CFlags to contain -fbuiltin")
+		}
+		if !slices.Contains(group4.CFlags, "-fno-math-errno") {
+			t.Errorf("Expected group4 CFlags to contain -fno-math-errno")
+		}
+		if slices.Contains(group4.LDFlags, "-u") || slices.Contains(group4.LDFlags, "_printf_float") {
+			t.Errorf("Expected group4 LDFlags not to contain -u/_printf_float; this is configured by external target ldflags")
+		}
+
+		// Group 5: libm (default flags)
+		group5 := config.Groups[5]
+		expectedOutput5 := "libm-default-" + target + ".a"
+		if group5.OutputFileName != expectedOutput5 {
+			t.Errorf("Group5 OutputFileName expected '%s', got '%s'", expectedOutput5, group5.OutputFileName)
+		}
+		if slices.Contains(group5.CFlags, "-fbuiltin") {
+			t.Errorf("Expected group5 CFlags not to contain -fbuiltin")
+		}
+		if slices.Contains(group5.CFlags, "-fno-math-errno") {
+			t.Errorf("Expected group5 CFlags not to contain -fno-math-errno")
+		}
+		if slices.Contains(group5.LDFlags, "-u") || slices.Contains(group5.LDFlags, "_printf_float") {
+			t.Errorf("Expected group5 LDFlags not to contain -u/_printf_float; this is configured by external target ldflags")
+		}
+
+		totalLibmFiles := len(group4.Files) + len(group5.Files)
+		if totalLibmFiles != 410 {
+			t.Errorf("Expected 410 libm files from riscv32-esp-elf build list, got %d", totalLibmFiles)
+		}
+
+		// libm list should follow the riscv32-esp-elf build selection and
+		// must not include stale mathfp/legacy entries.
+		allLibmFiles := append(append([]string{}, group4.Files...), group5.Files...)
+		for _, disallow := range []string{
+			filepath.Join(baseDir, "newlib", "libm", "mathfp", "s_sqrt.c"),
+			filepath.Join(baseDir, "newlib", "libm", "common", "isgreater.c"),
+			filepath.Join(baseDir, "newlib", "libm", "fenv", "fenv_stub.c"),
+		} {
+			for _, file := range allLibmFiles {
+				if file == disallow {
+					t.Errorf("Unexpected file '%s' found in group4 files", disallow)
+				}
+			}
 		}
 	}
 }
@@ -623,8 +691,8 @@ func TestGroupConfiguration(t *testing.T) {
 
 	t.Run("RISCV_GroupCount", func(t *testing.T) {
 		config := getNewlibESP32ConfigRISCV(baseDir, target)
-		if len(config.Groups) != 4 {
-			t.Errorf("Expected 4 groups for RISCV, got %d", len(config.Groups))
+		if len(config.Groups) != 6 {
+			t.Errorf("Expected 6 groups for RISCV, got %d", len(config.Groups))
 		}
 	})
 
@@ -642,6 +710,8 @@ func TestGroupConfiguration(t *testing.T) {
 			"libcrt0-" + target + ".a",
 			"libgloss-" + target + ".a",
 			"libc-" + target + ".a",
+			"libm-fbuiltin_fno_math_errno-" + target + ".a",
+			"libm-default-" + target + ".a",
 		}
 
 		for i, group := range config.Groups {
