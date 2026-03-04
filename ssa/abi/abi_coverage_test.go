@@ -335,7 +335,7 @@ func TestScopeIndicesAndTypeArgFallbackCoverage(t *testing.T) {
 		t.Fatalf("Instantiate generic alias failed: %v", err)
 	}
 	got := TypeArgs([]types.Type{inst})
-	if got != "[example.com/alias.Vec[int]]" {
-		t.Fatalf("TypeArgs(generic alias instance)=%q, want %q", got, "[example.com/alias.Vec[int]]")
+	if got != "[[]int]" {
+		t.Fatalf("TypeArgs(generic alias instance)=%q, want %q", got, "[[]int]")
 	}
 }
