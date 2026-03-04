@@ -141,6 +141,7 @@ type Config struct {
 	SizeReport    bool   // print size report after successful build
 	SizeFormat    string // size report format: text,json (default text)
 	SizeLevel     string // size aggregation level: full,module,package (default module)
+	SizeOpt       bool   // enable size-oriented global IR optimization at final link stage
 	CompilerHash  string // metadata hash for the running compiler (development builds only)
 	// GlobalRewrites specifies compile-time overrides for global string variables.
 	// Keys are fully qualified package paths (e.g. "main" or "github.com/user/pkg").
@@ -599,6 +600,40 @@ func tempNamePrefix(moduleName string) string {
 	return name
 }
 
+const linkedBitcodeSizePassPipeline = "module(globalopt,ipsccp,globaldce)"
+
+func optimizeLinkedBitcode(ctx *context, moduleName, inputBitcode string) (string, error) {
+	llvmCtx := gllvm.NewContext()
+	defer llvmCtx.Dispose()
+
+	mod, err := llvmCtx.ParseBitcodeFile(inputBitcode)
+	if err != nil {
+		return "", fmt.Errorf("parse linked bitcode %s: %w", inputBitcode, err)
+	}
+	defer mod.Dispose()
+
+	mod.SetDataLayout(ctx.prog.DataLayout())
+	mod.SetTarget(ctx.prog.Target().Spec().Triple)
+
+	pbo := gllvm.NewPassBuilderOptions()
+	defer pbo.Dispose()
+
+	if err := mod.RunPasses(linkedBitcodeSizePassPipeline, ctx.prog.TargetMachine(), pbo); err != nil {
+		return "", fmt.Errorf("run linked bitcode LLVM passes for %s failed: %w", moduleName, err)
+	}
+
+	out, err := os.CreateTemp("", tempNamePrefix(moduleName)+"-postpass-*.bc")
+	if err != nil {
+		return "", fmt.Errorf("create post-pass bitcode file: %w", err)
+	}
+	defer out.Close()
+
+	if err := gllvm.WriteBitcodeToFile(mod, out); err != nil {
+		return "", fmt.Errorf("write post-pass bitcode file: %w", err)
+	}
+	return out.Name(), nil
+}
+
 func mergeBitcodeFiles(moduleName string, bitcodeFiles []string) (string, error) {
 	if len(bitcodeFiles) == 0 {
 		return "", nil
@@ -750,13 +785,25 @@ func compileLinkedBitcodeToObject(ctx *context, moduleName string, bitcodeFiles 
 		}
 	}
 
+	compileInputBitcode := mergedBitcode
+	if ctx.buildConf.SizeOpt && ctx.passOpt {
+		if printCmds {
+			fmt.Fprintf(os.Stderr, "# running linked bitcode size-opt pass pipeline for %s: %s\n", moduleName, linkedBitcodeSizePassPipeline)
+		}
+		optimizedBitcode, err := optimizeLinkedBitcode(ctx, moduleName, mergedBitcode)
+		if err != nil {
+			return "", err
+		}
+		compileInputBitcode = optimizedBitcode
+	}
+
 	objFile, err := os.CreateTemp("", tempNamePrefix(moduleName)+"-*.o")
 	if err != nil {
 		return "", fmt.Errorf("create linked object temp file: %w", err)
 	}
 	objFile.Close()
 
-	args := []string{"-o", objFile.Name(), "-c", mergedBitcode, "-Wno-override-module"}
+	args := []string{"-o", objFile.Name(), "-c", compileInputBitcode, "-Wno-override-module"}
 	if IsDbgSymsEnabled() {
 		args = append(args, "-gdwarf-4")
 	}

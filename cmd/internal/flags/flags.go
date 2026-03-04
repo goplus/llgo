@@ -40,6 +40,7 @@ var ForceEspClang bool
 var SizeReport bool
 var SizeFormat string
 var SizeLevel string
+var SizeOptimize bool
 var ForceRebuild bool
 var PrintCommands bool
 
@@ -65,6 +66,7 @@ func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&SizeReport, "size", false, "Print size report after build (default format=text, level=module)")
 	fs.StringVar(&SizeFormat, "size-format", "", "Size report format (text,json). Default text.")
 	fs.StringVar(&SizeLevel, "size-level", "", "Size report aggregation level (full,module,package). Default module.")
+	fs.BoolVar(&SizeOptimize, "sizeopt", false, "Enable size-oriented global IR optimization at final link stage")
 }
 
 func AddBuildModeFlags(fs *flag.FlagSet) {
@@ -181,6 +183,7 @@ func UpdateConfig(conf *build.Config) error {
 	conf.Port = Port
 	conf.BaudRate = BaudRate
 	conf.ForceRebuild = ForceRebuild
+	conf.SizeOpt = SizeOptimize
 	if SizeReport || SizeFormat != "" || SizeLevel != "" {
 		conf.SizeReport = true
 		if SizeFormat != "" {
