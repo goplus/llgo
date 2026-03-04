@@ -357,6 +357,7 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 // #cgo pkg-config: python3
 // #cgo windows CFLAGS: -IC:/Python312/include
 // #cgo windows LDFLAGS: -LC:/Python312/libs -lpython312
+// #cgo linux CPPFLAGS: -I/usr/lib/llvm-19/include -D_GNU_SOURCE
 // #cgo CFLAGS: -I/usr/include/python3.12
 // #cgo LDFLAGS: -L/usr/lib/python3.12/config-3.12-x86_64-linux-gnu -lpython3.12
 func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
@@ -405,7 +406,7 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 			cflags:  safesplit.SplitPkgConfigFlags(string(cflags)),
 			ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
 		})
-	case "CFLAGS":
+	case "CPPFLAGS", "CFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:    tag,
 			cflags: safesplit.SplitPkgConfigFlags(arg),
@@ -415,6 +416,8 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 			tag:     tag,
 			ldflags: safesplit.SplitPkgConfigFlags(arg),
 		})
+	default:
+		err = fmt.Errorf("unsupported cgo flag type: %s", flag)
 	}
 	return
 }
