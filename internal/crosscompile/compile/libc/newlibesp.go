@@ -29,10 +29,10 @@ func withDefaultCCFlags(ccflags []string) []string {
 // GetNewlibESP32Config returns the configuration for downloading and building newlib for ESP32
 func GetNewlibESP32Config() compile.LibConfig {
 	return compile.LibConfig{
-		Url:            "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch5.tar.gz",
+		Url:            "https://github.com/goplus/newlib/archive/refs/tags/esp-4.3.0_20250211-patch6.tar.gz",
 		Name:           "newlib-esp32",
-		Version:        "esp-4.3.0_20250211-patch5",
-		ResourceSubDir: "newlib-esp-4.3.0_20250211-patch5",
+		Version:        "esp-4.3.0_20250211-patch6",
+		ResourceSubDir: "newlib-esp-4.3.0_20250211-patch6",
 	}
 }
 
@@ -1531,6 +1531,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 				Files: []string{
 					filepath.Join(baseDir, "libgloss", "xtensa", "clibrary_init.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "syscalls.c"),
+					filepath.Join(baseDir, "libgloss", "xtensa", "sim-call.S"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "boards", "esp32", "board.c"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "crt1-boards.S"),
 					filepath.Join(baseDir, "libgloss", "xtensa", "sleep.S"),
@@ -1539,6 +1540,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 				CFlags: []string{
 					"-DHAVE_CONFIG_H",
 					"-D_LIBGLOSS",
+					"-DQEMU_SEMIHOSTING_EXIT_ONLY",
 					"-isystem" + filepath.Join(libcDir, "include"),
 					"-I" + filepath.Join(baseDir, "libgloss"),
 					// TODO(MeteorsLiu): support riscv
@@ -1575,6 +1577,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 					filepath.Join(baseDir, "libgloss", "libnosys", "wait.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "write.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getentropy.c"),
+					filepath.Join(baseDir, "libgloss", "libnosys", "_exit.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "getreent.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "time.c"),
 					filepath.Join(baseDir, "libgloss", "libnosys", "fcntl.c"),
@@ -1729,7 +1732,6 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 					"-D_NO_WORDEXP",
 					"-D_NO_POPEN",
 					"-DHAVE_RENAME",
-					"-DGETREENT_PROVIDED",
 					"-DSIGNAL_PROVIDED",
 					"-isystem" + filepath.Join(libcDir, "include"),
 					"-I" + libcDir,
@@ -2450,7 +2452,6 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 					"-DHAVE_BLKSIZE",
 					"-DHAVE_OPENDIR",
 					"-DHAVE_RENAME",
-					"-DGETREENT_PROVIDED",
 					"-DSIGNAL_PROVIDED",
 					"-D__ESP__",
 					"-isystem" + filepath.Join(libcDir, "include"),

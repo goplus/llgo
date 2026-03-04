@@ -1,13 +1,14 @@
 #!/bin/bash
-# ESP32-C3 Startup and .init_array Regression Test
+# ESP32-C3 startup/linker regression test
 #
-# This script verifies ESP32-C3 compilation and runs the program in QEMU
-# emulator to ensure basic functionality works correctly.
+# Keep default ESP smoke coverage in test-esp-serial-startup.sh.
+# This script is dedicated to ESP32-C3-specific regressions.
 #
 # Verifies:
 # 1. _start uses newlib's __libc_init_array (not TinyGo's start.S)
 # 2. __init_array_start symbol is present in ELF
 # 3. __init_array_start is included in BIN load segments
+# 4. float output regression case(s) remain stable on esp32c3-basic emulator
 
 set -e
 
@@ -227,24 +228,7 @@ else
 fi
 
 echo ""
-echo "=== Test 4: Verify QEMU output ==="
-
-# Ignore emulator boot logs and validate the last non-empty line.
-RUN_OUT=$(llgo run -a -target=esp32c3-basic -emulator . 2>&1)
-LAST_LINE=$(printf "%s\n" "$RUN_OUT" | tr -d '\r' | awk 'NF{line=$0} END{print line}')
-if [ "$LAST_LINE" = "Hello World" ]; then
-    echo "✓ PASS: QEMU output ends with Hello World"
-else
-    echo "✗ FAIL: QEMU output mismatch"
-    echo "Last line: $LAST_LINE"
-    echo ""
-    echo "Full output:"
-    echo "$RUN_OUT"
-    exit 1
-fi
-
-echo ""
-echo "=== Test 5: ESP32-C3 float output regressions (temporary) ==="
+echo "=== Test 4: ESP32-C3 float output regressions (temporary) ==="
 pushd "$SCRIPT_DIR" > /dev/null
 run_case_and_compare "./esp32c3/float-1664" $'+5.000000e+00 +8.000000e+00\n1 +2.000000e+00\n0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true\n3 +6.280000e+00'
 popd > /dev/null
@@ -254,7 +238,6 @@ echo "=== All Tests Passed ==="
 echo "✓ ESP32-C3 uses newlib startup (_start calls __libc_init_array)"
 echo "✓ __init_array_start symbol exists in ELF"
 echo "✓ .init_array payload is correctly handled in BIN (or empty)"
-echo "✓ QEMU output ends with Hello World"
 echo "✓ ESP32-C3 float output regression cases match expected output"
 echo "✓ Constructor function pointers will be correctly flashed to ESP32-C3"
 
