@@ -38,7 +38,7 @@ build_target() {
 run_emulator_smoke() {
     local target="$1"
     local label="$2"
-    local expected="$3"
+    local expected_tail="$3"
 
     echo ""
     echo "=== Smoke: $label emulator output ==="
@@ -59,14 +59,30 @@ run_emulator_smoke() {
         echo "[WARN] $label emulator exited with code $run_rc; validating output tail instead"
     fi
 
-    local last_line
-    last_line=$(printf "%s\n" "$run_out" | tr -d '\r' | awk 'NF{line=$0} END{print line}')
+    local normalized_out
+    normalized_out=$(printf "%s\n" "$run_out" | tr -d '\r')
 
-    if [ "$last_line" = "$expected" ]; then
-        echo "✓ PASS: $label output ends with $expected"
+    local normalized_expected
+    normalized_expected=$(printf "%s" "$expected_tail" | tr -d '\r')
+
+    local n
+    n=$(printf "%s\n" "$normalized_expected" | awk 'END{print NR}')
+    if [ -z "$n" ] || [ "$n" -le 0 ]; then
+        echo "✗ FAIL: invalid expected tail for $label"
+        exit 1
+    fi
+
+    local actual_tail
+    actual_tail=$(printf "%s\n" "$normalized_out" | awk 'NF{print}' | tail -n "$n")
+
+    if [ "$actual_tail" = "$normalized_expected" ]; then
+        echo "✓ PASS: $label output tail (last $n line(s)) matched"
     else
         echo "✗ FAIL: $label output mismatch"
-        echo "Last line: $last_line"
+        echo "Expected tail (last $n line(s)):"
+        printf "%s\n" "$normalized_expected"
+        echo "Actual tail:"
+        printf "%s\n" "$actual_tail"
         echo ""
         echo "Full output:"
         echo "$run_out"
@@ -84,6 +100,14 @@ import "github.com/goplus/lib/c"
 
 func main() {
 	c.Printf(c.Str("Hello World\n"))
+	s := "hello"
+	var idx int64 = 1
+	tail := s[idx:]
+	if len(tail) == 4 && tail[0] == 'e' && tail[1] == 'l' && tail[2] == 'l' && tail[3] == 'o' {
+		c.Printf(c.Str("slice64 ok\n"))
+	} else {
+		c.Printf(c.Str("slice64 bad\n"))
+	}
 }
 EOGO
 
@@ -93,10 +117,10 @@ echo ""
 echo "=== ESP Serial Smoke Tests: Build + Emulator Run ==="
 
 build_target "esp32c3" "$ESP32C3_PREFIX" "ESP32-C3"
-run_emulator_smoke "esp32c3-basic" "ESP32-C3" "Hello World"
+run_emulator_smoke "esp32c3-basic" "ESP32-C3" $'Hello World\nslice64 ok'
 
 build_target "esp32" "$ESP32_PREFIX" "ESP32"
-run_emulator_smoke "esp32" "ESP32" "Hello World"
+run_emulator_smoke "esp32" "ESP32" $'Hello World\nslice64 ok'
 
 echo ""
 echo "=== Smoke Tests Passed ==="
