@@ -28,9 +28,10 @@ var (
 	traceInitOnce psync.Once
 	traceMu       psync.Mutex
 
-	traceCh     chan []byte
-	traceDoneCh chan struct{}
-	traceClosed bool
+	traceCh         chan []byte
+	traceDoneCh     chan struct{}
+	traceClosed     bool
+	traceDoneClosed bool
 )
 
 func ensureTraceInit() {
@@ -50,6 +51,7 @@ func StartTrace() error {
 	traceCh = make(chan []byte, 8)
 	traceDoneCh = make(chan struct{})
 	traceClosed = false
+	traceDoneClosed = false
 
 	// Minimal non-empty payload so stdlib runtime/trace tests can assert that
 	// tracing produced output. This is not a real execution trace.
@@ -74,7 +76,12 @@ func ReadTrace() []byte {
 	}
 	// Channel closed and drained: wake StopTrace.
 	if done != nil {
-		close(done)
+		traceMu.Lock()
+		if traceDoneCh == done && !traceDoneClosed {
+			traceDoneClosed = true
+			close(done)
+		}
+		traceMu.Unlock()
 	}
 	return nil
 }
@@ -105,6 +112,7 @@ func StopTrace() {
 		traceCh = nil
 		traceDoneCh = nil
 		traceClosed = false
+		traceDoneClosed = false
 	}
 	traceMu.Unlock()
 }

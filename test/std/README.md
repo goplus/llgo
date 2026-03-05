@@ -158,7 +158,7 @@ llgo test ./test/std/math/
 
 5. **Document gaps**: Use `t.Skip("TODO: ...")` for unsupported features
 
-6. **Update tracking**: Add entry to `test/TODO.md`
+6. **Update tracking**: Add entry to `test/std/TODO.md`
 
 7. **Validate**: Ensure tests pass with both `go test` and `llgo test`
 
@@ -177,4 +177,3 @@ Focus on:
 - **`_cmptest/`**: Comparison tests ensuring Go/llgo output equivalence
 
 The `test/std/` suite focuses on validating standard library API conformance, while `_cmptest/` validates behavioral equivalence through end-to-end comparison.
-

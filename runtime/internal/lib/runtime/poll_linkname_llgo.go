@@ -57,8 +57,13 @@ type llgoPollDesc struct {
 
 var pollOnce psync.Once
 var wakeR, wakeW c.Int
+var pollDescMu psync.Mutex
+var pollDescRoots map[uintptr]*llgoPollDesc
 
 func pollInit() {
+	pollDescMu.Init(nil)
+	pollDescRoots = make(map[uintptr]*llgoPollDesc)
+
 	var fds [2]c.Int
 	if cliteos.Pipe(&fds) != 0 {
 		// If we can't create the wake pipe, we fall back to a non-pollable mode.
@@ -67,8 +72,18 @@ func pollInit() {
 		return
 	}
 	wakeR, wakeW = fds[0], fds[1]
+	setCloseOnExec(wakeR)
+	setCloseOnExec(wakeW)
 	setNonblock(wakeR)
 	setNonblock(wakeW)
+}
+
+func setCloseOnExec(fd c.Int) {
+	flags := cliteos.Fcntl(fd, c.Int(csyscall.F_GETFD))
+	if flags < 0 {
+		return
+	}
+	_ = cliteos.Fcntl(fd, c.Int(csyscall.F_SETFD), uintptr(flags)|uintptr(csyscall.FD_CLOEXEC))
 }
 
 func setNonblock(fd c.Int) {
@@ -77,6 +92,26 @@ func setNonblock(fd c.Int) {
 		return
 	}
 	_ = cliteos.Fcntl(fd, c.Int(csyscall.F_SETFL), uintptr(flags)|uintptr(csyscall.O_NONBLOCK))
+}
+
+func pollRootAdd(pd *llgoPollDesc) uintptr {
+	if pd == nil {
+		return 0
+	}
+	ctx := uintptr(unsafe.Pointer(pd))
+	pollDescMu.Lock()
+	pollDescRoots[ctx] = pd
+	pollDescMu.Unlock()
+	return ctx
+}
+
+func pollRootDel(ctx uintptr) {
+	if ctx == 0 {
+		return
+	}
+	pollDescMu.Lock()
+	delete(pollDescRoots, ctx)
+	pollDescMu.Unlock()
 }
 
 func pollWake() {
@@ -151,17 +186,19 @@ func poll_runtime_pollOpen(fd uintptr) (uintptr, int) {
 		return 0, int(csyscall.EOPNOTSUPP)
 	}
 	pd := &llgoPollDesc{fd: c.Int(fd)}
-	return uintptr(unsafe.Pointer(pd)), 0
+	return pollRootAdd(pd), 0
 }
 
 //go:linkname poll_runtime_pollClose internal/poll.runtime_pollClose
 func poll_runtime_pollClose(ctx uintptr) {
+	pollOnce.Do(pollInit)
 	if ctx == 0 {
 		return
 	}
 	pd := (*llgoPollDesc)(unsafe.Pointer(ctx))
 	latomic.StoreUint32(&pd.closing, 1)
 	pollWake()
+	pollRootDel(ctx)
 }
 
 //go:linkname poll_runtime_pollWait internal/poll.runtime_pollWait

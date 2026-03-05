@@ -16,6 +16,7 @@ type Seq2[K, V any] func(yield func(K, V) bool)
 // iterator accessed by the two functions next and stop.
 //
 // This is a llgo-specific implementation that avoids runtime coroutines.
+// It follows the stdlib contract: next/stop must not be called concurrently.
 func Pull[V any](seq Seq[V]) (next func() (V, bool), stop func()) {
 	type none struct{}
 
@@ -117,6 +118,7 @@ func Pull[V any](seq Seq[V]) (next func() (V, bool), stop func()) {
 }
 
 // Pull2 is like Pull but for Seq2.
+// Like Pull, next/stop must not be called concurrently.
 func Pull2[K, V any](seq Seq2[K, V]) (next func() (K, V, bool), stop func()) {
 	type none struct{}
 	type pair struct {
@@ -189,7 +191,9 @@ func Pull2[K, V any](seq Seq2[K, V]) (next func() (K, V, bool), stop func()) {
 		if !ok {
 			finished = true
 			if panicValue != nil {
-				panic(panicValue)
+				p := panicValue
+				panicValue = nil
+				panic(p)
 			}
 			return
 		}
@@ -209,7 +213,9 @@ func Pull2[K, V any](seq Seq2[K, V]) (next func() (K, V, bool), stop func()) {
 		<-doneCh
 		finished = true
 		if panicValue != nil {
-			panic(panicValue)
+			p := panicValue
+			panicValue = nil
+			panic(p)
 		}
 	}
 
