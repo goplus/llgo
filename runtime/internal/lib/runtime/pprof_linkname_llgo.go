@@ -42,34 +42,42 @@ func pprof_cyclesPerSecond() int64 {
 	return 1
 }
 
+var (
+	cpuProfilePeriodRecord = []uint64{3, 0, 100}   // [len, timestamp, hz]
+	cpuProfilePeriodTags   = []unsafe.Pointer{nil} // one tag slot for the period record
+	cpuProfileEOF          = true                  // minimal stub: no streaming samples
+)
+
 //go:linkname runtime_pprof_readProfile runtime/pprof.readProfile
 func runtime_pprof_readProfile() (data []uint64, tags []unsafe.Pointer, eof bool) {
-	return nil, nil, true
+	// Provide a minimal, valid profile stream for runtime/pprof.
+	// The stdlib expects at least the initial "period" record (3 uint64s).
+	return cpuProfilePeriodRecord, cpuProfilePeriodTags, cpuProfileEOF
 }
 
 //go:linkname pprof_goroutineProfileWithLabels runtime.pprof_goroutineProfileWithLabels
-func pprof_goroutineProfileWithLabels(p []uintptr, labels []unsafe.Pointer) (n int, ok bool) {
-	return 0, false
+func pprof_goroutineProfileWithLabels(p []StackRecord, labels []unsafe.Pointer) (n int, ok bool) {
+	return 0, true
 }
 
 //go:linkname pprof_memProfileInternal runtime.pprof_memProfileInternal
-func pprof_memProfileInternal(p []uintptr, inuseZero bool) (n int, ok bool) {
-	return 0, false
+func pprof_memProfileInternal(p []MemProfileRecord, inuseZero bool) (n int, ok bool) {
+	return 0, true
 }
 
 //go:linkname pprof_blockProfileInternal runtime.pprof_blockProfileInternal
-func pprof_blockProfileInternal(p []uintptr) (n int, ok bool) {
-	return 0, false
+func pprof_blockProfileInternal(p []BlockProfileRecord) (n int, ok bool) {
+	return 0, true
 }
 
 //go:linkname pprof_mutexProfileInternal runtime.pprof_mutexProfileInternal
-func pprof_mutexProfileInternal(p []uintptr) (n int, ok bool) {
-	return 0, false
+func pprof_mutexProfileInternal(p []BlockProfileRecord) (n int, ok bool) {
+	return 0, true
 }
 
 //go:linkname pprof_threadCreateInternal runtime.pprof_threadCreateInternal
-func pprof_threadCreateInternal(p []uintptr) (n int, ok bool) {
-	return 0, false
+func pprof_threadCreateInternal(p []StackRecord) (n int, ok bool) {
+	return 0, true
 }
 
 //go:linkname pprof_fpunwindExpand runtime.pprof_fpunwindExpand

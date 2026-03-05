@@ -50,7 +50,7 @@ func KeepAlive(x any) {
 }
 
 //go:linkname c_write C.write
-func c_write(fd c.Int, p unsafe.Pointer, n c.SizeT) int32
+func c_write(fd c.Int, p unsafe.Pointer, n c.SizeT) c.SsizeT
 
 func write(fd uintptr, p unsafe.Pointer, n int32) int32 {
 	return int32(c_write(c.Int(fd), p, c.SizeT(n)))
