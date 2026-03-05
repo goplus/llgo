@@ -329,8 +329,8 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 	cm := c.ensureCacheManager()
 	paths := cm.PackagePaths(c.targetTriple(), pkg.PkgPath, pkg.Fingerprint)
 
-	// Check if archive file exists
-	if _, err := os.Stat(paths.Archive); err != nil {
+	// Check if bitcode cache exists.
+	if _, err := os.Stat(paths.Bitcode); err != nil {
 		return false
 	}
 
@@ -346,8 +346,11 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 		return false
 	}
 
-	// Use the .a archive directly for linking (no extraction needed)
-	pkg.ArchiveFile = paths.Archive
+	// Use cached package link inputs for final linking.
+	pkg.ObjFiles = []string{paths.Bitcode}
+	if _, err := os.Stat(paths.Archive); err == nil {
+		pkg.ObjFiles = append(pkg.ObjFiles, paths.Archive)
+	}
 	pkg.LinkArgs = meta.LinkArgs
 	pkg.NeedRt = meta.NeedRt
 	pkg.NeedPyInit = meta.NeedPyInit
@@ -444,18 +447,30 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return err
 	}
 
-	// If ArchiveFile is already set (from normalizeToArchive), copy it to cache
-	if pkg.ArchiveFile != "" {
-		if err := copyFileAtomic(pkg.ArchiveFile, paths.Archive); err != nil {
-			return err
-		}
-	} else if len(pkg.ObjFiles) > 0 {
-		// Otherwise, create archive from object files
-		if err := c.createArchiveFile(paths.Archive, pkg.ObjFiles); err != nil {
-			return err
-		}
-	} else {
+	bitcodeFiles, nativeInputs := splitBitcodeAndNativeInputs(pkg.ObjFiles)
+	// Package bitcode is mandatory for bitcode LTO cache entries.
+	if len(bitcodeFiles) == 0 {
 		return nil
+	}
+	pkgBitcode := bitcodeFiles[0]
+	if len(bitcodeFiles) > 1 {
+		merged, err := mergeBitcodeFiles(pkg.PkgPath, bitcodeFiles)
+		if err != nil {
+			return fmt.Errorf("merge bitcode for cache %s: %w", pkg.PkgPath, err)
+		}
+		pkgBitcode = merged
+	}
+	if err := copyFileAtomic(pkgBitcode, paths.Bitcode); err != nil {
+		return err
+	}
+	if len(nativeInputs) > 0 {
+		if len(nativeInputs) == 1 && strings.HasSuffix(nativeInputs[0], ".a") {
+			if err := copyFileAtomic(nativeInputs[0], paths.Archive); err != nil {
+				return err
+			}
+		} else if err := c.createArchiveFile(paths.Archive, nativeInputs); err != nil {
+			return err
+		}
 	}
 
 	// Append metadata to existing manifest (pkg.Manifest was built in collectFingerprint).

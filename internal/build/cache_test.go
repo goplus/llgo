@@ -64,6 +64,10 @@ func TestCacheManager_PackagePaths(t *testing.T) {
 	if paths.Archive != expectedArchive {
 		t.Errorf("Archive = %q, want %q", paths.Archive, expectedArchive)
 	}
+	expectedBitcode := filepath.Join(expectedDir, "abc123.bc")
+	if paths.Bitcode != expectedBitcode {
+		t.Errorf("Bitcode = %q, want %q", paths.Bitcode, expectedBitcode)
+	}
 
 	expectedManifest := filepath.Join(expectedDir, "abc123.manifest")
 	if paths.Manifest != expectedManifest {
@@ -167,7 +171,7 @@ func TestCacheManager_CacheExists(t *testing.T) {
 	if err := cm.EnsureDir(paths); err != nil {
 		t.Fatal(err)
 	}
-	os.WriteFile(paths.Archive, []byte("archive"), 0644)
+	os.WriteFile(paths.Bitcode, []byte("bitcode"), 0644)
 
 	// Still should not exist (manifest missing)
 	if cm.cacheExists(paths) {
@@ -179,7 +183,7 @@ func TestCacheManager_CacheExists(t *testing.T) {
 
 	// Now should exist
 	if !cm.cacheExists(paths) {
-		t.Error("cache should exist with both files")
+		t.Error("cache should exist with bitcode and manifest files")
 	}
 }
 
@@ -215,7 +219,7 @@ func TestCacheManager_CleanPackageCache(t *testing.T) {
 
 	// Create cache
 	cm.EnsureDir(paths)
-	os.WriteFile(paths.Archive, []byte("archive"), 0644)
+	os.WriteFile(paths.Bitcode, []byte("bitcode"), 0644)
 	os.WriteFile(paths.Manifest, []byte("manifest"), 0644)
 
 	// Clean
@@ -243,8 +247,8 @@ func TestCacheManager_CleanAllCache(t *testing.T) {
 
 	cm.EnsureDir(paths1)
 	cm.EnsureDir(paths2)
-	os.WriteFile(paths1.Archive, []byte("1"), 0644)
-	os.WriteFile(paths2.Archive, []byte("2"), 0644)
+	os.WriteFile(paths1.Bitcode, []byte("1"), 0644)
+	os.WriteFile(paths2.Bitcode, []byte("2"), 0644)
 
 	// Clean all
 	if err := cm.cleanAllCache(); err != nil {
@@ -278,8 +282,8 @@ func TestCacheManager_ListCachedPackages(t *testing.T) {
 	paths1 := cm.PackagePaths("arm64-darwin", "test/pkg", "fp1")
 	paths2 := cm.PackagePaths("arm64-darwin", "test/pkg", "fp2")
 	cm.EnsureDir(paths1)
-	os.WriteFile(paths1.Archive, []byte("1"), 0644)
-	os.WriteFile(paths2.Archive, []byte("2"), 0644)
+	os.WriteFile(paths1.Bitcode, []byte("1"), 0644)
+	os.WriteFile(paths2.Bitcode, []byte("2"), 0644)
 
 	fps, err = cm.listCachedPackages("arm64-darwin", "test/pkg")
 	if err != nil {
@@ -304,10 +308,10 @@ func TestCacheManager_Stats(t *testing.T) {
 	cm.EnsureDir(paths1)
 	cm.EnsureDir(paths2)
 
-	content1 := []byte("archive content 1")
-	content2 := []byte("archive content 2 longer")
-	os.WriteFile(paths1.Archive, content1, 0644)
-	os.WriteFile(paths2.Archive, content2, 0644)
+	content1 := []byte("bitcode content 1")
+	content2 := []byte("bitcode content 2 longer")
+	os.WriteFile(paths1.Bitcode, content1, 0644)
+	os.WriteFile(paths2.Bitcode, content2, 0644)
 	os.WriteFile(paths1.Manifest, []byte("m1"), 0644)
 	os.WriteFile(paths2.Manifest, []byte("m2"), 0644)
 

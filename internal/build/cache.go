@@ -29,6 +29,7 @@ import (
 
 const (
 	cacheBuildDirName = "build"
+	cacheBitcodeExt   = ".bc"
 	cacheArchiveExt   = ".a"
 	cacheManifestExt  = ".manifest"
 )
@@ -54,7 +55,8 @@ func newCacheManager() *cacheManager {
 // cachePaths holds the paths for a cached package
 type cachePaths struct {
 	Dir      string // Directory containing cache files
-	Archive  string // Path to .a file
+	Bitcode  string // Path to .bc file
+	Archive  string // Path to optional native .a file
 	Manifest string // Path to .manifest file
 }
 
@@ -64,6 +66,7 @@ func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) 
 	fingerprint = sanitizeComponent(fingerprint)
 	return cachePaths{
 		Dir:      dir,
+		Bitcode:  filepath.Join(dir, fingerprint+cacheBitcodeExt),
 		Archive:  filepath.Join(dir, fingerprint+cacheArchiveExt),
 		Manifest: filepath.Join(dir, fingerprint+cacheManifestExt),
 	}
@@ -176,8 +179,8 @@ func readManifest(path string) (string, error) {
 
 // cacheExists checks if a valid cache entry exists
 func (cm *cacheManager) cacheExists(paths cachePaths) bool {
-	// Both archive and manifest must exist
-	if _, err := os.Stat(paths.Archive); err != nil {
+	// Bitcode and manifest must exist. Native archive is optional.
+	if _, err := os.Stat(paths.Bitcode); err != nil {
 		return false
 	}
 	if _, err := os.Stat(paths.Manifest); err != nil {
@@ -211,8 +214,8 @@ func (cm *cacheManager) listCachedPackages(targetTriple, pkgPath string) ([]stri
 	var fingerprints []string
 	for _, entry := range entries {
 		name := entry.Name()
-		if strings.HasSuffix(name, cacheArchiveExt) {
-			fp := strings.TrimSuffix(name, cacheArchiveExt)
+		if strings.HasSuffix(name, cacheBitcodeExt) {
+			fp := strings.TrimSuffix(name, cacheBitcodeExt)
 			fingerprints = append(fingerprints, fp)
 		}
 	}
@@ -239,7 +242,7 @@ func (cm *cacheManager) stats() (cacheStats, error) {
 		}
 		if !info.IsDir() {
 			stats.TotalSize += info.Size()
-			if strings.HasSuffix(path, cacheArchiveExt) {
+			if strings.HasSuffix(path, cacheBitcodeExt) {
 				stats.TotalPackages++
 			}
 		}

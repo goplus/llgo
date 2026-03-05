@@ -149,6 +149,16 @@ func (b Builder) Longjmp(jb, retval Expr) {
 
 func (p Function) deferInitBuilder() (b Builder, next BasicBlock) {
 	b = p.NewBuilder()
+	// getDefer may switch to a fresh builder when wiring defer prologue.
+	// Seed a valid function-scope debug location so synthesized calls carry
+	// !dbg in debug builds (LLVM verifies this for inlinable calls).
+	if sp := p.impl.Subprogram(); sp.C != nil {
+		line := sp.SubprogramLine()
+		if line == 0 {
+			line = 1
+		}
+		b.impl.SetCurrentDebugLocation(line, 0, sp, llvm.Metadata{})
+	}
 	next = b.setBlockMoveLast(p.blks[0])
 	p.blks[0].last = next.last
 	return
