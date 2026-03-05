@@ -42,7 +42,7 @@ jobs:
           key: ${{ needs.setup.outputs.linux-cache-key }}
           lookup-only: true
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         with:
           image: tonistiigi/binfmt:qemu-v7.0.0-28
