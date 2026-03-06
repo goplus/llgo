@@ -62,11 +62,6 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "i8"},
 				Ret:  plan9asm.I64,
 			},
-			"internal/bytealg.countbytebody": {
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, "i8", plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R2", "R1", "R8"},
-			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s"): {
 			"internal/bytealg.Index": {
@@ -77,11 +72,6 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "{ ptr, i64 }"},
 				Ret:  plan9asm.I64,
 			},
-			"internal/bytealg.indexbody": {
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R3", "R9"},
-			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s"): {
 			"internal/bytealg.IndexByte": {
@@ -91,11 +81,6 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 			"internal/bytealg.IndexByteString": {
 				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "i8"},
 				Ret:  plan9asm.I64,
-			},
-			"internal/bytealg.indexbytebody": {
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, "i8", plan9asm.I64, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R8"},
 			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s"): {
@@ -116,6 +101,36 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s")]["internal/bytealg.memeqbody"] = plan9asm.FuncSig{
 				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
 				Ret:  plan9asm.I1,
+			}
+		}
+	}
+	// Go toolchains may keep or drop indexbody<> in index_arm64.s.
+	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s")); err == nil {
+		if string(src) != "" && containsTextSymbol(string(src), "indexbody<>") {
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s")]["internal/bytealg.indexbody"] = plan9asm.FuncSig{
+				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr},
+				Ret:     plan9asm.Void,
+				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R3", "R9"},
+			}
+		}
+	}
+	// Go toolchains may keep or drop indexbytebody<> in indexbyte_arm64.s.
+	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s")); err == nil {
+		if string(src) != "" && containsTextSymbol(string(src), "indexbytebody<>") {
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s")]["internal/bytealg.indexbytebody"] = plan9asm.FuncSig{
+				Args:    []plan9asm.LLVMType{plan9asm.Ptr, "i8", plan9asm.I64, plan9asm.Ptr},
+				Ret:     plan9asm.Void,
+				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R8"},
+			}
+		}
+	}
+	// Go toolchains may keep or drop countbytebody<> in count_arm64.s.
+	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s")); err == nil {
+		if string(src) != "" && containsTextSymbol(string(src), "countbytebody<>") {
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s")]["internal/bytealg.countbytebody"] = plan9asm.FuncSig{
+				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, "i8", plan9asm.Ptr},
+				Ret:     plan9asm.Void,
+				ArgRegs: []plan9asm.Reg{"R0", "R2", "R1", "R8"},
 			}
 		}
 	}

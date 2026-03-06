@@ -33,10 +33,20 @@ type plan9AsmFunctionInfo struct {
 
 type plan9AsmFileTranslation struct {
 	LLVMIR string `json:"-"`
-	// Signatures is the exact symbol->signature map passed to plan9asm.Translate.
+	// Signatures is the exact symbol->signature map passed to plan9asm.TranslateModule.
 	Signatures map[string]plan9asm.FuncSig `json:"signatures"`
 	// Functions records TEXT symbol resolution for this .s file.
 	Functions []plan9AsmFunctionInfo `json:"functions"`
+}
+
+// plan9AsmModuleTranslation keeps the raw LLVM module so callers can run
+// extra IR transforms (for example cabi) before emitting text/object files.
+type plan9AsmModuleTranslation struct {
+	Module gllvm.Module
+	// Signatures is the exact symbol->signature map passed to plan9asm.TranslateModule.
+	Signatures map[string]plan9asm.FuncSig
+	// Functions records TEXT symbol resolution for this .s file.
+	Functions []plan9AsmFunctionInfo
 }
 
 type translatePlan9AsmOptions struct {
@@ -85,7 +95,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
 		}
-		tr, err := translatePlan9AsmSourceForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
+		tr, err := translatePlan9AsmSourceModuleForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
 		if err != nil {
 			// Some stdlib .s files are comment-only placeholders (e.g. internal/cpu/cpu.s).
 			// Skip those silently.
@@ -94,7 +104,17 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 			}
 			return nil, fmt.Errorf("%s: translate %s: %w", pkg.PkgPath, sfile, err)
 		}
-		ll := tr.LLVMIR
+		mod := tr.Module
+
+		// Apply cabi rewrites to translated asm modules for declaration-driven
+		// aggregates (slice/string/interface headers) under ABI2.
+		// runtime asm uses hand-written calling conventions and must stay on
+		// original Go ABI semantics.
+		if pkg.PkgPath != "runtime" {
+			ctx.cTransformer.TransformModule(pkg.PkgPath, mod)
+		}
+		ll := mod.String()
+		mod.Dispose()
 
 		baseName := aPkg.ExportFile + filepath.Base(sfile) // used for stable debug output paths
 		tmpPrefix := "plan9asm-" + filepath.Base(sfile) + "-"
@@ -174,6 +194,23 @@ func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []by
 }
 
 func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt translatePlan9AsmOptions) (*plan9AsmFileTranslation, error) {
+	tr, err := translatePlan9AsmSourceModuleForPkgWithOptions(pkg, sfile, src, goos, goarch, opt)
+	if err != nil {
+		return nil, err
+	}
+	defer tr.Module.Dispose()
+	return &plan9AsmFileTranslation{
+		LLVMIR:     tr.Module.String(),
+		Signatures: tr.Signatures,
+		Functions:  tr.Functions,
+	}, nil
+}
+
+func translatePlan9AsmSourceModuleForPkg(pkg *packages.Package, sfile string, src []byte, goos string, goarch string) (*plan9AsmModuleTranslation, error) {
+	return translatePlan9AsmSourceModuleForPkgWithOptions(pkg, sfile, src, goos, goarch, translatePlan9AsmOptions{})
+}
+
+func translatePlan9AsmSourceModuleForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt translatePlan9AsmOptions) (*plan9AsmModuleTranslation, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("nil package")
 	}
@@ -213,7 +250,7 @@ func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile strin
 	if err != nil {
 		return nil, fmt.Errorf("%s: sigs %s: %w", pkg.PkgPath, sfile, err)
 	}
-	ll, err := plan9asm.Translate(file, plan9asm.Options{
+	mod, err := plan9asm.TranslateModule(file, plan9asm.Options{
 		TargetTriple:   triple,
 		ResolveSym:     resolve,
 		Sigs:           sigs,
@@ -233,8 +270,8 @@ func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile strin
 		})
 	}
 
-	return &plan9AsmFileTranslation{
-		LLVMIR:     ll,
+	return &plan9AsmModuleTranslation{
+		Module:     mod,
 		Signatures: sigs,
 		Functions:  funcs,
 	}, nil
@@ -253,6 +290,13 @@ func filterPlan9AsmFuncs(pkgPath, goos, goarch string, funcs []plan9asm.Func, re
 		// llgo-specific implementation consistently across supported toolchains.
 		if pkgPath == "syscall" && goos == "linux" && (goarch == "arm64" || goarch == "amd64") && strings.HasSuffix(resolved, "rawVforkSyscall") {
 			continue
+		}
+		// Darwin runtime exports RawSyscall/RawSyscall6 via go:linkname.
+		// Skip the syscall package's asm bodies to avoid duplicate definitions.
+		if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") {
+			if resolved == "syscall.RawSyscall" || resolved == "syscall.RawSyscall6" {
+				continue
+			}
 		}
 		keep = append(keep, fn)
 	}
@@ -276,6 +320,12 @@ var defaultPlan9AsmExcludedPkgs = map[string]none{
 	"runtime":               {},
 	"syscall/js":            {},
 	"unique":                {},
+}
+
+// Some packages need translated Plan9 asm and additive alt-package patches.
+// These patches do not replace the package; they fill in extra definitions.
+var plan9asmCompatAltPkgs = map[string]none{
+	"internal/runtime/sys": {},
 }
 
 func archSupportsPlan9AsmDefaults(goarch string) bool {
@@ -395,81 +445,26 @@ func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []
 	if ctx.buildConf.AbiMode != cabi.ModeAllFunc {
 		return nil
 	}
-	skip := make(map[string]struct{})
-	// Linkname entry used by reflect.Copy. ABI2 wrapping this symbol can
-	// mismatch runtime's concrete signature in mixed type-name scenarios.
-	skip["github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy"] = struct{}{}
 
-	ownSigs, err := plan9asmSigsForPkg(ctx, pkgPath)
-	check(err)
-	for name := range ownSigs {
-		skip[name] = struct{}{}
-	}
-
-	fn := mod.FirstFunction()
-	for !fn.IsNil() {
-		if fn.IsDeclaration() {
-			name := fn.Name()
-			depPkgPath := symbolPkgPath(name)
-			if depPkgPath != "" && depPkgPath != pkgPath {
-				depSigs, err := plan9asmSigsForPkg(ctx, depPkgPath)
-				check(err)
-				if _, ok := depSigs[name]; ok {
-					skip[name] = struct{}{}
-				}
-			}
+	// Plan9 asm modules are translated to LLVM and transformed by cabi in
+	// compilePkgSFiles. Most packages should not skip any rewrite.
+	//
+	// runtime is special: many runtime asm entry points use hand-crafted
+	// conventions that are not declaration-driven. Keep Go-side declarations
+	// untouched for those symbols.
+	if pkgPath == "runtime" || pkgPath == "reflect" {
+		ownSigs, err := plan9asmSigsForPkg(ctx, pkgPath)
+		check(err)
+		if len(ownSigs) == 0 {
+			return nil
 		}
-		fn = gllvm.NextFunction(fn)
-	}
-
-	// Darwin syscall packages mix Go declarations with runtime-provided
-	// implementations via //go:linkname; only on darwin do we force ABI rewrite
-	// for those Go entry points instead of skipping them as asm symbols.
-	if ctx.buildConf != nil && ctx.buildConf.Goos == "darwin" {
-		// syscall has mixed Go + asm on darwin. Cross-package callers must
-		// ABI-rewrite Go entry points; only the package's own build should keep
-		// skip entries for its asm trampolines.
-		if pkgPath != "syscall" {
-			for name := range skip {
-				if strings.HasPrefix(name, "syscall.") {
-					delete(skip, name)
-				}
-			}
+		names := make([]string, 0, len(ownSigs))
+		for name := range ownSigs {
+			names = append(names, name)
 		}
-		// syscall on darwin declares syscall/rawSyscall entry points in Go, but
-		// their implementations are provided by runtime via //go:linkname rather
-		// than package-local Plan9 asm.
-		delete(skip, "syscall.Syscall")
-		delete(skip, "syscall.Syscall6")
-		delete(skip, "syscall.Syscall6X")
-		delete(skip, "syscall.SyscallPtr")
-		delete(skip, "syscall.RawSyscall")
-		delete(skip, "syscall.RawSyscall6")
-		delete(skip, "syscall.syscall")
-		delete(skip, "syscall.syscall6")
-		delete(skip, "syscall.syscall6X")
-		delete(skip, "syscall.syscallPtr")
-		delete(skip, "syscall.rawSyscall")
-		delete(skip, "syscall.rawSyscall6")
-		// internal/syscall/unix has mixed Go + asm on darwin. Cross-package
-		// callers must ABI-rewrite Go entry points like Fcntl; only the package's
-		// own build should keep skip entries for its asm trampolines.
-		if pkgPath != "internal/syscall/unix" {
-			for name := range skip {
-				if strings.HasPrefix(name, "internal/syscall/unix.") {
-					delete(skip, name)
-				}
-			}
-		}
+		return names
 	}
-	if len(skip) == 0 {
-		return nil
-	}
-	names := make([]string, 0, len(skip))
-	for name := range skip {
-		names = append(names, name)
-	}
-	return names
+	return nil
 }
 
 func plan9asmResolveSymFunc(pkgPath string) func(sym string) string {
@@ -658,6 +653,9 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if !llruntime.HasAltPkg(pkgPath) {
 		return false
+	}
+	if _, ok := plan9asmCompatAltPkgs[pkgPath]; ok {
+		return true
 	}
 	// When Plan9 asm translation is enabled, avoid also pulling in alt packages
 	// that provide the same symbols as pure-Go fallbacks.
@@ -1123,6 +1121,8 @@ func llvmTypeForGo(t types.Type, goarch string) (plan9asm.LLVMType, error) {
 			return plan9asm.LLVMType("{ ptr, i64, i64 }"), nil
 		}
 		return plan9asm.LLVMType("{ ptr, i32, i32 }"), nil
+	case *types.Interface:
+		return plan9asm.LLVMType("{ ptr, ptr }"), nil
 	case *types.Named:
 		return llvmTypeForGo(tt.Underlying(), goarch)
 	default:
@@ -1253,10 +1253,11 @@ func hasAnyTextAsm(ctx *context, files []string) (bool, error) {
 // llvmArgsAndFrameSlotsForTuple lowers a Go parameter/result tuple into LLVM
 // argument types and a frame-slot layout compatible with Go stdlib asm.
 //
-// In particular, it flattens strings and slices into their header words:
+// In particular, it has declaration-driven header layouts for string/slice/interface:
 //
-//	string: base, len
-//	slice:  base, len, cap
+//	string:    base, len
+//	slice:     base, len, cap
+//	interface: type/itab ptr, data ptr
 //
 // It returns:
 //   - args: LLVM argument types (flattened)
@@ -1265,12 +1266,6 @@ func hasAnyTextAsm(ctx *context, files []string) (bool, error) {
 func llvmArgsAndFrameSlotsForTuple(tup *types.Tuple, goarch string, sz types.Sizes, startOff int64, flattenAgg bool) (args []plan9asm.LLVMType, slots []plan9asm.FrameSlot, nextOff int64, err error) {
 	if tup == nil || tup.Len() == 0 {
 		return nil, nil, startOff, nil
-	}
-
-	word := int64(wordSize(goarch))
-	wordTy := plan9asm.I64
-	if word == 4 {
-		wordTy = plan9asm.LLVMType("i32")
 	}
 
 	align := func(off, a int64) int64 {
@@ -1291,67 +1286,25 @@ func llvmArgsAndFrameSlotsForTuple(tup *types.Tuple, goarch string, sz types.Siz
 		a := int64(sz.Alignof(t))
 		off = align(off, a)
 
-		switch u := types.Unalias(t).(type) {
-		case *types.Basic:
-			if u.Kind() == types.String {
-				if flattenAgg {
-					// Return value elements (or explicit args) are flattened into header words:
-					// base ptr, len word.
-					args = append(args, plan9asm.LLVMType("ptr"), wordTy)
-					slots = append(slots,
-						plan9asm.FrameSlot{Offset: off + 0*word, Type: plan9asm.LLVMType("ptr"), Index: argIdx + 0, Field: -1},
-						plan9asm.FrameSlot{Offset: off + 1*word, Type: wordTy, Index: argIdx + 1, Field: -1},
-					)
-					argIdx += 2
-					off += int64(sz.Sizeof(t))
-					continue
+		parts, ok := framePartsForType(t, goarch)
+		if ok {
+			if flattenAgg {
+				for _, part := range parts {
+					args = append(args, part.Type)
+					slots = append(slots, plan9asm.FrameSlot{Offset: off + part.Offset, Type: part.Type, Index: argIdx, Field: -1})
+					argIdx++
 				}
-
-				// Go-level parameter is passed as a struct {ptr, len}.
-				// Stdlib asm still addresses the fields via FP slots, so we
-				// record per-field FrameSlots with Field selectors.
+			} else {
 				ty, e := llvmTypeForGo(t, goarch)
 				if e != nil {
 					return nil, nil, 0, e
 				}
 				args = append(args, ty)
-				slots = append(slots,
-					plan9asm.FrameSlot{Offset: off + 0*word, Type: plan9asm.LLVMType("ptr"), Index: argIdx, Field: 0},
-					plan9asm.FrameSlot{Offset: off + 1*word, Type: wordTy, Index: argIdx, Field: 1},
-				)
+				for _, part := range parts {
+					slots = append(slots, plan9asm.FrameSlot{Offset: off + part.Offset, Type: part.Type, Index: argIdx, Field: part.Field})
+				}
 				argIdx++
-				off += int64(sz.Sizeof(t))
-				continue
 			}
-		case *types.Slice:
-			if flattenAgg {
-				// Return value elements (or explicit args) are flattened into header words:
-				// base ptr, len word, cap word.
-				args = append(args, plan9asm.LLVMType("ptr"), wordTy, wordTy)
-				slots = append(slots,
-					plan9asm.FrameSlot{Offset: off + 0*word, Type: plan9asm.LLVMType("ptr"), Index: argIdx + 0, Field: -1},
-					plan9asm.FrameSlot{Offset: off + 1*word, Type: wordTy, Index: argIdx + 1, Field: -1},
-					plan9asm.FrameSlot{Offset: off + 2*word, Type: wordTy, Index: argIdx + 2, Field: -1},
-				)
-				argIdx += 3
-				off += int64(sz.Sizeof(t))
-				continue
-			}
-
-			// Go-level parameter is passed as a struct {ptr, len, cap}.
-			// Stdlib asm still addresses the fields via FP slots, so we
-			// record per-field FrameSlots with Field selectors.
-			ty, e := llvmTypeForGo(t, goarch)
-			if e != nil {
-				return nil, nil, 0, e
-			}
-			args = append(args, ty)
-			slots = append(slots,
-				plan9asm.FrameSlot{Offset: off + 0*word, Type: plan9asm.LLVMType("ptr"), Index: argIdx, Field: 0},
-				plan9asm.FrameSlot{Offset: off + 1*word, Type: wordTy, Index: argIdx, Field: 1},
-				plan9asm.FrameSlot{Offset: off + 2*word, Type: wordTy, Index: argIdx, Field: 2},
-			)
-			argIdx++
 			off += int64(sz.Sizeof(t))
 			continue
 		}
@@ -1366,6 +1319,42 @@ func llvmArgsAndFrameSlotsForTuple(tup *types.Tuple, goarch string, sz types.Siz
 		off += int64(sz.Sizeof(t))
 	}
 	return args, slots, off, nil
+}
+
+type framePart struct {
+	Offset int64
+	Type   plan9asm.LLVMType
+	Field  int
+}
+
+func framePartsForType(t types.Type, goarch string) ([]framePart, bool) {
+	word := int64(wordSize(goarch))
+	wordTy := plan9asm.I64
+	if word == 4 {
+		wordTy = plan9asm.LLVMType("i32")
+	}
+	switch u := types.Unalias(t).(type) {
+	case *types.Basic:
+		if u.Kind() == types.String {
+			return []framePart{
+				{Offset: 0, Type: plan9asm.Ptr, Field: 0},
+				{Offset: word, Type: wordTy, Field: 1},
+			}, true
+		}
+	case *types.Slice:
+		return []framePart{
+			{Offset: 0, Type: plan9asm.Ptr, Field: 0},
+			{Offset: word, Type: wordTy, Field: 1},
+			{Offset: 2 * word, Type: wordTy, Field: 2},
+		}, true
+	case *types.Interface:
+		// Both empty and non-empty interfaces occupy two pointers in Go ABI.
+		return []framePart{
+			{Offset: 0, Type: plan9asm.Ptr, Field: 0},
+			{Offset: word, Type: plan9asm.Ptr, Field: 1},
+		}, true
+	}
+	return nil, false
 }
 
 func alignOff(off, a int64) int64 {
