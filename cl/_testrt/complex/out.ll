@@ -3,7 +3,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/complex"
 
 @"github.com/goplus/llgo/cl/_testrt/complex.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/complex.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/complex.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/complex.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -16,7 +16,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/complex.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/complex.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double 1.000000e+00)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -49,10 +49,12 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double })
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double }) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

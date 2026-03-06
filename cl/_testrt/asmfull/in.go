@@ -23,5 +23,7 @@ func main() {
 		"x": 25,
 		"y": 17,
 	})
-	println("Result:", res2)
+	_ = res2
+	// check res2 is meaningless
+	// println("Result:", res2)
 }

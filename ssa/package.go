@@ -436,7 +436,10 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		mod: mod, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
-		export: make(map[string]string),
+		export:         make(map[string]string),
+		preserveSyms:   make(map[string]struct{}),
+		llvmUsedValues: make([]llvm.Value, 0, 4),
+		NonLeafAttr:    p.ctx.CreateStringAttribute("frame-pointer", "non-leaf"),
 	}
 	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
@@ -701,7 +704,10 @@ type aPackage struct {
 	NeedPyInit  bool
 	NeedAbiInit bool // need load all abi types for reflect make type
 
-	export map[string]string // pkgPath.nameInPkg => exportname
+	export         map[string]string   // pkgPath.nameInPkg => exportname
+	preserveSyms   map[string]struct{} // set of exported symbol names
+	llvmUsedValues []llvm.Value
+	NonLeafAttr    llvm.Attribute
 }
 
 type Package = *aPackage
@@ -712,10 +718,33 @@ func (p Package) Module() llvm.Module {
 
 func (p Package) SetExport(name, export string) {
 	p.export[name] = export
+	p.preserveSyms[export] = struct{}{}
 }
 
 func (p Package) ExportFuncs() map[string]string {
 	return p.export
+}
+
+func (p Package) isPreservedName(name string) bool {
+	_, ok := p.preserveSyms[name]
+	return ok
+}
+
+func (p Package) markLLVMUsed(v llvm.Value) {
+	elemTyp := p.Prog.VoidPtr().ll
+	p.llvmUsedValues = append(p.llvmUsedValues, llvm.ConstBitCast(v, elemTyp))
+}
+
+func (p Package) MaterializePreserveSyms() {
+	if len(p.llvmUsedValues) == 0 {
+		return
+	}
+	elemTyp := p.Prog.VoidPtr().ll
+	init := llvm.ConstArray(elemTyp, p.llvmUsedValues)
+	global := llvm.AddGlobal(p.mod, init.Type(), "llvm.compiler.used")
+	global.SetInitializer(init)
+	global.SetLinkage(llvm.AppendingLinkage)
+	global.SetSection("llvm.metadata")
 }
 
 func (p Package) rtFunc(fnName string) Expr {

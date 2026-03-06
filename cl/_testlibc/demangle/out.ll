@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/demangle"
 @1 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
 @2 = private unnamed_addr constant [18 x i8] c"Failed to demangle", align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibc/demangle.init"() {
+define void @"github.com/goplus/llgo/cl/_testlibc/demangle.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibc/demangle.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -21,7 +21,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibc/demangle.main"() {
+define void @"github.com/goplus/llgo/cl/_testlibc/demangle.main"() #0 {
 _llgo_0:
   %0 = call ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 29 }, i1 true)
   %1 = icmp ne ptr %0, null
@@ -40,10 +40,12 @@ _llgo_3:                                          ; preds = %_llgo_0
   br label %_llgo_2
 }
 
-declare ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"github.com/goplus/llgo/runtime/internal/runtime.String", i1)
+declare ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"github.com/goplus/llgo/runtime/internal/runtime.String", i1) #0
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

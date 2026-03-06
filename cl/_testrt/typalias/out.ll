@@ -7,7 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/typalias"
 @"github.com/goplus/llgo/cl/_testrt/typalias.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testrt/typalias.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/typalias.Print"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/typalias.Print"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
   %2 = load i1, ptr %1, align 1
@@ -23,16 +23,16 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/typalias._Cgo_ptr"(ptr %0) {
+define ptr @"github.com/goplus/llgo/cl/_testrt/typalias._Cgo_ptr"(ptr %0) #0 {
 _llgo_0:
   ret ptr %0
 }
 
-declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-define void @"github.com/goplus/llgo/cl/_testrt/typalias.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/typalias.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/typalias.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -56,7 +56,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/typalias.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/typalias.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
@@ -67,8 +67,10 @@ _llgo_0:
   ret void
 }
 
-declare void @printf(ptr, ...)
+declare void @printf(ptr, ...) #0
 
-declare void @syscall.init()
+declare void @syscall.init() #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

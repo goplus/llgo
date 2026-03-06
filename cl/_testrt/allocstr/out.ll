@@ -6,12 +6,12 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/allocstr"
 @"github.com/goplus/llgo/cl/_testrt/allocstr.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [12 x i8] c"Hello world\0A", align 1
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/allocstr.hello"() {
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/allocstr.hello"() #0 {
 _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 12 }
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/allocstr.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/allocstr.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/allocstr.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -24,7 +24,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/allocstr.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/allocstr.main"() #0 {
 _llgo_0:
   %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/allocstr.hello"()
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, 1
@@ -35,6 +35,8 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.CStrCopy"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

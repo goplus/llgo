@@ -5,7 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/fprintf"
 @__stderrp = external global ptr, align 8
 @0 = private unnamed_addr constant [10 x i8] c"Hello %d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/fprintf.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/fprintf.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/fprintf.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -18,11 +18,13 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/fprintf.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/fprintf.main"() #0 {
 _llgo_0:
   %0 = load ptr, ptr @__stderrp, align 8
   call void (ptr, ptr, ...) @fprintf(ptr %0, ptr @0, i64 100)
   ret void
 }
 
-declare void @fprintf(ptr, ptr, ...)
+declare void @fprintf(ptr, ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

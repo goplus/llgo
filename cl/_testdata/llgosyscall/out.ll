@@ -3,7 +3,7 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/llgosyscall"
 
 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.init$guard" = global i1 false, align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.Use"() {
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.Use"() #0 {
 _llgo_0:
   %0 = call i64 null(i64 1, i64 2, i64 3)
   %1 = icmp eq i64 %0, -1
@@ -19,7 +19,7 @@ _llgo_0:
   ret i64 %8
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.Use6"() {
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.Use6"() #0 {
 _llgo_0:
   %0 = call i64 null(i64 1, i64 2, i64 3, i64 4, i64 5, i64 6)
   %1 = icmp eq i64 %0, -1
@@ -35,7 +35,7 @@ _llgo_0:
   ret i64 %8
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.Use6X"() {
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.Use6X"() #0 {
 _llgo_0:
   %0 = call i64 null(i64 1, i64 2, i64 3, i64 4, i64 5, i64 6)
   %1 = icmp eq i64 %0, -1
@@ -51,7 +51,7 @@ _llgo_0:
   ret i64 %8
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.UsePtr"() {
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.UsePtr"() #0 {
 _llgo_0:
   %0 = call i64 null(i64 1, i64 2, i64 3)
   %1 = icmp eq i64 %0, -1
@@ -67,7 +67,7 @@ _llgo_0:
   ret i64 %8
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.UseRaw"() {
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.UseRaw"() #0 {
 _llgo_0:
   %0 = call i64 null(i64 1, i64 2, i64 3)
   %1 = icmp eq i64 %0, -1
@@ -83,7 +83,7 @@ _llgo_0:
   ret i64 %8
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.UseRaw6"() {
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgosyscall.UseRaw6"() #0 {
 _llgo_0:
   %0 = call i64 null(i64 1, i64 2, i64 3, i64 4, i64 5, i64 6)
   %1 = icmp eq i64 %0, -1
@@ -99,7 +99,7 @@ _llgo_0:
   ret i64 %8
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/llgosyscall.init"() {
+define void @"github.com/goplus/llgo/cl/_testdata/llgosyscall.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/llgosyscall.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -112,4 +112,6 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-declare i32 @cliteErrno()
+declare i32 @cliteErrno() #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

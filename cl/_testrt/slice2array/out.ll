@@ -5,7 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/slice2array"
 
 @"github.com/goplus/llgo/cl/_testrt/slice2array.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/slice2array.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/slice2array.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/slice2array.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -18,7 +18,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/slice2array.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/slice2array.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 4)
   %1 = getelementptr inbounds i8, ptr %0, i64 0
@@ -98,15 +98,16 @@ _llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PanicSliceConvert"(i64, i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PanicSliceConvert"(i64, i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { "frame-pointer"="non-leaf" }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) "frame-pointer"="non-leaf" }

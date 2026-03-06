@@ -3,7 +3,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/mask"
 
 @"github.com/goplus/llgo/cl/_testrt/mask.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/mask.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/mask.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/mask.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -16,7 +16,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/mask.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/mask.main"() #0 {
 _llgo_0:
   %0 = call i32 @"github.com/goplus/llgo/cl/_testrt/mask.mask"(i8 1)
   %1 = sext i32 %0 to i64
@@ -59,7 +59,7 @@ _llgo_0:
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/mask.mask"(i8 %0) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/mask.mask"(i8 %0) #0 {
 _llgo_0:
   %1 = sext i8 %0 to i32
   %2 = shl i32 %1, 31
@@ -68,7 +68,7 @@ _llgo_0:
   ret i32 %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shl"(i64 %0, i64 %1) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shl"(i64 %0, i64 %1) #0 {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -78,7 +78,7 @@ _llgo_0:
   ret i64 %5
 }
 
-define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shl8"(i8 %0, i64 %1) {
+define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shl8"(i8 %0, i64 %1) #0 {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -89,7 +89,7 @@ _llgo_0:
   ret i8 %6
 }
 
-define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shl8u"(i8 %0, i64 %1) {
+define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shl8u"(i8 %0, i64 %1) #0 {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -100,7 +100,7 @@ _llgo_0:
   ret i8 %6
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shr"(i64 %0, i64 %1) {
+define i64 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shr"(i64 %0, i64 %1) #0 {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -110,7 +110,7 @@ _llgo_0:
   ret i64 %5
 }
 
-define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shr8"(i8 %0, i64 %1) {
+define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shr8"(i8 %0, i64 %1) #0 {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -121,7 +121,7 @@ _llgo_0:
   ret i8 %6
 }
 
-define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shr8u"(i8 %0, i64 %1) {
+define i8 @"github.com/goplus/llgo/cl/_testrt/mask.mask_shr8u"(i8 %0, i64 %1) #0 {
 _llgo_0:
   %2 = icmp slt i64 %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1 %2)
@@ -132,10 +132,12 @@ _llgo_0:
   ret i8 %6
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNegativeShift"(i1) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

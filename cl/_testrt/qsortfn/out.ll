@@ -23,7 +23,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/qsortfn"
 @18 = private unnamed_addr constant [22 x i8] c"Comp => qsort.Comp()\0A\00", align 1
 @19 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -36,7 +36,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a"()
   call void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b"()
@@ -51,7 +51,7 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @0)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -90,7 +90,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -99,7 +99,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @2)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -138,7 +138,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -147,7 +147,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @4)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -186,7 +186,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -195,7 +195,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @6)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -234,7 +234,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -243,7 +243,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @8)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -282,7 +282,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -291,7 +291,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @10)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -330,7 +330,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -339,7 +339,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @12)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -378,7 +378,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -387,7 +387,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @14)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -426,7 +426,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -435,7 +435,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @16)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -474,7 +474,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -483,7 +483,7 @@ _llgo_0:
   ret i32 %5
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b"() {
+define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b"() #0 {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @18)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
@@ -522,7 +522,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b$1"(ptr %0, ptr %1) {
+define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b$1"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = load i64, ptr %1, align 4
@@ -531,10 +531,12 @@ _llgo_0:
   ret i32 %5
 }
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @qsort(ptr, i64, i64, ptr)
+declare void @qsort(ptr, i64, i64, ptr) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

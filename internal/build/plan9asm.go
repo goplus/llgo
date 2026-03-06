@@ -254,6 +254,10 @@ func filterPlan9AsmFuncs(pkgPath, goos, goarch string, funcs []plan9asm.Func, re
 		if pkgPath == "syscall" && goos == "linux" && (goarch == "arm64" || goarch == "amd64") && strings.HasSuffix(resolved, "rawVforkSyscall") {
 			continue
 		}
+		if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") &&
+			(strings.HasSuffix(resolved, "RawSyscall") || strings.HasSuffix(resolved, "RawSyscall6")) {
+			continue
+		}
 		keep = append(keep, fn)
 	}
 	return keep

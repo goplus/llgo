@@ -5,7 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/closure"
 @0 = private unnamed_addr constant [7 x i8] c"%d %d\0A\00", align 1
 @1 = private unnamed_addr constant [7 x i8] c"%d %d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/closure.init"() {
+define void @"github.com/goplus/llgo/cl/_testrt/closure.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/closure.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -18,7 +18,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/closure.main"() {
+define void @"github.com/goplus/llgo/cl/_testrt/closure.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/closure.main$1"(i64 100, i64 200)
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
@@ -33,19 +33,19 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/closure.main$1"(i64 %0, i64 %1) {
+define void @"github.com/goplus/llgo/cl/_testrt/closure.main$1"(i64 %0, i64 %1) #0 {
 _llgo_0:
   %2 = call i32 (ptr, ...) @printf(ptr @0, i64 %0, i64 %1)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/closure.main$2"(i64 %0, i64 %1) {
+define void @"github.com/goplus/llgo/cl/_testrt/closure.main$2"(i64 %0, i64 %1) #0 {
 _llgo_0:
   %2 = call i32 (ptr, ...) @printf(ptr @1, i64 %0, i64 %1)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/closure.main$3"(ptr %0) {
+define void @"github.com/goplus/llgo/cl/_testrt/closure.main$3"(ptr %0) #0 {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
@@ -56,14 +56,16 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closure.main$2"(ptr %0, i64 %1, i64 %2) {
+define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closure.main$2"(ptr %0, i64 %1, i64 %2) #0 {
 _llgo_0:
   tail call void @"github.com/goplus/llgo/cl/_testrt/closure.main$2"(i64 %1, i64 %2)
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare i32 @printf(ptr, ...)
+declare i32 @printf(ptr, ...) #0
+
+attributes #0 = { "frame-pointer"="non-leaf" }

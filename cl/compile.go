@@ -1246,6 +1246,7 @@ func newPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 		ctx.initAfter = nil
 		fn()
 	}
+	ret.MaterializePreserveSyms()
 	externs = ctx.cgoSymbols
 	return
 }
