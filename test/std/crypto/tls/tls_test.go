@@ -546,8 +546,12 @@ func TestClientServer(t *testing.T) {
 		t.Error("tls.Client returned nil")
 	}
 
-	_ = tlsServer.Close()
-	_ = tlsClient.Close()
+	if err := tlsServer.Close(); err != nil {
+		t.Fatalf("tlsServer.Close: %v", err)
+	}
+	if err := tlsClient.Close(); err != nil {
+		t.Fatalf("tlsClient.Close: %v", err)
+	}
 }
 
 func TestConnMethods(t *testing.T) {
@@ -569,12 +573,22 @@ func TestConnMethods(t *testing.T) {
 		t.Log("ConnectionState before handshake has zero version (expected)")
 	}
 
-	_ = tlsConn.SetDeadline(time.Now().Add(time.Second))
-	_ = tlsConn.SetReadDeadline(time.Now().Add(time.Second))
-	_ = tlsConn.SetWriteDeadline(time.Now().Add(time.Second))
+	if err := tlsConn.SetDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatalf("Conn.SetDeadline: %v", err)
+	}
+	if err := tlsConn.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatalf("Conn.SetReadDeadline: %v", err)
+	}
+	if err := tlsConn.SetWriteDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatalf("Conn.SetWriteDeadline: %v", err)
+	}
 
-	_ = tlsConn.Close()
-	_ = clientConn.Close()
+	if err := tlsConn.Close(); err != nil {
+		t.Fatalf("tlsConn.Close: %v", err)
+	}
+	if err := clientConn.Close(); err != nil {
+		t.Fatalf("clientConn.Close: %v", err)
+	}
 }
 
 func TestEncryptedClientHelloKey(t *testing.T) {
@@ -833,7 +847,9 @@ func TestCertificateRequestInfoContext(t *testing.T) {
 		Version:       tls.VersionTLS13,
 	}
 
-	_ = info.Context()
+	if info.Context() != nil {
+		t.Fatal("CertificateRequestInfo.Context() should be nil without handshake context")
+	}
 }
 
 func TestClientHelloInfoContext(t *testing.T) {
@@ -841,7 +857,9 @@ func TestClientHelloInfoContext(t *testing.T) {
 		ServerName: "example.com",
 	}
 
-	_ = info.Context()
+	if info.Context() != nil {
+		t.Fatal("ClientHelloInfo.Context() should be nil without handshake context")
+	}
 }
 
 func TestConfigEncryptDecryptTicket(t *testing.T) {
@@ -925,13 +943,17 @@ func TestConnReadWrite(t *testing.T) {
 	defer tlsConn.Close()
 
 	buf := make([]byte, 10)
-	_ = tlsConn.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if err := tlsConn.SetReadDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+		t.Fatalf("Conn.SetReadDeadline: %v", err)
+	}
 	_, err = tlsConn.Read(buf)
 	if err != nil {
 		t.Logf("Conn.Read error: %v (expected before handshake)", err)
 	}
 
-	_ = tlsConn.SetWriteDeadline(time.Now().Add(100 * time.Millisecond))
+	if err := tlsConn.SetWriteDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+		t.Fatalf("Conn.SetWriteDeadline: %v", err)
+	}
 	_, err = tlsConn.Write([]byte("test"))
 	if err != nil {
 		t.Logf("Conn.Write error: %v (expected before handshake)", err)
@@ -982,7 +1004,9 @@ func TestConnHandshakeTimeout(t *testing.T) {
 	tlsConn := tls.Server(serverConn, config)
 	defer tlsConn.Close()
 
-	_ = tlsConn.SetDeadline(time.Now().Add(100 * time.Millisecond))
+	if err := tlsConn.SetDeadline(time.Now().Add(100 * time.Millisecond)); err != nil {
+		t.Fatalf("Conn.SetDeadline: %v", err)
+	}
 	if err := tlsConn.Handshake(); err == nil {
 		t.Error("Conn.Handshake should fail without client peer")
 	}
@@ -1023,7 +1047,7 @@ func TestConnectionStateExportKeyingMaterial(t *testing.T) {
 			t.Error("expected panic due to missing exporter state")
 		}
 	}()
-	_, _ = state.ExportKeyingMaterial("label", nil, 32)
+	state.ExportKeyingMaterial("label", nil, 32)
 }
 
 func TestConnHandshakeContext(t *testing.T) {

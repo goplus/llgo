@@ -342,7 +342,9 @@ func TestPackageLevelSymbols(t *testing.T) {
 	if text := parsed.Text('f', 3); text != "3.125" {
 		t.Fatalf("ParseFloat text = %q", text)
 	}
-	_ = big.Word(7) // ensure Word referenced
+	if w := big.Word(7); w != 7 {
+		t.Fatalf("Word conversion mismatch: got %d, want 7", w)
+	}
 }
 
 func TestFloatExtendedAPI(t *testing.T) {

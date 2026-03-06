@@ -9,7 +9,12 @@ import (
 )
 
 func ReadMemStats(m *runtime.MemStats) {
-	panic("todo: runtime.ReadMemStats")
+	if m == nil {
+		return
+	}
+	// LLGo currently doesn't provide accurate allocation statistics when using BDWGC.
+	// Populate a zeroed snapshot so stdlib callers like testing.AllocsPerRun can run.
+	*m = runtime.MemStats{}
 }
 
 func GC() {
