@@ -575,10 +575,9 @@ entry:
 	}
 }
 
-// TestModeAllFunc_RuntimeSliceNoWrap verifies that runtime Slice is preserved in
-// ABI2 transformation, while unrelated
-// large aggregates are still wrapped as needed.
-func TestModeAllFunc_RuntimeSliceNoWrap(t *testing.T) {
+// TestModeAllFunc_RuntimeSliceWrap verifies that runtime Slice also follows
+// ABI2 CABI rewriting, while unrelated large aggregates keep normal wrapping.
+func TestModeAllFunc_RuntimeSliceWrap(t *testing.T) {
 	testIR := `; ModuleID = 'test'
 source_filename = "test"
 
@@ -599,7 +598,7 @@ entry:
 	ctx := llvm.NewContext()
 	defer ctx.Dispose()
 
-	tmpfile := filepath.Join(t.TempDir(), "runtime_slice_nowrap.ll")
+	tmpfile := filepath.Join(t.TempDir(), "runtime_slice_wrap.ll")
 	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
 		t.Fatalf("Failed to write test IR: %v", err)
 	}
@@ -629,11 +628,11 @@ entry:
 		t.Fatal("pkg.keep not found")
 	}
 	keepHead := strings.SplitN(keep.String(), "\n", 2)[0]
-	if !strings.Contains(keepHead, `%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0`) {
-		t.Fatalf("runtime slice param unexpectedly rewritten:\n%s", keep.String())
+	if !strings.Contains(keepHead, "sret(%\"github.com/goplus/llgo/runtime/internal/runtime.Slice\")") {
+		t.Fatalf("runtime slice return should use sret after rewrite:\n%s", keep.String())
 	}
-	if strings.Contains(keepHead, "sret(") || strings.Contains(keepHead, "byval(") {
-		t.Fatalf("runtime slice function should not use sret/byval:\n%s", keep.String())
+	if !strings.Contains(keepHead, "byval(%\"github.com/goplus/llgo/runtime/internal/runtime.Slice\")") {
+		t.Fatalf("runtime slice param should use byval after rewrite:\n%s", keep.String())
 	}
 
 	mixed := mod.NamedFunction("pkg.mixed")
@@ -641,8 +640,8 @@ entry:
 		t.Fatal("pkg.mixed not found")
 	}
 	mixedHead := strings.SplitN(mixed.String(), "\n", 2)[0]
-	if !strings.Contains(mixedHead, `%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0`) {
-		t.Fatalf("runtime slice param unexpectedly rewritten in mixed function:\n%s", mixed.String())
+	if !strings.Contains(mixedHead, "byval(%\"github.com/goplus/llgo/runtime/internal/runtime.Slice\")") {
+		t.Fatalf("runtime slice param should be rewritten in mixed function:\n%s", mixed.String())
 	}
 	if !strings.Contains(mixedHead, "byval(%Big)") {
 		t.Fatalf("non-runtime large aggregate should still be wrapped:\n%s", mixed.String())

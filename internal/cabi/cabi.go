@@ -255,9 +255,6 @@ func funcNoUnwind(ctx llvm.Context) llvm.Attribute {
 }
 
 func (p *Transformer) IsWrapType(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) bool {
-	if p.isNoWrapRuntimeHeaderType(typ) {
-		return false
-	}
 	if p.sys != nil {
 		bret := index == 0
 		if p.sys.SkipEmptyParams() && p.isWrapEmptyType(ctx, typ, bret) {
@@ -288,15 +285,6 @@ func (p *Transformer) getEmptyType(ctx llvm.Context, typ llvm.Type, bret bool) (
 }
 
 func (p *Transformer) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Type, index int) *TypeInfo {
-	if p.isNoWrapRuntimeHeaderType(typ) {
-		return &TypeInfo{
-			Type:  typ,
-			Kind:  AttrNone,
-			Type1: typ,
-			Size:  p.Sizeof(typ),
-			Align: p.Alignof(typ),
-		}
-	}
 	if p.sys != nil {
 		bret := index == 0
 		if p.sys.SkipEmptyParams() {
@@ -307,25 +295,6 @@ func (p *Transformer) GetTypeInfo(ctx llvm.Context, ftyp llvm.Type, typ llvm.Typ
 		return p.sys.GetTypeInfo(ctx, ftyp, typ, index)
 	}
 	panic("not implment: " + p.arch)
-}
-
-func (p *Transformer) isNoWrapRuntimeHeaderType(typ llvm.Type) bool {
-	if typ.TypeKind() != llvm.StructTypeKind {
-		return false
-	}
-	name := typ.StructName()
-	if name == "" || !strings.Contains(name, "runtime/internal/runtime.") {
-		return false
-	}
-	if i := strings.LastIndexByte(name, '.'); i >= 0 && i+1 < len(name) {
-		name = name[i+1:]
-	}
-	switch name {
-	case "Slice":
-		return true
-	default:
-		return false
-	}
 }
 
 func (p *Transformer) Sizeof(typ llvm.Type) int {

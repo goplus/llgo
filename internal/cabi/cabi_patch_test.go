@@ -55,7 +55,7 @@ func TestSetSkipFuncsAndShouldSkipCall(t *testing.T) {
 	}
 }
 
-func TestRuntimeHeaderNoWrapAndTypeInfo(t *testing.T) {
+func TestRuntimeHeaderWrapAndTypeInfo(t *testing.T) {
 	llvm.InitializeAllTargets()
 	llvm.InitializeAllTargetMCs()
 	llvm.InitializeAllTargetInfos()
@@ -68,26 +68,14 @@ func TestRuntimeHeaderNoWrapAndTypeInfo(t *testing.T) {
 	sliceTy := ctx.StructCreateNamed("github.com/goplus/llgo/runtime/internal/runtime.Slice")
 	sliceTy.StructSetBody([]llvm.Type{ptr, ctx.Int64Type(), ctx.Int64Type()}, false)
 
-	if !tr.isNoWrapRuntimeHeaderType(sliceTy) {
-		t.Fatalf("isNoWrapRuntimeHeaderType(Slice) = false, want true")
-	}
-	if tr.IsWrapType(ctx, llvm.FunctionType(ctx.VoidType(), nil, false), sliceTy, 1) {
-		t.Fatalf("IsWrapType should be false for runtime Slice header")
+	if !tr.IsWrapType(ctx, llvm.FunctionType(ctx.VoidType(), nil, false), sliceTy, 1) {
+		t.Fatalf("IsWrapType should be true for runtime Slice header")
 	}
 	info := tr.GetTypeInfo(ctx, llvm.FunctionType(ctx.VoidType(), nil, false), sliceTy, 1)
-	if info.Kind != AttrNone || info.Type1 != sliceTy {
-		t.Fatalf("GetTypeInfo no-wrap mismatch: kind=%v type1=%v", info.Kind, info.Type1)
+	if info.Kind == AttrNone {
+		t.Fatalf("GetTypeInfo should not keep AttrNone for runtime Slice")
 	}
 	if info.Size == 0 || info.Align == 0 {
 		t.Fatalf("GetTypeInfo size/align should be non-zero, got size=%d align=%d", info.Size, info.Align)
-	}
-
-	strTy := ctx.StructCreateNamed("github.com/goplus/llgo/runtime/internal/runtime.String")
-	strTy.StructSetBody([]llvm.Type{ptr, ctx.Int64Type()}, false)
-	if tr.isNoWrapRuntimeHeaderType(strTy) {
-		t.Fatalf("isNoWrapRuntimeHeaderType(String) = true, want false")
-	}
-	if tr.isNoWrapRuntimeHeaderType(ctx.Int32Type()) {
-		t.Fatalf("isNoWrapRuntimeHeaderType(non-struct) = true, want false")
 	}
 }
