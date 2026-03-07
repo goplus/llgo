@@ -1,27 +1,36 @@
 package runtime
 
+type altPkgMode uint8
+
+const (
+	altPkgReplace altPkgMode = iota + 1
+	altPkgAdditive
+)
+
 func SkipToBuild(pkgPath string) bool {
-	if _, ok := hasAltPkg[pkgPath]; ok {
+	if _, ok := altPkgs[pkgPath]; ok {
 		return false
 	}
 	return pkgPath == "unsafe"
 }
 
 func HasAltPkg(path string) (b bool) {
-	_, b = hasAltPkg[path]
+	_, b = altPkgs[path]
 	return
 }
 
-type none struct{}
+func HasAdditiveAltPkg(path string) bool {
+	return altPkgs[path] == altPkgAdditive
+}
 
-var hasAltPkg = map[string]none{
-	"internal/abi":          {},
-	"internal/reflectlite":  {},
-	"internal/runtime/maps": {},
-	"internal/runtime/sys":  {},
-	"iter":                  {},
-	"reflect":               {},
-	"runtime":               {},
-	"unique":                {},
-	"syscall/js":            {},
+var altPkgs = map[string]altPkgMode{
+	"internal/abi":          altPkgReplace,
+	"internal/reflectlite":  altPkgReplace,
+	"internal/runtime/maps": altPkgReplace,
+	"internal/runtime/sys":  altPkgAdditive,
+	"iter":                  altPkgReplace,
+	"reflect":               altPkgReplace,
+	"runtime":               altPkgReplace,
+	"unique":                altPkgReplace,
+	"syscall/js":            altPkgReplace,
 }

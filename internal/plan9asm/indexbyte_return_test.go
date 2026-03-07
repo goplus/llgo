@@ -1,7 +1,7 @@
 //go:build !llgo
 // +build !llgo
 
-package build
+package plan9asm
 
 import (
 	"os"
@@ -49,7 +49,7 @@ func TestPlan9AsmIndexByteStringUsesHelperResultSlot(t *testing.T) {
 	pkg := pkgs[0]
 
 	sfile := filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s")
-	tr, err := translatePlan9AsmFileForPkgWithOptions(pkg, sfile, runtime.GOOS, "arm64", nil, translatePlan9AsmOptions{AnnotateSource: true})
+	tr, err := TranslateFileForPkgWithOptions(pkg, sfile, runtime.GOOS, "arm64", nil, TranslateOptions{AnnotateSource: true})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,7 +1,7 @@
 //go:build !llgo
 // +build !llgo
 
-package build
+package plan9asm
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/internal/packages"
-	"github.com/goplus/plan9asm"
+	extplan9asm "github.com/goplus/plan9asm"
 )
 
 func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
@@ -38,58 +38,58 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 	}
 	pkg := pkgs[0]
 
-	sfiles := map[string]map[string]plan9asm.FuncSig{
+	sfiles := map[string]map[string]extplan9asm.FuncSig{
 		filepath.Join(goroot, "src", "internal", "bytealg", "compare_arm64.s"): {
 			"internal/bytealg.Compare": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64, i64 }", "{ ptr, i64, i64 }"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64, i64 }", "{ ptr, i64, i64 }"},
+				Ret:  extplan9asm.I64,
 			},
 			"runtime.cmpstring": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "{ ptr, i64 }"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64 }", "{ ptr, i64 }"},
+				Ret:  extplan9asm.I64,
 			},
 			"internal/bytealg.cmpbody": {
-				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.I64, extplan9asm.Ptr, extplan9asm.I64},
+				Ret:  extplan9asm.I64,
 			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s"): {
 			"internal/bytealg.Count": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64, i64 }", "i8"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64, i64 }", "i8"},
+				Ret:  extplan9asm.I64,
 			},
 			"internal/bytealg.CountString": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "i8"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64 }", "i8"},
+				Ret:  extplan9asm.I64,
 			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s"): {
 			"internal/bytealg.Index": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64, i64 }", "{ ptr, i64, i64 }"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64, i64 }", "{ ptr, i64, i64 }"},
+				Ret:  extplan9asm.I64,
 			},
 			"internal/bytealg.IndexString": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "{ ptr, i64 }"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64 }", "{ ptr, i64 }"},
+				Ret:  extplan9asm.I64,
 			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s"): {
 			"internal/bytealg.IndexByte": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64, i64 }", "i8"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64, i64 }", "i8"},
+				Ret:  extplan9asm.I64,
 			},
 			"internal/bytealg.IndexByteString": {
-				Args: []plan9asm.LLVMType{"{ ptr, i64 }", "i8"},
-				Ret:  plan9asm.I64,
+				Args: []extplan9asm.LLVMType{"{ ptr, i64 }", "i8"},
+				Ret:  extplan9asm.I64,
 			},
 		},
 		filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s"): {
 			"runtime.memequal_varlen": {
-				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr},
+				Args: []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.Ptr},
 				Ret:  "i1",
 			},
 			"runtime.memequal": {
-				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
+				Args: []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.Ptr, extplan9asm.I64},
 				Ret:  "i1",
 			},
 		},
@@ -98,45 +98,45 @@ func TestSigsForStdlibInternalBytealgArm64(t *testing.T) {
 	// Newer toolchains inline it into runtime·memequal and drop this symbol.
 	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s")); err == nil {
 		if string(src) != "" && containsTextSymbol(string(src), "memeqbody<>") {
-			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s")]["internal/bytealg.memeqbody"] = plan9asm.FuncSig{
-				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
-				Ret:  plan9asm.I1,
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "equal_arm64.s")]["internal/bytealg.memeqbody"] = extplan9asm.FuncSig{
+				Args: []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.Ptr, extplan9asm.I64},
+				Ret:  extplan9asm.I1,
 			}
 		}
 	}
 	// Go toolchains may keep or drop indexbody<> in index_arm64.s.
 	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s")); err == nil {
 		if string(src) != "" && containsTextSymbol(string(src), "indexbody<>") {
-			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s")]["internal/bytealg.indexbody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R3", "R9"},
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "index_arm64.s")]["internal/bytealg.indexbody"] = extplan9asm.FuncSig{
+				Args:    []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.I64, extplan9asm.Ptr, extplan9asm.I64, extplan9asm.Ptr},
+				Ret:     extplan9asm.Void,
+				ArgRegs: []extplan9asm.Reg{"R0", "R1", "R2", "R3", "R9"},
 			}
 		}
 	}
 	// Go toolchains may keep or drop indexbytebody<> in indexbyte_arm64.s.
 	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s")); err == nil {
 		if string(src) != "" && containsTextSymbol(string(src), "indexbytebody<>") {
-			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s")]["internal/bytealg.indexbytebody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, "i8", plan9asm.I64, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R8"},
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "indexbyte_arm64.s")]["internal/bytealg.indexbytebody"] = extplan9asm.FuncSig{
+				Args:    []extplan9asm.LLVMType{extplan9asm.Ptr, "i8", extplan9asm.I64, extplan9asm.Ptr},
+				Ret:     extplan9asm.Void,
+				ArgRegs: []extplan9asm.Reg{"R0", "R1", "R2", "R8"},
 			}
 		}
 	}
 	// Go toolchains may keep or drop countbytebody<> in count_arm64.s.
 	if src, err := os.ReadFile(filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s")); err == nil {
 		if string(src) != "" && containsTextSymbol(string(src), "countbytebody<>") {
-			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s")]["internal/bytealg.countbytebody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, "i8", plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R2", "R1", "R8"},
+			sfiles[filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s")]["internal/bytealg.countbytebody"] = extplan9asm.FuncSig{
+				Args:    []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.I64, "i8", extplan9asm.Ptr},
+				Ret:     extplan9asm.Void,
+				ArgRegs: []extplan9asm.Reg{"R0", "R2", "R1", "R8"},
 			}
 		}
 	}
 
 	for path, wantSigs := range sfiles {
-		tr, err := translatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
+		tr, err := TranslateFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
 		if err != nil {
 			t.Fatalf("translate %s: %v", path, err)
 		}
@@ -170,7 +170,7 @@ func containsTextSymbol(src, sym string) bool {
 		strings.Contains(src, "\nTEXT "+sym+"(SB)")
 }
 
-func checkSig(got, want plan9asm.FuncSig) error {
+func checkSig(got, want extplan9asm.FuncSig) error {
 	if got.Ret != want.Ret {
 		return fmt.Errorf("ret mismatch: got %s, want %s", got.Ret, want.Ret)
 	}
@@ -229,7 +229,7 @@ func TestSigsForStdlibInternalBytealgArm64_CoversAllTextSymbols(t *testing.T) {
 		if err != nil {
 			t.Fatalf("read %s: %v", path, err)
 		}
-		file, err := plan9asm.Parse(plan9asm.ArchARM64, string(src))
+		file, err := extplan9asm.Parse(extplan9asm.ArchARM64, string(src))
 		if err != nil {
 			t.Fatalf("parse %s: %v", path, err)
 		}
@@ -237,7 +237,7 @@ func TestSigsForStdlibInternalBytealgArm64_CoversAllTextSymbols(t *testing.T) {
 			t.Fatalf("unexpected empty funcs: %s", path)
 		}
 
-		tr, err := translatePlan9AsmFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
+		tr, err := TranslateFileForPkg(pkg, path, runtime.GOOS, "arm64", nil)
 		if err != nil {
 			t.Fatalf("translate %s: %v", path, err)
 		}

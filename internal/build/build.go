@@ -547,10 +547,9 @@ type context struct {
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
 
-	// plan9asm package allowlist parsed from env.
+	// plan9asm package policy parsed from env.
 	plan9asmOnce sync.Once
-	plan9asmAll  bool
-	// when plan9asmAll=false: enabled set; when plan9asmAll=true: excluded set.
+	plan9asmMode plan9asmPkgsEnvMode
 	plan9asmPkgs map[string]bool
 }
 

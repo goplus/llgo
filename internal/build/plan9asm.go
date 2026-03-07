@@ -4,54 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"go/ast"
-	"go/constant"
-	"go/types"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/packages"
-	intllvm "github.com/goplus/llgo/internal/xtool/llvm"
+	llplan9asm "github.com/goplus/llgo/internal/plan9asm"
 	llruntime "github.com/goplus/llgo/runtime"
 	gllvm "github.com/goplus/llvm"
-	"github.com/goplus/plan9asm"
 )
-
-type plan9AsmFunctionInfo struct {
-	// TextSymbol is the raw symbol from TEXT (e.g. "·IndexByte",
-	// "runtime·cmpstring<ABIInternal>", "cmpbody<>").
-	TextSymbol string `json:"text_symbol"`
-	// ResolvedSymbol is the final linker symbol used in generated LLVM IR.
-	ResolvedSymbol string `json:"resolved_symbol"`
-}
-
-type plan9AsmFileTranslation struct {
-	LLVMIR string `json:"-"`
-	// Signatures is the exact symbol->signature map passed to plan9asm.TranslateModule.
-	Signatures map[string]plan9asm.FuncSig `json:"signatures"`
-	// Functions records TEXT symbol resolution for this .s file.
-	Functions []plan9AsmFunctionInfo `json:"functions"`
-}
-
-// plan9AsmModuleTranslation keeps the raw LLVM module so callers can run
-// extra IR transforms (for example cabi) before emitting text/object files.
-type plan9AsmModuleTranslation struct {
-	Module gllvm.Module
-	// Signatures is the exact symbol->signature map passed to plan9asm.TranslateModule.
-	Signatures map[string]plan9asm.FuncSig
-	// Functions records TEXT symbol resolution for this .s file.
-	Functions []plan9AsmFunctionInfo
-}
-
-type translatePlan9AsmOptions struct {
-	AnnotateSource bool
-}
 
 // compilePkgSFiles translates Go/Plan9 assembly files selected by `go list -json`
 // for this package/target into LLVM IR, compiles them to .o, and returns the
@@ -74,7 +38,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 			// Some stdlib .s files are placeholders without any TEXT bodies
 			// (e.g. runtime/debug/debug.s). They carry no executable asm and
 			// are safe to ignore.
-			hasText, err := hasAnyTextAsm(ctx, sfiles)
+			hasText, err := llplan9asm.HasAnyTextAsm(ctx.conf.Overlay, sfiles)
 			if err != nil {
 				return nil, fmt.Errorf("%s: inspect asm files: %w", pkg.PkgPath, err)
 			}
@@ -91,11 +55,11 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 
 	objFiles := make([]string, 0, len(sfiles))
 	for _, sfile := range sfiles {
-		src, err := readFileWithOverlay(ctx.conf.Overlay, sfile)
+		src, err := llplan9asm.ReadFileWithOverlay(ctx.conf.Overlay, sfile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
 		}
-		tr, err := translatePlan9AsmSourceModuleForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
+		tr, err := llplan9asm.TranslateSourceModuleForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
 		if err != nil {
 			// Some stdlib .s files are comment-only placeholders (e.g. internal/cpu/cpu.s).
 			// Skip those silently.
@@ -168,165 +132,12 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 	return objFiles, nil
 }
 
-// translatePlan9AsmFileForPkg translates a single Plan9 asm source file using
-// the same symbol resolution/signature inference path as normal llgo builds.
-//
-// This is intended for debugging ABI/signature mismatches and translator bugs.
-func translatePlan9AsmFileForPkg(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte) (*plan9AsmFileTranslation, error) {
-	return translatePlan9AsmFileForPkgWithOptions(pkg, sfile, goos, goarch, overlay, translatePlan9AsmOptions{})
-}
-
-// translatePlan9AsmFileForPkgWithOptions is the same as
-// translatePlan9AsmFileForPkg but allows debug-oriented translation options.
-func translatePlan9AsmFileForPkgWithOptions(pkg *packages.Package, sfile string, goos string, goarch string, overlay map[string][]byte, opt translatePlan9AsmOptions) (*plan9AsmFileTranslation, error) {
-	if pkg == nil {
-		return nil, fmt.Errorf("nil package")
-	}
-	src, err := readFileWithOverlay(overlay, sfile)
-	if err != nil {
-		return nil, err
-	}
-	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, opt)
-}
-
-func translatePlan9AsmSourceForPkg(pkg *packages.Package, sfile string, src []byte, goos string, goarch string) (*plan9AsmFileTranslation, error) {
-	return translatePlan9AsmSourceForPkgWithOptions(pkg, sfile, src, goos, goarch, translatePlan9AsmOptions{})
-}
-
-func translatePlan9AsmSourceForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt translatePlan9AsmOptions) (*plan9AsmFileTranslation, error) {
-	tr, err := translatePlan9AsmSourceModuleForPkgWithOptions(pkg, sfile, src, goos, goarch, opt)
-	if err != nil {
-		return nil, err
-	}
-	defer tr.Module.Dispose()
-	return &plan9AsmFileTranslation{
-		LLVMIR:     tr.Module.String(),
-		Signatures: tr.Signatures,
-		Functions:  tr.Functions,
-	}, nil
-}
-
-func translatePlan9AsmSourceModuleForPkg(pkg *packages.Package, sfile string, src []byte, goos string, goarch string) (*plan9AsmModuleTranslation, error) {
-	return translatePlan9AsmSourceModuleForPkgWithOptions(pkg, sfile, src, goos, goarch, translatePlan9AsmOptions{})
-}
-
-func translatePlan9AsmSourceModuleForPkgWithOptions(pkg *packages.Package, sfile string, src []byte, goos string, goarch string, opt translatePlan9AsmOptions) (*plan9AsmModuleTranslation, error) {
-	if pkg == nil {
-		return nil, fmt.Errorf("nil package")
-	}
-	if pkg.PkgPath == "" {
-		return nil, fmt.Errorf("empty package path")
-	}
-	if pkg.Types == nil || pkg.Types.Scope() == nil {
-		return nil, fmt.Errorf("%s: missing types (needed for asm signatures)", pkg.PkgPath)
-	}
-
-	arch, err := plan9asmArch(goarch)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", pkg.PkgPath, err)
-	}
-	triple := intllvm.GetTargetTriple(goos, goarch)
-	resolve := plan9asmResolveSymFunc(pkg.PkgPath)
-
-	// Go/Plan9 asm can reference Go constants as "const_<Name>".
-	// Example: internal/cpu·X86+const_offsetX86HasAVX2(SB) where offsetX86HasAVX2
-	// is a Go constant defined in the same package.
-	if bytes.Contains(src, []byte("const_")) {
-		importTypes := map[string]*types.Package{}
-		for path, imp := range pkg.Imports {
-			if imp != nil && imp.Types != nil {
-				importTypes[path] = imp.Types
-			}
-		}
-		src = expandPlan9AsmConsts(src, pkg.Types, importTypes)
-	}
-
-	file, err := plan9asm.Parse(arch, string(src))
-	if err != nil {
-		return nil, fmt.Errorf("%s: parse %s: %w", pkg.PkgPath, sfile, err)
-	}
-	file.Funcs = filterPlan9AsmFuncs(pkg.PkgPath, goos, goarch, file.Funcs, resolve)
-	sigs, err := sigsForAsmFile(pkg, file, resolve, goarch)
-	if err != nil {
-		return nil, fmt.Errorf("%s: sigs %s: %w", pkg.PkgPath, sfile, err)
-	}
-	mod, err := plan9asm.TranslateModule(file, plan9asm.Options{
-		TargetTriple:   triple,
-		ResolveSym:     resolve,
-		Sigs:           sigs,
-		Goarch:         goarch,
-		AnnotateSource: opt.AnnotateSource,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("%s: translate %s: %w", pkg.PkgPath, sfile, err)
-	}
-
-	funcs := make([]plan9AsmFunctionInfo, 0, len(file.Funcs))
-	for _, fn := range file.Funcs {
-		sym := stripABISuffix(fn.Sym)
-		funcs = append(funcs, plan9AsmFunctionInfo{
-			TextSymbol:     fn.Sym,
-			ResolvedSymbol: resolve(sym),
-		})
-	}
-
-	return &plan9AsmModuleTranslation{
-		Module:     mod,
-		Signatures: sigs,
-		Functions:  funcs,
-	}, nil
-}
-
-func filterPlan9AsmFuncs(pkgPath, goos, goarch string, funcs []plan9asm.Func, resolve func(sym string) string) []plan9asm.Func {
-	if len(funcs) == 0 {
-		return funcs
-	}
-	keep := funcs[:0]
-	for _, fn := range funcs {
-		resolved := resolve(stripABISuffix(fn.Sym))
-		// Linux syscall rawVforkSyscall is provided by runtime via linkname on
-		// arches where llgo keeps a dedicated implementation.
-		// Skip the asm body to avoid duplicate definitions and to use the
-		// llgo-specific implementation consistently across supported toolchains.
-		if pkgPath == "syscall" && goos == "linux" && (goarch == "arm64" || goarch == "amd64") && strings.HasSuffix(resolved, "rawVforkSyscall") {
-			continue
-		}
-		// Darwin runtime exports RawSyscall/RawSyscall6 via go:linkname.
-		// Skip the syscall package's asm bodies to avoid duplicate definitions.
-		if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") {
-			if resolved == "syscall.RawSyscall" || resolved == "syscall.RawSyscall6" {
-				continue
-			}
-		}
-		keep = append(keep, fn)
-	}
-	return keep
-}
-
 type plan9AsmSigCacheKey struct {
 	ctx     *context
 	pkgPath string
 }
 
 var plan9AsmSigCache sync.Map // key: plan9AsmSigCacheKey, value: map[string]struct{}
-
-var defaultPlan9AsmExcludedPkgs = map[string]none{
-	// Keep alt/runtime implementations for these packages.
-	"internal/abi":          {},
-	"internal/reflectlite":  {},
-	"internal/runtime/maps": {},
-	"iter":                  {},
-	"reflect":               {},
-	"runtime":               {},
-	"syscall/js":            {},
-	"unique":                {},
-}
-
-// Some packages need translated Plan9 asm and additive alt-package patches.
-// These patches do not replace the package; they fill in extra definitions.
-var plan9asmCompatAltPkgs = map[string]none{
-	"internal/runtime/sys": {},
-}
 
 func archSupportsPlan9AsmDefaults(goarch string) bool {
 	return goarch == "arm64" || goarch == "amd64"
@@ -408,11 +219,11 @@ func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, erro
 		return nil, err
 	}
 	for _, sfile := range sfiles {
-		src, err := readFileWithOverlay(ctx.conf.Overlay, sfile)
+		src, err := llplan9asm.ReadFileWithOverlay(ctx.conf.Overlay, sfile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
 		}
-		tr, err := translatePlan9AsmSourceForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
+		tr, err := llplan9asm.TranslateSourceForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
 		if err != nil {
 			if strings.Contains(err.Error(), "no TEXT directive found") {
 				continue
@@ -425,17 +236,6 @@ func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, erro
 	}
 	plan9AsmSigCache.Store(key, sigs)
 	return sigs, nil
-}
-
-func symbolPkgPath(sym string) string {
-	if sym == "" {
-		return ""
-	}
-	pos := strings.LastIndexByte(sym, '.')
-	if pos <= 0 {
-		return ""
-	}
-	return sym[:pos]
 }
 
 func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []string {
@@ -467,194 +267,40 @@ func cabiSkipFuncsForPlan9Asm(ctx *context, pkgPath string, mod gllvm.Module) []
 	return nil
 }
 
-func plan9asmResolveSymFunc(pkgPath string) func(sym string) string {
-	return func(sym string) string {
-		sym = stripABISuffix(sym)
-		// Stdlib asm uses "<>" suffix for local/internal helpers. It does not
-		// matter for linkage as long as references are consistent, and trimming
-		// simplifies signature mappings for asm-only helpers.
-		sym = strings.TrimSuffix(sym, "<>")
-		// internal/bytealg includes many package-local helper symbols like
-		// "cmpbody<>" and "countbytebody<>". Namespace them to avoid collisions
-		// with other packages when we translate more stdlib asm.
-		if pkgPath == "internal/bytealg" {
-			// Keep cross-package symbols (e.g. runtime·memequal) in their home package.
-			if strings.HasPrefix(sym, "runtime·") {
-				sym = strings.ReplaceAll(sym, "∕", "/")
-				return strings.ReplaceAll(sym, "·", ".")
-			}
-			// Package-local TEXT ·Foo or Foo.
-			s := strings.TrimPrefix(sym, "·")
-			s = strings.ReplaceAll(s, "∕", "/")
-			s = strings.ReplaceAll(s, "·", ".")
-			// If this is a simple local name (no pkg path), prefix with the package path.
-			if !strings.Contains(s, "/") && !strings.Contains(s, ".") {
-				return pkgPath + "." + s
-			}
-			// Otherwise treat it as already-qualified.
-			return s
-		}
-		// Local symbols use the Plan 9 middle dot (·) for package separator.
-		// For package-local TEXT ·foo(SB), we map to "import/path.foo".
-		if strings.HasPrefix(sym, "·") {
-			return pkgPath + "." + strings.TrimPrefix(sym, "·")
-		}
-		// Some stdlib asm sources use the unicode division slash (∕) to represent
-		// '/' in package paths. Normalize it to avoid mismatched symbol names.
-		// Example: internal∕cpu·X86 -> internal/cpu.X86
-		sym = strings.ReplaceAll(sym, "∕", "/")
-		return strings.ReplaceAll(sym, "·", ".")
-	}
-}
-
-var (
-	rePlan9ConstRef     = regexp.MustCompile(`\bconst_[A-Za-z0-9_]+\b`)
-	rePlan9ConstPlusRef = regexp.MustCompile(`([\pL\pN_∕·./]+)\+const_([A-Za-z0-9_]+)`)
-)
-
-func expandPlan9AsmConsts(src []byte, pkgTypes *types.Package, imports map[string]*types.Package) []byte {
-	if pkgTypes == nil || pkgTypes.Scope() == nil {
-		return src
-	}
-
-	typeByPath := map[string]*types.Package{}
-	typeByPath[pkgTypes.Path()] = pkgTypes
-	for path, tp := range imports {
-		if tp != nil && tp.Scope() != nil && typeByPath[path] == nil {
-			typeByPath[path] = tp
-		}
-	}
-
-	lookupConst := func(tp *types.Package, name string) (string, bool) {
-		if tp == nil || tp.Scope() == nil || name == "" {
-			return "", false
-		}
-		obj := tp.Scope().Lookup(name)
-		c, ok := obj.(*types.Const)
-		if !ok || c == nil {
-			return "", false
-		}
-		v := c.Val()
-		if v == nil {
-			return "", false
-		}
-		if i64, ok := constant.Int64Val(v); ok {
-			return fmt.Sprintf("%d", i64), true
-		}
-		if u64, ok := constant.Uint64Val(v); ok {
-			// Preserve value if it fits in signed range; otherwise leave as-is.
-			if u64 <= uint64(^uint64(0)>>1) {
-				return fmt.Sprintf("%d", int64(u64)), true
-			}
-		}
-		return "", false
-	}
-
-	// First expand qualified refs like:
-	//   internal∕cpu·X86+const_offsetX86HasAVX2(SB)
-	// using the symbol's package path to pick the correct scope.
-	src = rePlan9ConstPlusRef.ReplaceAllFunc(src, func(m []byte) []byte {
-		sub := rePlan9ConstPlusRef.FindSubmatch(m)
-		if len(sub) != 3 {
-			return m
-		}
-		symRaw := string(sub[1])
-		constName := string(sub[2])
-		symGo := strings.ReplaceAll(symRaw, "∕", "/")
-		symGo = strings.ReplaceAll(symGo, "·", ".")
-		dot := strings.LastIndex(symGo, ".")
-		if dot < 0 {
-			return m
-		}
-		pkgPath := symGo[:dot]
-		tp := typeByPath[pkgPath]
-		if tp == nil {
-			return m
-		}
-		if val, ok := lookupConst(tp, constName); ok {
-			return []byte(symRaw + "+" + val)
-		}
-		return m
-	})
-
-	// Then expand any remaining bare const_* tokens using the current package,
-	// with a best-effort fallback to imported packages if the name is unique.
-	return rePlan9ConstRef.ReplaceAllFunc(src, func(tok []byte) []byte {
-		name := string(tok)
-		goName := strings.TrimPrefix(name, "const_")
-		if goName == "" {
-			return tok
-		}
-		if val, ok := lookupConst(pkgTypes, goName); ok {
-			return []byte(val)
-		}
-		var (
-			foundVal string
-			found    bool
-		)
-		for _, tp := range typeByPath {
-			if tp == nil || tp == pkgTypes {
-				continue
-			}
-			if val, ok := lookupConst(tp, goName); ok {
-				if found {
-					// Ambiguous: leave as-is.
-					return tok
-				}
-				foundVal = val
-				found = true
-			}
-		}
-		if found {
-			return []byte(foundVal)
-		}
-		return tok
-	})
-}
-
 func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 	ctx.plan9asmOnce.Do(func() {
 		cfg := parsePlan9AsmPkgsEnv(Plan9ASMPkgs())
+		ctx.plan9asmMode = cfg.mode
 		switch cfg.mode {
-		case plan9asmEnvNone:
-			// Explicitly disable all asm translation.
-			ctx.plan9asmAll = false
-			ctx.plan9asmPkgs = make(map[string]bool)
-		case plan9asmEnvAll:
-			ctx.plan9asmPkgs = make(map[string]bool)
-			ctx.plan9asmAll = true
 		case plan9asmEnvSelected:
-			ctx.plan9asmAll = false
 			ctx.plan9asmPkgs = make(map[string]bool, len(cfg.pkgs))
 			for p := range cfg.pkgs {
 				ctx.plan9asmPkgs[p] = true
 			}
-		case plan9asmEnvDefaults:
-			// Default mode: on supported arches, enable translation for all
-			// packages except a small excluded set handled by runtime alt code.
-			if ctx.buildConf != nil && archSupportsPlan9AsmDefaults(ctx.buildConf.Goarch) {
-				ctx.plan9asmAll = true
-				ctx.plan9asmPkgs = make(map[string]bool, len(defaultPlan9AsmExcludedPkgs))
-				for p := range defaultPlan9AsmExcludedPkgs {
-					ctx.plan9asmPkgs[p] = true
-				}
-				return
-			}
-			ctx.plan9asmAll = false
+		default:
 			ctx.plan9asmPkgs = make(map[string]bool)
 		}
 	})
-	if ctx.plan9asmAll {
-		return !ctx.plan9asmPkgs[pkgPath]
+
+	switch ctx.plan9asmMode {
+	case plan9asmEnvAll:
+		return true
+	case plan9asmEnvNone:
+		return false
+	case plan9asmEnvSelected:
+		return ctx.plan9asmPkgs[pkgPath]
+	case plan9asmEnvDefaults:
+		return plan9asmEnabledByDefault(ctx.buildConf, pkgPath)
+	default:
+		return false
 	}
-	return ctx.plan9asmPkgs[pkgPath]
 }
 
 func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if !llruntime.HasAltPkg(pkgPath) {
 		return false
 	}
-	if _, ok := plan9asmCompatAltPkgs[pkgPath]; ok {
+	if llruntime.HasAdditiveAltPkg(pkgPath) {
 		return true
 	}
 	// When Plan9 asm translation is enabled, avoid also pulling in alt packages
@@ -688,455 +334,7 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	if !archSupportsPlan9AsmDefaults(conf.Goarch) {
 		return false
 	}
-	_, excluded := defaultPlan9AsmExcludedPkgs[pkgPath]
-	return !excluded
-}
-
-func plan9asmArch(goarch string) (plan9asm.Arch, error) {
-	switch goarch {
-	case "amd64", "386":
-		// The prototype parser uses the amd64 token set for x86 currently.
-		return plan9asm.ArchAMD64, nil
-	case "arm64":
-		return plan9asm.ArchARM64, nil
-	default:
-		return "", fmt.Errorf("Plan 9 asm unsupported arch %q", goarch)
-	}
-}
-
-func sigsForAsmFile(pkg *packages.Package, file *plan9asm.File, resolve func(sym string) string, goarch string) (map[string]plan9asm.FuncSig, error) {
-	sigs := make(map[string]plan9asm.FuncSig, len(file.Funcs))
-	scope := pkg.Types.Scope()
-	sz := types.SizesFor("gc", goarch)
-	if sz == nil {
-		return nil, fmt.Errorf("missing sizes for goarch %q", goarch)
-	}
-
-	manual := extraAsmSigsAndDeclMap(pkg.PkgPath, goarch)
-	linknames := linknameRemoteToLocal(pkg.Syntax)
-
-	for i := range file.Funcs {
-		sym := stripABISuffix(file.Funcs[i].Sym)
-		resolved := resolve(sym)
-		if ms, ok := manual[resolved]; ok {
-			ms.Name = resolved
-			sigs[resolved] = ms
-			continue
-		}
-
-		declName := strings.TrimPrefix(sym, "·")
-		// Plan9 middle dot in TEXT name is not a valid Go identifier. For local
-		// symbols we expect "·foo". For non-local TEXT that defines symbols in
-		// other packages (e.g. runtime·cmpstring), declaration lookup in the
-		// current package scope won't work; those typically have a local
-		// go:linkname declaration that provides a Go identifier we can use.
-		if strings.ContainsRune(declName, '·') {
-			key := strings.ReplaceAll(sym, "∕", "/")
-			key = strings.ReplaceAll(key, "·", ".")
-			if local, ok := linknames[key]; ok {
-				declName = local
-			} else {
-				return nil, fmt.Errorf("unsupported asm symbol name %q (no go:linkname mapping found)", sym)
-			}
-		}
-
-		obj := scope.Lookup(declName)
-		if obj == nil {
-			return nil, fmt.Errorf("missing Go declaration for asm symbol %q", sym)
-		}
-		fn, ok := obj.(*types.Func)
-		if !ok {
-			return nil, fmt.Errorf("asm symbol %q maps to non-func %T", sym, obj)
-		}
-
-		sig := fn.Type().(*types.Signature)
-		if sig.Recv() != nil {
-			return nil, fmt.Errorf("methods in asm not supported: %s", fn.FullName())
-		}
-		if sig.Variadic() {
-			return nil, fmt.Errorf("variadic asm not supported: %s", fn.FullName())
-		}
-
-		params := sig.Params()
-		args, frameParams, nextOff, err := llvmArgsAndFrameSlotsForTuple(params, goarch, sz, 0, false)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", fn.FullName(), err)
-		}
-		// The Go assembler rounds the argument area up to the machine word size
-		// before laying out results. Some stdlib asm relies on these exact FP
-		// offsets (e.g. hash/crc32/crc32_amd64.s).
-		nextOff = alignOff(nextOff, int64(wordSize(goarch)))
-
-		res := sig.Results()
-		retTys, frameResults, _, err := llvmArgsAndFrameSlotsForTuple(res, goarch, sz, nextOff, true)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", fn.FullName(), err)
-		}
-		var ret plan9asm.LLVMType
-		switch len(retTys) {
-		case 0:
-			ret = plan9asm.Void
-		case 1:
-			ret = retTys[0]
-		default:
-			parts := make([]string, 0, len(retTys))
-			for _, t := range retTys {
-				parts = append(parts, string(t))
-			}
-			ret = plan9asm.LLVMType("{ " + strings.Join(parts, ", ") + " }")
-		}
-
-		// Classic Go asm uses name+off(FP) stack slots. We build a minimal frame
-		// layout that is compatible with stdlib conventions, including slice and
-		// string field offsets like "b_base+0(FP)" and "b_len+8(FP)".
-		var frame plan9asm.FrameLayout
-		frame.Params = frameParams
-		frame.Results = frameResults
-
-		fs := plan9asm.FuncSig{
-			Name:  resolved,
-			Args:  args,
-			Ret:   ret,
-			Frame: frame,
-		}
-		if pkg.PkgPath == "hash/crc32" && goarch == "arm64" {
-			// These helpers use CRC32{,C} instructions and require "+crc".
-			if strings.HasSuffix(resolved, ".castagnoliUpdate") || strings.HasSuffix(resolved, ".ieeeUpdate") {
-				fs.Attrs = "#0"
-			}
-		}
-		if pkg.PkgPath == "hash/crc32" && goarch == "amd64" {
-			// These helpers use SSE4.2 CRC32 and/or PCLMULQDQ instructions.
-			if strings.HasSuffix(resolved, ".ieeeCLMUL") {
-				fs.Attrs = "#1"
-			} else if strings.HasSuffix(resolved, ".castagnoliSSE42") ||
-				strings.HasSuffix(resolved, ".castagnoliSSE42Triple") {
-				fs.Attrs = "#0"
-			}
-		}
-		sigs[resolved] = fs
-	}
-
-	// Some stdlib asm tail-jumps to Go functions that have no TEXT entry in the
-	// current .s file (e.g. internal/bytealg: JMP ·countGeneric(SB)).
-	//
-	// Our CFG-based lowering models registers as local allocas and does not
-	// automatically seed them with %argN, so we treat these as true tailcalls
-	// and use the caller's LLVM args. For that, we still need the callee's
-	// signature here.
-	//
-	// Discover such targets by scanning JMP/B with (SB) operands and resolving
-	// missing signatures from the package scope.
-	splitSymPlusOff := func(s string) (base string, off int64) {
-		s = strings.TrimSpace(s)
-		if s == "" {
-			return "", 0
-		}
-		sep := strings.LastIndexAny(s, "+-")
-		if sep <= 0 || sep == len(s)-1 {
-			return s, 0
-		}
-		n, err := strconv.ParseInt(strings.TrimSpace(s[sep:]), 0, 64)
-		if err != nil {
-			return s, 0
-		}
-		return strings.TrimSpace(s[:sep]), n
-	}
-	addGoDeclSig := func(sym string) error {
-		sym = stripABISuffix(sym)
-		sym = strings.TrimSuffix(sym, "<>")
-		resolved := resolve(sym)
-		if resolved == "" {
-			return nil
-		}
-		if _, ok := sigs[resolved]; ok {
-			return nil
-		}
-		if ms, ok := manual[resolved]; ok {
-			ms.Name = resolved
-			sigs[resolved] = ms
-			return nil
-		}
-
-		// If the resolved name is package-qualified, prefer looking up the local
-		// identifier part in the current package scope.
-		declName := ""
-		if strings.HasPrefix(resolved, pkg.PkgPath+".") {
-			declName = strings.TrimPrefix(resolved, pkg.PkgPath+".")
-		} else if strings.HasPrefix(sym, "·") {
-			declName = strings.TrimPrefix(sym, "·")
-		}
-		if declName == "" {
-			return nil
-		}
-
-		obj := scope.Lookup(declName)
-		if obj == nil {
-			// Not a Go decl in this package; ignore.
-			return nil
-		}
-		fn, ok := obj.(*types.Func)
-		if !ok {
-			return nil
-		}
-		sig := fn.Type().(*types.Signature)
-		if sig.Recv() != nil || sig.Variadic() {
-			return nil
-		}
-
-		params := sig.Params()
-		args, _, _, err := llvmArgsAndFrameSlotsForTuple(params, goarch, sz, 0, false)
-		if err != nil {
-			return fmt.Errorf("%s: %w", fn.FullName(), err)
-		}
-		res := sig.Results()
-		retTys, _, _, err := llvmArgsAndFrameSlotsForTuple(res, goarch, sz, 0, false)
-		if err != nil {
-			return fmt.Errorf("%s: %w", fn.FullName(), err)
-		}
-		var ret plan9asm.LLVMType
-		switch len(retTys) {
-		case 0:
-			ret = plan9asm.Void
-		case 1:
-			ret = retTys[0]
-		default:
-			parts := make([]string, 0, len(retTys))
-			for _, t := range retTys {
-				parts = append(parts, string(t))
-			}
-			ret = plan9asm.LLVMType("{ " + strings.Join(parts, ", ") + " }")
-		}
-		sigs[resolved] = plan9asm.FuncSig{
-			Name: resolved,
-			Args: args,
-			Ret:  ret,
-		}
-		return nil
-	}
-
-	for _, fn := range file.Funcs {
-		callerResolved := resolve(stripABISuffix(fn.Sym))
-		callerSig, hasCallerSig := sigs[callerResolved]
-		for _, ins := range fn.Instrs {
-			op := strings.ToUpper(string(ins.Op))
-			tailJump := false
-			switch op {
-			case "JMP", "B":
-				tailJump = true
-			case "CALL", "BL":
-				// direct call to package-local helper
-			default:
-				continue
-			}
-			if len(ins.Args) != 1 || ins.Args[0].Kind != plan9asm.OpSym {
-				continue
-			}
-			s := strings.TrimSpace(ins.Args[0].Sym)
-			if !strings.HasSuffix(s, "(SB)") {
-				continue
-			}
-			s = strings.TrimSuffix(s, "(SB)")
-			base, off := splitSymPlusOff(s)
-			if base == "" || off != 0 {
-				continue
-			}
-			if err := addGoDeclSig(base); err != nil {
-				return nil, err
-			}
-			targetResolved := resolve(base)
-			if _, ok := sigs[targetResolved]; ok {
-				continue
-			}
-			if !tailJump || !hasCallerSig {
-				continue
-			}
-			// Cross-package trampoline with no local Go declaration available.
-			// Reuse caller signature as a best-effort extern declaration so
-			// direct tail-jumps like sync/atomic -> internal/runtime/atomic link.
-			fs := callerSig
-			fs.Name = targetResolved
-			sigs[targetResolved] = fs
-		}
-	}
-	return sigs, nil
-}
-
-// linknameRemoteToLocal returns a mapping from go:linkname "remote" symbol name
-// (canonicalized to use '/' and '.') to the local Go identifier name.
-//
-// This is used to resolve asm symbols like "runtime·cmpstring" to a Go decl in
-// the current package (e.g. "abigen_runtime_cmpstring").
-func linknameRemoteToLocal(files []*ast.File) map[string]string {
-	m := map[string]string{}
-	for _, f := range files {
-		if f == nil {
-			continue
-		}
-		for _, cg := range f.Comments {
-			if cg == nil {
-				continue
-			}
-			for _, c := range cg.List {
-				if c == nil {
-					continue
-				}
-				// Handle both line and block comments; split into lines and strip
-				// obvious comment markers.
-				for _, line := range strings.Split(c.Text, "\n") {
-					line = strings.TrimSpace(line)
-					line = strings.TrimPrefix(line, "//")
-					line = strings.TrimPrefix(line, "/*")
-					line = strings.TrimSuffix(line, "*/")
-					line = strings.TrimSpace(strings.TrimPrefix(line, "*"))
-					if !strings.HasPrefix(line, "go:linkname") {
-						continue
-					}
-					parts := strings.Fields(line)
-					if len(parts) < 3 || parts[0] != "go:linkname" {
-						continue
-					}
-					local := parts[1]
-					remote := parts[2]
-					remote = strings.ReplaceAll(remote, "∕", "/")
-					remote = strings.ReplaceAll(remote, "·", ".")
-					m[remote] = local
-				}
-			}
-		}
-	}
-	return m
-}
-
-func extraAsmSigsAndDeclMap(pkgPath string, goarch string) (manual map[string]plan9asm.FuncSig) {
-	manual = map[string]plan9asm.FuncSig{}
-
-	// internal/bytealg defines a few runtime symbols and asm-only helpers.
-	// The Go package provides linkname declarations that we can use for the
-	// public runtime symbols, but helpers like cmpbody<> have no Go decl at all.
-	if pkgPath == "internal/bytealg" {
-		// Helper bodies (no Go decl). These are entered via tail-jumps from
-		// other TEXT stubs, so translation needs explicit signatures.
-		switch goarch {
-		case "arm64":
-			manual["internal/bytealg.cmpbody"] = plan9asm.FuncSig{
-				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64},
-				Ret:  plan9asm.I64,
-			}
-			// go1.21 arm64 equal_arm64.s has helper memeqbody<> tail-called by
-			// runtime·memequal/runtime·memequal_varlen and has no Go declaration.
-			manual["internal/bytealg.memeqbody"] = plan9asm.FuncSig{
-				Args: []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
-				Ret:  plan9asm.I1,
-			}
-			manual["internal/bytealg.countbytebody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.LLVMType("i8"), plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R2", "R1", "R8"},
-			}
-			manual["internal/bytealg.indexbody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R3", "R9"},
-			}
-			manual["internal/bytealg.indexbytebody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.LLVMType("i8"), plan9asm.I64, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{"R0", "R1", "R2", "R8"},
-			}
-		case "amd64":
-			// See GOROOT/src/internal/bytealg/*_amd64.s for calling conventions.
-			manual["internal/bytealg.cmpbody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64, plan9asm.I64},
-				Ret:     plan9asm.I64,
-				ArgRegs: []plan9asm.Reg{plan9asm.SI, plan9asm.DI, plan9asm.BX, plan9asm.DX},
-			}
-			// countbody writes the result to *R8 and returns void.
-			manual["internal/bytealg.countbody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.LLVMType("i8"), plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{plan9asm.SI, plan9asm.BX, plan9asm.AX, plan9asm.Reg("R8")},
-			}
-			manual["internal/bytealg.indexbody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.I64, plan9asm.Ptr, plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{plan9asm.DI, plan9asm.DX, plan9asm.Reg("R8"), plan9asm.AX, plan9asm.Reg("R10"), plan9asm.Reg("R11")},
-			}
-			manual["internal/bytealg.indexbytebody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.I64, plan9asm.LLVMType("i8"), plan9asm.Ptr},
-				Ret:     plan9asm.Void,
-				ArgRegs: []plan9asm.Reg{plan9asm.SI, plan9asm.BX, plan9asm.AX, plan9asm.Reg("R8")},
-			}
-			// memeqbody returns bool in AX (0/1).
-			manual["internal/bytealg.memeqbody"] = plan9asm.FuncSig{
-				Args:    []plan9asm.LLVMType{plan9asm.Ptr, plan9asm.Ptr, plan9asm.I64},
-				Ret:     plan9asm.I1,
-				ArgRegs: []plan9asm.Reg{plan9asm.SI, plan9asm.DI, plan9asm.BX},
-			}
-		}
-	}
-	return manual
-}
-
-func llvmTypeForGo(t types.Type, goarch string) (plan9asm.LLVMType, error) {
-	switch tt := t.(type) {
-	case *types.Basic:
-		switch tt.Kind() {
-		case types.Bool:
-			return plan9asm.LLVMType("i1"), nil
-		case types.UnsafePointer:
-			return plan9asm.LLVMType("ptr"), nil
-		case types.Int8, types.Uint8:
-			return plan9asm.LLVMType("i8"), nil
-		case types.Int16, types.Uint16:
-			return plan9asm.LLVMType("i16"), nil
-		case types.Int32, types.Uint32:
-			return plan9asm.LLVMType("i32"), nil
-		case types.Int64, types.Uint64:
-			return plan9asm.I64, nil
-		case types.Int, types.Uint, types.Uintptr:
-			if wordSize(goarch) == 8 {
-				return plan9asm.I64, nil
-			}
-			return plan9asm.LLVMType("i32"), nil
-		case types.Float32:
-			return plan9asm.LLVMType("float"), nil
-		case types.Float64:
-			return plan9asm.LLVMType("double"), nil
-		case types.String:
-			// Strings are lowered as (ptr, word) to match stdlib asm conventions.
-			// The actual string header is (ptr, len).
-			if wordSize(goarch) == 8 {
-				return plan9asm.LLVMType("{ ptr, i64 }"), nil
-			}
-			return plan9asm.LLVMType("{ ptr, i32 }"), nil
-		default:
-			return "", fmt.Errorf("unsupported basic type %s", tt.String())
-		}
-	case *types.Pointer:
-		return plan9asm.LLVMType("ptr"), nil
-	case *types.Slice:
-		// Slices are lowered as (ptr, len, cap) to match stdlib asm conventions.
-		if wordSize(goarch) == 8 {
-			return plan9asm.LLVMType("{ ptr, i64, i64 }"), nil
-		}
-		return plan9asm.LLVMType("{ ptr, i32, i32 }"), nil
-	case *types.Interface:
-		return plan9asm.LLVMType("{ ptr, ptr }"), nil
-	case *types.Named:
-		return llvmTypeForGo(tt.Underlying(), goarch)
-	default:
-		return "", fmt.Errorf("unsupported type %s", t.String())
-	}
-}
-
-func wordSize(goarch string) int {
-	switch goarch {
-	case "amd64", "arm64", "loong64", "mips64", "mips64le", "ppc64", "ppc64le", "riscv64", "s390x":
-		return 8
-	default:
-		return 4
-	}
+	return !llruntime.HasAltPkg(pkgPath) || llruntime.HasAdditiveAltPkg(pkgPath)
 }
 
 func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
@@ -1215,155 +413,4 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	}
 	ctx.sfilesCache[pkg.ID] = paths
 	return paths, nil
-}
-
-func readFileWithOverlay(overlay map[string][]byte, path string) ([]byte, error) {
-	if overlay != nil {
-		if b, ok := overlay[path]; ok {
-			return b, nil
-		}
-	}
-	return os.ReadFile(path)
-}
-
-var abiSuffixRe = regexp.MustCompile(`<ABI[^>]*>$`)
-var reTextDirective = regexp.MustCompile(`(?m)^\s*TEXT\b`)
-
-func stripABISuffix(sym string) string {
-	// Examples:
-	//   ·Compare<ABIInternal> -> ·Compare
-	//   runtime·cmpstring<ABIInternal> -> runtime·cmpstring
-	// Keep local helper suffix "<>" intact (it does not match this regexp).
-	return abiSuffixRe.ReplaceAllString(sym, "")
-}
-
-func hasAnyTextAsm(ctx *context, files []string) (bool, error) {
-	for _, f := range files {
-		src, err := readFileWithOverlay(ctx.conf.Overlay, f)
-		if err != nil {
-			return false, err
-		}
-		if reTextDirective.Match(src) {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// llvmArgsAndFrameSlotsForTuple lowers a Go parameter/result tuple into LLVM
-// argument types and a frame-slot layout compatible with Go stdlib asm.
-//
-// In particular, it has declaration-driven header layouts for string/slice/interface:
-//
-//	string:    base, len
-//	slice:     base, len, cap
-//	interface: type/itab ptr, data ptr
-//
-// It returns:
-//   - args: LLVM argument types (flattened)
-//   - slots: frame slots at the exact FP offsets used by stdlib asm
-//   - nextOff: the next free FP offset after the tuple
-func llvmArgsAndFrameSlotsForTuple(tup *types.Tuple, goarch string, sz types.Sizes, startOff int64, flattenAgg bool) (args []plan9asm.LLVMType, slots []plan9asm.FrameSlot, nextOff int64, err error) {
-	if tup == nil || tup.Len() == 0 {
-		return nil, nil, startOff, nil
-	}
-
-	align := func(off, a int64) int64 {
-		if a <= 1 {
-			return off
-		}
-		m := off % a
-		if m == 0 {
-			return off
-		}
-		return off + (a - m)
-	}
-
-	off := startOff
-	argIdx := 0
-	for i := 0; i < tup.Len(); i++ {
-		t := tup.At(i).Type()
-		a := int64(sz.Alignof(t))
-		off = align(off, a)
-
-		parts, ok := framePartsForType(t, goarch)
-		if ok {
-			if flattenAgg {
-				for _, part := range parts {
-					args = append(args, part.Type)
-					slots = append(slots, plan9asm.FrameSlot{Offset: off + part.Offset, Type: part.Type, Index: argIdx, Field: -1})
-					argIdx++
-				}
-			} else {
-				ty, e := llvmTypeForGo(t, goarch)
-				if e != nil {
-					return nil, nil, 0, e
-				}
-				args = append(args, ty)
-				for _, part := range parts {
-					slots = append(slots, plan9asm.FrameSlot{Offset: off + part.Offset, Type: part.Type, Index: argIdx, Field: part.Field})
-				}
-				argIdx++
-			}
-			off += int64(sz.Sizeof(t))
-			continue
-		}
-
-		ty, e := llvmTypeForGo(t, goarch)
-		if e != nil {
-			return nil, nil, 0, e
-		}
-		args = append(args, ty)
-		slots = append(slots, plan9asm.FrameSlot{Offset: off, Type: ty, Index: argIdx, Field: -1})
-		argIdx++
-		off += int64(sz.Sizeof(t))
-	}
-	return args, slots, off, nil
-}
-
-type framePart struct {
-	Offset int64
-	Type   plan9asm.LLVMType
-	Field  int
-}
-
-func framePartsForType(t types.Type, goarch string) ([]framePart, bool) {
-	word := int64(wordSize(goarch))
-	wordTy := plan9asm.I64
-	if word == 4 {
-		wordTy = plan9asm.LLVMType("i32")
-	}
-	switch u := types.Unalias(t).(type) {
-	case *types.Basic:
-		if u.Kind() == types.String {
-			return []framePart{
-				{Offset: 0, Type: plan9asm.Ptr, Field: 0},
-				{Offset: word, Type: wordTy, Field: 1},
-			}, true
-		}
-	case *types.Slice:
-		return []framePart{
-			{Offset: 0, Type: plan9asm.Ptr, Field: 0},
-			{Offset: word, Type: wordTy, Field: 1},
-			{Offset: 2 * word, Type: wordTy, Field: 2},
-		}, true
-	case *types.Interface:
-		// Both empty and non-empty interfaces occupy two pointers in Go ABI.
-		return []framePart{
-			{Offset: 0, Type: plan9asm.Ptr, Field: 0},
-			{Offset: word, Type: plan9asm.Ptr, Field: 1},
-		}, true
-	}
-	return nil, false
-}
-
-func alignOff(off, a int64) int64 {
-	if a <= 1 {
-		return off
-	}
-	m := off % a
-	if m == 0 {
-		return off
-	}
-	return off + (a - m)
 }
