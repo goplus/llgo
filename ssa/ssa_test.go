@@ -107,6 +107,34 @@ func TestPointerSize(t *testing.T) {
 	}
 }
 
+func TestNewFuncExLLVMUsed(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("main", "main")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+
+	// Mark the exported name before function creation so NewFuncEx can protect it via llvm.compiler.used.
+	pkg.SetExport("main.Foo", "Foo")
+	pkg.SetExport("main.Bar", "Bar")
+	pkg.NewFunc("Foo", sig, InGo)
+	pkg.NewFunc("Bar", sig, InGo)
+	pkg.NewFunc("Baz", sig, InGo)
+	pkg.MaterializePreserveSyms()
+
+	used := pkg.Module().NamedGlobal("llvm.compiler.used")
+	if used.IsNil() {
+		t.Fatal("missing llvm.compiler.used")
+	}
+	if got := used.Linkage(); got != llvm.AppendingLinkage {
+		t.Fatalf("llvm.compiler.used linkage = %v, want %v", got, llvm.AppendingLinkage)
+	}
+	if got := used.Section(); got != "llvm.metadata" {
+		t.Fatalf("llvm.compiler.used section = %q, want %q", got, "llvm.metadata")
+	}
+	if got := pkg.String(); !strings.Contains(got, `@llvm.compiler.used = appending global [2 x ptr] [ptr @Foo, ptr @Bar], section "llvm.metadata"`) {
+		t.Fatalf("module missing llvm.compiler.used entry:\n%s", got)
+	}
+}
+
 func TestSetBlock(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {
