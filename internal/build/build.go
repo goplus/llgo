@@ -922,7 +922,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	var rtLinkInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
-	linkedAPkgs := make(map[string]Package)
 	var linkedOrder []Package
 	packages.Visit(visitRoots, nil, func(p *packages.Package) {
 		// Skip if already linked this package (by ID)
@@ -936,7 +935,6 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		}
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkedPkgs[p.ID] = true
-			linkedAPkgs[p.ID] = aPkg
 			linkedOrder = append(linkedOrder, aPkg)
 		}
 	})
@@ -974,7 +972,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		archiveInputs = append(archiveInputs, rtLinkInputs...)
 	}
 
-	abiSymbols := linkedModuleGlobals(linkedAPkgs)
+	abiSymbols := linkedModuleGlobals(linkedOrder)
 
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
@@ -1019,7 +1017,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	return nil
 }
 
-func linkedModuleGlobals(pkgs map[string]Package) []string {
+func linkedModuleGlobals(pkgs []Package) []string {
 	if len(pkgs) == 0 {
 		return nil
 	}

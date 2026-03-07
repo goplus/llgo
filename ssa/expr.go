@@ -793,7 +793,13 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 			ret.impl = x.impl
 		}
 	} else {
-		ret.impl = b.retypeValue(t, x)
+		if x.impl.Type().String() == t.ll.String() {
+			ret.impl = x.impl
+		} else {
+			ptr := llvm.CreateAlloca(b.impl, t.ll)
+			b.impl.CreateStore(x.impl, ptr)
+			ret.impl = llvm.CreateLoad(b.impl, t.ll, ptr)
+		}
 	}
 	ret.Type = t
 	return
@@ -929,19 +935,9 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 		}
 	}
 	if types.Identical(dst.Underlying(), x.RawType().Underlying()) {
-		ret.impl = b.retypeValue(t, x)
-		return
+		return b.ChangeType(t, x)
 	}
 	panic("todo")
-}
-
-func (b Builder) retypeValue(t Type, x Expr) llvm.Value {
-	if x.impl.Type().String() == t.ll.String() {
-		return x.impl
-	}
-	ptr := llvm.CreateAlloca(b.impl, t.ll)
-	b.impl.CreateStore(x.impl, ptr)
-	return llvm.CreateLoad(b.impl, t.ll, ptr)
 }
 
 func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
