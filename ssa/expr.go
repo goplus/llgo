@@ -793,7 +793,13 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 			ret.impl = x.impl
 		}
 	} else {
-		ret.impl = x.impl
+		if x.impl.Type().String() == t.ll.String() {
+			ret.impl = x.impl
+		} else {
+			ptr := llvm.CreateAlloca(b.impl, t.ll)
+			b.impl.CreateStore(x.impl, ptr)
+			ret.impl = llvm.CreateLoad(b.impl, t.ll, ptr)
+		}
 	}
 	ret.Type = t
 	return
@@ -829,9 +835,9 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	if debugInstr {
 		log.Printf("Convert %v <- %v\n", t.RawType(), x.RawType())
 	}
-	typ := t.raw.Type
-	ret.Type = b.Prog.rawType(typ)
-	switch typ := typ.Underlying().(type) {
+	dst := t.raw.Type
+	ret.Type = b.Prog.rawType(dst)
+	switch typ := dst.Underlying().(type) {
 	case *types.Basic:
 		switch typ.Kind() {
 		case types.Uintptr:
@@ -927,6 +933,9 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 				}
 			}
 		}
+	}
+	if types.Identical(dst.Underlying(), x.RawType().Underlying()) {
+		return b.ChangeType(t, x)
 	}
 	panic("todo")
 }

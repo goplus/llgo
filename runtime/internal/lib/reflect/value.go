@@ -2100,10 +2100,11 @@ func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
 
 // typedslicecopy copies a slice of elemType values from src to dst,
 // returning the number of elements copied.
-//
-//go:noescape
-//go:linkname typedslicecopy github.com/goplus/llgo/runtime/internal/runtime.Typedslicecopy
-func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int
+func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int {
+	rdst := *(*runtime.Slice)(unsafe.Pointer(&dst))
+	rsrc := *(*runtime.Slice)(unsafe.Pointer(&src))
+	return runtime.Typedslicecopy(t, rdst, rsrc)
+}
 
 /*
 	TODO(xsw):
@@ -2127,8 +2128,11 @@ func verifyNotInHeapPtr(p uintptr) bool {
 	return true
 }
 
-//go:linkname growslice github.com/goplus/llgo/runtime/internal/runtime.GrowSlice
-func growslice(src []byte, num, etSize int) []byte
+func growslice(src []byte, num, etSize int) []byte {
+	rs := *(*runtime.Slice)(unsafe.Pointer(&src))
+	rs = runtime.GrowSlice(rs, num, etSize)
+	return *(*[]byte)(unsafe.Pointer(&rs))
+}
 
 // Dummy annotation marking that the value x escapes,
 // for use in cases where the reflect code is so clever that
@@ -2474,7 +2478,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 	}
 	for i, arg := range in {
 		typ := tin[ioff+i]
-		if typ.Kind() == abi.Slice {
+		if ffiCallSliceAsTriple && typ.Kind() == abi.Slice {
 			h := (*unsafeheaderSlice)(arg.ptr)
 			ffiArgs = append(ffiArgs, ffi.TypePointer, ffi.TypeInt, ffi.TypeInt)
 			args = append(args, unsafe.Pointer(&h.Data), unsafe.Pointer(&h.Len), unsafe.Pointer(&h.Cap))
