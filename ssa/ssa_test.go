@@ -1409,3 +1409,15 @@ func TestInitAbiTypesForSubset(t *testing.T) {
 		t.Fatalf("full abi array length = %d, want %d", got, len(prog.abiSymbol))
 	}
 }
+
+func TestInitAbiTypesForEmptySelection(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	if fn := pkg.InitAbiTypes("empty"); fn != nil {
+		t.Fatalf("InitAbiTypes on empty abi symbol set = %v, want nil", fn)
+	}
+	if fn := pkg.InitAbiTypesFor("subset", []string{}); fn != nil {
+		t.Fatalf("InitAbiTypesFor with empty selection = %v, want nil", fn)
+	}
+}
