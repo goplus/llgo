@@ -91,6 +91,9 @@ func (p *Transformer) shouldSkipFunc(name string) bool {
 
 func (p *Transformer) shouldSkipCall(call llvm.Value) bool {
 	callee := call.CalledValue()
+	if !callee.IsAInlineAsm().IsNil() {
+		return true
+	}
 	if callee.IsAFunction().IsNil() {
 		return false
 	}
