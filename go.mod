@@ -1,8 +1,6 @@
 module github.com/goplus/llgo
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/goplus/cobra v1.9.12 //gop:class
@@ -18,7 +16,7 @@ require (
 
 require (
 	github.com/goplus/plan9asm v0.0.0-20260212064924-71ea5584065b
-	github.com/marcinbor85/gohex v0.0.0-20210308104911-55fb1c624d84
+	github.com/marcinbor85/gohex v0.1.0
 	github.com/mattn/go-tty v0.0.7
 	github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1
 	go.bug.st/serial v1.6.4
