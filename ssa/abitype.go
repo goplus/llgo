@@ -517,13 +517,21 @@ func (b Builder) abiType(t types.Type) Expr {
 	}), prog.AbiTypePtr()}
 }
 
-func (p Package) getAbiTypes(name string) Expr {
+func (p Package) getAbiTypesFor(name string, selected []string) Expr {
 	prog := p.Prog
-	names := make([]string, len(prog.abiSymbol))
-	n := 0
-	for k, _ := range prog.abiSymbol {
-		names[n] = k
-		n++
+	var names []string
+	if selected == nil {
+		names = make([]string, 0, len(prog.abiSymbol))
+		for k := range prog.abiSymbol {
+			names = append(names, k)
+		}
+	} else {
+		names = make([]string, 0, len(selected))
+		for _, k := range selected {
+			if _, ok := prog.abiSymbol[k]; ok {
+				names = append(names, k)
+			}
+		}
 	}
 	sort.Strings(names)
 	fields := make([]llvm.Value, len(names))
@@ -555,17 +563,29 @@ func (p Package) getAbiTypes(name string) Expr {
 	return g.Expr
 }
 
-func (p Package) InitAbiTypes(fname string) Function {
-	if len(p.Prog.abiSymbol) == 0 {
+func (p Package) getAbiTypes(name string) Expr {
+	return p.getAbiTypesFor(name, nil)
+}
+
+func (p Package) InitAbiTypesFor(fname string, selected []string) Function {
+	if selected == nil {
+		if len(p.Prog.abiSymbol) == 0 {
+			return nil
+		}
+	} else if len(selected) == 0 {
 		return nil
 	}
 	prog := p.Prog
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
 	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
-	b.Store(g.Expr, b.Load(p.getAbiTypes(fname)))
+	b.Store(g.Expr, b.Load(p.getAbiTypesFor(fname, selected)))
 	b.Return()
 	return initFn
+}
+
+func (p Package) InitAbiTypes(fname string) Function {
+	return p.InitAbiTypesFor(fname, nil)
 }
 
 // -----------------------------------------------------------------------------

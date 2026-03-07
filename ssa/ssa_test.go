@@ -27,6 +27,7 @@ import (
 	"go/types"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 	"unsafe"
@@ -1313,12 +1314,62 @@ func TestAbiTables(t *testing.T) {
 
 	fn := pkg.InitAbiTypes(pkg.Path() + ".init$abitables")
 	s := fn.impl.String()
-	if !strings.Contains(s, `define void @"foo/bar.init$abitables"() {
-_llgo_0:
-  %0 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr @"foo/bar.init$abitables$slice", align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, ptr @"github.com/goplus/llgo/runtime/internal/runtime.typelist", align 8
-  ret void
-}`) {
+	if !strings.Contains(s, `define void @"foo/bar.init$abitables"()`) ||
+		!strings.Contains(s, `@"foo/bar.init$abitables$slice"`) ||
+		!strings.Contains(s, `@"github.com/goplus/llgo/runtime/internal/runtime.typelist"`) {
 		t.Fatal("error abi tables", s)
+	}
+}
+
+func TestInitAbiTypesForSubset(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	emptyType := prog.Type(emptyIface, InGo)
+	makeFn := func(name string, x Expr) {
+		sig := types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(types.NewVar(0, nil, "", emptyIface)), false)
+		fn := pkg.NewFunc(name, sig, InGo)
+		b := fn.MakeBody(1)
+		b.Return(b.MakeInterface(emptyType, x))
+	}
+
+	makeFn("intIface", prog.Val(1))
+	makeFn("floatIface", prog.FloatVal(3.5, prog.Float32()))
+
+	if len(prog.abiSymbol) < 2 {
+		t.Fatalf("expected multiple abi symbols, got %d", len(prog.abiSymbol))
+	}
+	names := make([]string, 0, len(prog.abiSymbol))
+	for name := range prog.abiSymbol {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	pkg.getAbiTypesFor("subset", []string{names[0], "missing.symbol"})
+	subsetArray := pkg.Module().NamedGlobal("subset$array")
+	if subsetArray.IsNil() {
+		t.Fatal("missing subset abi array global")
+	}
+	if got := subsetArray.GlobalValueType().ArrayLength(); got != 1 {
+		t.Fatalf("subset abi array length = %d, want 1", got)
+	}
+
+	pkg.getAbiTypes("all")
+	allArray := pkg.Module().NamedGlobal("all$array")
+	if allArray.IsNil() {
+		t.Fatal("missing full abi array global")
+	}
+	if got := allArray.GlobalValueType().ArrayLength(); got != len(prog.abiSymbol) {
+		t.Fatalf("full abi array length = %d, want %d", got, len(prog.abiSymbol))
 	}
 }

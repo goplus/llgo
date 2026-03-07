@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -247,6 +248,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	verbose := conf.Verbose
 	patterns := args
 	tags := "llgo,math_big_pure_go,purego"
+	if conf.AbiMode == cabi.ModeAllFunc {
+		tags += ",llgo_abi_2"
+	}
 	if conf.Tags != "" {
 		tags += "," + conf.Tags
 	}
@@ -902,13 +906,25 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
 	}
-	// linkInputs contains .a archives from all packages and .o files from main module
-	var linkInputs []string
+	visitRoots := allPkgs
+	if ctx.mode == ModeTest {
+		visitRoots = []*packages.Package{pkg}
+		for _, p := range allPkgs {
+			if isRuntimePkg(p.PkgPath) {
+				visitRoots = append(visitRoots, p)
+			}
+		}
+	}
+	// archiveInputs contains package .a files. Object files are prepended later so
+	// archive extraction can see their undefined references in a single linker pass.
+	var archiveInputs []string
 	var linkArgs []string
 	var rtLinkInputs []string
 	var rtLinkArgs []string
 	linkedPkgs := make(map[string]bool) // Track linked packages by ID to avoid duplicates
-	packages.Visit(allPkgs, nil, func(p *packages.Package) {
+	linkedAPkgs := make(map[string]Package)
+	var linkedOrder []Package
+	packages.Visit(visitRoots, nil, func(p *packages.Package) {
 		// Skip if already linked this package (by ID)
 		if linkedPkgs[p.ID] {
 			return
@@ -920,46 +936,55 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		}
 		if p.ExportFile != "" && aPkg != nil { // skip packages that only contain declarations
 			linkedPkgs[p.ID] = true
-
-			// Defer linking runtime packages unless we actually need the runtime.
-			if isRuntimePkg(p.PkgPath) {
-				rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
-				if aPkg.ArchiveFile != "" {
-					rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
-				}
-				return
-			} else {
-				// Only let non-runtime packages influence whether runtime is needed.
-				need1, need2 := aPkg.isNeedRuntimeOrPyInit()
-				needRuntime = needRuntime || need1
-				needPyInit = needPyInit || need2
-			}
-			if aPkg.LPkg.NeedAbiInit {
-				needAbiInit = true
-			}
-
-			linkArgs = append(linkArgs, aPkg.LinkArgs...)
-			if aPkg.ArchiveFile != "" {
-				linkInputs = append(linkInputs, aPkg.ArchiveFile)
-			}
+			linkedAPkgs[p.ID] = aPkg
+			linkedOrder = append(linkedOrder, aPkg)
 		}
 	})
+
+	// packages.Visit with a post callback yields dependencies before importers.
+	// Reverse that order so static archives are linked after the objects that use them.
+	for i := len(linkedOrder) - 1; i >= 0; i-- {
+		aPkg := linkedOrder[i]
+		p := aPkg.Package
+		// Defer linking runtime packages unless we actually need the runtime.
+		if isRuntimePkg(p.PkgPath) {
+			rtLinkArgs = append(rtLinkArgs, aPkg.LinkArgs...)
+			if aPkg.ArchiveFile != "" {
+				rtLinkInputs = append(rtLinkInputs, aPkg.ArchiveFile)
+			}
+			continue
+		}
+		// Only let non-runtime packages influence whether runtime is needed.
+		need1, need2 := aPkg.isNeedRuntimeOrPyInit()
+		needRuntime = needRuntime || need1
+		needPyInit = needPyInit || need2
+		if aPkg.LPkg.NeedAbiInit {
+			needAbiInit = true
+		}
+
+		linkArgs = append(linkArgs, aPkg.LinkArgs...)
+		if aPkg.ArchiveFile != "" {
+			archiveInputs = append(archiveInputs, aPkg.ArchiveFile)
+		}
+	}
 
 	// Only link runtime objects when needed (or for host builds where runtime is always required).
 	if needRuntime || needPyInit || ctx.buildConf.Target == "" {
 		linkArgs = append(linkArgs, rtLinkArgs...)
-		linkInputs = append(linkInputs, rtLinkInputs...)
+		archiveInputs = append(archiveInputs, rtLinkInputs...)
 	}
+
+	abiSymbols := linkedModuleGlobals(linkedAPkgs)
 
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
-	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit)
+	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit, abiSymbols)
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
 	}
-	linkInputs = append(linkInputs, entryObjFile)
+	linkInputs := []string{entryObjFile}
 
 	// Compile extra files from target configuration
 	extraObjFiles, err := compileExtraFiles(ctx, verbose)
@@ -967,6 +992,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		return err
 	}
 	linkInputs = append(linkInputs, extraObjFiles...)
+	linkInputs = append(linkInputs, archiveInputs...)
 
 	if IsFullRpathEnabled() {
 		// Treat every link-time library search path, specified by the -L parameter, as a runtime search path as well.
@@ -991,6 +1017,27 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	}
 
 	return nil
+}
+
+func linkedModuleGlobals(pkgs map[string]Package) []string {
+	if len(pkgs) == 0 {
+		return nil
+	}
+	seen := make(map[string]struct{})
+	for _, pkg := range pkgs {
+		if pkg == nil || pkg.LPkg == nil {
+			continue
+		}
+		for g := pkg.LPkg.Module().FirstGlobal(); !g.IsNil(); g = gllvm.NextGlobal(g) {
+			seen[g.Name()] = struct{}{}
+		}
+	}
+	names := make([]string, 0, len(seen))
+	for name := range seen {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // isRuntimePkg reports whether the package path belongs to the llgo runtime tree.
