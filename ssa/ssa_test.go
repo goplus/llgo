@@ -249,6 +249,42 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 	assertPkg(t, pkg, expected)
 }
 
+func TestConvertNamedStructValue(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	tpkg := types.NewPackage("foo/bar", "bar")
+
+	st := types.NewStruct([]*types.Var{
+		types.NewField(0, tpkg, "sec", types.Typ[types.Int64], false),
+		types.NewField(0, tpkg, "nsec", types.Typ[types.Int64], false),
+		types.NewField(0, tpkg, "loc", types.NewPointer(types.Typ[types.Int8]), false),
+	}, nil)
+	srcNamed := types.NewNamed(types.NewTypeName(0, tpkg, "SrcTime", nil), st, nil)
+	dstNamed := types.NewNamed(types.NewTypeName(0, tpkg, "DstTime", nil), st, nil)
+
+	sig := types.NewSignatureType(
+		nil,
+		nil,
+		nil,
+		types.NewTuple(types.NewParam(0, tpkg, "v", srcNamed)),
+		types.NewTuple(types.NewParam(0, tpkg, "", dstNamed)),
+		false,
+	)
+	fn := pkg.NewFunc("convertNamed", sig, InGo)
+	b := fn.MakeBody(1)
+	src := fn.Param(0)
+	dst := b.Convert(prog.Type(dstNamed, InGo), src)
+	b.Return(dst)
+
+	ir := fn.impl.String()
+	if strings.Contains(ir, `ret %"foo/bar.SrcTime"`) {
+		t.Fatalf("named struct convert returned source type:\n%s", ir)
+	}
+	if !strings.Contains(ir, `ret %"foo/bar.DstTime"`) {
+		t.Fatalf("named struct convert did not return destination type:\n%s", ir)
+	}
+}
+
 func TestCallClosureDynamic(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
