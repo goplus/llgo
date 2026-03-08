@@ -135,11 +135,11 @@ func TestTranslateHelperFunctions(t *testing.T) {
 		t.Fatalf("resolveSymFuncForTarget darwin RawSyscall6 = %q", got)
 	}
 
-	if shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.rawVforkSyscall") {
-		t.Fatal("linux rawVforkSyscall should be filtered")
-	}
 	if !shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.Syscall") {
 		t.Fatal("normal syscall symbol should be kept")
+	}
+	if !shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.rawVforkSyscall") {
+		t.Fatal("linux rawVforkSyscall should be kept")
 	}
 	if !shouldKeepResolvedFunc("syscall", "darwin", "arm64", "syscall.RawSyscall") {
 		t.Fatal("darwin RawSyscall should be kept")
@@ -153,8 +153,8 @@ func TestTranslateHelperFunctions(t *testing.T) {
 	}
 	funcs := []extplan9asm.Func{{Sym: "·rawVforkSyscall"}, {Sym: "·Keep"}}
 	filtered := FilterFuncs("syscall", "linux", "amd64", funcs, ResolveSymFunc("syscall"))
-	if len(filtered) != 1 || filtered[0].Sym != "·Keep" {
-		t.Fatalf("FilterFuncs linux = %#v, want only Keep", filtered)
+	if len(filtered) != len(funcs) {
+		t.Fatalf("FilterFuncs linux = %#v, want all kept", filtered)
 	}
 	darwinFuncs := []extplan9asm.Func{{Sym: "·RawSyscall"}, {Sym: "·RawSyscall6"}, {Sym: "·Syscall"}}
 	darwinFiltered := FilterFuncs("syscall", "darwin", "arm64", darwinFuncs, resolveDarwinSyscall)

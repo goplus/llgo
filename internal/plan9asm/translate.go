@@ -123,9 +123,6 @@ func TranslateSourceModuleForPkgWithOptions(pkg *packages.Package, sfile string,
 }
 
 func shouldKeepResolvedFunc(pkgPath, goos, goarch, resolved string) bool {
-	if pkgPath == "syscall" && goos == "linux" && (goarch == "arm64" || goarch == "amd64") && strings.HasSuffix(resolved, "rawVforkSyscall") {
-		return false
-	}
 	return true
 }
 
