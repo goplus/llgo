@@ -575,10 +575,65 @@ entry:
 	}
 }
 
-// TestModeAllFunc_RuntimeSliceNoWrap verifies that runtime Slice is preserved in
-// ABI2 transformation, while unrelated
-// large aggregates are still wrapped as needed.
-func TestModeAllFunc_RuntimeSliceNoWrap(t *testing.T) {
+func TestModeAllFunc_KeepInlineAsmCallSignature(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+define { i32, i32, i32, i32 } @"internal/cpu.cpuid"(i32 %0, i32 %1) {
+entry:
+  %2 = call { i32, i32, i32, i32 } asm sideeffect "cpuid", "={ax},={bx},={cx},={dx},{ax},{cx},~{dirflag},~{fpsr},~{flags}"(i32 %0, i32 %1)
+  ret { i32, i32, i32, i32 } %2
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modeall_inline_asm.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeAllFunc, "amd64")
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.TransformModule("test", mod)
+
+	fn := mod.NamedFunction("internal/cpu.cpuid")
+	if fn.IsNil() {
+		t.Fatal("internal/cpu.cpuid not found")
+	}
+	head := strings.SplitN(fn.String(), "\n", 2)[0]
+	if !strings.Contains(head, "{ i64, i64 }") {
+		t.Fatalf("function signature should still be cabi-rewritten:\n%s", fn.String())
+	}
+	ir := fn.String()
+	if strings.Contains(ir, `call { i64, i64 } asm sideeffect "cpuid"`) {
+		t.Fatalf("inline asm call should keep original constraint-matching signature:\n%s", ir)
+	}
+	if !strings.Contains(ir, `call { i32, i32, i32, i32 } asm sideeffect "cpuid"`) {
+		t.Fatalf("inline asm call signature unexpectedly changed:\n%s", ir)
+	}
+}
+
+// TestModeAllFunc_RuntimeSliceWrap verifies that runtime Slice also follows
+// ABI2 CABI rewriting, while unrelated large aggregates keep normal wrapping.
+func TestModeAllFunc_RuntimeSliceWrap(t *testing.T) {
 	testIR := `; ModuleID = 'test'
 source_filename = "test"
 
@@ -599,7 +654,7 @@ entry:
 	ctx := llvm.NewContext()
 	defer ctx.Dispose()
 
-	tmpfile := filepath.Join(t.TempDir(), "runtime_slice_nowrap.ll")
+	tmpfile := filepath.Join(t.TempDir(), "runtime_slice_wrap.ll")
 	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
 		t.Fatalf("Failed to write test IR: %v", err)
 	}
@@ -629,11 +684,11 @@ entry:
 		t.Fatal("pkg.keep not found")
 	}
 	keepHead := strings.SplitN(keep.String(), "\n", 2)[0]
-	if !strings.Contains(keepHead, `%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0`) {
-		t.Fatalf("runtime slice param unexpectedly rewritten:\n%s", keep.String())
+	if !strings.Contains(keepHead, "sret(%\"github.com/goplus/llgo/runtime/internal/runtime.Slice\")") {
+		t.Fatalf("runtime slice return should use sret after rewrite:\n%s", keep.String())
 	}
-	if strings.Contains(keepHead, "sret(") || strings.Contains(keepHead, "byval(") {
-		t.Fatalf("runtime slice function should not use sret/byval:\n%s", keep.String())
+	if !strings.Contains(keepHead, "byval(%\"github.com/goplus/llgo/runtime/internal/runtime.Slice\")") {
+		t.Fatalf("runtime slice param should use byval after rewrite:\n%s", keep.String())
 	}
 
 	mixed := mod.NamedFunction("pkg.mixed")
@@ -641,8 +696,8 @@ entry:
 		t.Fatal("pkg.mixed not found")
 	}
 	mixedHead := strings.SplitN(mixed.String(), "\n", 2)[0]
-	if !strings.Contains(mixedHead, `%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0`) {
-		t.Fatalf("runtime slice param unexpectedly rewritten in mixed function:\n%s", mixed.String())
+	if !strings.Contains(mixedHead, "byval(%\"github.com/goplus/llgo/runtime/internal/runtime.Slice\")") {
+		t.Fatalf("runtime slice param should be rewritten in mixed function:\n%s", mixed.String())
 	}
 	if !strings.Contains(mixedHead, "byval(%Big)") {
 		t.Fatalf("non-runtime large aggregate should still be wrapped:\n%s", mixed.String())
