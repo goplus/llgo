@@ -126,11 +126,6 @@ func shouldKeepResolvedFunc(pkgPath, goos, goarch, resolved string) bool {
 	if pkgPath == "syscall" && goos == "linux" && (goarch == "arm64" || goarch == "amd64") && strings.HasSuffix(resolved, "rawVforkSyscall") {
 		return false
 	}
-	if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") {
-		if resolved == "syscall.rawSyscall" || resolved == "syscall.rawSyscall6" {
-			return false
-		}
-	}
 	return true
 }
 
@@ -155,14 +150,6 @@ func ResolveSymFunc(pkgPath string) func(sym string) string {
 func resolveSymFuncForTarget(pkgPath, goos, goarch string) func(sym string) string {
 	return func(sym string) string {
 		sym = StripABISuffix(sym)
-		if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") {
-			switch sym {
-			case "·RawSyscall":
-				return "syscall.rawSyscall"
-			case "·RawSyscall6":
-				return "syscall.rawSyscall6"
-			}
-		}
 		if pkgPath == "internal/bytealg" {
 			if strings.HasPrefix(sym, "runtime·") {
 				sym = strings.ReplaceAll(sym, "∕", "/")

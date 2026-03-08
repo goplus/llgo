@@ -128,24 +128,24 @@ func TestTranslateHelperFunctions(t *testing.T) {
 		t.Fatalf("ResolveSymFunc bytealg local = %q", got)
 	}
 	resolveDarwinSyscall := resolveSymFuncForTarget("syscall", "darwin", "arm64")
-	if got := resolveDarwinSyscall("·RawSyscall"); got != "syscall.rawSyscall" {
+	if got := resolveDarwinSyscall("·RawSyscall"); got != "syscall.RawSyscall" {
 		t.Fatalf("resolveSymFuncForTarget darwin RawSyscall = %q", got)
 	}
-	if got := resolveDarwinSyscall("·RawSyscall6"); got != "syscall.rawSyscall6" {
+	if got := resolveDarwinSyscall("·RawSyscall6"); got != "syscall.RawSyscall6" {
 		t.Fatalf("resolveSymFuncForTarget darwin RawSyscall6 = %q", got)
 	}
 
 	if shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.rawVforkSyscall") {
 		t.Fatal("linux rawVforkSyscall should be filtered")
 	}
-	if shouldKeepResolvedFunc("syscall", "darwin", "arm64", "syscall.rawSyscall") {
-		t.Fatal("darwin rawSyscall should be filtered")
-	}
-	if shouldKeepResolvedFunc("syscall", "darwin", "amd64", "syscall.rawSyscall6") {
-		t.Fatal("darwin rawSyscall6 should be filtered")
-	}
 	if !shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.Syscall") {
 		t.Fatal("normal syscall symbol should be kept")
+	}
+	if !shouldKeepResolvedFunc("syscall", "darwin", "arm64", "syscall.RawSyscall") {
+		t.Fatal("darwin RawSyscall should be kept")
+	}
+	if !shouldKeepResolvedFunc("syscall", "darwin", "amd64", "syscall.RawSyscall6") {
+		t.Fatal("darwin RawSyscall6 should be kept")
 	}
 
 	if got := FilterFuncs("syscall", "linux", "amd64", nil, resolvePkg); got != nil {
@@ -158,8 +158,8 @@ func TestTranslateHelperFunctions(t *testing.T) {
 	}
 	darwinFuncs := []extplan9asm.Func{{Sym: "·RawSyscall"}, {Sym: "·RawSyscall6"}, {Sym: "·Syscall"}}
 	darwinFiltered := FilterFuncs("syscall", "darwin", "arm64", darwinFuncs, resolveDarwinSyscall)
-	if len(darwinFiltered) != 1 || darwinFiltered[0].Sym != "·Syscall" {
-		t.Fatalf("FilterFuncs darwin = %#v, want only Syscall kept", darwinFiltered)
+	if len(darwinFiltered) != len(darwinFuncs) {
+		t.Fatalf("FilterFuncs darwin = %#v, want all kept", darwinFiltered)
 	}
 
 	tmpDir := t.TempDir()
