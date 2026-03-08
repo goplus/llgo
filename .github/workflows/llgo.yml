@@ -54,7 +54,7 @@ jobs:
       - name: Install embedded dependencies
         uses: ./.github/actions/setup-embed-deps
       - name: Download model artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: llama2-model
           path: ./_demo/c/llama2-c/
