@@ -147,19 +147,6 @@ func ResolveSymFunc(pkgPath string) func(sym string) string {
 func resolveSymFuncForTarget(pkgPath, goos, goarch string) func(sym string) string {
 	return func(sym string) string {
 		sym = StripABISuffix(sym)
-		if pkgPath == "internal/bytealg" {
-			if strings.HasPrefix(sym, "runtime·") {
-				sym = strings.ReplaceAll(sym, "∕", "/")
-				return strings.ReplaceAll(sym, "·", ".")
-			}
-			s := strings.TrimPrefix(sym, "·")
-			s = strings.ReplaceAll(s, "∕", "/")
-			s = strings.ReplaceAll(s, "·", ".")
-			if !strings.Contains(s, "/") && !strings.Contains(s, ".") {
-				return pkgPath + "." + s
-			}
-			return s
-		}
 		if strings.HasPrefix(sym, "·") {
 			return pkgPath + "." + strings.TrimPrefix(sym, "·")
 		}
