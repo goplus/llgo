@@ -77,7 +77,7 @@ func TranslateSourceModuleForPkgWithOptions(pkg *packages.Package, sfile string,
 		return nil, fmt.Errorf("%s: missing types (needed for asm signatures)", pkg.PkgPath)
 	}
 
-	resolve := ResolveSymFunc(pkg.PkgPath)
+	resolve := resolveSymFuncForTarget(pkg.PkgPath, goos, goarch)
 	keep := func(textSym, resolved string) bool {
 		return shouldKeepResolvedFunc(pkg.PkgPath, goos, goarch, resolved)
 	}
@@ -127,7 +127,7 @@ func shouldKeepResolvedFunc(pkgPath, goos, goarch, resolved string) bool {
 		return false
 	}
 	if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") {
-		if resolved == "syscall.RawSyscall" || resolved == "syscall.RawSyscall6" {
+		if resolved == "syscall.rawSyscall" || resolved == "syscall.rawSyscall6" {
 			return false
 		}
 	}
@@ -149,8 +149,20 @@ func FilterFuncs(pkgPath, goos, goarch string, funcs []extplan9asm.Func, resolve
 }
 
 func ResolveSymFunc(pkgPath string) func(sym string) string {
+	return resolveSymFuncForTarget(pkgPath, "", "")
+}
+
+func resolveSymFuncForTarget(pkgPath, goos, goarch string) func(sym string) string {
 	return func(sym string) string {
 		sym = StripABISuffix(sym)
+		if pkgPath == "syscall" && goos == "darwin" && (goarch == "arm64" || goarch == "amd64") {
+			switch sym {
+			case "·RawSyscall":
+				return "syscall.rawSyscall"
+			case "·RawSyscall6":
+				return "syscall.rawSyscall6"
+			}
+		}
 		if pkgPath == "internal/bytealg" {
 			if strings.HasPrefix(sym, "runtime·") {
 				sym = strings.ReplaceAll(sym, "∕", "/")

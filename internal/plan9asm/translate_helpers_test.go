@@ -127,15 +127,22 @@ func TestTranslateHelperFunctions(t *testing.T) {
 	if got := resolveBytealg("·Count"); got != "internal/bytealg.Count" {
 		t.Fatalf("ResolveSymFunc bytealg local = %q", got)
 	}
+	resolveDarwinSyscall := resolveSymFuncForTarget("syscall", "darwin", "arm64")
+	if got := resolveDarwinSyscall("·RawSyscall"); got != "syscall.rawSyscall" {
+		t.Fatalf("resolveSymFuncForTarget darwin RawSyscall = %q", got)
+	}
+	if got := resolveDarwinSyscall("·RawSyscall6"); got != "syscall.rawSyscall6" {
+		t.Fatalf("resolveSymFuncForTarget darwin RawSyscall6 = %q", got)
+	}
 
 	if shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.rawVforkSyscall") {
 		t.Fatal("linux rawVforkSyscall should be filtered")
 	}
-	if shouldKeepResolvedFunc("syscall", "darwin", "arm64", "syscall.RawSyscall") {
-		t.Fatal("darwin RawSyscall should be filtered")
+	if shouldKeepResolvedFunc("syscall", "darwin", "arm64", "syscall.rawSyscall") {
+		t.Fatal("darwin rawSyscall should be filtered")
 	}
-	if shouldKeepResolvedFunc("syscall", "darwin", "amd64", "syscall.RawSyscall6") {
-		t.Fatal("darwin RawSyscall6 should be filtered")
+	if shouldKeepResolvedFunc("syscall", "darwin", "amd64", "syscall.rawSyscall6") {
+		t.Fatal("darwin rawSyscall6 should be filtered")
 	}
 	if !shouldKeepResolvedFunc("syscall", "linux", "amd64", "syscall.Syscall") {
 		t.Fatal("normal syscall symbol should be kept")
@@ -148,6 +155,11 @@ func TestTranslateHelperFunctions(t *testing.T) {
 	filtered := FilterFuncs("syscall", "linux", "amd64", funcs, ResolveSymFunc("syscall"))
 	if len(filtered) != 1 || filtered[0].Sym != "·Keep" {
 		t.Fatalf("FilterFuncs linux = %#v, want only Keep", filtered)
+	}
+	darwinFuncs := []extplan9asm.Func{{Sym: "·RawSyscall"}, {Sym: "·RawSyscall6"}, {Sym: "·Syscall"}}
+	darwinFiltered := FilterFuncs("syscall", "darwin", "arm64", darwinFuncs, resolveDarwinSyscall)
+	if len(darwinFiltered) != 1 || darwinFiltered[0].Sym != "·Syscall" {
+		t.Fatalf("FilterFuncs darwin = %#v, want only Syscall kept", darwinFiltered)
 	}
 
 	tmpDir := t.TempDir()
