@@ -990,8 +990,19 @@ func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 			tmp := b.impl.CreateSelect(isNeg, neg, pos, "")
 			return llvm.CreateTrunc(b.impl, tmp, typ.ll)
 		}
+		// Match gc for signed narrow integer targets: clamp out-of-range float
+		// values to the destination min/max bounds instead of wrapping after trunc.
+		bits := uint(dstSize * 8)
+		maxInt := (uint64(1) << (bits - 1)) - 1
+		minInt := ^maxInt
+		minFloat := llvm.ConstFloat(x.Type(), float64(int64(minInt)))
+		maxFloat := llvm.ConstFloat(x.Type(), float64(int64(maxInt)))
+		ltMin := b.impl.CreateFCmp(llvm.FloatOLT, x, minFloat, "")
+		gtMax := b.impl.CreateFCmp(llvm.FloatOGT, x, maxFloat, "")
 		tmp := llvm.CreateFPToSI(b.impl, x, i64.ll)
-		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+		trunc := llvm.CreateTrunc(b.impl, tmp, typ.ll)
+		clampMax := b.impl.CreateSelect(gtMax, llvm.ConstInt(typ.ll, maxInt, false), trunc, "")
+		return b.impl.CreateSelect(ltMin, llvm.ConstInt(typ.ll, minInt, false), clampMax, "")
 	}
 	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
 	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction

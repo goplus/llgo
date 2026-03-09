@@ -251,6 +251,30 @@ func TestUint16ToInt32Conversion(t *testing.T) {
 	}
 }
 
+func TestFloat64ToInt32ConversionClampsLikeGo(t *testing.T) {
+	cases := []struct {
+		name string
+		in   float64
+		want int32
+	}{
+		{name: "below_min", in: -4294967296, want: -2147483648},
+		{name: "just_below_min", in: -2147483649, want: -2147483648},
+		{name: "at_min", in: -2147483648, want: -2147483648},
+		{name: "minus_one", in: -1, want: -1},
+		{name: "at_zero", in: 0, want: 0},
+		{name: "at_one", in: 1, want: 1},
+		{name: "at_max", in: 2147483647, want: 2147483647},
+		{name: "just_above_max", in: 2147483648, want: 2147483647},
+		{name: "from_max_uint32", in: float64(uint32(0xFFFFFFFF)), want: 2147483647},
+		{name: "above_uint32_max", in: 4294967296, want: 2147483647},
+	}
+	for _, tc := range cases {
+		if got := int32(tc.in); got != tc.want {
+			t.Errorf("%s: int32(%v) = %d, want %d", tc.name, tc.in, got, tc.want)
+		}
+	}
+}
+
 // TestFmtSprintfIntegerOverflow tests integer overflow with fmt.Sprintf
 // This catches issues where conversion to any in fmt.Printf may hide bugs
 func TestFmtSprintfIntegerOverflow(t *testing.T) {
