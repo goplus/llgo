@@ -998,8 +998,26 @@ func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 			clampMin := b.impl.CreateSelect(ltMin, llvm.ConstInt(typ.ll, 0x80000000, false), clampMax, "")
 			return b.impl.CreateSelect(nan, llvm.ConstInt(typ.ll, 0, false), clampMin, "")
 		}
-		tmp := llvm.CreateFPToSI(b.impl, x, i64.ll)
-		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+		// Match gc for signed narrow integer targets: finite in-range values still
+		// wrap via FPToSI(i64)->trunc, but NaN maps to 0 and values outside the
+		// int64 range clamp to MinInt64/MaxInt64 before truncation.
+		xForCmp := x
+		cmpTy := x.Type()
+		if cmpTy.TypeKind() == llvm.FloatTypeKind {
+			cmpTy = b.Prog.Float64().ll
+			xForCmp = llvm.CreateFPExt(b.impl, x, cmpTy)
+		}
+		zero := llvm.ConstNull(x.Type())
+		nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
+		minFloat := llvm.ConstFloat(cmpTy, -9223372036854775808.0)
+		maxFloat := llvm.ConstFloat(cmpTy, 9223372036854775807.0)
+		ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
+		gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
+		xSafe := b.impl.CreateSelect(nan, zero, x, "")
+		tmp := llvm.CreateFPToSI(b.impl, xSafe, i64.ll)
+		clampMax := b.impl.CreateSelect(gtMax, llvm.ConstInt(i64.ll, 9223372036854775807, false), tmp, "")
+		clampMin := b.impl.CreateSelect(ltMin, llvm.ConstInt(i64.ll, 0x8000000000000000, false), clampMax, "")
+		return llvm.CreateTrunc(b.impl, clampMin, typ.ll)
 	}
 	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
 	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction
