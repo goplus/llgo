@@ -117,6 +117,9 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	if n == 0 {
 		for p.getp != chanHasRecv && !p.close {
 			p.sends++
+			// A blocked unbuffered send must wake select-based receivers so they can
+			// retry ChanTryRecv after observing that a sender is now waiting.
+			notifyOps(p)
 			p.cond.Wait(&p.mutex)
 			p.sends--
 		}
