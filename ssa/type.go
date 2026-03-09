@@ -276,7 +276,8 @@ func (p Program) rawType(raw types.Type) Type {
 
 func (p Program) tyVoidPtr() llvm.Type {
 	if p.voidPtrTy.IsNil() {
-		p.voidPtrTy = llvm.PointerType(p.tyVoid(), 0)
+		// No void* in llvm, all the pointers are opaque pointer.
+		p.voidPtrTy = llvm.PointerType(p.tyInt8(), 0)
 	}
 	return p.voidPtrTy
 }
