@@ -39,6 +39,18 @@ const (
 	OrderingSeqConsistent  = llvm.AtomicOrderingSequentiallyConsistent
 )
 
+const (
+	gcFloatToInt32Min = -2147483648.0
+	gcFloatToInt32Max = 2147483647.0
+	gcFloatToInt64Min = -9223372036854775808.0
+	gcFloatToInt64Max = 9223372036854775807.0
+
+	gcInt32MinBits = uint64(0x80000000)
+	gcInt32MaxBits = uint64(2147483647)
+	gcInt64MinBits = uint64(0x8000000000000000)
+	gcInt64MaxBits = uint64(9223372036854775807)
+)
+
 // -----------------------------------------------------------------------------
 
 type Expr struct {
@@ -997,8 +1009,8 @@ func castSignedFloatToInt32(b Builder, x llvm.Value, typ Type) llvm.Value {
 	xForCmp, cmpTy := floatCmpValue(b, x)
 	prog := b.Prog
 	nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
-	minFloat := llvm.ConstFloat(cmpTy, -2147483648)
-	maxFloat := llvm.ConstFloat(cmpTy, 2147483647)
+	minFloat := llvm.ConstFloat(cmpTy, gcFloatToInt32Min)
+	maxFloat := llvm.ConstFloat(cmpTy, gcFloatToInt32Max)
 	ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
 	gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
 	rangeFail := b.impl.CreateOr(ltMin, gtMax, "")
@@ -1010,7 +1022,7 @@ func castSignedFloatToInt32(b Builder, x llvm.Value, typ Type) llvm.Value {
 	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
 		b.SetBlockEx(blk, AtEnd, false)
 		if i == 0 {
-			bounded := b.impl.CreateSelect(ltMin, llvm.ConstInt(typ.ll, 0x80000000, false), llvm.ConstInt(typ.ll, 2147483647, false), "")
+			bounded := b.impl.CreateSelect(ltMin, llvm.ConstInt(typ.ll, gcInt32MinBits, false), llvm.ConstInt(typ.ll, gcInt32MaxBits, false), "")
 			slowVal := b.impl.CreateSelect(nan, llvm.ConstInt(typ.ll, 0, false), bounded, "")
 			b.Jump(blks[2])
 			return Expr{slowVal, typ}
@@ -1029,8 +1041,8 @@ func castSignedFloatToNarrowInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	prog := b.Prog
 	i64 := prog.Int64()
 	nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
-	minFloat := llvm.ConstFloat(cmpTy, -9223372036854775808.0)
-	maxFloat := llvm.ConstFloat(cmpTy, 9223372036854775807.0)
+	minFloat := llvm.ConstFloat(cmpTy, gcFloatToInt64Min)
+	maxFloat := llvm.ConstFloat(cmpTy, gcFloatToInt64Max)
 	ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
 	gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
 	rangeFail := b.impl.CreateOr(ltMin, gtMax, "")
@@ -1042,7 +1054,7 @@ func castSignedFloatToNarrowInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
 		b.SetBlockEx(blk, AtEnd, false)
 		if i == 0 {
-			bounded64 := b.impl.CreateSelect(ltMin, llvm.ConstInt(i64.ll, 0x8000000000000000, false), llvm.ConstInt(i64.ll, 9223372036854775807, false), "")
+			bounded64 := b.impl.CreateSelect(ltMin, llvm.ConstInt(i64.ll, gcInt64MinBits, false), llvm.ConstInt(i64.ll, gcInt64MaxBits, false), "")
 			bounded64 = b.impl.CreateSelect(nan, llvm.ConstInt(i64.ll, 0, false), bounded64, "")
 			slowVal := llvm.CreateTrunc(b.impl, bounded64, typ.ll)
 			b.Jump(blks[2])
