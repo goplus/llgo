@@ -14,20 +14,37 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/cast"
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32"(float %0, i32 %1) {
 _llgo_0:
-  %2 = fptosi float %0 to i64
-  %3 = trunc i64 %2 to i32
-  %4 = icmp ne i32 %3, %1
-  br i1 %4, label %_llgo_1, label %_llgo_2
+  %2 = fpext float %0 to double
+  %3 = fcmp uno double %2, %2
+  %4 = fcmp olt double %2, 0xC1E0000000000000
+  %5 = fcmp ogt double %2, 0x41DFFFFFFFC00000
+  %6 = or i1 %4, %5
+  %7 = or i1 %3, %6
+  br i1 %7, label %_llgo_3, label %_llgo_4
 
-_llgo_1:                                          ; preds = %_llgo_0
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
+_llgo_1:                                          ; preds = %_llgo_5
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %8, align 8
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %8, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %9)
   unreachable
 
-_llgo_2:                                          ; preds = %_llgo_0
+_llgo_2:                                          ; preds = %_llgo_5
   ret void
+
+_llgo_3:                                          ; preds = %_llgo_0
+  %10 = select i1 %4, i32 -2147483648, i32 2147483647
+  %11 = select i1 %3, i32 0, i32 %10
+  br label %_llgo_5
+
+_llgo_4:                                          ; preds = %_llgo_0
+  %12 = fptosi float %0 to i32
+  br label %_llgo_5
+
+_llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
+  %13 = phi i32 [ %11, %_llgo_3 ], [ %12, %_llgo_4 ]
+  %14 = icmp ne i32 %13, %1
+  br i1 %14, label %_llgo_1, label %_llgo_2
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float %0, i32 %1) {
@@ -70,20 +87,39 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float %0, i8 %1) {
 _llgo_0:
-  %2 = fptosi float %0 to i64
-  %3 = trunc i64 %2 to i8
-  %4 = icmp ne i8 %3, %1
-  br i1 %4, label %_llgo_1, label %_llgo_2
+  %2 = fpext float %0 to double
+  %3 = fcmp uno double %2, %2
+  %4 = fcmp olt double %2, 0xC3E0000000000000
+  %5 = fcmp ogt double %2, 0x43E0000000000000
+  %6 = or i1 %4, %5
+  %7 = or i1 %3, %6
+  br i1 %7, label %_llgo_3, label %_llgo_4
 
-_llgo_1:                                          ; preds = %_llgo_0
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %5, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6)
+_llgo_1:                                          ; preds = %_llgo_5
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %8, align 8
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %8, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %9)
   unreachable
 
-_llgo_2:                                          ; preds = %_llgo_0
+_llgo_2:                                          ; preds = %_llgo_5
   ret void
+
+_llgo_3:                                          ; preds = %_llgo_0
+  %10 = select i1 %4, i64 -9223372036854775808, i64 9223372036854775807
+  %11 = select i1 %3, i64 0, i64 %10
+  %12 = trunc i64 %11 to i8
+  br label %_llgo_5
+
+_llgo_4:                                          ; preds = %_llgo_0
+  %13 = fptosi float %0 to i64
+  %14 = trunc i64 %13 to i8
+  br label %_llgo_5
+
+_llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
+  %15 = phi i8 [ %12, %_llgo_3 ], [ %14, %_llgo_4 ]
+  %16 = icmp ne i8 %15, %1
+  br i1 %16, label %_llgo_1, label %_llgo_2
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float %0, i8 %1) {
