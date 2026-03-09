@@ -23,11 +23,16 @@ func TestSelectRecvWakesForBlockedUnbufferedSend(t *testing.T) {
 		}()
 
 		<-started
+		// Give the goroutine a brief chance to reach the blocking select path so
+		// this regression exercises select wakeups rather than a direct recv fast path.
 		time.Sleep(time.Millisecond)
 
 		go func() {
-			res <- struct{}{}
-			close(sendDone)
+			select {
+			case res <- struct{}{}:
+				close(sendDone)
+			case <-done:
+			}
 		}()
 
 		select {
