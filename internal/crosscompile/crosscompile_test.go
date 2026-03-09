@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -76,7 +77,7 @@ func TestUseCrossCompileSDK(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := use(tc.goos, tc.goarch, false, false)
+			export, err := use(tc.goos, tc.goarch, false, false, true)
 
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -231,7 +232,7 @@ func TestUseTarget(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			export, err := UseTarget(tc.targetName)
+			export, err := UseTarget(tc.targetName, true)
 
 			if tc.expectError {
 				if err == nil {
@@ -311,7 +312,7 @@ func TestUseTarget(t *testing.T) {
 
 func TestUseWithTarget(t *testing.T) {
 	// Test target-based configuration takes precedence
-	export, err := Use("linux", "amd64", "esp32", false, true)
+	export, err := Use("linux", "amd64", "esp32", false, true, true)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -323,7 +324,7 @@ func TestUseWithTarget(t *testing.T) {
 	}
 
 	// Test fallback to goos/goarch when no target specified
-	export, err = Use(runtime.GOOS, runtime.GOARCH, "", false, false)
+	export, err = Use(runtime.GOOS, runtime.GOARCH, "", false, false, true)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -331,5 +332,63 @@ func TestUseWithTarget(t *testing.T) {
 	// Should use native configuration (only check for macOS since that's where tests run)
 	if runtime.GOOS == "darwin" && len(export.LDFLAGS) == 0 {
 		t.Error("Expected LDFLAGS to be set for native build")
+	}
+}
+
+func TestUseLTOFlagsControlledByOption(t *testing.T) {
+	export, err := use(runtime.GOOS, runtime.GOARCH, false, false, false)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	for _, flag := range export.CCFLAGS {
+		if strings.HasPrefix(flag, "-flto") {
+			t.Fatalf("unexpected LTO ccflag when disabled: %q", flag)
+		}
+	}
+	for _, flag := range export.LDFLAGS {
+		if strings.Contains(flag, "lto-") {
+			t.Fatalf("unexpected LTO ldflag when disabled: %q", flag)
+		}
+	}
+}
+
+func hasMllvmOption(flags []string, opt string) bool {
+	for i := 0; i+1 < len(flags); i++ {
+		if flags[i] == "-mllvm" && flags[i+1] == opt {
+			return true
+		}
+	}
+	return false
+}
+
+func TestUseTargetCodegenFlagsOnlyAddedToLDFlagsWithLTO(t *testing.T) {
+	const target = "k210"
+
+	noLTO, err := UseTarget(target, false)
+	if err != nil {
+		t.Fatalf("UseTarget(%q, false) error: %v", target, err)
+	}
+	if hasMllvmOption(noLTO.LDFLAGS, "-code-model=medium") {
+		t.Fatalf("unexpected -mllvm -code-model=medium in LDFLAGS when LTO disabled: %v", noLTO.LDFLAGS)
+	}
+	if hasMllvmOption(noLTO.LDFLAGS, "-target-abi=lp64") {
+		t.Fatalf("unexpected -mllvm -target-abi=lp64 in LDFLAGS when LTO disabled: %v", noLTO.LDFLAGS)
+	}
+	if !slices.Contains(noLTO.CCFLAGS, "-mcmodel=medium") {
+		t.Fatalf("missing -mcmodel=medium in CCFLAGS: %v", noLTO.CCFLAGS)
+	}
+	if !slices.Contains(noLTO.CCFLAGS, "-mabi=lp64") {
+		t.Fatalf("missing -mabi=lp64 in CCFLAGS: %v", noLTO.CCFLAGS)
+	}
+
+	withLTO, err := UseTarget(target, true)
+	if err != nil {
+		t.Fatalf("UseTarget(%q, true) error: %v", target, err)
+	}
+	if !hasMllvmOption(withLTO.LDFLAGS, "-code-model=medium") {
+		t.Fatalf("missing -mllvm -code-model=medium in LDFLAGS when LTO enabled: %v", withLTO.LDFLAGS)
+	}
+	if !hasMllvmOption(withLTO.LDFLAGS, "-target-abi=lp64") {
+		t.Fatalf("missing -mllvm -target-abi=lp64 in LDFLAGS when LTO enabled: %v", withLTO.LDFLAGS)
 	}
 }

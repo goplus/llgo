@@ -111,6 +111,9 @@ case "$test_dir" in
 			"riscv32"
 			"riscv64"
 			"rp2040"
+			# nintendoswitch: undefined symbol under lto, the compiled files is not enough.
+			# For no-lto, it works because the testcases does not use the missing fucntions.
+			"nintendoswitch"
 		)
 		;;
 	defer)
