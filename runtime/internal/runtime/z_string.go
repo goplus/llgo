@@ -121,6 +121,9 @@ func StringToRunes(s string) []rune {
 }
 
 func StringFromCStr(cstr *int8) (s String) {
+	if cstr == nil {
+		return
+	}
 	return StringFrom(unsafe.Pointer(cstr), int(c.Strlen(cstr)))
 }
 
