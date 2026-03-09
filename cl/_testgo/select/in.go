@@ -7,37 +7,30 @@ func main() {
 
 func send() {
 	ch1 := make(chan int)
-	ch2 := make(chan int)
+	ready := make(chan struct{})
+	done := make(chan struct{})
 
 	go func() {
+		close(ready)
 		println(<-ch1)
+		close(done)
 	}()
-	go func() {
-		println(<-ch2)
-	}()
+	<-ready
 
 	select {
 	case ch1 <- 100:
-	case ch2 <- 200:
 	}
+	<-done
 }
 
 func recv() {
-	c1 := make(chan string)
-	c2 := make(chan string)
-	go func() {
-		c1 <- "ch1"
-	}()
-	go func() {
-		c2 <- "ch2"
-	}()
+	c1 := make(chan string, 1)
+	c1 <- "ch1"
 
 	for i := 0; i < 2; i++ {
 		select {
 		case msg1 := <-c1:
 			println(msg1)
-		case msg2 := <-c2:
-			println(msg2)
 		default:
 			println("exit")
 		}
