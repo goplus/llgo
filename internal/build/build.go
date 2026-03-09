@@ -352,11 +352,18 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	patches := make(cl.Patches, len(altPkgPaths))
 	altSSAPkgs(progSSA, patches, altPkgs[1:], conf, verbose)
 
+	naivePkgs := naiveProgramPackages(initial)
+	var progSSANaive *ssa.Program
+	if len(naivePkgs) != 0 {
+		progSSANaive = ssa.NewProgram(initial[0].Fset, buildMode|ssa.NaiveForm)
+		altSSAPkgs(progSSANaive, patches, altPkgs[1:], conf, verbose)
+	}
+
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
 
 	output := conf.OutFile != ""
-	ctx := &context{env: env, conf: cfg, progSSA: progSSA, prog: prog, dedup: dedup,
+	ctx := &context{env: env, conf: cfg, progSSA: progSSA, progSSANaive: progSSANaive, naivePkgs: naivePkgs, prog: prog, dedup: dedup,
 		patches: patches, built: make(map[string]none), initial: initial, mode: mode,
 		fingerprinting: make(map[string]bool),
 		pkgs:           map[*packages.Package]Package{},
@@ -524,6 +531,8 @@ type context struct {
 	env            *llvm.Env
 	conf           *packages.Config
 	progSSA        *ssa.Program
+	progSSANaive   *ssa.Program
+	naivePkgs      map[*packages.Package]bool
 	prog           llssa.Program
 	dedup          packages.Deduper
 	patches        cl.Patches
@@ -1359,6 +1368,113 @@ func altPkgs(initial []*packages.Package, conf *Config, alts ...string) []string
 	return alts
 }
 
+func naiveProgramPackages(initial []*packages.Package) map[*packages.Package]bool {
+	memo := make(map[*packages.Package]bool)
+	state := make(map[*packages.Package]uint8)
+	var visit func(*packages.Package) bool
+	visit = func(p *packages.Package) bool {
+		if p == nil || p.Types == nil || p.IllTyped {
+			return false
+		}
+		switch state[p] {
+		case 1:
+			return false
+		case 2:
+			return memo[p]
+		}
+		state[p] = 1
+		need := pkgRequiresNaiveForm(p)
+		for _, imp := range p.Imports {
+			if visit(imp) {
+				need = true
+			}
+		}
+		state[p] = 2
+		memo[p] = need
+		return need
+	}
+	packages.Visit(initial, nil, func(p *packages.Package) {
+		if p != nil {
+			visit(p)
+		}
+	})
+	for p, need := range memo {
+		if !need {
+			delete(memo, p)
+		}
+	}
+	return memo
+}
+
+func pkgRequiresNaiveForm(pkg *packages.Package) bool {
+	for _, file := range pkg.Syntax {
+		if file == nil {
+			continue
+		}
+		imports := make(map[string]string, len(file.Imports))
+		dotImports := make(map[string]bool)
+		for _, imp := range file.Imports {
+			pathValue := strings.Trim(imp.Path.Value, "\"")
+			switch pathValue {
+			case "github.com/goplus/lib/c", "github.com/goplus/lib/c/setjmp":
+			default:
+				continue
+			}
+			if imp.Name != nil {
+				switch imp.Name.Name {
+				case "_":
+					continue
+				case ".":
+					dotImports[pathValue] = true
+					continue
+				default:
+					imports[imp.Name.Name] = pathValue
+					continue
+				}
+			}
+			imports[path.Base(pathValue)] = pathValue
+		}
+		found := false
+		ast.Inspect(file, func(n ast.Node) bool {
+			if found {
+				return false
+			}
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			switch fn := call.Fun.(type) {
+			case *ast.SelectorExpr:
+				pkgIdent, ok := fn.X.(*ast.Ident)
+				if !ok {
+					return true
+				}
+				switch imports[pkgIdent.Name] {
+				case "github.com/goplus/lib/c/setjmp":
+					found = fn.Sel.Name == "Setjmp"
+				case "github.com/goplus/lib/c":
+					found = fn.Sel.Name == "Sigsetjmp"
+				}
+				return !found
+			case *ast.Ident:
+				if dotImports["github.com/goplus/lib/c/setjmp"] && fn.Name == "Setjmp" {
+					found = true
+					return false
+				}
+				if dotImports["github.com/goplus/lib/c"] && fn.Name == "Sigsetjmp" {
+					found = true
+					return false
+				}
+			}
+			return true
+		})
+		if found {
+			return true
+		}
+	}
+	return false
+}
+
 func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, conf *Config, verbose bool) {
 	packages.Visit(alts, nil, func(p *packages.Package) {
 		if typs := p.Types; typs != nil && !p.IllTyped {
@@ -1407,7 +1523,6 @@ type aPackage struct {
 type Package = *aPackage
 
 func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*aPackage, error) {
-	prog := ctx.progSSA
 	var all []*aPackage
 	var errs []*packages.Package
 	packages.Visit(initial, nil, func(p *packages.Package) {
@@ -1418,7 +1533,7 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 				return
 			}
 			var altPkg *packages.Cached
-			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
+			var ssaPkg = createSSAPkg(ctx, p, verbose)
 			if ctx.hasAltPkg(pkgPath) {
 				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
 					return
@@ -1557,18 +1672,35 @@ func applyPatches(ctx *context, p *packages.Package, verbose bool) {
 	}
 }
 
-func createSSAPkg(ctx *context, prog *ssa.Program, p *packages.Package, verbose bool) *ssa.Package {
-	pkgSSA := prog.ImportedPackage(p.ID)
-	if pkgSSA == nil {
-		if debugBuild || verbose {
-			log.Println("==> BuildSSA", p.ID)
+func createSSAPkg(ctx *context, p *packages.Package, verbose bool) *ssa.Package {
+	prog := ctx.progSSA
+	useNaive := ctx.progSSANaive != nil && ctx.naivePkgs[p]
+	if useNaive {
+		prog = ctx.progSSANaive
+	}
+	if pkgSSA := prog.Package(p.Types); pkgSSA != nil {
+		return pkgSSA
+	}
+	if debugBuild || verbose {
+		log.Println("==> BuildSSA", p.ID)
+	}
+	if useNaive {
+		for _, imp := range p.Imports {
+			if imp == nil || imp.Types == nil || imp.IllTyped || prog.Package(imp.Types) != nil {
+				continue
+			}
+			prog.CreatePackage(imp.Types, nil, nil, true)
 		}
 		applyPatches(ctx, p, verbose)
-		pkgSSA = prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
-		pkgSSA.Build() // TODO(xsw): build concurrently
-		// Apply local SSA fixups once when package SSA is first built.
-		fixSSAOrder(pkgSSA)
+		prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
+	} else {
+		applyPatches(ctx, p, verbose)
+		prog.CreatePackage(p.Types, p.Syntax, p.TypesInfo, true)
 	}
+	pkgSSA := prog.Package(p.Types)
+	pkgSSA.Build() // TODO(xsw): build concurrently
+	// Apply local SSA fixups once when package SSA is first built.
+	fixSSAOrder(pkgSSA)
 	return pkgSSA
 }
 

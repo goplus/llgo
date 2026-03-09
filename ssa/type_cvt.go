@@ -72,10 +72,22 @@ func (p Program) Closure(sig *types.Signature) Type {
 	return p.rawType(closure)
 }
 
+func isSSAOpaqueType(typ types.Type) bool {
+	switch types.TypeString(typ, nil) {
+	case "deferStack", "iter":
+		return true
+	default:
+		return false
+	}
+}
+
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 	switch t := typ.(type) {
 	case *types.Basic:
 	case *types.Pointer:
+		if isSSAOpaqueType(t.Elem()) {
+			return types.Typ[types.UnsafePointer], true
+		}
 		if elem, cvt := p.cvtType(t.Elem()); cvt {
 			return types.NewPointer(elem), true
 		}
@@ -118,6 +130,9 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 	case *types.Alias:
 		return p.cvtType(types.Unalias(t))
 	default:
+		if isSSAOpaqueType(typ) {
+			return types.Typ[types.UnsafePointer], true
+		}
 		panic(fmt.Sprintf("cvtType: unexpected type - %T", typ))
 	}
 	return typ, false

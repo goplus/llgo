@@ -1291,6 +1291,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	case "recover":
 		return b.Recover()
+	case "ssa:deferstack":
+		return b.Prog.Nil(b.Prog.VoidPtr())
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
 	case "complex":

@@ -6,6 +6,10 @@ package build
 import (
 	"bytes"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"go/types"
 	"io"
 	"os"
 	"os/exec"
@@ -305,5 +309,103 @@ func TestTestMultiplePackagesWithOutputFile(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "cannot use -o flag with multiple packages") {
 		t.Errorf("Expected error about -o with multiple packages, got: %v", err)
+	}
+}
+
+func TestPkgRequiresNaiveForm(t *testing.T) {
+	parsePkg := func(t *testing.T, src string) *packages.Package {
+		t.Helper()
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, "main.go", src, 0)
+		if err != nil {
+			t.Fatalf("ParseFile: %v", err)
+		}
+		return &packages.Package{Syntax: []*ast.File{file}}
+	}
+
+	t.Run("setjmp package call", func(t *testing.T) {
+		pkg := parsePkg(t, `package main
+			import setjmp "github.com/goplus/lib/c/setjmp"
+			func f(jb *setjmp.JmpBuf) int { return int(setjmp.Setjmp(jb)) }
+		`)
+		if !pkgRequiresNaiveForm(pkg) {
+			t.Fatal("pkgRequiresNaiveForm = false, want true")
+		}
+	})
+
+	t.Run("c sigsetjmp call", func(t *testing.T) {
+		pkg := parsePkg(t, `package main
+			import c "github.com/goplus/lib/c"
+			func f(jb c.Pointer) int { return int(c.Sigsetjmp(jb, 0)) }
+		`)
+		if !pkgRequiresNaiveForm(pkg) {
+			t.Fatal("pkgRequiresNaiveForm = false, want true")
+		}
+	})
+
+	t.Run("dot import", func(t *testing.T) {
+		pkg := parsePkg(t, `package main
+			import . "github.com/goplus/lib/c/setjmp"
+			func f(jb *JmpBuf) int { return int(Setjmp(jb)) }
+		`)
+		if !pkgRequiresNaiveForm(pkg) {
+			t.Fatal("pkgRequiresNaiveForm = false, want true")
+		}
+	})
+
+	t.Run("plain c import without setjmp", func(t *testing.T) {
+		pkg := parsePkg(t, `package main
+			import c "github.com/goplus/lib/c"
+			func f(s *c.Char) uintptr { return c.Strlen(s) }
+		`)
+		if pkgRequiresNaiveForm(pkg) {
+			t.Fatal("pkgRequiresNaiveForm = true, want false")
+		}
+	})
+}
+
+func TestNaiveProgramPackagesPropagatesToImporters(t *testing.T) {
+	parsePkg := func(t *testing.T, path, src string, imports ...*packages.Package) *packages.Package {
+		t.Helper()
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path+".go", src, 0)
+		if err != nil {
+			t.Fatalf("ParseFile: %v", err)
+		}
+		typesPkg := types.NewPackage(path, filepath.Base(path))
+		importMap := make(map[string]*packages.Package, len(imports))
+		for _, imp := range imports {
+			importMap[imp.PkgPath] = imp
+		}
+		return &packages.Package{
+			ID:      path,
+			PkgPath: path,
+			Types:   typesPkg,
+			Syntax:  []*ast.File{file},
+			Imports: importMap,
+		}
+	}
+
+	leaf := parsePkg(t, "example.com/leaf", `package leaf
+		import setjmp "github.com/goplus/lib/c/setjmp"
+		func F(jb *setjmp.JmpBuf) int { return int(setjmp.Setjmp(jb)) }
+	`)
+	parent := parsePkg(t, "example.com/parent", `package parent
+		import "example.com/leaf"
+		func Use() int { return 0 }
+	`, leaf)
+	plain := parsePkg(t, "example.com/plain", `package plain
+		func Use() int { return 0 }
+	`)
+
+	got := naiveProgramPackages([]*packages.Package{parent, plain})
+	if !got[leaf] {
+		t.Fatal("naiveProgramPackages missing direct setjmp package")
+	}
+	if !got[parent] {
+		t.Fatal("naiveProgramPackages missing importer of direct setjmp package")
+	}
+	if got[plain] {
+		t.Fatal("naiveProgramPackages unexpectedly marked unrelated package")
 	}
 }
