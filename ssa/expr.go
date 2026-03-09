@@ -40,15 +40,20 @@ const (
 )
 
 const (
-	gcFloatToInt32Min = -2147483648.0
-	gcFloatToInt32Max = 2147483647.0
-	gcFloatToInt64Min = -9223372036854775808.0
-	gcFloatToInt64Max = 9223372036854775807.0
+	gcInt32Min = -1 << 31
+	gcInt32Max = 1<<31 - 1
+	gcInt64Min = -1 << 63
+	gcInt64Max = 1<<63 - 1
+
+	gcFloatToInt32Min = float64(gcInt32Min)
+	gcFloatToInt32Max = float64(gcInt32Max)
+	gcFloatToInt64Min = float64(gcInt64Min)
+	gcFloatToInt64Max = float64(gcInt64Max)
 
 	gcInt32MinBits = uint64(0x80000000)
-	gcInt32MaxBits = uint64(2147483647)
+	gcInt32MaxBits = uint64(0x7fffffff)
 	gcInt64MinBits = uint64(0x8000000000000000)
-	gcInt64MaxBits = uint64(9223372036854775807)
+	gcInt64MaxBits = uint64(0x7fffffffffffffff)
 )
 
 // -----------------------------------------------------------------------------
