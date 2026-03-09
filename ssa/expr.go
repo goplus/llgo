@@ -974,63 +974,109 @@ func castInt(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 	}
 }
 
+func floatCmpValue(b Builder, x llvm.Value) (llvm.Value, llvm.Type) {
+	cmpTy := x.Type()
+	if cmpTy.TypeKind() != llvm.FloatTypeKind {
+		return x, cmpTy
+	}
+	cmpTy = b.Prog.Float64().ll
+	return llvm.CreateFPExt(b.impl, x, cmpTy), cmpTy
+}
+
+func castUnsignedFloatToNarrowInt(b Builder, x llvm.Value, typ Type) llvm.Value {
+	i64 := b.Prog.Int64()
+	zero := llvm.ConstNull(x.Type())
+	isNeg := b.impl.CreateFCmp(llvm.FloatOLT, x, zero, "")
+	neg := llvm.CreateFPToSI(b.impl, x, i64.ll)
+	pos := llvm.CreateFPToUI(b.impl, x, i64.ll)
+	tmp := b.impl.CreateSelect(isNeg, neg, pos, "")
+	return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+}
+
+func castSignedFloatToInt32(b Builder, x llvm.Value, typ Type) llvm.Value {
+	xForCmp, cmpTy := floatCmpValue(b, x)
+	prog := b.Prog
+	nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
+	minFloat := llvm.ConstFloat(cmpTy, -2147483648)
+	maxFloat := llvm.ConstFloat(cmpTy, 2147483647)
+	ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
+	gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
+	rangeFail := b.impl.CreateOr(ltMin, gtMax, "")
+	slow := b.impl.CreateOr(nan, rangeFail, "")
+	blks := b.Func.MakeBlocks(3)
+	b.If(Expr{slow, prog.Bool()}, blks[0], blks[1])
+	b.SetBlockEx(blks[2], AtEnd, false)
+	phi := b.Phi(typ)
+	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
+		b.SetBlockEx(blk, AtEnd, false)
+		if i == 0 {
+			bounded := b.impl.CreateSelect(ltMin, llvm.ConstInt(typ.ll, 0x80000000, false), llvm.ConstInt(typ.ll, 2147483647, false), "")
+			slowVal := b.impl.CreateSelect(nan, llvm.ConstInt(typ.ll, 0, false), bounded, "")
+			b.Jump(blks[2])
+			return Expr{slowVal, typ}
+		}
+		conv := llvm.CreateFPToSI(b.impl, x, typ.ll)
+		b.Jump(blks[2])
+		return Expr{conv, typ}
+	})
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
+	return phi.Expr.impl
+}
+
+func castSignedFloatToNarrowInt(b Builder, x llvm.Value, typ Type) llvm.Value {
+	xForCmp, cmpTy := floatCmpValue(b, x)
+	prog := b.Prog
+	i64 := prog.Int64()
+	nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
+	minFloat := llvm.ConstFloat(cmpTy, -9223372036854775808.0)
+	maxFloat := llvm.ConstFloat(cmpTy, 9223372036854775807.0)
+	ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
+	gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
+	rangeFail := b.impl.CreateOr(ltMin, gtMax, "")
+	slow := b.impl.CreateOr(nan, rangeFail, "")
+	blks := b.Func.MakeBlocks(3)
+	b.If(Expr{slow, prog.Bool()}, blks[0], blks[1])
+	b.SetBlockEx(blks[2], AtEnd, false)
+	phi := b.Phi(typ)
+	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
+		b.SetBlockEx(blk, AtEnd, false)
+		if i == 0 {
+			bounded64 := b.impl.CreateSelect(ltMin, llvm.ConstInt(i64.ll, 0x8000000000000000, false), llvm.ConstInt(i64.ll, 9223372036854775807, false), "")
+			bounded64 = b.impl.CreateSelect(nan, llvm.ConstInt(i64.ll, 0, false), bounded64, "")
+			slowVal := llvm.CreateTrunc(b.impl, bounded64, typ.ll)
+			b.Jump(blks[2])
+			return Expr{slowVal, typ}
+		}
+		conv := llvm.CreateFPToSI(b.impl, x, i64.ll)
+		conv = llvm.CreateTrunc(b.impl, conv, typ.ll)
+		b.Jump(blks[2])
+		return Expr{conv, typ}
+	})
+	b.SetBlockEx(blks[2], AtEnd, false)
+	b.blk.last = blks[2].last
+	return phi.Expr.impl
+}
+
 func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	dstSize := b.Prog.td.TypeAllocSize(typ.ll)
 	if dstSize < 8 {
-		i64 := b.Prog.Int64()
 		if typ.kind == vkUnsigned {
 			// note(zzy): for unsigned targets, split negative vs non-negative.
 			// Negative values need signed expansion (FPToSI) before truncation;
 			// non-negative values can use unsigned expansion (FPToUI). This avoids
 			// direct float->narrow-unsigned conversions and preserves wrap/trunc behavior.
-			zero := llvm.ConstNull(x.Type())
-			isNeg := b.impl.CreateFCmp(llvm.FloatOLT, x, zero, "")
-			neg := llvm.CreateFPToSI(b.impl, x, i64.ll)
-			pos := llvm.CreateFPToUI(b.impl, x, i64.ll)
-			tmp := b.impl.CreateSelect(isNeg, neg, pos, "")
-			return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+			return castUnsignedFloatToNarrowInt(b, x, typ)
 		}
 		if dstSize == 4 {
 			// Match gc for signed 32-bit integer targets: positive overflow clamps to
 			// MaxInt32, negative overflow clamps to MinInt32, and NaN converts to 0.
-			xForCmp := x
-			cmpTy := x.Type()
-			if cmpTy.TypeKind() == llvm.FloatTypeKind {
-				cmpTy = b.Prog.Float64().ll
-				xForCmp = llvm.CreateFPExt(b.impl, x, cmpTy)
-			}
-			zero := llvm.ConstNull(x.Type())
-			nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
-			minFloat := llvm.ConstFloat(cmpTy, -2147483648)
-			maxFloat := llvm.ConstFloat(cmpTy, 2147483647)
-			ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
-			gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
-			xSafe := b.impl.CreateSelect(nan, zero, x, "")
-			conv := llvm.CreateFPToSI(b.impl, xSafe, typ.ll)
-			clampMax := b.impl.CreateSelect(gtMax, llvm.ConstInt(typ.ll, 2147483647, false), conv, "")
-			clampMin := b.impl.CreateSelect(ltMin, llvm.ConstInt(typ.ll, 0x80000000, false), clampMax, "")
-			return b.impl.CreateSelect(nan, llvm.ConstInt(typ.ll, 0, false), clampMin, "")
+			return castSignedFloatToInt32(b, x, typ)
 		}
 		// Match gc for signed narrow integer targets: finite in-range values still
 		// wrap via FPToSI(i64)->trunc, but NaN maps to 0 and values outside the
 		// int64 range clamp to MinInt64/MaxInt64 before truncation.
-		xForCmp := x
-		cmpTy := x.Type()
-		if cmpTy.TypeKind() == llvm.FloatTypeKind {
-			cmpTy = b.Prog.Float64().ll
-			xForCmp = llvm.CreateFPExt(b.impl, x, cmpTy)
-		}
-		zero := llvm.ConstNull(x.Type())
-		nan := b.impl.CreateFCmp(llvm.FloatUNO, xForCmp, xForCmp, "")
-		minFloat := llvm.ConstFloat(cmpTy, -9223372036854775808.0)
-		maxFloat := llvm.ConstFloat(cmpTy, 9223372036854775807.0)
-		ltMin := b.impl.CreateFCmp(llvm.FloatOLT, xForCmp, minFloat, "")
-		gtMax := b.impl.CreateFCmp(llvm.FloatOGT, xForCmp, maxFloat, "")
-		xSafe := b.impl.CreateSelect(nan, zero, x, "")
-		tmp := llvm.CreateFPToSI(b.impl, xSafe, i64.ll)
-		clampMax := b.impl.CreateSelect(gtMax, llvm.ConstInt(i64.ll, 9223372036854775807, false), tmp, "")
-		clampMin := b.impl.CreateSelect(ltMin, llvm.ConstInt(i64.ll, 0x8000000000000000, false), clampMax, "")
-		return llvm.CreateTrunc(b.impl, clampMin, typ.ll)
+		return castSignedFloatToNarrowInt(b, x, typ)
 	}
 	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
 	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction
