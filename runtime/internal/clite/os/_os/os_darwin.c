@@ -1,3 +1,4 @@
+// INODE64 compatibility wrappers for darwin/amd64 syscall trampolines.
 #include <stdint.h>
 #include <dirent.h>
 
