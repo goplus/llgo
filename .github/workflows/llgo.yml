@@ -223,7 +223,8 @@ jobs:
       - name: Test Baremetal GC
         if: ${{!startsWith(matrix.os, 'macos') && matrix.shard == '0'}}
         working-directory: runtime/internal/runtime/tinygogc
-        run: llgo test -timeout=20m -tags testGC .
+        # tinygogc test binaries currently reject non-zero -test.timeout values under testGC.
+        run: llgo test -timeout=0 -tags testGC .
       - name: run llgo test
         env:
           SHARD_INDEX: ${{ matrix.shard }}
