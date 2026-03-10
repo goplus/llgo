@@ -338,6 +338,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	prog.SetPython(func() *types.Package {
 		return dedup.Check(llssa.PkgPython).Types
 	})
+	preCollectRuntimeLinknames(prog, altPkgs)
 
 	buildMode := ssaBuildMode
 	cabiOptimize := true
@@ -1367,6 +1368,15 @@ func altPkgs(initial []*packages.Package, conf *Config, alts ...string) []string
 		}
 	})
 	return alts
+}
+
+func preCollectRuntimeLinknames(prog llssa.Program, pkgs []*packages.Package) {
+	for _, pkg := range pkgs {
+		if pkg != nil && pkg.PkgPath == llssa.PkgRuntime && len(pkg.Syntax) != 0 {
+			cl.PreCollectLinknames(prog, pkg.PkgPath, pkg.Syntax)
+			return
+		}
+	}
 }
 
 func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package, conf *Config, verbose bool) {

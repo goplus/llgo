@@ -217,6 +217,60 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	}
 }
 
+// PreCollectLinknames scans syntax files before SSA compilation and populates
+// prog.Linkname for package-level //go:linkname / //llgo:link declarations.
+// It intentionally ignores //export because there is no package export context
+// during the pre-collection phase.
+func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) {
+	ctx := &context{prog: prog}
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			switch decl := decl.(type) {
+			case *ast.FuncDecl:
+				fullName, inPkgName := astFuncName(pkgPath, decl)
+				preCollectLinknameByDoc(ctx, decl.Doc, fullName, inPkgName, false)
+			case *ast.GenDecl:
+				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
+					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+						inPkgName := names[0].Name
+						preCollectLinknameByDoc(ctx, decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+					}
+				}
+			}
+		}
+	}
+}
+
+func preCollectLinknameByDoc(ctx *context, doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
+	if doc == nil {
+		return
+	}
+	for n := len(doc.List) - 1; n >= 0; n-- {
+		line := doc.List[n].Text
+		switch {
+		case strings.HasPrefix(line, "//go:linkname "):
+			ctx.initLink(line, len("//go:linkname "), false, func(name string, isExport bool) (string, bool, bool) {
+				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
+			})
+			return
+		case strings.HasPrefix(line, "//llgo:link "):
+			ctx.initLink(line, len("//llgo:link "), false, func(name string, isExport bool) (string, bool, bool) {
+				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
+			})
+			return
+		case strings.HasPrefix(line, "// llgo:link "):
+			ctx.initLink(line, len("// llgo:link "), false, func(name string, isExport bool) (string, bool, bool) {
+				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
+			})
+			return
+		case strings.HasPrefix(line, "//go:"):
+			continue
+		default:
+			return
+		}
+	}
+}
+
 // Collect skip names and skip other annotations, such as go: and llgo:
 // llgo:skip symbol1 symbol2 ...
 // llgo:skipall

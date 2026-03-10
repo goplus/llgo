@@ -113,11 +113,7 @@ func (b Builder) Sigsetjmp(jb, savemask Expr) Expr {
 	if b.Prog.target.GOARCH == "wasm" || b.Prog.target.Target != "" {
 		return b.Setjmp(jb)
 	}
-	fname := "sigsetjmp"
-	if b.Prog.target.GOOS == "linux" {
-		fname = "__sigsetjmp"
-	}
-	fn := b.Pkg.cFunc(fname, b.Prog.tySigsetjmp())
+	fn := b.Pkg.rtFunc("Sigsetjmp")
 	b.addReturnsTwiceAttr(fn)
 	return b.Call(fn, jb, savemask)
 }
@@ -128,7 +124,7 @@ func (b Builder) Siglongjmp(jb, retval Expr) {
 		b.Longjmp(jb, retval)
 		return
 	}
-	fn := b.Pkg.cFunc("siglongjmp", b.Prog.tySiglongjmp()) // TODO(xsw): mark as noreturn
+	fn := b.Pkg.rtFunc("Siglongjmp") // TODO(xsw): mark as noreturn
 	b.Call(fn, jb, retval)
 	// b.Unreachable()
 }

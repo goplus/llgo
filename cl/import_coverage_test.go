@@ -150,3 +150,21 @@ func TestAstAndTypesFuncNameCoverage(t *testing.T) {
 		t.Fatalf("typesFuncName(func)=(%q,%q), want (%q,%q)", full, inPkg, "example.com/p.Top", "Top")
 	}
 }
+
+func TestPreCollectLinknames(t *testing.T) {
+	src := `package runtime
+import _ "unsafe"
+//go:linkname Sigsetjmp C.sigsetjmp
+func Sigsetjmp()
+`
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "runtime.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile failed: %v", err)
+	}
+	prog := llssa.NewProgram(nil)
+	PreCollectLinknames(prog, llssa.PkgRuntime, []*ast.File{file})
+	if got, ok := prog.Linkname(llssa.PkgRuntime + ".Sigsetjmp"); !ok || got != "C.sigsetjmp" {
+		t.Fatalf("pre-collected linkname = (%q,%v), want (%q,%v)", got, ok, "C.sigsetjmp", true)
+	}
+}
