@@ -8,14 +8,32 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"io"
 	"math/big"
+	mrand "math/rand"
 	"net"
 	"testing"
 	"time"
 )
 
+type deterministicReader struct {
+	r *mrand.Rand
+}
+
+func (r deterministicReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = byte(r.r.Intn(256))
+	}
+	return len(p), nil
+}
+
+func newDeterministicReader(seed int64) io.Reader {
+	return deterministicReader{r: mrand.New(mrand.NewSource(seed))}
+}
+
 func generateTestCert(t *testing.T) ([]byte, []byte) {
-	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	reader := newDeterministicReader(1)
+	priv, err := rsa.GenerateKey(reader, 1024)
 	if err != nil {
 		t.Fatalf("Failed to generate private key: %v", err)
 	}
@@ -25,14 +43,14 @@ func generateTestCert(t *testing.T) ([]byte, []byte) {
 		Subject: pkix.Name{
 			Organization: []string{"Test Org"},
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(24 * time.Hour),
+		NotBefore:             time.Unix(0, 0),
+		NotAfter:              time.Unix(0, 0).Add(24 * time.Hour),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)
+	certDER, err := x509.CreateCertificate(reader, &template, &template, &priv.PublicKey, priv)
 	if err != nil {
 		t.Fatalf("Failed to create certificate: %v", err)
 	}
