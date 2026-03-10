@@ -270,7 +270,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	cl.EnableDebug(IsDbgEnabled())
 	cl.EnableDbgSyms(IsDbgSymsEnabled())
-	cl.EnableFuncMetadata(conf.Mode != ModeGen)
+	cl.EnableFuncMetadata(conf.Mode != ModeGen && conf.Target == "")
 	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
