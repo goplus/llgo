@@ -553,16 +553,21 @@ func isAtomicIntrinsic(ftype int) bool {
 		(ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast)
 }
 
+func pkgTypesForFunc(fn *ssa.Function, fallback *types.Package) *types.Package {
+	if origin := fn.Origin(); origin != nil && origin.Pkg != nil && origin.Pkg.Pkg != nil {
+		return origin.Pkg.Pkg
+	}
+	if fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		return fn.Pkg.Pkg
+	}
+	return fallback
+}
+
 func (p *context) atomicIntrinsicWrapper(fn *ssa.Function, ftype int) llssa.Function {
 	if p.intrinsicWraps == nil {
 		p.intrinsicWraps = make(map[string]llssa.Function)
 	}
-	pkgTypes := p.goTyps
-	if origin := fn.Origin(); origin != nil && origin.Pkg != nil && origin.Pkg.Pkg != nil {
-		pkgTypes = origin.Pkg.Pkg
-	} else if fn.Pkg != nil && fn.Pkg.Pkg != nil {
-		pkgTypes = fn.Pkg.Pkg
-	}
+	pkgTypes := pkgTypesForFunc(fn, p.goTyps)
 	key := fmt.Sprintf("%s#%d", funcName(pkgTypes, fn, false), ftype)
 	if wrap, ok := p.intrinsicWraps[key]; ok {
 		return wrap

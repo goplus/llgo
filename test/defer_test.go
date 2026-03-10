@@ -141,6 +141,45 @@ func TestDeferAtomicStoreUint32(t *testing.T) {
 	}
 }
 
+func runDeferAtomicCompareAndSwapUint32() (before, after uint32) {
+	var v uint32 = 1
+	func() {
+		defer atomic.CompareAndSwapUint32(&v, 1, 2)
+		before = atomic.LoadUint32(&v)
+	}()
+	after = atomic.LoadUint32(&v)
+	return
+}
+
+func TestDeferAtomicCompareAndSwapUint32(t *testing.T) {
+	before, after := runDeferAtomicCompareAndSwapUint32()
+	if before != 1 {
+		t.Fatalf("before defer = %d, want 1", before)
+	}
+	if after != 2 {
+		t.Fatalf("after defer = %d, want 2", after)
+	}
+}
+
+func runGoAtomicAddInt64() int64 {
+	var v int64
+	go atomic.AddInt64(&v, 2)
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if got := atomic.LoadInt64(&v); got == 2 {
+			return got
+		}
+		time.Sleep(time.Millisecond)
+	}
+	return atomic.LoadInt64(&v)
+}
+
+func TestGoAtomicAddInt64(t *testing.T) {
+	if got := runGoAtomicAddInt64(); got != 2 {
+		t.Fatalf("go atomic add = %d, want 2", got)
+	}
+}
+
 func TestNestedDeferLoops(t *testing.T) {
 	got := runNestedLoopDeferOrder()
 	want := []string{
