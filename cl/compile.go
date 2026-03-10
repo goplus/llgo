@@ -135,15 +135,16 @@ type context struct {
 	inCFunc bool
 	skipall bool
 
-	cgoCalled  bool
-	cgoArgs    []llssa.Expr
-	cgoRet     llssa.Expr
-	cgoErrno   llssa.Expr
-	cgoErrnoTy types.Type
-	cgoSymbols []string
-	rewrites   map[string]string
-	embedMap   goembed.VarMap
-	embedInits []embedInit
+	cgoCalled      bool
+	cgoArgs        []llssa.Expr
+	cgoRet         llssa.Expr
+	cgoErrno       llssa.Expr
+	cgoErrnoTy     types.Type
+	cgoSymbols     []string
+	rewrites       map[string]string
+	intrinsicWraps map[string]llssa.Function
+	embedMap       goembed.VarMap
+	embedInits     []embedInit
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {

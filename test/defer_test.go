@@ -121,6 +121,26 @@ func TestDeferRecoverHandlesPanic(t *testing.T) {
 	}
 }
 
+func runDeferAtomicStoreUint32() (before, after uint32) {
+	var v uint32
+	func() {
+		defer atomic.StoreUint32(&v, 1)
+		before = atomic.LoadUint32(&v)
+	}()
+	after = atomic.LoadUint32(&v)
+	return
+}
+
+func TestDeferAtomicStoreUint32(t *testing.T) {
+	before, after := runDeferAtomicStoreUint32()
+	if before != 0 {
+		t.Fatalf("before defer = %d, want 0", before)
+	}
+	if after != 1 {
+		t.Fatalf("after defer = %d, want 1", after)
+	}
+}
+
 func TestNestedDeferLoops(t *testing.T) {
 	got := runNestedLoopDeferOrder()
 	want := []string{

@@ -547,6 +547,57 @@ func (p *context) atomicCmpXchgOK(b llssa.Builder, args []ssa.Value) llssa.Expr 
 	return b.Extract(ret, 1)
 }
 
+func isAtomicIntrinsic(ftype int) bool {
+	return ftype == llgoAtomicLoad || ftype == llgoAtomicStore ||
+		ftype == llgoAtomicCmpXchg || ftype == llgoAtomicCmpXchgOK ||
+		(ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast)
+}
+
+func (p *context) atomicIntrinsicWrapper(fn *ssa.Function, ftype int) llssa.Function {
+	if p.intrinsicWraps == nil {
+		p.intrinsicWraps = make(map[string]llssa.Function)
+	}
+	pkgTypes := p.goTyps
+	if origin := fn.Origin(); origin != nil && origin.Pkg != nil && origin.Pkg.Pkg != nil {
+		pkgTypes = origin.Pkg.Pkg
+	} else if fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		pkgTypes = fn.Pkg.Pkg
+	}
+	key := fmt.Sprintf("%s#%d", funcName(pkgTypes, fn, false), ftype)
+	if wrap, ok := p.intrinsicWraps[key]; ok {
+		return wrap
+	}
+	sig := p.patchType(fn.Signature).(*types.Signature)
+	name := "__llgo_intrinsicwrap." + key
+	wrap := p.pkg.FuncOf(name)
+	if wrap == nil {
+		wrap = p.pkg.NewFunc(name, sig, llssa.InGo)
+	}
+	if !wrap.HasBody() {
+		b := wrap.MakeBody(1)
+		params := make([]llssa.Expr, sig.Params().Len())
+		for i := range params {
+			params[i] = wrap.Param(i)
+		}
+		switch ftype {
+		case llgoAtomicLoad:
+			b.Return(b.Load(params[0]).SetOrdering(llssa.OrderingSeqConsistent))
+		case llgoAtomicStore:
+			b.Store(params[0], params[1]).SetOrdering(llssa.OrderingSeqConsistent)
+			b.Return()
+		case llgoAtomicCmpXchg:
+			b.Return(b.AtomicCmpXchg(params[0], params[1], params[2]))
+		case llgoAtomicCmpXchgOK:
+			ret := b.AtomicCmpXchg(params[0], params[1], params[2])
+			b.Return(b.Extract(ret, 1))
+		default:
+			b.Return(b.Atomic(llssa.AtomicOp(ftype-llgoAtomicOpBase), params[0], params[1]))
+		}
+	}
+	p.intrinsicWraps[key] = wrap
+	return wrap
+}
+
 // -----------------------------------------------------------------------------
 
 var llgoInstrs = map[string]int{
@@ -708,6 +759,11 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		}
 	case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)
+		if act != llssa.Call && isAtomicIntrinsic(ftype) {
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, p.atomicIntrinsicWrapper(cv, ftype).Expr, args...)
+			return
+		}
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
 		case cFunc:
