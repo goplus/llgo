@@ -41,7 +41,7 @@ func GoString(p *int8) string {
 }
 
 func GoStringN(p *int8, n int) string {
-	if p == nil || n <= 0 {
+	if n <= 0 {
 		return ""
 	}
 	return string((*[1 << 30]byte)(unsafe.Pointer(p))[:n:n])
