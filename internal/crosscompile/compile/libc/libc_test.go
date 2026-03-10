@@ -705,6 +705,12 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 		if !slices.Contains(group5.CFlags, "-D_LIBM") {
 			t.Errorf("Expected group5 CFlags to contain -D_LIBM")
 		}
+		if !slices.Contains(group5.CFlags, "-I"+filepath.Join(baseDir, "newlib", "libc", "machine", "xtensa", "include")) {
+			t.Errorf("Expected group5 CFlags to contain xtensa machine include path")
+		}
+		if !slices.Contains(group5.CFlags, "-I"+filepath.Join(baseDir, "newlib", "libc", "xtensa")) {
+			t.Errorf("Expected group5 CFlags to contain xtensa sys include path")
+		}
 
 		totalLibmFiles := len(group3.Files) + len(group4.Files) + len(group5.Files)
 		if totalLibmFiles != 379 {

@@ -2919,6 +2919,10 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 				CFlags: append(
 					append([]string{}, libmCommonCFlags...),
 					"-D_LIBM",
+					// machine/xtensa sources include <xtensa/config/core-isa.h>.
+					"-I"+filepath.Join(libcDir, "machine", "xtensa", "include"),
+					// Prefer xtensa sys/fenv.h instead of generic libc/include/sys/fenv.h.
+					"-I"+filepath.Join(libcDir, "xtensa"),
 				),
 				LDFlags: _libcLDFlags,
 				CCFlags: _libcCCFlags,
