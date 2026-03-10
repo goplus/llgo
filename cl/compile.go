@@ -56,6 +56,7 @@ var (
 	enableCallTracing bool
 	enableDbg         bool
 	enableDbgSyms     bool
+	enableFuncMetadata bool
 	disableInline     bool
 
 	// enableExportRename enables //export to use different C symbol names than Go function names.
@@ -76,6 +77,10 @@ func EnableDebug(b bool) {
 
 func EnableDbgSyms(b bool) {
 	enableDbgSyms = b
+}
+
+func EnableFuncMetadata(b bool) {
+	enableFuncMetadata = b
 }
 
 func EnableTrace(b bool) {
@@ -430,6 +435,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 }
 
 func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
+	if !enableFuncMetadata {
+		return false
+	}
 	if pos.Filename == "" || pos.Line <= 0 {
 		return false
 	}

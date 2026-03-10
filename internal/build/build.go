@@ -270,6 +270,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	cl.EnableDebug(IsDbgEnabled())
 	cl.EnableDbgSyms(IsDbgSymsEnabled())
+	cl.EnableFuncMetadata(conf.Mode != ModeGen)
 	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
@@ -547,6 +548,9 @@ type context struct {
 	// Cache related fields
 	cacheManager *cacheManager
 	llvmVersion  string
+	goEnvOnce    sync.Once
+	goVersion    string
+	goRoot       string
 
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
