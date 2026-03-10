@@ -9,6 +9,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
+	llrt "github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 // Frames may be used to get function/file/line information for a
@@ -105,6 +106,31 @@ func unknownFunctionName(pc uintptr) string {
 	return "pc=" + uintptrHex(pc)
 }
 
+func applyFuncMetadata(fn string, entry uintptr, frame *Frame) {
+	if frame == nil {
+		return
+	}
+	if entry != 0 {
+		file, line, ok := llrt.LookupFuncMetadataPC(entry)
+		if ok {
+			frame.File = file
+			frame.Line = line
+			frame.startLine = line
+			return
+		}
+	}
+	if fn == "" {
+		return
+	}
+	file, line, ok := llrt.LookupFuncMetadata(fn)
+	if !ok {
+		return
+	}
+	frame.File = file
+	frame.Line = line
+	frame.startLine = line
+}
+
 func (ci *Frames) Next() (frame Frame, more bool) {
 	for len(ci.frames) < 2 {
 		// Find the next frame.
@@ -121,28 +147,32 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 		}
 		info := &clitedebug.Info{}
 		if clitedebug.Addrinfo(unsafe.Pointer(pc), info) == 0 {
-			ci.frames = append(ci.frames, Frame{
+			frame := Frame{
 				PC:        pc,
 				Function:  unknownFunctionName(pc),
 				File:      "",
 				Line:      0,
 				startLine: 0,
 				Entry:     0,
-			})
+			}
+			applyFuncMetadata(frame.Function, 0, &frame)
+			ci.frames = append(ci.frames, frame)
 			continue
 		}
 		fn := safeGoString(info.Sname, "")
 		if fn == "" {
 			fn = unknownFunctionName(pc)
 		}
-		ci.frames = append(ci.frames, Frame{
+		frame := Frame{
 			PC:        pc,
 			Function:  fn,
 			File:      "",
 			Line:      0,
 			startLine: 0,
 			Entry:     uintptr(info.Saddr),
-		})
+		}
+		applyFuncMetadata(fn, frame.Entry, &frame)
+		ci.frames = append(ci.frames, frame)
 	}
 
 	// Pop one frame from the frame list. Keep the rest.

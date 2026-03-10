@@ -24,10 +24,13 @@ import (
 	"go/types"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
+	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/goembed"
 	"github.com/goplus/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
@@ -315,6 +318,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	sig := p.patchType(f.Signature).(*types.Signature)
 	state := p.state
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
+	pos := p.goProg.Fset.Position(f.Pos())
 	if isInit && state == pkgHasPatch {
 		name = initFnNameOfHasPatch(name)
 		// TODO(xsw): pkg.init$guard has been set, change ssa.If to ssa.Jump
@@ -380,7 +384,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			b := fn.NewBuilder()
 			if dbgEnabled {
-				pos := p.goProg.Fset.Position(f.Pos())
 				bodyPos := p.getFuncBodyPos(f)
 				b.DebugFunction(fn, pos, bodyPos)
 			}
@@ -395,6 +398,10 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				for i, block := range f.Blocks {
 					off[i] = p.compilePhis(b, block)
 				}
+			}
+			if p.shouldRegisterFuncMetadata(pos) {
+				b.SetBlock(fn.Block(0))
+				b.RegisterCurrentFuncMetadata(name, pos.Filename, pos.Line)
 			}
 			p.blkInfos = blocks.Infos(f.Blocks)
 			i := 0
@@ -420,6 +427,23 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	return fn, nil, goFunc
+}
+
+func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
+	if pos.Filename == "" || pos.Line <= 0 {
+		return false
+	}
+	if pkgPath := p.goTyps.Path(); strings.HasPrefix(pkgPath, env.LLGoRuntimePkg) {
+		return false
+	}
+	if goroot := runtime.GOROOT(); goroot != "" {
+		root := filepath.Clean(goroot) + string(os.PathSeparator)
+		file := filepath.Clean(pos.Filename)
+		if strings.HasPrefix(file, root) {
+			return false
+		}
+	}
+	return true
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {

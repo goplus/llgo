@@ -70,6 +70,15 @@ type aBuilder struct {
 // Builder represents a builder for creating instructions in a function.
 type Builder = *aBuilder
 
+func (b Builder) RegisterCurrentFuncMetadata(name, file string, line int) {
+	if name == "" || file == "" || line <= 0 {
+		return
+	}
+	pc := Expr{llvm.CreatePtrToInt(b.impl, b.Func.impl, b.Prog.Uintptr().ll), b.Prog.Uintptr()}
+	b.Call(b.Pkg.rtFunc("RegisterFuncMetadataPC"), pc, b.Str(file), b.Prog.Val(line))
+	b.Call(b.Pkg.rtFunc("RegisterFuncMetadata"), b.Str(name), b.Str(file), b.Prog.Val(line))
+}
+
 // EndBuild ends the build process of a function.
 func (b Builder) EndBuild() {
 	b.Func.endDefer(b)
