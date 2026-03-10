@@ -558,8 +558,8 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 	}
 
 	// Test Groups configuration
-	if len(config.Groups) != 4 {
-		t.Errorf("Expected 4 groups, got %d", len(config.Groups))
+	if len(config.Groups) != 6 {
+		t.Errorf("Expected 6 groups, got %d", len(config.Groups))
 	} else {
 		// Group 0: libcrt0
 		group0 := config.Groups[0]
@@ -631,9 +631,9 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 			}
 		}
 
-		// Group 3: libm fpclassify symbols for _printf_float path.
+		// Group 3: libm sources with -fbuiltin -fno-math-errno.
 		group3 := config.Groups[3]
-		expectedOutput3 := "libm-fpclassify-" + target + ".a"
+		expectedOutput3 := "libm-fbuiltin_fno_math_errno-" + target + ".a"
 		if group3.OutputFileName != expectedOutput3 {
 			t.Errorf("Group3 OutputFileName expected '%s', got '%s'", expectedOutput3, group3.OutputFileName)
 		}
@@ -651,6 +651,64 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 			if !found {
 				t.Errorf("Expected file '%s' not found in group3 files", sample)
 			}
+		}
+		if !slices.Contains(group3.CFlags, "-fbuiltin") || !slices.Contains(group3.CFlags, "-fno-math-errno") {
+			t.Errorf("Expected group3 CFlags to contain -fbuiltin and -fno-math-errno")
+		}
+
+		// Group 4: default libm sources.
+		group4 := config.Groups[4]
+		expectedOutput4 := "libm-default-" + target + ".a"
+		if group4.OutputFileName != expectedOutput4 {
+			t.Errorf("Group4 OutputFileName expected '%s', got '%s'", expectedOutput4, group4.OutputFileName)
+		}
+		for _, sample := range []string{
+			filepath.Join(baseDir, "newlib", "libm", "complex", "cabs.c"),
+			filepath.Join(baseDir, "newlib", "libm", "math", "e_acos.c"),
+		} {
+			found := false
+			for _, file := range group4.Files {
+				if file == sample {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected file '%s' not found in group4 files", sample)
+			}
+		}
+		if slices.Contains(group4.CFlags, "-fbuiltin") || slices.Contains(group4.CFlags, "-fno-math-errno") || slices.Contains(group4.CFlags, "-D_LIBM") {
+			t.Errorf("Expected group4 CFlags to not contain -fbuiltin/-fno-math-errno/-D_LIBM")
+		}
+
+		// Group 5: machine/xtensa libm sources built with -D_LIBM.
+		group5 := config.Groups[5]
+		expectedOutput5 := "libm-machine_xtensa_d_libm-" + target + ".a"
+		if group5.OutputFileName != expectedOutput5 {
+			t.Errorf("Group5 OutputFileName expected '%s', got '%s'", expectedOutput5, group5.OutputFileName)
+		}
+		for _, sample := range []string{
+			filepath.Join(baseDir, "newlib", "libm", "machine", "xtensa", "ef_sqrt.c"),
+			filepath.Join(baseDir, "newlib", "libm", "machine", "xtensa", "fegetenv.c"),
+		} {
+			found := false
+			for _, file := range group5.Files {
+				if file == sample {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected file '%s' not found in group5 files", sample)
+			}
+		}
+		if !slices.Contains(group5.CFlags, "-D_LIBM") {
+			t.Errorf("Expected group5 CFlags to contain -D_LIBM")
+		}
+
+		totalLibmFiles := len(group3.Files) + len(group4.Files) + len(group5.Files)
+		if totalLibmFiles != 379 {
+			t.Errorf("Expected 379 xtensa libm files from command-log build list, got %d", totalLibmFiles)
 		}
 
 		// Test LDFlags and CCFlags
@@ -720,8 +778,8 @@ func TestGroupConfiguration(t *testing.T) {
 
 	t.Run("Xtensa_GroupCount", func(t *testing.T) {
 		config := getNewlibESP32ConfigXtensa(baseDir, target)
-		if len(config.Groups) != 4 {
-			t.Errorf("Expected 4 groups for Xtensa, got %d", len(config.Groups))
+		if len(config.Groups) != 6 {
+			t.Errorf("Expected 6 groups for Xtensa, got %d", len(config.Groups))
 		}
 	})
 
@@ -749,7 +807,9 @@ func TestGroupConfiguration(t *testing.T) {
 			"libcrt0-" + target + ".a",
 			"libgloss-" + target + ".a",
 			"libc-" + target + ".a",
-			"libm-fpclassify-" + target + ".a",
+			"libm-fbuiltin_fno_math_errno-" + target + ".a",
+			"libm-default-" + target + ".a",
+			"libm-machine_xtensa_d_libm-" + target + ".a",
 		}
 
 		for i, group := range config.Groups {
