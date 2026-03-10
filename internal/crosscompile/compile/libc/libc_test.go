@@ -558,8 +558,8 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 	}
 
 	// Test Groups configuration
-	if len(config.Groups) != 3 {
-		t.Errorf("Expected 2 groups, got %d", len(config.Groups))
+	if len(config.Groups) != 4 {
+		t.Errorf("Expected 4 groups, got %d", len(config.Groups))
 	} else {
 		// Group 0: libcrt0
 		group0 := config.Groups[0]
@@ -631,6 +631,28 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 			}
 		}
 
+		// Group 3: libm fpclassify symbols for _printf_float path.
+		group3 := config.Groups[3]
+		expectedOutput3 := "libm-fpclassify-" + target + ".a"
+		if group3.OutputFileName != expectedOutput3 {
+			t.Errorf("Group3 OutputFileName expected '%s', got '%s'", expectedOutput3, group3.OutputFileName)
+		}
+		for _, sample := range []string{
+			filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c"),
+			filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c"),
+		} {
+			found := false
+			for _, file := range group3.Files {
+				if file == sample {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Expected file '%s' not found in group3 files", sample)
+			}
+		}
+
 		// Test LDFlags and CCFlags
 		if len(group0.LDFlags) == 0 {
 			t.Error("Expected non-empty LDFlags in group0")
@@ -698,8 +720,8 @@ func TestGroupConfiguration(t *testing.T) {
 
 	t.Run("Xtensa_GroupCount", func(t *testing.T) {
 		config := getNewlibESP32ConfigXtensa(baseDir, target)
-		if len(config.Groups) != 3 {
-			t.Errorf("Expected 2 groups for Xtensa, got %d", len(config.Groups))
+		if len(config.Groups) != 4 {
+			t.Errorf("Expected 4 groups for Xtensa, got %d", len(config.Groups))
 		}
 	})
 
@@ -726,12 +748,11 @@ func TestGroupConfiguration(t *testing.T) {
 		expectedNames := []string{
 			"libcrt0-" + target + ".a",
 			"libgloss-" + target + ".a",
+			"libc-" + target + ".a",
+			"libm-fpclassify-" + target + ".a",
 		}
 
 		for i, group := range config.Groups {
-			if i >= len(expectedNames) {
-				return
-			}
 			if group.OutputFileName != expectedNames[i] {
 				t.Errorf("Group %d expected name '%s', got '%s'", i, expectedNames[i], group.OutputFileName)
 			}

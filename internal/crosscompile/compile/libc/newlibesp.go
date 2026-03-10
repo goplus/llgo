@@ -1523,6 +1523,19 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 		"-I" + libcDir,
 	}
 
+	// Keep this in sync with esp32 target ldflags:
+	// `--undefined=_printf_float` pulls nano-vfprintf float path, which
+	// requires libm fp classify symbols such as __fpclassifyd.
+	libmCommonCFlags := []string{
+		"-DHAVE_CONFIG_H",
+		"-D_LIBC",
+		"-D__ESP__",
+		"-isystem" + filepath.Join(libcDir, "include"),
+		"-I" + filepath.Join(baseDir, "newlib"),
+		"-idirafter" + filepath.Join(baseDir, "include"),
+		"-I" + filepath.Join(baseDir, "newlib", "libm", "common"),
+	}
+
 	return compile.CompileConfig{
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
@@ -2488,6 +2501,16 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 					"-Wno-int-conversion",
 					"-Wno-unused-command-line-argument",
 				}),
+			},
+			{
+				OutputFileName: fmt.Sprintf("libm-fpclassify-%s.a", target),
+				Files: []string{
+					filepath.Join(baseDir, "newlib", "libm", "common", "s_fpclassify.c"),
+					filepath.Join(baseDir, "newlib", "libm", "common", "sf_fpclassify.c"),
+				},
+				CFlags:  append([]string{}, libmCommonCFlags...),
+				LDFlags: _libcLDFlags,
+				CCFlags: _libcCCFlags,
 			},
 		},
 	}

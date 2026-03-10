@@ -74,6 +74,58 @@ run_emulator_smoke() {
     fi
 }
 
+extract_last_nonempty_lines() {
+    local n="$1"
+    awk -v n="$n" '
+    NF { out[++count] = $0 }
+    END {
+        if (n <= 0 || count == 0) {
+            exit
+        }
+        start = count - n + 1
+        if (start < 1) {
+            start = 1
+        }
+        for (i = start; i <= count; i++) {
+            print out[i]
+        }
+    }'
+}
+
+run_case_and_compare() {
+    local target="$1"
+    local case_dir="$2"
+    local expected="$3"
+    local raw_output
+    local actual
+    local expected_lines
+
+    echo "Running: llgo run -a -target=${target} -emulator ${case_dir}"
+    if ! raw_output=$(llgo run -a -target="${target}" -emulator "${case_dir}" 2>&1); then
+        echo "✗ FAIL: command failed for ${case_dir}"
+        echo "$raw_output"
+        return 1
+    fi
+
+    expected_lines=$(printf "%s\n" "$expected" | awk 'NF { n++ } END { print n + 0 }')
+    actual=$(printf "%s\n" "$raw_output" | tr -d '\r' | extract_last_nonempty_lines "$expected_lines")
+    if [ "$actual" = "$expected" ]; then
+        echo "✓ PASS: $case_dir"
+        return 0
+    fi
+
+    echo "✗ FAIL: output mismatch for $case_dir"
+    echo "Expected:"
+    printf "%s\n" "$expected"
+    echo ""
+    echo "Got:"
+    printf "%s\n" "$actual"
+    echo ""
+    echo "Diff:"
+    diff -u <(printf "%s\n" "$expected") <(printf "%s\n" "$actual") || true
+    return 1
+}
+
 mkdir -p "$TEMP_DIR"
 
 echo "==> Creating minimal test program..."
@@ -99,6 +151,13 @@ build_target "esp32" "$ESP32_PREFIX" "ESP32"
 run_emulator_smoke "esp32" "ESP32" "Hello World"
 
 echo ""
+echo "=== Regression: ESP32 float output (temporary) ==="
+pushd "$SCRIPT_DIR" > /dev/null
+run_case_and_compare "esp32" "./esp32/float-1685" $'+5.000000e+00 +8.000000e+00\n1 +2.000000e+00\n0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true\n3 +6.280000e+00'
+popd > /dev/null
+
+echo ""
 echo "=== Smoke Tests Passed ==="
 echo "✓ ESP32-C3 build + emulator run passed"
 echo "✓ ESP32 build + emulator run passed"
+echo "✓ ESP32 float output regression cases match expected output"
