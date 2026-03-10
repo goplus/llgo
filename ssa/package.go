@@ -205,8 +205,6 @@ type aProgram struct {
 	destructTy  *types.Signature
 	setjmpTy    *types.Signature
 	longjmpTy   *types.Signature
-	sigsetjmpTy *types.Signature
-	sigljmpTy   *types.Signature
 
 	printfTy *types.Signature
 
