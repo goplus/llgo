@@ -17,7 +17,13 @@ runs:
         # Determine OS and architecture
         if [[ "$RUNNER_OS" == "macOS" ]]; then
           OS="darwin"
-          ARCH="arm64"
+          # Use uname -m to detect actual CPU architecture
+          # macos-15-intel runners report x86_64, others report arm64
+          if [[ "$(uname -m)" == "x86_64" ]]; then
+            ARCH="amd64"
+          else
+            ARCH="arm64"
+          fi
         else
           OS="linux"
           ARCH="amd64"
