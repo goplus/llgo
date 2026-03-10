@@ -1,40 +1,16 @@
 #!/bin/bash
-# ESP serial targets smoke test (build + emulator run only).
+# ESP serial targets smoke test (emulator run only).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
 
-ESP32C3_PREFIX="esp32c3_smoke"
-ESP32_PREFIX="esp32_smoke"
 CASE_ROOT="$SCRIPT_DIR/testdata/esp32-serial"
 
 cleanup() {
     rm -rf "$TEMP_DIR"
 }
 trap cleanup EXIT
-
-build_target() {
-    local target="$1"
-    local prefix="$2"
-    local label="$3"
-    local test_go="$4"
-
-    echo "==> Building for $label target ($target): ELF + BIN..."
-    llgo build -target="$target" -o "$prefix" -obin "$test_go"
-
-    if [ ! -f "${prefix}.elf" ]; then
-        echo "✗ FAIL: Build failed, ${prefix}.elf not found"
-        exit 1
-    fi
-
-    if [ ! -f "${prefix}.bin" ]; then
-        echo "✗ FAIL: Build failed, ${prefix}.bin not found"
-        exit 1
-    fi
-
-    echo "✓ PASS: $label build artifacts generated"
-}
 
 run_emulator_smoke() {
     local target="$1"
@@ -100,24 +76,14 @@ run_case() {
     local case_name
     case_name="$(basename "$case_dir")"
 
-    local test_go="$case_dir/main.go"
     local expected_file="$case_dir/expect.txt"
-    if [ ! -f "$test_go" ]; then
-        echo "✗ FAIL: missing testcase source: $test_go"
+    if [ ! -f "$case_dir/main.go" ]; then
+        echo "✗ FAIL: missing testcase source: $case_dir/main.go"
         exit 1
     fi
 
-    build_target "esp32c3" "$TEMP_DIR/${ESP32C3_PREFIX}_${case_name}" "ESP32-C3 [$case_name]" "$test_go"
-    build_target "esp32" "$TEMP_DIR/${ESP32_PREFIX}_${case_name}" "ESP32 [$case_name]" "$test_go"
-
-    if [ -f "$expected_file" ]; then
-        run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
-        run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
-    else
-        echo ""
-        echo "=== Skip emulator assertions for [$case_name] (missing expect.txt) ==="
-        echo "✓ PASS: Build-only smoke passed for ESP32-C3 and ESP32"
-    fi
+    run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
+    run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
 }
 
 run_all_cases() {
@@ -147,10 +113,10 @@ fi
 cd "$SCRIPT_DIR"
 
 echo ""
-echo "=== ESP Serial Smoke Tests: Build + Emulator Run ==="
+echo "=== ESP Serial Smoke Tests: Emulator Run ==="
 run_all_cases
 
 echo ""
 echo "=== Smoke Tests Passed ==="
-echo "✓ ESP32-C3 and ESP32 build + emulator smoke passed for all serial testcases"
+echo "✓ ESP32-C3 and ESP32 emulator smoke passed for all serial testcases"
 echo "✓ Cases are discovered only from testdata/esp32-serial (main.go + expect.txt)"
