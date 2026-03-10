@@ -4,10 +4,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
-TEST_GO="$TEMP_DIR/main.go"
 
 ESP32C3_PREFIX="esp32c3_smoke"
 ESP32_PREFIX="esp32_smoke"
+CASE_ROOT="$SCRIPT_DIR/esp32"
 
 cleanup() {
     rm -rf "$TEMP_DIR"
@@ -18,9 +18,10 @@ build_target() {
     local target="$1"
     local prefix="$2"
     local label="$3"
+    local test_go="$4"
 
     echo "==> Building for $label target ($target): ELF + BIN..."
-    llgo build -target="$target" -o "$prefix" -obin "$TEST_GO"
+    llgo build -target="$target" -o "$prefix" -obin "$test_go"
 
     if [ ! -f "${prefix}.elf" ]; then
         echo "✗ FAIL: Build failed, ${prefix}.elf not found"
@@ -38,7 +39,8 @@ build_target() {
 run_emulator_smoke() {
     local target="$1"
     local label="$2"
-    local expected_tail="$3"
+    local case_dir="$3"
+    local expected_file="$4"
 
     echo ""
     echo "=== Smoke: $label emulator output ==="
@@ -47,7 +49,7 @@ run_emulator_smoke() {
     run_out_file=$(mktemp "${TEMP_DIR}/run_${target}.XXXX.log")
 
     set +e
-    llgo run -a -target="$target" -emulator . 2>&1 | tee "$run_out_file"
+    llgo run -a -target="$target" -emulator "$case_dir" 2>&1 | tee "$run_out_file"
     local run_rc=${PIPESTATUS[0]}
     set -e
 
@@ -61,6 +63,9 @@ run_emulator_smoke() {
 
     local normalized_out
     normalized_out=$(printf "%s\n" "$run_out" | tr -d '\r')
+
+    local expected_tail
+    expected_tail=$(cat "$expected_file")
 
     local normalized_expected
     normalized_expected=$(printf "%s" "$expected_tail" | tr -d '\r')
@@ -90,39 +95,58 @@ run_emulator_smoke() {
     fi
 }
 
-mkdir -p "$TEMP_DIR"
+run_case() {
+    local case_dir="$1"
+    local case_name
+    case_name="$(basename "$case_dir")"
 
-echo "==> Creating minimal test program..."
-cat > "$TEST_GO" << 'EOGO'
-package main
+    local test_go="$case_dir/main.go"
+    local expected_file="$case_dir/expect.txt"
+    if [ ! -f "$test_go" ]; then
+        echo "✗ FAIL: missing testcase source: $test_go"
+        exit 1
+    fi
+    if [ ! -f "$expected_file" ]; then
+        echo "✗ FAIL: missing testcase expectation: $expected_file"
+        exit 1
+    fi
 
-import "github.com/goplus/lib/c"
+    build_target "esp32c3" "$TEMP_DIR/${ESP32C3_PREFIX}_${case_name}" "ESP32-C3 [$case_name]" "$test_go"
+    run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
 
-func main() {
-	c.Printf(c.Str("Hello World\n"))
-	s := "hello"
-	var idx int64 = 1
-	tail := s[idx:]
-	if len(tail) == 4 && tail[0] == 'e' && tail[1] == 'l' && tail[2] == 'l' && tail[3] == 'o' {
-		c.Printf(c.Str("slice64 ok\n"))
-	} else {
-		c.Printf(c.Str("slice64 bad\n"))
-	}
+    build_target "esp32" "$TEMP_DIR/${ESP32_PREFIX}_${case_name}" "ESP32 [$case_name]" "$test_go"
+    run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
 }
-EOGO
 
-cd "$TEMP_DIR"
+run_all_cases() {
+    local found=0
+    local case_dir
+    while IFS= read -r case_dir; do
+        if [ -f "$case_dir/main.go" ] && [ -f "$case_dir/expect.txt" ]; then
+            found=1
+            run_case "$case_dir"
+        fi
+    done < <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
+
+    if [ "$found" -eq 0 ]; then
+        echo "✗ FAIL: no testcase found under $CASE_ROOT (need main.go + expect.txt)"
+        exit 1
+    fi
+}
+
+mkdir -p "$TEMP_DIR"
+if [ ! -d "$CASE_ROOT" ]; then
+    echo "✗ FAIL: testcase root not found: $CASE_ROOT"
+    exit 1
+fi
+
+cd "$SCRIPT_DIR"
 
 echo ""
 echo "=== ESP Serial Smoke Tests: Build + Emulator Run ==="
-
-build_target "esp32c3" "$ESP32C3_PREFIX" "ESP32-C3"
-run_emulator_smoke "esp32c3-basic" "ESP32-C3" $'Hello World\nslice64 ok'
-
-build_target "esp32" "$ESP32_PREFIX" "ESP32"
-run_emulator_smoke "esp32" "ESP32" $'Hello World\nslice64 ok'
+run_all_cases
 
 echo ""
 echo "=== Smoke Tests Passed ==="
-echo "✓ ESP32-C3 build + emulator run passed"
-echo "✓ ESP32 build + emulator run passed"
+echo "✓ ESP32-C3 build + emulator run passed for all split testcases"
+echo "✓ ESP32 build + emulator run passed for all split testcases"
