@@ -1,7 +1,5 @@
 package runtime
 
-import "strings"
-
 type funcMetadata struct {
 	file string
 	line int
@@ -11,12 +9,13 @@ var funcMetadataMap map[string]funcMetadata
 var funcMetadataPC map[uintptr]funcMetadata
 
 func normalizeFuncMetadataName(name string) string {
-	name = strings.TrimLeft(name, "_")
-	name = strings.TrimPrefix(name, "llgo_stub.")
-	if idx := strings.Index(name, ".."); idx >= 0 {
-		name = strings.ReplaceAll(name, "..", ".")
+	for len(name) > 0 && name[0] == '_' {
+		name = name[1:]
 	}
-	return name
+	if hasPrefix(name, "llgo_stub.") {
+		name = name[len("llgo_stub."):]
+	}
+	return replaceDoubleDots(name)
 }
 
 func RegisterFuncMetadata(name, file string, line int) {
@@ -49,7 +48,7 @@ func LookupFuncMetadata(name string) (file string, line int, ok bool) {
 		var matched funcMetadata
 		var found bool
 		for key, value := range funcMetadataMap {
-			if strings.HasSuffix(key, "."+name) {
+			if hasDotSuffix(key, name) {
 				if found {
 					return "", 0, false
 				}
@@ -74,4 +73,41 @@ func LookupFuncMetadataPC(pc uintptr) (file string, line int, ok bool) {
 		return "", 0, false
 	}
 	return meta.file, meta.line, true
+}
+
+func hasPrefix(s, prefix string) bool {
+	if len(s) < len(prefix) {
+		return false
+	}
+	return s[:len(prefix)] == prefix
+}
+
+func hasDotSuffix(s, suffix string) bool {
+	if len(s) <= len(suffix) {
+		return false
+	}
+	if s[len(s)-len(suffix)-1] != '.' {
+		return false
+	}
+	return s[len(s)-len(suffix):] == suffix
+}
+
+func replaceDoubleDots(s string) string {
+	n := len(s)
+	for i := 0; i+1 < n; i++ {
+		if s[i] == '.' && s[i+1] == '.' {
+			buf := make([]byte, 0, n-1)
+			for j := 0; j < n; {
+				if j+1 < n && s[j] == '.' && s[j+1] == '.' {
+					buf = append(buf, '.')
+					j += 2
+					continue
+				}
+				buf = append(buf, s[j])
+				j++
+			}
+			return string(buf)
+		}
+	}
+	return s
 }
