@@ -1,12 +1,13 @@
 package runtime
 
 type funcMetadata struct {
+	name string
+	pc   uintptr
 	file string
 	line int
 }
 
-var funcMetadataMap map[string]funcMetadata
-var funcMetadataPC map[uintptr]funcMetadata
+var funcMetadataList []funcMetadata
 
 func normalizeFuncMetadataName(name string) string {
 	for len(name) > 0 && name[0] == '_' {
@@ -22,57 +23,67 @@ func RegisterFuncMetadata(name, file string, line int) {
 	if name == "" || file == "" || line <= 0 {
 		return
 	}
-	if funcMetadataMap == nil {
-		funcMetadataMap = make(map[string]funcMetadata)
+	name = normalizeFuncMetadataName(name)
+	for i := range funcMetadataList {
+		if funcMetadataList[i].name == name {
+			funcMetadataList[i].file = file
+			funcMetadataList[i].line = line
+			return
+		}
 	}
-	funcMetadataMap[normalizeFuncMetadataName(name)] = funcMetadata{file: file, line: line}
+	funcMetadataList = append(funcMetadataList, funcMetadata{name: name, file: file, line: line})
 }
 
 func RegisterFuncMetadataPC(pc uintptr, file string, line int) {
 	if pc == 0 || file == "" || line <= 0 {
 		return
 	}
-	if funcMetadataPC == nil {
-		funcMetadataPC = make(map[uintptr]funcMetadata)
+	for i := range funcMetadataList {
+		if funcMetadataList[i].pc == pc {
+			funcMetadataList[i].file = file
+			funcMetadataList[i].line = line
+			return
+		}
 	}
-	funcMetadataPC[pc] = funcMetadata{file: file, line: line}
+	funcMetadataList = append(funcMetadataList, funcMetadata{pc: pc, file: file, line: line})
 }
 
 func LookupFuncMetadata(name string) (file string, line int, ok bool) {
-	if funcMetadataMap == nil {
+	name = normalizeFuncMetadataName(name)
+	for i := range funcMetadataList {
+		meta := &funcMetadataList[i]
+		if meta.name == name {
+			return meta.file, meta.line, true
+		}
+	}
+	idx := -1
+	for i := range funcMetadataList {
+		meta := &funcMetadataList[i]
+		if hasDotSuffix(meta.name, name) {
+			if idx >= 0 {
+				return "", 0, false
+			}
+			idx = i
+		}
+	}
+	if idx < 0 {
 		return "", 0, false
 	}
-	name = normalizeFuncMetadataName(name)
-	meta, ok := funcMetadataMap[name]
-	if !ok {
-		var matched funcMetadata
-		var found bool
-		for key, value := range funcMetadataMap {
-			if hasDotSuffix(key, name) {
-				if found {
-					return "", 0, false
-				}
-				matched = value
-				found = true
-			}
-		}
-		if !found {
-			return "", 0, false
-		}
-		meta = matched
-	}
+	meta := &funcMetadataList[idx]
 	return meta.file, meta.line, true
 }
 
 func LookupFuncMetadataPC(pc uintptr) (file string, line int, ok bool) {
-	if funcMetadataPC == nil {
+	if pc == 0 {
 		return "", 0, false
 	}
-	meta, ok := funcMetadataPC[pc]
-	if !ok {
-		return "", 0, false
+	for i := range funcMetadataList {
+		meta := &funcMetadataList[i]
+		if meta.pc == pc {
+			return meta.file, meta.line, true
+		}
 	}
-	return meta.file, meta.line, true
+	return "", 0, false
 }
 
 func hasPrefix(s, prefix string) bool {
