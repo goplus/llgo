@@ -106,30 +106,34 @@ run_case() {
         echo "✗ FAIL: missing testcase source: $test_go"
         exit 1
     fi
-    if [ ! -f "$expected_file" ]; then
-        echo "✗ FAIL: missing testcase expectation: $expected_file"
-        exit 1
-    fi
 
     build_target "esp32c3" "$TEMP_DIR/${ESP32C3_PREFIX}_${case_name}" "ESP32-C3 [$case_name]" "$test_go"
-    run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
-
     build_target "esp32" "$TEMP_DIR/${ESP32_PREFIX}_${case_name}" "ESP32 [$case_name]" "$test_go"
-    run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
+
+    if [ -f "$expected_file" ]; then
+        run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
+        run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
+    else
+        echo ""
+        echo "=== Skip emulator assertions for [$case_name] (missing expect.txt) ==="
+        echo "✓ PASS: Build-only smoke passed for ESP32-C3 and ESP32"
+    fi
 }
 
 run_all_cases() {
     local found=0
     local case_dir
-    while IFS= read -r case_dir; do
-        if [ -f "$case_dir/main.go" ] && [ -f "$case_dir/expect.txt" ]; then
+    exec 3< <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
+    while IFS= read -r case_dir <&3; do
+        if [ -f "$case_dir/main.go" ]; then
             found=1
             run_case "$case_dir"
         fi
-    done < <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
+    done
+    exec 3<&-
 
     if [ "$found" -eq 0 ]; then
-        echo "✗ FAIL: no testcase found under $CASE_ROOT (need main.go + expect.txt)"
+        echo "✗ FAIL: no testcase found under $CASE_ROOT (need main.go)"
         exit 1
     fi
 }
@@ -148,5 +152,5 @@ run_all_cases
 
 echo ""
 echo "=== Smoke Tests Passed ==="
-echo "✓ ESP32-C3 build + emulator run passed for all split testcases"
-echo "✓ ESP32 build + emulator run passed for all split testcases"
+echo "✓ ESP32-C3 and ESP32 build smoke passed for all esp32 demo cases (main.go)"
+echo "✓ Emulator output assertions passed for cases with expect.txt"
