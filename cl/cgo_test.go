@@ -278,6 +278,139 @@ func f() {}
 	_ = ctx2.cgoErrnoType() // cached path
 }
 
+func TestPkgTypesForFunc_FallbackAndPkg(t *testing.T) {
+	fallback := types.NewPackage("example.com/fallback", "fallback")
+	if got := pkgTypesForFunc(&gossa.Function{}, fallback); got != fallback {
+		t.Fatalf("fallback pkg mismatch: got %v, want %v", got, fallback)
+	}
+
+	ssaPkg, _, _ := buildGoSSAPkg(t, `
+package foo
+
+func atomicLoadLike(p *uint32) uint32 { return 0 }
+`)
+	goFn := ssaPkg.Members["atomicLoadLike"].(*gossa.Function)
+	if got := pkgTypesForFunc(goFn, fallback); got != ssaPkg.Pkg {
+		t.Fatalf("package pkg mismatch: got %v, want %v", got, ssaPkg.Pkg)
+	}
+}
+
+func TestIsAtomicIntrinsic(t *testing.T) {
+	if !isAtomicIntrinsic(llgoAtomicLoad) || !isAtomicIntrinsic(llgoAtomicStore) || !isAtomicIntrinsic(llgoAtomicCmpXchg) || !isAtomicIntrinsic(llgoAtomicCmpXchgOK) || !isAtomicIntrinsic(int(llgoAtomicAdd)) {
+		t.Fatal("expected atomic intrinsic classification to accept known atomic ops")
+	}
+	if isAtomicIntrinsic(llgoFuncAddr) {
+		t.Fatal("unexpected atomic intrinsic classification for non-atomic op")
+	}
+}
+
+func TestPkgTypesForFunc_OriginPkg(t *testing.T) {
+	fallback := types.NewPackage("example.com/fallback", "fallback")
+	ssaPkg, _, _ := buildGoSSAPkg(t, `
+package foo
+
+func genericStore[T any](p *T, v T) {}
+func use(p *uint32) { genericStore[uint32](p, 1) }
+`)
+	useFn := ssaPkg.Members["use"].(*gossa.Function)
+	var callee *gossa.Function
+	for _, blk := range useFn.Blocks {
+		for _, instr := range blk.Instrs {
+			if c, ok := instr.(*gossa.Call); ok {
+				if fn := c.Call.StaticCallee(); fn != nil && fn.Origin() != nil {
+					callee = fn
+					break
+				}
+			}
+		}
+		if callee != nil {
+			break
+		}
+	}
+	if callee == nil {
+		t.Fatal("expected instantiated generic callee with origin")
+	}
+	if got := pkgTypesForFunc(callee, fallback); got != ssaPkg.Pkg {
+		t.Fatalf("origin pkg mismatch: got %v, want %v", got, ssaPkg.Pkg)
+	}
+}
+
+func TestAtomicIntrinsicWrapper_BranchesAndCache(t *testing.T) {
+	ssaPkg, _, _ := buildGoSSAPkg(t, `
+package foo
+
+func atomicLoadLike(p *uint32) uint32 { return 0 }
+func atomicStoreLike(p *uint32, v uint32) {}
+func atomicCmpXchgLike(p *uint32, old, new uint32) (uint32, bool) { return 0, false }
+func atomicCmpXchgOKLike(p *uint32, old, new uint32) bool { return false }
+func atomicAddLike(p *int64, v int64) int64 { return 0 }
+`)
+	prog := newLLSSAProg(t)
+	pkg := prog.NewPackage("foo", "foo")
+	ctx := &context{prog: prog, pkg: pkg, goTyps: ssaPkg.Pkg}
+
+	cases := []struct {
+		name   string
+		ftype  int
+		wantIR string
+	}{
+		{"atomicLoadLike", llgoAtomicLoad, "load atomic i32"},
+		{"atomicStoreLike", llgoAtomicStore, "store atomic i32"},
+		{"atomicCmpXchgLike", llgoAtomicCmpXchg, "cmpxchg"},
+		{"atomicCmpXchgOKLike", llgoAtomicCmpXchgOK, "extractvalue"},
+		{"atomicAddLike", int(llgoAtomicAdd), "atomicrmw add"},
+	}
+	for _, tc := range cases {
+		goFn := ssaPkg.Members[tc.name].(*gossa.Function)
+		wrap1 := ctx.atomicIntrinsicWrapper(goFn, tc.ftype)
+		wrap2 := ctx.atomicIntrinsicWrapper(goFn, tc.ftype)
+		if wrap1.Name() != wrap2.Name() {
+			t.Fatalf("wrapper cache mismatch for %s: %s vs %s", tc.name, wrap1.Name(), wrap2.Name())
+		}
+		if !wrap1.HasBody() {
+			t.Fatalf("wrapper %s has no body", wrap1.Name())
+		}
+		ir := mustNamedFunction(t, pkg.Module(), wrap1.Name()).String()
+		if !strings.Contains(ir, tc.wantIR) {
+			t.Fatalf("wrapper %s missing %q in IR:\n%s", wrap1.Name(), tc.wantIR, ir)
+		}
+	}
+}
+
+func TestAtomicIntrinsicWrapper_UsedForDeferAndGo(t *testing.T) {
+	ssaPkg, _, files := buildGoSSAPkg(t, `
+package foo
+
+func atomicStoreLike(p *uint32, v uint32) {}
+func atomicCmpXchgOKLike(p *uint32, old, new uint32) bool { return false }
+func atomicAddLike(p *int64, v int64) int64 { return 0 }
+
+func use(p *uint32, p64 *int64) {
+	defer atomicStoreLike(p, 1)
+	defer atomicCmpXchgOKLike(p, 1, 2)
+	go atomicAddLike(p64, 2)
+}
+`)
+	prog := newLLSSAProg(t)
+	prog.SetLinkname("foo.atomicStoreLike", "llgo.atomicStore")
+	prog.SetLinkname("foo.atomicCmpXchgOKLike", "llgo.atomicCmpXchgOK")
+	prog.SetLinkname("foo.atomicAddLike", "llgo.atomicAdd")
+	pkg, err := NewPackage(prog, ssaPkg, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ir := pkg.Module().String()
+	for _, want := range []string{
+		"__llgo_intrinsicwrap.foo.atomicStoreLike#",
+		"__llgo_intrinsicwrap.foo.atomicCmpXchgOKLike#",
+		"__llgo_intrinsicwrap.foo.atomicAddLike#",
+	} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("missing wrapper %q in module:\n%s", want, ir)
+		}
+	}
+}
+
 func TestCgoReturn_PanicWrongResultsLen(t *testing.T) {
 	prog := newLLSSAProg(t)
 	pkg := prog.NewPackage("foo", "foo")
