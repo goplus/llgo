@@ -367,6 +367,9 @@ func TestQUICConfig(t *testing.T) {
 }
 
 func TestQUICClient(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping QUIC runtime path in llgo")
+	}
 	config := &tls.QUICConfig{
 		TLSConfig: &tls.Config{
 			ServerName: "example.com",
@@ -380,6 +383,9 @@ func TestQUICClient(t *testing.T) {
 }
 
 func TestQUICServer(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping QUIC runtime path in llgo")
+	}
 	certPEM, keyPEM := generateTestCert(t)
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
@@ -399,6 +405,9 @@ func TestQUICServer(t *testing.T) {
 }
 
 func TestQUICConn(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping QUIC runtime path in llgo")
+	}
 	config := &tls.QUICConfig{
 		TLSConfig: &tls.Config{
 			ServerName: "example.com",
@@ -779,6 +788,9 @@ func TestConnMethods2(t *testing.T) {
 }
 
 func TestQUICConnMethods(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping QUIC runtime path in llgo")
+	}
 	config := &tls.QUICConfig{
 		TLSConfig: &tls.Config{
 			ServerName: "example.com",
@@ -807,6 +819,9 @@ func TestQUICConnMethods(t *testing.T) {
 }
 
 func TestQUICServerMethods(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping QUIC runtime path in llgo")
+	}
 	certPEM, keyPEM := generateTestCert(t)
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {

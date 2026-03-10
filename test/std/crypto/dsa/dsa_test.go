@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"math/big"
-	"runtime"
 	"testing"
 )
 
@@ -52,7 +51,7 @@ func TestParameterSizes(t *testing.T) {
 }
 
 func TestGenerateParameters(t *testing.T) {
-	if testing.Short() || runtime.Compiler == "llgo" {
+	if testing.Short() || isLLGo {
 		t.Skip("Skipping expensive parameter generation in this mode")
 	}
 
