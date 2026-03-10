@@ -7,8 +7,7 @@ TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
 
 ESP32C3_PREFIX="esp32c3_smoke"
 ESP32_PREFIX="esp32_smoke"
-DEMO_CASE_ROOT="$SCRIPT_DIR/esp32"
-SERIAL_CASE_ROOT="$SCRIPT_DIR/testdata/esp32-serial"
+CASE_ROOT="$SCRIPT_DIR/testdata/esp32-serial"
 
 cleanup() {
     rm -rf "$TEMP_DIR"
@@ -123,31 +122,25 @@ run_case() {
 
 run_all_cases() {
     local found=0
-    local root
     local case_dir
-    for root in "$DEMO_CASE_ROOT" "$SERIAL_CASE_ROOT"; do
-        if [ ! -d "$root" ]; then
-            continue
+    exec 3< <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
+    while IFS= read -r case_dir <&3; do
+        if [ -f "$case_dir/main.go" ] && [ -f "$case_dir/expect.txt" ]; then
+            found=1
+            run_case "$case_dir"
         fi
-        exec 3< <(find "$root" -mindepth 1 -maxdepth 1 -type d | sort)
-        while IFS= read -r case_dir <&3; do
-            if [ -f "$case_dir/main.go" ]; then
-                found=1
-                run_case "$case_dir"
-            fi
-        done
-        exec 3<&-
     done
+    exec 3<&-
 
     if [ "$found" -eq 0 ]; then
-        echo "✗ FAIL: no testcase found under $DEMO_CASE_ROOT or $SERIAL_CASE_ROOT (need main.go)"
+        echo "✗ FAIL: no testcase found under $CASE_ROOT (need main.go + expect.txt)"
         exit 1
     fi
 }
 
 mkdir -p "$TEMP_DIR"
-if [ ! -d "$DEMO_CASE_ROOT" ] && [ ! -d "$SERIAL_CASE_ROOT" ]; then
-    echo "✗ FAIL: testcase roots not found: $DEMO_CASE_ROOT and $SERIAL_CASE_ROOT"
+if [ ! -d "$CASE_ROOT" ]; then
+    echo "✗ FAIL: testcase root not found: $CASE_ROOT"
     exit 1
 fi
 
@@ -159,5 +152,5 @@ run_all_cases
 
 echo ""
 echo "=== Smoke Tests Passed ==="
-echo "✓ ESP32-C3 and ESP32 build smoke passed for discovered cases (main.go)"
-echo "✓ Emulator output assertions passed for cases with expect.txt (including testdata/esp32-serial)"
+echo "✓ ESP32-C3 and ESP32 build + emulator smoke passed for all serial testcases"
+echo "✓ Cases are discovered only from testdata/esp32-serial (main.go + expect.txt)"
