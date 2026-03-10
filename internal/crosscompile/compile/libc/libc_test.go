@@ -713,8 +713,8 @@ func TestGetNewlibESP32ConfigXtensa(t *testing.T) {
 		}
 
 		totalLibmFiles := len(group3.Files) + len(group4.Files) + len(group5.Files)
-		if totalLibmFiles != 379 {
-			t.Errorf("Expected 379 xtensa libm files from command-log build list, got %d", totalLibmFiles)
+		if totalLibmFiles != 380 {
+			t.Errorf("Expected 380 xtensa libm files from command-log build list, got %d", totalLibmFiles)
 		}
 
 		// Test LDFlags and CCFlags

@@ -1647,6 +1647,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 		filepath.Join(baseDir, "newlib", "libm/math/e_sqrt.c"),
 		filepath.Join(baseDir, "newlib", "libm/math/e_tgamma.c"),
 		filepath.Join(baseDir, "newlib", "libm/math/ef_acos.c"),
+		filepath.Join(baseDir, "newlib", "libm/math/ef_acosh.c"),
 		filepath.Join(baseDir, "newlib", "libm/math/ef_asin.c"),
 		filepath.Join(baseDir, "newlib", "libm/math/ef_atan2.c"),
 		filepath.Join(baseDir, "newlib", "libm/math/ef_atanh.c"),
