@@ -155,7 +155,13 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 				startLine: 0,
 				Entry:     0,
 			}
-			applyFuncMetadata(frame.Function, 0, &frame)
+			if file, line, ok := llrt.LookupFuncMetadataPC(pc); ok {
+				frame.File = file
+				frame.Line = line
+				frame.startLine = line
+			} else {
+				applyFuncMetadata(frame.Function, 0, &frame)
+			}
 			ci.frames = append(ci.frames, frame)
 			continue
 		}
@@ -172,6 +178,13 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 			Entry:     uintptr(info.Saddr),
 		}
 		applyFuncMetadata(fn, frame.Entry, &frame)
+		if frame.File == "" {
+			if file, line, ok := llrt.LookupFuncMetadataPC(pc); ok {
+				frame.File = file
+				frame.Line = line
+				frame.startLine = line
+			}
+		}
 		ci.frames = append(ci.frames, frame)
 	}
 

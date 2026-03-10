@@ -77,13 +77,24 @@ func LookupFuncMetadataPC(pc uintptr) (file string, line int, ok bool) {
 	if pc == 0 {
 		return "", 0, false
 	}
+	best := -1
 	for i := range funcMetadataList {
 		meta := &funcMetadataList[i]
+		if meta.pc == 0 {
+			continue
+		}
 		if meta.pc == pc {
 			return meta.file, meta.line, true
 		}
+		if meta.pc < pc && (best < 0 || funcMetadataList[best].pc < meta.pc) {
+			best = i
+		}
 	}
-	return "", 0, false
+	if best < 0 {
+		return "", 0, false
+	}
+	meta := &funcMetadataList[best]
+	return meta.file, meta.line, true
 }
 
 func hasPrefix(s, prefix string) bool {
