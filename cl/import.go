@@ -228,45 +228,15 @@ func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) 
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				preCollectLinknameByDoc(ctx, decl.Doc, fullName, inPkgName, false)
+				ctx.preCollectLinknameByDoc(decl.Doc, fullName, inPkgName, false)
 			case *ast.GenDecl:
 				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
 					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
 						inPkgName := names[0].Name
-						preCollectLinknameByDoc(ctx, decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
+						ctx.preCollectLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true)
 					}
 				}
 			}
-		}
-	}
-}
-
-func preCollectLinknameByDoc(ctx *context, doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) {
-	if doc == nil {
-		return
-	}
-	for n := len(doc.List) - 1; n >= 0; n-- {
-		line := doc.List[n].Text
-		switch {
-		case strings.HasPrefix(line, "//go:linkname "):
-			ctx.initLink(line, len("//go:linkname "), false, func(name string, isExport bool) (string, bool, bool) {
-				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
-			})
-			return
-		case strings.HasPrefix(line, "//llgo:link "):
-			ctx.initLink(line, len("//llgo:link "), false, func(name string, isExport bool) (string, bool, bool) {
-				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
-			})
-			return
-		case strings.HasPrefix(line, "// llgo:link "):
-			ctx.initLink(line, len("// llgo:link "), false, func(name string, isExport bool) (string, bool, bool) {
-				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
-			})
-			return
-		case strings.HasPrefix(line, "//go:"):
-			continue
-		default:
-			return
 		}
 	}
 }
@@ -328,10 +298,18 @@ func (p *context) collectSkip(line string, prefix int) {
 }
 
 func (p *context) initLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
+	return p.processLinknameByDoc(doc, fullName, inPkgName, isVar, true)
+}
+
+func (p *context) preCollectLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar bool) bool {
+	return p.processLinknameByDoc(doc, fullName, inPkgName, isVar, false)
+}
+
+func (p *context) processLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgName string, isVar, allowExport bool) bool {
 	if doc != nil {
 		for n := len(doc.List) - 1; n >= 0; n-- {
 			line := doc.List[n].Text
-			ret := p.initLinkname(line, func(name string, isExport bool) (_ string, _, ok bool) {
+			ret := p.initLinknameMode(line, allowExport, func(name string, isExport bool) (_ string, _, ok bool) {
 				return fullName, isVar, name == inPkgName || (isExport && enableExportRename)
 			})
 			if ret != unknownDirective {
@@ -349,6 +327,10 @@ const (
 )
 
 func (p *context) initLinkname(line string, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
+	return p.initLinknameMode(line, true, f)
+}
+
+func (p *context) initLinknameMode(line string, allowExport bool, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
 	const (
 		linkname  = "//go:linkname "
 		llgolink  = "//llgo:link "
@@ -365,7 +347,7 @@ func (p *context) initLinkname(line string, f func(inPkgName string, isExport bo
 	} else if strings.HasPrefix(line, llgolink) {
 		p.initLink(line, len(llgolink), false, f)
 		return hasLinkname
-	} else if strings.HasPrefix(line, export) {
+	} else if allowExport && strings.HasPrefix(line, export) {
 		// rewrite //export FuncName to //export FuncName FuncName
 		funcName := strings.TrimSpace(line[len(export):])
 		line = line + " " + funcName
