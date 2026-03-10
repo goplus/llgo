@@ -36,7 +36,10 @@ jobs:
   llgo:
     needs: download-model
     continue-on-error: true
-    timeout-minutes: 30
+    # macOS Intel is much slower than macOS ARM in the "Test demos" step.
+    # Observed: macOS ARM about 2m49s vs macOS Intel about 10m26s.
+    # Keep a larger budget to avoid timeout-related cancellations.
+    timeout-minutes: 60
     strategy:
       matrix:
         os:
