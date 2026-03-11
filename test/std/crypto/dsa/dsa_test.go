@@ -29,9 +29,6 @@ func TestParameterSizes(t *testing.T) {
 }
 
 func TestGenerateParameters(t *testing.T) {
-	if isLLGo {
-		t.Skip("Skipping expensive DSA parameter generation in llgo")
-	}
 	if testing.Short() {
 		t.Skip("Skipping parameter generation in short mode")
 	}
@@ -56,9 +53,6 @@ func TestGenerateParameters(t *testing.T) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	if isLLGo {
-		t.Skip("Skipping expensive DSA key generation in llgo")
-	}
 	if testing.Short() {
 		t.Skip("Skipping key generation in short mode")
 	}
@@ -94,9 +88,6 @@ func TestGenerateKey(t *testing.T) {
 }
 
 func TestSignAndVerify(t *testing.T) {
-	if isLLGo {
-		t.Skip("Skipping expensive DSA sign/verify fixture in llgo")
-	}
 	if testing.Short() {
 		t.Skip("Skipping sign/verify test in short mode")
 	}
