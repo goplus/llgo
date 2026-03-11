@@ -4,13 +4,21 @@
 package cl
 
 import (
+	"go/ast"
+	"go/importer"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
+	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/internal/env"
+	llssa "github.com/goplus/llgo/ssa"
+	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 func TestEnableFuncMetadata(t *testing.T) {
@@ -59,5 +67,56 @@ func TestShouldRegisterFuncMetadata(t *testing.T) {
 				t.Fatalf("shouldRegisterFuncMetadata(%+v) = %v, want %v", tt.pos, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCompileFuncDeclRegistersFuncMetadata(t *testing.T) {
+	old := enableFuncMetadata
+	defer func() { enableFuncMetadata = old }()
+	EnableFuncMetadata(true)
+
+	fset := token.NewFileSet()
+	const filename = "/tmp/funcmeta_integration.go"
+	src := `package demo
+
+func Demo() int {
+	return 42
+}
+`
+	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []*ast.File{f}
+	pkg := types.NewPackage("example.com/demo", "demo")
+	imp := packages.NewImporter(fset)
+	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	ssaPkg, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, mode)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := importer.For("source", nil).Import(llssa.PkgRuntime)
+		if err != nil {
+			t.Fatal("load runtime failed:", err)
+		}
+		return rt
+	})
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	llPkg, err := NewPackage(prog, ssaPkg, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ir := llPkg.String()
+	for _, want := range []string{
+		"runtime/internal/runtime.RegisterFuncMetadataFull",
+		"example.com/demo.Demo",
+		filename,
+	} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("compiled IR missing %q:\n%s", want, ir)
+		}
 	}
 }
