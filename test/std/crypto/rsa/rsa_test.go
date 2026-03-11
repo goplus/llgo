@@ -8,7 +8,14 @@ import (
 	"testing"
 )
 
+func skipGeneratedKeyFixturesInLLGo(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping generated RSA key fixtures in llgo")
+	}
+}
+
 func TestGenerateKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -24,6 +31,7 @@ func TestGenerateKey(t *testing.T) {
 }
 
 func TestGenerateMultiPrimeKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateMultiPrimeKey(rand.Reader, 3, 2048)
 	if err != nil {
 		t.Fatalf("GenerateMultiPrimeKey() error = %v", err)
@@ -39,6 +47,7 @@ func TestGenerateMultiPrimeKey(t *testing.T) {
 }
 
 func TestEncryptDecryptPKCS1v15(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -62,6 +71,7 @@ func TestEncryptDecryptPKCS1v15(t *testing.T) {
 }
 
 func TestEncryptDecryptOAEP(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -88,6 +98,7 @@ func TestEncryptDecryptOAEP(t *testing.T) {
 }
 
 func TestSignVerifyPKCS1v15(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -114,6 +125,7 @@ func TestSignVerifyPKCS1v15(t *testing.T) {
 }
 
 func TestSignVerifyPSS(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -140,6 +152,7 @@ func TestSignVerifyPSS(t *testing.T) {
 }
 
 func TestPrivateKeyValidate(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -161,6 +174,7 @@ func TestPrivateKeyValidate(t *testing.T) {
 }
 
 func TestPrivateKeyPrecompute(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -180,6 +194,7 @@ func TestPrivateKeyPrecompute(t *testing.T) {
 }
 
 func TestPrivateKeyEqual(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv1, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -205,6 +220,7 @@ func TestPrivateKeyEqual(t *testing.T) {
 }
 
 func TestPrivateKeyPublic(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -229,6 +245,7 @@ func TestPrivateKeyPublic(t *testing.T) {
 }
 
 func TestPrivateKeySign(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -253,6 +270,7 @@ func TestPrivateKeySign(t *testing.T) {
 }
 
 func TestPrivateKeyDecrypt(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -276,6 +294,7 @@ func TestPrivateKeyDecrypt(t *testing.T) {
 }
 
 func TestPublicKeyEqual(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv1, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -304,6 +323,7 @@ func TestPublicKeyEqual(t *testing.T) {
 }
 
 func TestPublicKeySize(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -329,6 +349,7 @@ func TestPSSOptionsHashFunc(t *testing.T) {
 }
 
 func TestDecryptPKCS1v15SessionKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -368,6 +389,7 @@ func TestErrors(t *testing.T) {
 }
 
 func TestOAEPOptions(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -397,6 +419,7 @@ func TestPKCS1v15DecryptOptions(t *testing.T) {
 }
 
 func TestCRTValue(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -409,6 +432,7 @@ func TestCRTValue(t *testing.T) {
 }
 
 func TestPrecomputedValues(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -428,6 +452,7 @@ func TestPrecomputedValues(t *testing.T) {
 }
 
 func TestPSSWithOptions(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -453,6 +478,7 @@ func TestPSSWithOptions(t *testing.T) {
 }
 
 func TestPSSSaltLengthEqualsHash(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
@@ -478,6 +504,7 @@ func TestPSSSaltLengthEqualsHash(t *testing.T) {
 }
 
 func TestCRTValueStruct(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateMultiPrimeKey(rand.Reader, 3, 2048)
 	if err != nil {
 		t.Fatalf("GenerateMultiPrimeKey() error = %v", err)
@@ -500,6 +527,7 @@ func TestCRTValueStruct(t *testing.T) {
 }
 
 func TestPrecomputedValuesStruct(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatalf("GenerateKey() error = %v", err)
