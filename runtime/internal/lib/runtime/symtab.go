@@ -106,6 +106,15 @@ func unknownFunctionName(pc uintptr) string {
 	return "pc=" + uintptrHex(pc)
 }
 
+func setFrameSource(frame *Frame, file string, line int) {
+	if frame == nil || file == "" || line <= 0 {
+		return
+	}
+	frame.File = file
+	frame.Line = line
+	frame.startLine = line
+}
+
 func applyFuncMetadata(fn string, entry uintptr, frame *Frame) {
 	if frame == nil {
 		return
@@ -113,9 +122,7 @@ func applyFuncMetadata(fn string, entry uintptr, frame *Frame) {
 	if entry != 0 {
 		file, line, ok := llrt.LookupFuncMetadataPC(entry)
 		if ok {
-			frame.File = file
-			frame.Line = line
-			frame.startLine = line
+			setFrameSource(frame, file, line)
 			return
 		}
 	}
@@ -126,9 +133,7 @@ func applyFuncMetadata(fn string, entry uintptr, frame *Frame) {
 	if !ok {
 		return
 	}
-	frame.File = file
-	frame.Line = line
-	frame.startLine = line
+	setFrameSource(frame, file, line)
 }
 
 func (ci *Frames) Next() (frame Frame, more bool) {
@@ -156,9 +161,7 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 				Entry:     0,
 			}
 			if file, line, ok := llrt.LookupFuncMetadataPC(pc); ok {
-				frame.File = file
-				frame.Line = line
-				frame.startLine = line
+				setFrameSource(&frame, file, line)
 			} else {
 				applyFuncMetadata(frame.Function, 0, &frame)
 			}
@@ -180,9 +183,7 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 		applyFuncMetadata(fn, frame.Entry, &frame)
 		if frame.File == "" {
 			if file, line, ok := llrt.LookupFuncMetadataPC(pc); ok {
-				frame.File = file
-				frame.Line = line
-				frame.startLine = line
+				setFrameSource(&frame, file, line)
 			}
 		}
 		ci.frames = append(ci.frames, frame)

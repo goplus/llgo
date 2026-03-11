@@ -63,6 +63,8 @@ var (
 	// This is for TinyGo compatibility when using -target flag for embedded targets.
 	// Currently, using -target implies TinyGo embedded target mode.
 	enableExportRename bool
+
+	funcMetadataGOROOTPrefix = cleanedGOROOTPrefix()
 )
 
 // SetDebug sets debug flags.
@@ -434,6 +436,13 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	return fn, nil, goFunc
 }
 
+func cleanedGOROOTPrefix() string {
+	if goroot := runtime.GOROOT(); goroot != "" {
+		return filepath.Clean(goroot) + string(os.PathSeparator)
+	}
+	return ""
+}
+
 func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
 	if !enableFuncMetadata {
 		return false
@@ -444,8 +453,7 @@ func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
 	if pkgPath := p.goTyps.Path(); strings.HasPrefix(pkgPath, env.LLGoRuntimePkg) {
 		return false
 	}
-	if goroot := runtime.GOROOT(); goroot != "" {
-		root := filepath.Clean(goroot) + string(os.PathSeparator)
+	if root := funcMetadataGOROOTPrefix; root != "" {
 		file := filepath.Clean(pos.Filename)
 		if strings.HasPrefix(file, root) {
 			return false

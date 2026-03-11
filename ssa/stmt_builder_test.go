@@ -22,8 +22,7 @@ func TestRegisterCurrentFuncMetadataEmitsCalls(t *testing.T) {
 
 	ir := pkg.String()
 	for _, needle := range []string{
-		"runtime/internal/runtime.RegisterFuncMetadataPC",
-		"runtime/internal/runtime.RegisterFuncMetadata",
+		"runtime/internal/runtime.RegisterFuncMetadataFull",
 		"/tmp/foo.go",
 		"foo.fn",
 	} {
