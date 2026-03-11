@@ -49,58 +49,41 @@ func SwapPointer(addr *unsafe.Pointer, new unsafe.Pointer) (old unsafe.Pointer)
 // llgo:link atomicCmpXchg llgo.atomicCmpXchg
 func atomicCmpXchg[T valtype](ptr *T, old, new T) (T, bool) { return old, false }
 
-func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool) {
-	_, swapped = atomicCmpXchg(addr, old, new)
-	return
-}
+//go:linkname CompareAndSwapInt32 llgo.atomicCmpXchgOK
+func CompareAndSwapInt32(addr *int32, old, new int32) (swapped bool)
 
-func CompareAndSwapInt64(addr *int64, old, new int64) (swapped bool) {
-	_, swapped = atomicCmpXchg(addr, old, new)
-	return
-}
+//go:linkname CompareAndSwapInt64 llgo.atomicCmpXchgOK
+func CompareAndSwapInt64(addr *int64, old, new int64) (swapped bool)
 
-func CompareAndSwapUint32(addr *uint32, old, new uint32) (swapped bool) {
-	_, swapped = atomicCmpXchg(addr, old, new)
-	return
-}
+//go:linkname CompareAndSwapUint32 llgo.atomicCmpXchgOK
+func CompareAndSwapUint32(addr *uint32, old, new uint32) (swapped bool)
 
-func CompareAndSwapUint64(addr *uint64, old, new uint64) (swapped bool) {
-	_, swapped = atomicCmpXchg(addr, old, new)
-	return
-}
+//go:linkname CompareAndSwapUint64 llgo.atomicCmpXchgOK
+func CompareAndSwapUint64(addr *uint64, old, new uint64) (swapped bool)
 
-func CompareAndSwapUintptr(addr *uintptr, old, new uintptr) (swapped bool) {
-	_, swapped = atomicCmpXchg(addr, old, new)
-	return
-}
+//go:linkname CompareAndSwapUintptr llgo.atomicCmpXchgOK
+func CompareAndSwapUintptr(addr *uintptr, old, new uintptr) (swapped bool)
 
-func CompareAndSwapPointer(addr *unsafe.Pointer, old, new unsafe.Pointer) (swapped bool) {
-	_, swapped = atomicCmpXchg(addr, old, new)
-	return
-}
+//go:linkname CompareAndSwapPointer llgo.atomicCmpXchgOK
+func CompareAndSwapPointer(addr *unsafe.Pointer, old, new unsafe.Pointer) (swapped bool)
 
-// llgo:link atomicAdd llgo.atomicAdd
+// llgo:link atomicAdd llgo.atomicAddReturnNew
 func atomicAdd[T valtype](ptr *T, v T) T { return v }
 
-func AddInt32(addr *int32, delta int32) (new int32) {
-	return atomicAdd(addr, delta) + delta
-}
+//go:linkname AddInt32 llgo.atomicAddReturnNew
+func AddInt32(addr *int32, delta int32) (new int32)
 
-func AddUint32(addr *uint32, delta uint32) (new uint32) {
-	return atomicAdd(addr, delta) + delta
-}
+//go:linkname AddUint32 llgo.atomicAddReturnNew
+func AddUint32(addr *uint32, delta uint32) (new uint32)
 
-func AddInt64(addr *int64, delta int64) (new int64) {
-	return atomicAdd(addr, delta) + delta
-}
+//go:linkname AddInt64 llgo.atomicAddReturnNew
+func AddInt64(addr *int64, delta int64) (new int64)
 
-func AddUint64(addr *uint64, delta uint64) (new uint64) {
-	return atomicAdd(addr, delta) + delta
-}
+//go:linkname AddUint64 llgo.atomicAddReturnNew
+func AddUint64(addr *uint64, delta uint64) (new uint64)
 
-func AddUintptr(addr *uintptr, delta uintptr) (new uintptr) {
-	return atomicAdd(addr, delta) + delta
-}
+//go:linkname AddUintptr llgo.atomicAddReturnNew
+func AddUintptr(addr *uintptr, delta uintptr) (new uintptr)
 
 //go:linkname LoadInt32 llgo.atomicLoad
 func LoadInt32(addr *int32) (val int32)

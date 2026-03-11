@@ -499,17 +499,17 @@ const (
 	llgoAtomicCmpXchg = llgoInstrBase + 0x1f
 	llgoAtomicOpBase  = llgoInstrBase + 0x20
 
-	llgoAtomicXchg = llgoAtomicOpBase + llssa.OpXchg
-	llgoAtomicAdd  = llgoAtomicOpBase + llssa.OpAdd
-	llgoAtomicSub  = llgoAtomicOpBase + llssa.OpSub
-	llgoAtomicAnd  = llgoAtomicOpBase + llssa.OpAnd
-	llgoAtomicNand = llgoAtomicOpBase + llssa.OpNand
-	llgoAtomicOr   = llgoAtomicOpBase + llssa.OpOr
-	llgoAtomicXor  = llgoAtomicOpBase + llssa.OpXor
-	llgoAtomicMax  = llgoAtomicOpBase + llssa.OpMax
-	llgoAtomicMin  = llgoAtomicOpBase + llssa.OpMin
-	llgoAtomicUMax = llgoAtomicOpBase + llssa.OpUMax
-	llgoAtomicUMin = llgoAtomicOpBase + llssa.OpUMin
+	llgoAtomicXchg = int(llgoAtomicOpBase + llssa.OpXchg)
+	llgoAtomicAdd  = int(llgoAtomicOpBase + llssa.OpAdd)
+	llgoAtomicSub  = int(llgoAtomicOpBase + llssa.OpSub)
+	llgoAtomicAnd  = int(llgoAtomicOpBase + llssa.OpAnd)
+	llgoAtomicNand = int(llgoAtomicOpBase + llssa.OpNand)
+	llgoAtomicOr   = int(llgoAtomicOpBase + llssa.OpOr)
+	llgoAtomicXor  = int(llgoAtomicOpBase + llssa.OpXor)
+	llgoAtomicMax  = int(llgoAtomicOpBase + llssa.OpMax)
+	llgoAtomicMin  = int(llgoAtomicOpBase + llssa.OpMin)
+	llgoAtomicUMax = int(llgoAtomicOpBase + llssa.OpUMax)
+	llgoAtomicUMin = int(llgoAtomicOpBase + llssa.OpUMin)
 
 	llgoCgoBase         = llgoInstrBase + 0x30
 	llgoCgoCString      = llgoCgoBase + 0x0
@@ -521,12 +521,13 @@ const (
 	llgoCgoCheckPointer = llgoCgoBase + 0x6
 	llgoCgoCgocall      = llgoCgoBase + 0x7
 
-	llgoAsm             = llgoInstrBase + 0x40
-	llgoStackSave       = llgoInstrBase + 0x41
-	llgoFuncPCABI0      = llgoInstrBase + 0x42
-	llgoSkip            = llgoInstrBase + 0x43
-	llgoSyscall         = llgoInstrBase + 0x44
-	llgoAtomicCmpXchgOK = llgoInstrBase + 0x45
+	llgoAsm                = llgoInstrBase + 0x40
+	llgoStackSave          = llgoInstrBase + 0x41
+	llgoFuncPCABI0         = llgoInstrBase + 0x42
+	llgoSkip               = llgoInstrBase + 0x43
+	llgoSyscall            = llgoInstrBase + 0x44
+	llgoAtomicCmpXchgOK    = llgoInstrBase + 0x45
+	llgoAtomicAddReturnNew = llgoInstrBase + 0x46
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )

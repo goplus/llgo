@@ -1,1 +1,5 @@
-;
+store: 100
+ret: 101 v: 101
+swp: false v: 101
+swp: true v: 102
+ret: 101 v: 101

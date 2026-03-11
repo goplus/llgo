@@ -33,4 +33,5 @@ var altPkgs = map[string]altPkgMode{
 	"runtime":               altPkgReplace,
 	"unique":                altPkgReplace,
 	"syscall/js":            altPkgReplace,
+	"sync/atomic":           altPkgReplace,
 }

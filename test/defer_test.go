@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 // runLoopDefers exercises a defer statement inside a loop and relies on
@@ -410,5 +411,304 @@ func TestDeferInLoopDoesNotDrainOtherDefers(t *testing.T) {
 	runLoopDeferTimerStopWithOuterDefer()
 	if got := loopDeferOuterRan.Load(); got != 1 {
 		t.Fatalf("outer defer was not executed: got %d, want %d", got, 1)
+	}
+}
+
+func runDeferAtomicStoreUint32() (before, after uint32) {
+	var v uint32
+	func() {
+		defer atomic.StoreUint32(&v, 1)
+		before = atomic.LoadUint32(&v)
+	}()
+	after = atomic.LoadUint32(&v)
+	return
+}
+
+func TestDeferAtomicStoreUint32(t *testing.T) {
+	before, after := runDeferAtomicStoreUint32()
+	if before != 0 {
+		t.Fatalf("before defer = %d, want 0", before)
+	}
+	if after != 1 {
+		t.Fatalf("after defer = %d, want 1", after)
+	}
+}
+
+func runDeferAtomicCompareAndSwapUint32() (before, after uint32) {
+	var v uint32 = 1
+	func() {
+		defer atomic.CompareAndSwapUint32(&v, 1, 2)
+		before = atomic.LoadUint32(&v)
+	}()
+	after = atomic.LoadUint32(&v)
+	return
+}
+
+func TestDeferAtomicCompareAndSwapUint32(t *testing.T) {
+	before, after := runDeferAtomicCompareAndSwapUint32()
+	if before != 1 {
+		t.Fatalf("before defer = %d, want 1", before)
+	}
+	if after != 2 {
+		t.Fatalf("after defer = %d, want 2", after)
+	}
+}
+
+func runGoAtomicAddInt64() int64 {
+	var v int64
+	go atomic.AddInt64(&v, 2)
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if got := atomic.LoadInt64(&v); got == 2 {
+			return got
+		}
+		time.Sleep(time.Millisecond)
+	}
+	return atomic.LoadInt64(&v)
+}
+
+func TestGoAtomicAddInt64(t *testing.T) {
+	if got := runGoAtomicAddInt64(); got != 2 {
+		t.Fatalf("go atomic add = %d, want 2", got)
+	}
+}
+
+type loopDeferAtomicScalarResults struct {
+	int32Load    int32
+	int32Final   int32
+	int64Load    int64
+	int64Final   int64
+	uint32Load   uint32
+	uint32Final  uint32
+	uint64Load   uint64
+	uint64Final  uint64
+	uintptrLoad  uintptr
+	uintptrFinal uintptr
+}
+
+func runLoopDeferAtomicScalars() (res loopDeferAtomicScalarResults) {
+	var v32 int32 = 10
+	func() {
+		for i := 0; i < 5; i++ {
+			switch i {
+			case 0:
+				defer atomic.StoreInt32(&v32, 7)
+			case 1:
+				defer func() {
+					res.int32Load = atomic.LoadInt32(&v32)
+				}()
+			case 2:
+				defer atomic.AddInt32(&v32, 5)
+			case 3:
+				defer atomic.CompareAndSwapInt32(&v32, 15, 21)
+			case 4:
+				defer atomic.SwapInt32(&v32, 15)
+			}
+		}
+	}()
+
+	var v64 int64 = 20
+	func() {
+		for i := 0; i < 5; i++ {
+			switch i {
+			case 0:
+				defer atomic.StoreInt64(&v64, 9)
+			case 1:
+				defer func() {
+					res.int64Load = atomic.LoadInt64(&v64)
+				}()
+			case 2:
+				defer atomic.AddInt64(&v64, 4)
+			case 3:
+				defer atomic.CompareAndSwapInt64(&v64, 30, 40)
+			case 4:
+				defer atomic.SwapInt64(&v64, 30)
+			}
+		}
+	}()
+
+	var u32 uint32 = 11
+	func() {
+		for i := 0; i < 5; i++ {
+			switch i {
+			case 0:
+				defer atomic.StoreUint32(&u32, 3)
+			case 1:
+				defer func() {
+					res.uint32Load = atomic.LoadUint32(&u32)
+				}()
+			case 2:
+				defer atomic.AddUint32(&u32, 2)
+			case 3:
+				defer atomic.CompareAndSwapUint32(&u32, 13, 17)
+			case 4:
+				defer atomic.SwapUint32(&u32, 13)
+			}
+		}
+	}()
+
+	var u64 uint64 = 50
+	func() {
+		for i := 0; i < 5; i++ {
+			switch i {
+			case 0:
+				defer atomic.StoreUint64(&u64, 8)
+			case 1:
+				defer func() {
+					res.uint64Load = atomic.LoadUint64(&u64)
+				}()
+			case 2:
+				defer atomic.AddUint64(&u64, 7)
+			case 3:
+				defer atomic.CompareAndSwapUint64(&u64, 60, 90)
+			case 4:
+				defer atomic.SwapUint64(&u64, 60)
+			}
+		}
+	}()
+
+	var up uintptr = 100
+	func() {
+		for i := 0; i < 5; i++ {
+			switch i {
+			case 0:
+				defer atomic.StoreUintptr(&up, 5)
+			case 1:
+				defer func() {
+					res.uintptrLoad = atomic.LoadUintptr(&up)
+				}()
+			case 2:
+				defer atomic.AddUintptr(&up, 6)
+			case 3:
+				defer atomic.CompareAndSwapUintptr(&up, 120, 140)
+			case 4:
+				defer atomic.SwapUintptr(&up, 120)
+			}
+		}
+	}()
+
+	res.int32Final = atomic.LoadInt32(&v32)
+	res.int64Final = atomic.LoadInt64(&v64)
+	res.uint32Final = atomic.LoadUint32(&u32)
+	res.uint64Final = atomic.LoadUint64(&u64)
+	res.uintptrFinal = atomic.LoadUintptr(&up)
+	return
+}
+
+func TestDeferAtomicInLoopScalars(t *testing.T) {
+	got := runLoopDeferAtomicScalars()
+	want := loopDeferAtomicScalarResults{
+		int32Load:    26,
+		int32Final:   7,
+		int64Load:    44,
+		int64Final:   9,
+		uint32Load:   19,
+		uint32Final:  3,
+		uint64Load:   97,
+		uint64Final:  8,
+		uintptrLoad:  146,
+		uintptrFinal: 5,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected scalar defer+atomic results: got %+v, want %+v", got, want)
+	}
+}
+
+type loopDeferAtomicPointerResults struct {
+	loadValue  int
+	finalValue int
+}
+
+func runLoopDeferAtomicPointer() (res loopDeferAtomicPointerResults) {
+	values := []int{11, 22, 33, 44}
+	var ptr unsafe.Pointer = unsafe.Pointer(&values[0])
+
+	func() {
+		for i := 0; i < 4; i++ {
+			switch i {
+			case 0:
+				defer atomic.StorePointer(&ptr, unsafe.Pointer(&values[1]))
+			case 1:
+				defer func() {
+					res.loadValue = *(*int)(atomic.LoadPointer(&ptr))
+				}()
+			case 2:
+				defer atomic.CompareAndSwapPointer(&ptr, unsafe.Pointer(&values[2]), unsafe.Pointer(&values[3]))
+			case 3:
+				defer atomic.SwapPointer(&ptr, unsafe.Pointer(&values[2]))
+			}
+		}
+	}()
+
+	res.finalValue = *(*int)(atomic.LoadPointer(&ptr))
+	return
+}
+
+func TestDeferAtomicInLoopPointer(t *testing.T) {
+	got := runLoopDeferAtomicPointer()
+	want := loopDeferAtomicPointerResults{
+		loadValue:  44,
+		finalValue: 22,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("unexpected pointer defer+atomic results: got %+v, want %+v", got, want)
+	}
+}
+
+func runConditionalDeferAtomic(flag bool) (before, after uint32) {
+	var v uint32 = 10
+	func() {
+		if flag {
+			defer atomic.AddUint32(&v, 1)
+			defer atomic.CompareAndSwapUint32(&v, 10, 20)
+		} else {
+			defer atomic.StoreUint32(&v, 30)
+			defer atomic.SwapUint32(&v, 40)
+		}
+		before = atomic.LoadUint32(&v)
+	}()
+	after = atomic.LoadUint32(&v)
+	return
+}
+
+func TestDeferAtomicInConditional(t *testing.T) {
+	before, after := runConditionalDeferAtomic(true)
+	if before != 10 || after != 21 {
+		t.Fatalf("flag=true: got before=%d after=%d, want before=10 after=21", before, after)
+	}
+
+	before, after = runConditionalDeferAtomic(false)
+	if before != 10 || after != 30 {
+		t.Fatalf("flag=false: got before=%d after=%d, want before=10 after=30", before, after)
+	}
+}
+
+func runLoopControlDeferAtomic() (before, after uint32) {
+	var v uint32 = 5
+	func() {
+		for i := 0; i < 4; i++ {
+			if i == 1 {
+				defer atomic.AddUint32(&v, 10)
+				continue
+			}
+			if i == 3 {
+				defer atomic.SwapUint32(&v, 99)
+				break
+			}
+			defer atomic.AddUint32(&v, 1)
+		}
+		before = atomic.LoadUint32(&v)
+	}()
+	after = atomic.LoadUint32(&v)
+	return
+}
+
+func TestDeferAtomicInLoopControlFlow(t *testing.T) {
+	before, after := runLoopControlDeferAtomic()
+	if before != 5 {
+		t.Fatalf("before loop control defers = %d, want 5", before)
+	}
+	if after != 111 {
+		t.Fatalf("after loop control defers = %d, want 111", after)
 	}
 }
