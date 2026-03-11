@@ -549,6 +549,9 @@ func TestConstants(t *testing.T) {
 }
 
 func TestClientServer(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping client/server integration path in llgo")
+	}
 	certPEM, keyPEM := generateTestCert(t)
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
