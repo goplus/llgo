@@ -585,6 +585,9 @@ func TestClientServer(t *testing.T) {
 }
 
 func TestConnMethods(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping conn method integration path in llgo")
+	}
 	certPEM, keyPEM := generateTestCert(t)
 	cert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {

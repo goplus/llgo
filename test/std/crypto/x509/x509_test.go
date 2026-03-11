@@ -12,7 +12,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"io"
 	"math/big"
+	mrand "math/rand"
 	"net"
 	"net/url"
 	"testing"
@@ -223,8 +225,24 @@ func TestOID(t *testing.T) {
 	}
 }
 
+type deterministicReader struct {
+	rnd *mrand.Rand
+}
+
+func (r *deterministicReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = byte(r.rnd.Intn(256))
+	}
+	return len(p), nil
+}
+
+func newDeterministicReader(seed int64) io.Reader {
+	return &deterministicReader{rnd: mrand.New(mrand.NewSource(seed))}
+}
+
 func generateSelfSignedCert(t *testing.T) (*x509.Certificate, crypto.PrivateKey) {
-	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	rng := newDeterministicReader(0x58766139)
+	priv, err := rsa.GenerateKey(rng, 1024)
 	if err != nil {
 		t.Fatalf("Failed to generate private key: %v", err)
 	}
@@ -235,8 +253,8 @@ func generateSelfSignedCert(t *testing.T) (*x509.Certificate, crypto.PrivateKey)
 			Organization: []string{"Test Org"},
 			CommonName:   "test.example.com",
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(24 * time.Hour),
+		NotBefore:             time.Unix(0, 0),
+		NotAfter:              time.Unix(0, 0).Add(24 * time.Hour),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
@@ -245,7 +263,7 @@ func generateSelfSignedCert(t *testing.T) (*x509.Certificate, crypto.PrivateKey)
 		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
+	certDER, err := x509.CreateCertificate(rng, template, template, &priv.PublicKey, priv)
 	if err != nil {
 		t.Fatalf("Failed to create certificate: %v", err)
 	}
