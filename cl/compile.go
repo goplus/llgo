@@ -53,11 +53,11 @@ var (
 	debugInstr bool
 	debugGoSSA bool
 
-	enableCallTracing bool
-	enableDbg         bool
-	enableDbgSyms     bool
+	enableCallTracing  bool
+	enableDbg          bool
+	enableDbgSyms      bool
 	enableFuncMetadata bool
-	disableInline     bool
+	disableInline      bool
 
 	// enableExportRename enables //export to use different C symbol names than Go function names.
 	// This is for TinyGo compatibility when using -target flag for embedded targets.
