@@ -53,11 +53,12 @@ func TestShouldRegisterFuncMetadata(t *testing.T) {
 		want bool
 	}{
 		{name: "disabled", ctx: &context{goTyps: userPkg}, pos: token.Position{Filename: userFile, Line: 7}, on: false, want: false},
-		{name: "empty filename", ctx: &context{goTyps: userPkg}, pos: token.Position{Line: 7}, on: true, want: false},
-		{name: "non positive line", ctx: &context{goTyps: userPkg}, pos: token.Position{Filename: userFile}, on: true, want: false},
-		{name: "runtime package excluded", ctx: &context{goTyps: runtimePkg}, pos: token.Position{Filename: userFile, Line: 7}, on: true, want: false},
-		{name: "goroot file excluded", ctx: &context{goTyps: userPkg}, pos: token.Position{Filename: gorootFile, Line: 7}, on: true, want: false},
-		{name: "user file accepted", ctx: &context{goTyps: userPkg}, pos: token.Position{Filename: userFile, Line: 7}, on: true, want: true},
+		{name: "needs metadata false", ctx: &context{goTyps: userPkg, metaMode: funcMetadataDisabled}, pos: token.Position{Filename: userFile, Line: 7}, on: true, want: false},
+		{name: "empty filename", ctx: &context{goTyps: userPkg, metaMode: funcMetadataEnabled}, pos: token.Position{Line: 7}, on: true, want: false},
+		{name: "non positive line", ctx: &context{goTyps: userPkg, metaMode: funcMetadataEnabled}, pos: token.Position{Filename: userFile}, on: true, want: false},
+		{name: "runtime package excluded", ctx: &context{goTyps: runtimePkg, metaMode: funcMetadataEnabled}, pos: token.Position{Filename: userFile, Line: 7}, on: true, want: false},
+		{name: "goroot file excluded", ctx: &context{goTyps: userPkg, metaMode: funcMetadataEnabled}, pos: token.Position{Filename: gorootFile, Line: 7}, on: true, want: false},
+		{name: "user file accepted", ctx: &context{goTyps: userPkg, metaMode: funcMetadataEnabled}, pos: token.Position{Filename: userFile, Line: 7}, on: true, want: true},
 	}
 
 	for _, tt := range tests {
@@ -70,6 +71,61 @@ func TestShouldRegisterFuncMetadata(t *testing.T) {
 	}
 }
 
+func TestNeedsFuncMetadata(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want bool
+	}{
+		{
+			name: "runtime caller usage",
+			src: `package demo
+import "runtime"
+func Demo() (uintptr, string, int, bool) { return runtime.Caller(0) }
+`,
+			want: true,
+		},
+		{
+			name: "no runtime caller usage",
+			src: `package demo
+func Demo() int { return 42 }
+`,
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ssaPkg := mustSSAPackageForSource(t, tt.src)
+			ctx := &context{goProg: ssaPkg.Prog, goPkg: ssaPkg, goTyps: ssaPkg.Pkg}
+			if got := ctx.needsFuncMetadata(); got != tt.want {
+				t.Fatalf("needsFuncMetadata() = %v, want %v", got, tt.want)
+			}
+			if got := ctx.needsFuncMetadata(); got != tt.want {
+				t.Fatalf("cached needsFuncMetadata() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func mustSSAPackageForSource(t *testing.T, src string) *ssa.Package {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "/tmp/funcmeta.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []*ast.File{f}
+	pkg := types.NewPackage("example.com/demo", "demo")
+	imp := packages.NewImporter(fset)
+	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	ssaPkg, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, mode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ssaPkg
+}
+
 func TestCompileFuncDeclRegistersFuncMetadata(t *testing.T) {
 	old := enableFuncMetadata
 	defer func() { enableFuncMetadata = old }()
@@ -79,8 +135,10 @@ func TestCompileFuncDeclRegistersFuncMetadata(t *testing.T) {
 	const filename = "/tmp/funcmeta_integration.go"
 	src := `package demo
 
-func Demo() int {
-	return 42
+import "runtime"
+
+func Demo() (uintptr, string, int, bool) {
+	return runtime.Caller(0)
 }
 `
 	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
@@ -118,5 +176,50 @@ func Demo() int {
 		if !strings.Contains(ir, want) {
 			t.Fatalf("compiled IR missing %q:\n%s", want, ir)
 		}
+	}
+}
+
+func TestCompileFuncDeclSkipsFuncMetadataWithoutRuntimeCaller(t *testing.T) {
+	old := enableFuncMetadata
+	defer func() { enableFuncMetadata = old }()
+	EnableFuncMetadata(true)
+
+	fset := token.NewFileSet()
+	const filename = "/tmp/funcmeta_plain.go"
+	src := `package demo
+
+func Demo() int {
+	return 42
+}
+`
+	f, err := parser.ParseFile(fset, filename, src, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []*ast.File{f}
+	pkg := types.NewPackage("example.com/demo", "demo")
+	imp := packages.NewImporter(fset)
+	mode := ssa.SanityCheckFunctions | ssa.InstantiateGenerics
+	ssaPkg, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, mode)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	prog := llssa.NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		rt, err := importer.For("source", nil).Import(llssa.PkgRuntime)
+		if err != nil {
+			t.Fatal("load runtime failed:", err)
+		}
+		return rt
+	})
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	llPkg, err := NewPackage(prog, ssaPkg, files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ir := llPkg.String()
+	if strings.Contains(ir, "runtime/internal/runtime.RegisterFuncMetadataFull") {
+		t.Fatalf("compiled IR unexpectedly contains func metadata registration:\n%s", ir)
 	}
 }

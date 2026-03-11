@@ -155,6 +155,7 @@ type context struct {
 	embedMap   goembed.VarMap
 	embedInits []embedInit
 	funcMeta   []funcMetaEntry
+	metaMode   int
 }
 
 type funcMetaEntry struct {
@@ -163,6 +164,12 @@ type funcMetaEntry struct {
 	file string
 	line int
 }
+
+const (
+	funcMetadataUnknown = iota
+	funcMetadataDisabled
+	funcMetadataEnabled
+)
 
 func (p *context) rewriteValue(name string) (string, bool) {
 	if p.rewrites == nil {
@@ -459,6 +466,9 @@ func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
 	if !enableFuncMetadata {
 		return false
 	}
+	if !p.needsFuncMetadata() {
+		return false
+	}
 	if pos.Filename == "" || pos.Line <= 0 {
 		return false
 	}
@@ -474,6 +484,64 @@ func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
 	return true
 }
 
+func (p *context) needsFuncMetadata() bool {
+	switch p.metaMode {
+	case funcMetadataEnabled:
+		return true
+	case funcMetadataDisabled:
+		return false
+	}
+	if p.goProg == nil {
+		p.metaMode = funcMetadataDisabled
+		return false
+	}
+	var needsFunc func(*ssa.Function) bool
+	needsFunc = func(fn *ssa.Function) bool {
+		for _, block := range fn.Blocks {
+			for _, instr := range block.Instrs {
+				site, ok := instr.(ssa.CallInstruction)
+				if !ok {
+					continue
+				}
+				callee := site.Common().StaticCallee()
+				if callee == nil || callee.Pkg == nil || callee.Pkg.Pkg == nil {
+					continue
+				}
+				path := callee.Pkg.Pkg.Path()
+				if path != "runtime" && !strings.HasPrefix(path, env.LLGoRuntimePkg) {
+					continue
+				}
+				switch callee.Name() {
+				case "Caller", "Callers", "CallersFrames":
+					return true
+				}
+			}
+		}
+		for _, anon := range fn.AnonFuncs {
+			if needsFunc(anon) {
+				return true
+			}
+		}
+		return false
+	}
+	for _, ssaPkg := range p.goProg.AllPackages() {
+		if ssaPkg == nil || ssaPkg.Pkg == nil || ssaPkg.Pkg.Path() != p.goTyps.Path() {
+			continue
+		}
+		for _, member := range ssaPkg.Members {
+			fn, ok := member.(*ssa.Function)
+			if !ok {
+				continue
+			}
+			if needsFunc(fn) {
+				p.metaMode = funcMetadataEnabled
+				return true
+			}
+		}
+	}
+	p.metaMode = funcMetadataDisabled
+	return false
+}
 func (p *context) emitFuncMetadataInit(b llssa.Builder, ret llssa.BasicBlock) {
 	if len(p.funcMeta) == 0 {
 		return
