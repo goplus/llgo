@@ -261,6 +261,12 @@ func generateSelfSignedCert(t *testing.T) (*x509.Certificate, crypto.PrivateKey)
 	return cert, priv
 }
 
+func skipGeneratedKeyFixturesInLLGo(t *testing.T) {
+	if isLLGo {
+		t.Skip("Skipping generated key fixtures in llgo")
+	}
+}
+
 func TestCreateCertificate(t *testing.T) {
 	cert, _ := generateSelfSignedCert(t)
 
@@ -436,6 +442,7 @@ func TestSetFallbackRoots(t *testing.T) {
 }
 
 func TestMarshalPKCS1PrivateKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -456,6 +463,7 @@ func TestMarshalPKCS1PrivateKey(t *testing.T) {
 }
 
 func TestMarshalPKCS1PublicKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -477,6 +485,7 @@ func TestMarshalPKCS1PublicKey(t *testing.T) {
 }
 
 func TestMarshalPKCS8PrivateKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -500,6 +509,7 @@ func TestMarshalPKCS8PrivateKey(t *testing.T) {
 }
 
 func TestMarshalPKIXPublicKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -523,6 +533,7 @@ func TestMarshalPKIXPublicKey(t *testing.T) {
 }
 
 func TestMarshalECPrivateKey(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -581,6 +592,7 @@ func TestEncryptDecryptPEMBlock(t *testing.T) {
 }
 
 func TestCreateCertificateRequest(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -786,6 +798,7 @@ func TestPolicyMapping(t *testing.T) {
 }
 
 func TestEd25519(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -831,6 +844,7 @@ func TestEd25519(t *testing.T) {
 }
 
 func TestCertificateWithURIs(t *testing.T) {
+	skipGeneratedKeyFixturesInLLGo(t)
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		t.Fatal(err)
