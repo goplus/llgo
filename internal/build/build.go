@@ -270,7 +270,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	cl.EnableDebug(IsDbgEnabled())
 	cl.EnableDbgSyms(IsDbgSymsEnabled())
-	cl.EnableFuncMetadata(conf.Mode == ModeTest && conf.Target == "")
+	cl.EnableFuncMetadata(false)
 	cl.EnableTrace(IsTraceEnabled())
 	llssa.Initialize(llssa.InitAll)
 
@@ -323,6 +323,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			return nil, fmt.Errorf("cannot run multiple packages")
 		}
 	}
+	cl.EnableFuncMetadata(shouldEnableFuncMetadata(conf, initial))
 
 	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
 	cfg.Dir = env.LLGoRuntimeDir()
@@ -504,6 +505,32 @@ func filterTestPackages(initial []*packages.Package, outFile string) ([]*package
 		return nil, fmt.Errorf("cannot use -o flag with multiple packages")
 	}
 	return filtered, nil
+}
+
+func shouldEnableFuncMetadata(conf *Config, initial []*packages.Package) bool {
+	if conf.Mode != ModeTest || conf.Target != "" {
+		return false
+	}
+	for _, pkg := range initial {
+		if isFuncMetadataRootTest(pkg) {
+			return true
+		}
+	}
+	return false
+}
+
+func isFuncMetadataRootTest(pkg *packages.Package) bool {
+	if pkg == nil {
+		return false
+	}
+	const root = "github.com/goplus/llgo/test"
+	if pkg.PkgPath == root || pkg.ForTest == root {
+		return true
+	}
+	if pkg.ID == root+".test" {
+		return true
+	}
+	return strings.HasPrefix(pkg.ID, root+" ["+root+".test]")
 }
 
 func (p Package) setNeedRuntimeOrPyInit(needRuntime, needPyInit bool) {

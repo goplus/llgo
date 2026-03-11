@@ -99,6 +99,35 @@ func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
 }
 
+func TestShouldEnableFuncMetadata(t *testing.T) {
+	confTest := &Config{Mode: ModeTest}
+	confTarget := &Config{Mode: ModeTest, Target: "wasip1"}
+	confBuild := &Config{Mode: ModeBuild}
+	pkg := func(path string) *packages.Package {
+		return &packages.Package{PkgPath: path}
+	}
+	tests := []struct {
+		name    string
+		conf    *Config
+		initial []*packages.Package
+		want    bool
+	}{
+		{name: "disabled for non-test mode", conf: confBuild, initial: []*packages.Package{pkg("github.com/goplus/llgo/test")}, want: false},
+		{name: "disabled for target builds", conf: confTarget, initial: []*packages.Package{pkg("github.com/goplus/llgo/test")}, want: false},
+		{name: "disabled for unrelated test package", conf: confTest, initial: []*packages.Package{pkg("github.com/goplus/llgo/test/std/fmt")}, want: false},
+		{name: "enabled for top-level llgo test package", conf: confTest, initial: []*packages.Package{pkg("github.com/goplus/llgo/test")}, want: true},
+		{name: "enabled for synthetic test main", conf: confTest, initial: []*packages.Package{{ID: "github.com/goplus/llgo/test.test", PkgPath: "github.com/goplus/llgo/test.test"}}, want: true},
+		{name: "enabled for external test variant", conf: confTest, initial: []*packages.Package{{ID: "github.com/goplus/llgo/test [github.com/goplus/llgo/test.test]", ForTest: "github.com/goplus/llgo/test"}}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shouldEnableFuncMetadata(tt.conf, tt.initial); got != tt.want {
+				t.Fatalf("shouldEnableFuncMetadata() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFilterTestPackages(t *testing.T) {
 	pkg := func(id string) *packages.Package {
 		return &packages.Package{ID: id}
