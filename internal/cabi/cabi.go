@@ -331,7 +331,7 @@ func (p *Transformer) transformFuncType(ctx llvm.Context, info *FuncInfo) (llvm.
 	case AttrWidthType:
 		returnType = info.Return.Type1
 	case AttrWidthType2:
-		returnType = llvm.StructType([]llvm.Type{info.Return.Type1, info.Return.Type2}, false)
+		returnType = ctx.StructType([]llvm.Type{info.Return.Type1, info.Return.Type2}, false)
 	default:
 		returnType = info.Return.Type1
 	}
@@ -443,7 +443,7 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 				replaceAllocaInstrs(fn.Param(i), ptr)
 			}
 		case AttrWidthType2:
-			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
+			typ := ctx.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
 			iptr := llvm.CreateAlloca(b, typ)
 			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 0, ""))
 			index++
@@ -577,7 +577,7 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 		case AttrWidthType2:
 			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
-			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false) // {i8,i64}
+			typ := ctx.StructType([]llvm.Type{ti.Type1, ti.Type2}, false) // {i8,i64}
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(typ, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type1, b.CreateStructGEP(typ, iptr, 0, ""), ""))
 			nparams = append(nparams, b.CreateLoad(ti.Type2, b.CreateStructGEP(typ, iptr, 1, ""), ""))
@@ -673,7 +673,7 @@ func (p *Transformer) transformCallbackFunc(m llvm.Module, fn llvm.Value) (wrap 
 	}
 
 	b := ctx.NewBuilder()
-	block := llvm.AddBasicBlock(wrapFunc, "entry")
+	block := ctx.AddBasicBlock(wrapFunc, "entry")
 	b.SetInsertPointAtEnd(block)
 
 	var nparams []llvm.Value
@@ -695,7 +695,7 @@ func (p *Transformer) transformCallbackFunc(m llvm.Module, fn llvm.Value) (wrap 
 			ptr := b.CreateBitCast(iptr, llvm.PointerType(ti.Type, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type, ptr, ""))
 		case AttrWidthType2:
-			typ := llvm.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
+			typ := ctx.StructType([]llvm.Type{ti.Type1, ti.Type2}, false)
 			iptr := llvm.CreateAlloca(b, typ)
 			b.CreateStore(params[index], b.CreateStructGEP(typ, iptr, 0, ""))
 			index++

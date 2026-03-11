@@ -506,7 +506,7 @@ func (b Builder) abiType(t types.Type) Expr {
 				b.abiUncommonMethods(t, mset),
 			}
 		}
-		g.impl.SetInitializer(prog.ctx.ConstStruct(fields, false))
+		g.impl.SetInitializer(llvm.ConstNamedStruct(g.impl.GlobalValueType(), fields))
 		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 		prog.abiSymbol[name] = g.Type

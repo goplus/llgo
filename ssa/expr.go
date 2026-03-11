@@ -113,6 +113,7 @@ func pyVarExpr(mod Expr, name string) Expr {
 // Zero returns a zero constant expression.
 func (p Program) Zero(t Type) Expr {
 	var ret llvm.Value
+	_, isNamed := t.raw.Type.(*types.Named)
 	switch u := t.raw.Type.Underlying().(type) {
 	case *types.Basic:
 		kind := u.Kind()
@@ -123,16 +124,16 @@ func (p Program) Zero(t Type) Expr {
 			ret = p.Zero(p.rtType("String")).impl
 		case kind == types.UnsafePointer:
 			ret = llvm.ConstPointerNull(p.tyVoidPtr())
-		case kind <= types.Float64:
+		case kind == types.Float64:
 			ret = llvm.ConstFloat(p.Float64().ll, 0)
 		case kind == types.Float32:
 			ret = llvm.ConstFloat(p.Float32().ll, 0)
 		case kind == types.Complex64:
 			v := llvm.ConstFloat(p.Float32().ll, 0)
-			ret = llvm.ConstStruct([]llvm.Value{v, v}, false)
+			ret = p.ctx.ConstStruct([]llvm.Value{v, v}, false)
 		case kind == types.Complex128:
 			v := llvm.ConstFloat(p.Float64().ll, 0)
-			ret = llvm.ConstStruct([]llvm.Value{v, v}, false)
+			ret = p.ctx.ConstStruct([]llvm.Value{v, v}, false)
 		default:
 			panic("todo")
 		}
@@ -144,7 +145,11 @@ func (p Program) Zero(t Type) Expr {
 		for i := 0; i < n; i++ {
 			flds[i] = p.Zero(p.rawType(u.Field(i).Type())).impl
 		}
-		ret = llvm.ConstStruct(flds, false)
+		if isNamed {
+			ret = llvm.ConstNamedStruct(t.ll, flds)
+		} else {
+			ret = p.ctx.ConstStruct(flds, false)
+		}
 	case *types.Slice:
 		ret = p.Zero(p.rtType("Slice")).impl
 	case *types.Array:
@@ -165,7 +170,7 @@ func (p Program) Zero(t Type) Expr {
 		for i := 0; i < n; i++ {
 			flds[i] = p.Zero(p.rawType(u.At(i).Type())).impl
 		}
-		ret = llvm.ConstStruct(flds, false)
+		ret = p.ctx.ConstStruct(flds, false)
 	default:
 		log.Panicln("todo:", u)
 	}
@@ -205,7 +210,7 @@ func (p Program) ComplexVal(v complex128, t Type) Expr {
 	flt := p.Field(t, 0)
 	re := p.FloatVal(real(v), flt)
 	im := p.FloatVal(imag(v), flt)
-	return Expr{llvm.ConstStruct([]llvm.Value{re.impl, im.impl}, false), t}
+	return Expr{p.ctx.ConstStruct([]llvm.Value{re.impl, im.impl}, false), t}
 }
 
 // Val returns a constant expression.
@@ -792,6 +797,14 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		default:
 			ret.impl = x.impl
 		}
+	} else if t.kind == vkStruct {
+		xt := types.Unalias(x.RawType()).Underlying().(*types.Struct)
+		agg := llvm.Undef(t.ll)
+		for i := 0; i < xt.NumFields(); i++ {
+			field := b.impl.CreateExtractValue(x.impl, i, "")
+			agg = b.impl.CreateInsertValue(agg, field, i, "")
+		}
+		ret.impl = agg
 	} else {
 		if x.impl.Type().String() == t.ll.String() {
 			ret.impl = x.impl

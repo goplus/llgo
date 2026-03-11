@@ -329,7 +329,7 @@ func (p Function) MakeBlocks(nblk int) []BasicBlock {
 
 func (p Function) addBlock(idx int) BasicBlock {
 	label := "_llgo_" + strconv.Itoa(idx)
-	blk := llvm.AddBasicBlock(p.impl, label)
+	blk := p.Prog.ctx.AddBasicBlock(p.impl, label)
 	ret := &aBasicBlock{blk, blk, p, idx}
 	p.blks = append(p.blks, ret)
 	return ret
