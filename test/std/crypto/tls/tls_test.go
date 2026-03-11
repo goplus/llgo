@@ -32,6 +32,9 @@ func newDeterministicReader(seed int64) io.Reader {
 }
 
 func generateTestCert(t *testing.T) ([]byte, []byte) {
+	if isLLGo {
+		t.Skip("Skipping generated certificate fixtures in llgo")
+	}
 	reader := newDeterministicReader(1)
 	priv, err := rsa.GenerateKey(reader, 1024)
 	if err != nil {

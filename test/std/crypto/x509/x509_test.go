@@ -241,6 +241,9 @@ func newDeterministicReader(seed int64) io.Reader {
 }
 
 func generateSelfSignedCert(t *testing.T) (*x509.Certificate, crypto.PrivateKey) {
+	if isLLGo {
+		t.Skip("Skipping generated self-signed certificate fixtures in llgo")
+	}
 	rng := newDeterministicReader(0x58766139)
 	priv, err := rsa.GenerateKey(rng, 1024)
 	if err != nil {
