@@ -9,7 +9,7 @@ import (
 )
 
 func TestConstructorsAndKinds(t *testing.T) {
-	t.Parallel()
+	maybeParallel(t)
 
 	if constant.Bool.String() != "Bool" || constant.Float.String() != "Float" {
 		t.Fatalf("Kind.String mismatch: Bool=%q Float=%q", constant.Bool.String(), constant.Float.String())
@@ -155,7 +155,7 @@ func TestConstructorsAndKinds(t *testing.T) {
 }
 
 func TestLiteralParsingAndValues(t *testing.T) {
-	t.Parallel()
+	maybeParallel(t)
 
 	hex := constant.MakeFromLiteral("0x2A", token.INT, 0)
 	if v, ok := constant.Int64Val(hex); !ok || v != 42 {
@@ -198,7 +198,7 @@ func TestLiteralParsingAndValues(t *testing.T) {
 }
 
 func TestArithmeticOperations(t *testing.T) {
-	t.Parallel()
+	maybeParallel(t)
 
 	forty := constant.MakeInt64(40)
 	two := constant.MakeInt64(2)
@@ -266,7 +266,7 @@ func TestArithmeticOperations(t *testing.T) {
 }
 
 func TestComplexAndConversions(t *testing.T) {
-	t.Parallel()
+	maybeParallel(t)
 
 	realPart := constant.MakeFloat64(7.5)
 	imagPart := constant.MakeImag(constant.MakeFloat64(2.25))
@@ -326,7 +326,7 @@ func TestComplexAndConversions(t *testing.T) {
 }
 
 func TestUnknownPropagation(t *testing.T) {
-	t.Parallel()
+	maybeParallel(t)
 
 	unknown := constant.MakeUnknown()
 	if unknown.Kind() != constant.Unknown {
