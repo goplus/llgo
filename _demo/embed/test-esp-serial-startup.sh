@@ -1,44 +1,22 @@
 #!/bin/bash
-# ESP serial targets smoke test (build + emulator run only).
+# ESP serial targets smoke test (emulator run only).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMP_DIR="$SCRIPT_DIR/.test_tmp_$$"
-TEST_GO="$TEMP_DIR/main.go"
 
-ESP32C3_PREFIX="esp32c3_smoke"
-ESP32_PREFIX="esp32_smoke"
+CASE_ROOT="$SCRIPT_DIR/testdata/esp32-serial"
 
 cleanup() {
     rm -rf "$TEMP_DIR"
 }
 trap cleanup EXIT
 
-build_target() {
-    local target="$1"
-    local prefix="$2"
-    local label="$3"
-
-    echo "==> Building for $label target ($target): ELF + BIN..."
-    llgo build -target="$target" -o "$prefix" -obin "$TEST_GO"
-
-    if [ ! -f "${prefix}.elf" ]; then
-        echo "✗ FAIL: Build failed, ${prefix}.elf not found"
-        exit 1
-    fi
-
-    if [ ! -f "${prefix}.bin" ]; then
-        echo "✗ FAIL: Build failed, ${prefix}.bin not found"
-        exit 1
-    fi
-
-    echo "✓ PASS: $label build artifacts generated"
-}
-
 run_emulator_smoke() {
     local target="$1"
     local label="$2"
-    local expected="$3"
+    local case_dir="$3"
+    local expected_file="$4"
 
     echo ""
     echo "=== Smoke: $label emulator output ==="
@@ -47,7 +25,7 @@ run_emulator_smoke() {
     run_out_file=$(mktemp "${TEMP_DIR}/run_${target}.XXXX.log")
 
     set +e
-    llgo run -a -target="$target" -emulator . 2>&1 | tee "$run_out_file"
+    llgo run -a -target="$target" -emulator "$case_dir" 2>&1 | tee "$run_out_file"
     local run_rc=${PIPESTATUS[0]}
     set -e
 
@@ -59,14 +37,33 @@ run_emulator_smoke() {
         echo "[WARN] $label emulator exited with code $run_rc; validating output tail instead"
     fi
 
-    local last_line
-    last_line=$(printf "%s\n" "$run_out" | tr -d '\r' | awk 'NF{line=$0} END{print line}')
+    local normalized_out
+    normalized_out=$(printf "%s\n" "$run_out" | tr -d '\r')
 
-    if [ "$last_line" = "$expected" ]; then
-        echo "✓ PASS: $label output ends with $expected"
+    local expected_tail
+    expected_tail=$(cat "$expected_file")
+
+    local normalized_expected
+    normalized_expected=$(printf "%s" "$expected_tail" | tr -d '\r')
+
+    local n
+    n=$(printf "%s\n" "$normalized_expected" | awk 'END{print NR}')
+    if [ -z "$n" ] || [ "$n" -le 0 ]; then
+        echo "✗ FAIL: invalid expected tail for $label"
+        exit 1
+    fi
+
+    local actual_tail
+    actual_tail=$(printf "%s\n" "$normalized_out" | awk 'NF{print}' | tail -n "$n")
+
+    if [ "$actual_tail" = "$normalized_expected" ]; then
+        echo "✓ PASS: $label output tail (last $n line(s)) matched"
     else
         echo "✗ FAIL: $label output mismatch"
-        echo "Last line: $last_line"
+        echo "Expected tail (last $n line(s)):"
+        printf "%s\n" "$normalized_expected"
+        echo "Actual tail:"
+        printf "%s\n" "$actual_tail"
         echo ""
         echo "Full output:"
         echo "$run_out"
@@ -74,31 +71,52 @@ run_emulator_smoke() {
     fi
 }
 
-mkdir -p "$TEMP_DIR"
+run_case() {
+    local case_dir="$1"
+    local case_name
+    case_name="$(basename "$case_dir")"
 
-echo "==> Creating minimal test program..."
-cat > "$TEST_GO" << 'EOGO'
-package main
+    local expected_file="$case_dir/expect.txt"
+    if [ ! -f "$case_dir/main.go" ]; then
+        echo "✗ FAIL: missing testcase source: $case_dir/main.go"
+        exit 1
+    fi
 
-import "github.com/goplus/lib/c"
-
-func main() {
-	c.Printf(c.Str("Hello World\n"))
+    run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
+    run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
 }
-EOGO
 
-cd "$TEMP_DIR"
+run_all_cases() {
+    local found=0
+    local case_dir
+    exec 3< <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
+    while IFS= read -r case_dir <&3; do
+        if [ -f "$case_dir/main.go" ] && [ -f "$case_dir/expect.txt" ]; then
+            found=1
+            run_case "$case_dir"
+        fi
+    done
+    exec 3<&-
+
+    if [ "$found" -eq 0 ]; then
+        echo "✗ FAIL: no testcase found under $CASE_ROOT (need main.go + expect.txt)"
+        exit 1
+    fi
+}
+
+mkdir -p "$TEMP_DIR"
+if [ ! -d "$CASE_ROOT" ]; then
+    echo "✗ FAIL: testcase root not found: $CASE_ROOT"
+    exit 1
+fi
+
+cd "$SCRIPT_DIR"
 
 echo ""
-echo "=== ESP Serial Smoke Tests: Build + Emulator Run ==="
-
-build_target "esp32c3" "$ESP32C3_PREFIX" "ESP32-C3"
-run_emulator_smoke "esp32c3-basic" "ESP32-C3" "Hello World"
-
-build_target "esp32" "$ESP32_PREFIX" "ESP32"
-run_emulator_smoke "esp32" "ESP32" "Hello World"
+echo "=== ESP Serial Smoke Tests: Emulator Run ==="
+run_all_cases
 
 echo ""
 echo "=== Smoke Tests Passed ==="
-echo "✓ ESP32-C3 build + emulator run passed"
-echo "✓ ESP32 build + emulator run passed"
+echo "✓ ESP32-C3 and ESP32 emulator smoke passed for all serial testcases"
+echo "✓ Cases are discovered only from testdata/esp32-serial (main.go + expect.txt)"

@@ -341,6 +341,14 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	var lowIsNil = low.IsNil()
 	if lowIsNil {
 		low = prog.IntVal(0, prog.Int())
+	} else {
+		low = b.fitIntSize(low)
+	}
+	if !high.IsNil() {
+		high = b.fitIntSize(high)
+	}
+	if !max.IsNil() {
+		max = b.fitIntSize(max)
 	}
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
