@@ -154,6 +154,14 @@ type context struct {
 	rewrites   map[string]string
 	embedMap   goembed.VarMap
 	embedInits []embedInit
+	funcMeta   []funcMetaEntry
+}
+
+type funcMetaEntry struct {
+	fn   llssa.Function
+	name string
+	file string
+	line int
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -356,6 +364,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
+	if p.shouldRegisterFuncMetadata(pos) {
+		p.funcMeta = append(p.funcMeta, funcMetaEntry{
+			fn:   fn,
+			name: name,
+			file: pos.Filename,
+			line: pos.Line,
+		})
+	}
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
@@ -405,10 +421,6 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				for i, block := range f.Blocks {
 					off[i] = p.compilePhis(b, block)
 				}
-			}
-			if p.shouldRegisterFuncMetadata(pos) {
-				b.SetBlock(fn.Block(0))
-				b.RegisterCurrentFuncMetadata(name, pos.Filename, pos.Line)
 			}
 			p.blkInfos = blocks.Infos(f.Blocks)
 			i := 0
@@ -460,6 +472,16 @@ func (p *context) shouldRegisterFuncMetadata(pos token.Position) bool {
 		}
 	}
 	return true
+}
+
+func (p *context) emitFuncMetadataInit(b llssa.Builder, ret llssa.BasicBlock) {
+	if len(p.funcMeta) == 0 {
+		return
+	}
+	b.SetBlockEx(ret, llssa.BeforeLast, false)
+	for _, meta := range p.funcMeta {
+		b.RegisterFuncMetadata(meta.fn, meta.name, meta.file, meta.line)
+	}
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
@@ -547,6 +569,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		} else if p.state != pkgHasPatch {
 			// TODO(xsw): confirm pyMod don't need to call AfterInit
 			p.initAfter = func() {
+				p.emitFuncMetadataInit(b, ret)
 				pkg.AfterInit(b, ret)
 			}
 		}
