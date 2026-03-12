@@ -299,6 +299,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	check(err)
+	if len(initial) == 0 {
+		return nil, fmt.Errorf("no packages matched pattern(s): %s", strings.Join(patterns, " "))
+	}
 	mode := conf.Mode
 	if mode == ModeTest {
 		initial, err = filterTestPackages(initial, conf.OutFile)

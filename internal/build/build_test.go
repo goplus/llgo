@@ -99,6 +99,32 @@ func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
 }
 
+func TestNoPackagesMatchedReturnsError(t *testing.T) {
+	tmp := t.TempDir()
+	oldwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getwd failed: %v", err)
+	}
+	defer func() { _ = os.Chdir(oldwd) }()
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("Chdir failed: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module example.com/empty\n\ngo 1.24\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(go.mod) failed: %v", err)
+	}
+
+	if err := os.Mkdir(filepath.Join(tmp, "missing"), 0o755); err != nil {
+		t.Fatalf("Mkdir failed: %v", err)
+	}
+	_, err = Do([]string{"./missing/..."}, &Config{Mode: ModeCmpTest})
+	if err == nil {
+		t.Fatal("expected no packages matched error, got nil")
+	}
+	if got := err.Error(); !strings.Contains(got, "no packages matched pattern(s): ./missing/...") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestFilterTestPackages(t *testing.T) {
 	pkg := func(id string) *packages.Package {
 		return &packages.Package{ID: id}
