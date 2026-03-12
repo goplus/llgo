@@ -205,7 +205,7 @@ SECTIONS
   /DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }
 }
 
-_globals_start = _data_start;
-_globals_end = _end;
+_globals_start = ALIGN(_data_start, 4);
+_globals_end = ALIGN(_end, 4);
 _heapStart = _end;
 _stack_top = __stack;

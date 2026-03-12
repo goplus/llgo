@@ -1,11 +1,8 @@
-//go:build !testGC
+//go:build baremetal
 
 package tinygogc
 
-import (
-	"unsafe"
-	_ "unsafe"
-)
+import "unsafe"
 
 // LLGoPackage instructs the LLGo linker to wrap C standard library memory allocation
 // functions (malloc, realloc, calloc) so they use the tinygogc allocator instead.

@@ -1,4 +1,4 @@
-//go:build baremetal || testGC
+//go:build baremetal
 
 /*
  * Copyright (c) 2018-2025 The TinyGo Authors. All rights reserved.
@@ -25,7 +25,6 @@
 //
 // Build tags:
 //   - baremetal: Enables this GC for baremetal targets
-//   - testGC: Enables testing mode with mock implementations
 //
 // Memory Layout:
 // The heap is divided into fixed-size blocks (32 bytes on 64-bit). Metadata is stored
@@ -450,7 +449,8 @@ func startMark(root uintptr) {
 
 			if gcStateOf(referencedBlock) == blockStateFree {
 				// The to-be-marked object doesn't actually exist.
-				// This is probably a false positive.
+				// This could either be a dangling pointer (oops!) but most likely
+				// just a false positive.
 				continue
 			}
 
