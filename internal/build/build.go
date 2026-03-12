@@ -210,6 +210,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if conf.Goarch == "" {
 		conf.Goarch = runtime.GOARCH
 	}
+	if err := validateHostCrossRequest(conf.Goos, conf.Goarch, conf.Target); err != nil {
+		return nil, err
+	}
 	if conf.AppExt == "" {
 		conf.AppExt = defaultAppExt(conf)
 	}
@@ -483,6 +486,16 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	return allPkgs, nil
+}
+
+func validateHostCrossRequest(goos, goarch, target string) error {
+	if target != "" {
+		return nil
+	}
+	if goos == runtime.GOOS && goarch == runtime.GOARCH {
+		return nil
+	}
+	return fmt.Errorf("cross-compilation via GOOS/GOARCH requires -target (host=%s/%s requested=%s/%s)", runtime.GOOS, runtime.GOARCH, goos, goarch)
 }
 
 func needLink(pkg *packages.Package, mode Mode) bool {

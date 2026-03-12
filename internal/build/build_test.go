@@ -99,6 +99,43 @@ func TestCmpTest(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeCmpTest})
 }
 
+func TestValidateHostCrossRequest(t *testing.T) {
+	t.Run("same host without target", func(t *testing.T) {
+		err := validateHostCrossRequest(runtime.GOOS, runtime.GOARCH, "")
+		if err != nil {
+			t.Fatalf("validateHostCrossRequest returned unexpected error: %v", err)
+		}
+	})
+
+	t.Run("cross request without target", func(t *testing.T) {
+		goos, goarch := runtime.GOOS, runtime.GOARCH
+		if goos == "linux" {
+			goos = "darwin"
+		} else {
+			goos = "linux"
+		}
+		if goarch == "amd64" {
+			goarch = "arm64"
+		} else {
+			goarch = "amd64"
+		}
+		err := validateHostCrossRequest(goos, goarch, "")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if !strings.Contains(err.Error(), "requires -target") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("cross request with target", func(t *testing.T) {
+		err := validateHostCrossRequest("linux", "arm64", "rp2040")
+		if err != nil {
+			t.Fatalf("validateHostCrossRequest returned unexpected error: %v", err)
+		}
+	})
+}
+
 func TestFilterTestPackages(t *testing.T) {
 	pkg := func(id string) *packages.Package {
 		return &packages.Package{ID: id}
