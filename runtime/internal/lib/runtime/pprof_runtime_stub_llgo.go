@@ -2,6 +2,12 @@
 
 package runtime
 
+import (
+	"unsafe"
+
+	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
+)
+
 // StackRecord is a minimal placeholder for runtime/pprof.
 type StackRecord struct {
 	Stack []uintptr
@@ -54,5 +60,16 @@ func NumGoroutine() int {
 func SetCPUProfileRate(hz int) {}
 
 func FuncForPC(pc uintptr) *Func {
-	return nil
+	var info clitedebug.Info
+	if clitedebug.Addrinfo(unsafe.Pointer(pc), &info) == 0 {
+		return nil
+	}
+	name := safeGoString(info.Sname, "")
+	if name == "" {
+		return nil
+	}
+	return &Func{
+		name:  name,
+		entry: uintptr(info.Saddr),
+	}
 }

@@ -177,10 +177,32 @@ func CallersFrames(callers []uintptr) *Frames {
 // A Func represents a Go function in the running binary.
 type Func struct {
 	opaque struct{} // unexported field to disallow conversions
+	name   string
+	entry  uintptr
 }
 
 func (f *Func) Name() string {
-	panic("todo")
+	if f == nil {
+		return ""
+	}
+	return f.name
+}
+
+// FileLine returns the file name and line number corresponding to pc.
+//
+// LLGo currently reconstructs function identity from dynamic symbol
+// information. Source file/line mapping is not yet available here, so this
+// method returns unknown location data while preserving API compatibility.
+func (f *Func) FileLine(pc uintptr) (file string, line int) {
+	return "", 0
+}
+
+// Entry returns the entry address of the function.
+func (f *Func) Entry() uintptr {
+	if f == nil {
+		return 0
+	}
+	return f.entry
 }
 
 // moduledata records information about the layout of the executable
