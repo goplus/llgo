@@ -495,7 +495,7 @@ func validateHostCrossRequest(goos, goarch, target string) error {
 	if goos == runtime.GOOS && goarch == runtime.GOARCH {
 		return nil
 	}
-	return fmt.Errorf("cross-compilation via GOOS/GOARCH requires -target (host=%s/%s requested=%s/%s)", runtime.GOOS, runtime.GOARCH, goos, goarch)
+	return fmt.Errorf("GOOS/GOARCH cross-compilation is not supported (host=%s/%s requested=%s/%s)", runtime.GOOS, runtime.GOARCH, goos, goarch)
 }
 
 func needLink(pkg *packages.Package, mode Mode) bool {

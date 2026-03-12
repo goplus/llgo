@@ -123,7 +123,7 @@ func TestValidateHostCrossRequest(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		if !strings.Contains(err.Error(), "requires -target") {
+		if !strings.Contains(err.Error(), "cross-compilation is not supported") {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
