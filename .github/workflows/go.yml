@@ -19,7 +19,7 @@ concurrency:
 jobs:
   test:
     continue-on-error: true
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       matrix:
         os:
@@ -76,6 +76,11 @@ jobs:
       - name: Test with coverage
         if: startsWith(matrix.os, 'macos')
         run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
+
+      - name: Test with embedded emulator env
+        env:
+          LLGO_EMBED_TESTS: "1"
+        run: go test -v -timeout 60m ./cl -run '^TestRunEmbedEmulator$'
 
       - name: Check std symbol coverage
         run: bash doc/_readme/scripts/check_std_cover.sh
