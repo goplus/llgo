@@ -298,7 +298,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		patterns = []string{"."}
 	}
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	mode := conf.Mode
 	if mode == ModeTest {
 		initial, err = filterTestPackages(initial, conf.OutFile)
@@ -326,7 +328,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	prog.SetRuntime(func() *types.Package {
 		return altPkgs[0].Types
@@ -372,14 +376,20 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	addGlobalString(conf, "runtime.defaultGOROOT="+runtime.GOROOT(), nil)
 	addGlobalString(conf, "runtime.buildVersion="+runtime.Version(), nil)
 	pkgs, err := buildSSAPkgs(ctx, initial, verbose)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 	depPkgs, err := buildSSAPkgs(ctx, altPkgs, verbose)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, depPkgs...)
 	allPkgs, err = buildAllPkgs(ctx, allPkgs, verbose)
-	check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	if mode == ModeGen {
 		for _, pkg := range allPkgs {
