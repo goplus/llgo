@@ -2,6 +2,8 @@ package flags
 
 import (
 	"flag"
+	"fmt"
+	"strconv"
 
 	"github.com/goplus/llgo/cmd/internal/compilerhash"
 	"github.com/goplus/llgo/internal/build"
@@ -43,6 +45,49 @@ var SizeLevel string
 var ForceRebuild bool
 var PrintCommands bool
 
+type optionalBool struct {
+	Specified bool
+	Value     bool
+}
+
+func (o *optionalBool) String() string {
+	if !o.Specified {
+		return "auto"
+	}
+	return strconv.FormatBool(o.Value)
+}
+
+func (o *optionalBool) SetValue(v string) error {
+	val, err := strconv.ParseBool(v)
+	if err != nil {
+		return fmt.Errorf("invalid bool value %q", v)
+	}
+	o.Specified = true
+	o.Value = val
+	return nil
+}
+
+func (o *optionalBool) Set(v string) error {
+	return o.SetValue(v)
+}
+
+func (o *optionalBool) IsBoolFlag() bool {
+	return true
+}
+
+var LTO optionalBool
+
+func AddLTOFlag(fs *flag.FlagSet) {
+	fs.Var(&LTO, "lto", "Enable LTO optimization (default: on for -target builds, off for non-target builds)")
+}
+
+func ResolveLTO(defaultValue bool) bool {
+	if LTO.Specified {
+		return LTO.Value
+	}
+	return defaultValue
+}
+
 const DefaultTestTimeout = "10m" // Matches Go's default test timeout
 
 func AddCommonFlags(fs *flag.FlagSet) {
@@ -52,6 +97,7 @@ func AddCommonFlags(fs *flag.FlagSet) {
 func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&ForceRebuild, "a", false, "Force rebuilding of packages that are already up-to-date")
 	fs.BoolVar(&PrintCommands, "x", false, "Print the commands")
+	AddLTOFlag(fs)
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	if buildenv.Dev {
@@ -181,6 +227,10 @@ func UpdateConfig(conf *build.Config) error {
 	conf.Port = Port
 	conf.BaudRate = BaudRate
 	conf.ForceRebuild = ForceRebuild
+	if LTO.Specified {
+		lto := LTO.Value
+		conf.LTO = &lto
+	}
 	if SizeReport || SizeFormat != "" || SizeLevel != "" {
 		conf.SizeReport = true
 		if SizeFormat != "" {
