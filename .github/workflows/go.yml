@@ -77,6 +77,11 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
 
+      - name: Test with embedded emulator env
+        env:
+          LLGO_EMBED_TESTS: "1"
+        run: go test ./...
+
       - name: Check std symbol coverage
         run: bash doc/_readme/scripts/check_std_cover.sh
 

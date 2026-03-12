@@ -36,11 +36,96 @@ func testCompile(t *testing.T, src, expected string) {
 	cltest.TestCompileEx(t, src, "foo.go", expected, false)
 }
 
-func requireESP32C3Emulator(t *testing.T) {
+func requireEmbedTest(t *testing.T) {
 	t.Helper()
 	if os.Getenv("LLGO_EMBED_TESTS") != "1" {
-		t.Skip("Skipping ESP32-C3 emulator tests; set LLGO_EMBED_TESTS=1 to run")
+		t.Skip("Skipping embedded emulator tests; set LLGO_EMBED_TESTS=1 to run")
 	}
+}
+
+type embedTestSuite struct {
+	name   string
+	relDir string
+}
+
+type embedTargetConfig struct {
+	target      string
+	ignoreByDir map[string][]string
+}
+
+var embedTestSuites = []embedTestSuite{
+	{name: "testgo", relDir: "./_testgo"},
+	{name: "testlibc", relDir: "./_testlibc"},
+	{name: "testrt", relDir: "./_testrt"},
+	{name: "testdata", relDir: "./_testdata"},
+}
+
+var embedTargetConfigs = []embedTargetConfig{
+	{
+		target: "esp32c3-basic",
+		ignoreByDir: map[string][]string{
+			"./_testgo": {
+				"./_testgo/abimethod",   // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/cgobasic",    // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgocfiles",   // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgodefer",    // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgofull",     // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgopython",   // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/chan",        // timeout: emulator did not auto-exit
+				"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
+				"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
+				"./_testgo/invoke",      // timeout: emulator did not auto-exit
+				"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
+				"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/reflectconv", // llgo panic: unsatisfied import internal/sync
+				"./_testgo/reflectfn",   // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/reflectmkfn", // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/rewrite",     // llgo panic: unsatisfied import internal/sync
+				"./_testgo/select",      // timeout: emulator did not auto-exit
+				"./_testgo/selects",     // timeout: emulator did not auto-exit
+				"./_testgo/sigsegv",     // unexpected output: got "0/main", expected recover nil-pointer message
+				"./_testgo/syncmap",     // llgo panic: unsatisfied import internal/runtime/sys
+			},
+			"./_testlibc": {
+				"./_testlibc/argv",     // timeout: emulator panic (Load access fault), no auto-exit
+				"./_testlibc/atomic",   // link error: ld.lld: error: undefined symbol: __atomic_store
+				"./_testlibc/complex",  // link error: ld.lld: error: undefined symbol: cabsf
+				"./_testlibc/demangle", // link error: ld.lld: error: unknown argument '-Wl,-search_paths_first'
+				"./_testlibc/once",     // fast fail: build constraints exclude all Go files (pthread/sync)
+				"./_testlibc/setjmp",   // link error: ld.lld: error: undefined symbol: stderr
+				"./_testlibc/sqlite",   // link error: ld.lld: error: unable to find library -lsqlite3
+			},
+			"./_testrt": {
+				"./_testrt/asmfull",     // compile/asm error: unrecognized instruction mnemonic
+				"./_testrt/fprintf",     // link error: ld.lld: error: undefined symbol: __stderrp
+				"./_testrt/hello",       // fast fail: build constraints exclude all Go files
+				"./_testrt/linkname",    // unexpected output: line order mismatch ("hello" appears first)
+				"./_testrt/makemap",     // link error: ld.lld: error: undefined symbol: __atomic_fetch_or_4
+				"./_testrt/strlen",      // fast fail: build constraints exclude all Go files
+				"./_testrt/struct",      // fast fail: build constraints exclude all Go files
+				"./_testrt/tpfunc",      // unexpected output: type size mismatch (got 8 4 4, expected 16 8 8)
+				"./_testrt/typalias",    // fast fail: build constraints exclude all Go files
+				"./_testrt/unreachable", // timeout: emulator panic (Instruction access fault), no auto-exit
+			},
+			"./_testdata": {
+				"./_testdata/debug", // llgo panic: unsatisfied import internal/runtime/sys
+			},
+		},
+	},
+}
+
+func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
+	t.Helper()
+	conf := build.NewDefaultConf(build.ModeRun)
+	conf.Target = target
+	conf.Emulator = true
+	conf.ForceRebuild = true
+	cltest.RunFromDir(t, "", relDir, ignore,
+		cltest.WithRunConfig(conf),
+		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
+	)
 }
 
 func TestFromTestgo(t *testing.T) {
@@ -98,104 +183,19 @@ Hello World!
 	}
 }
 
-func TestRunESP32C3Emulator(t *testing.T) {
-	requireESP32C3Emulator(t)
-	conf := build.NewDefaultConf(build.ModeRun)
-	conf.Target = "esp32c3-basic"
-	conf.Emulator = true
-	conf.ForceRebuild = true
-
-	ignore := []string{
-		"./_testgo/abimethod",   // llgo panic: unsatisfied import internal/runtime/sys
-		"./_testgo/cgobasic",    // fast fail: build constraints exclude all Go files (cgo)
-		"./_testgo/cgocfiles",   // fast fail: build constraints exclude all Go files (cgo)
-		"./_testgo/cgodefer",    // fast fail: build constraints exclude all Go files (cgo)
-		"./_testgo/cgofull",     // fast fail: build constraints exclude all Go files (cgo)
-		"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
-		"./_testgo/cgopython",   // fast fail: build constraints exclude all Go files (cgo)
-		"./_testgo/chan",        // timeout: emulator did not auto-exit
-		"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
-		"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
-		"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
-		"./_testgo/invoke",      // timeout: emulator did not auto-exit
-		"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
-		"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
-		"./_testgo/reflectconv", // llgo panic: unsatisfied import internal/sync
-		"./_testgo/reflectfn",   // llgo panic: unsatisfied import internal/runtime/sys
-		"./_testgo/reflectmkfn", // llgo panic: unsatisfied import internal/runtime/sys
-		"./_testgo/rewrite",     // llgo panic: unsatisfied import internal/sync
-		"./_testgo/select",      // timeout: emulator did not auto-exit
-		"./_testgo/selects",     // timeout: emulator did not auto-exit
-		"./_testgo/sigsegv",     // unexpected output: got "0/main", expected recover nil-pointer message
-		"./_testgo/syncmap",     // llgo panic: unsatisfied import internal/runtime/sys
+func TestRunEmbedEmulator(t *testing.T) {
+	requireEmbedTest(t)
+	for _, targetConf := range embedTargetConfigs {
+		targetConf := targetConf
+		t.Run(targetConf.target, func(t *testing.T) {
+			for _, suite := range embedTestSuites {
+				suite := suite
+				t.Run(suite.name, func(t *testing.T) {
+					runEmbedTargetSuite(t, targetConf.target, suite.relDir, targetConf.ignoreByDir[suite.relDir])
+				})
+			}
+		})
 	}
-	cltest.RunFromDir(t, "", "./_testgo", ignore,
-		cltest.WithRunConfig(conf),
-		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
-	)
-}
-
-func TestRunESP32C3Libc(t *testing.T) {
-	requireESP32C3Emulator(t)
-	conf := build.NewDefaultConf(build.ModeRun)
-	conf.Target = "esp32c3-basic"
-	conf.Emulator = true
-	conf.ForceRebuild = true
-
-	ignore := []string{
-		"./_testlibc/argv",     // timeout: emulator panic (Load access fault), no auto-exit
-		"./_testlibc/atomic",   // link error: ld.lld: error: undefined symbol: __atomic_store
-		"./_testlibc/complex",  // link error: ld.lld: error: undefined symbol: cabsf
-		"./_testlibc/demangle", // link error: ld.lld: error: unknown argument '-Wl,-search_paths_first'
-		"./_testlibc/once",     // fast fail: build constraints exclude all Go files (pthread/sync)
-		"./_testlibc/setjmp",   // link error: ld.lld: error: undefined symbol: stderr
-		"./_testlibc/sqlite",   // link error: ld.lld: error: unable to find library -lsqlite3
-	}
-	cltest.RunFromDir(t, "", "./_testlibc", ignore,
-		cltest.WithRunConfig(conf),
-		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
-	)
-}
-
-func TestRunESP32C3Testrt(t *testing.T) {
-	requireESP32C3Emulator(t)
-	conf := build.NewDefaultConf(build.ModeRun)
-	conf.Target = "esp32c3-basic"
-	conf.Emulator = true
-	conf.ForceRebuild = true
-
-	ignore := []string{
-		"./_testrt/asmfull",     // compile/asm error: unrecognized instruction mnemonic
-		"./_testrt/fprintf",     // link error: ld.lld: error: undefined symbol: __stderrp
-		"./_testrt/hello",       // fast fail: build constraints exclude all Go files
-		"./_testrt/linkname",    // unexpected output: line order mismatch ("hello" appears first)
-		"./_testrt/makemap",     // link error: ld.lld: error: undefined symbol: __atomic_fetch_or_4
-		"./_testrt/strlen",      // fast fail: build constraints exclude all Go files
-		"./_testrt/struct",      // fast fail: build constraints exclude all Go files
-		"./_testrt/tpfunc",      // unexpected output: type size mismatch (got 8 4 4, expected 16 8 8)
-		"./_testrt/typalias",    // fast fail: build constraints exclude all Go files
-		"./_testrt/unreachable", // timeout: emulator panic (Instruction access fault), no auto-exit
-	}
-	cltest.RunFromDir(t, "", "./_testrt", ignore,
-		cltest.WithRunConfig(conf),
-		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
-	)
-}
-
-func TestRunESP32C3Testdata(t *testing.T) {
-	requireESP32C3Emulator(t)
-	conf := build.NewDefaultConf(build.ModeRun)
-	conf.Target = "esp32c3-basic"
-	conf.Emulator = true
-	conf.ForceRebuild = true
-
-	ignore := []string{
-		"./_testdata/debug", // llgo panic: unsatisfied import internal/runtime/sys
-	}
-	cltest.RunFromDir(t, "", "./_testdata", ignore,
-		cltest.WithRunConfig(conf),
-		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
-	)
 }
 
 func TestFromTestpy(t *testing.T) {
