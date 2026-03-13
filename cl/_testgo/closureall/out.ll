@@ -49,24 +49,30 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testgo/closureall.S" %0, ptr %2, align 4
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/closureall.S", ptr %2, i32 0, i32 0
-  %4 = load i64, ptr %3, align 4
-  %5 = add i64 %4, %1
-  ret i64 %5
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %3, align 4
+  %6 = add i64 %5, %1
+  ret i64 %6
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/closureall.S", ptr %0, i32 0, i32 0
-  %3 = load i64, ptr %2, align 4
-  %4 = add i64 %3, %1
-  ret i64 %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load i64, ptr %2, align 4
+  %5 = add i64 %4, %1
+  ret i64 %5
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load %"github.com/goplus/llgo/cl/_testgo/closureall.S", ptr %0, align 4
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc"(%"github.com/goplus/llgo/cl/_testgo/closureall.S" %2, i64 %1)
-  ret i64 %3
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testgo/closureall.S", ptr %0, align 4
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc"(%"github.com/goplus/llgo/cl/_testgo/closureall.S" %3, i64 %1)
+  ret i64 %4
 }
 
 define i32 @"github.com/goplus/llgo/cl/_testgo/closureall.callCallback"(ptr %0, i32 %1) {
@@ -83,6 +89,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/closureall.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/closureall.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -171,30 +178,40 @@ _llgo_0:
   %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.makeWithFree$1", ptr undef }, ptr %2, 1
   %5 = alloca %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", align 8
   store { ptr, ptr } %4, ptr %5, align 8
-  %6 = load %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", ptr %5, align 8
-  ret %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %6
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", ptr %5, align 8
+  ret %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %7
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.makeWithFree$1"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = load i64, ptr %3, align 4
-  %5 = add i64 %1, %4
-  ret i64 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i64, ptr %4, align 4
+  %7 = add i64 %1, %6
+  ret i64 %7
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add$bound"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add"(ptr %3, i64 %1)
-  ret i64 %4
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  %5 = call i64 @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add"(ptr %4, i64 %1)
+  ret i64 %5
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
@@ -247,18 +264,20 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int}.Add$bound"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
-  %3 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %2, 0
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %3)
-  %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3, 0
-  %6 = getelementptr ptr, ptr %5, i64 3
-  %7 = load ptr, ptr %6, align 8
-  %8 = insertvalue { ptr, ptr } undef, ptr %7, 0
-  %9 = insertvalue { ptr, ptr } %8, ptr %4, 1
-  %10 = extractvalue { ptr, ptr } %9, 1
-  %11 = extractvalue { ptr, ptr } %9, 0
-  %12 = call i64 %11(ptr %10, i64 %1)
-  ret i64 %12
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { %"github.com/goplus/llgo/runtime/internal/runtime.iface" }, ptr %0, align 8
+  %4 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %3, 0
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %4)
+  %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, 0
+  %7 = getelementptr ptr, ptr %6, i64 3
+  %8 = load ptr, ptr %7, align 8
+  %9 = insertvalue { ptr, ptr } undef, ptr %8, 0
+  %10 = insertvalue { ptr, ptr } %9, ptr %5, 1
+  %11 = extractvalue { ptr, ptr } %10, 1
+  %12 = extractvalue { ptr, ptr } %10, 0
+  %13 = call i64 %12(ptr %11, i64 %1)
+  ret i64 %13
 }
 
 declare double @sqrt(double)

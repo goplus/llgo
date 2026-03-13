@@ -54,9 +54,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", ptr %1, i32 0, i32 0
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr %3)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr %4)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %5
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped.setName"(%"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
@@ -65,29 +67,36 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0, ptr %2, align 8
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", ptr %2, i32 0, i32 0
-  %4 = load ptr, ptr %3, align 8
-  call void @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  call void @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName"(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
   ret void
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", ptr %0, i32 0, i32 0
-  %2 = load ptr, ptr %1, align 8
-  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr %2)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr %3)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).setName"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
 _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", ptr %0, i32 0, i32 0
-  %3 = load ptr, ptr %2, align 8
-  call void @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  call void @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -126,6 +135,8 @@ _llgo_0:
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr)
 

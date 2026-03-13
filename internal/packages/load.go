@@ -167,6 +167,13 @@ type importerFunc func(path string) (*types.Package, error)
 
 func (f importerFunc) Import(path string) (*types.Package, error) { return f(path) }
 
+func typePkgPath(lpkg *loaderPackage) string {
+	if lpkg.ForTest != "" || strings.Contains(lpkg.ID, " [") {
+		return lpkg.ID
+	}
+	return lpkg.PkgPath
+}
+
 func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 	if lpkg.PkgPath == "unsafe" {
 		// Fill in the blanks to avoid surprises.
@@ -189,7 +196,7 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 		}
 		defer func() {
 			if !lpkg.IllTyped && lpkg.needtypes && lpkg.needsrc {
-				dedup.set(lpkg.PkgPath, &Cached{
+				dedup.set(lpkg.ID, &Cached{
 					Package:   lpkg.Package,
 					Types:     lpkg.Types,
 					TypesInfo: lpkg.TypesInfo,
@@ -197,16 +204,20 @@ func loadPackageEx(dedup Deduper, ld *loader, lpkg *loaderPackage) {
 				})
 			}
 		}()
+		typesPath := typePkgPath(lpkg)
 		if dedup.setpath != nil {
-			lpkg.PkgPath = dedup.setpath(lpkg.PkgPath, lpkg.Name)
+			typesPath = dedup.setpath(typesPath, lpkg.Name)
 		}
+		lpkg.Types = types.NewPackage(typesPath, lpkg.Name)
+		lpkg.Fset = ld.Fset
 	}
-
-	// Call NewPackage directly with explicit name.
-	// This avoids skew between golist and go/types when the files'
-	// package declarations are inconsistent.
-	lpkg.Types = types.NewPackage(lpkg.PkgPath, lpkg.Name)
-	lpkg.Fset = ld.Fset
+	if lpkg.Types == nil {
+		// Call NewPackage directly with explicit name.
+		// This avoids skew between golist and go/types when the files'
+		// package declarations are inconsistent.
+		lpkg.Types = types.NewPackage(lpkg.PkgPath, lpkg.Name)
+		lpkg.Fset = ld.Fset
+	}
 
 	// Start shutting down if the context is done and do not load
 	// source or export data files.

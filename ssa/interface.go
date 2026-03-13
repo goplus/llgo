@@ -86,7 +86,7 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
-	fn := b.Load(pfn)
+	fn := Expr{llvm.CreateLoad(b.impl, prog.VoidPtr().ll, pfn.impl), prog.VoidPtr()}
 	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
 	return ret
 }

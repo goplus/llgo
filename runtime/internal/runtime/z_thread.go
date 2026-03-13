@@ -17,12 +17,43 @@
 package runtime
 
 import (
+	"unsafe"
+
 	_ "unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
+	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
+type threadStart struct {
+	routine pthread.RoutineFunc
+	arg     c.Pointer
+}
+
+var liveGoroutines int32 = 1
+
+func NumGoroutine() int {
+	return int(atomic.Load(&liveGoroutines))
+}
+
+func finishGoroutine() {
+	atomic.Add(&liveGoroutines, -1)
+}
+
+func threadEntry(arg c.Pointer) c.Pointer {
+	start := (*threadStart)(unsafe.Pointer(arg))
+	ret := start.routine(start.arg)
+	finishGoroutine()
+	return ret
+}
+
 func CreateThread(th *pthread.Thread, attr *pthread.Attr, routine pthread.RoutineFunc, arg c.Pointer) c.Int {
-	return pthread.Create(th, attr, routine, arg)
+	atomic.Add(&liveGoroutines, 1)
+	start := &threadStart{routine: routine, arg: arg}
+	if rc := pthread.Create(th, attr, threadEntry, c.Pointer(unsafe.Pointer(start))); rc != 0 {
+		finishGoroutine()
+		return rc
+	}
+	return 0
 }

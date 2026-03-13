@@ -1078,6 +1078,12 @@ _llgo_0:
 
 func TestUnOp(t *testing.T) {
 	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
 	pkg := prog.NewPackage("bar", "foo/bar")
 	params := types.NewTuple(
 		types.NewVar(0, nil, "p", types.NewPointer(types.Typ[types.Int])),
@@ -1096,11 +1102,15 @@ source_filename = "foo/bar"
 
 define i64 @fn(ptr %0) {
 _llgo_0:
-  %1 = load i64, ptr %0, align 4
-  %2 = xor i64 %1, 1
-  store i64 %2, ptr %0, align 4
-  ret i64 %2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load i64, ptr %0, align 4
+  %3 = xor i64 %2, 1
+  store i64 %3, ptr %0, align 4
+  ret i64 %3
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 `)
 }
 

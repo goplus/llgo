@@ -326,8 +326,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 
 	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
-	cfg.Dir = env.LLGoRuntimeDir()
-	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+	altCfg := *cfg
+	altCfg.Tests = false
+	altCfg.Mode &^= packages.NeedForTest
+	altCfg.Dir = env.LLGoRuntimeDir()
+	altPkgs, err := packages.LoadEx(dedup, sizes, &altCfg, altPkgPaths...)
 	if err != nil {
 		return nil, err
 	}
@@ -743,6 +746,7 @@ func appendExternalLinkArgs(ctx *context, aPkg *aPackage, spec string) {
 	expdArgs := make([]string, 0, len(altParts))
 	for _, alt := range altParts {
 		alt = strings.TrimSpace(alt)
+		alt = strings.TrimSuffix(alt, ";")
 		if strings.ContainsRune(alt, '$') {
 			expdArgs = append(expdArgs, xenv.ExpandEnvToArgs(alt)...)
 			atomic.AddInt32(&ctx.nLibdir, 1)

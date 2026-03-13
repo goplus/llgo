@@ -12,12 +12,14 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/max"
 
 define void @"github.com/goplus/llgo/cl/_testpy/max.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
   call void @"github.com/goplus/lib/py/std.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @0, ptr @__llgo_py.builtins.iter, ptr @1, ptr @__llgo_py.builtins.max, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
   br label %_llgo_2
@@ -32,8 +34,10 @@ _llgo_0:
   %1 = call ptr @PyFloat_FromDouble(double 9.000000e+00)
   %2 = call ptr @PyFloat_FromDouble(double 2.300000e+01)
   %3 = call ptr @PyFloat_FromDouble(double 1.000000e+02)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %4 = load ptr, ptr @__llgo_py.builtins.max, align 8
   %5 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %4, ptr %0, ptr %1, ptr %2, ptr %3, ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %6 = load ptr, ptr @__llgo_py.builtins.print, align 8
   %7 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %6, ptr %5, ptr null)
   %8 = call ptr @PyList_New(i64 4)
@@ -45,10 +49,13 @@ _llgo_0:
   %14 = call i32 @PyList_SetItem(ptr %8, i64 2, ptr %13)
   %15 = call ptr @PyFloat_FromDouble(double 1.000000e+02)
   %16 = call i32 @PyList_SetItem(ptr %8, i64 3, ptr %15)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %17 = load ptr, ptr @__llgo_py.builtins.iter, align 8
   %18 = call ptr @PyObject_CallOneArg(ptr %17, ptr %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %19 = load ptr, ptr @__llgo_py.builtins.max, align 8
   %20 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %19, ptr %18, ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %21 = load ptr, ptr @__llgo_py.builtins.print, align 8
   %22 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %21, ptr %20, ptr null)
   %23 = call ptr @PyTuple_New(i64 3)
@@ -58,14 +65,19 @@ _llgo_0:
   %27 = call i32 @PyTuple_SetItem(ptr %23, i64 1, ptr %26)
   %28 = call ptr @PyFloat_FromDouble(double 3.000000e+00)
   %29 = call i32 @PyTuple_SetItem(ptr %23, i64 2, ptr %28)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %30 = load ptr, ptr @__llgo_py.builtins.iter, align 8
   %31 = call ptr @PyObject_CallOneArg(ptr %30, ptr %23)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %32 = load ptr, ptr @__llgo_py.builtins.max, align 8
   %33 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %32, ptr %31, ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %34 = load ptr, ptr @__llgo_py.builtins.print, align 8
   %35 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %34, ptr %33, ptr null)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/lib/py/std.init"()
 

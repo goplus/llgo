@@ -35,6 +35,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/closureiface"
 
 define void @"github.com/goplus/llgo/cl/_testrt/closureiface.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/closureiface.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -95,12 +96,18 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closureiface.main$1"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = load i64, ptr %3, align 4
-  %5 = add i64 %4, %1
-  ret i64 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i64, ptr %4, align 4
+  %7 = add i64 %6, %1
+  ret i64 %7
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

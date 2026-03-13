@@ -11,6 +11,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/closure"
 
 define void @"github.com/goplus/llgo/cl/_testgo/closure.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/closure.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -32,11 +33,13 @@ _llgo_0:
   %3 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closure.main$2", ptr undef }, ptr %1, 1
   %4 = alloca %"github.com/goplus/llgo/cl/_testgo/closure.T", align 8
   store { ptr, ptr } %3, ptr %4, align 8
-  %5 = load %"github.com/goplus/llgo/cl/_testgo/closure.T", ptr %4, align 8
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load %"github.com/goplus/llgo/cl/_testgo/closure.T", ptr %4, align 8
   call void @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/closure.main$1"(ptr null, i64 100)
-  %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 1
-  %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %5, 0
-  call void %7(ptr %6, i64 200)
+  %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %6, 1
+  %8 = extractvalue %"github.com/goplus/llgo/cl/_testgo/closure.T" %6, 0
+  call void %8(ptr %7, i64 200)
   ret void
 }
 
@@ -51,17 +54,23 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/closure.main$2"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %3, align 8
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %4, align 8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

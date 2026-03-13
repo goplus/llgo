@@ -11,22 +11,30 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/typerecur"
 define %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" @"github.com/goplus/llgo/cl/_testgo/typerecur.countState"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 0
-  %2 = load i64, ptr %1, align 4
-  %3 = add i64 %2, 1
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 0
-  store i64 %3, ptr %4, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %1, align 4
+  %4 = add i64 %3, 1
   %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 0
-  %6 = load i64, ptr %5, align 4
+  store i64 %4, ptr %5, align 4
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 0
+  %7 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = load i64, ptr %6, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 6 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 0
-  %8 = load i64, ptr %7, align 4
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 1
-  %10 = load i64, ptr %9, align 4
-  %11 = icmp sge i64 %8, %10
-  br i1 %11, label %_llgo_1, label %_llgo_2
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 0
+  %10 = icmp eq ptr %9, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = load i64, ptr %9, align 4
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 1
+  %13 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load i64, ptr %12, align 4
+  %15 = icmp sge i64 %11, %14
+  br i1 %15, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" zeroinitializer
@@ -37,6 +45,7 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/typerecur.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/typerecur.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -59,24 +68,30 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_3
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  %4 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %3, align 8
-  %5 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 1
-  %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %4, 0
-  %7 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %6(ptr %5, ptr %0)
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %7, ptr %8, align 8
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %3, align 8
+  %6 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %5, 1
+  %7 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %5, 0
+  %8 = call %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %7(ptr %6, ptr %0)
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
+  store %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %8, ptr %9, align 8
   br label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
-  %10 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %9, align 8
-  %11 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %10, 0
-  %12 = icmp ne ptr %11, null
-  br i1 %12, label %_llgo_1, label %_llgo_2
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/typerecur.counter", ptr %0, i32 0, i32 2
+  %11 = icmp eq ptr %10, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = load %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn", ptr %10, align 8
+  %13 = extractvalue %"github.com/goplus/llgo/cl/_testgo/typerecur.stateFn" %12, 0
+  %14 = icmp ne ptr %13, null
+  br i1 %14, label %_llgo_1, label %_llgo_2
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 

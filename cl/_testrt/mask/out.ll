@@ -5,6 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/mask"
 
 define void @"github.com/goplus/llgo/cl/_testrt/mask.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/mask.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -131,6 +132,8 @@ _llgo_0:
   %6 = select i1 %4, i8 0, i8 %5
   ret i8 %6
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

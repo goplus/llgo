@@ -153,6 +153,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/makemap"
 
 define void @"github.com/goplus/llgo/cl/_testrt/makemap.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/makemap.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -194,162 +195,172 @@ _llgo_0:
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 1, ptr %7, align 4
   %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_int]_llgo_string", ptr %0, ptr %7)
-  %9 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %8, align 8
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  store i64 2, ptr %10, align 4
-  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_int]_llgo_string", ptr %0, ptr %10)
-  %12 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %11, align 8
-  %13 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.MapLen"(ptr %0)
+  %9 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %8, align 8
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store i64 2, ptr %11, align 4
+  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_int]_llgo_string", ptr %0, ptr %11)
+  %13 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %12, align 8
+  %15 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.MapLen"(ptr %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_int]_llgo_string", ptr %0)
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_int]_llgo_string", ptr %0)
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %15 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %14)
-  %16 = extractvalue { i1, ptr, ptr } %15, 0
-  br i1 %16, label %_llgo_11, label %_llgo_12
+  %17 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %16)
+  %18 = extractvalue { i1, ptr, ptr } %17, 0
+  br i1 %18, label %_llgo_11, label %_llgo_12
 
 _llgo_2:                                          ; preds = %_llgo_13
-  %17 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %68, 1
-  %18 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %68, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %17)
+  %19 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %73, 1
+  %20 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %73, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %19)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @19, i64 1 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %18)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %20)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_13
-  %19 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.MapLen"(ptr %0)
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_string]_llgo_int", i64 %19)
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_int]_llgo_string", ptr %0)
+  %21 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.MapLen"(ptr %0)
+  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_string]_llgo_int", i64 %21)
+  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_int]_llgo_string", ptr %0)
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_5, %_llgo_3
-  %22 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %21)
-  %23 = extractvalue { i1, ptr, ptr } %22, 0
-  br i1 %23, label %_llgo_14, label %_llgo_15
+  %24 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %23)
+  %25 = extractvalue { i1, ptr, ptr } %24, 0
+  br i1 %25, label %_llgo_14, label %_llgo_15
 
 _llgo_5:                                          ; preds = %_llgo_16
-  %24 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %76, 1
-  %25 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %76, 2
-  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %25, ptr %26, align 8
-  %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_string]_llgo_int", ptr %20, ptr %26)
-  store i64 %24, ptr %27, align 4
+  %26 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %81, 1
+  %27 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %81, 2
+  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %27, ptr %28, align 8
+  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_string]_llgo_int", ptr %22, ptr %28)
+  store i64 %26, ptr %29, align 4
   br label %_llgo_4
 
 _llgo_6:                                          ; preds = %_llgo_16
-  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 }, ptr %28, align 8
-  %29 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr @"map[_llgo_string]_llgo_int", ptr %20, ptr %28)
-  %30 = extractvalue { ptr, i1 } %29, 0
-  %31 = load i64, ptr %30, align 4
-  %32 = extractvalue { ptr, i1 } %29, 1
-  %33 = insertvalue { i64, i1 } undef, i64 %31, 0
-  %34 = insertvalue { i64, i1 } %33, i1 %32, 1
-  %35 = extractvalue { i64, i1 } %34, 0
-  %36 = extractvalue { i64, i1 } %34, 1
+  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 }, ptr %30, align 8
+  %31 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr @"map[_llgo_string]_llgo_int", ptr %22, ptr %30)
+  %32 = extractvalue { ptr, i1 } %31, 0
+  %33 = icmp eq ptr %32, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %33)
+  %34 = load i64, ptr %32, align 4
+  %35 = extractvalue { ptr, i1 } %31, 1
+  %36 = insertvalue { i64, i1 } undef, i64 %34, 0
+  %37 = insertvalue { i64, i1 } %36, i1 %35, 1
+  %38 = extractvalue { i64, i1 } %37, 0
+  %39 = extractvalue { i64, i1 } %37, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %35)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %38)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %36)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %39)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %37 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 2 }, ptr %37, align 8
-  %38 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr @"map[_llgo_string]_llgo_int", ptr %20, ptr %37)
-  %39 = extractvalue { ptr, i1 } %38, 0
-  %40 = load i64, ptr %39, align 4
-  %41 = extractvalue { ptr, i1 } %38, 1
-  %42 = insertvalue { i64, i1 } undef, i64 %40, 0
-  %43 = insertvalue { i64, i1 } %42, i1 %41, 1
-  %44 = extractvalue { i64, i1 } %43, 0
-  %45 = extractvalue { i64, i1 } %43, 1
+  %40 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 2 }, ptr %40, align 8
+  %41 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr @"map[_llgo_string]_llgo_int", ptr %22, ptr %40)
+  %42 = extractvalue { ptr, i1 } %41, 0
+  %43 = icmp eq ptr %42, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %43)
+  %44 = load i64, ptr %42, align 4
+  %45 = extractvalue { ptr, i1 } %41, 1
+  %46 = insertvalue { i64, i1 } undef, i64 %44, 0
+  %47 = insertvalue { i64, i1 } %46, i1 %45, 1
+  %48 = extractvalue { i64, i1 } %47, 0
+  %49 = extractvalue { i64, i1 } %47, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 2 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %44)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %48)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %45)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %49)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %46 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 }, ptr %46, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.MapDelete"(ptr @"map[_llgo_string]_llgo_int", ptr %20, ptr %46)
-  %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 }, ptr %47, align 8
-  %48 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr @"map[_llgo_string]_llgo_int", ptr %20, ptr %47)
-  %49 = extractvalue { ptr, i1 } %48, 0
-  %50 = load i64, ptr %49, align 4
-  %51 = extractvalue { ptr, i1 } %48, 1
-  %52 = insertvalue { i64, i1 } undef, i64 %50, 0
-  %53 = insertvalue { i64, i1 } %52, i1 %51, 1
-  %54 = extractvalue { i64, i1 } %53, 0
-  %55 = extractvalue { i64, i1 } %53, 1
-  br i1 %55, label %_llgo_7, label %_llgo_8
+  %50 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 }, ptr %50, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.MapDelete"(ptr @"map[_llgo_string]_llgo_int", ptr %22, ptr %50)
+  %51 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @18, i64 4 }, ptr %51, align 8
+  %52 = call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"(ptr @"map[_llgo_string]_llgo_int", ptr %22, ptr %51)
+  %53 = extractvalue { ptr, i1 } %52, 0
+  %54 = icmp eq ptr %53, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %54)
+  %55 = load i64, ptr %53, align 4
+  %56 = extractvalue { ptr, i1 } %52, 1
+  %57 = insertvalue { i64, i1 } undef, i64 %55, 0
+  %58 = insertvalue { i64, i1 } %57, i1 %56, 1
+  %59 = extractvalue { i64, i1 } %58, 0
+  %60 = extractvalue { i64, i1 } %58, 1
+  br i1 %60, label %_llgo_7, label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_6
-  %56 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 7 }, ptr %56, align 8
-  %57 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %56, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %57)
+  %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 7 }, ptr %61, align 8
+  %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %61, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %62)
   unreachable
 
 _llgo_8:                                          ; preds = %_llgo_6
-  %58 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.MapLen"(ptr %20)
-  %59 = icmp ne i64 %58, 2
-  br i1 %59, label %_llgo_9, label %_llgo_10
+  %63 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.MapLen"(ptr %22)
+  %64 = icmp ne i64 %63, 2
+  br i1 %64, label %_llgo_9, label %_llgo_10
 
 _llgo_9:                                          ; preds = %_llgo_8
-  %60 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 7 }, ptr %60, align 8
-  %61 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %60, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %61)
+  %65 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 7 }, ptr %65, align 8
+  %66 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %65, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %66)
   unreachable
 
 _llgo_10:                                         ; preds = %_llgo_8
   ret void
 
 _llgo_11:                                         ; preds = %_llgo_1
-  %62 = extractvalue { i1, ptr, ptr } %15, 1
-  %63 = extractvalue { i1, ptr, ptr } %15, 2
-  %64 = load i64, ptr %62, align 4
-  %65 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %63, align 8
-  %66 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef }, i64 %64, 1
-  %67 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %66, %"github.com/goplus/llgo/runtime/internal/runtime.String" %65, 2
+  %67 = extractvalue { i1, ptr, ptr } %17, 1
+  %68 = extractvalue { i1, ptr, ptr } %17, 2
+  %69 = load i64, ptr %67, align 4
+  %70 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %68, align 8
+  %71 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef }, i64 %69, 1
+  %72 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %71, %"github.com/goplus/llgo/runtime/internal/runtime.String" %70, 2
   br label %_llgo_13
 
 _llgo_12:                                         ; preds = %_llgo_1
   br label %_llgo_13
 
 _llgo_13:                                         ; preds = %_llgo_12, %_llgo_11
-  %68 = phi { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } [ %67, %_llgo_11 ], [ zeroinitializer, %_llgo_12 ]
-  %69 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %68, 0
-  br i1 %69, label %_llgo_2, label %_llgo_3
+  %73 = phi { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } [ %72, %_llgo_11 ], [ zeroinitializer, %_llgo_12 ]
+  %74 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %73, 0
+  br i1 %74, label %_llgo_2, label %_llgo_3
 
 _llgo_14:                                         ; preds = %_llgo_4
-  %70 = extractvalue { i1, ptr, ptr } %22, 1
-  %71 = extractvalue { i1, ptr, ptr } %22, 2
-  %72 = load i64, ptr %70, align 4
-  %73 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %71, align 8
-  %74 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef }, i64 %72, 1
-  %75 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %74, %"github.com/goplus/llgo/runtime/internal/runtime.String" %73, 2
+  %75 = extractvalue { i1, ptr, ptr } %24, 1
+  %76 = extractvalue { i1, ptr, ptr } %24, 2
+  %77 = load i64, ptr %75, align 4
+  %78 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %76, align 8
+  %79 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef }, i64 %77, 1
+  %80 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %79, %"github.com/goplus/llgo/runtime/internal/runtime.String" %78, 2
   br label %_llgo_16
 
 _llgo_15:                                         ; preds = %_llgo_4
   br label %_llgo_16
 
 _llgo_16:                                         ; preds = %_llgo_15, %_llgo_14
-  %76 = phi { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } [ %75, %_llgo_14 ], [ zeroinitializer, %_llgo_15 ]
-  %77 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %76, 0
-  br i1 %77, label %_llgo_5, label %_llgo_6
+  %81 = phi { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } [ %80, %_llgo_14 ], [ zeroinitializer, %_llgo_15 ]
+  %82 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %81, 0
+  br i1 %82, label %_llgo_5, label %_llgo_6
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/makemap.make2"() {
@@ -380,99 +391,107 @@ _llgo_0:
   call void @llvm.memset(ptr %6, i8 0, i64 8, i1 false)
   %7 = getelementptr inbounds i64, ptr %6, i64 0
   store i64 1, ptr %7, align 4
-  %8 = load [1 x i64], ptr %6, align 4
-  %9 = extractvalue [1 x i64] %8, 0
-  %10 = inttoptr i64 %9 to ptr
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %10, 1
-  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %11, ptr %12, align 8
-  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %12)
-  store i64 100, ptr %13, align 4
-  %14 = alloca [1 x i64], align 8
-  call void @llvm.memset(ptr %14, i8 0, i64 8, i1 false)
-  %15 = getelementptr inbounds i64, ptr %14, i64 0
-  store i64 2, ptr %15, align 4
-  %16 = load [1 x i64], ptr %14, align 4
-  %17 = extractvalue [1 x i64] %16, 0
-  %18 = inttoptr i64 %17 to ptr
-  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %18, 1
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %19, ptr %20, align 8
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %20)
-  store i64 200, ptr %21, align 4
-  %22 = alloca [1 x i64], align 8
-  call void @llvm.memset(ptr %22, i8 0, i64 8, i1 false)
-  %23 = getelementptr inbounds i64, ptr %22, i64 0
-  store i64 3, ptr %23, align 4
-  %24 = load [1 x i64], ptr %22, align 4
-  %25 = extractvalue [1 x i64] %24, 0
-  %26 = inttoptr i64 %25 to ptr
-  %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %26, 1
-  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %27, ptr %28, align 8
-  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %28)
-  store i64 300, ptr %29, align 4
-  %30 = alloca [1 x i64], align 8
-  call void @llvm.memset(ptr %30, i8 0, i64 8, i1 false)
-  %31 = getelementptr inbounds i64, ptr %30, i64 0
-  store i64 2, ptr %31, align 4
-  %32 = load [1 x i64], ptr %30, align 4
-  %33 = extractvalue [1 x i64] %32, 0
-  %34 = inttoptr i64 %33 to ptr
-  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %34, 1
-  %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %35, ptr %36, align 8
-  %37 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %36)
-  store i64 -200, ptr %37, align 4
-  %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %5)
+  %8 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = load [1 x i64], ptr %6, align 4
+  %10 = extractvalue [1 x i64] %9, 0
+  %11 = inttoptr i64 %10 to ptr
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %11, 1
+  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %13, align 8
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %13)
+  store i64 100, ptr %14, align 4
+  %15 = alloca [1 x i64], align 8
+  call void @llvm.memset(ptr %15, i8 0, i64 8, i1 false)
+  %16 = getelementptr inbounds i64, ptr %15, i64 0
+  store i64 2, ptr %16, align 4
+  %17 = icmp eq ptr %15, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %17)
+  %18 = load [1 x i64], ptr %15, align 4
+  %19 = extractvalue [1 x i64] %18, 0
+  %20 = inttoptr i64 %19 to ptr
+  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %20, 1
+  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %21, ptr %22, align 8
+  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %22)
+  store i64 200, ptr %23, align 4
+  %24 = alloca [1 x i64], align 8
+  call void @llvm.memset(ptr %24, i8 0, i64 8, i1 false)
+  %25 = getelementptr inbounds i64, ptr %24, i64 0
+  store i64 3, ptr %25, align 4
+  %26 = icmp eq ptr %24, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %26)
+  %27 = load [1 x i64], ptr %24, align 4
+  %28 = extractvalue [1 x i64] %27, 0
+  %29 = inttoptr i64 %28 to ptr
+  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %29, 1
+  %31 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %30, ptr %31, align 8
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %31)
+  store i64 300, ptr %32, align 4
+  %33 = alloca [1 x i64], align 8
+  call void @llvm.memset(ptr %33, i8 0, i64 8, i1 false)
+  %34 = getelementptr inbounds i64, ptr %33, i64 0
+  store i64 2, ptr %34, align 4
+  %35 = icmp eq ptr %33, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %35)
+  %36 = load [1 x i64], ptr %33, align 4
+  %37 = extractvalue [1 x i64] %36, 0
+  %38 = inttoptr i64 %37 to ptr
+  %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %38, 1
+  %40 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %39, ptr %40, align 8
+  %41 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %40)
+  store i64 -200, ptr %41, align 4
+  %42 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %5)
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_7, %_llgo_0
-  %39 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %38)
-  %40 = extractvalue { i1, ptr, ptr } %39, 0
-  br i1 %40, label %_llgo_4, label %_llgo_5
+  %43 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %42)
+  %44 = extractvalue { i1, ptr, ptr } %43, 0
+  br i1 %44, label %_llgo_4, label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_6
-  %41 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 1
-  %42 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 2
-  %43 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, 0
-  %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1"
-  br i1 %44, label %_llgo_7, label %_llgo_8
+  %45 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %55, 1
+  %46 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %55, 2
+  %47 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %45, 0
+  %48 = icmp eq ptr %47, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1"
+  br i1 %48, label %_llgo_7, label %_llgo_8
 
 _llgo_3:                                          ; preds = %_llgo_6
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_1
-  %45 = extractvalue { i1, ptr, ptr } %39, 1
-  %46 = extractvalue { i1, ptr, ptr } %39, 2
-  %47 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %45, align 8
-  %48 = load i64, ptr %46, align 4
-  %49 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } { i1 true, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, i64 undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %47, 1
-  %50 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %49, i64 %48, 2
+  %49 = extractvalue { i1, ptr, ptr } %43, 1
+  %50 = extractvalue { i1, ptr, ptr } %43, 2
+  %51 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %49, align 8
+  %52 = load i64, ptr %50, align 4
+  %53 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } { i1 true, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, i64 undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %51, 1
+  %54 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %53, i64 %52, 2
   br label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_1
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %51 = phi { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } [ %50, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
-  %52 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 0
-  br i1 %52, label %_llgo_2, label %_llgo_3
+  %55 = phi { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } [ %54, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
+  %56 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %55, 0
+  br i1 %56, label %_llgo_2, label %_llgo_3
 
 _llgo_7:                                          ; preds = %_llgo_2
-  %53 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, 1
-  %54 = ptrtoint ptr %53 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %54)
+  %57 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %45, 1
+  %58 = ptrtoint ptr %57 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %58)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %42)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %46)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_8:                                          ; preds = %_llgo_2
-  %55 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 81 }, ptr %55, align 8
-  %56 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %55, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %56)
+  %59 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @32, i64 81 }, ptr %59, align 8
+  %60 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %59, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %60)
   unreachable
 }
 
@@ -485,172 +504,59 @@ _llgo_0:
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %1, i32 0, i32 1
   store i8 1, ptr %2, align 1
   store i8 2, ptr %3, align 1
-  %4 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %0, align 1
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
-  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %4, ptr %5, align 1
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %5, 1
-  %7 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
-  call void @llvm.memset(ptr %7, i8 0, i64 2, i1 false)
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %7, i64 0
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %8, i32 0, i32 0
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %8, i32 0, i32 1
-  store i8 1, ptr %9, align 1
-  store i8 2, ptr %10, align 1
-  %11 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %7, align 1
-  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
-  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %11, ptr %12, align 1
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %12, 1
-  %14 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %6, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %13)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %14)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
-  %16 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
-  call void @llvm.memset(ptr %16, i8 0, i64 2, i1 false)
-  %17 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %16, i64 0
-  %18 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %17, i32 0, i32 0
-  %19 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %17, i32 0, i32 1
-  store i8 1, ptr %18, align 1
-  store i8 2, ptr %19, align 1
-  %20 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %16, align 1
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
-  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %20, ptr %21, align 1
-  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %21, 1
-  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, ptr %23, align 8
-  %24 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %15, ptr %23)
-  store i64 100, ptr %24, align 4
-  %25 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
-  call void @llvm.memset(ptr %25, i8 0, i64 2, i1 false)
-  %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %25, i64 0
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %26, i32 0, i32 0
-  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %26, i32 0, i32 1
-  store i8 3, ptr %27, align 1
-  store i8 4, ptr %28, align 1
-  %29 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %25, align 1
-  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
-  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %29, ptr %30, align 1
-  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %30, 1
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %31, ptr %32, align 8
-  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %15, ptr %32)
-  store i64 200, ptr %33, align 4
-  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %15)
-  br label %_llgo_1
-
-_llgo_1:                                          ; preds = %_llgo_7, %_llgo_0
-  %35 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %34)
-  %36 = extractvalue { i1, ptr, ptr } %35, 0
-  br i1 %36, label %_llgo_4, label %_llgo_5
-
-_llgo_2:                                          ; preds = %_llgo_6
-  %37 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %47, 1
-  %38 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %47, 2
-  %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %37, 0
-  %40 = icmp eq ptr %39, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K"
-  br i1 %40, label %_llgo_7, label %_llgo_8
-
-_llgo_3:                                          ; preds = %_llgo_6
-  ret void
-
-_llgo_4:                                          ; preds = %_llgo_1
-  %41 = extractvalue { i1, ptr, ptr } %35, 1
-  %42 = extractvalue { i1, ptr, ptr } %35, 2
-  %43 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %41, align 8
-  %44 = load i64, ptr %42, align 4
-  %45 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } { i1 true, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, i64 undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %43, 1
-  %46 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %45, i64 %44, 2
-  br label %_llgo_6
-
-_llgo_5:                                          ; preds = %_llgo_1
-  br label %_llgo_6
-
-_llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %47 = phi { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } [ %46, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
-  %48 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %47, 0
-  br i1 %48, label %_llgo_2, label %_llgo_3
-
-_llgo_7:                                          ; preds = %_llgo_2
-  %49 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %37, 1
-  %50 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %49, align 1
-  %51 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
-  call void @llvm.memset(ptr %51, i8 0, i64 2, i1 false)
-  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %50, ptr %51, align 1
-  %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %51, i64 0
-  %53 = load %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %52, align 1
-  %54 = extractvalue %"github.com/goplus/llgo/cl/_testrt/makemap.N" %53, 0
-  %55 = sext i8 %54 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %55)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %38)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  br label %_llgo_1
-
-_llgo_8:                                          ; preds = %_llgo_2
-  %56 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 80 }, ptr %56, align 8
-  %57 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %56, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %57)
-  unreachable
-}
-
-define void @"github.com/goplus/llgo/cl/_testrt/makemap.make4"() {
-_llgo_0:
-  %0 = alloca [1 x ptr], align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
-  %1 = getelementptr inbounds ptr, ptr %0, i64 0
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %2, i32 0, i32 0
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %2, i32 0, i32 1
-  store i8 1, ptr %3, align 1
-  store i8 2, ptr %4, align 1
-  store ptr %2, ptr %1, align 8
-  %5 = load [1 x ptr], ptr %0, align 8
-  %6 = extractvalue [1 x ptr] %5, 0
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %6, 1
-  %8 = alloca [1 x ptr], align 8
-  call void @llvm.memset(ptr %8, i8 0, i64 8, i1 false)
-  %9 = getelementptr inbounds ptr, ptr %8, i64 0
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
-  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %10, i32 0, i32 0
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %10, i32 0, i32 1
-  store i8 1, ptr %11, align 1
-  store i8 2, ptr %12, align 1
-  store ptr %10, ptr %9, align 8
-  %13 = load [1 x ptr], ptr %8, align 8
-  %14 = extractvalue [1 x ptr] %13, 0
-  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %14, 1
+  %4 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %0, align 1
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
+  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %5, ptr %6, align 1
+  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %6, 1
+  %8 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
+  call void @llvm.memset(ptr %8, i8 0, i64 2, i1 false)
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %8, i64 0
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %9, i32 0, i32 0
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %9, i32 0, i32 1
+  store i8 1, ptr %10, align 1
+  store i8 2, ptr %11, align 1
+  %12 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %8, align 1
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
+  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %13, ptr %14, align 1
+  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %14, 1
   %16 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %7, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %15)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
-  %18 = alloca [1 x ptr], align 8
-  call void @llvm.memset(ptr %18, i8 0, i64 8, i1 false)
-  %19 = getelementptr inbounds ptr, ptr %18, i64 0
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
-  %21 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %20, i32 0, i32 0
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %20, i32 0, i32 1
-  store i8 1, ptr %21, align 1
-  store i8 2, ptr %22, align 1
-  store ptr %20, ptr %19, align 8
-  %23 = load [1 x ptr], ptr %18, align 8
-  %24 = extractvalue [1 x ptr] %23, 0
-  %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %24, 1
+  %18 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
+  call void @llvm.memset(ptr %18, i8 0, i64 2, i1 false)
+  %19 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %18, i64 0
+  %20 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %19, i32 0, i32 0
+  %21 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %19, i32 0, i32 1
+  store i8 1, ptr %20, align 1
+  store i8 2, ptr %21, align 1
+  %22 = icmp eq ptr %18, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %22)
+  %23 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %18, align 1
+  %24 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
+  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %23, ptr %24, align 1
+  %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %24, 1
   %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %25, ptr %26, align 8
   %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %17, ptr %26)
   store i64 100, ptr %27, align 4
-  %28 = alloca [1 x ptr], align 8
-  call void @llvm.memset(ptr %28, i8 0, i64 8, i1 false)
-  %29 = getelementptr inbounds ptr, ptr %28, i64 0
-  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %30, i32 0, i32 0
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %30, i32 0, i32 1
-  store i8 3, ptr %31, align 1
-  store i8 4, ptr %32, align 1
-  store ptr %30, ptr %29, align 8
-  %33 = load [1 x ptr], ptr %28, align 8
-  %34 = extractvalue [1 x ptr] %33, 0
-  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %34, 1
+  %28 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
+  call void @llvm.memset(ptr %28, i8 0, i64 2, i1 false)
+  %29 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %28, i64 0
+  %30 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %29, i32 0, i32 0
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %29, i32 0, i32 1
+  store i8 3, ptr %30, align 1
+  store i8 4, ptr %31, align 1
+  %32 = icmp eq ptr %28, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %32)
+  %33 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %28, align 1
+  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 2)
+  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %33, ptr %34, align 1
+  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %34, 1
   %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %35, ptr %36, align 8
   %37 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %17, ptr %36)
@@ -667,7 +573,7 @@ _llgo_2:                                          ; preds = %_llgo_6
   %41 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 1
   %42 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %51, 2
   %43 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, 0
-  %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2"
+  %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K"
   br i1 %44, label %_llgo_7, label %_llgo_8
 
 _llgo_3:                                          ; preds = %_llgo_6
@@ -692,20 +598,153 @@ _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
 
 _llgo_7:                                          ; preds = %_llgo_2
   %53 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %41, 1
-  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %53, i32 0, i32 0
-  %55 = load i8, ptr %54, align 1
-  %56 = sext i8 %55 to i64
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %56)
+  %54 = load [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], ptr %53, align 1
+  %55 = alloca [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"], align 8
+  call void @llvm.memset(ptr %55, i8 0, i64 2, i1 false)
+  store [1 x %"github.com/goplus/llgo/cl/_testrt/makemap.N"] %54, ptr %55, align 1
+  %56 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %55, i64 0
+  %57 = icmp eq ptr %56, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %57)
+  %58 = load %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %56, align 1
+  %59 = extractvalue %"github.com/goplus/llgo/cl/_testrt/makemap.N" %58, 0
+  %60 = sext i8 %59 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %60)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %42)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_1
 
 _llgo_8:                                          ; preds = %_llgo_2
-  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 81 }, ptr %57, align 8
-  %58 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %57, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %58)
+  %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @39, i64 80 }, ptr %61, align 8
+  %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %61, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %62)
+  unreachable
+}
+
+define void @"github.com/goplus/llgo/cl/_testrt/makemap.make4"() {
+_llgo_0:
+  %0 = alloca [1 x ptr], align 8
+  call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
+  %1 = getelementptr inbounds ptr, ptr %0, i64 0
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %2, i32 0, i32 0
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %2, i32 0, i32 1
+  store i8 1, ptr %3, align 1
+  store i8 2, ptr %4, align 1
+  store ptr %2, ptr %1, align 8
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load [1 x ptr], ptr %0, align 8
+  %7 = extractvalue [1 x ptr] %6, 0
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %7, 1
+  %9 = alloca [1 x ptr], align 8
+  call void @llvm.memset(ptr %9, i8 0, i64 8, i1 false)
+  %10 = getelementptr inbounds ptr, ptr %9, i64 0
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %11, i32 0, i32 0
+  %13 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %11, i32 0, i32 1
+  store i8 1, ptr %12, align 1
+  store i8 2, ptr %13, align 1
+  store ptr %11, ptr %10, align 8
+  %14 = icmp eq ptr %9, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [1 x ptr], ptr %9, align 8
+  %16 = extractvalue [1 x ptr] %15, 0
+  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %16, 1
+  %18 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %8, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %18)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
+  %20 = alloca [1 x ptr], align 8
+  call void @llvm.memset(ptr %20, i8 0, i64 8, i1 false)
+  %21 = getelementptr inbounds ptr, ptr %20, i64 0
+  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %22, i32 0, i32 0
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %22, i32 0, i32 1
+  store i8 1, ptr %23, align 1
+  store i8 2, ptr %24, align 1
+  store ptr %22, ptr %21, align 8
+  %25 = icmp eq ptr %20, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %25)
+  %26 = load [1 x ptr], ptr %20, align 8
+  %27 = extractvalue [1 x ptr] %26, 0
+  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %27, 1
+  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %28, ptr %29, align 8
+  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %19, ptr %29)
+  store i64 100, ptr %30, align 4
+  %31 = alloca [1 x ptr], align 8
+  call void @llvm.memset(ptr %31, i8 0, i64 8, i1 false)
+  %32 = getelementptr inbounds ptr, ptr %31, i64 0
+  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 2)
+  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %33, i32 0, i32 0
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %33, i32 0, i32 1
+  store i8 3, ptr %34, align 1
+  store i8 4, ptr %35, align 1
+  store ptr %33, ptr %32, align 8
+  %36 = icmp eq ptr %31, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %36)
+  %37 = load [1 x ptr], ptr %31, align 8
+  %38 = extractvalue [1 x ptr] %37, 0
+  %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %38, 1
+  %40 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %39, ptr %40, align 8
+  %41 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %19, ptr %40)
+  store i64 200, ptr %41, align 4
+  %42 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %19)
+  br label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_7, %_llgo_0
+  %43 = call { i1, ptr, ptr } @"github.com/goplus/llgo/runtime/internal/runtime.MapIterNext"(ptr %42)
+  %44 = extractvalue { i1, ptr, ptr } %43, 0
+  br i1 %44, label %_llgo_4, label %_llgo_5
+
+_llgo_2:                                          ; preds = %_llgo_6
+  %45 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %55, 1
+  %46 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %55, 2
+  %47 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %45, 0
+  %48 = icmp eq ptr %47, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2"
+  br i1 %48, label %_llgo_7, label %_llgo_8
+
+_llgo_3:                                          ; preds = %_llgo_6
+  ret void
+
+_llgo_4:                                          ; preds = %_llgo_1
+  %49 = extractvalue { i1, ptr, ptr } %43, 1
+  %50 = extractvalue { i1, ptr, ptr } %43, 2
+  %51 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %49, align 8
+  %52 = load i64, ptr %50, align 4
+  %53 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } { i1 true, %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, i64 undef }, %"github.com/goplus/llgo/runtime/internal/runtime.eface" %51, 1
+  %54 = insertvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %53, i64 %52, 2
+  br label %_llgo_6
+
+_llgo_5:                                          ; preds = %_llgo_1
+  br label %_llgo_6
+
+_llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
+  %55 = phi { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } [ %54, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
+  %56 = extractvalue { i1, %"github.com/goplus/llgo/runtime/internal/runtime.eface", i64 } %55, 0
+  br i1 %56, label %_llgo_2, label %_llgo_3
+
+_llgo_7:                                          ; preds = %_llgo_2
+  %57 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %45, 1
+  %58 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/makemap.N", ptr %57, i32 0, i32 0
+  %59 = icmp eq ptr %58, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %59)
+  %60 = load i8, ptr %58, align 1
+  %61 = sext i8 %60 to i64
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %61)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %46)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  br label %_llgo_1
+
+_llgo_8:                                          ; preds = %_llgo_2
+  %62 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @42, i64 81 }, ptr %62, align 8
+  %63 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %62, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %63)
   unreachable
 }
 
@@ -829,8 +868,8 @@ _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
   br i1 %7, label %_llgo_4, label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_6
-  %8 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %19, 1
-  %9 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %19, 2
+  %8 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %20, 1
+  %9 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %20, 2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %9)
@@ -841,28 +880,32 @@ _llgo_3:                                          ; preds = %_llgo_6
   %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 1, ptr %10, align 4
   %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %10)
-  %12 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %11, align 8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %12)
+  %12 = icmp eq ptr %11, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %11, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_1
-  %13 = extractvalue { i1, ptr, ptr } %6, 1
-  %14 = extractvalue { i1, ptr, ptr } %6, 2
-  %15 = load i64, ptr %13, align 4
-  %16 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %14, align 8
-  %17 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef }, i64 %15, 1
-  %18 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %17, %"github.com/goplus/llgo/runtime/internal/runtime.String" %16, 2
+  %14 = extractvalue { i1, ptr, ptr } %6, 1
+  %15 = extractvalue { i1, ptr, ptr } %6, 2
+  %16 = load i64, ptr %14, align 4
+  %17 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %15, align 8
+  %18 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } { i1 true, i64 undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" undef }, i64 %16, 1
+  %19 = insertvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %18, %"github.com/goplus/llgo/runtime/internal/runtime.String" %17, 2
   br label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_1
   br label %_llgo_6
 
 _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-  %19 = phi { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } [ %18, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
-  %20 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %19, 0
-  br i1 %20, label %_llgo_2, label %_llgo_3
+  %20 = phi { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } [ %19, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
+  %21 = extractvalue { i1, i64, %"github.com/goplus/llgo/runtime/internal/runtime.String" } %20, 0
+  br i1 %21, label %_llgo_2, label %_llgo_3
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 

@@ -85,6 +85,11 @@ func TestCompile(t *testing.T) {
 
 		os.Setenv("TMPDIR", tmpDir)
 		defer os.Unsetenv("TMPDIR")
+		if probe, err := os.CreateTemp(tmpDir, "probe-*"); err == nil {
+			probe.Close()
+			os.Remove(probe.Name())
+			t.Skip("TMPDIR remains writable in this environment")
+		}
 
 		group := CompileGroup{
 			OutputFileName: "nop.a",

@@ -93,6 +93,7 @@ _llgo_3:                                          ; preds = %_llgo_2, %_llgo_1
 
 define void @"github.com/goplus/llgo/cl/_testgo/struczero.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/struczero.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -114,38 +115,46 @@ _llgo_0:
   store %"github.com/goplus/llgo/cl/_testgo/struczero.bar" %2, ptr %0, align 8
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } %1, 1
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %0, i32 0, i32 0
-  %5 = load ptr, ptr %4, align 8
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %0, i32 0, i32 1
-  %7 = load float, ptr %6, align 4
-  %8 = xor i1 %3, true
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %5)
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load ptr, ptr %4, align 8
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %0, i32 0, i32 1
+  %8 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = load float, ptr %7, align 4
+  %10 = xor i1 %3, true
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %9 = fpext float %7 to double
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %9)
+  %11 = fpext float %9 to double
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %11)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 6 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %8)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %10 = alloca %"github.com/goplus/llgo/cl/_testdata/foo.Foo", align 8
-  call void @llvm.memset(ptr %10, i8 0, i64 16, i1 false)
-  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" zeroinitializer, ptr %11, align 8
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr undef }, ptr %11, 1
-  %13 = call { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } @"github.com/goplus/llgo/cl/_testgo/struczero.Bar"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %12)
-  %14 = extractvalue { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } %13, 0
-  store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" %14, ptr %10, align 8
-  %15 = extractvalue { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } %13, 1
-  %16 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %10, align 8
-  %17 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %16)
-  %18 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %10, i32 0, i32 1
-  %19 = load float, ptr %18, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %17)
+  %12 = alloca %"github.com/goplus/llgo/cl/_testdata/foo.Foo", align 8
+  call void @llvm.memset(ptr %12, i8 0, i64 16, i1 false)
+  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" zeroinitializer, ptr %13, align 8
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr undef }, ptr %13, 1
+  %15 = call { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } @"github.com/goplus/llgo/cl/_testgo/struczero.Bar"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %14)
+  %16 = extractvalue { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } %15, 0
+  store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" %16, ptr %12, align 8
+  %17 = extractvalue { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } %15, 1
+  %18 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %18)
+  %19 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %12, align 8
+  %20 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %19)
+  %21 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %12, i32 0, i32 1
+  %22 = icmp eq ptr %21, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %22)
+  %23 = load float, ptr %21, align 4
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %20)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %20 = fpext float %19 to double
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %20)
+  %24 = fpext float %23 to double
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %24)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %15)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %17)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -179,6 +188,8 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo")
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/cl/_testdata/foo.init"()
 

@@ -285,33 +285,42 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testgo/abimethod.T" %0, ptr %1, align 4
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %1, i32 0, i32 0
-  %3 = load i64, ptr %2, align 4
-  ret i64 %3
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load i64, ptr %2, align 4
+  ret i64 %4
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo1"(ptr %0) {
 _llgo_0:
-  %1 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, align 4
-  %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %1)
-  ret i64 %2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, align 4
+  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %2)
+  ret i64 %3
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-  %2 = load i64, ptr %1, align 4
-  ret i64 %2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %1, align 4
+  ret i64 %3
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-  %2 = load i64, ptr %1, align 4
-  ret i64 %2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %1, align 4
+  ret i64 %3
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/abimethod.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -391,10 +400,52 @@ _llgo_0:
   store i64 100, ptr %4, align 4
   store i64 10, ptr %1, align 4
   store ptr %3, ptr %2, align 8
-  %5 = load { i64, ptr }, ptr %0, align 8
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load { i64, ptr }, ptr %0, align 8
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store { i64, ptr } %6, ptr %7, align 8
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %8, 0
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %7, 1
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %13 = getelementptr ptr, ptr %12, i64 3
+  %14 = load ptr, ptr %13, align 8
+  %15 = insertvalue { ptr, ptr } undef, ptr %14, 0
+  %16 = insertvalue { ptr, ptr } %15, ptr %11, 1
+  %17 = extractvalue { ptr, ptr } %16, 1
+  %18 = extractvalue { ptr, ptr } %16, 0
+  %19 = call i64 %18(ptr %17)
+  %20 = icmp ne i64 %19, 100
+  br i1 %20, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 20 }, ptr %21, align 8
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %21, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %22)
+  unreachable
+
+_llgo_2:                                          ; preds = %_llgo_0
+  ret void
+}
+
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous3"() {
+_llgo_0:
+  %0 = alloca { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, align 8
+  call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
+  %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
+  %2 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %2, i32 0, i32 0
+  store i64 10, ptr %1, align 4
+  store i64 100, ptr %3, align 4
+  %4 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, align 4
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { i64, ptr } %5, ptr %6, align 8
-  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
+  store { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" } %5, ptr %6, align 4
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
   %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %7, 0
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, ptr %6, 1
   %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
@@ -411,47 +462,9 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 20 }, ptr %20, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 20 }, ptr %20, align 8
   %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %20, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)
-  unreachable
-
-_llgo_2:                                          ; preds = %_llgo_0
-  ret void
-}
-
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous3"() {
-_llgo_0:
-  %0 = alloca { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
-  %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-  store i64 10, ptr %1, align 4
-  store i64 100, ptr %3, align 4
-  %4 = load { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, align 4
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" } %4, ptr %5, align 4
-  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %6, 0
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, ptr %5, 1
-  %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %8)
-  %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 0
-  %11 = getelementptr ptr, ptr %10, i64 3
-  %12 = load ptr, ptr %11, align 8
-  %13 = insertvalue { ptr, ptr } undef, ptr %12, 0
-  %14 = insertvalue { ptr, ptr } %13, ptr %9, 1
-  %15 = extractvalue { ptr, ptr } %14, 1
-  %16 = extractvalue { ptr, ptr } %14, 0
-  %17 = call i64 %16(ptr %15)
-  %18 = icmp ne i64 %17, 100
-  br i1 %18, label %_llgo_1, label %_llgo_2
-
-_llgo_1:                                          ; preds = %_llgo_0
-  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @17, i64 20 }, ptr %19, align 8
-  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %19, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %20)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -537,29 +550,31 @@ _llgo_0:
   store i64 100, ptr %4, align 4
   store i64 10, ptr %1, align 4
   store ptr %3, ptr %2, align 8
-  %5 = load { i64, ptr }, ptr %0, align 8
-  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { i64, ptr } %5, ptr %6, align 8
-  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$GIQLduxo5T_xLwYbboAKy8LzikHgsGzb7WxrkOH3Lr4", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %7, 0
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, ptr %6, 1
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
-  %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
-  %12 = getelementptr ptr, ptr %11, i64 3
-  %13 = load ptr, ptr %12, align 8
-  %14 = insertvalue { ptr, ptr } undef, ptr %13, 0
-  %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
-  %16 = extractvalue { ptr, ptr } %15, 1
-  %17 = extractvalue { ptr, ptr } %15, 0
-  %18 = call i64 %17(ptr %16)
-  %19 = icmp ne i64 %18, 100
-  br i1 %19, label %_llgo_1, label %_llgo_2
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load { i64, ptr }, ptr %0, align 8
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store { i64, ptr } %6, ptr %7, align 8
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$GIQLduxo5T_xLwYbboAKy8LzikHgsGzb7WxrkOH3Lr4", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %8, 0
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %7, 1
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %13 = getelementptr ptr, ptr %12, i64 3
+  %14 = load ptr, ptr %13, align 8
+  %15 = insertvalue { ptr, ptr } undef, ptr %14, 0
+  %16 = insertvalue { ptr, ptr } %15, ptr %11, 1
+  %17 = extractvalue { ptr, ptr } %16, 1
+  %18 = extractvalue { ptr, ptr } %16, 0
+  %19 = call i64 %18(ptr %17)
+  %20 = icmp ne i64 %19, 100
+  br i1 %20, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 20 }, ptr %20, align 8
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %20, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @21, i64 20 }, ptr %21, align 8
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %21, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %22)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -577,49 +592,51 @@ _llgo_0:
   store i64 100, ptr %4, align 4
   store i64 10, ptr %1, align 4
   store ptr %3, ptr %2, align 8
-  %5 = load { i64, ptr }, ptr %0, align 8
-  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { i64, ptr } %5, ptr %6, align 8
-  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$58AxoxqQ6sGUOM73FOqFrXsMlgxkU4HGd-S1Wl-ssYw", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %7, 0
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, ptr %6, 1
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
-  %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
-  %12 = getelementptr ptr, ptr %11, i64 3
-  %13 = load ptr, ptr %12, align 8
-  %14 = insertvalue { ptr, ptr } undef, ptr %13, 0
-  %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
-  %16 = extractvalue { ptr, ptr } %15, 1
-  %17 = extractvalue { ptr, ptr } %15, 0
-  %18 = call i64 %17(ptr %16)
-  %19 = icmp ne i64 %18, 100
-  br i1 %19, label %_llgo_1, label %_llgo_2
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load { i64, ptr }, ptr %0, align 8
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store { i64, ptr } %6, ptr %7, align 8
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$58AxoxqQ6sGUOM73FOqFrXsMlgxkU4HGd-S1Wl-ssYw", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %8, 0
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %7, 1
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %13 = getelementptr ptr, ptr %12, i64 3
+  %14 = load ptr, ptr %13, align 8
+  %15 = insertvalue { ptr, ptr } undef, ptr %14, 0
+  %16 = insertvalue { ptr, ptr } %15, ptr %11, 1
+  %17 = extractvalue { ptr, ptr } %16, 1
+  %18 = extractvalue { ptr, ptr } %16, 0
+  %19 = call i64 %18(ptr %17)
+  %20 = icmp ne i64 %19, 100
+  br i1 %20, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 20 }, ptr %20, align 8
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %20, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 20 }, ptr %21, align 8
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %21, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %22)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
-  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
-  %24 = getelementptr ptr, ptr %23, i64 4
-  %25 = load ptr, ptr %24, align 8
-  %26 = insertvalue { ptr, ptr } undef, ptr %25, 0
-  %27 = insertvalue { ptr, ptr } %26, ptr %22, 1
-  %28 = extractvalue { ptr, ptr } %27, 1
-  %29 = extractvalue { ptr, ptr } %27, 0
-  %30 = call i64 %29(ptr %28)
-  %31 = icmp ne i64 %30, 100
-  br i1 %31, label %_llgo_3, label %_llgo_4
+  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %25 = getelementptr ptr, ptr %24, i64 4
+  %26 = load ptr, ptr %25, align 8
+  %27 = insertvalue { ptr, ptr } undef, ptr %26, 0
+  %28 = insertvalue { ptr, ptr } %27, ptr %23, 1
+  %29 = extractvalue { ptr, ptr } %28, 1
+  %30 = extractvalue { ptr, ptr } %28, 0
+  %31 = call i64 %30(ptr %29)
+  %32 = icmp ne i64 %31, 100
+  br i1 %32, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 20 }, ptr %32, align 8
-  %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %32, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %33)
+  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 20 }, ptr %33, align 8
+  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %33, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %34)
   unreachable
 
 _llgo_4:                                          ; preds = %_llgo_2
@@ -637,69 +654,71 @@ _llgo_0:
   store i64 100, ptr %4, align 4
   store i64 10, ptr %1, align 4
   store ptr %3, ptr %2, align 8
-  %5 = load { i64, ptr }, ptr %0, align 8
-  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store { i64, ptr } %5, ptr %6, align 8
-  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.iface$kT5SIXt45Cspjl04Bof3DZVSOIltlDo-njpk6KqtZvA", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %7, 0
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, ptr %6, 1
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
-  %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
-  %12 = getelementptr ptr, ptr %11, i64 3
-  %13 = load ptr, ptr %12, align 8
-  %14 = insertvalue { ptr, ptr } undef, ptr %13, 0
-  %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
-  %16 = extractvalue { ptr, ptr } %15, 1
-  %17 = extractvalue { ptr, ptr } %15, 0
-  %18 = call i64 %17(ptr %16)
-  %19 = icmp ne i64 %18, 100
-  br i1 %19, label %_llgo_1, label %_llgo_2
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load { i64, ptr }, ptr %0, align 8
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store { i64, ptr } %6, ptr %7, align 8
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.iface$kT5SIXt45Cspjl04Bof3DZVSOIltlDo-njpk6KqtZvA", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %8, 0
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %7, 1
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %13 = getelementptr ptr, ptr %12, i64 3
+  %14 = load ptr, ptr %13, align 8
+  %15 = insertvalue { ptr, ptr } undef, ptr %14, 0
+  %16 = insertvalue { ptr, ptr } %15, ptr %11, 1
+  %17 = extractvalue { ptr, ptr } %16, 1
+  %18 = extractvalue { ptr, ptr } %16, 0
+  %19 = call i64 %18(ptr %17)
+  %20 = icmp ne i64 %19, 100
+  br i1 %20, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 20 }, ptr %20, align 8
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %20, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 20 }, ptr %21, align 8
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %21, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %22)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
-  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
-  %24 = getelementptr ptr, ptr %23, i64 4
-  %25 = load ptr, ptr %24, align 8
-  %26 = insertvalue { ptr, ptr } undef, ptr %25, 0
-  %27 = insertvalue { ptr, ptr } %26, ptr %22, 1
-  %28 = extractvalue { ptr, ptr } %27, 1
-  %29 = extractvalue { ptr, ptr } %27, 0
-  %30 = call i64 %29(ptr %28)
-  %31 = icmp ne i64 %30, 100
-  br i1 %31, label %_llgo_3, label %_llgo_4
+  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %25 = getelementptr ptr, ptr %24, i64 4
+  %26 = load ptr, ptr %25, align 8
+  %27 = insertvalue { ptr, ptr } undef, ptr %26, 0
+  %28 = insertvalue { ptr, ptr } %27, ptr %23, 1
+  %29 = extractvalue { ptr, ptr } %28, 1
+  %30 = extractvalue { ptr, ptr } %28, 0
+  %31 = call i64 %30(ptr %29)
+  %32 = icmp ne i64 %31, 100
+  br i1 %32, label %_llgo_3, label %_llgo_4
 
 _llgo_3:                                          ; preds = %_llgo_2
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 20 }, ptr %32, align 8
-  %33 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %32, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %33)
+  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 20 }, ptr %33, align 8
+  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %33, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %34)
   unreachable
 
 _llgo_4:                                          ; preds = %_llgo_2
-  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
-  %35 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
-  %36 = getelementptr ptr, ptr %35, i64 5
-  %37 = load ptr, ptr %36, align 8
-  %38 = insertvalue { ptr, ptr } undef, ptr %37, 0
-  %39 = insertvalue { ptr, ptr } %38, ptr %34, 1
-  %40 = extractvalue { ptr, ptr } %39, 1
-  %41 = extractvalue { ptr, ptr } %39, 0
-  %42 = call i64 %41(ptr %40)
-  %43 = icmp ne i64 %42, 100
-  br i1 %43, label %_llgo_5, label %_llgo_6
+  %35 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %10)
+  %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %10, 0
+  %37 = getelementptr ptr, ptr %36, i64 5
+  %38 = load ptr, ptr %37, align 8
+  %39 = insertvalue { ptr, ptr } undef, ptr %38, 0
+  %40 = insertvalue { ptr, ptr } %39, ptr %35, 1
+  %41 = extractvalue { ptr, ptr } %40, 1
+  %42 = extractvalue { ptr, ptr } %40, 0
+  %43 = call i64 %42(ptr %41)
+  %44 = icmp ne i64 %43, 100
+  br i1 %44, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
-  %44 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 20 }, ptr %44, align 8
-  %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %44, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %45)
+  %45 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @25, i64 20 }, ptr %45, align 8
+  %46 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %45, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %46)
   unreachable
 
 _llgo_6:                                          ; preds = %_llgo_4
@@ -766,32 +785,34 @@ _llgo_0:
   %19 = extractvalue { ptr, ptr } %18, 1
   %20 = extractvalue { ptr, ptr } %18, 0
   %21 = call ptr %20(ptr %19)
-  %22 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %21, align 8
-  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 0
-  %24 = icmp eq ptr %23, @_llgo_int
-  br i1 %24, label %_llgo_3, label %_llgo_4
+  %22 = icmp eq ptr %21, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %22)
+  %23 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %21, align 8
+  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %23, 0
+  %25 = icmp eq ptr %24, @_llgo_int
+  br i1 %25, label %_llgo_3, label %_llgo_4
 
 _llgo_1:                                          ; preds = %_llgo_3
-  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @109, i64 17 }, ptr %25, align 8
-  %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %25, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %26)
+  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @109, i64 17 }, ptr %26, align 8
+  %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %26, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %27)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %27 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 1
-  %28 = ptrtoint ptr %27 to i64
-  %29 = icmp ne i64 %28, 100
-  br i1 %29, label %_llgo_1, label %_llgo_2
+  %28 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %23, 1
+  %29 = ptrtoint ptr %28 to i64
+  %30 = icmp ne i64 %29, 100
+  br i1 %30, label %_llgo_1, label %_llgo_2
 
 _llgo_4:                                          ; preds = %_llgo_0
-  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @108, i64 40 }, ptr %30, align 8
-  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %30, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %31)
+  %31 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @108, i64 40 }, ptr %31, align 8
+  %32 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %31, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %32)
   unreachable
 }
 
@@ -839,29 +860,31 @@ _llgo_0:
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
   store i64 100, ptr %1, align 4
-  %2 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, align 4
-  %3 = extractvalue %"github.com/goplus/llgo/cl/_testgo/abimethod.T" %2, 0
-  %4 = inttoptr i64 %3 to ptr
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.T")
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %5, 0
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, ptr %4, 1
-  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %7)
-  %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 0
-  %10 = getelementptr ptr, ptr %9, i64 3
-  %11 = load ptr, ptr %10, align 8
-  %12 = insertvalue { ptr, ptr } undef, ptr %11, 0
-  %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
-  %14 = extractvalue { ptr, ptr } %13, 1
-  %15 = extractvalue { ptr, ptr } %13, 0
-  %16 = call i64 %15(ptr %14)
-  %17 = icmp ne i64 %16, 100
-  br i1 %17, label %_llgo_1, label %_llgo_2
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, align 4
+  %4 = extractvalue %"github.com/goplus/llgo/cl/_testgo/abimethod.T" %3, 0
+  %5 = inttoptr i64 %4 to ptr
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.T")
+  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %6, 0
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, ptr %5, 1
+  %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %8)
+  %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 0
+  %11 = getelementptr ptr, ptr %10, i64 3
+  %12 = load ptr, ptr %11, align 8
+  %13 = insertvalue { ptr, ptr } undef, ptr %12, 0
+  %14 = insertvalue { ptr, ptr } %13, ptr %9, 1
+  %15 = extractvalue { ptr, ptr } %14, 1
+  %16 = extractvalue { ptr, ptr } %14, 0
+  %17 = call i64 %16(ptr %15)
+  %18 = icmp ne i64 %17, 100
+  br i1 %18, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @111, i64 16 }, ptr %18, align 8
-  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %18, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %19)
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @111, i64 16 }, ptr %19, align 8
+  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %19, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %20)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -902,6 +925,8 @@ _llgo_2:                                          ; preds = %_llgo_0
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
 declare void @bytes.init()
 
 declare void @fmt.init()
@@ -913,26 +938,34 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %2, align 4
-  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %3)
-  ret i64 %4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %3, align 4
+  %6 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %5)
+  ret i64 %6
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %2)
-  ret i64 %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %3)
+  ret i64 %4
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %2)
-  ret i64 %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %3)
+  ret i64 %4
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
@@ -949,10 +982,14 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %3, align 4
-  %5 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %4)
-  ret i64 %5
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %4, align 4
+  %7 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %6)
+  ret i64 %7
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"({ i64, ptr } %0) {
@@ -961,9 +998,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %3)
-  ret i64 %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %4)
+  ret i64 %5
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"({ i64, ptr } %0) {
@@ -972,9 +1011,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %3)
-  ret i64 %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %4)
+  ret i64 %5
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
@@ -1017,17 +1058,21 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" } %0, ptr %1, align 4
   %2 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %1, i32 0, i32 1
-  %3 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %2, align 4
-  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %3)
-  ret i64 %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %2, align 4
+  %5 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %4)
+  ret i64 %5
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
-  %2 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %1, align 4
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %2)
-  ret i64 %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %1, align 4
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %3)
+  ret i64 %4
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"(ptr %0) {
@@ -1049,353 +1094,79 @@ declare ptr @bytes.NewBufferString(%"github.com/goplus/llgo/runtime/internal/run
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Available"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call i64 @"bytes.(*Buffer).Available"(ptr %2)
-  ret i64 %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call i64 @"bytes.(*Buffer).Available"(ptr %3)
+  ret i64 %4
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.AvailableBuffer"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).AvailableBuffer"(ptr %2)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).AvailableBuffer"(ptr %3)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Bytes"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr %2)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr %3)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Cap"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call i64 @"bytes.(*Buffer).Cap"(ptr %2)
-  ret i64 %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call i64 @"bytes.(*Buffer).Cap"(ptr %3)
+  ret i64 %4
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Grow"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  call void @"bytes.(*Buffer).Grow"(ptr %3, i64 %1)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  call void @"bytes.(*Buffer).Grow"(ptr %4, i64 %1)
   ret void
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Len"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call i64 @"bytes.(*Buffer).Len"(ptr %2)
-  ret i64 %3
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call i64 @"bytes.(*Buffer).Len"(ptr %3)
+  ret i64 %4
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Next"(ptr %0, i64 %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Next"(ptr %3, i64 %1)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Next"(ptr %4, i64 %1)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Read"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Read"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %5 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %5, 0
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadByte"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadByte"(ptr %2)
-  %4 = extractvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %3, 0
-  %5 = extractvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %3, 1
-  %6 = insertvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i8 %4, 0
-  %7 = insertvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5, 1
-  ret { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7
-}
-
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadBytes"(ptr %0, i8 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadBytes"(ptr %3, i8 %1)
-  %5 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 0
-  %8 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadFrom"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadFrom"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
-  %5 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %5, 0
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadRune"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadRune"(ptr %2)
-  %4 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %3, 0
-  %5 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %3, 1
-  %6 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %3, 2
-  %7 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i32 %4, 0
-  %8 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, i64 %5, 1
-  %9 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 2
-  ret { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
-}
-
-define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadString"(ptr %0, i8 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadString"(ptr %3, i8 %1)
-  %5 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" %5, 0
-  %8 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Reset"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  call void @"bytes.(*Buffer).Reset"(ptr %2)
-  ret void
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.String"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr %2)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %3
-}
-
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Truncate"(ptr %0, i64 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  call void @"bytes.(*Buffer).Truncate"(ptr %3, i64 %1)
-  ret void
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadByte"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadByte"(ptr %2)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadRune"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadRune"(ptr %2)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3
-}
-
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Write"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %5 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %5, 0
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteByte"(ptr %0, i8 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).WriteByte"(ptr %3, i8 %1)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
-}
-
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteRune"(ptr %0, i32 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteRune"(ptr %3, i32 %1)
-  %5 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %5, 0
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteString"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
-  %5 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %5, 0
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteTo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteTo"(ptr %3, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
-  %5 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %5, 0
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.empty"(ptr %0) {
-_llgo_0:
-  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %2 = load ptr, ptr %1, align 8
-  %3 = call i1 @"bytes.(*Buffer).empty"(ptr %2)
-  ret i1 %3
-}
-
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.grow"(ptr %0, i64 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i64 @"bytes.(*Buffer).grow"(ptr %3, i64 %1)
-  ret i64 %4
-}
-
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.readSlice"(ptr %0, i8 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).readSlice"(ptr %3, i8 %1)
-  %5 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
-  %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
-  %7 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 0
-  %8 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6, 1
-  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
-}
-
-define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.tryGrowByReslice"(ptr %0, i64 %1) {
-_llgo_0:
-  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call { i64, i1 } @"bytes.(*Buffer).tryGrowByReslice"(ptr %3, i64 %1)
-  %5 = extractvalue { i64, i1 } %4, 0
-  %6 = extractvalue { i64, i1 } %4, 1
-  %7 = insertvalue { i64, i1 } undef, i64 %5, 0
-  %8 = insertvalue { i64, i1 } %7, i1 %6, 1
-  ret { i64, i1 } %8
-}
-
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Available"({ i64, ptr } %0) {
-_llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i64 @"bytes.(*Buffer).Available"(ptr %3)
-  ret i64 %4
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.AvailableBuffer"({ i64, ptr } %0) {
-_llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).AvailableBuffer"(ptr %3)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Bytes"({ i64, ptr } %0) {
-_llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr %3)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
-}
-
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Cap"({ i64, ptr } %0) {
-_llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i64 @"bytes.(*Buffer).Cap"(ptr %3)
-  ret i64 %4
-}
-
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Grow"({ i64, ptr } %0, i64 %1) {
-_llgo_0:
-  %2 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %2, align 8
-  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  call void @"bytes.(*Buffer).Grow"(ptr %4, i64 %1)
-  ret void
-}
-
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Len"({ i64, ptr } %0) {
-_llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i64 @"bytes.(*Buffer).Len"(ptr %3)
-  ret i64 %4
-}
-
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Next"({ i64, ptr } %0, i64 %1) {
-_llgo_0:
-  %2 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %2, align 8
-  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Next"(ptr %4, i64 %1)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5
-}
-
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Read"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
-_llgo_0:
-  %2 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %2, align 8
-  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
   %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Read"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
   %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
@@ -1404,13 +1175,12 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadByte"({ i64, ptr } %0) {
+define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadByte"(ptr %0) {
 _llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
   %4 = call { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadByte"(ptr %3)
   %5 = extractvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
   %6 = extractvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
@@ -1419,13 +1189,12 @@ _llgo_0:
   ret { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadBytes"({ i64, ptr } %0, i8 %1) {
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadBytes"(ptr %0, i8 %1) {
 _llgo_0:
-  %2 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %2, align 8
-  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
   %5 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadBytes"(ptr %4, i8 %1)
   %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
   %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
@@ -1434,13 +1203,12 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadFrom"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadFrom"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
 _llgo_0:
-  %2 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %2, align 8
-  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
   %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadFrom"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
   %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
   %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
@@ -1449,13 +1217,12 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadRune"({ i64, ptr } %0) {
+define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadRune"(ptr %0) {
 _llgo_0:
-  %1 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %1, align 8
-  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
   %4 = call { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadRune"(ptr %3)
   %5 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 0
   %6 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %4, 1
@@ -1466,13 +1233,12 @@ _llgo_0:
   ret { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadString"({ i64, ptr } %0, i8 %1) {
+define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadString"(ptr %0, i8 %1) {
 _llgo_0:
-  %2 = alloca { i64, ptr }, align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store { i64, ptr } %0, ptr %2, align 8
-  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
   %5 = call { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadString"(ptr %4, i8 %1)
   %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
   %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
@@ -1481,14 +1247,375 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Reset"(ptr %0) {
+_llgo_0:
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  call void @"bytes.(*Buffer).Reset"(ptr %3)
+  ret void
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.String"(ptr %0) {
+_llgo_0:
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr %3)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
+}
+
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Truncate"(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  call void @"bytes.(*Buffer).Truncate"(ptr %4, i64 %1)
+  ret void
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadByte"(ptr %0) {
+_llgo_0:
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadByte"(ptr %3)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadRune"(ptr %0) {
+_llgo_0:
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadRune"(ptr %3)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
+}
+
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Write"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteByte"(ptr %0, i8 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).WriteByte"(ptr %4, i8 %1)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
+}
+
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteRune"(ptr %0, i32 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteRune"(ptr %4, i32 %1)
+  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+}
+
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteString"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+}
+
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteTo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteTo"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+}
+
+define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.empty"(ptr %0) {
+_llgo_0:
+  %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  %4 = call i1 @"bytes.(*Buffer).empty"(ptr %3)
+  ret i1 %4
+}
+
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.grow"(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i64 @"bytes.(*Buffer).grow"(ptr %4, i64 %1)
+  ret i64 %5
+}
+
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.readSlice"(ptr %0, i8 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).readSlice"(ptr %4, i8 %1)
+  %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, 0
+  %9 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
+  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+}
+
+define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.tryGrowByReslice"(ptr %0, i64 %1) {
+_llgo_0:
+  %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i64, i1 } @"bytes.(*Buffer).tryGrowByReslice"(ptr %4, i64 %1)
+  %6 = extractvalue { i64, i1 } %5, 0
+  %7 = extractvalue { i64, i1 } %5, 1
+  %8 = insertvalue { i64, i1 } undef, i64 %6, 0
+  %9 = insertvalue { i64, i1 } %8, i1 %7, 1
+  ret { i64, i1 } %9
+}
+
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Available"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i64 @"bytes.(*Buffer).Available"(ptr %4)
+  ret i64 %5
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.AvailableBuffer"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).AvailableBuffer"(ptr %4)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Bytes"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr %4)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5
+}
+
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Cap"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i64 @"bytes.(*Buffer).Cap"(ptr %4)
+  ret i64 %5
+}
+
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Grow"({ i64, ptr } %0, i64 %1) {
+_llgo_0:
+  %2 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  call void @"bytes.(*Buffer).Grow"(ptr %5, i64 %1)
+  ret void
+}
+
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Len"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i64 @"bytes.(*Buffer).Len"(ptr %4)
+  ret i64 %5
+}
+
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Next"({ i64, ptr } %0, i64 %1) {
+_llgo_0:
+  %2 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Next"(ptr %5, i64 %1)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6
+}
+
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Read"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+_llgo_0:
+  %2 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Read"(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %7, 0
+  %10 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
+}
+
+define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadByte"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadByte"(ptr %4)
+  %6 = extractvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = insertvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i8 %6, 0
+  %9 = insertvalue { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
+  ret { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+}
+
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadBytes"({ i64, ptr } %0, i8 %1) {
+_llgo_0:
+  %2 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadBytes"(ptr %5, i8 %1)
+  %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
+  %10 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
+}
+
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadFrom"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+_llgo_0:
+  %2 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadFrom"(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %7, 0
+  %10 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
+}
+
+define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadRune"({ i64, ptr } %0) {
+_llgo_0:
+  %1 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %1, align 8
+  %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadRune"(ptr %4)
+  %6 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
+  %7 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
+  %8 = extractvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 2
+  %9 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i32 %6, 0
+  %10 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, i64 %7, 1
+  %11 = insertvalue { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 2
+  ret { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %11
+}
+
+define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadString"({ i64, ptr } %0, i8 %1) {
+_llgo_0:
+  %2 = alloca { i64, ptr }, align 8
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  store { i64, ptr } %0, ptr %2, align 8
+  %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadString"(ptr %5, i8 %1)
+  %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.String" %7, 0
+  %10 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
+}
+
 define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Reset"({ i64, ptr } %0) {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  call void @"bytes.(*Buffer).Reset"(ptr %3)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  call void @"bytes.(*Buffer).Reset"(ptr %4)
   ret void
 }
 
@@ -1498,9 +1625,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr %3)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr %4)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %5
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Truncate"({ i64, ptr } %0, i64 %1) {
@@ -1509,8 +1638,10 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  call void @"bytes.(*Buffer).Truncate"(ptr %4, i64 %1)
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  call void @"bytes.(*Buffer).Truncate"(ptr %5, i64 %1)
   ret void
 }
 
@@ -1520,9 +1651,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadByte"(ptr %3)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadByte"(ptr %4)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.UnreadRune"({ i64, ptr } %0) {
@@ -1531,9 +1664,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadRune"(ptr %3)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadRune"(ptr %4)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Write"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
@@ -1542,13 +1677,15 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
-  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
-  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %7, 0
+  %10 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteByte"({ i64, ptr } %0, i8 %1) {
@@ -1557,9 +1694,11 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).WriteByte"(ptr %4, i8 %1)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).WriteByte"(ptr %5, i8 %1)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %6
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteRune"({ i64, ptr } %0, i32 %1) {
@@ -1568,13 +1707,15 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteRune"(ptr %4, i32 %1)
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
-  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
-  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteRune"(ptr %5, i32 %1)
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %7, 0
+  %10 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteString"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
@@ -1583,13 +1724,15 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
-  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
-  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %7, 0
+  %10 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
 define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteTo"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
@@ -1598,13 +1741,15 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteTo"(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
-  %6 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
-  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
-  %8 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %6, 0
-  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
-  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteTo"(ptr %5, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  %7 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, i64 %7, 0
+  %10 = insertvalue { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
 define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.empty"({ i64, ptr } %0) {
@@ -1613,9 +1758,11 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %1, align 8
   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
-  %3 = load ptr, ptr %2, align 8
-  %4 = call i1 @"bytes.(*Buffer).empty"(ptr %3)
-  ret i1 %4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  %5 = call i1 @"bytes.(*Buffer).empty"(ptr %4)
+  ret i1 %5
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.grow"({ i64, ptr } %0, i64 %1) {
@@ -1624,9 +1771,11 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call i64 @"bytes.(*Buffer).grow"(ptr %4, i64 %1)
-  ret i64 %5
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call i64 @"bytes.(*Buffer).grow"(ptr %5, i64 %1)
+  ret i64 %6
 }
 
 define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.readSlice"({ i64, ptr } %0, i8 %1) {
@@ -1635,13 +1784,15 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).readSlice"(ptr %4, i8 %1)
-  %6 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 0
-  %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %5, 1
-  %8 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, 0
-  %9 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, 1
-  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).readSlice"(ptr %5, i8 %1)
+  %7 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 0
+  %8 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %6, 1
+  %9 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } undef, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
+  %10 = insertvalue { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %8, 1
+  ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
 define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.tryGrowByReslice"({ i64, ptr } %0, i64 %1) {
@@ -1650,13 +1801,15 @@ _llgo_0:
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
   store { i64, ptr } %0, ptr %2, align 8
   %3 = getelementptr inbounds { i64, ptr }, ptr %2, i32 0, i32 1
-  %4 = load ptr, ptr %3, align 8
-  %5 = call { i64, i1 } @"bytes.(*Buffer).tryGrowByReslice"(ptr %4, i64 %1)
-  %6 = extractvalue { i64, i1 } %5, 0
-  %7 = extractvalue { i64, i1 } %5, 1
-  %8 = insertvalue { i64, i1 } undef, i64 %6, 0
-  %9 = insertvalue { i64, i1 } %8, i1 %7, 1
-  ret { i64, i1 } %9
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load ptr, ptr %3, align 8
+  %6 = call { i64, i1 } @"bytes.(*Buffer).tryGrowByReslice"(ptr %5, i64 %1)
+  %7 = extractvalue { i64, i1 } %6, 0
+  %8 = extractvalue { i64, i1 } %6, 1
+  %9 = insertvalue { i64, i1 } undef, i64 %7, 0
+  %10 = insertvalue { i64, i1 } %9, i1 %8, 1
+  ret { i64, i1 } %10
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
@@ -1734,8 +1887,10 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"gith
 define linkonce ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.(*Pointer[any]).Load"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.Pointer[any]", ptr %0, i32 0, i32 1
-  %2 = load atomic ptr, ptr %1 seq_cst, align 8
-  ret ptr %2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load atomic ptr, ptr %1 seq_cst, align 8
+  ret ptr %3
 }
 
 define linkonce void @"github.com/goplus/llgo/cl/_testgo/abimethod.(*Pointer[any]).Store"(ptr %0, ptr %1) {

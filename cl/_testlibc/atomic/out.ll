@@ -10,6 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/atomic"
 
 define void @"github.com/goplus/llgo/cl/_testlibc/atomic.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibc/atomic.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -25,26 +26,38 @@ define void @"github.com/goplus/llgo/cl/_testlibc/atomic.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store atomic i64 100, ptr %0 seq_cst, align 4
-  %1 = load atomic i64, ptr %0 seq_cst, align 4
-  %2 = call i32 (ptr, ...) @printf(ptr @0, i64 %1)
-  %3 = atomicrmw add ptr %0, i64 1 seq_cst, align 8
-  %4 = load i64, ptr %0, align 4
-  %5 = call i32 (ptr, ...) @printf(ptr @1, i64 %3, i64 %4)
-  %6 = cmpxchg ptr %0, i64 100, i64 102 seq_cst seq_cst, align 8
-  %7 = extractvalue { i64, i1 } %6, 0
-  %8 = extractvalue { i64, i1 } %6, 1
-  %9 = load i64, ptr %0, align 4
-  %10 = call i32 (ptr, ...) @printf(ptr @2, i64 %7, i64 %9)
-  %11 = cmpxchg ptr %0, i64 101, i64 102 seq_cst seq_cst, align 8
-  %12 = extractvalue { i64, i1 } %11, 0
-  %13 = extractvalue { i64, i1 } %11, 1
-  %14 = load i64, ptr %0, align 4
-  %15 = call i32 (ptr, ...) @printf(ptr @3, i64 %12, i64 %14)
-  %16 = atomicrmw sub ptr %0, i64 1 seq_cst, align 8
-  %17 = load i64, ptr %0, align 4
-  %18 = call i32 (ptr, ...) @printf(ptr @4, i64 %16, i64 %17)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load atomic i64, ptr %0 seq_cst, align 4
+  %3 = call i32 (ptr, ...) @printf(ptr @0, i64 %2)
+  %4 = atomicrmw add ptr %0, i64 1 seq_cst, align 8
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i64, ptr %0, align 4
+  %7 = call i32 (ptr, ...) @printf(ptr @1, i64 %4, i64 %6)
+  %8 = cmpxchg ptr %0, i64 100, i64 102 seq_cst seq_cst, align 8
+  %9 = extractvalue { i64, i1 } %8, 0
+  %10 = extractvalue { i64, i1 } %8, 1
+  %11 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = load i64, ptr %0, align 4
+  %13 = call i32 (ptr, ...) @printf(ptr @2, i64 %9, i64 %12)
+  %14 = cmpxchg ptr %0, i64 101, i64 102 seq_cst seq_cst, align 8
+  %15 = extractvalue { i64, i1 } %14, 0
+  %16 = extractvalue { i64, i1 } %14, 1
+  %17 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %17)
+  %18 = load i64, ptr %0, align 4
+  %19 = call i32 (ptr, ...) @printf(ptr @3, i64 %15, i64 %18)
+  %20 = atomicrmw sub ptr %0, i64 1 seq_cst, align 8
+  %21 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %21)
+  %22 = load i64, ptr %0, align 4
+  %23 = call i32 (ptr, ...) @printf(ptr @4, i64 %20, i64 %22)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

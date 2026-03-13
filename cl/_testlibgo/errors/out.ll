@@ -10,6 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/errors"
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/errors.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/errors.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -32,6 +33,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %4)
   unreachable
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @errors.init()
 

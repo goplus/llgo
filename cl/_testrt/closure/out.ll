@@ -7,6 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/closure"
 
 define void @"github.com/goplus/llgo/cl/_testrt/closure.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/closure.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -47,14 +48,20 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/closure.main$3"(ptr %0) {
 _llgo_0:
-  %1 = load { ptr }, ptr %0, align 8
-  %2 = extractvalue { ptr } %1, 0
-  %3 = load { ptr, ptr }, ptr %2, align 8
-  %4 = extractvalue { ptr, ptr } %3, 1
-  %5 = extractvalue { ptr, ptr } %3, 0
-  call void %5(ptr %4, i64 100, i64 200)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load { ptr }, ptr %0, align 8
+  %3 = extractvalue { ptr } %2, 0
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load { ptr, ptr }, ptr %3, align 8
+  %6 = extractvalue { ptr, ptr } %5, 1
+  %7 = extractvalue { ptr, ptr } %5, 0
+  call void %7(ptr %6, i64 100, i64 200)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

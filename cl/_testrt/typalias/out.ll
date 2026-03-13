@@ -10,13 +10,17 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/typalias"
 define void @"github.com/goplus/llgo/cl/_testrt/typalias.Print"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
-  %2 = load i1, ptr %1, align 1
-  br i1 %2, label %_llgo_1, label %_llgo_2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i1, ptr %1, align 1
+  br i1 %3, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %3 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
-  %4 = load i32, ptr %3, align 4
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i32 %4)
+  %4 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i32, ptr %4, align 4
+  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i32 %6)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -34,6 +38,7 @@ declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/r
 
 define void @"github.com/goplus/llgo/cl/_testrt/typalias.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/typalias.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -66,6 +71,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/typalias.Print"(ptr %0)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @printf(ptr, ...)
 
