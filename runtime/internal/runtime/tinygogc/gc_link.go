@@ -2,7 +2,10 @@
 
 package tinygogc
 
-import "unsafe"
+import (
+	"unsafe"
+	_ "unsafe"
+)
 
 // LLGoPackage instructs the LLGo linker to wrap C standard library memory allocation
 // functions (malloc, realloc, calloc) so they use the tinygogc allocator instead.
