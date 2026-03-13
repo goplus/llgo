@@ -37,6 +37,7 @@ func TestGenMainModuleExecutable(t *testing.T) {
 	checks := []string{
 		"define i32 @main(",
 		"call void @Py_Initialize()",
+		"call void @Py_Finalize()",
 		"call void @\"example.com/foo.init\"()",
 		"define weak void @_start()",
 	}
