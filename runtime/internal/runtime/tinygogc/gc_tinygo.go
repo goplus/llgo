@@ -449,8 +449,7 @@ func startMark(root uintptr) {
 
 			if gcStateOf(referencedBlock) == blockStateFree {
 				// The to-be-marked object doesn't actually exist.
-				// This could either be a dangling pointer (oops!) but most likely
-				// just a false positive.
+				// This is probably a false positive.
 				continue
 			}
 
