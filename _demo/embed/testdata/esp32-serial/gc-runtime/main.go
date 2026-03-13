@@ -1283,9 +1283,15 @@ func runTest(name string, fn func() bool) bool {
 func main() {
 	ok := true
 
-	if !runTest("BasicAllocationAndStats", testBasicAllocationAndStats) { ok = false }
-	if !runTest("StatsConsistency", testStatsConsistency) { ok = false }
-	if !runTest("GlobalPointerRoot", testGlobalPointerRoot) { ok = false }
+	if !runTest("BasicAllocationAndStats", testBasicAllocationAndStats) {
+		ok = false
+	}
+	if !runTest("StatsConsistency", testStatsConsistency) {
+		ok = false
+	}
+	if !runTest("GlobalPointerRoot", testGlobalPointerRoot) {
+		ok = false
+	}
 
 	// Split tests: scrubStack() between build/drop phases clears stale
 	// RISC-V register spills from the caller's stack frame so the
@@ -1294,57 +1300,103 @@ func main() {
 		buildOk, _, afterStats := testGlobalSliceRoot_build()
 		scrubStack()
 		if buildOk && testGlobalSliceRoot_drop(afterStats) {
-			if debugGC { println("PASS: GlobalSliceRoot") }
+			if debugGC {
+				println("PASS: GlobalSliceRoot")
+			}
 		} else {
 			ok = false
 		}
 	}
-	if !runTest("DeferClosureLiveness", testDeferClosureLiveness) { ok = false }
-	if !runTest("DeferArgumentLiveness", testDeferArgumentLiveness) { ok = false }
+	if !runTest("DeferClosureLiveness", testDeferClosureLiveness) {
+		ok = false
+	}
+	if !runTest("DeferArgumentLiveness", testDeferArgumentLiveness) {
+		ok = false
+	}
 	{
 		buildOk, midStats := testReachabilityGraph_build()
 		scrubStack()
 		if buildOk && testReachabilityGraph_drop(midStats) {
-			if debugGC { println("PASS: ReachabilityGraph") }
+			if debugGC {
+				println("PASS: ReachabilityGraph")
+			}
 		} else {
 			ok = false
 		}
 	}
-	if !runTest("CircularReferences", testCircularReferences) { ok = false }
+	if !runTest("CircularReferences", testCircularReferences) {
+		ok = false
+	}
 	{
 		buildOk, extraStats := testMemoryPressure_build()
 		scrubStack()
 		if buildOk && testMemoryPressure_drop(extraStats) {
-			if debugGC { println("PASS: MemoryPressure") }
+			if debugGC {
+				println("PASS: MemoryPressure")
+			}
 		} else {
 			ok = false
 		}
 	}
-	if !runTest("ZeroSizeAllocation", testZeroSizeAllocation) { ok = false }
-	if !runTest("LargeObjectMultiBlock", testLargeObjectMultiBlock) { ok = false }
-	if !runTest("SliceElementLiveness", testSliceElementLiveness) { ok = false }
-	if !runTest("RegisterRootProbe", testRegisterRootProbe) { ok = false }
-	if !runTest("InterfaceLiveness", testInterfaceLiveness) { ok = false }
-	if !runTest("SliceAppendGrowth", testSliceAppendGrowth) { ok = false }
-	if !runTest("DeepReferenceChain", testDeepReferenceChain) { ok = false }
+	if !runTest("ZeroSizeAllocation", testZeroSizeAllocation) {
+		ok = false
+	}
+	if !runTest("LargeObjectMultiBlock", testLargeObjectMultiBlock) {
+		ok = false
+	}
+	if !runTest("SliceElementLiveness", testSliceElementLiveness) {
+		ok = false
+	}
+	if !runTest("RegisterRootProbe", testRegisterRootProbe) {
+		ok = false
+	}
+	if !runTest("InterfaceLiveness", testInterfaceLiveness) {
+		ok = false
+	}
+	if !runTest("SliceAppendGrowth", testSliceAppendGrowth) {
+		ok = false
+	}
+	if !runTest("DeepReferenceChain", testDeepReferenceChain) {
+		ok = false
+	}
 	{
 		buildOk, buildStats := testUnreachableOrphanCollection_build()
 		scrubStack()
 		if buildOk && testUnreachableOrphanCollection_drop(buildStats) {
-			if debugGC { println("PASS: UnreachableOrphanCollection") }
+			if debugGC {
+				println("PASS: UnreachableOrphanCollection")
+			}
 		} else {
 			ok = false
 		}
 	}
-	if !runTest("GCIdempotency", testGCIdempotency) { ok = false }
-	if !runTest("AllocAfterGCReclaim", testAllocAfterGCReclaim) { ok = false }
-	if !runTest("NestedStructPointers", testNestedStructPointers) { ok = false }
-	if !runTest("TotalAllocMonotonicity", testTotalAllocMonotonicity) { ok = false }
-	if !runTest("StatsConsistencyAfterMultipleGCCycles", testStatsConsistencyAfterMultipleGCCycles) { ok = false }
-	if !runTest("DeferInLoopLiveness", testDeferInLoopLiveness) { ok = false }
-	if !runTest("PartialGraphUnlinking", testPartialGraphUnlinking) { ok = false }
-	if !runTest("MultipleCyclesDisjoint", testMultipleCyclesDisjoint) { ok = false }
-	if !runTest("MixedObjectSizes", testMixedObjectSizes) { ok = false }
+	if !runTest("GCIdempotency", testGCIdempotency) {
+		ok = false
+	}
+	if !runTest("AllocAfterGCReclaim", testAllocAfterGCReclaim) {
+		ok = false
+	}
+	if !runTest("NestedStructPointers", testNestedStructPointers) {
+		ok = false
+	}
+	if !runTest("TotalAllocMonotonicity", testTotalAllocMonotonicity) {
+		ok = false
+	}
+	if !runTest("StatsConsistencyAfterMultipleGCCycles", testStatsConsistencyAfterMultipleGCCycles) {
+		ok = false
+	}
+	if !runTest("DeferInLoopLiveness", testDeferInLoopLiveness) {
+		ok = false
+	}
+	if !runTest("PartialGraphUnlinking", testPartialGraphUnlinking) {
+		ok = false
+	}
+	if !runTest("MultipleCyclesDisjoint", testMultipleCyclesDisjoint) {
+		ok = false
+	}
+	if !runTest("MixedObjectSizes", testMixedObjectSizes) {
+		ok = false
+	}
 
 	if ok {
 		println("OK")
