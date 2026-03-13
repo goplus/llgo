@@ -205,8 +205,6 @@ type aProgram struct {
 	destructTy  *types.Signature
 	setjmpTy    *types.Signature
 	longjmpTy   *types.Signature
-	sigsetjmpTy *types.Signature
-	sigljmpTy   *types.Signature
 
 	printfTy *types.Signature
 
@@ -749,6 +747,9 @@ func (p Package) rtFunc(fnName string) Expr {
 	p.NeedRuntime = true
 	fn := p.Prog.runtime().Scope().Lookup(fnName).(*types.Func)
 	name := FullName(fn.Pkg(), fnName)
+	if p.fnlink != nil {
+		name = p.fnlink(name)
+	}
 	sig := fn.Type().(*types.Signature)
 	return p.NewFunc(name, sig, InGo).Expr
 }
