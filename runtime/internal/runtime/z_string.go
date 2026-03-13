@@ -61,12 +61,12 @@ func CStrDup(s String) *int8 {
 
 func StringSlice(base String, i, j int) String {
 	if i < 0 || j < i || j > base.len {
-		panic("string slice index out of bounds")
+		panic(errorString("slice bounds out of range"))
 	}
-	if i < base.len {
-		return String{c.Advance(base.data, i), j - i}
+	if base.data == nil {
+		return String{nil, j - i}
 	}
-	return String{nil, 0}
+	return String{c.Advance(base.data, i), j - i}
 }
 
 type StringIter struct {

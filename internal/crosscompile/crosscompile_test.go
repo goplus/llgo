@@ -168,6 +168,9 @@ func TestUseCrossCompileSDK(t *testing.T) {
 }
 
 func TestUseTarget(t *testing.T) {
+	needSkipDownload = true
+	defer func() { needSkipDownload = false }()
+
 	// Test cases for target-based configuration
 	testCases := []struct {
 		name        string

@@ -19,6 +19,7 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/g
 
 define void @"github.com/goplus/llgo/cl/_testrt/linkname.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/linkname.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -37,9 +38,11 @@ _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.F"(ptr @4, ptr @5, ptr @6, ptr @7)
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   call void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.(*m).setInfo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 5 })
-  %1 = load %"github.com/goplus/llgo/cl/_testrt/linkname.m", ptr %0, align 8
-  %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info"(%"github.com/goplus/llgo/cl/_testrt/linkname.m" %1)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load %"github.com/goplus/llgo/cl/_testrt/linkname.m", ptr %0, align 8
+  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info"(%"github.com/goplus/llgo/cl/_testrt/linkname.m" %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -47,6 +50,8 @@ _llgo_0:
 declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.F"(ptr, ptr, ptr, ptr)
 
 declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.(*m).setInfo"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/cl/_testrt/linkname/linktarget.init"()
 

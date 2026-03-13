@@ -7,6 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tpindex"
 
 define void @"github.com/goplus/llgo/cl/_testgo/tpindex.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/tpindex.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -43,6 +44,8 @@ _llgo_0:
   ret void
 }
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tpindex.index[int]"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, i64 %1) {
@@ -64,9 +67,11 @@ _llgo_2:                                          ; preds = %_llgo_1
   %10 = or i1 %9, %8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
   %11 = getelementptr inbounds i64, ptr %6, i64 %4
-  %12 = load i64, ptr %11, align 4
-  %13 = icmp eq i64 %1, %12
-  br i1 %13, label %_llgo_4, label %_llgo_1
+  %12 = icmp eq ptr %11, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load i64, ptr %11, align 4
+  %14 = icmp eq i64 %1, %13
+  br i1 %14, label %_llgo_4, label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
   ret i64 -1

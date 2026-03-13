@@ -15,12 +15,15 @@ _llgo_0:
   %4 = or i1 %3, %2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %4)
   %5 = getelementptr inbounds i8, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.array", i64 %1
-  %6 = load i8, ptr %5, align 1
-  ret i8 %6
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load i8, ptr %5, align 1
+  ret i8 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/utf8.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -70,6 +73,8 @@ _llgo_3:                                          ; preds = %_llgo_1
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"unicode/utf8.init"()
 

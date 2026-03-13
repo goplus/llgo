@@ -11,12 +11,14 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/matrix"
 
 define void @"github.com/goplus/llgo/cl/_testpy/matrix.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/matrix.init$guard", align 1
   call void @"github.com/goplus/lib/py/numpy.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load ptr, ptr @__llgo_py.numpy, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @3, ptr @__llgo_py.numpy.add, ptr null)
   br label %_llgo_2
@@ -77,6 +79,7 @@ _llgo_0:
   %47 = call i32 @PyList_SetItem(ptr %46, i64 0, ptr %25)
   %48 = call i32 @PyList_SetItem(ptr %46, i64 1, ptr %32)
   %49 = call i32 @PyList_SetItem(ptr %46, i64 2, ptr %39)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %50 = load ptr, ptr @__llgo_py.numpy.add, align 8
   %51 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %50, ptr %21, ptr %46, ptr null)
   %52 = call ptr @PyObject_Str(ptr %21)
@@ -90,6 +93,8 @@ _llgo_0:
   %60 = call i32 (ptr, ...) @printf(ptr @2, ptr %59)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/lib/py/numpy.init"()
 

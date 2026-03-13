@@ -35,7 +35,7 @@ type Slice struct {
 
 func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
 	if i < 0 || j < i || k < j || k > cap {
-		panic("slice index out of bounds")
+		panic(errorString("slice bounds out of range"))
 	}
 	s.len = j - i
 	s.cap = k - i
@@ -50,7 +50,7 @@ func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
 // SliceAppend append elem data and returns a slice.
 func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 	if etSize == 0 {
-		return src
+		return GrowSlice(src, num, etSize)
 	}
 	oldLen := src.len
 	src = GrowSlice(src, num, etSize)
@@ -64,11 +64,13 @@ func GrowSlice(src Slice, num, etSize int) Slice {
 	newLen := oldLen + num
 	if newLen > src.cap {
 		newCap := nextslicecap(newLen, src.cap)
-		p := AllocZ(uintptr(newCap * etSize))
-		if oldLen != 0 {
-			c.Memcpy(p, src.data, uintptr(oldLen*etSize))
+		if etSize != 0 {
+			p := AllocZ(uintptr(newCap * etSize))
+			if oldLen != 0 {
+				c.Memcpy(p, src.data, uintptr(oldLen*etSize))
+			}
+			src.data = p
 		}
-		src.data = p
 		src.cap = newCap
 	}
 	src.len = newLen
@@ -144,6 +146,15 @@ func panicmakeslicecap() {
 
 func SliceClear(t *abi.SliceType, s Slice) {
 	c.Memset(s.data, 0, uintptr(s.len)*t.Elem.Size())
+}
+
+// SliceToArrayPtr implements the runtime check for slice-to-array-pointer
+// conversion and returns the slice backing pointer on success.
+func SliceToArrayPtr(src Slice, max int) unsafe.Pointer {
+	if src.len < max {
+		PanicSliceConvert(max, src.len)
+	}
+	return src.data
 }
 
 // -----------------------------------------------------------------------------

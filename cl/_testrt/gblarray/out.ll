@@ -14,8 +14,10 @@ _llgo_0:
   %1 = icmp sge i64 %0, 25
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %1)
   %2 = getelementptr inbounds ptr, ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.basicTypes", i64 %0
-  %3 = load ptr, ptr %2, align 8
-  ret ptr %3
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  ret ptr %4
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.basicType"(i64 %0) {
@@ -25,19 +27,22 @@ _llgo_0:
   %3 = icmp sge i64 %0, 25
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %3)
   %4 = getelementptr inbounds i64, ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.sizeBasicTypes", i64 %0
-  %5 = load i64, ptr %4, align 4
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 2
-  %7 = trunc i64 %0 to i32
-  %8 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 6
-  %9 = trunc i64 %0 to i8
-  store i64 %5, ptr %2, align 4
-  store i32 %7, ptr %6, align 4
-  store i8 %9, ptr %8, align 1
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i64, ptr %4, align 4
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 2
+  %8 = trunc i64 %0 to i32
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 6
+  %10 = trunc i64 %0 to i8
+  store i64 %6, ptr %2, align 4
+  store i32 %8, ptr %7, align 4
+  store i8 %10, ptr %9, align 1
   ret ptr %1
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/gblarray.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -57,15 +62,21 @@ define void @"github.com/goplus/llgo/cl/_testrt/gblarray.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.Basic"(i64 24)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %0, i32 0, i32 6
-  %2 = load i8, ptr %1, align 1
-  %3 = zext i8 %2 to i64
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %0, i32 0, i32 0
-  %5 = load i64, ptr %4, align 4
-  %6 = call i32 (ptr, ...) @printf(ptr @0, i64 %3, i64 %5)
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i8, ptr %1, align 1
+  %4 = zext i8 %3 to i64
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %0, i32 0, i32 0
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load i64, ptr %5, align 4
+  %8 = call i32 (ptr, ...) @printf(ptr @0, i64 %4, i64 %7)
   ret void
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

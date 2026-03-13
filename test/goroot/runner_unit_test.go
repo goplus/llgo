@@ -4,7 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseDirective(t *testing.T) {
@@ -72,5 +74,44 @@ func TestXFailMatch(t *testing.T) {
 	}
 	if reason != "known issue" {
 		t.Fatalf("reason=%q, want known issue", reason)
+	}
+}
+
+func TestRunProgramTimeout(t *testing.T) {
+	if os.Getenv("LLGO_GOROOT_HELPER") == "sleep" {
+		time.Sleep(200 * time.Millisecond)
+		return
+	}
+
+	stdout, stderr, exitCode, err := runProgram(
+		t.TempDir(),
+		os.Args[0],
+		append(os.Environ(), "LLGO_GOROOT_HELPER=sleep"),
+		50*time.Millisecond,
+		"-test.run=TestRunProgramTimeout",
+	)
+	if err == nil {
+		t.Fatal("expected timeout")
+	}
+	if exitCode == 0 {
+		t.Fatalf("exitCode=%d, want non-zero on timeout", exitCode)
+	}
+	if len(stdout) != 0 {
+		t.Fatalf("stdout=%q, want empty", stdout)
+	}
+	if len(stderr) != 0 {
+		t.Fatalf("stderr=%q, want empty", stderr)
+	}
+	if !strings.Contains(err.Error(), "timed out after") {
+		t.Fatalf("err=%v, want timeout", err)
+	}
+}
+
+func TestNormalizeOutputStripsLogTimestamp(t *testing.T) {
+	in := []byte("2026/03/13 00:56:11 listing stdlib export files: open : no such file or directory\n")
+	got := string(normalizeOutput(in))
+	want := "listing stdlib export files: open : no such file or directory\n"
+	if got != want {
+		t.Fatalf("normalizeOutput()=%q, want %q", got, want)
 	}
 }

@@ -36,6 +36,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/reflectfn.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/reflectfn.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -131,10 +132,14 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/reflectfn.main$1"(ptr %0) {
 _llgo_0:
-  %1 = load { ptr }, ptr %0, align 8
-  %2 = extractvalue { ptr } %1, 0
-  %3 = load i64, ptr %2, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load { ptr }, ptr %0, align 8
+  %3 = extractvalue { ptr } %2, 0
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %3, align 4
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -142,6 +147,8 @@ _llgo_0:
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @fmt.init()
 

@@ -5,6 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/constconv"
 
 define void @"github.com/goplus/llgo/cl/_testgo/constconv.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/constconv.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -28,6 +29,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
 

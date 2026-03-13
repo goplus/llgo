@@ -8,6 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/closure2"
 
 define void @"github.com/goplus/llgo/cl/_testgo/closure2.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/closure2.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -38,28 +39,36 @@ _llgo_0:
 
 define { ptr, ptr } @"github.com/goplus/llgo/cl/_testgo/closure2.main$1"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %5 = getelementptr inbounds { ptr }, ptr %4, i32 0, i32 0
-  store ptr %3, ptr %5, align 8
-  %6 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closure2.main$1$1", ptr undef }, ptr %4, 1
-  ret { ptr, ptr } %6
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %6 = getelementptr inbounds { ptr }, ptr %5, i32 0, i32 0
+  store ptr %4, ptr %6, align 8
+  %7 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closure2.main$1$1", ptr undef }, ptr %5, 1
+  ret { ptr, ptr } %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/closure2.main$1$1"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  %4 = load i64, ptr %3, align 4
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i64, ptr %4, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %6)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

@@ -16,7 +16,7 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %2 = phi %"github.com/goplus/llgo/runtime/internal/runtime.String" [ zeroinitializer, %_llgo_0 ], [ %13, %_llgo_2 ]
+  %2 = phi %"github.com/goplus/llgo/runtime/internal/runtime.String" [ zeroinitializer, %_llgo_0 ], [ %14, %_llgo_2 ]
   %3 = phi i64 [ -1, %_llgo_0 ], [ %4, %_llgo_2 ]
   %4 = add i64 %3, 1
   %5 = icmp slt i64 %4, %1
@@ -30,8 +30,10 @@ _llgo_2:                                          ; preds = %_llgo_1
   %10 = or i1 %9, %8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
   %11 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %6, i64 %4
-  %12 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %11, align 8
-  %13 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2, %"github.com/goplus/llgo/runtime/internal/runtime.String" %12)
+  %12 = icmp eq ptr %11, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %11, align 8
+  %14 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2, %"github.com/goplus/llgo/runtime/internal/runtime.String" %13)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -47,6 +49,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/concat.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/concat.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -77,6 +80,8 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringCat"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 

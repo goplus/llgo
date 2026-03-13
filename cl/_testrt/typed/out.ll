@@ -32,6 +32,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/typed"
 
 define void @"github.com/goplus/llgo/cl/_testrt/typed.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/typed.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -92,43 +93,51 @@ _llgo_5:                                          ; preds = %_llgo_4, %_llgo_3
   %19 = getelementptr inbounds i64, ptr %17, i64 1
   store i64 1, ptr %18, align 4
   store i64 2, ptr %19, align 4
-  %20 = load [2 x i64], ptr %17, align 4
-  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store [2 x i64] %20, ptr %21, align 4
-  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A", ptr undef }, ptr %21, 1
-  %23 = alloca [2 x i64], align 8
-  call void @llvm.memset(ptr %23, i8 0, i64 16, i1 false)
-  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 0
-  %25 = icmp eq ptr %24, @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A"
-  br i1 %25, label %_llgo_6, label %_llgo_7
+  %20 = icmp eq ptr %17, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %20)
+  %21 = load [2 x i64], ptr %17, align 4
+  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store [2 x i64] %21, ptr %22, align 4
+  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A", ptr undef }, ptr %22, 1
+  %24 = alloca [2 x i64], align 8
+  call void @llvm.memset(ptr %24, i8 0, i64 16, i1 false)
+  %25 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %23, 0
+  %26 = icmp eq ptr %25, @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A"
+  br i1 %26, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  %26 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, 1
-  %27 = load [2 x i64], ptr %26, align 4
-  %28 = insertvalue { [2 x i64], i1 } undef, [2 x i64] %27, 0
-  %29 = insertvalue { [2 x i64], i1 } %28, i1 true, 1
+  %27 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %23, 1
+  %28 = load [2 x i64], ptr %27, align 4
+  %29 = insertvalue { [2 x i64], i1 } undef, [2 x i64] %28, 0
+  %30 = insertvalue { [2 x i64], i1 } %29, i1 true, 1
   br label %_llgo_8
 
 _llgo_7:                                          ; preds = %_llgo_5
   br label %_llgo_8
 
 _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
-  %30 = phi { [2 x i64], i1 } [ %29, %_llgo_6 ], [ zeroinitializer, %_llgo_7 ]
-  %31 = extractvalue { [2 x i64], i1 } %30, 0
-  store [2 x i64] %31, ptr %23, align 4
-  %32 = extractvalue { [2 x i64], i1 } %30, 1
-  %33 = getelementptr inbounds i64, ptr %23, i64 0
-  %34 = load i64, ptr %33, align 4
-  %35 = getelementptr inbounds i64, ptr %23, i64 1
-  %36 = load i64, ptr %35, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %34)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  %31 = phi { [2 x i64], i1 } [ %30, %_llgo_6 ], [ zeroinitializer, %_llgo_7 ]
+  %32 = extractvalue { [2 x i64], i1 } %31, 0
+  store [2 x i64] %32, ptr %24, align 4
+  %33 = extractvalue { [2 x i64], i1 } %31, 1
+  %34 = getelementptr inbounds i64, ptr %24, i64 0
+  %35 = icmp eq ptr %34, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %35)
+  %36 = load i64, ptr %34, align 4
+  %37 = getelementptr inbounds i64, ptr %24, i64 1
+  %38 = icmp eq ptr %37, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %38)
+  %39 = load i64, ptr %37, align 4
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %36)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %39)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %33)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 

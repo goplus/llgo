@@ -27,6 +27,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/tpnamed.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -65,6 +66,8 @@ _llgo_0:
   %1 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"()
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 define linkonce %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"(ptr %0) {
 _llgo_0:

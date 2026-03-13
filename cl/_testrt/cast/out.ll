@@ -240,6 +240,7 @@ _llgo_4:                                          ; preds = %_llgo_2
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/cast.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -327,3 +328,5 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

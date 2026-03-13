@@ -98,6 +98,7 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 
 // collectCommonInputs collects common build configuration inputs.
 func (c *context) collectCommonInputs(m *manifestBuilder) {
+	m.common.CacheVersion = "2"
 	m.common.AbiMode = fmt.Sprintf("%d", c.buildConf.AbiMode)
 	if c.buildConf.Tags != "" {
 		m.common.BuildTags = strings.Split(c.buildConf.Tags, ",")
@@ -138,8 +139,13 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 	m.pkg.PkgPath = p.PkgPath
 	m.pkg.PkgID = p.ID
 
-	// Go source files
-	goFilesList, err := digestFilesWithOverlay(p.GoFiles, c.conf.Overlay)
+	// Fingerprint the exact compiled source set so test variants do not collide
+	// with normal package builds in the shared cache.
+	goFiles := p.CompiledGoFiles
+	if len(goFiles) == 0 {
+		goFiles = p.GoFiles
+	}
+	goFilesList, err := digestFilesWithOverlay(goFiles, c.conf.Overlay)
 	if err != nil {
 		return fmt.Errorf("digest go files: %w", err)
 	}
@@ -147,7 +153,11 @@ func (c *context) collectPackageInputs(m *manifestBuilder, pkg *aPackage) error 
 
 	// Alt package files (if any)
 	if pkg.AltPkg != nil {
-		altList, err := digestFilesWithOverlay(pkg.AltPkg.GoFiles, c.conf.Overlay)
+		altGoFiles := pkg.AltPkg.CompiledGoFiles
+		if len(altGoFiles) == 0 {
+			altGoFiles = pkg.AltPkg.GoFiles
+		}
+		altList, err := digestFilesWithOverlay(altGoFiles, c.conf.Overlay)
 		if err != nil {
 			return fmt.Errorf("digest alt go files: %w", err)
 		}

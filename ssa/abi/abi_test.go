@@ -67,6 +67,32 @@ func TestPointer(t *testing.T) {
 	testValue(t, b, ppptyp, pppv)
 }
 
+func TestBlankFieldComparable(t *testing.T) {
+	type blankInt struct {
+		_ int
+	}
+	type mixedBlankInt struct {
+		X int
+		_ int
+	}
+
+	b := newBuilder("main")
+	blankIntTyp := types.NewStruct([]*types.Var{
+		types.NewField(0, nil, "_", types.Typ[types.Int], false),
+	}, nil)
+	mixedBlankIntTyp := types.NewStruct([]*types.Var{
+		types.NewField(0, nil, "X", types.Typ[types.Int], false),
+		types.NewField(0, nil, "_", types.Typ[types.Int], false),
+	}, nil)
+
+	if got, want := b.EqualName(blankIntTyp) != "", reflect.TypeOf(blankInt{}).Comparable(); got != want {
+		t.Fatalf("blankInt comparable = %v, want %v", got, want)
+	}
+	if got, want := b.EqualName(mixedBlankIntTyp) != "", reflect.TypeOf(mixedBlankInt{}).Comparable(); got != want {
+		t.Fatalf("mixedBlankInt comparable = %v, want %v", got, want)
+	}
+}
+
 func TestSlice(t *testing.T) {
 	b := newBuilder("main")
 	testValue(t, b, types.NewSlice(types.Typ[types.Int]), []int{})

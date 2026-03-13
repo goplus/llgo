@@ -5,6 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tplocaltype"
 
 define void @"github.com/goplus/llgo/cl/_testgo/tplocaltype.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/tplocaltype.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -34,6 +35,8 @@ _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testgo/tplocaltype.id[github.com/goplus/llgo/cl/_testgo/tplocaltype.T.2.0]"(i64 2)
   ret i64 %0
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tplocaltype.id[github.com/goplus/llgo/cl/_testgo/tplocaltype.T.1.0]"(i64 %0) {
 _llgo_0:

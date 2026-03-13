@@ -16,6 +16,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/callpy"
 
 define void @"github.com/goplus/llgo/cl/_testpy/callpy.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/callpy.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -24,10 +25,13 @@ _llgo_1:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/lib/py/math.init"()
   call void @"github.com/goplus/lib/py/os.init"()
   call void @"github.com/goplus/lib/py/std.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load ptr, ptr @__llgo_py.builtins, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @2, ptr @__llgo_py.builtins.print, ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %2 = load ptr, ptr @__llgo_py.math, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %2, ptr @3, ptr @__llgo_py.math.sqrt, ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %3 = load ptr, ptr @__llgo_py.os, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %3, ptr @4, ptr @__llgo_py.os.getcwd, ptr null)
   br label %_llgo_2
@@ -39,17 +43,22 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testpy/callpy.main"() {
 _llgo_0:
   %0 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load ptr, ptr @__llgo_py.math.sqrt, align 8
   %2 = call ptr @PyObject_CallOneArg(ptr %1, ptr %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %3 = load ptr, ptr @__llgo_py.os.getcwd, align 8
   %4 = call ptr @PyObject_CallNoArgs(ptr %3)
   %5 = call double @PyFloat_AsDouble(ptr %2)
   %6 = call i32 (ptr, ...) @printf(ptr @0, double %5)
   %7 = call ptr @PyUnicode_FromString(ptr @1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %8 = load ptr, ptr @__llgo_py.builtins.print, align 8
   %9 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %8, ptr %7, ptr %4, ptr null)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/lib/py/math.init"()
 

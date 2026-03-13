@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -30,6 +31,7 @@ var (
 	flagLimit  = flag.Int("limit", 0, "maximum number of matching cases to run")
 	flagKeep   = flag.Bool("keepwork", false, "keep temporary work directories for debugging")
 	flagXFail  = flag.String("xfail", filepath.Join("test", "goroot", "xfail.yaml"), "xfail configuration path relative to repo root")
+	flagRunTO  = flag.Duration("run-timeout", 20*time.Second, "timeout for each go/llgo child process; 0 disables the timeout")
 )
 
 var defaultGoRootTestDirs = []string{
@@ -313,13 +315,13 @@ func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase)
 		defer cleanup()
 	}
 
-	goStdout, goStderr, goExit, err := runProgram(workRoot, goCmd, runnerEnv(repoRoot, goroot), "run", tc.FileName)
+	goStdout, goStderr, goExit, err := runProgram(workRoot, goCmd, runnerEnv(repoRoot, goroot), *flagRunTO, "run", tc.FileName)
 	if err != nil {
-		return fmt.Errorf("baseline go run failed: %w", err)
+		return commandFailure("baseline go run", err, goStdout, goStderr, goExit)
 	}
-	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBin, runnerEnv(repoRoot, goroot), "run", tc.FileName)
+	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBin, runnerEnv(repoRoot, goroot), *flagRunTO, "run", tc.FileName)
 	if err != nil {
-		return fmt.Errorf("llgo run failed: %w", err)
+		return commandFailure("llgo run", err, llgoStdout, llgoStderr, llgoExit)
 	}
 
 	goStdout = normalizeOutput(goStdout)
@@ -392,31 +394,80 @@ func appendIfMissing(env []string, kv string) []string {
 	return append(env, kv)
 }
 
-func runProgram(dir, app string, env []string, args ...string) ([]byte, []byte, int, error) {
+func runProgram(dir, app string, env []string, timeout time.Duration, args ...string) ([]byte, []byte, int, error) {
 	cmd := exec.Command(app, args...)
+	configureProcessGroup(cmd)
 	cmd.Dir = dir
 	cmd.Env = env
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return nil, nil, 0, err
+	}
+
+	waitCh := make(chan error, 1)
+	go func() {
+		waitCh <- cmd.Wait()
+	}()
+
+	var err error
+	timedOut := false
+	if timeout > 0 {
+		select {
+		case err = <-waitCh:
+		case <-time.After(timeout):
+			timedOut = true
+			killProcessTree(cmd)
+			err = <-waitCh
+		}
+	} else {
+		err = <-waitCh
+	}
 	exitCode := 0
 	if err != nil {
 		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
+		switch {
+		case errors.As(err, &exitErr):
 			exitCode = exitErr.ExitCode()
-		} else {
+		default:
 			return nil, nil, 0, err
 		}
 	}
+	if timedOut {
+		return stdout.Bytes(), stderr.Bytes(), exitCode, fmt.Errorf("timed out after %s", timeout)
+	}
 	return stdout.Bytes(), stderr.Bytes(), exitCode, nil
+}
+
+func commandFailure(prefix string, err error, stdout, stderr []byte, exitCode int) error {
+	var msg strings.Builder
+	fmt.Fprintf(&msg, "%s failed: %v", prefix, err)
+	if exitCode != 0 {
+		fmt.Fprintf(&msg, "\nexit code: %d", exitCode)
+	}
+	if len(stdout) != 0 {
+		fmt.Fprintf(&msg, "\nstdout:\n%s", normalizeOutput(stdout))
+	}
+	if len(stderr) != 0 {
+		fmt.Fprintf(&msg, "\nstderr:\n%s", normalizeOutput(stderr))
+	}
+	return errors.New(msg.String())
 }
 
 func normalizeOutput(in []byte) []byte {
 	in = bytes.ReplaceAll(in, []byte("\r\n"), []byte("\n"))
 	in = bytes.ReplaceAll(in, []byte("\r"), []byte("\n"))
-	return in
+	lines := bytes.SplitAfter(in, []byte{'\n'})
+	if len(lines) == 0 {
+		return in
+	}
+	var out bytes.Buffer
+	for _, line := range lines {
+		out.WriteString(trimLogTimestampPrefix(string(line)))
+	}
+	return out.Bytes()
 }
 
 func filterNoise(in []byte) []byte {
@@ -442,6 +493,21 @@ func filterNoise(in []byte) []byte {
 		out.Write(line)
 	}
 	return out.Bytes()
+}
+
+func trimLogTimestampPrefix(line string) string {
+	if len(line) < 20 {
+		return line
+	}
+	if line[4] != '/' || line[7] != '/' || line[10] != ' ' || line[13] != ':' || line[16] != ':' || line[19] != ' ' {
+		return line
+	}
+	for _, pos := range []int{0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18} {
+		if line[pos] < '0' || line[pos] > '9' {
+			return line
+		}
+	}
+	return line[20:]
 }
 
 func releaseTagsFor(goVersion string) []string {

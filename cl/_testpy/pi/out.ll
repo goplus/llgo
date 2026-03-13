@@ -8,6 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/pi"
 
 define void @"github.com/goplus/llgo/cl/_testpy/pi.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/pi.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -22,12 +23,15 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testpy/pi.main"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load ptr, ptr @__llgo_py.math, align 8
   %1 = call ptr @PyObject_GetAttrString(ptr %0, ptr @1)
   %2 = call double @PyFloat_AsDouble(ptr %1)
   %3 = call i32 (ptr, ...) @printf(ptr @0, double %2)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/lib/py/math.init"()
 

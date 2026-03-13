@@ -12,6 +12,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/uint.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/uint.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -29,5 +30,7 @@ _llgo_0:
   %1 = call i32 (ptr, ...) @printf(ptr @0, i32 %0)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i32 @printf(ptr, ...)

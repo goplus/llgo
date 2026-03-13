@@ -638,6 +638,9 @@ func TestResolveEmbedPatterns_DuplicateAndReadFailure(t *testing.T) {
 	}
 	defer os.Chmod(noRead, 0o600)
 	if _, err := goembed.ResolvePatterns(dir, []string{"noread.txt"}); err == nil {
+		if _, readErr := os.ReadFile(noRead); readErr == nil {
+			t.Skip("current user can still read chmod 0 file")
+		}
 		t.Fatalf("resolveEmbedPatterns should fail for unreadable file")
 	}
 }
@@ -661,6 +664,9 @@ func TestResolveEmbedPatterns_WalkDirError(t *testing.T) {
 	defer os.Chmod(locked, 0o755)
 
 	if _, err := goembed.ResolvePatterns(dir, []string{"root"}); err == nil {
+		if _, readErr := os.ReadDir(locked); readErr == nil {
+			t.Skip("current user can still read chmod 0 directory")
+		}
 		t.Fatalf("resolveEmbedPatterns should fail when walk cannot read directory")
 	}
 }

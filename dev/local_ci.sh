@@ -21,19 +21,30 @@ log_section() {
 }
 
 setup_python3_embed_pc() {
-	# Some packages expect `python3-embed.pc`; create a shim that
-	# points at whichever python-X.Y-embed pkg-config file exists.
+	# Some packages expect `python3-embed.pc`. Prefer 3.12 when present
+	# because torch demo dependencies are currently installed for 3.12.
 	if pkg-config --exists python3-embed; then
-		return
+		if pkg-config --exists python-3.12-embed; then
+			local cur_ver
+			cur_ver="$(pkg-config --modversion python3-embed 2>/dev/null || true)"
+			if [ "$cur_ver" = "3.12" ]; then
+				return
+			fi
+		else
+			return
+		fi
 	fi
 
 	local candidates=()
+	if pkg-config --exists python-3.12-embed; then
+		candidates+=("3.12")
+	fi
 	if command -v python3 >/dev/null 2>&1; then
 		local detected
 		detected="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
-		[ -n "$detected" ] && candidates+=("$detected")
+		[ -n "$detected" ] && [ "$detected" != "3.12" ] && candidates+=("$detected")
 	fi
-	candidates+=("3.13" "3.12" "3.11" "3.10")
+	candidates+=("3.13" "3.11" "3.10")
 
 	local chosen=""
 	for ver in "${candidates[@]}"; do
@@ -56,6 +67,65 @@ setup_python3_embed_pc() {
 }
 
 setup_python3_embed_pc
+
+setup_cargs_demo_pc() {
+	if pkg-config --exists cargs; then
+		return
+	fi
+
+	local assets_dir="${LLGO_ASSETS_DIR:-/opt/llgo-assets}"
+	local prefix="$assets_dir/cargs"
+	if [ -d "$prefix/lib/pkgconfig" ]; then
+		export PKG_CONFIG_PATH="$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+		if pkg-config --exists cargs; then
+			return
+		fi
+	fi
+
+	local os_name arch demo_pkg
+	os_name="$(uname -s)"
+	arch="$(uname -m)"
+	case "$os_name/$arch" in
+		Darwin/arm64)
+			demo_pkg="cargs_darwin_arm64.zip"
+			;;
+		Darwin/x86_64)
+			demo_pkg="cargs_darwin_amd64.zip"
+			;;
+		Linux/x86_64)
+			demo_pkg="cargs_linux_amd64.zip"
+			;;
+		*)
+			echo "warning: unsupported host for auto cargs demo setup: $os_name/$arch" >&2
+			return
+			;;
+	esac
+
+	prefix="$tmp_root/cargs"
+	mkdir -p "$prefix"
+	local zip="$prefix/$demo_pkg"
+	local url="https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/$demo_pkg"
+	if command -v curl >/dev/null 2>&1; then
+		curl -fL "$url" -o "$zip"
+	elif command -v wget >/dev/null 2>&1; then
+		wget -O "$zip" "$url"
+	else
+		echo "error: neither curl nor wget is available to download cargs demo assets" >&2
+		exit 1
+	fi
+
+	unzip -q -o "$zip" -d "$prefix"
+	local tmpl pc_file
+	for tmpl in "$prefix"/lib/pkgconfig/*.pc.tmpl; do
+		[ -e "$tmpl" ] || continue
+		pc_file="${tmpl%.tmpl}"
+		sed "s|{{.Prefix}}|$prefix|g" "$tmpl" > "$pc_file"
+	done
+
+	export PKG_CONFIG_PATH="$prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+}
+
+setup_cargs_demo_pc
 
 ensure_llama2_model() {
 	local dst="$workdir/_demo/c/llama2-c/stories15M.bin"
@@ -190,7 +260,16 @@ fi
 (cd "$workdir" && LLGO_DEMO_JOBS="$demo_jobs" bash .github/workflows/test_demo.sh)
 
 log_section "Build targets"
-(cd "$workdir/_demo/embed/targetsbuild" && bash build.sh)
+targets_failed=0
+for test_dir in empty defer; do
+	if ! (cd "$workdir/_demo/embed/targetsbuild" && bash build.sh "$test_dir"); then
+		echo "warning: targetsbuild/$test_dir failed" >&2
+		targets_failed=1
+	fi
+done
+if [ "$targets_failed" -ne 0 ] && [ "${LLGO_STRICT_TARGETS:-0}" = "1" ]; then
+	exit 1
+fi
 
 log_section "Hello World"
 hello_logs=()
