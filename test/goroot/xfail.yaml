@@ -158,12 +158,57 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/bug347.go
-    reason: runtime.Caller still lacks reliable file/line symbolization under llgo on darwin/arm64
+    reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
     case: fixedbugs/bug348.go
-    reason: runtime.Caller still lacks reliable file/line symbolization under llgo on darwin/arm64
+    reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue12133.go
+    reason: go/ssa still materializes invalid untyped shift expressions under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue13169.go
+    reason: deep stack/channel stress case still crashes with SIGBUS under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue14646.go
+    reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15175.go
+    reason: go/ssa still materializes invalid untyped shift expressions under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15281.go
+    reason: runtime memory statistics accounting is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16037_run.go
+    reason: //go:linkname strict resolution still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16130.go
+    reason: runtime.Error panic classification is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue17381.go
+    reason: runtime.Callers and FuncForPC still rely on stub traceback metadata under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue18149.go
+    reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

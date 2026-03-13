@@ -319,7 +319,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		for i := 0; i < n; i++ {
 			if f := t.Field(i); !f.Exported() {
 				if pkg := f.Pkg(); pkg != nil {
-					pkgPath = pkg.Path()
+					pkgPath = abi.UserPathOf(pkg)
 					break
 				}
 			}
@@ -332,7 +332,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		ab := b.abiInfo()
 		name, _ = ab.TypeName(t)
 		fields = []llvm.Value{
-			b.Str(pkg.Path()).impl,
+			b.Str(b.Pkg.Path()).impl,
 			b.abiInterfaceImethods(t, name+"$imethods"),
 		}
 	case *types.Named:
@@ -349,7 +349,7 @@ retry:
 		goto retry
 	case *types.Named:
 		pkg := typ.Obj().Pkg()
-		return pkg, abi.PathOf(pkg)
+		return pkg, abi.UserPathOf(pkg)
 	}
 	return nil, b.Pkg.Path()
 }

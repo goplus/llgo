@@ -2,7 +2,12 @@
 
 package runtime
 
-import iruntime "github.com/goplus/llgo/runtime/internal/runtime"
+import (
+	"unsafe"
+
+	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
+	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
+)
 
 // StackRecord is a minimal placeholder for runtime/pprof.
 type StackRecord struct {
@@ -56,5 +61,16 @@ func NumGoroutine() int {
 func SetCPUProfileRate(hz int) {}
 
 func FuncForPC(pc uintptr) *Func {
-	return nil
+	info := &clitedebug.Info{}
+	if clitedebug.Addrinfo(unsafe.Pointer(pc), info) == 0 {
+		return nil
+	}
+	name := safeGoString(info.Sname, "")
+	if name == "" {
+		name = unknownFunctionName(pc)
+	}
+	return (*Func)(unsafe.Pointer(&funcValue{
+		name:  name,
+		entry: uintptr(info.Saddr),
+	}))
 }

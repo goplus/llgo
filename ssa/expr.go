@@ -876,12 +876,21 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 				}
 			case *types.Basic:
-				if x.Type != b.Prog.Int32() {
-					srcType := x.Type
-					x.Type = b.Prog.Int32()
-					x.impl = castInt(b, x.impl, srcType, b.Prog.Int32())
+				if x.Type.kind == vkUnsigned {
+					if x.Type != b.Prog.Uint64() {
+						srcType := x.Type
+						x.Type = b.Prog.Uint64()
+						x.impl = castInt(b, x.impl, srcType, b.Prog.Uint64())
+					}
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromUint64"), x).impl
+					return
 				}
-				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
+				if x.Type != b.Prog.Int64() {
+					srcType := x.Type
+					x.Type = b.Prog.Int64()
+					x.impl = castInt(b, x.impl, srcType, b.Prog.Int64())
+				}
+				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromInt64"), x).impl
 				return
 			}
 		case types.Complex128:

@@ -62,15 +62,23 @@ func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 func GrowSlice(src Slice, num, etSize int) Slice {
 	oldLen := src.len
 	newLen := oldLen + num
+	if etSize == 0 {
+		if newLen > 0 && src.data == nil {
+			src.data = zeroAlloc()
+		}
+		if newLen > src.cap {
+			src.cap = nextslicecap(newLen, src.cap)
+		}
+		src.len = newLen
+		return src
+	}
 	if newLen > src.cap {
 		newCap := nextslicecap(newLen, src.cap)
-		if etSize != 0 {
-			p := AllocZ(uintptr(newCap * etSize))
-			if oldLen != 0 {
-				c.Memcpy(p, src.data, uintptr(oldLen*etSize))
-			}
-			src.data = p
+		p := AllocZ(uintptr(newCap * etSize))
+		if oldLen != 0 {
+			c.Memcpy(p, src.data, uintptr(oldLen*etSize))
 		}
+		src.data = p
 		src.cap = newCap
 	}
 	src.len = newLen

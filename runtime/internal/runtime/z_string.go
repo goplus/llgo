@@ -17,6 +17,7 @@
 package runtime
 
 import (
+	"unicode/utf8"
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
@@ -156,9 +157,21 @@ func StringFromRunes(rs []rune) (s String) {
 func StringFromRune(r rune) (s String) {
 	var buf [4]byte
 	n := encoderune(buf[:], r)
-	s.len = n
-	s.data = unsafe.Pointer(&buf[0])
-	return
+	return StringFrom(unsafe.Pointer(&buf[0]), n)
+}
+
+func StringFromInt64(v int64) String {
+	if v < 0 || v > utf8.MaxRune {
+		return StringFromRune(utf8.RuneError)
+	}
+	return StringFromRune(rune(v))
+}
+
+func StringFromUint64(v uint64) String {
+	if v > utf8.MaxRune {
+		return StringFromRune(utf8.RuneError)
+	}
+	return StringFromRune(rune(v))
 }
 
 func StringEqual(x, y String) bool {

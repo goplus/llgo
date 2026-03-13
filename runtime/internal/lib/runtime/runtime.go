@@ -42,6 +42,10 @@ func GOMAXPROCS(n int) int {
 	return int(c_maxprocs())
 }
 
+func NumCPU() int {
+	return int(c_maxprocs())
+}
+
 func Gosched() {
 	// LLGo's runtime does not currently have a scheduler handoff primitive.
 	// Keep the symbol available for compatibility; callers that need to poll

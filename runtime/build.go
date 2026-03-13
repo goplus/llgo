@@ -24,14 +24,15 @@ func HasAdditiveAltPkg(path string) bool {
 }
 
 var altPkgs = map[string]altPkgMode{
-	"internal/abi":          altPkgReplace,
-	"internal/reflectlite":  altPkgReplace,
-	"internal/runtime/maps": altPkgReplace,
-	"internal/runtime/sys":  altPkgAdditive,
-	"iter":                  altPkgReplace,
-	"reflect":               altPkgReplace,
-	"runtime":               altPkgReplace,
-	"unique":                altPkgReplace,
-	"syscall/js":            altPkgReplace,
-	"sync/atomic":           altPkgReplace,
+	"internal/abi":            altPkgReplace,
+	"internal/reflectlite":    altPkgReplace,
+	"internal/runtime/atomic": altPkgReplace,
+	"internal/runtime/maps":   altPkgReplace,
+	"internal/runtime/sys":    altPkgAdditive,
+	"iter":                    altPkgReplace,
+	"reflect":                 altPkgReplace,
+	"runtime":                 altPkgReplace,
+	"sync/atomic":             altPkgReplace,
+	"unique":                  altPkgReplace,
+	"syscall/js":              altPkgReplace,
 }

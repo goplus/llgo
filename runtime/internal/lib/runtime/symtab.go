@@ -179,8 +179,16 @@ type Func struct {
 	opaque struct{} // unexported field to disallow conversions
 }
 
+type funcValue struct {
+	name  string
+	entry uintptr
+}
+
 func (f *Func) Name() string {
-	panic("todo")
+	if f == nil {
+		return ""
+	}
+	return (*funcValue)(unsafe.Pointer(f)).name
 }
 
 // moduledata records information about the layout of the executable

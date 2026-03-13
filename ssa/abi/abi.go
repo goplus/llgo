@@ -409,6 +409,10 @@ func userPathOf(pkg *types.Package) string {
 	return path
 }
 
+func UserPathOf(pkg *types.Package) string {
+	return userPathOf(pkg)
+}
+
 // FullName returns the full name of a package member.
 func FullName(pkg *types.Package, name string) string {
 	if pkg == nil {
