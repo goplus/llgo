@@ -197,6 +197,21 @@ func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, boo
 	return value, true
 }
 
+func isBlankFieldStore(addr ssa.Value) bool {
+	fieldAddr, ok := addr.(*ssa.FieldAddr)
+	if !ok {
+		return false
+	}
+	switch typ := fieldAddr.X.Type().Underlying().(type) {
+	case *types.Pointer:
+		st, ok := typ.Elem().Underlying().(*types.Struct)
+		return ok && st.Field(fieldAddr.Field).Name() == "_"
+	case *types.Struct:
+		return typ.Field(fieldAddr.Field).Name() == "_"
+	}
+	return false
+}
+
 type pkgState byte
 
 const (
@@ -975,6 +990,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	switch v := instr.(type) {
 	case *ssa.Store:
 		va := v.Addr
+		if isBlankFieldStore(va) {
+			return
+		}
 		if va, ok := va.(*ssa.IndexAddr); ok {
 			if args, ok := p.isVArgs(va.X); ok { // varargs: this is a varargs store
 				idx := intVal(va.Index)

@@ -349,6 +349,9 @@ func (t *rtype) PkgPath() string {
 	}
 	ut := t.uncommon()
 	if ut == nil {
+		if t.Kind() == UnsafePointer {
+			return "unsafe"
+		}
 		return ""
 	}
 	return ut.PkgPath_

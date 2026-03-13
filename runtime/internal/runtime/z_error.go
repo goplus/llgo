@@ -67,6 +67,10 @@ func AssertNilDeref(b bool) {
 	}
 }
 
+func MakeTypeAssertionError(have, want string) any {
+	return plainError("type assertion " + have + " -> " + want + " failed")
+}
+
 // printany prints an argument passed to panic.
 // If panic is called with a value that has a String or Error method,
 // it has already been converted into a string by preprintpanics.

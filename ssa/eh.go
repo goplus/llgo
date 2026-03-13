@@ -536,7 +536,13 @@ func (b Builder) Recover() Expr {
 // Panic emits a panic instruction.
 func (b Builder) Panic(v Expr) {
 	b.Call(b.Pkg.rtFunc("Panic"), v)
-	b.Unreachable() // TODO: func supports noreturn attribute
+	// Panic does not return, but we still switch to a fresh dead block so
+	// subsequent builder emissions remain valid IR.
+	b.Unreachable()
+	dead := b.Func.MakeBlock()
+	b.SetBlock(dead)
+	b.Unreachable()
+	b.SetBlockEx(dead, BeforeLast, true)
 }
 
 // -----------------------------------------------------------------------------

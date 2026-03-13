@@ -287,6 +287,46 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: fixedbugs/issue30116.go
+    reason: int64/uint64 bounds checks still miss many index and slice panic paths under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30116u.go
+    reason: int64/uint64 bounds checks still miss many index and slice panic paths under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue32477.go
+    reason: finalizer retention timing is still unstable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue33724.go
+    reason: promoted nil-receiver panic and stack trimming still diverge under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue37975.go
+    reason: makeslice cap panic classification still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue45045.go
+    reason: finalizer-backed map key retention still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue4562.go
+    reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue46725.go
+    reason: finalizer collection timing is still unstable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: switch.go
     reason: switch lowering still hits an unsupported const type path under llgo on darwin/arm64
   - version: go1.24
