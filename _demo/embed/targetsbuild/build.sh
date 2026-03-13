@@ -97,6 +97,47 @@ warned_targets=()
 failed_targets=()
 targets_to_build=()
 
+# Known target limitations that currently fail due missing libc/runtime/linker
+# support rather than regressions in the sample being built.
+common_known_limitations=(
+	# <unknown>:0: error: out of range branch target (expected an integer in the range -4096 to 4095)
+	# error: cannot compile inline asm
+	"digispark"
+
+	# /usr/include/features-time64.h:20:10: fatal error: 'bits/wordsize.h' file not found
+	"nintendoswitch"
+
+	# ld.lld: error: ... cannot link object files with incompatible target ISA
+	"simavr"
+
+	# libc / pthread / startup symbol gaps on current cross toolchains
+	"arduino-leonardo"
+	"arduino-mega1280"
+	"arduino-mega2560"
+	"arduino-nano-new"
+	"arduino-nano"
+	"arduino"
+	"atmega1284p"
+	"atmega328pb"
+	"attiny1616"
+	"cortex-m0"
+	"cortex-m0plus"
+	"cortex-m3"
+	"cortex-m33"
+	"cortex-m4"
+	"cortex-m7"
+	"d1mini"
+	"esp8266"
+	"gameboy-advance"
+	"hifive1b"
+	"maixbit"
+	"nodemcu"
+	"riscv-qemu"
+	"riscv32-esp"
+	"stm32l0x2"
+	"tkey"
+)
+
 # Define ignore list based on test directory
 case "$test_dir" in
 	empty)
@@ -111,6 +152,8 @@ case "$test_dir" in
 			"riscv32"
 			"riscv64"
 			"rp2040"
+
+			"${common_known_limitations[@]}"
 		)
 		;;
 	defer)
@@ -126,49 +169,7 @@ case "$test_dir" in
 			"riscv64"
 			"rp2040"
 
-			# <unknown>:0: error: out of range branch target (expected an integer in the range -4096 to 4095)
-			# error: cannot compile inline asm
-			"digispark"
-
-			#In file included from /home/runner/work/llgo/llgo/runtime/internal/clite/debug/_wrap/debug.c:9:
-			# In file included from /usr/include/dlfcn.h:22:
-			# In file included from /usr/include/features.h:394:
-			# /usr/include/features-time64.h:20:10: fatal error: 'bits/wordsize.h' file not found
-			#    20 | #include <bits/wordsize.h>
-			#       |          ^~~~~~~~~~~~~~~~~
-			# 1 error generated.
-			# panic: exit status 1
-			"nintendoswitch"
-
-			# ld.lld: error: /home/runner/.cache/llgo/crosscompile/picolibc-v0.1.0/libc-avr.a(-home-runner-.cache-llgo-crosscompile-picolibc-v0.1.0-newlib-libc-tinystdio-printf.c1170247836.o): cannot link object files with incompatible target ISA
-			"simavr"
-
-			# libc symbol lack
-			"arduino-leonardo"
-			"arduino-mega1280"
-			"arduino-mega2560"
-			"arduino-nano-new"
-			"arduino-nano"
-			"arduino"
-			"atmega1284p"
-			"atmega328pb"
-			"attiny1616"
-			"cortex-m0"
-			"cortex-m0plus"
-			"cortex-m3"
-			"cortex-m33"
-			"cortex-m4"
-			"cortex-m7"
-			"d1mini"
-			"esp8266"
-			"gameboy-advance"
-			"hifive1b"
-			"maixbit"
-			"nodemcu"
-			"riscv-qemu"
-			"riscv32-esp"
-			"stm32l0x2"
-			"tkey"
+			"${common_known_limitations[@]}"
 		)
 		;;
 	*)
