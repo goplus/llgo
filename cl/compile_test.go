@@ -136,7 +136,6 @@ func TestRunFromTestgo(t *testing.T) {
 	cltest.RunFromDir(t, "", "./_testgo", nil)
 }
 
-<<<<<<< HEAD
 func TestFilterEmulatorOutput(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -196,7 +195,9 @@ func TestRunEmbedEmulator(t *testing.T) {
 				})
 			}
 		})
-=======
+	}
+}
+
 func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 	output, err := cltest.RunAndCapture("./_testgo/select", "")
 	if err != nil {
@@ -210,7 +211,6 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 	}
 	if _, ok := allowed[got]; !ok {
 		t.Fatalf("unexpected select output:\n%s", got)
->>>>>>> 194199a4 (cltest: allow select sample interleavings)
 	}
 }
 
