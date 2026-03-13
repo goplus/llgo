@@ -125,7 +125,6 @@ var cycleB *node
 var mixedSmall []*tinyObj
 var mixedMedium []*node
 var mixedLargeSlice []*largeObj
-var regProbeResult *node // used by testRegisterRootProbe
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -643,31 +642,32 @@ func testLargeObjectMultiBlock() bool {
 }
 
 // ---------------------------------------------------------------------------
-// 12. testStackLocalLiveness
-// Covers: heap pointers stored in a local array on the stack. An array is
-// always backed by an alloca (LLVM cannot promote it to registers), so the
-// conservative stack scanner will reliably find the pointers inside it.
+// 12. testSliceElementLiveness
+// Covers: heap objects reachable through a global slice survive GC.
+// The slice header is in a global variable, but the backing array and
+// each *node element are heap-allocated. This verifies that the GC
+// traces the indirect reference chain: global → slice → heap objects.
 // ---------------------------------------------------------------------------
 
-var stackTestSlice []*node
+var sliceTestElements []*node
 
-func testStackLocalLiveness() bool {
-	stackTestSlice = make([]*node, 4)
-	stackTestSlice[0] = &node{id: 800}
-	stackTestSlice[1] = &node{id: 801}
-	stackTestSlice[2] = &node{id: 802}
-	stackTestSlice[3] = &node{id: 803}
+func testSliceElementLiveness() bool {
+	sliceTestElements = make([]*node, 4)
+	sliceTestElements[0] = &node{id: 800}
+	sliceTestElements[1] = &node{id: 801}
+	sliceTestElements[2] = &node{id: 802}
+	sliceTestElements[3] = &node{id: 803}
 
 	gcCollect()
 	gcCollect()
 	gcCollect()
 
 	for i := 0; i < 4; i++ {
-		if stackTestSlice[i] == nil || stackTestSlice[i].id != 800+i {
-			return fail("stack local: array root lost after GC")
+		if sliceTestElements[i] == nil || sliceTestElements[i].id != 800+i {
+			return fail("slice element: heap pointer lost after GC")
 		}
 	}
-	stackTestSlice = nil
+	sliceTestElements = nil
 	return true
 }
 
@@ -1322,7 +1322,7 @@ func main() {
 	}
 	if !runTest("ZeroSizeAllocation", testZeroSizeAllocation) { ok = false }
 	if !runTest("LargeObjectMultiBlock", testLargeObjectMultiBlock) { ok = false }
-	if !runTest("StackLocalLiveness", testStackLocalLiveness) { ok = false }
+	if !runTest("SliceElementLiveness", testSliceElementLiveness) { ok = false }
 	if !runTest("RegisterRootProbe", testRegisterRootProbe) { ok = false }
 	if !runTest("InterfaceLiveness", testInterfaceLiveness) { ok = false }
 	if !runTest("SliceAppendGrowth", testSliceAppendGrowth) { ok = false }
