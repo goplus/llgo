@@ -17,7 +17,6 @@
 package ssa
 
 import (
-	"go/constant"
 	"go/token"
 	"go/types"
 	"log"
@@ -256,7 +255,10 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	var eq Expr
 	var val func() Expr
 	if x.RawType() == assertedTyp.RawType() {
-		eq = b.Const(constant.MakeBool(!b.faceData(x.impl).IsNull()), b.Prog.Bool())
+		eq = Expr{
+			llvm.CreateICmp(b.impl, llvm.IntNE, tx.impl, llvm.ConstNull(tx.impl.Type())),
+			b.Prog.Bool(),
+		}
 		val = func() Expr { return x }
 	} else {
 		if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {

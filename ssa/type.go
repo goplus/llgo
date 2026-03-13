@@ -385,8 +385,11 @@ func (p Program) toType(raw types.Type) Type {
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
-		elem := p.rawType(t.Elem())
-		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
+		// LLVM pointers are opaque in our backend, so lowering the pointee type
+		// is unnecessary and can recurse forever on valid Go types such as:
+		//   type T18 *[10]T19
+		//   type T19 T18
+		return &aType{p.tyVoidPtr(), typ, vkPtr}
 	case *types.Interface:
 		if t.Empty() {
 			return &aType{p.rtEface(), typ, vkEface}
@@ -423,8 +426,10 @@ func (p Program) toLLVMNamedStruct(name string, raw *types.Named, st *types.Stru
 	typ := &aType{t, rawType{raw}, kind}
 	p.named[name] = typ
 	p.typs.Set(raw, typ)
+	p.building[name] = true
 	fields := p.toLLVMFields(st)
 	t.StructSetBody(fields, false)
+	delete(p.building, name)
 	return typ
 }
 
@@ -536,6 +541,15 @@ func isPkgScope(parent, pkgScope *types.Scope) bool {
 func (p Program) toNamed(raw *types.Named) Type {
 	name := p.llvmNameOf(raw)
 	if typ, ok := p.named[name]; ok {
+		if p.building[name] {
+			return typ
+		}
+		// Self-referential named types re-enter here while their LLVM named
+		// struct body is still being filled. Reuse the in-progress placeholder
+		// instead of recursing through equivalence checks.
+		if typ.raw.Type == raw {
+			return typ
+		}
 		if namedTypeEquivalent(typ.raw.Type, raw) || p.namedStructLayoutEquivalent(typ, raw) {
 			return typ
 		}

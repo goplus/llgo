@@ -187,6 +187,8 @@ type aFunction struct {
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
 	hasVArg  bool
 
+	genericTypeArgs []types.Type
+
 	diFunc DIFunction
 }
 
@@ -258,6 +260,14 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 // Name returns the function's name.
 func (p Function) Name() string {
 	return p.impl.Name()
+}
+
+func (p Function) SetGenericTypeArgs(typeArgs []types.Type) {
+	p.genericTypeArgs = append(p.genericTypeArgs[:0], typeArgs...)
+}
+
+func (p Function) GenericTypeArgs() []types.Type {
+	return p.genericTypeArgs
 }
 
 // Params returns the function's ith parameter.

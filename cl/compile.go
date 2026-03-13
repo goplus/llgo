@@ -307,6 +307,15 @@ func isInstance(f *ssa.Function) bool {
 	return false
 }
 
+func genericTypeArgsOf(f *ssa.Function) []types.Type {
+	for ; f != nil; f = f.Parent() {
+		if targs := f.TypeArgs(); len(targs) != 0 {
+			return targs
+		}
+	}
+	return nil
+}
+
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
@@ -341,9 +350,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	if fn == nil {
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
+		fn.SetGenericTypeArgs(genericTypeArgsOf(f))
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
+	} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+		fn.SetGenericTypeArgs(targs)
 	}
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {

@@ -157,6 +157,16 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: fixedbugs/bug347.go
+    reason: runtime.Caller still lacks reliable file/line symbolization under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug348.go
+    reason: runtime.Caller still lacks reliable file/line symbolization under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: switch.go
     reason: switch lowering still hits an unsupported const type path under llgo on darwin/arm64
   - version: go1.24
@@ -174,6 +184,11 @@ xfails:
     directive: run
     case: typeparam/chans.go
     reason: generic ranger finalizer path still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/nested.go
+    reason: local generic runtime type canonicalization still misses enclosing function instantiation context under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

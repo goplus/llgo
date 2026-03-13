@@ -62,10 +62,23 @@ var (
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])), false)
 )
 
+func (b Builder) abiInfo() abi.Builder {
+	ab := b.Pkg.abi
+	ab.LocalTypeArgs = b.localTypeArgs()
+	return ab
+}
+
+func (b Builder) localTypeArgs() []string {
+	typeArgs := b.Func.GenericTypeArgs()
+	if len(typeArgs) == 0 {
+		return nil
+	}
+	return abi.TypeArgStrings(typeArgs)
+}
+
 func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
-	pkg := b.Pkg
-	ab := pkg.abi
+	ab := b.abiInfo()
 	// Size uintptr
 	fields = append(fields, prog.IntVal(uint64(ab.Size(t)), prog.Uintptr()).impl)
 	// PtrBytes uintptr
@@ -292,13 +305,15 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 			prog.IntVal(uint64(flags), prog.Uint32()).impl,
 		}
 	case *types.Signature:
-		name, _ := b.Pkg.abi.TypeName(t)
+		ab := b.abiInfo()
+		name, _ := ab.TypeName(t)
 		fields = []llvm.Value{
 			b.abiTuples(t.Params(), name+"$in"),
 			b.abiTuples(t.Results(), name+"$out"),
 		}
 	case *types.Struct:
-		name, _ = b.Pkg.abi.TypeName(t)
+		ab := b.abiInfo()
+		name, _ = ab.TypeName(t)
 		var pkgPath string
 		n := t.NumFields()
 		for i := 0; i < n; i++ {
@@ -314,7 +329,8 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 			b.abiStructFields(t, name+"$fields"),
 		}
 	case *types.Interface:
-		name, _ = b.Pkg.abi.TypeName(t)
+		ab := b.abiInfo()
+		name, _ = ab.TypeName(t)
 		fields = []llvm.Value{
 			b.Str(pkg.Path()).impl,
 			b.abiInterfaceImethods(t, name+"$imethods"),
@@ -471,7 +487,8 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 	}
 */
 func (b Builder) abiType(t types.Type) Expr {
-	name, _ := b.Pkg.abi.TypeName(t)
+	ab := b.abiInfo()
+	name, _ := ab.TypeName(t)
 	g := b.Pkg.VarOf(name)
 	prog := b.Prog
 	pkg := b.Pkg

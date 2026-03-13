@@ -121,6 +121,7 @@ type aProgram struct {
 	td      llvm.TargetData
 	tm      llvm.TargetMachine
 	named   map[string]Type
+	building map[string]bool
 	fnnamed map[string]int
 
 	intType   llvm.Type
@@ -262,7 +263,7 @@ func NewProgram(target *Target) Program {
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
-		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
+		ptrSize: td.PointerSize(), named: make(map[string]Type), building: make(map[string]bool), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
 }
