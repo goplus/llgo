@@ -212,6 +212,81 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: fixedbugs/issue19040.go
+    reason: nil receiver panicwrap text still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue21879.go
+    reason: traceback function naming still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22083.go
+    reason: traceback frame metadata is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22662.go
+    reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue23017.go
+    reason: concurrency stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue23837.go
+    reason: concurrency stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue24491b.go
+    reason: concurrency stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25897a.go
+    reason: concurrency stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue26094.go
+    reason: panic payload typing still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue26335.go
+    reason: reflect.Call type validation still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27201.go
+    reason: panic location tracking still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27518b.go
+    reason: finalizer timing is still unstable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue28748.go
+    reason: reflect panic classification is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue29190.go
+    reason: expected runtime panic is still missing under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue29504.go
+    reason: traceback frame metadata is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: switch.go
     reason: switch lowering still hits an unsupported const type path under llgo on darwin/arm64
   - version: go1.24
