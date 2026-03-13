@@ -53,8 +53,10 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testgo/interface.Game1" %0, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/interface.Game1", ptr %1, i32 0, i32 0
-  %3 = load ptr, ptr %2, align 8
-  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %3)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %4)
   ret void
 }
 
@@ -64,24 +66,30 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testgo/interface.Game1" %0, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/interface.Game1", ptr %1, i32 0, i32 0
-  %3 = load ptr, ptr %2, align 8
-  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"(ptr %3)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"(ptr %4)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).Load"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/interface.Game1", ptr %0, i32 0, i32 0
-  %2 = load ptr, ptr %1, align 8
-  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %2)
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %3)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).initGame"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/interface.Game1", ptr %0, i32 0, i32 0
-  %2 = load ptr, ptr %1, align 8
-  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"(ptr %2)
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load ptr, ptr %1, align 8
+  call void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"(ptr %3)
   ret void
 }
 
@@ -92,6 +100,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/interface.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/interface.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -185,6 +194,8 @@ _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr)
 

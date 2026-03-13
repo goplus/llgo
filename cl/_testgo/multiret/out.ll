@@ -6,6 +6,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/multiret"
 
 define { i64, double } @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(double %0) {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load i64, ptr @"github.com/goplus/llgo/cl/_testgo/multiret.a", align 4
   %2 = insertvalue { i64, double } undef, i64 %1, 0
   %3 = insertvalue { i64, double } %2, double %0, 1
@@ -14,6 +15,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/multiret.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/multiret.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -37,6 +39,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

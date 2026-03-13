@@ -697,6 +697,11 @@ func TestExtractZip(t *testing.T) {
 		if err := os.MkdirAll(readOnlyDir, 0400); err != nil {
 			t.Fatal(err)
 		}
+		if probe, err := os.CreateTemp(readOnlyDir, "probe-*"); err == nil {
+			probe.Close()
+			os.Remove(probe.Name())
+			t.Skip("destination remains writable in this environment")
+		}
 
 		// Execute extraction and expect error
 		if err := extractZip(zipPath, readOnlyDir); err == nil {

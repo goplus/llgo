@@ -40,6 +40,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/reflectmkfn"
 
 define void @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -120,28 +121,34 @@ _llgo_0:
   %3 = icmp sge i64 0, %2
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %3)
   %4 = getelementptr inbounds %reflect.Value, ptr %1, i64 0
-  %5 = load %reflect.Value, ptr %4, align 8
-  %6 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @reflect.Value.String(%reflect.Value %5)
-  %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
-  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
-  %9 = icmp sge i64 1, %8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9)
-  %10 = getelementptr inbounds %reflect.Value, ptr %7, i64 1
-  %11 = load %reflect.Value, ptr %10, align 8
-  %12 = call i64 @reflect.Value.Int(%reflect.Value %11)
-  %13 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @strings.Repeat(%"github.com/goplus/llgo/runtime/internal/runtime.String" %6, i64 %12)
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %15 = getelementptr inbounds %reflect.Value, ptr %14, i64 0
-  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %13, ptr %16, align 8
-  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %16, 1
-  %18 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %17)
-  store %reflect.Value %18, ptr %15, align 8
-  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %14, 0
-  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %19, i64 1, 1
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %20, i64 1, 2
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %21
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load %reflect.Value, ptr %4, align 8
+  %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @reflect.Value.String(%reflect.Value %6)
+  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
+  %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
+  %10 = icmp sge i64 1, %9
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
+  %11 = getelementptr inbounds %reflect.Value, ptr %8, i64 1
+  %12 = icmp eq ptr %11, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load %reflect.Value, ptr %11, align 8
+  %14 = call i64 @reflect.Value.Int(%reflect.Value %13)
+  %15 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @strings.Repeat(%"github.com/goplus/llgo/runtime/internal/runtime.String" %7, i64 %14)
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
+  %17 = getelementptr inbounds %reflect.Value, ptr %16, i64 0
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %15, ptr %18, align 8
+  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %18, 1
+  %20 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %19)
+  store %reflect.Value %20, ptr %17, align 8
+  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %16, 0
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %21, i64 1, 1
+  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %22, i64 1, 2
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %23
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @reflect.init()
 

@@ -103,7 +103,7 @@ func (p Package) closureWrapPtr(sig *types.Signature) Function {
 	// ctxArg is expected to be a non-nil pointer to a stored function pointer cell.
 	// We intentionally avoid runtime null checks here; invalid ctx is a compiler/user error.
 	fnPtr := b.Convert(fnPtrType, ctxArg)
-	fnVal := b.Load(fnPtr)
+	fnVal := Expr{llvm.CreateLoad(b.impl, fnType.ll, fnPtr.impl), fnType}
 	args := closureWrapArgs(wrap)
 	ret := b.Call(fnVal, args...)
 	closureWrapReturn(b, sig, ret)

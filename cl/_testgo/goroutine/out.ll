@@ -10,6 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/goroutine"
 
 define void @"github.com/goplus/llgo/cl/_testgo/goroutine.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/goroutine.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -51,19 +52,25 @@ _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %13 = load i1, ptr %0, align 1
-  br i1 %13, label %_llgo_2, label %_llgo_1
+  %13 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load i1, ptr %0, align 1
+  br i1 %14, label %_llgo_2, label %_llgo_1
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %2 = load { ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr } %2, 0
-  store i1 true, ptr %3, align 1
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { ptr }, ptr %0, align 8
+  %4 = extractvalue { ptr } %3, 0
+  store i1 true, ptr %4, align 1
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

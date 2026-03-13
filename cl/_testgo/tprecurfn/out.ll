@@ -7,6 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tprecurfn"
 
 define void @"github.com/goplus/llgo/cl/_testgo/tprecurfn.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/tprecurfn.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -27,12 +28,16 @@ _llgo_0:
   store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tprecurfn.main$1", ptr null }, ptr %3, align 8
   store ptr %2, ptr %1, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %0, i32 0, i32 1
-  %5 = load ptr, ptr %4, align 8
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %5, i32 0, i32 0
-  %7 = load { ptr, ptr }, ptr %6, align 8
-  %8 = extractvalue { ptr, ptr } %7, 1
-  %9 = extractvalue { ptr, ptr } %7, 0
-  call void %9(ptr %8, i64 100)
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load ptr, ptr %4, align 8
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/tprecurfn.My[int]", ptr %6, i32 0, i32 0
+  %8 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = load { ptr, ptr }, ptr %7, align 8
+  %10 = extractvalue { ptr, ptr } %9, 1
+  %11 = extractvalue { ptr, ptr } %9, 0
+  call void %11(ptr %10, i64 100)
   ret void
 }
 
@@ -42,6 +47,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

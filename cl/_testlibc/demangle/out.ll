@@ -10,6 +10,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/demangle"
 
 define void @"github.com/goplus/llgo/cl/_testlibc/demangle.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibc/demangle.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -39,6 +40,8 @@ _llgo_3:                                          ; preds = %_llgo_0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   br label %_llgo_2
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @_ZN4llvm15itaniumDemangleENSt3__117basic_string_viewIcNS0_11char_traitsIcEEEEb(%"github.com/goplus/llgo/runtime/internal/runtime.String", i1)
 

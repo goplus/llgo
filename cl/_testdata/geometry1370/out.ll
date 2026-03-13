@@ -19,18 +19,24 @@ _llgo_0:
 define double @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).Area"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 0
-  %2 = load double, ptr %1, align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 1
-  %4 = load double, ptr %3, align 8
-  %5 = fmul double %2, %4
-  ret double %5
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load double, ptr %1, align 8
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 1
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load double, ptr %4, align 8
+  %7 = fmul double %3, %6
+  ret double %7
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).GetID"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 2
-  %2 = load i64, ptr %1, align 4
-  ret i64 %2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %1, align 4
+  ret i64 %3
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).setID"(ptr %0, i64 %1) {
@@ -43,19 +49,23 @@ _llgo_0:
 define i1 @"github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).validate"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 0
-  %2 = load double, ptr %1, align 8
-  %3 = fcmp ogt double %2, 0.000000e+00
-  br i1 %3, label %_llgo_1, label %_llgo_2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load double, ptr %1, align 8
+  %4 = fcmp ogt double %3, 0.000000e+00
+  br i1 %4, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 1
-  %5 = load double, ptr %4, align 8
-  %6 = fcmp ogt double %5, 0.000000e+00
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", ptr %0, i32 0, i32 1
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load double, ptr %5, align 8
+  %8 = fcmp ogt double %7, 0.000000e+00
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %7 = phi i1 [ false, %_llgo_0 ], [ %6, %_llgo_1 ]
-  ret i1 %7
+  %9 = phi i1 [ false, %_llgo_0 ], [ %8, %_llgo_1 ]
+  ret i1 %9
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, i64 %1) {
@@ -74,6 +84,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/geometry1370.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/geometry1370.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -86,5 +97,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")

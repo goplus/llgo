@@ -5,6 +5,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpfunc"
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpfunc.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/tpfunc.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -29,27 +30,35 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpfunc.main$1"(ptr %0) {
 _llgo_0:
-  %1 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load i64, ptr %0, align 4
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpfunc.main$2"(ptr %0) {
 _llgo_0:
-  %1 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load i64, ptr %0, align 4
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpfunc.main$3"(ptr %0) {
 _llgo_0:
-  %1 = load i64, ptr %0, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load i64, ptr %0, align 4
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpfunc.main$1"(ptr %0, ptr %1) {
 _llgo_0:

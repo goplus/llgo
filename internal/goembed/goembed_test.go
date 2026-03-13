@@ -535,6 +535,9 @@ func TestResolvePatternsDuplicateAndReadFailure(t *testing.T) {
 		t.Fatalf("chmod noread.txt: %v", err)
 	}
 	defer os.Chmod(noRead, 0o600)
+	if _, err := os.ReadFile(noRead); err == nil {
+		t.Skip("file remains readable in this environment")
+	}
 	if _, err := ResolvePatterns(dir, []string{"noread.txt"}); err == nil {
 		t.Fatalf("ResolvePatterns should fail for unreadable file")
 	}
@@ -557,6 +560,9 @@ func TestResolvePatternsWalkDirError(t *testing.T) {
 		t.Fatalf("chmod locked: %v", err)
 	}
 	defer os.Chmod(locked, 0o755)
+	if _, err := os.ReadDir(locked); err == nil {
+		t.Skip("directory remains readable in this environment")
+	}
 	if _, err := ResolvePatterns(dir, []string{"root"}); err == nil {
 		t.Fatalf("ResolvePatterns should fail when walk cannot read directory")
 	}

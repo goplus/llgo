@@ -50,7 +50,19 @@ func PrintFloat(v float64) {
 		}
 		return
 	}
-	c.Fprintf(c.Stderr, c.Str("%+e"), v)
+	var buf [32]c.Char
+	c.Sprintf(&buf[0], c.Str("%+e"), v)
+	n := c.Strlen(&buf[0])
+	if n >= 4 {
+		e := n - 4
+		if c.Index(&buf[0], e) == c.Char('e') {
+			c.Fwrite(unsafe.Pointer(&buf[0]), 1, e+2, c.Stderr)
+			c.Fputc(c.Int('0'), c.Stderr)
+			c.Fwrite(unsafe.Pointer(c.Advance(&buf[0], e+2)), 1, n-(e+2), c.Stderr)
+			return
+		}
+	}
+	c.Fputs(&buf[0], c.Stderr)
 }
 
 func PrintComplex(v complex128) {

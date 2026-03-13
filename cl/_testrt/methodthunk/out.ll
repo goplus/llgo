@@ -73,8 +73,10 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/methodthunk"
 define i64 @"github.com/goplus/llgo/cl/_testrt/methodthunk.(*InnerInt).M"(ptr %0) {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/methodthunk.InnerInt", ptr %0, i32 0, i32 0
-  %2 = load i64, ptr %1, align 4
-  ret i64 %2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %1, align 4
+  ret i64 %3
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/methodthunk.(*OuterInt).M"(ptr %0) {
@@ -86,6 +88,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testrt/methodthunk.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -173,6 +176,8 @@ define void @"github.com/goplus/llgo/cl/_testrt/methodthunk.(*outer).M"(ptr %0) 
 _llgo_0:
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 define void @"github.com/goplus/llgo/cl/_testrt/methodthunk.(*outer).M$thunk"(ptr %0) {
 _llgo_0:

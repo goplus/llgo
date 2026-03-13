@@ -85,15 +85,18 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer, ptr %2, align 8
-  %3 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, align 8
-  %4 = extractvalue { ptr, ptr } %0, 1
-  %5 = extractvalue { ptr, ptr } %0, 0
-  call void %5(ptr %4, %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %3)
+  %3 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, align 8
+  %5 = extractvalue { ptr, ptr } %0, 1
+  %6 = extractvalue { ptr, ptr } %0, 0
+  call void %6(ptr %5, %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %4)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpmethod.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -148,6 +151,8 @@ _llgo_0:
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/tpmethod.main$1"(ptr %0, %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %1) {
@@ -162,8 +167,10 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %0, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %1, i32 0, i32 0
-  %3 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %2, align 8
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
@@ -175,10 +182,12 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 define linkonce void @"github.com/goplus/llgo/cl/_testrt/tpmethod.(*future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]).Then"(ptr %0, { ptr, ptr } %1) {
 _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", ptr %0, i32 0, i32 0
-  %3 = load { ptr, ptr }, ptr %2, align 8
-  %4 = extractvalue { ptr, ptr } %3, 1
-  %5 = extractvalue { ptr, ptr } %3, 0
-  call void %5(ptr %4, { ptr, ptr } %1)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load { ptr, ptr }, ptr %2, align 8
+  %5 = extractvalue { ptr, ptr } %4, 1
+  %6 = extractvalue { ptr, ptr } %4, 0
+  call void %6(ptr %5, { ptr, ptr } %1)
   ret void
 }
 
@@ -194,9 +203,11 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, p
 
 define linkonce %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.(*Tuple[error]).Get"(ptr %0) {
 _llgo_0:
-  %1 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %0, align 8
-  %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error].Get"(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %1)
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load %"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", ptr %0, align 8
+  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error].Get"(%"github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]" %2)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)

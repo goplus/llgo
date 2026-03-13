@@ -9,12 +9,14 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/pow"
 
 define void @"github.com/goplus/llgo/cl/_testpy/pow.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/pow.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/pow.init$guard", align 1
   call void @"github.com/goplus/lib/py/math.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load ptr, ptr @__llgo_py.math, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @1, ptr @__llgo_py.math.pow, ptr null)
   br label %_llgo_2
@@ -27,12 +29,15 @@ define void @"github.com/goplus/llgo/cl/_testpy/pow.main"() {
 _llgo_0:
   %0 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
   %1 = call ptr @PyFloat_FromDouble(double 3.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %2 = load ptr, ptr @__llgo_py.math.pow, align 8
   %3 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %2, ptr %0, ptr %1, ptr null)
   %4 = call double @PyFloat_AsDouble(ptr %3)
   %5 = call i32 (ptr, ...) @printf(ptr @0, double %4)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/lib/py/math.init"()
 

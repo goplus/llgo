@@ -20,6 +20,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/returnorder"
 
 define void @"github.com/goplus/llgo/cl/_testgo/returnorder.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/returnorder.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -41,30 +42,34 @@ _llgo_0:
   store %"github.com/goplus/llgo/cl/_testgo/returnorder.state" %2, ptr %0, align 4
   %3 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } %1, 1
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, i32 0, i32 0
-  %5 = load i64, ptr %4, align 4
-  %6 = icmp ne i64 %5, 2
-  br i1 %6, label %_llgo_1, label %_llgo_3
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load i64, ptr %4, align 4
+  %7 = icmp ne i64 %6, 2
+  br i1 %7, label %_llgo_1, label %_llgo_3
 
 _llgo_1:                                          ; preds = %_llgo_3, %_llgo_0
-  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, i32 0, i32 0
-  %8 = load i64, ptr %7, align 4
-  %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
-  %10 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %9, i64 0
-  %11 = inttoptr i64 %8 to ptr
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %11, 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %10, align 8
-  %13 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %9, i64 1
-  %14 = inttoptr i64 %3 to ptr
-  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %14, 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %15, ptr %13, align 8
-  %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %9, 0
-  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %16, i64 2, 1
-  %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, i64 2, 2
-  %19 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @fmt.Sprintf(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 46 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %19, ptr %20, align 8
-  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %20, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %21)
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, i32 0, i32 0
+  %9 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = load i64, ptr %8, align 4
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %11, i64 0
+  %13 = inttoptr i64 %10 to ptr
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %13, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %14, ptr %12, align 8
+  %15 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %11, i64 1
+  %16 = inttoptr i64 %3 to ptr
+  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %16, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %17, ptr %15, align 8
+  %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %11, 0
+  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18, i64 2, 1
+  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %19, i64 2, 2
+  %21 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @fmt.Sprintf(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 46 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %20)
+  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %21, ptr %22, align 8
+  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %22, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %23)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_3
@@ -73,8 +78,8 @@ _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %22 = icmp ne i64 %3, 2
-  br i1 %22, label %_llgo_1, label %_llgo_2
+  %24 = icmp ne i64 %3, 2
+  br i1 %24, label %_llgo_1, label %_llgo_2
 }
 
 define { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } @"github.com/goplus/llgo/cl/_testgo/returnorder.returnStateAndMut"() {
@@ -83,10 +88,12 @@ _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, i32 0, i32 0
   store i64 1, ptr %1, align 4
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/returnorder.(*state).mutate"(ptr %0, i64 2)
-  %3 = load %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, align 4
-  %4 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } undef, %"github.com/goplus/llgo/cl/_testgo/returnorder.state" %3, 0
-  %5 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } %4, i64 %2, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } %5
+  %3 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, align 4
+  %5 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } undef, %"github.com/goplus/llgo/cl/_testgo/returnorder.state" %4, 0
+  %6 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } %5, i64 %2, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } %6
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/returnorder.(*state).mutate"(ptr %0, i64 %1) {
@@ -94,9 +101,13 @@ _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, i32 0, i32 0
   store i64 %1, ptr %2, align 4
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/returnorder.state", ptr %0, i32 0, i32 0
-  %4 = load i64, ptr %3, align 4
-  ret i64 %4
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %3, align 4
+  ret i64 %5
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @fmt.init()
 

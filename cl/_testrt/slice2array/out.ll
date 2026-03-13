@@ -7,6 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/slice2array"
 
 define void @"github.com/goplus/llgo/cl/_testrt/slice2array.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/slice2array.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -32,75 +33,65 @@ _llgo_0:
   %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
   %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, i64 4, 1
   %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, i64 4, 2
-  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %9 = icmp slt i64 %8, 4
-  br i1 %9, label %_llgo_1, label %_llgo_2
-
-_llgo_1:                                          ; preds = %_llgo_0
-  %10 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PanicSliceConvert"(i64 %10, i64 4)
-  br label %_llgo_2
-
-_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
-  %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
-  %12 = load [4 x i8], ptr %0, align 1
-  %13 = load [4 x i8], ptr %11, align 1
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceToArrayPtr"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, i64 4)
+  %9 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = load [4 x i8], ptr %0, align 1
+  %11 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = load [4 x i8], ptr %8, align 1
+  %13 = extractvalue [4 x i8] %10, 0
   %14 = extractvalue [4 x i8] %12, 0
-  %15 = extractvalue [4 x i8] %13, 0
-  %16 = icmp eq i8 %14, %15
-  %17 = and i1 true, %16
+  %15 = icmp eq i8 %13, %14
+  %16 = and i1 true, %15
+  %17 = extractvalue [4 x i8] %10, 1
   %18 = extractvalue [4 x i8] %12, 1
-  %19 = extractvalue [4 x i8] %13, 1
-  %20 = icmp eq i8 %18, %19
-  %21 = and i1 %17, %20
+  %19 = icmp eq i8 %17, %18
+  %20 = and i1 %16, %19
+  %21 = extractvalue [4 x i8] %10, 2
   %22 = extractvalue [4 x i8] %12, 2
-  %23 = extractvalue [4 x i8] %13, 2
-  %24 = icmp eq i8 %22, %23
-  %25 = and i1 %21, %24
+  %23 = icmp eq i8 %21, %22
+  %24 = and i1 %20, %23
+  %25 = extractvalue [4 x i8] %10, 3
   %26 = extractvalue [4 x i8] %12, 3
-  %27 = extractvalue [4 x i8] %13, 3
-  %28 = icmp eq i8 %26, %27
-  %29 = and i1 %25, %28
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %29)
+  %27 = icmp eq i8 %25, %26
+  %28 = and i1 %24, %27
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %28)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
-  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30, i64 4, 1
-  %32 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31, i64 4, 2
-  %33 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %32, 1
-  %34 = icmp slt i64 %33, 2
-  br i1 %34, label %_llgo_3, label %_llgo_4
-
-_llgo_3:                                          ; preds = %_llgo_2
-  %35 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %32, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PanicSliceConvert"(i64 %35, i64 2)
-  br label %_llgo_4
-
-_llgo_4:                                          ; preds = %_llgo_3, %_llgo_2
-  %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %32, 0
-  %37 = load [2 x i8], ptr %36, align 1
-  %38 = alloca [2 x i8], align 1
-  call void @llvm.memset(ptr %38, i8 0, i64 2, i1 false)
-  %39 = getelementptr inbounds i8, ptr %38, i64 0
-  %40 = getelementptr inbounds i8, ptr %38, i64 1
-  store i8 1, ptr %39, align 1
-  store i8 2, ptr %40, align 1
-  %41 = load [2 x i8], ptr %38, align 1
-  %42 = extractvalue [2 x i8] %37, 0
-  %43 = extractvalue [2 x i8] %41, 0
-  %44 = icmp eq i8 %42, %43
-  %45 = and i1 true, %44
-  %46 = extractvalue [2 x i8] %37, 1
-  %47 = extractvalue [2 x i8] %41, 1
-  %48 = icmp eq i8 %46, %47
-  %49 = and i1 %45, %48
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %49)
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %29, i64 4, 1
+  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30, i64 4, 2
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceToArrayPtr"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31, i64 2)
+  %33 = icmp eq ptr %32, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %33)
+  %34 = load [2 x i8], ptr %32, align 1
+  %35 = alloca [2 x i8], align 1
+  call void @llvm.memset(ptr %35, i8 0, i64 2, i1 false)
+  %36 = getelementptr inbounds i8, ptr %35, i64 0
+  %37 = getelementptr inbounds i8, ptr %35, i64 1
+  store i8 1, ptr %36, align 1
+  store i8 2, ptr %37, align 1
+  %38 = icmp eq ptr %35, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %38)
+  %39 = load [2 x i8], ptr %35, align 1
+  %40 = extractvalue [2 x i8] %34, 0
+  %41 = extractvalue [2 x i8] %39, 0
+  %42 = icmp eq i8 %40, %41
+  %43 = and i1 true, %42
+  %44 = extractvalue [2 x i8] %34, 1
+  %45 = extractvalue [2 x i8] %39, 1
+  %46 = icmp eq i8 %44, %45
+  %47 = and i1 %43, %46
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %47)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PanicSliceConvert"(i64, i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SliceToArrayPtr"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
 

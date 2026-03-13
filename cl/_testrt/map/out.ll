@@ -48,6 +48,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/map"
 
 define void @"github.com/goplus/llgo/cl/_testrt/map.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/map.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -73,10 +74,14 @@ _llgo_0:
   %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 23, ptr %5, align 4
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_int]_llgo_int", ptr %0, ptr %5)
-  %7 = load i64, ptr %6, align 4
-  %8 = call i32 (ptr, ...) @printf(ptr @13, i64 %7)
+  %7 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = load i64, ptr %6, align 4
+  %9 = call i32 (ptr, ...) @printf(ptr @13, i64 %8)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 

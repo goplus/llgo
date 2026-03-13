@@ -21,6 +21,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	"github.com/goplus/llgo/runtime/internal/runtime/math"
 )
 
 // -----------------------------------------------------------------------------
@@ -43,6 +44,15 @@ type Chan struct {
 }
 
 func NewChan(eltSize, cap int) *Chan {
+	if cap < 0 {
+		panic(plainError("makechan: size out of range"))
+	}
+	if cap > 0 {
+		mem, overflow := math.MulUintptr(uintptr(eltSize), uintptr(cap))
+		if overflow || mem > maxAlloc {
+			panic(plainError("makechan: size out of range"))
+		}
+	}
 	ret := new(Chan)
 	if cap > 0 {
 		ret.data = AllocU(uintptr(cap * eltSize))
@@ -77,7 +87,14 @@ func notifyOps(p *Chan) {
 }
 
 func ChanClose(p *Chan) {
+	if p == nil {
+		panic(plainError("close of nil channel"))
+	}
 	p.mutex.Lock()
+	if p.close {
+		p.mutex.Unlock()
+		panic(plainError("close of closed channel"))
+	}
 	p.close = true
 	notifyOps(p)
 	p.mutex.Unlock()
@@ -85,10 +102,17 @@ func ChanClose(p *Chan) {
 }
 
 func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
+	if p == nil {
+		return false
+	}
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
-		if p.getp != chanHasRecv || p.close {
+		if p.close {
+			p.mutex.Unlock()
+			panic(plainError("send on closed channel"))
+		}
+		if p.getp != chanHasRecv {
 			p.mutex.Unlock()
 			return false
 		}
@@ -97,7 +121,11 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		}
 		p.getp = chanNoSendRecv
 	} else {
-		if p.len == n || p.close {
+		if p.close {
+			p.mutex.Unlock()
+			panic(plainError("send on closed channel"))
+		}
+		if p.len == n {
 			p.mutex.Unlock()
 			return false
 		}
@@ -112,6 +140,9 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 }
 
 func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
+	if p == nil {
+		select {}
+	}
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
@@ -122,7 +153,7 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		}
 		if p.close {
 			p.mutex.Unlock()
-			return false
+			panic(plainError("send on closed channel"))
 		}
 		if p.data != nil {
 			c.Memcpy(p.data, v, uintptr(eltSize))
@@ -134,7 +165,7 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 		}
 		if p.close {
 			p.mutex.Unlock()
-			return false
+			panic(plainError("send on closed channel"))
 		}
 		off := (p.getp + p.len) % n
 		c.Memcpy(c.Advance(p.data, off*eltSize), v, uintptr(eltSize))
@@ -147,6 +178,9 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 }
 
 func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK bool) {
+	if p == nil {
+		return false, false
+	}
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
@@ -177,8 +211,8 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 		for p.getp == chanHasRecv && !p.close {
 			p.cond.Wait(&p.mutex)
 		}
-		recvOK = !p.close
-		tryOK = recvOK
+		recvOK = p.getp != chanHasRecv
+		tryOK = recvOK || p.close
 		p.mutex.Unlock()
 	} else {
 		recvOK, tryOK = true, true
@@ -187,6 +221,9 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 }
 
 func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
+	if p == nil {
+		select {}
+	}
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
@@ -221,7 +258,7 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 		for p.getp == chanHasRecv && !p.close {
 			p.cond.Wait(&p.mutex)
 		}
-		recvOK = !p.close
+		recvOK = p.getp != chanHasRecv
 		p.mutex.Unlock()
 	} else {
 		recvOK = true

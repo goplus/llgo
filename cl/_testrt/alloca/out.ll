@@ -7,6 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/alloca"
 
 define void @"github.com/goplus/llgo/cl/_testrt/alloca.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/alloca.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -25,6 +26,8 @@ _llgo_0:
   %2 = call i32 (ptr, ...) @printf(ptr @1, ptr %0)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @memcpy(ptr, ptr, i64)
 

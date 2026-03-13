@@ -42,8 +42,18 @@ func GOMAXPROCS(n int) int {
 	return int(c_maxprocs())
 }
 
+func Gosched() {
+	// LLGo's runtime does not currently have a scheduler handoff primitive.
+	// Keep the symbol available for compatibility; callers that need to poll
+	// for progress already pair Gosched with blocking operations or sleeps.
+}
+
 func Goexit() {
 	runtime.Goexit()
+}
+
+func Breakpoint() {
+	c.Exit(2)
 }
 
 func KeepAlive(x any) {

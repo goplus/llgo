@@ -6,6 +6,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/qsort"
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsort.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/qsort.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -32,23 +33,27 @@ _llgo_0:
   store i64 7, ptr %5, align 4
   %6 = getelementptr inbounds i64, ptr %0, i64 0
   call void @qsort(ptr %6, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsort.main$1")
-  %7 = load [5 x i64], ptr %0, align 4
+  %7 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = load [5 x i64], ptr %0, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %8 = phi i64 [ -1, %_llgo_0 ], [ %9, %_llgo_2 ]
-  %9 = add i64 %8, 1
-  %10 = icmp slt i64 %9, 5
-  br i1 %10, label %_llgo_2, label %_llgo_3
+  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
+  %10 = add i64 %9, 1
+  %11 = icmp slt i64 %10, 5
+  br i1 %11, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %11 = icmp slt i64 %9, 0
-  %12 = icmp sge i64 %9, 5
-  %13 = or i1 %12, %11
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %13)
-  %14 = getelementptr inbounds i64, ptr %0, i64 %9
-  %15 = load i64, ptr %14, align 4
-  %16 = call i32 (ptr, ...) @printf(ptr @0, i64 %15)
+  %12 = icmp slt i64 %10, 0
+  %13 = icmp sge i64 %10, 5
+  %14 = or i1 %13, %12
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
+  %15 = getelementptr inbounds i64, ptr %0, i64 %10
+  %16 = icmp eq ptr %15, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %16)
+  %17 = load i64, ptr %15, align 4
+  %18 = call i32 (ptr, ...) @printf(ptr @0, i64 %17)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -57,12 +62,18 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsort.main$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

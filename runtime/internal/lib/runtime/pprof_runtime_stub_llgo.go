@@ -2,6 +2,8 @@
 
 package runtime
 
+import iruntime "github.com/goplus/llgo/runtime/internal/runtime"
+
 // StackRecord is a minimal placeholder for runtime/pprof.
 type StackRecord struct {
 	Stack []uintptr
@@ -48,7 +50,7 @@ func ThreadCreateProfile(p []StackRecord) (n int, ok bool) {
 }
 
 func NumGoroutine() int {
-	return 1
+	return iruntime.NumGoroutine()
 }
 
 func SetCPUProfileRate(hz int) {}
