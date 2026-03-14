@@ -11,3 +11,10 @@ func TestMakeTypeAssertionErrorImplementsRuntimeError(t *testing.T) {
 		t.Fatalf("MakeTypeAssertionError().Error() = %q", got)
 	}
 }
+
+func TestMakePanicWrapError(t *testing.T) {
+	errv := MakePanicWrapError("main.T", "F")
+	if got := errv.(error).Error(); got != "value method main.T.F called using nil *T pointer" {
+		t.Fatalf("MakePanicWrapError().Error() = %q", got)
+	}
+}

@@ -741,6 +741,22 @@ func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 	return false
 }
 
+func makeSliceAllocCap(v ssa.Value) (int64, bool) {
+	alloc, ok := v.(*ssa.Alloc)
+	if !ok || alloc.Comment != "makeslice" {
+		return 0, false
+	}
+	ptr, ok := alloc.Type().(*types.Pointer)
+	if !ok {
+		return 0, false
+	}
+	arr, ok := types.Unalias(ptr.Elem()).(*types.Array)
+	if !ok {
+		return 0, false
+	}
+	return arr.Len(), true
+}
+
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -856,6 +872,17 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
 			return
+		}
+		if capLen, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
+			t := p.type_(v.Type(), llssa.InGo)
+			nLen := p.prog.IntVal(uint64(capLen), p.prog.Int())
+			if v.High != nil {
+				nLen = p.compileValue(b, v.High)
+			}
+			nCap := p.prog.IntVal(uint64(capLen), p.prog.Int())
+			ret = b.MakeSlice(t, nLen, nCap)
+			ret.Type = t
+			break
 		}
 		var low, high, max llssa.Expr
 		x := p.compileValue(b, vx)

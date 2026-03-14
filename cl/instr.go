@@ -704,9 +704,25 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	switch cv := cv.(type) {
 	case *ssa.Builtin:
 		fn := cv.Name()
-		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-			arg := args[0]
-			ret = p.compileValue(b, arg)
+		if fn == "ssa:wrapnilchk" {
+			ret = p.compileValue(b, args[0])
+			nilPtr := b.Prog.Nil(ret.Type)
+			cond := b.BinOp(token.EQL, ret, nilPtr)
+			params := types.NewTuple(
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.String]),
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.String]),
+			)
+			results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.NewInterfaceType(nil, nil).Complete()))
+			panicWrapFn := b.Pkg.NewFunc(llssa.PkgRuntime+".MakePanicWrapError",
+				types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+			blks := b.Func.MakeBlocks(2)
+			b.If(cond, blks[0], blks[1])
+			b.SetBlockEx(blks[0], llssa.AtEnd, true)
+			errv := b.Call(panicWrapFn.Expr,
+				b.Str(constant.StringVal(args[1].(*ssa.Const).Value)),
+				b.Str(constant.StringVal(args[2].(*ssa.Const).Value)))
+			b.Panic(errv)
+			b.SetBlockEx(blks[1], llssa.AtEnd, true)
 		} else {
 			args := p.compileValues(b, args, kind)
 			ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)

@@ -179,6 +179,9 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	case *types.Pointer:
+		nilPtr := llvm.ConstNull(x.impl.Type())
+		isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 		ar := t.Elem().Underlying().(*types.Array)
 		max := prog.IntVal(uint64(ar.Len()), prog.Int())
 		idx = b.checkIndex(idx, max)

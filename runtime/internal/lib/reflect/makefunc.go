@@ -36,6 +36,25 @@ type funcData struct {
 	nin  int
 }
 
+func checkMakeFuncResults(ftyp *funcType, outs []Value) {
+	if len(outs) != len(ftyp.Out) {
+		panic("reflect: wrong return count from function created by MakeFunc")
+	}
+	for _, out := range outs {
+		if out.typ() == nil {
+			panic("reflect: function created by MakeFunc returned zero Value")
+		}
+	}
+}
+
+func storeMakeFuncResult(dst unsafe.Pointer, typ *abi.Type, out Value) {
+	if typ.IfaceIndir() {
+		c.Memmove(dst, out.ptr, typ.Size_)
+		return
+	}
+	c.Memmove(dst, unsafe.Pointer(&out.ptr), typ.Size_)
+}
+
 func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 	if typ.Kind() != Func {
 		panic("reflect: call of MakeFunc with non-Func type")
@@ -57,7 +76,7 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 			for i := 0; i < fd.nin; i++ {
 				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
 			}
-			fd.fn(ins)
+			checkMakeFuncResults(fd.ftyp, fd.fn(ins))
 		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
 	case 1:
 		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
@@ -67,11 +86,8 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
 			}
 			out := fd.fn(ins)
-			if fd.ftyp.Out[0].IfaceIndir() {
-				c.Memmove(ret, out[0].ptr, fd.ftyp.Out[0].Size_)
-			} else {
-				*(*unsafe.Pointer)(ret) = unsafe.Pointer(out[0].ptr)
-			}
+			checkMakeFuncResults(fd.ftyp, out)
+			storeMakeFuncResult(ret, fd.ftyp.Out[0], out[0])
 		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
 	default:
 		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
@@ -81,13 +97,10 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
 			}
 			outs := fd.fn(ins)
+			checkMakeFuncResults(fd.ftyp, outs)
 			var offset uintptr = 0
 			for i, out := range outs {
-				if fd.ftyp.Out[i].IfaceIndir() {
-					c.Memmove(add(ret, offset, ""), out.ptr, fd.ftyp.Out[i].Size_)
-				} else {
-					*(*unsafe.Pointer)(add(ret, offset, "")) = unsafe.Pointer(out.ptr)
-				}
+				storeMakeFuncResult(add(ret, offset, ""), fd.ftyp.Out[i], out)
 				offset += fd.ftyp.Out[i].Size_
 			}
 		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))

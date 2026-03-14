@@ -97,11 +97,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: recover3.go
-    reason: runtime.Error panic classification is incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: recover4.go
     reason: recover stress case still crashes with SIGBUS under llgo on darwin/arm64
   - version: go1.24
@@ -217,11 +212,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue19040.go
-    reason: nil receiver panicwrap text still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue21879.go
     reason: traceback function naming still diverges under llgo on darwin/arm64
   - version: go1.24
@@ -272,11 +262,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue28748.go
-    reason: reflect panic classification is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue29504.go
     reason: traceback frame metadata is still incomplete under llgo on darwin/arm64
   - version: go1.24
@@ -299,11 +284,6 @@ xfails:
     directive: run
     case: fixedbugs/issue33724.go
     reason: promoted nil-receiver panic and stack trimming still diverge under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue37975.go
-    reason: makeslice cap panic classification still diverges under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

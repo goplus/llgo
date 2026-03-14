@@ -17,6 +17,7 @@
 package runtime
 
 import (
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
@@ -88,6 +89,15 @@ func MakeTypeAssertionError(src string, concrete *abi.Type, want, missingMethod 
 		msg += " (types from different scopes)"
 	}
 	return runtimePlainError(msg)
+}
+
+func MakePanicWrapError(recvType, method string) any {
+	recvType = strings.ReplaceAll(recvType, "command-line-arguments.", "main.")
+	short := recvType
+	if i := strings.LastIndex(recvType, "."); i >= 0 && i+1 < len(recvType) {
+		short = recvType[i+1:]
+	}
+	return plainError("value method " + recvType + "." + method + " called using nil *" + short + " pointer")
 }
 
 // printany prints an argument passed to panic.
