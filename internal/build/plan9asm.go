@@ -201,7 +201,7 @@ func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, erro
 		plan9AsmSigCache.Store(key, sigs)
 		return sigs, nil
 	}
-	if hasAltPkgForTarget(ctx.buildConf, pkgPath) && !llruntime.HasAdditiveAltPkg(pkgPath) {
+	if hasAltPkgForTarget(ctx.buildConf, pkgPath) && !llruntime.HasAdditiveAltPkgForGOARCH(pkgPath, ctx.buildConf.Goarch) {
 		plan9AsmSigCache.Store(key, sigs)
 		return sigs, nil
 	}
@@ -301,13 +301,10 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 }
 
 func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
-	if pkgPath == "internal/runtime/atomic" {
-		return conf != nil && conf.Goarch == "arm"
-	}
-	if !llruntime.HasAltPkg(pkgPath) {
+	if conf == nil || !llruntime.HasAltPkgForGOARCH(pkgPath, conf.Goarch) {
 		return false
 	}
-	if llruntime.HasAdditiveAltPkg(pkgPath) {
+	if llruntime.HasAdditiveAltPkgForGOARCH(pkgPath, conf.Goarch) {
 		return true
 	}
 	// When Plan9 asm translation is enabled, avoid also pulling in alt packages
@@ -338,13 +335,10 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	if conf == nil {
 		return false
 	}
-	if pkgPath == "internal/runtime/atomic" {
-		return archSupportsPlan9AsmDefaults(conf.Goarch)
-	}
 	if !archSupportsPlan9AsmDefaults(conf.Goarch) {
 		return false
 	}
-	return !llruntime.HasAltPkg(pkgPath) || llruntime.HasAdditiveAltPkg(pkgPath)
+	return !llruntime.HasAltPkgForGOARCH(pkgPath, conf.Goarch) || llruntime.HasAdditiveAltPkgForGOARCH(pkgPath, conf.Goarch)
 }
 
 func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
@@ -414,9 +408,8 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		}
 	}
 	// Embedded ARM targets currently reuse GOOS=linux metadata, but they do not
-	// have a Linux syscall surface. Skip Linux/ARM syscall asm in that mode so
-	// target-smoke builds can exercise stdlib packages without pulling in
-	// syscall-specific plan9asm frame quirks.
+	// have a Linux syscall surface. Skip syscall asm in that mode so embedded
+	// builds do not inherit Linux/ARM-specific frame layouts.
 	if shouldSkipPlan9AsmSFilesForTarget(ctx.buildConf, pkg.PkgPath) {
 		ctx.sfilesCache[pkg.ID] = nil
 		return nil, nil

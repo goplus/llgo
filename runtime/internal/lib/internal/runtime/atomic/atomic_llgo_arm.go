@@ -1,8 +1,12 @@
-//go:build arm
+//go:build arm && baremetal
 
 package atomic
 
 import "unsafe"
+
+// This file is a single-threaded baremetal fallback for ARM targets that do not
+// provide upstream runtime atomics. These helpers are plain loads/stores and do
+// not provide inter-core atomicity.
 
 // Export some functions via linkname to assembly in sync/atomic.
 //
@@ -233,7 +237,10 @@ func Store64(ptr *uint64, val uint64) {
 	*ptr = val
 }
 
-// StorepNoWB performs *ptr = val atomically and without a write barrier.
+// StorepNoWB performs *ptr = val without a write barrier.
+//
+//go:nosplit
+//go:noinline
 func StorepNoWB(ptr unsafe.Pointer, val unsafe.Pointer) {
 	*(*unsafe.Pointer)(ptr) = val
 }
@@ -358,60 +365,42 @@ func Xaddint64(ptr *int64, delta int64) int64 {
 
 //go:nosplit
 func And32(ptr *uint32, val uint32) uint32 {
-	for {
-		old := *ptr
-		if Cas(ptr, old, old&val) {
-			return old
-		}
-	}
+	old := *ptr
+	*ptr = old & val
+	return old
 }
 
 //go:nosplit
 func Or32(ptr *uint32, val uint32) uint32 {
-	for {
-		old := *ptr
-		if Cas(ptr, old, old|val) {
-			return old
-		}
-	}
+	old := *ptr
+	*ptr = old | val
+	return old
 }
 
 //go:nosplit
 func And64(ptr *uint64, val uint64) uint64 {
-	for {
-		old := *ptr
-		if Cas64(ptr, old, old&val) {
-			return old
-		}
-	}
+	old := *ptr
+	*ptr = old & val
+	return old
 }
 
 //go:nosplit
 func Or64(ptr *uint64, val uint64) uint64 {
-	for {
-		old := *ptr
-		if Cas64(ptr, old, old|val) {
-			return old
-		}
-	}
+	old := *ptr
+	*ptr = old | val
+	return old
 }
 
 //go:nosplit
 func Anduintptr(ptr *uintptr, val uintptr) uintptr {
-	for {
-		old := *ptr
-		if Casuintptr(ptr, old, old&val) {
-			return old
-		}
-	}
+	old := *ptr
+	*ptr = old & val
+	return old
 }
 
 //go:nosplit
 func Oruintptr(ptr *uintptr, val uintptr) uintptr {
-	for {
-		old := *ptr
-		if Casuintptr(ptr, old, old|val) {
-			return old
-		}
-	}
+	old := *ptr
+	*ptr = old | val
+	return old
 }
