@@ -201,6 +201,10 @@ func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, erro
 		plan9AsmSigCache.Store(key, sigs)
 		return sigs, nil
 	}
+	if hasAltPkgForTarget(ctx.buildConf, pkgPath) && !llruntime.HasAdditiveAltPkg(pkgPath) {
+		plan9AsmSigCache.Store(key, sigs)
+		return sigs, nil
+	}
 
 	var pkg *packages.Package
 	for p := range ctx.pkgs {
@@ -297,6 +301,9 @@ func (ctx *context) plan9asmEnabled(pkgPath string) bool {
 }
 
 func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
+	if pkgPath == "internal/runtime/atomic" {
+		return conf != nil && conf.Goarch == "arm"
+	}
 	if !llruntime.HasAltPkg(pkgPath) {
 		return false
 	}
@@ -330,6 +337,9 @@ func plan9asmEnabledByEnv(pkgPath string) bool {
 func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	if conf == nil {
 		return false
+	}
+	if pkgPath == "internal/runtime/atomic" {
+		return archSupportsPlan9AsmDefaults(conf.Goarch)
 	}
 	if !archSupportsPlan9AsmDefaults(conf.Goarch) {
 		return false
@@ -403,14 +413,34 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 			return paths, nil
 		}
 	}
-
-	paths := make([]string, 0, len(lp.SFiles))
-	for _, f := range lp.SFiles {
-		if lp.Dir == "" {
-			continue
-		}
-		paths = append(paths, filepath.Join(lp.Dir, f))
+	// Embedded ARM targets currently reuse GOOS=linux metadata, but they do not
+	// have a Linux syscall surface. Skip Linux/ARM syscall asm in that mode so
+	// target-smoke builds can exercise stdlib packages without pulling in
+	// syscall-specific plan9asm frame quirks.
+	if shouldSkipPlan9AsmSFilesForTarget(ctx.buildConf, pkg.PkgPath) {
+		ctx.sfilesCache[pkg.ID] = nil
+		return nil, nil
 	}
+
+	paths := selectedSFiles(lp.Dir, lp.SFiles)
 	ctx.sfilesCache[pkg.ID] = paths
 	return paths, nil
+}
+
+func selectedSFiles(dir string, files []string) []string {
+	if dir == "" || len(files) == 0 {
+		return nil
+	}
+	paths := make([]string, 0, len(files))
+	for _, f := range files {
+		if strings.HasSuffix(f, "_test.s") || strings.HasSuffix(f, "_test.S") {
+			continue
+		}
+		paths = append(paths, filepath.Join(dir, f))
+	}
+	return paths
+}
+
+func shouldSkipPlan9AsmSFilesForTarget(conf *Config, pkgPath string) bool {
+	return conf != nil && conf.Target != "" && conf.Goarch == "arm" && pkgPath == "syscall"
 }
