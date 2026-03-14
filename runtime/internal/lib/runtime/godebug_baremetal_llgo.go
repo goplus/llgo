@@ -1,25 +1,17 @@
-//go:build !baremetal
+//go:build baremetal
 
 package runtime
 
-import (
-	c "github.com/goplus/llgo/runtime/internal/clite"
-	cliteos "github.com/goplus/llgo/runtime/internal/clite/os"
-	_ "unsafe"
-)
+import _ "unsafe"
 
 var (
-	godebugDefault string // compile-time defaults (empty for now)
+	godebugDefault string
 	godebugEnv     string
 	godebugUpdate  func(string, string)
 )
 
 func godebugGetenv() string {
-	p := cliteos.Getenv(c.AllocaCStr("GODEBUG"))
-	if p == nil {
-		return ""
-	}
-	return c.GoString(p)
+	return ""
 }
 
 func godebugNotify() {
@@ -37,7 +29,6 @@ func godebugEnvChanged(env string) {
 //go:linkname godebug_setUpdate internal/godebug.setUpdate
 func godebug_setUpdate(update func(string, string)) {
 	godebugUpdate = update
-	// Initial sync.
 	godebugEnv = godebugGetenv()
 	godebugNotify()
 }

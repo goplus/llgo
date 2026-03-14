@@ -7,6 +7,23 @@ const (
 	altPkgAdditive
 )
 
+type altPkgSpec struct {
+	mode    altPkgMode
+	goarchs map[string]struct{}
+}
+
+func (s altPkgSpec) enabledFor(goarch string) bool {
+	return len(s.goarchs) == 0 || hasGoarch(s.goarchs, goarch)
+}
+
+func hasGoarch(goarchs map[string]struct{}, goarch string) bool {
+	if goarchs == nil {
+		return false
+	}
+	_, ok := goarchs[goarch]
+	return ok
+}
+
 func SkipToBuild(pkgPath string) bool {
 	if _, ok := altPkgs[pkgPath]; ok {
 		return false
@@ -19,19 +36,30 @@ func HasAltPkg(path string) (b bool) {
 	return
 }
 
-func HasAdditiveAltPkg(path string) bool {
-	return altPkgs[path] == altPkgAdditive
+func HasAltPkgForGOARCH(path, goarch string) bool {
+	spec, ok := altPkgs[path]
+	return ok && spec.enabledFor(goarch)
 }
 
-var altPkgs = map[string]altPkgMode{
-	"internal/abi":          altPkgReplace,
-	"internal/reflectlite":  altPkgReplace,
-	"internal/runtime/maps": altPkgReplace,
-	"internal/runtime/sys":  altPkgAdditive,
-	"iter":                  altPkgReplace,
-	"reflect":               altPkgReplace,
-	"runtime":               altPkgReplace,
-	"unique":                altPkgReplace,
-	"syscall/js":            altPkgReplace,
-	"sync/atomic":           altPkgReplace,
+func HasAdditiveAltPkg(path string) bool {
+	return altPkgs[path].mode == altPkgAdditive
+}
+
+func HasAdditiveAltPkgForGOARCH(path, goarch string) bool {
+	spec, ok := altPkgs[path]
+	return ok && spec.mode == altPkgAdditive && spec.enabledFor(goarch)
+}
+
+var altPkgs = map[string]altPkgSpec{
+	"internal/abi":            {mode: altPkgReplace},
+	"internal/runtime/atomic": {mode: altPkgReplace, goarchs: map[string]struct{}{"arm": {}}},
+	"internal/reflectlite":    {mode: altPkgReplace},
+	"internal/runtime/maps":   {mode: altPkgReplace},
+	"internal/runtime/sys":    {mode: altPkgAdditive},
+	"iter":                    {mode: altPkgReplace},
+	"reflect":                 {mode: altPkgReplace},
+	"runtime":                 {mode: altPkgReplace},
+	"sync/atomic":             {mode: altPkgReplace},
+	"unique":                  {mode: altPkgReplace},
+	"syscall/js":              {mode: altPkgReplace},
 }

@@ -1253,10 +1253,12 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	}
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
-	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, printCmds); err != nil {
-		return err
-	} else {
-		aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
+	if aPkg.AltPkg == nil || llruntime.HasAdditiveAltPkg(pkgPath) {
+		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, printCmds); err != nil {
+			return err
+		} else {
+			aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
+		}
 	}
 	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.Package.Syntax, printCmds); err != nil {
 		return err
