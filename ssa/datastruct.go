@@ -44,6 +44,9 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 		log.Printf("FieldAddr %v, %d\n", x.impl, idx)
 	}
 	prog := b.Prog
+	nilPtr := llvm.ConstNull(x.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 	tstruc := prog.Elem(x.Type)
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)

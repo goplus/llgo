@@ -207,11 +207,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue16130.go
-    reason: runtime.Error panic classification is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue17381.go
     reason: runtime.Callers and FuncForPC still rely on stub traceback metadata under llgo on darwin/arm64
   - version: go1.24
@@ -262,11 +257,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue26094.go
-    reason: panic payload typing still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue26335.go
     reason: reflect.Call type validation still diverges under llgo on darwin/arm64
   - version: go1.24
@@ -284,11 +274,6 @@ xfails:
     directive: run
     case: fixedbugs/issue28748.go
     reason: reflect panic classification is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue29190.go
-    reason: expected runtime panic is still missing under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -419,11 +404,6 @@ xfails:
     directive: run
     case: fixedbugs/issue5963.go
     reason: runtime.Goexit deadlock semantics still diverge under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue63657.go
-    reason: expected runtime panic is still missing under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

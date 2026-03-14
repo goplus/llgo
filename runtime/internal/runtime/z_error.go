@@ -75,8 +75,19 @@ func AssertNilDeref(b bool) {
 	}
 }
 
-func MakeTypeAssertionError(have, want string) any {
-	return runtimePlainError("type assertion " + have + " -> " + want + " failed")
+func MakeTypeAssertionError(src string, concrete *abi.Type, want, missingMethod string) any {
+	if concrete == nil {
+		return runtimePlainError("interface conversion: " + src + " is nil, not " + want)
+	}
+	cs := concrete.String()
+	if missingMethod != "" {
+		return runtimePlainError("interface conversion: " + cs + " is not " + want + ": missing method " + missingMethod)
+	}
+	msg := "interface conversion: " + src + " is " + cs + ", not " + want
+	if cs == want {
+		msg += " (types from different scopes)"
+	}
+	return runtimePlainError(msg)
 }
 
 // printany prints an argument passed to panic.

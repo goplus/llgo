@@ -34,6 +34,14 @@ func typeAssertString(t types.Type) string {
 	return s
 }
 
+func missingMethodName(t types.Type) string {
+	rawIntf, ok := t.Underlying().(*types.Interface)
+	if !ok || rawIntf.NumMethods() == 0 {
+		return ""
+	}
+	return rawIntf.Method(0).Name()
+}
+
 // -----------------------------------------------------------------------------
 
 // unsafeEface(t *abi.Type, data unsafe.Pointer) Eface
@@ -311,7 +319,9 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	b.SetBlockEx(blks[1], AtEnd, false)
 	errv := b.Call(b.Pkg.rtFunc("MakeTypeAssertionError"),
 		b.Str(typeAssertString(x.RawType())),
-		b.Str(typeAssertString(assertedTyp.RawType())))
+		tx,
+		b.Str(typeAssertString(assertedTyp.RawType())),
+		b.Str(missingMethodName(assertedTyp.RawType())))
 	b.Panic(errv)
 	b.SetBlockEx(blks[0], AtEnd, false)
 	b.blk.last = blks[0].last
