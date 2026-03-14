@@ -317,16 +317,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue52788.go
-    reason: reflect.Call type validation still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue52788a.go
-    reason: reflect.Call result handling still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue53137.go
     reason: generic field offset metadata still diverges under llgo on darwin/arm64
   - version: go1.24

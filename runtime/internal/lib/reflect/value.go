@@ -2259,6 +2259,12 @@ type closure struct {
 }
 
 func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
+	if typ.IsClosure() {
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
+		return unsafe.Pointer(&v.ptr)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2310,6 +2316,9 @@ var (
 )
 
 func toFFIType(typ *abi.Type) *ffi.Type {
+	if typ.IsClosure() {
+		return ffi.ArrayOf(ffi.TypePointer, 2)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
