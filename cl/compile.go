@@ -816,6 +816,33 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Call:
 		ret = p.call(b, llssa.Call, &v.Call)
 	case *ssa.BinOp:
+		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
+			if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
+				switch v.Op {
+				case token.EQL:
+					ret = p.prog.BoolVal(true)
+					break
+				case token.NEQ:
+					ret = p.prog.BoolVal(false)
+					break
+				}
+				if ret.Type != nil {
+					break
+				}
+			}
+		}
+		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
+			x := p.compileConst(b, xConst, v.Y.Type())
+			y := p.compileValue(b, v.Y)
+			ret = b.BinOp(v.Op, x, y)
+			break
+		}
+		if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
+			x := p.compileValue(b, v.X)
+			y := p.compileConst(b, yConst, v.X.Type())
+			ret = b.BinOp(v.Op, x, y)
+			break
+		}
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
@@ -1111,6 +1138,26 @@ func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn ll
 	return p.funcOf(v)
 }
 
+func isUntypedNil(t types.Type) bool {
+	basic, ok := types.Unalias(t).(*types.Basic)
+	return ok && basic.Kind() == types.UntypedNil
+}
+
+func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) llssa.Expr {
+	bg := llssa.InGo
+	if p.inCFunc {
+		bg = llssa.InC
+	}
+	if v.Value == nil {
+		t := v.Type()
+		if isUntypedNil(t) {
+			t = hint
+		}
+		return p.prog.Nil(p.type_(t, bg))
+	}
+	return b.Const(v.Value, p.type_(types.Default(v.Type()), bg))
+}
+
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if iv, ok := v.(instrOrValue); ok {
 		return p.compileInstrOrValue(b, iv, true)
@@ -1141,12 +1188,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return val
 	case *ssa.Const:
-		t := types.Default(v.Type())
-		bg := llssa.InGo
-		if p.inCFunc {
-			bg = llssa.InC
-		}
-		return b.Const(v.Value, p.type_(t, bg))
+		return p.compileConst(b, v, nil)
 	case *ssa.FreeVar:
 		fn := v.Parent()
 		for idx, freeVar := range fn.FreeVars {
