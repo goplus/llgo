@@ -97,7 +97,7 @@ func TestTooManyConditionalDefers(t *testing.T) {
 
 	b.Return()
 	for i := 0; i < 65; i++ {
-		b.Defer(DeferInCond, target.Expr)
+		b.Defer(DeferInCond, target.Expr, Builder.Call)
 	}
 }
 

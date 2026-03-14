@@ -19,6 +19,10 @@
 package ssa_test
 
 import (
+	"fmt"
+	"go/constant"
+	"go/token"
+	"go/types"
 	"strings"
 	"testing"
 
@@ -43,7 +47,7 @@ func TestDeferInLoopIR(t *testing.T) {
 	b.Return()
 	b.SetBlockEx(fn.Block(0), ssa.BeforeLast, true)
 
-	b.Defer(ssa.DeferInLoop, callee.Expr)
+	b.Defer(ssa.DeferInLoop, callee.Expr, ssa.Builder.Call)
 	b.EndBuild()
 
 	ir := pkg.Module().String()
@@ -53,6 +57,41 @@ func TestDeferInLoopIR(t *testing.T) {
 	// Loop defers must record each execution (even with no args) so the drain loop
 	// can run deferred calls the correct number of times.
 	if !strings.Contains(ir, "FreeDeferNode") {
+		t.Fatalf("expected loop defer node free in IR, got:\n%s", ir)
+	}
+}
+
+func TestDeferAtomicInLoopIR(t *testing.T) {
+	prog := ssatest.NewProgram(t, nil)
+	pkg := prog.NewPackage("foo", "foo")
+
+	int64PtrType := types.NewPointer(types.Typ[types.Int64])
+	params := types.NewTuple(types.NewParam(token.NoPos, nil, "", int64PtrType))
+	IntPtrArgSig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("main", IntPtrArgSig, ssa.InGo)
+	b := fn.MakeBody(1)
+	fn.SetRecover(fn.MakeBlock())
+
+	// Ensure entry block has a terminator like real codegen
+	b.Return()
+	b.SetBlockEx(fn.Block(0), ssa.BeforeLast, true)
+
+	ptr := fn.Param(0)
+	val := b.Const(constant.MakeInt64(1), prog.Int64())
+	b.Defer(ssa.DeferInLoop, ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
+		return b.Store(ptr, val).SetOrdering(ssa.OrderingSeqConsistent)
+	})
+	b.EndBuild()
+
+	ir := pkg.Module().String()
+	fmt.Println(ir)
+	atomicIdx := strings.Index(ir, "store atomic i64 1, ptr %0 seq_cst")
+	if atomicIdx == -1 {
+		t.Fatalf("expected store atomic in IR, got:\n%s", ir)
+	}
+	// Loop defers must record each execution (even with no args) so the drain loop
+	// can run deferred calls the correct number of times.
+	if !strings.Contains(ir[atomicIdx:], "FreeDeferNode") {
 		t.Fatalf("expected loop defer node free in IR, got:\n%s", ir)
 	}
 }

@@ -177,10 +177,11 @@ type aDefer struct {
 // The id uniquely identifies the defer call site for dispatch during drain.
 // typ is the node struct type needed to decode the linked-list node.
 type loopDeferCase struct {
-	id   Expr
-	typ  Type
-	fn   Expr
-	args []Expr
+	id        Expr
+	typ       Type
+	fn        Expr
+	args      []Expr
+	buildCall func(Builder, Expr, ...Expr) Expr
 }
 
 const (
@@ -268,7 +269,7 @@ func (b Builder) DeferData() Expr {
 }
 
 // Defer emits a defer instruction.
-func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
+func (b Builder) Defer(kind DoAction, fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args ...Expr) {
 	if debugInstr {
 		logCall("Defer", fn, args)
 	}
@@ -295,7 +296,8 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 	}
 	typ := b.saveDeferArgs(self, kind, id, fn, args)
 	if kind == DeferInLoop {
-		self.loopCases = append(self.loopCases, loopDeferCase{id: id, typ: typ, fn: fn, args: args})
+		loopCase := loopDeferCase{id: id, typ: typ, fn: fn, args: args, buildCall: buildCall}
+		self.loopCases = append(self.loopCases, loopCase)
 	}
 	self.stmts = append(self.stmts, func(bits Expr) {
 		switch kind {
@@ -306,13 +308,13 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 			zero := prog.Val(uintptr(0))
 			has := b.BinOp(token.NEQ, b.BinOp(token.AND, bits, nextbit), zero)
 			b.IfThen(has, func() {
-				b.callDefer(self, typ, fn, args)
+				b.callDefer(self, typ, buildCall, fn, args)
 			})
 		case DeferAlways:
 			// Leaving a run of loop defers; allow the next loop-defer statement
 			// (earlier in source order) to generate its own drainer.
 			self.loopDrainerGenerated = false
-			b.callDefer(self, typ, fn, args)
+			b.callDefer(self, typ, buildCall, fn, args)
 		case DeferInLoop:
 			// Only one drainer is needed per contiguous run of loop defers.
 			// (Multiple loop-defer statements inside the same loop share the same
@@ -374,7 +376,7 @@ func (b Builder) Defer(kind DoAction, fn Expr, args ...Expr) {
 
 				b.SetBlockEx(caseBlks[i], AtEnd, true)
 				b.Store(self.rethPtr, drainEntryAddr)
-				b.callDefer(self, c.typ, c.fn, c.args)
+				b.callDefer(self, c.typ, c.buildCall, c.fn, c.args)
 				b.Jump(condBlk)
 			}
 
@@ -399,12 +401,12 @@ free(node)
 */
 
 func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, args []Expr) Type {
-	if kind != DeferInLoop && fn.kind != vkClosure && len(args) == 0 {
+	if kind != DeferInLoop && fn != Nil && fn.kind != vkClosure && len(args) == 0 {
 		return nil
 	}
 	prog := b.Prog
 	offset := 2 // prev + id
-	if fn.kind == vkClosure {
+	if fn != Nil && fn.kind == vkClosure {
 		offset++
 	}
 	typs := make([]Type, len(args)+offset)
@@ -413,7 +415,7 @@ func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, ar
 	flds[0] = b.Load(self.argsPtr).impl
 	typs[1] = prog.Uintptr()
 	flds[1] = id.impl
-	if fn.kind == vkClosure {
+	if fn != Nil && fn.kind == vkClosure {
 		typs[2] = fn.Type
 		flds[2] = fn.impl
 	}
@@ -427,9 +429,9 @@ func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, ar
 	return typ
 }
 
-func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
+func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr, ...Expr) Expr, fn Expr, args []Expr) {
 	if typ == nil {
-		b.Call(fn, args...)
+		buildCall(b, fn, args...)
 		return
 	}
 	prog := b.Prog
@@ -444,15 +446,14 @@ func (b Builder) callDefer(self *aDefer, typ Type, fn Expr, args []Expr) {
 		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
 		offset := 2 // prev + id
 		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
-		callFn := fn
-		if callFn.kind == vkClosure {
-			callFn = b.getField(data, 2)
+		if fn != Nil && fn.kind == vkClosure {
+			fn = b.getField(data, 2)
 			offset++
 		}
 		for i := 0; i < len(args); i++ {
 			args[i] = b.getField(data, i+offset)
 		}
-		b.Call(callFn, args...)
+		buildCall(b, fn, args...)
 		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
 	})
 }

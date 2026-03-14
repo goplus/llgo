@@ -77,10 +77,10 @@ func TestDeferInLoopContiguousDrainerGeneration(t *testing.T) {
 	b.SetBlockEx(fn.Block(0), ssa.BeforeLast, true)
 
 	// Two contiguous loop defers should share one drain-loop generation pass.
-	b.Defer(ssa.DeferInLoop, c1.Expr)
-	b.Defer(ssa.DeferInLoop, c2.Expr)
+	b.Defer(ssa.DeferInLoop, c1.Expr, ssa.Builder.Call)
+	b.Defer(ssa.DeferInLoop, c2.Expr, ssa.Builder.Call)
 	// Non-loop defer resets loop drainer state while walking deferred stmts.
-	b.Defer(ssa.DeferAlways, c1.Expr)
+	b.Defer(ssa.DeferAlways, c1.Expr, ssa.Builder.Call)
 	b.EndBuild()
 
 	ir := pkg.Module().String()

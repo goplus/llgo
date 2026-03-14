@@ -510,44 +510,43 @@ func (p *context) siglongjmp(b llssa.Builder, args []ssa.Value) {
 	panic("siglongjmp(jb c.SigjmpBuf, retval c.Int): invalid arguments")
 }
 
-func (p *context) atomic(b llssa.Builder, op llssa.AtomicOp, args []ssa.Value) (ret llssa.Expr) {
+func (p *context) atomic(b llssa.Builder, op llssa.AtomicOp, args []llssa.Expr) (ret llssa.Expr) {
 	if len(args) == 2 {
-		addr := p.compileValue(b, args[0])
-		val := p.compileValue(b, args[1])
+		addr := args[0]
+		val := args[1]
 		return b.Atomic(op, addr, val)
 	}
 	panic("atomicOp(addr *T, val T) T: invalid arguments")
 }
 
-func (p *context) atomicLoad(b llssa.Builder, args []ssa.Value) llssa.Expr {
+func (p *context) atomicLoad(b llssa.Builder, args []llssa.Expr) llssa.Expr {
 	if len(args) == 1 {
-		addr := p.compileValue(b, args[0])
+		addr := args[0]
 		return b.Load(addr).SetOrdering(llssa.OrderingSeqConsistent)
 	}
 	panic("atomicLoad(addr *T) T: invalid arguments")
 }
 
-func (p *context) atomicStore(b llssa.Builder, args []ssa.Value) {
+func (p *context) atomicStore(b llssa.Builder, args []llssa.Expr) llssa.Expr {
 	if len(args) == 2 {
-		addr := p.compileValue(b, args[0])
-		val := p.compileValue(b, args[1])
-		b.Store(addr, val).SetOrdering(llssa.OrderingSeqConsistent)
-		return
+		addr := args[0]
+		val := args[1]
+		return b.Store(addr, val).SetOrdering(llssa.OrderingSeqConsistent)
 	}
 	panic("atomicStore(addr *T, val T) T: invalid arguments")
 }
 
-func (p *context) atomicCmpXchg(b llssa.Builder, args []ssa.Value) llssa.Expr {
+func (p *context) atomicCmpXchg(b llssa.Builder, args []llssa.Expr) llssa.Expr {
 	if len(args) == 3 {
-		addr := p.compileValue(b, args[0])
-		old := p.compileValue(b, args[1])
-		new := p.compileValue(b, args[2])
+		addr := args[0]
+		old := args[1]
+		new := args[2]
 		return b.AtomicCmpXchg(addr, old, new)
 	}
 	panic("atomicCmpXchg(addr *T, old, new T) T: invalid arguments")
 }
 
-func (p *context) atomicCmpXchgOK(b llssa.Builder, args []ssa.Value) llssa.Expr {
+func (p *context) atomicCmpXchgOK(b llssa.Builder, args []llssa.Expr) llssa.Expr {
 	ret := p.atomicCmpXchg(b, args)
 	return b.Extract(ret, 1)
 }
@@ -577,10 +576,11 @@ var llgoInstrs = map[string]int{
 	"deferData":   llgoDeferData,
 	"unreachable": llgoUnreachable,
 
-	"atomicLoad":      llgoAtomicLoad,
-	"atomicStore":     llgoAtomicStore,
-	"atomicCmpXchg":   llgoAtomicCmpXchg,
-	"atomicCmpXchgOK": llgoAtomicCmpXchgOK,
+	"atomicLoad":         llgoAtomicLoad,
+	"atomicStore":        llgoAtomicStore,
+	"atomicCmpXchg":      llgoAtomicCmpXchg,
+	"atomicCmpXchgOK":    llgoAtomicCmpXchgOK,
+	"atomicAddReturnNew": llgoAtomicAddReturnNew,
 
 	"atomicXchg": int(llgoAtomicXchg),
 	"atomicAdd":  int(llgoAtomicAdd),
@@ -690,7 +690,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			hasVArg = fnHasVArg
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
-		ret = b.Do(act, fn, args...)
+		ret = b.Do(act, fn, llssa.Builder.Call, args...)
 		return
 	}
 	kind := p.funcKind(cv)
@@ -709,7 +709,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.compileValue(b, arg)
 		} else {
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Builtin(fn), args...)
+			ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
 		}
 	case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)
@@ -719,13 +719,13 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			ret = b.Do(act, aFn.Expr, args...)
+			ret = b.Do(act, aFn.Expr, llssa.Builder.Call, args...)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, aFn.Expr, args...)
+			ret = b.Do(act, aFn.Expr, llssa.Builder.Call, args...)
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, pyFn.Expr, args...)
+			ret = b.Do(act, pyFn.Expr, llssa.Builder.Call, args...)
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)
@@ -770,14 +770,6 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.string(b, args)
 		case llgoStringData:
 			ret = p.stringData(b, args)
-		case llgoAtomicLoad:
-			ret = p.atomicLoad(b, args)
-		case llgoAtomicStore:
-			p.atomicStore(b, args)
-		case llgoAtomicCmpXchg:
-			ret = p.atomicCmpXchg(b, args)
-		case llgoAtomicCmpXchgOK:
-			ret = p.atomicCmpXchgOK(b, args)
 		case llgoSigsetjmp:
 			ret = p.sigsetjmp(b, args)
 		case llgoSiglongjmp:
@@ -800,9 +792,37 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = p.syscallIntrinsic(b, args, call.Signature().Results())
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
+		case llgoAtomicLoad:
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+				return p.atomicLoad(b, args)
+			}, args...)
+		case llgoAtomicStore:
+			args := p.compileValues(b, args, kind)
+			b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+				return p.atomicStore(b, args)
+			}, args...)
+		case llgoAtomicCmpXchg:
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+				return p.atomicCmpXchg(b, args)
+			}, args...)
+		case llgoAtomicCmpXchgOK:
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+				return p.atomicCmpXchgOK(b, args)
+			}, args...)
+		case llgoAtomicAddReturnNew:
+			args := p.compileValues(b, args, kind)
+			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+				return b.BinOp(token.ADD, p.atomic(b, llssa.OpAdd, args), args[1])
+			}, args...)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
-				ret = p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
+				args := p.compileValues(b, args, kind)
+				ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+					return p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
+				}, args...)
 			} else {
 				log.Panicf("unknown ftype: %d for %s", ftype, cv.Name())
 			}
@@ -810,7 +830,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	default:
 		fn := p.compileValue(b, cv)
 		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, fn, args...)
+		ret = b.Do(act, fn, llssa.Builder.Call, args...)
 	}
 	return
 }

@@ -1130,7 +1130,7 @@ var (
 )
 
 func logCall(da string, fn Expr, args []Expr) {
-	if fn.kind == vkBuiltin {
+	if fn == Nil || fn.kind == vkBuiltin {
 		return
 	}
 	var b bytes.Buffer
@@ -1158,14 +1158,14 @@ const (
 )
 
 // Do call a function with an action.
-func (b Builder) Do(da DoAction, fn Expr, args ...Expr) (ret Expr) {
+func (b Builder) Do(da DoAction, fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args ...Expr) (ret Expr) {
 	switch da {
 	case Call:
-		return b.Call(fn, args...)
+		return buildCall(b, fn, args...)
 	case Go:
-		b.Go(fn, args...)
+		b.Go(fn, buildCall, args...)
 	default:
-		b.Defer(da, fn, args...)
+		b.Defer(da, fn, buildCall, args...)
 	}
 	return
 }
