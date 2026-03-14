@@ -442,6 +442,11 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: fixedbugs/issue8606b.go
+    reason: string comparison ordering still dereferences invalid backing stores before scalar mismatch checks under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: switch.go
     reason: switch lowering still hits an unsupported const type path under llgo on darwin/arm64
   - version: go1.24
