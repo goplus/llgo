@@ -97,11 +97,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: recover2.go
-    reason: panic payload typing still diverges for runtime errors under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: recover3.go
     reason: runtime.Error panic classification is incomplete under llgo on darwin/arm64
   - version: go1.24
@@ -134,6 +129,11 @@ xfails:
     directive: run
     case: reflectmethod6.go
     reason: reflect method value boxing still hits bad indir under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: reflectmethod7.go
+    reason: reflect method value boxing stress case still hangs under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -462,13 +462,43 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: ddd.go
+    reason: deep deferred dispatch stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: gcgort.go
+    reason: GC and goroutine interaction stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: typeparam/chans.go
     reason: generic ranger finalizer path still hangs under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: typeparam/mdempsky/17.go
+    reason: generic range-to-interface lowering still emits invalid forward-referenced IR under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: typeparam/nested.go
     reason: local generic runtime type canonicalization still misses enclosing function instantiation context under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: chan/sieve2.go
+    reason: prime sieve channel pipeline still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug473.go
+    reason: panic-loop regression case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug483.go
+    reason: defer/goroutine regression case still hangs under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

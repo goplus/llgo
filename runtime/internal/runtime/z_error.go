@@ -37,6 +37,14 @@ func (e plainError) Error() string {
 	return string(e)
 }
 
+type runtimePlainError string
+
+func (e runtimePlainError) RuntimeError() {}
+
+func (e runtimePlainError) Error() string {
+	return string(e)
+}
+
 func AssertRuntimeError(b bool, msg string) {
 	if b {
 		panic(errorString(msg))
@@ -68,7 +76,7 @@ func AssertNilDeref(b bool) {
 }
 
 func MakeTypeAssertionError(have, want string) any {
-	return plainError("type assertion " + have + " -> " + want + " failed")
+	return runtimePlainError("type assertion " + have + " -> " + want + " failed")
 }
 
 // printany prints an argument passed to panic.

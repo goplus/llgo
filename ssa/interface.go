@@ -20,10 +20,19 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
+
+func typeAssertString(t types.Type) string {
+	s := types.TypeString(t, abi.UserPathOf)
+	if strings.HasPrefix(s, "interface{") && strings.HasSuffix(s, "}") {
+		return "interface { " + strings.TrimSuffix(strings.TrimPrefix(s, "interface{"), "}") + " }"
+	}
+	return s
+}
 
 // -----------------------------------------------------------------------------
 
@@ -301,8 +310,8 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	b.If(eq, blks[0], blks[1])
 	b.SetBlockEx(blks[1], AtEnd, false)
 	errv := b.Call(b.Pkg.rtFunc("MakeTypeAssertionError"),
-		b.Str(x.RawType().String()),
-		b.Str(assertedTyp.RawType().String()))
+		b.Str(typeAssertString(x.RawType())),
+		b.Str(typeAssertString(assertedTyp.RawType())))
 	b.Panic(errv)
 	b.SetBlockEx(blks[0], AtEnd, false)
 	b.blk.last = blks[0].last
