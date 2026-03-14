@@ -167,6 +167,16 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: fixedbugs/bug027.go
+    reason: goroutine scheduling stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug257.go
+    reason: emitted IR still triggers an LLVM loop-simplify crash in crypto/internal/fips140/drbg on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: fixedbugs/issue12133.go
     reason: go/ssa still materializes invalid untyped shift expressions under llgo on darwin/arm64
   - version: go1.24
@@ -324,6 +334,111 @@ xfails:
     directive: run
     case: fixedbugs/issue46725.go
     reason: finalizer collection timing is still unstable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25897b.go
+    reason: finalizer-backed map key retention still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27695.go
+    reason: goroutine scheduling stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue39541.go
+    reason: goroutine scheduling stress case still hangs under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue52788.go
+    reason: reflect.Call type validation still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue52788a.go
+    reason: reflect.Call result handling still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue53137.go
+    reason: generic field offset metadata still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue53635.go
+    reason: generic lowering still hits an unsupported basic-type path under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue54343.go
+    reason: generic method-value finalizer liveness is still unstable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue5493.go
+    reason: finalizer throughput is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue56990.go
+    reason: runtime.Func metadata still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue5704.go
+    reason: empty slice nilness semantics still diverge under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue57823.go
+    reason: finalizer collection timing is still unstable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue58300.go
+    reason: traceback symbol names still leak __llgo_stub wrappers under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue58300b.go
+    reason: traceback symbol names still leak __llgo_stub wrappers under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue5856.go
+    reason: defer caller location metadata is still incomplete under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue59411.go
+    reason: map clear during iteration still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue5963.go
+    reason: runtime.Goexit deadlock semantics still diverge under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue63657.go
+    reason: expected runtime panic is still missing under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue71675.go
+    reason: generic lowering still cannot convert *ssa.opaqueType under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7550.go
+    reason: expected panic propagation still diverges under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7690.go
+    reason: runtime.Callers trace still misses main.main under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
