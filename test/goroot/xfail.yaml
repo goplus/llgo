@@ -79,18 +79,8 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue17381.go
-    reason: runtime.Callers and FuncForPC still rely on stub traceback metadata under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue18149.go
     reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue21879.go
-    reason: traceback function naming still diverges under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
