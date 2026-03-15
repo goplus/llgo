@@ -9,7 +9,7 @@
 package sync
 
 import (
-	race "github.com/goplus/llgo/runtime/internal/lib/internal/race"
+	"internal/race"
 	"sync/atomic"
 	"unsafe"
 )

@@ -330,6 +330,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	altCfg.Tests = false
 	altCfg.Mode &^= packages.NeedForTest
 	altCfg.Dir = env.LLGoRuntimeDir()
+	altCfg.Overlay, err = buildAltOverlay(cfg.Overlay, altCfg.Dir, altPkgPaths)
+	if err != nil {
+		return nil, err
+	}
 	altPkgs, err := packages.LoadEx(dedup, sizes, &altCfg, altPkgPaths...)
 	if err != nil {
 		return nil, err
@@ -624,6 +628,11 @@ func (c *context) loadAltPkg(pkgPath string, verbose bool) (*packages.Cached, er
 	altCfg.Tests = false
 	altCfg.Mode &^= packages.NeedForTest
 	altCfg.Dir = env.LLGoRuntimeDir()
+	overlay, err := buildAltOverlay(c.conf.Overlay, altCfg.Dir, []string{pkgPath})
+	if err != nil {
+		return nil, err
+	}
+	altCfg.Overlay = overlay
 
 	altPkgs, err := packages.LoadEx(c.dedup, c.pkgTypeSizes, &altCfg, altID)
 	if err != nil {

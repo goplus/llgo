@@ -5,8 +5,8 @@
 package sync
 
 import (
-	abi "github.com/goplus/llgo/runtime/internal/lib/internal/abi"
-	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
+	"internal/abi"
+	"internal/goarch"
 	"sync/atomic"
 	"unsafe"
 )

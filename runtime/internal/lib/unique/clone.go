@@ -5,9 +5,8 @@
 package unique
 
 import (
-	"unsafe"
-
 	"github.com/goplus/llgo/runtime/abi"
+	"unsafe"
 )
 
 // clone makes a copy of value, and may update string values found in value

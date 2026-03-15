@@ -5,8 +5,8 @@
 package unique
 
 import (
-	abi "github.com/goplus/llgo/runtime/internal/lib/internal/abi"
-	isync "github.com/goplus/llgo/runtime/internal/lib/internal/sync"
+	"internal/abi"
+	isync "internal/sync"
 	"runtime"
 	"sync"
 	"unsafe"
