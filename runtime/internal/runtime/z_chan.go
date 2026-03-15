@@ -82,7 +82,9 @@ func ChanCap(p *Chan) int {
 
 func notifyOps(p *Chan) {
 	for _, reg := range p.sops {
-		reg.op.notify()
+		if reg != nil {
+			reg.notify()
+		}
 	}
 }
 
@@ -283,12 +285,25 @@ type selectOp struct {
 	cond  sync.Cond
 	sem   bool
 	regs  []*selectReg
+	gen    uint64
+	active bool
+	next   *selectOp
 }
 
 type selectReg struct {
 	op  *selectOp
 	c   *Chan
 	idx int
+	gen uint64
+}
+
+var selectPool struct {
+	mutex sync.Mutex
+	head  *selectOp
+}
+
+func init() {
+	selectPool.mutex.Init(nil)
 }
 
 func (p *selectOp) init() {
@@ -298,13 +313,24 @@ func (p *selectOp) init() {
 }
 
 func (p *selectOp) end() {
-	// selectOp may still be observed by concurrent notify paths that raced with
-	// select teardown on another channel. Keep the sync primitives alive for the
-	// lifetime of the heap object to avoid use-after-destroy.
+	p.mutex.Lock()
+	p.sem = false
+	p.active = false
+	p.regs = p.regs[:0]
+	p.mutex.Unlock()
+
+	selectPool.mutex.Lock()
+	p.next = selectPool.head
+	selectPool.head = p
+	selectPool.mutex.Unlock()
 }
 
 func (p *selectOp) notify() {
 	p.mutex.Lock()
+	if !p.active {
+		p.mutex.Unlock()
+		return
+	}
 	p.sem = true
 	p.mutex.Unlock()
 	p.cond.Signal()
@@ -317,6 +343,42 @@ func (p *selectOp) wait() {
 	}
 	p.sem = false
 	p.mutex.Unlock()
+}
+
+func (r *selectReg) notify() {
+	op := r.op
+	if op == nil {
+		return
+	}
+	op.mutex.Lock()
+	if !op.active || op.gen != r.gen {
+		op.mutex.Unlock()
+		return
+	}
+	op.sem = true
+	op.mutex.Unlock()
+	op.cond.Signal()
+}
+
+func acquireSelectOp() *selectOp {
+	selectPool.mutex.Lock()
+	op := selectPool.head
+	if op != nil {
+		selectPool.head = op.next
+		op.next = nil
+	}
+	selectPool.mutex.Unlock()
+	if op == nil {
+		op = new(selectOp)
+		op.init()
+	}
+	op.mutex.Lock()
+	op.sem = false
+	op.regs = op.regs[:0]
+	op.gen++
+	op.active = true
+	op.mutex.Unlock()
+	return op
 }
 
 // ChanOp represents a channel operation.
@@ -352,8 +414,7 @@ func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
 
 // Select executes a blocking select operation.
 func Select(ops ...ChanOp) (isel int, recvOK bool) {
-	selOp := new(selectOp)
-	selOp.init()
+	selOp := acquireSelectOp()
 	for _, op := range ops {
 		if op.C == nil {
 			continue
@@ -389,7 +450,7 @@ func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	if c.cap == 0 && isSend {
 		c.sends++
 	}
-	reg := &selectReg{op: selOp, c: c, idx: len(c.sops)}
+	reg := &selectReg{op: selOp, c: c, idx: len(c.sops), gen: selOp.gen}
 	c.sops = append(c.sops, reg)
 	selOp.regs = append(selOp.regs, reg)
 	if c.cap == 0 && isSend {
@@ -420,6 +481,7 @@ func endSelect(c *Chan, selOp *selectOp, isSend bool) {
 		c.sops[last] = nil
 		c.sops = c.sops[:last]
 		reg.c = nil
+		reg.op = nil
 		break
 	}
 	c.mutex.Unlock()
