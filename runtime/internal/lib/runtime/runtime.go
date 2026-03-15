@@ -66,7 +66,12 @@ func Breakpoint() {
 	c.Exit(2)
 }
 
+//go:noinline
 func KeepAlive(x any) {
+	// Force the interface value to stay materialized until this call site.
+	// A zero-length libc call is enough to keep the argument live without
+	// otherwise affecting program behavior.
+	c.Memcmp(unsafe.Pointer(&x), unsafe.Pointer(&x), 0)
 }
 
 //go:linkname c_write C.write
