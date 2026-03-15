@@ -10,8 +10,8 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
-	"github.com/goplus/llgo/runtime/internal/ffi"
 	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	"github.com/goplus/llgo/runtime/internal/ffi"
 	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
 )
 
@@ -24,18 +24,12 @@ var (
 	finalizerInitOnce psync.Once
 	finalizerMu       psync.Mutex
 	finalizerCancels  map[uintptr]func()
-	finalizerSig      *ffi.Signature
 )
 
 func ensureFinalizerInit() {
 	finalizerInitOnce.Do(func() {
 		finalizerMu.Init(nil)
 		finalizerCancels = make(map[uintptr]func())
-		sig, err := ffi.NewSignature(ffi.TypeVoid, ffi.TypePointer, ffi.TypePointer)
-		if err != nil {
-			panic(err)
-		}
-		finalizerSig = sig
 	})
 }
 
@@ -49,10 +43,10 @@ func cancelFinalizer(key uintptr) {
 	}
 }
 
-func finalizerFunc(v any) finalizerClosure {
+func finalizerFunc(v any) (finalizerClosure, *ffi.Signature) {
 	e := (*eface)(unsafe.Pointer(&v))
 	if e._type == nil {
-		return finalizerClosure{}
+		return finalizerClosure{}, nil
 	}
 	if !e._type.IsClosure() {
 		panic("runtime.SetFinalizer: second argument is not a function")
@@ -61,7 +55,11 @@ func finalizerFunc(v any) finalizerClosure {
 	if len(ft.In) != 1 || ft.In[0] == nil {
 		panic("runtime.SetFinalizer: second argument must be func(*T)")
 	}
-	return *(*finalizerClosure)(e.data)
+	sig, err := ffi.NewSignature(finalizerFFIRetType(ft.Out), ffi.TypePointer, finalizerFFIType(ft.In[0]))
+	if err != nil {
+		panic(err)
+	}
+	return *(*finalizerClosure)(e.data), sig
 }
 
 func SetFinalizer(obj any, finalizer any) {
@@ -81,19 +79,78 @@ func SetFinalizer(obj any, finalizer any) {
 	if typeOf(finalizer) == nil {
 		return
 	}
-	fn := finalizerFunc(finalizer)
+	fn, sig := finalizerFunc(finalizer)
+	fnptr := fn.fn
+	env0 := fn.env
 
-	objWord := key
 	var cancel func()
-	invoke := func() {
-		cancelFinalizer(objWord)
-		env := fn.env
-		arg := unsafe.Pointer(objWord ^ 0xffff)
-		ffi.Call(finalizerSig, fn.fn, nil, unsafe.Pointer(&env), unsafe.Pointer(&arg))
+	invoke := func(p unsafe.Pointer) {
+		cancelFinalizer(key)
+		env := env0
+		arg := p
+		var ret unsafe.Pointer
+		if sig.RType != ffi.TypeVoid {
+			ret = iruntime.AllocZ(sig.RType.Size)
+		}
+		ffi.Call(sig, fnptr, ret, unsafe.Pointer(&env), unsafe.Pointer(&arg))
 	}
-	cancel = iruntime.AddCleanupPtr(objPtr, invoke)
+	cancel = iruntime.AddCleanupValuePtr(objPtr, objType.Elem().Size(), invoke)
 
 	finalizerMu.Lock()
 	finalizerCancels[key] = cancel
 	finalizerMu.Unlock()
+}
+
+func finalizerFFIType(typ *abi.Type) *ffi.Type {
+	if typ.IsClosure() {
+		return ffi.ArrayOf(ffi.TypePointer, 2)
+	}
+	switch kind := typ.Kind(); kind {
+	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64, abi.Complex64, abi.Complex128:
+		return ffi.Typ[kind]
+	case abi.Array:
+		at := typ.ArrayType()
+		return ffi.ArrayOf(finalizerFFIType(at.Elem), int(at.Len))
+	case abi.Chan, abi.Map, abi.Pointer, abi.UnsafePointer:
+		return ffi.TypePointer
+	case abi.Func:
+		return ffi.ArrayOf(ffi.TypePointer, 2)
+	case abi.Interface:
+		return ffi.TypeInterface
+	case abi.Slice:
+		return ffi.TypeSlice
+	case abi.String:
+		return ffi.TypeString
+	case abi.Struct:
+		st := typ.StructType()
+		fields := make([]*ffi.Type, 0, len(st.Fields))
+		for _, fs := range st.Fields {
+			if fs.Typ.Size() == 0 {
+				continue
+			}
+			fields = append(fields, finalizerFFIType(fs.Typ))
+		}
+		if len(fields) == 0 {
+			return ffi.TypeVoid
+		}
+		return ffi.StructOf(fields...)
+	}
+	panic("runtime.SetFinalizer: unsupported finalizer type " + typ.String())
+}
+
+func finalizerFFIRetType(tout []*abi.Type) *ffi.Type {
+	switch len(tout) {
+	case 0:
+		return ffi.TypeVoid
+	case 1:
+		return finalizerFFIType(tout[0])
+	default:
+		fields := make([]*ffi.Type, len(tout))
+		for i, out := range tout {
+			fields[i] = finalizerFFIType(out)
+		}
+		return ffi.StructOf(fields...)
+	}
 }

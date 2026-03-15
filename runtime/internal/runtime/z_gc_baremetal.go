@@ -48,3 +48,9 @@ func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
 	// Not implemented: tinygogc does not support finalizers
 	return func() {} // no-op cancel
 }
+
+// AddCleanupValuePtr is not implemented in baremetal builds because tinygogc
+// does not support finalizers. Cleanup functions will never be called.
+func AddCleanupValuePtr(ptr unsafe.Pointer, size uintptr, cleanup func(unsafe.Pointer)) (cancel func()) {
+	return func() {} // no-op cancel
+}

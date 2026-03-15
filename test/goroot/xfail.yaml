@@ -44,11 +44,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: mallocfin.go
-    reason: finalizer throughput is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: stackobj.go
     reason: stack object GC liveness is still incomplete under llgo on darwin/arm64
   - version: go1.24

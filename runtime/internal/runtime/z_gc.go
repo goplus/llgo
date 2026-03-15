@@ -23,6 +23,8 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
+	"github.com/goplus/llgo/runtime/internal/clite/pthread"
+	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
@@ -47,19 +49,98 @@ func AllocZ(size uintptr) unsafe.Pointer {
 }
 
 type entry struct {
-	fn   func()         // cleanup func
-	prev unsafe.Pointer // prev cleanup func ptr
-	stop int32
+	fn       func()
+	valueFn  func(unsafe.Pointer)
+	copySize uintptr
+	obj      unsafe.Pointer
+	prev     unsafe.Pointer
+	next     *entry
+	stop     int32
+}
+
+var cleanupState struct {
+	once syncOnce
+	mu   psync.Mutex
+	cond psync.Cond
+	head *entry
+	tail *entry
+}
+
+type syncOnce = psync.Once
+
+func ensureCleanupRunner() {
+	cleanupState.once.Do(func() {
+		cleanupState.mu.Init(nil)
+		cleanupState.cond.Init(nil)
+		var th pthread.Thread
+		if rc := CreateThread(&th, nil, cleanupThread, nil); rc != 0 {
+			fatal("failed to create cleanup thread")
+			c.Exit(2)
+		}
+		// Match the Go runtime: the dedicated finalizer worker is not a user
+		// goroutine that should skew runtime.NumGoroutine().
+		finishGoroutine()
+	})
+}
+
+func cleanupThread(c.Pointer) c.Pointer {
+	for {
+		cleanupState.mu.Lock()
+		for cleanupState.head == nil {
+			cleanupState.cond.Wait(&cleanupState.mu)
+		}
+		e := cleanupState.head
+		cleanupState.head = e.next
+		if cleanupState.head == nil {
+			cleanupState.tail = nil
+		}
+		e.next = nil
+		cleanupState.mu.Unlock()
+
+		if atomic.Load(&e.stop) != 1 {
+			if e.valueFn != nil {
+				e.valueFn(e.obj)
+			} else {
+				e.fn()
+			}
+		}
+		e.obj = nil
+	}
+}
+
+func enqueueCleanup(e *entry) {
+	cleanupState.mu.Lock()
+	e.next = nil
+	if cleanupState.tail == nil {
+		cleanupState.head = e
+	} else {
+		cleanupState.tail.next = e
+	}
+	cleanupState.tail = e
+	cleanupState.cond.Signal()
+	cleanupState.mu.Unlock()
 }
 
 func finalizer(ptr unsafe.Pointer, cb unsafe.Pointer) {
 	e := (*entry)(cb)
-	if ptr := atomic.Load(&e.prev); ptr != nil {
-		(*(*func())(ptr))()
+	if prev := atomic.Load(&e.prev); prev != nil {
+		(*(*func())(prev))()
 	}
-	if atomic.Load(&e.stop) != 1 {
+	if atomic.Load(&e.stop) == 1 {
+		return
+	}
+	if e.valueFn == nil {
 		e.fn()
+		return
 	}
+	if e.copySize == 0 {
+		e.obj = ptr
+	} else {
+		snap := bdwgc.Malloc(e.copySize)
+		c.Memmove(snap, ptr, e.copySize)
+		e.obj = snap
+	}
+	enqueueCleanup(e)
 }
 
 // AddCleanupPtr attaches a cleanup function to ptr. Some time after ptr is no longer
@@ -71,6 +152,24 @@ func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
 	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
 	if oldCb != nil {
 		n := uintptr(ptr) ^ 0xffff // hides the pointer from escape analysis
+		fn := func() {
+			oldFn((unsafe.Pointer)(n^0xffff), oldCb)
+		}
+		atomic.Store(&e.prev, unsafe.Pointer(&fn))
+	}
+	return func() {
+		atomic.Store(&e.stop, 1)
+	}
+}
+
+func AddCleanupValuePtr(ptr unsafe.Pointer, size uintptr, cleanup func(unsafe.Pointer)) (cancel func()) {
+	ensureCleanupRunner()
+	e := &entry{valueFn: cleanup, copySize: size}
+	var oldFn bdwgc.FinalizerFunc
+	var oldCb unsafe.Pointer
+	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
+	if oldCb != nil {
+		n := uintptr(ptr) ^ 0xffff
 		fn := func() {
 			oldFn((unsafe.Pointer)(n^0xffff), oldCb)
 		}

@@ -50,3 +50,9 @@ func AllocZ(size uintptr) unsafe.Pointer {
 func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
 	return func() {} // no-op cancel
 }
+
+// AddCleanupValuePtr is not implemented when GC is disabled.
+// Cleanup functions will never be called.
+func AddCleanupValuePtr(ptr unsafe.Pointer, size uintptr, cleanup func(unsafe.Pointer)) (cancel func()) {
+	return func() {} // no-op cancel
+}
