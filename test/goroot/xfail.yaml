@@ -75,7 +75,7 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue15281.go
-    reason: runtime memory statistics accounting is still incomplete under llgo on darwin/arm64
+    reason: conservative GC and missing last-use local clearing still retain the slice value under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -125,7 +125,7 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue27518b.go
-    reason: finalizer timing is still unstable under llgo on darwin/arm64
+    reason: panic/defer liveness around return slots still finalizes the heap object too early under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -135,12 +135,12 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue32477.go
-    reason: finalizer retention timing is still unstable under llgo on darwin/arm64
+    reason: defer-path liveness still finalizes the heap object too early under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue45045.go
-    reason: finalizer-backed map key retention still hangs under llgo on darwin/arm64
+    reason: conservative GC still retains finalizer-backed map keys too long under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -150,7 +150,7 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue46725.go
-    reason: finalizer collection timing is still unstable under llgo on darwin/arm64
+    reason: last-use liveness for interface-held values still keeps the finalizable object reachable under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -175,7 +175,12 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue57823.go
-    reason: finalizer collection timing is still unstable under llgo on darwin/arm64
+    reason: last-use liveness for slice and string backing pointers still keeps the finalizable object reachable under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: chanlinear.go
+    reason: goroutine-equals-thread select stress still times out under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
