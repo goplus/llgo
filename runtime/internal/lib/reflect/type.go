@@ -1255,23 +1255,24 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	// Build a hash and minimally populate ft.
 	var hash uint32
 	for i, in := range in {
-		t := in.(*rtype)
-		ft.In[i] = &t.t
-		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+		t := in.common()
+		ft.In[i] = t
+		hash = fnv1(hash, byte(t.Hash>>24), byte(t.Hash>>16), byte(t.Hash>>8), byte(t.Hash))
 	}
 	if variadic {
 		hash = fnv1(hash, 'v')
 	}
 	hash = fnv1(hash, '.')
 	for i, out := range out {
-		t := out.(*rtype)
-		ft.Out[i] = &t.t
-		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+		t := out.common()
+		ft.Out[i] = t
+		hash = fnv1(hash, byte(t.Hash>>24), byte(t.Hash>>16), byte(t.Hash>>8), byte(t.Hash))
 	}
 
 	ft.TFlag = 0
 	ft.Hash = hash
 	ft.Kind_ = uint8(abi.Func)
+	ft.Kind_ |= abi.KindDirectIface
 	if variadic {
 		ft.TFlag |= abi.TFlagVariadic
 	}

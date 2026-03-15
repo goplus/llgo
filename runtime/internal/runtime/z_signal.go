@@ -29,6 +29,7 @@ const (
 	// introduce dependencies on errors and internal/reflectlite packages that cause
 	// linking issues in c-shared and c-archive build modes.
 	SIGSEGV = c.Int(0xb)
+	SIGBUS  = c.Int(0xa)
 )
 
 // This file contains platform-specific runtime initialization for non-wasm targets.
@@ -38,11 +39,13 @@ const (
 // For wasm platform compatibility, signal handling is excluded via build tags.
 // See PR #1059 for wasm platform requirements.
 func init() {
-	signal.Signal(SIGSEGV, func(v c.Int) {
-		if v == SIGSEGV {
+	handleFault := func(v c.Int) {
+		if v == SIGSEGV || v == SIGBUS {
 			panic(errorString("invalid memory address or nil pointer dereference"))
 		}
 		var buf [20]byte
 		panic(errorString("unexpected signal value: " + string(itoa(buf[:], uint64(v)))))
-	})
+	}
+	signal.Signal(SIGSEGV, handleFault)
+	signal.Signal(SIGBUS, handleFault)
 }

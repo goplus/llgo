@@ -266,8 +266,53 @@ func ifaceeq(tab *itab, x, y unsafe.Pointer) bool {
 	return eq(x, y)
 }
 
+func quickEqual(t *_type, p, q unsafe.Pointer) (decided bool, equal bool) {
+	switch t.Kind() {
+	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
+		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
+		abi.Float32, abi.Float64, abi.Complex64, abi.Complex128,
+		abi.Pointer, abi.Chan, abi.UnsafePointer:
+		return true, t.Equal(p, q)
+	case abi.String:
+		return true, len(*(*string)(p)) == len(*(*string)(q))
+	case abi.Struct:
+		return structequalQuick((*structtype)(unsafe.Pointer(t)), p, q)
+	case abi.Array:
+		return arrayequalQuick((*arraytype)(unsafe.Pointer(t)), p, q)
+	default:
+		return false, true
+	}
+}
+
+func structequalQuick(t *structtype, p, q unsafe.Pointer) (decided bool, equal bool) {
+	for _, ft := range t.Fields {
+		if ft.Name_ == "_" {
+			continue
+		}
+		decided, equal = quickEqual(ft.Typ, add(p, ft.Offset), add(q, ft.Offset))
+		if decided && !equal {
+			return true, false
+		}
+	}
+	return false, true
+}
+
+func arrayequalQuick(t *arraytype, p, q unsafe.Pointer) (decided bool, equal bool) {
+	elem := t.Elem
+	for i := uintptr(0); i < t.Len; i++ {
+		decided, equal = quickEqual(elem, add(p, i*elem.Size_), add(q, i*elem.Size_))
+		if decided && !equal {
+			return true, false
+		}
+	}
+	return false, true
+}
+
 func structequal(t, p, q unsafe.Pointer) bool {
 	x := (*structtype)(t)
+	if decided, equal := structequalQuick(x, p, q); decided {
+		return equal
+	}
 	for _, ft := range x.Fields {
 		if ft.Name_ == "_" {
 			continue
@@ -283,6 +328,9 @@ func structequal(t, p, q unsafe.Pointer) bool {
 
 func arrayequal(t, p, q unsafe.Pointer) bool {
 	x := (*arraytype)(t)
+	if decided, equal := arrayequalQuick(x, p, q); decided {
+		return equal
+	}
 	elem := x.Elem
 	for i := uintptr(0); i < x.Len; i++ {
 		pi := add(p, i*elem.Size_)

@@ -67,7 +67,7 @@ func (b *Builder) Str(t types.Type) string {
 		obj := t.Obj()
 		name := NamedName(t)
 		if targs := t.TypeArgs(); targs != nil && targs.Len() != 0 {
-			name = b.namedName(t)
+			name = b.namedDisplayName(t)
 		}
 		if pkg := obj.Pkg(); pkg != nil {
 			return pkg.Name() + "." + name

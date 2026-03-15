@@ -9,18 +9,43 @@ import (
 	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
 )
 
-// StackRecord is a minimal placeholder for runtime/pprof.
-type StackRecord struct {
+type rawStackRecord struct {
 	Stack []uintptr
 }
 
-// MemProfileRecord is a minimal placeholder for runtime/pprof.
+type rawMemProfileRecord struct {
+	AllocBytes, FreeBytes     int64
+	AllocObjects, FreeObjects int64
+	Stack                     []uintptr
+}
+
+type rawBlockProfileRecord struct {
+	Count  int64
+	Cycles int64
+	Stack  []uintptr
+}
+
+func init() {
+	iruntime.SetMemProfileRatePtr(&MemProfileRate)
+}
+
+type StackRecord struct {
+	Stack0 [32]uintptr
+}
+
+func (r *StackRecord) Stack() []uintptr {
+	for i, v := range r.Stack0 {
+		if v == 0 {
+			return r.Stack0[:i]
+		}
+	}
+	return r.Stack0[:]
+}
+
 type MemProfileRecord struct {
-	AllocBytes   int64
-	FreeBytes    int64
-	AllocObjects int64
-	FreeObjects  int64
-	Stack        []uintptr
+	AllocBytes, FreeBytes     int64
+	AllocObjects, FreeObjects int64
+	Stack0                    [32]uintptr
 }
 
 func (r *MemProfileRecord) InUseBytes() int64 {
@@ -31,27 +56,63 @@ func (r *MemProfileRecord) InUseObjects() int64 {
 	return r.AllocObjects - r.FreeObjects
 }
 
-// BlockProfileRecord is a minimal placeholder for runtime/pprof.
+func (r *MemProfileRecord) Stack() []uintptr {
+	for i, v := range r.Stack0 {
+		if v == 0 {
+			return r.Stack0[:i]
+		}
+	}
+	return r.Stack0[:]
+}
+
 type BlockProfileRecord struct {
 	Count  int64
 	Cycles int64
-	Stack  []uintptr
+	StackRecord
 }
 
 func MemProfile(p []MemProfileRecord, inuseZero bool) (n int, ok bool) {
-	return 0, false
+	raw := make([]rawMemProfileRecord, len(p))
+	n, ok = pprof_memProfileInternal(raw, inuseZero)
+	if ok {
+		for i := 0; i < n; i++ {
+			copyMemProfileRecord(&p[i], raw[i])
+		}
+	}
+	return n, ok
 }
 
 func BlockProfile(p []BlockProfileRecord) (n int, ok bool) {
-	return 0, false
+	raw := make([]rawBlockProfileRecord, len(p))
+	n, ok = pprof_blockProfileInternal(raw)
+	if ok {
+		for i := 0; i < n; i++ {
+			copyBlockProfileRecord(&p[i], raw[i])
+		}
+	}
+	return n, ok
 }
 
 func MutexProfile(p []BlockProfileRecord) (n int, ok bool) {
-	return 0, false
+	raw := make([]rawBlockProfileRecord, len(p))
+	n, ok = pprof_mutexProfileInternal(raw)
+	if ok {
+		for i := 0; i < n; i++ {
+			copyBlockProfileRecord(&p[i], raw[i])
+		}
+	}
+	return n, ok
 }
 
 func ThreadCreateProfile(p []StackRecord) (n int, ok bool) {
-	return 0, false
+	raw := make([]rawStackRecord, len(p))
+	n, ok = pprof_threadCreateInternal(raw)
+	if ok {
+		for i := 0; i < n; i++ {
+			copyStackRecord(&p[i], raw[i])
+		}
+	}
+	return n, ok
 }
 
 func NumGoroutine() int {
@@ -59,6 +120,33 @@ func NumGoroutine() int {
 }
 
 func SetCPUProfileRate(hz int) {}
+
+func copyMemProfileRecord(dst *MemProfileRecord, src rawMemProfileRecord) {
+	dst.AllocBytes = src.AllocBytes
+	dst.FreeBytes = src.FreeBytes
+	dst.AllocObjects = src.AllocObjects
+	dst.FreeObjects = src.FreeObjects
+	n := copy(dst.Stack0[:], src.Stack)
+	for i := n; i < len(dst.Stack0); i++ {
+		dst.Stack0[i] = 0
+	}
+}
+
+func copyBlockProfileRecord(dst *BlockProfileRecord, src rawBlockProfileRecord) {
+	dst.Count = src.Count
+	dst.Cycles = src.Cycles
+	n := copy(dst.Stack0[:], src.Stack)
+	for i := n; i < len(dst.Stack0); i++ {
+		dst.Stack0[i] = 0
+	}
+}
+
+func copyStackRecord(dst *StackRecord, src rawStackRecord) {
+	n := copy(dst.Stack0[:], src.Stack)
+	for i := n; i < len(dst.Stack0); i++ {
+		dst.Stack0[i] = 0
+	}
+}
 
 func FuncForPC(pc uintptr) *Func {
 	info := &clitedebug.Info{}
@@ -68,6 +156,8 @@ func FuncForPC(pc uintptr) *Func {
 	name := safeGoString(info.Sname, "")
 	if name == "" {
 		name = unknownFunctionName(pc)
+	} else {
+		name = userVisibleFuncName(name)
 	}
 	return (*Func)(unsafe.Pointer(&funcValue{
 		name:  name,

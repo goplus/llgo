@@ -31,7 +31,14 @@ type threadStart struct {
 	arg     c.Pointer
 }
 
+type mainThreadStart struct {
+	routine pthread.RoutineFunc
+	arg     c.Pointer
+}
+
 var liveGoroutines int32 = 1
+
+const mainThreadStackSize = 64 << 20
 
 func NumGoroutine() int {
 	return int(atomic.Load(&liveGoroutines))
@@ -48,6 +55,12 @@ func threadEntry(arg c.Pointer) c.Pointer {
 	return ret
 }
 
+func mainThreadEntry(arg c.Pointer) c.Pointer {
+	start := (*mainThreadStart)(unsafe.Pointer(arg))
+	mainThread = pthread.Self()
+	return start.routine(start.arg)
+}
+
 func CreateThread(th *pthread.Thread, attr *pthread.Attr, routine pthread.RoutineFunc, arg c.Pointer) c.Int {
 	atomic.Add(&liveGoroutines, 1)
 	start := &threadStart{routine: routine, arg: arg}
@@ -56,4 +69,31 @@ func CreateThread(th *pthread.Thread, attr *pthread.Attr, routine pthread.Routin
 		return rc
 	}
 	return 0
+}
+
+func RunMain(routine pthread.RoutineFunc, arg c.Pointer) {
+	finishGoroutine()
+
+	var (
+		th      pthread.Thread
+		attr    pthread.Attr
+		attrPtr *pthread.Attr
+		retval  c.Pointer
+	)
+	if attr.Init() == 0 {
+		attrPtr = &attr
+		_ = attr.SetStackSize(mainThreadStackSize)
+		defer attr.Destroy()
+	}
+
+	start := &mainThreadStart{routine: routine, arg: arg}
+	if rc := CreateThread(&th, attrPtr, mainThreadEntry, c.Pointer(unsafe.Pointer(start))); rc != 0 {
+		atomic.Add(&liveGoroutines, 1)
+		fatal("failed to create main thread")
+		c.Exit(2)
+	}
+	if rc := pthread.NativeJoin(th, &retval); rc != 0 {
+		fatal("failed to join main thread")
+		c.Exit(2)
+	}
 }

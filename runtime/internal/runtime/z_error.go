@@ -64,6 +64,20 @@ func AssertIndexRange(b bool) {
 	}
 }
 
+func CheckIndexInt(x, y int) int {
+	if x < 0 || x >= y {
+		panic(boundsError{x: int64(x), signed: true, y: y, code: boundsIndex})
+	}
+	return x
+}
+
+func CheckIndexUint(x uint, y int) uint {
+	if x >= uint(y) {
+		panic(boundsError{x: int64(x), signed: false, y: y, code: boundsIndex})
+	}
+	return x
+}
+
 func AssertDivideByZero(b bool) {
 	if b {
 		panic(errorString("integer divide by zero"))

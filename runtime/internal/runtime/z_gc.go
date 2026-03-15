@@ -31,7 +31,9 @@ func AllocU(size uintptr) unsafe.Pointer {
 	if size == 0 {
 		return zeroAlloc()
 	}
-	return bdwgc.Malloc(size)
+	p := bdwgc.Malloc(size)
+	afterAlloc(size)
+	return p
 }
 
 // AllocZ allocates zero-initialized memory.
@@ -40,6 +42,7 @@ func AllocZ(size uintptr) unsafe.Pointer {
 		return zeroAlloc()
 	}
 	ret := bdwgc.Malloc(size)
+	afterAlloc(size)
 	return c.Memset(ret, 0, size)
 }
 

@@ -113,6 +113,7 @@ type context struct {
 	prog        llssa.Program
 	pkg         llssa.Package
 	fn          llssa.Function
+	goFn        *ssa.Function
 	fset        *token.FileSet
 	goProg      *ssa.Program
 	goTyps      *types.Package
@@ -121,6 +122,7 @@ type context struct {
 	skips       map[string]none
 	loaded      map[*types.Package]*pkgInfo // loaded packages
 	bvals       map[ssa.Value]llssa.Expr    // block values
+	vblks       map[ssa.Value]llssa.BasicBlock
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
 	paramDIVars map[*types.Var]llssa.DIVar
 
@@ -197,6 +199,26 @@ func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, boo
 	return value, true
 }
 
+func (p *context) canSkipMakeInterfaceLoad(v *ssa.MakeInterface) bool {
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return true
+	}
+	store, ok := (*refs)[0].(*ssa.Store)
+	if !ok {
+		return true
+	}
+	va, ok := store.Addr.(*ssa.IndexAddr)
+	if !ok {
+		return true
+	}
+	alloc, ok := va.X.(*ssa.Alloc)
+	if !ok {
+		return true
+	}
+	return !isAllocVargs(p, alloc)
+}
+
 func isBlankFieldStore(addr ssa.Value) bool {
 	fieldAddr, ok := addr.(*ssa.FieldAddr)
 	if !ok {
@@ -258,7 +280,12 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	if debugInstr {
 		log.Println("==> NewVar", name, typ)
 	}
-	g := pkg.NewVar(name, typ, llssa.Background(vtype))
+	var g llssa.Global
+	if define {
+		g = pkg.NewVar(name, typ, llssa.Background(vtype))
+	} else {
+		g = pkg.DeclareVar(name, typ, llssa.Background(vtype))
+	}
 	if p.tryEmbedGlobalInit(pkg, gbl, g, name) {
 		return
 	}
@@ -372,6 +399,13 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
 		fn.SetGenericTypeArgs(targs)
 	}
+	if sharedDeferFunc0Eligible(f) {
+		fn.SetSharedDeferFunc0(true)
+	}
+	if needsOptNone(f) {
+		fn.Inline(llssa.NoInline)
+		fn.Inline(llssa.OptNone)
+	}
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
@@ -389,9 +423,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
 		p.inits = append(p.inits, func() {
 			p.fn = fn
+			p.goFn = f
 			p.state = state // restore pkgState when compiling funcBody
 			defer func() {
 				p.fn = nil
+				p.goFn = nil
 			}()
 			p.phis = nil
 			if dbgSymsEnabled {
@@ -412,6 +448,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				b.DebugFunction(fn, pos, bodyPos)
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
+			p.vblks = make(map[ssa.Value]llssa.BasicBlock)
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -447,6 +484,80 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		}
 	}
 	return fn, nil, goFunc
+}
+
+func needsOptNone(f *ssa.Function) bool {
+	origin := f
+	if f.Origin() != nil {
+		origin = f.Origin()
+	}
+	if origin.Pkg == nil || origin.Pkg.Pkg == nil {
+		return false
+	}
+	return funcName(origin.Pkg.Pkg, origin, f.Origin() != nil) == "crypto/internal/fips140/drbg.Read"
+}
+
+func sharedDeferFunc0Eligible(root *ssa.Function) bool {
+	hasForeign := false
+	eligible := true
+	var walk func(fn *ssa.Function)
+	walk = func(fn *ssa.Function) {
+		if !eligible || fn == nil || fn.Blocks == nil {
+			return
+		}
+		for _, blk := range fn.Blocks {
+			for _, instr := range blk.Instrs {
+				d, ok := instr.(*ssa.Defer)
+				if !ok {
+					continue
+				}
+				if !isSharedDeferFunc0Site(d) {
+					eligible = false
+					return
+				}
+				if _, ok := foreignDeferStackValue(d); ok {
+					hasForeign = true
+				}
+			}
+		}
+		for _, af := range fn.AnonFuncs {
+			walk(af)
+		}
+	}
+	walk(root)
+	return eligible && hasForeign
+}
+
+func isSharedDeferFunc0Site(d *ssa.Defer) bool {
+	if d == nil || d.Call.Method != nil || len(d.Call.Args) != 0 {
+		return false
+	}
+	sig := d.Call.Signature()
+	if sig == nil || sig.Params().Len() != 0 || sig.Results().Len() != 0 {
+		return false
+	}
+	fn, ok := d.Call.Value.(*ssa.Function)
+	return ok && fn.Parent() != nil
+}
+
+func foreignDeferStackValue(d *ssa.Defer) (ssa.Value, bool) {
+	if d == nil {
+		return nil, false
+	}
+	ops := d.Operands(nil)
+	if len(ops) == 0 || ops[len(ops)-1] == nil {
+		return nil, false
+	}
+	stack := *ops[len(ops)-1]
+	u, ok := stack.(*ssa.UnOp)
+	if !ok {
+		return nil, false
+	}
+	fv, ok := u.X.(*ssa.FreeVar)
+	if !ok || fv.Name() != "defer$stack" {
+		return nil, false
+	}
+	return stack, true
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
@@ -792,17 +903,38 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 	ret = phi.Expr
 	p.phis = append(p.phis, func() {
 		preds := v.Block().Preds
-		bblks := make([]llssa.BasicBlock, len(preds))
-		for i, pred := range preds {
-			bblks[i] = p.fn.Block(pred.Index)
-		}
-		edges := v.Edges
-		phi.AddIncoming(b, bblks, func(i int, blk llssa.BasicBlock) llssa.Expr {
+		phi.AddIncomingEx(b, makePhiPredBlocks(p, preds), func(i int, blk llssa.BasicBlock) (llssa.Expr, llssa.BasicBlock) {
+			edge := v.Edges[i]
 			b.SetBlockEx(blk, llssa.BeforeLast, false)
-			return p.compileValue(b, edges[i])
+			val := p.compileValue(b, edge)
+			if usesSplitPhiIncoming(edge) {
+				if edgeBlk, ok := p.vblks[edge]; ok && edgeBlk != nil {
+					return val, edgeBlk
+				}
+			}
+			return val, blk
 		})
 	})
 	return
+}
+
+func makePhiPredBlocks(p *context, preds []*ssa.BasicBlock) []llssa.BasicBlock {
+	ret := make([]llssa.BasicBlock, len(preds))
+	for i, pred := range preds {
+		ret[i] = p.fn.Block(pred.Index)
+	}
+	return ret
+}
+
+func usesSplitPhiIncoming(edge ssa.Value) bool {
+	switch v := edge.(type) {
+	case *ssa.TypeAssert:
+		return true
+	case *ssa.Call:
+		return v.Call.IsInvoke()
+	default:
+		return false
+	}
 }
 
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
@@ -810,7 +942,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
-		log.Panicln("unreachable:", iv)
+		fn := "<nil>"
+		if p.goFn != nil {
+			fn = p.goFn.String()
+		}
+		log.Panicf("unreachable: %T %v in %s", iv, iv, fn)
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
@@ -847,6 +983,26 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
+		if v.Op == token.MUL {
+			if _, ok := v.X.(*ssa.UnOp); ok {
+				if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if _, ok := t.RawType().Underlying().(*types.Pointer); !ok && p.prog.SizeOf(t) > 1<<20 {
+							x := p.compileValue(b, v.X)
+							b.AssertNilDeref(x)
+							return
+						}
+					}
+				}
+			}
+			if refs := v.Referrers(); refs != nil {
+				if len(*refs) == 1 {
+					if mi, ok := (*refs)[0].(*ssa.MakeInterface); ok && p.canSkipMakeInterfaceLoad(mi) {
+						return
+					}
+				}
+			}
+		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
 			ret = b.Recv(x, v.CommaOk)
@@ -942,6 +1098,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
+		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
+			if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
+				ret = b.MakeInterfaceFromPtr(t, ptr)
+				break
+			}
+		}
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
@@ -971,12 +1133,23 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		ret = b.Range(x)
 	case *ssa.Next:
-		var typ llssa.Type
+		var srcTyp llssa.Type
+		var keyTyp, valTyp llssa.Type
 		if !v.IsString {
-			typ = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+			srcTyp = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+			styp := v.Iter.(*ssa.Range).X.Type().Underlying().(*types.Map)
+			keyTyp = p.prog.Type(styp.Key(), llssa.InGo)
+			valTyp = p.prog.Type(styp.Elem(), llssa.InGo)
+			ttyp := v.Type().(*types.Tuple)
+			if _, ok := ttyp.At(1).Type().Underlying().(*types.Interface); ok {
+				keyTyp = p.prog.Type(ttyp.At(1).Type().Underlying(), llssa.InGo)
+			}
+			if _, ok := ttyp.At(2).Type().Underlying().(*types.Interface); ok {
+				valTyp = p.prog.Type(ttyp.At(2).Type().Underlying(), llssa.InGo)
+			}
 		}
 		iter := p.compileValue(b, v.Iter)
-		ret = b.Next(typ, iter, v.IsString)
+		ret = b.Next(srcTyp, keyTyp, valTyp, iter, v.IsString)
 	case *ssa.ChangeInterface:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
@@ -1008,6 +1181,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
 	p.bvals[iv] = ret
+	if usesSplitPhiIncoming(iv) {
+		p.vblks[iv] = b.Block()
+	}
 	return ret
 }
 
@@ -1072,6 +1248,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		jmpb := p.jumpTo(v)
 		b.Jump(jmpb)
 	case *ssa.Return:
+		if p.needImplicitRunDefers(v) {
+			b.RunDefers()
+		}
 		var results []llssa.Expr
 		if n := len(v.Results); n > 0 {
 			results = make([]llssa.Expr, n)
@@ -1093,6 +1272,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Defer:
+		if p.compileSharedDeferFunc0(b, v) {
+			return
+		}
 		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
@@ -1112,6 +1294,55 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
+}
+
+func (p *context) needImplicitRunDefers(ret *ssa.Return) bool {
+	fn := ret.Parent()
+	if fn == nil || fn.Synthetic != "range-over-func yield" || !functionHasDefer(fn) {
+		return false
+	}
+	for _, instr := range ret.Block().Instrs {
+		if instr == ret {
+			break
+		}
+		if _, ok := instr.(*ssa.RunDefers); ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) compileSharedDeferFunc0(b llssa.Builder, v *ssa.Defer) bool {
+	if !isSharedDeferFunc0Site(v) {
+		return false
+	}
+	stack, ok := foreignDeferStackValue(v)
+	if !ok {
+		return false
+	}
+	cur := v.Parent()
+	if cur == nil || cur.Parent() == nil {
+		return false
+	}
+	outer, _, kind := p.compileFunction(cur.Parent())
+	if kind != goFunc || outer == nil || !outer.SharedDeferFunc0() {
+		return false
+	}
+	fn := p.compileValue(b, v.Call.Value)
+	target := p.compileValue(b, stack)
+	b.PushSharedDeferFunc0(target, fn)
+	return true
+}
+
+func functionHasDefer(fn *ssa.Function) bool {
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			if _, ok := instr.(*ssa.Defer); ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {

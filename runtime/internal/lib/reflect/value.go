@@ -141,6 +141,22 @@ func packEface(v Value) any {
 	t := v.typ()
 	var i any
 	e := (*emptyInterface)(unsafe.Pointer(&i))
+	if t.Kind() == abi.Func && !t.IsClosure() {
+		ct := closureOf(t.FuncType())
+		if v.flag&flagIndir != 0 {
+			e.word = unsafe_New(ct)
+			*(*closure)(e.word) = closure{
+				fn: *(*unsafe.Pointer)(v.ptr),
+			}
+		} else if v.ptr != nil {
+			e.word = unsafe_New(ct)
+			*(*closure)(e.word) = closure{
+				fn: v.ptr,
+			}
+		}
+		e.typ = ct
+		return i
+	}
 	// First, fill in the data portion of the interface.
 	switch {
 	case t.IfaceIndir():
@@ -2344,9 +2360,15 @@ func toFFIType(typ *abi.Type) *ffi.Type {
 		return ffi.TypeString
 	case abi.Struct:
 		st := typ.StructType()
-		fields := make([]*ffi.Type, len(st.Fields))
-		for i, fs := range st.Fields {
-			fields[i] = toFFIType(fs.Typ)
+		fields := make([]*ffi.Type, 0, len(st.Fields))
+		for _, fs := range st.Fields {
+			if fs.Typ.Size() == 0 {
+				continue
+			}
+			fields = append(fields, toFFIType(fs.Typ))
+		}
+		if len(fields) == 0 {
+			return ffi.TypeVoid
 		}
 		return ffi.StructOf(fields...)
 	case abi.UnsafePointer:
@@ -2682,6 +2704,7 @@ type hiter struct {
 	i           uint8
 	bucket      uintptr
 	checkBucket uintptr
+	clearSeq    uint64
 }
 
 func (h *hiter) initialized() bool {

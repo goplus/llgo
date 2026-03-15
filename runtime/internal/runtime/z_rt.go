@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
+	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 	"github.com/goplus/llgo/runtime/internal/clite/setjmp"
 )
@@ -31,36 +32,105 @@ type Defer struct {
 	Addr unsafe.Pointer // sigjmpbuf
 	Bits uintptr
 	Link *Defer
+	Pan  unsafe.Pointer // current panic record being unwound in this frame
 	Reth unsafe.Pointer // block address after Rethrow
 	Rund unsafe.Pointer // block address after RunDefers
 	Args unsafe.Pointer // defer func and args links
 }
 
+type panicRecord struct {
+	link unsafe.Pointer
+	pan  unsafe.Pointer
+	val  any
+	nstk int32
+	stack [32]uintptr
+}
+
+type panicTrace struct {
+	nstk int32
+	stack [32]uintptr
+}
+
 // Recover recovers a panic.
-func Recover() (ret any) {
-	ptr := excepKey.Get()
-	if ptr != nil {
-		excepKey.Set(nil)
-		ret = *(*any)(ptr)
-		c.Free(ptr)
+func Recover(tok unsafe.Pointer) (ret any) {
+	if tok == nil || recoverKey.Get() == nil {
+		return nil
 	}
+	ptr := recoverPan.Get()
+	if ptr == nil || ptr != excepKey.Get() {
+		return nil
+	}
+	recoverPan.Set(nil)
+	rec := (*panicRecord)(ptr)
+	excepKey.Set(rec.link)
+	storePanicTrace(rec.stack[:], int(rec.nstk))
+	if cur := (*Defer)(c.GoDeferData()); cur != nil && cur.Pan == ptr {
+		cur.Pan = rec.pan
+	}
+	ret = rec.val
+	c.Free(ptr)
 	return
 }
 
 // Panic panics with a value.
 func Panic(v any) {
-	ptr := c.Malloc(unsafe.Sizeof(v))
-	*(*any)(ptr) = v
+	ptr := c.Malloc(unsafe.Sizeof(panicRecord{}))
+	rec := (*panicRecord)(ptr)
+	rec.link = excepKey.Get()
+	rec.val = v
+	rec.nstk = int32(clitedebug.StackTracePCs(0, rec.stack[:]))
+	if cur := (*Defer)(c.GoDeferData()); cur != nil {
+		rec.pan = cur.Pan
+		excepKey.Set(ptr)
+		cur.Pan = ptr
+		throwCurrent(cur)
+		return
+	}
 	excepKey.Set(ptr)
-
-	Rethrow((*Defer)(c.GoDeferData()))
+	Rethrow(nil)
 }
 
 var (
 	excepKey   pthread.Key
 	goexitKey  pthread.Key
+	recoverKey pthread.Key
+	recoverPan pthread.Key
+	panicTraceKey pthread.Key
 	mainThread pthread.Thread
 )
+
+func SetRecoverToken(tok unsafe.Pointer) (prev unsafe.Pointer) {
+	prev = recoverKey.Get()
+	recoverKey.Set(tok)
+	recoverPan.Set(excepKey.Get())
+	return
+}
+
+func storePanicTrace(stack []uintptr, n int) {
+	if old := panicTraceKey.Get(); old != nil {
+		c.Free(old)
+		panicTraceKey.Set(nil)
+	}
+	if n <= 0 {
+		return
+	}
+	trace := (*panicTrace)(c.Malloc(unsafe.Sizeof(panicTrace{})))
+	trace.nstk = int32(copy(trace.stack[:], stack[:n]))
+	panicTraceKey.Set(unsafe.Pointer(trace))
+}
+
+func PanicTrace(dst []uintptr) int {
+	ptr := panicTraceKey.Get()
+	if ptr == nil {
+		return 0
+	}
+	trace := (*panicTrace)(ptr)
+	n := int(trace.nstk)
+	if n > len(dst) {
+		n = len(dst)
+	}
+	return copy(dst, trace.stack[:n])
+}
 
 func Goexit() {
 	goexitKey.Set(unsafe.Pointer(&goexitKey))
@@ -70,6 +140,9 @@ func Goexit() {
 func init() {
 	excepKey.Create(nil)
 	goexitKey.Create(nil)
+	recoverKey.Create(nil)
+	recoverPan.Create(nil)
+	panicTraceKey.Create(nil)
 	mainThread = pthread.Self()
 }
 

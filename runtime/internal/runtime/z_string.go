@@ -61,13 +61,25 @@ func CStrDup(s String) *int8 {
 }
 
 func StringSlice(base String, i, j int) String {
-	if i < 0 || j < i || j > base.len {
-		panic(errorString("slice bounds out of range"))
-	}
+	i, j = checkSlice2Signed(i, j, base.len, boundsSliceAlen)
 	if base.data == nil {
 		return String{nil, j - i}
 	}
+	if j == i {
+		return String{base.data, 0}
+	}
 	return String{c.Advance(base.data, i), j - i}
+}
+
+func StringSliceU(base String, i, j uint) String {
+	i, j = checkSlice2Unsigned(i, j, base.len, boundsSliceAlen)
+	if base.data == nil {
+		return String{nil, int(j - i)}
+	}
+	if j == i {
+		return String{base.data, 0}
+	}
+	return String{c.Advance(base.data, int(i)), int(j - i)}
 }
 
 type StringIter struct {
@@ -96,7 +108,7 @@ func StringIterNext(it *StringIter) (ok bool, k int, v rune) {
 
 func StringToBytes(s String) []byte {
 	if s.len == 0 {
-		return nil
+		return make([]byte, 0)
 	}
 	data := make([]byte, s.len)
 	c.Memcpy(unsafe.Pointer(&data[0]), s.data, uintptr(s.len))
@@ -105,7 +117,7 @@ func StringToBytes(s String) []byte {
 
 func StringToRunes(s string) []rune {
 	if len(s) == 0 {
-		return nil
+		return make([]rune, 0)
 	}
 	data := make([]rune, len(s))
 	var index uint

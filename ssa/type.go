@@ -265,7 +265,54 @@ func typeStringWithPkg(t types.Type) string {
 	})
 }
 
+func containsOpaqueGoSSAType(t types.Type) bool {
+	seen := map[types.Type]bool{}
+	var walk func(types.Type) bool
+	walk = func(t types.Type) bool {
+		if t == nil || seen[t] {
+			return false
+		}
+		seen[t] = true
+		if isOpaqueGoSSAType(t) {
+			return true
+		}
+		switch tt := t.(type) {
+		case *types.Pointer:
+			return walk(tt.Elem())
+		case *types.Slice:
+			return walk(tt.Elem())
+		case *types.Array:
+			return walk(tt.Elem())
+		case *types.Map:
+			return walk(tt.Key()) || walk(tt.Elem())
+		case *types.Chan:
+			return walk(tt.Elem())
+		case *types.Tuple:
+			for i := 0; i < tt.Len(); i++ {
+				if walk(tt.At(i).Type()) {
+					return true
+				}
+			}
+		case *types.Signature:
+			return walk(tt.Params()) || walk(tt.Results())
+		case *types.Named:
+			return walk(tt.Underlying())
+		case *types.Struct:
+			for i := 0; i < tt.NumFields(); i++ {
+				if walk(tt.Field(i).Type()) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return walk(t)
+}
+
 func (p Program) rawType(raw types.Type) Type {
+	if containsOpaqueGoSSAType(raw) {
+		return p.toType(raw)
+	}
 	if v := p.typs.At(raw); v != nil {
 		return v.(Type)
 	}

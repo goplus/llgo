@@ -72,3 +72,30 @@ func TestVarNameGoLinkRuntimeAndNonRuntime(t *testing.T) {
 		t.Fatalf("non-runtime varName = (%q,%d,%v), want (%q,%d,%v)", name, vtyp, define, "go:example.com/p.G", goVar, false)
 	}
 }
+
+func TestVarNameMainInitTaskIsDefined(t *testing.T) {
+	prog := llssa.NewProgram(nil)
+	c := &context{prog: prog}
+
+	pkg, global := buildGlobal(t, "command-line-arguments", "main", "package main\nvar main_inittask struct{}\n", "main_inittask")
+	key := llssa.FullName(pkg, global.Name())
+	prog.SetLinkname(key, "main..inittask")
+
+	name, vtyp, define := c.varName(pkg, global)
+	if name != "main..inittask" || vtyp != goVar || !define {
+		t.Fatalf("main inittask varName = (%q,%d,%v), want (%q,%d,%v)", name, vtyp, define, "main..inittask", goVar, true)
+	}
+}
+
+func TestVarNameImportedGlobalIsDeclared(t *testing.T) {
+	prog := llssa.NewProgram(nil)
+	curPkg := types.NewPackage("example.com/main", "main")
+	c := &context{prog: prog, goTyps: curPkg}
+
+	impPkg, impGlobal := buildGlobal(t, "encoding/binary", "binary", "package binary\ntype bigEndian struct{}\nvar BigEndian bigEndian\n", "BigEndian")
+
+	name, vtyp, define := c.varName(impPkg, impGlobal)
+	if name != "encoding/binary.BigEndian" || vtyp != goVar || define {
+		t.Fatalf("imported varName = (%q,%d,%v), want (%q,%d,%v)", name, vtyp, define, "encoding/binary.BigEndian", goVar, false)
+	}
+}

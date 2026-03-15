@@ -389,6 +389,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, depPkgs...)
+	allPkgs = append(allPkgs, ctx.extraPkgs...)
 	allPkgs, err = buildAllPkgs(ctx, allPkgs, verbose)
 	if err != nil {
 		return nil, err
@@ -545,6 +546,7 @@ type context struct {
 	initial        []*packages.Package
 	pkgs           map[*packages.Package]Package // cache for lookup
 	pkgByID        map[string]Package            // cache for lookup by pkg.ID
+	extraPkgs      []*aPackage
 	mode           Mode
 	nLibdir        int32
 	output         bool
@@ -603,6 +605,54 @@ func (c *context) shouldPrintCommands(verbose bool) bool {
 
 func (c *context) hasAltPkg(pkgPath string) bool {
 	return hasAltPkgForTarget(c.buildConf, pkgPath)
+}
+
+func (c *context) pkgTypeSizes(sizes types.Sizes, compiler, arch string) types.Sizes {
+	if arch == "wasm" {
+		sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
+	}
+	return c.prog.TypeSizes(sizes)
+}
+
+func (c *context) loadAltPkg(pkgPath string, verbose bool) (*packages.Cached, error) {
+	altID := altPkgPathPrefix + pkgPath
+	if altPkg := c.dedup.Check(altID); altPkg != nil {
+		return altPkg, nil
+	}
+
+	altCfg := *c.conf
+	altCfg.Tests = false
+	altCfg.Mode &^= packages.NeedForTest
+	altCfg.Dir = env.LLGoRuntimeDir()
+
+	altPkgs, err := packages.LoadEx(c.dedup, c.pkgTypeSizes, &altCfg, altID)
+	if err != nil {
+		return nil, err
+	}
+	altSSAPkgs(c.progSSA, c.patches, altPkgs, c.buildConf, verbose)
+	newPkgs, err := buildSSAPkgs(c, altPkgs, verbose)
+	if err != nil {
+		return nil, err
+	}
+	c.extraPkgs = append(c.extraPkgs, newPkgs...)
+
+	if altPkg := c.dedup.Check(altID); altPkg != nil {
+		return altPkg, nil
+	}
+	for _, p := range altPkgs {
+		if p.ID != altID || len(p.Errors) == 0 {
+			continue
+		}
+		var sb strings.Builder
+		for i, e := range p.Errors {
+			if i > 0 {
+				sb.WriteString("; ")
+			}
+			sb.WriteString(e.Msg)
+		}
+		return nil, fmt.Errorf("load alt package %s: %s", pkgPath, sb.String())
+	}
+	return nil, nil
 }
 
 // normalizeToArchive creates an archive from object files and sets ArchiveFile.
@@ -1379,7 +1429,10 @@ func altSSAPkgs(prog *ssa.Program, patches cl.Patches, alts []*packages.Package,
 			if debugBuild || verbose {
 				log.Println("==> BuildSSA", p.ID)
 			}
-			pkgSSA := prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
+			pkgSSA := prog.Package(typs)
+			if pkgSSA == nil {
+				pkgSSA = prog.CreatePackage(typs, p.Syntax, p.TypesInfo, true)
+			}
 			if strings.HasPrefix(p.ID, altPkgPathPrefix) {
 				path := p.ID[len(altPkgPathPrefix):]
 				// Even if an alt package exists and is pulled in as a dependency of other
@@ -1424,7 +1477,11 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 	prog := ctx.progSSA
 	var all []*aPackage
 	var errs []*packages.Package
+	var loadErr error
 	packages.Visit(initial, nil, func(p *packages.Package) {
+		if loadErr != nil {
+			return
+		}
 		if p.Types != nil && !p.IllTyped {
 			pkgPath := p.PkgPath
 			// Use p.ID to check duplicates since same pkgPath may have different IDs
@@ -1434,7 +1491,14 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			var altPkg *packages.Cached
 			var ssaPkg = createSSAPkg(ctx, prog, p, verbose)
 			if ctx.hasAltPkg(pkgPath) {
-				if altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath); altPkg == nil {
+				altPkg = ctx.dedup.Check(altPkgPathPrefix + pkgPath)
+				if altPkg == nil {
+					altPkg, loadErr = ctx.loadAltPkg(pkgPath, verbose)
+					if loadErr != nil {
+						return
+					}
+				}
+				if altPkg == nil {
 					return
 				}
 			}
@@ -1457,6 +1521,9 @@ func buildSSAPkgs(ctx *context, initial []*packages.Package, verbose bool) ([]*a
 			errs = append(errs, p)
 		}
 	})
+	if loadErr != nil {
+		return nil, loadErr
+	}
 	if len(errs) > 0 {
 		for _, errPkg := range errs {
 			for _, err := range errPkg.Errors {
@@ -1506,31 +1573,27 @@ func toTypeList(args *types.TypeList) []types.Type {
 	return result
 }
 
-// fixUntypedShiftTypes fixes a bug in go/types where non-constant shift expressions
-// with untyped constant left operands have type "untyped int" instead of "int".
+// fixUntypedShiftTypes fixes go/types/ssa cases where non-constant expressions
+// still carry an untyped basic type. x/tools/go/ssa rejects these during sanity
+// checking, but the Go spec requires such expressions to assume a default type.
 //
-// According to the Go spec: "If the left operand of a non-constant shift expression
-// is an untyped constant, it is first implicitly converted to the type it would assume
-// if the shift expression were replaced by its left operand alone."
-//
-// This causes go/ssa sanity check to fail when the type remains untyped.
+// This shows up most often around shift expressions, but the surrounding convert
+// and arithmetic nodes can also remain untyped after the expression ceases to be
+// a constant, so we normalize all non-constant untyped basic expressions except nil.
 // See: https://github.com/golang/go/issues/77067
 func fixUntypedShiftTypes(p *packages.Package) {
 	// First pass: identify expressions needing fixes
 	// (avoid modifying map during iteration)
 	var toFix []ast.Expr
 	for expr, tv := range p.TypesInfo.Types {
-		switch e := expr.(type) {
-		case *ast.BinaryExpr:
-			if e.Op != token.SHL && e.Op != token.SHR {
-				break
-			}
-			basic, ok := tv.Type.(*types.Basic)
-			if !ok || basic.Info()&types.IsUntyped == 0 {
-				break
-			}
-			toFix = append(toFix, expr)
+		basic, ok := tv.Type.(*types.Basic)
+		if !ok || basic.Info()&types.IsUntyped == 0 {
+			continue
 		}
+		if basic.Kind() == types.UntypedNil || tv.Value != nil {
+			continue
+		}
+		toFix = append(toFix, expr)
 	}
 
 	// Second pass: apply fixes

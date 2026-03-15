@@ -171,6 +171,7 @@ type aDefer struct {
 	loopDrainerGenerated bool
 	loopCases            []loopDeferCase
 	stmts                []func(bits Expr)
+	genericFunc0         bool
 }
 
 // loopDeferCase represents a defer statement inside a loop.
@@ -188,24 +189,45 @@ const (
 	// 0: addr sigjmpbuf
 	// 1: bits uintptr
 	// 2: link *Defer
-	// 3: reth voidptr: block address after Rethrow
-	// 4: rund voidptr: block address after RunDefers
-	// 5: func and args links
+	// 3: pan voidptr: current panic record being unwound in this frame
+	// 4: reth voidptr: block address after Rethrow
+	// 5: rund voidptr: block address after RunDefers
+	// 6: func and args links
 	deferSigjmpbuf = iota
 	deferBits
 	deferLink
+	deferPanic
 	deferRethrow
 	deferRunDefers
 	deferArgs
 )
 
 func (b Builder) getDefer(kind DoAction) *aDefer {
-	if b.Func.recov == nil {
-		// b.Func.recov maybe nil in ssa.NaiveForm
-		return nil
-	}
 	self := b.Func
 	if self.defer_ == nil {
+		recov := self.recov
+		if recov == nil {
+			// go/ssa may omit Recover for functions whose recovered-panic path was
+			// optimized away. Deferred calls still need a landing target so the
+			// defer chain can be materialized. After a successful recover the
+			// enclosing function returns immediately, so synthesize that zero-value
+			// return path here instead of falling into unreachable.
+			recov = self.MakeBlock()
+			self.recov = recov
+			rb := self.NewBuilder()
+			rb.SetBlockEx(recov, AtEnd, false)
+			sig := self.raw.Type.(*types.Signature)
+			n := sig.Results().Len()
+			if n == 0 {
+				rb.Return()
+			} else {
+				results := make([]Expr, n)
+				for i := range n {
+					results[i] = rb.Prog.Zero(rb.Prog.rawType(sig.Results().At(i).Type()))
+				}
+				rb.Return(results...)
+			}
+		}
 		// TODO(xsw): check if in pkg.init
 		var next, panicBlk BasicBlock
 		if kind != DeferAlways {
@@ -219,7 +241,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		zero := prog.Val(uintptr(0))
 		link := b.Call(b.Pkg.rtFunc("GetThreadDefer"))
 		jb := b.AllocaSigjmpBuf()
-		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
+		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, zero.impl, procBlk.Addr().impl)
 		deferData := Expr{ptr, prog.DeferPtr()}
 		b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
 		bitsPtr := b.FieldAddr(deferData, deferBits)
@@ -241,19 +263,20 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 		b.If(b.BinOp(token.EQL, retval, czero), next, panicBlk)
 
 		self.defer_ = &aDefer{
-			data:      deferData,
-			bitsPtr:   bitsPtr,
-			rethPtr:   rethPtr,
-			rundPtr:   rundPtr,
-			argsPtr:   argsPtr,
-			procBlk:   procBlk,
-			panicBlk:  panicBlk,
-			rundsNext: []BasicBlock{rethrowBlk},
+			data:         deferData,
+			bitsPtr:      bitsPtr,
+			rethPtr:      rethPtr,
+			rundPtr:      rundPtr,
+			argsPtr:      argsPtr,
+			procBlk:      procBlk,
+			panicBlk:     panicBlk,
+			rundsNext:    []BasicBlock{rethrowBlk},
+			genericFunc0: self.SharedDeferFunc0(),
 		}
 
 		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
-		b.Call(b.Pkg.rtFunc("Rethrow"), link)
-		b.Jump(self.recov)
+		b.Call(b.Pkg.rtFunc("Rethrow"), deferData)
+		b.Jump(recov)
 
 		if kind == DeferAlways {
 			b.SetBlockEx(next, AtEnd, false)
@@ -268,6 +291,117 @@ func (b Builder) DeferData() Expr {
 	return b.Call(b.Pkg.rtFunc("GetThreadDefer"))
 }
 
+func (b Builder) EnsureSharedDeferFunc0() {
+	if !b.Func.SharedDeferFunc0() {
+		return
+	}
+	if b.Func.defer_ == nil && b.blk != nil && b.blk.Index() == 0 && b.blk.last.LastInstruction().IsNil() {
+		b.initSharedDeferFunc0()
+		return
+	}
+	_ = b.getDefer(DeferInCond)
+}
+
+func (b Builder) initSharedDeferFunc0() {
+	self := b.Func
+	if self.defer_ != nil {
+		return
+	}
+	recov := self.recov
+	if recov == nil {
+		recov = self.MakeBlock()
+		self.recov = recov
+		rb := self.NewBuilder()
+		rb.SetBlockEx(recov, AtEnd, false)
+		sig := self.raw.Type.(*types.Signature)
+		n := sig.Results().Len()
+		if n == 0 {
+			rb.Return()
+		} else {
+			results := make([]Expr, n)
+			for i := range n {
+				results[i] = rb.Prog.Zero(rb.Prog.rawType(sig.Results().At(i).Type()))
+			}
+			rb.Return(results...)
+		}
+	}
+
+	prog := b.Prog
+	blks := self.MakeBlocks(3)
+	procBlk, rethrowBlk, next := blks[0], blks[1], blks[2]
+	panicBlk := self.MakeBlock()
+
+	zero := prog.Val(uintptr(0))
+	link := b.Call(b.Pkg.rtFunc("GetThreadDefer"))
+	jb := b.AllocaSigjmpBuf()
+	ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, zero.impl, procBlk.Addr().impl)
+	deferData := Expr{ptr, prog.DeferPtr()}
+	b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
+	bitsPtr := b.FieldAddr(deferData, deferBits)
+	rethPtr := b.FieldAddr(deferData, deferRethrow)
+	rundPtr := b.FieldAddr(deferData, deferRunDefers)
+	argsPtr := b.FieldAddr(deferData, deferArgs)
+	b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
+
+	czero := prog.IntVal(0, prog.CInt())
+	retval := b.Sigsetjmp(jb, czero)
+	b.If(b.BinOp(token.EQL, retval, czero), next, panicBlk)
+
+	self.defer_ = &aDefer{
+		data:         deferData,
+		bitsPtr:      bitsPtr,
+		rethPtr:      rethPtr,
+		rundPtr:      rundPtr,
+		argsPtr:      argsPtr,
+		procBlk:      procBlk,
+		panicBlk:     panicBlk,
+		rundsNext:    []BasicBlock{rethrowBlk},
+		genericFunc0: true,
+	}
+
+	b.SetBlockEx(rethrowBlk, AtEnd, false)
+	b.Call(b.Pkg.rtFunc("Rethrow"), deferData)
+	b.Jump(recov)
+
+	b.SetBlockEx(next, AtEnd, true)
+}
+
+func (b Builder) func0DeferType() Type {
+	return b.Prog.Closure(NoArgsNoRet)
+}
+
+func (b Builder) saveFunc0Defer(argsPtr Expr, fn Expr) {
+	prog := b.Prog
+	fn = b.ChangeType(b.func0DeferType(), fn)
+	typ := prog.Struct(prog.VoidPtr(), fn.Type)
+	ptr := Expr{b.aggregateAllocU(typ, b.Load(argsPtr).impl, fn.impl), prog.VoidPtr()}
+	b.Store(argsPtr, ptr)
+}
+
+func (b Builder) callFunc0Defer(argsPtr Expr) {
+	prog := b.Prog
+	zero := prog.Nil(prog.VoidPtr())
+	list := b.Load(argsPtr)
+	has := b.BinOp(token.NEQ, list, zero)
+	b.IfThen(has, func() {
+		ptr := b.Load(argsPtr)
+		typ := prog.Struct(prog.VoidPtr(), b.func0DeferType())
+		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
+		b.Store(argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
+		callFn := b.getField(data, 1)
+		prev := b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), recoverTokenExpr(b, callFn))
+		b.Call(callFn)
+		b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), prev)
+		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
+	})
+}
+
+func (b Builder) PushSharedDeferFunc0(stack Expr, fn Expr) {
+	target := b.ChangeType(b.Prog.DeferPtr(), stack)
+	argsPtr := b.FieldAddr(target, deferArgs)
+	b.saveFunc0Defer(argsPtr, fn)
+}
+
 // Defer emits a defer instruction.
 func (b Builder) Defer(kind DoAction, fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args ...Expr) {
 	if debugInstr {
@@ -276,6 +410,10 @@ func (b Builder) Defer(kind DoAction, fn Expr, buildCall func(Builder, Expr, ...
 	var prog Program
 	var nextbit Expr
 	var self = b.getDefer(kind)
+	if self.genericFunc0 && len(args) == 0 {
+		b.saveFunc0Defer(self.argsPtr, fn)
+		return
+	}
 	id := b.Prog.Val(self.nextID)
 	self.nextID++
 	switch kind {
@@ -430,8 +568,19 @@ func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, ar
 }
 
 func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr, ...Expr) Expr, fn Expr, args []Expr) {
+	callWithRecoverToken := func(callFn Expr, args []Expr) {
+		if callFn.kind == vkBuiltin {
+			if bi, ok := callFn.raw.Type.(*builtinTy); ok && bi.name == "recover" {
+				buildCall(b, callFn, args...)
+				return
+			}
+		}
+		prev := b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), recoverTokenExpr(b, callFn))
+		buildCall(b, callFn, args...)
+		b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), prev)
+	}
 	if typ == nil {
-		buildCall(b, fn, args...)
+		callWithRecoverToken(fn, args)
 		return
 	}
 	prog := b.Prog
@@ -453,7 +602,7 @@ func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr,
 		for i := 0; i < len(args); i++ {
 			args[i] = b.getField(data, i+offset)
 		}
-		buildCall(b, fn, args...)
+		callWithRecoverToken(fn, args)
 		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
 	})
 }
@@ -481,6 +630,38 @@ func (p Function) endDefer(b Builder) {
 	}
 	nexts := self.rundsNext
 	if len(nexts) == 0 {
+		return
+	}
+	if self.genericFunc0 {
+		rethrowBlk := nexts[0]
+		procBlk := self.procBlk
+		panicBlk := self.panicBlk
+		rundPtr := self.rundPtr
+
+		condBlk := p.MakeBlock()
+		callBlk := p.MakeBlock()
+		doneBlk := p.MakeBlock()
+
+		b.SetBlockEx(procBlk, AtEnd, false)
+		b.Jump(condBlk)
+
+		b.SetBlockEx(condBlk, AtEnd, true)
+		list := b.Load(self.argsPtr)
+		has := b.BinOp(token.NEQ, list, b.Prog.Nil(b.Prog.VoidPtr()))
+		b.If(has, callBlk, doneBlk)
+
+		b.SetBlockEx(callBlk, AtEnd, true)
+		b.callFunc0Defer(self.argsPtr)
+		b.Jump(condBlk)
+
+		b.SetBlockEx(doneBlk, AtEnd, true)
+		link := b.getField(b.Load(self.data), deferLink)
+		b.Call(b.Pkg.rtFunc("SetThreadDefer"), link)
+		b.IndirectJump(b.Load(rundPtr), nexts)
+
+		b.SetBlockEx(panicBlk, AtEnd, false)
+		b.Store(rundPtr, rethrowBlk.Addr())
+		b.Jump(procBlk)
 		return
 	}
 
@@ -529,8 +710,20 @@ func (b Builder) Recover() Expr {
 	if debugInstr {
 		log.Println("Recover")
 	}
-	// TODO(xsw): recover can't be a function call in Go
-	return b.Call(b.Pkg.rtFunc("Recover"))
+	return b.Call(b.Pkg.rtFunc("Recover"), recoverTokenExpr(b, b.Func.Expr))
+}
+
+func recoverTokenExpr(b Builder, fn Expr) Expr {
+	prog := b.Prog
+	switch fn.kind {
+	case vkClosure:
+		fn = b.Field(fn, 0)
+		fallthrough
+	case vkFuncDecl, vkFuncPtr:
+		return b.Convert(prog.VoidPtr(), fn)
+	default:
+		return prog.Nil(prog.VoidPtr())
+	}
 }
 
 // Panic emits a panic instruction.

@@ -126,6 +126,7 @@ type hmap struct {
 	buckets    unsafe.Pointer // array of 2^B Buckets. may be nil if count==0.
 	oldbuckets unsafe.Pointer // previous bucket array of half the size, non-nil only when growing
 	nevacuate  uintptr        // progress counter for evacuation (buckets less than this have been evacuated)
+	clearSeq   uint64
 
 	extra *mapextra // optional fields
 }
@@ -179,6 +180,7 @@ type hiter struct {
 	i           uint8
 	bucket      uintptr
 	checkBucket uintptr
+	clearSeq    uint64
 }
 
 // bucketShift returns 1<<b, optimized for code generation.
@@ -825,10 +827,11 @@ func mapiterinit(t *maptype, h *hmap, it *hiter) {
 		return
 	}
 
-	if unsafe.Sizeof(hiter{})/goarch.PtrSize != 12 {
+	if unsafe.Sizeof(hiter{})/goarch.PtrSize != 13 {
 		throw("hash_iter size incorrect") // see cmd/compile/internal/reflectdata/reflect.go
 	}
 	it.h = h
+	it.clearSeq = h.clearSeq
 
 	// grab snapshot of bucket state
 	it.B = h.B
@@ -952,8 +955,9 @@ next:
 				}
 			}
 		}
-		if (b.tophash[offi] != evacuatedX && b.tophash[offi] != evacuatedY) ||
-			!(t.ReflexiveKey() || t.Key.Equal(k, k)) {
+		if it.clearSeq == h.clearSeq &&
+			((b.tophash[offi] != evacuatedX && b.tophash[offi] != evacuatedY) ||
+				!(t.ReflexiveKey() || t.Key.Equal(k, k))) {
 			// This is the golden data, we can return it.
 			// OR
 			// key!=key, so the entry can't be deleted or updated, so we can just return it.
@@ -1030,6 +1034,7 @@ func mapclear(t *maptype, h *hmap) {
 	h.nevacuate = 0
 	h.noverflow = 0
 	h.count = 0
+	h.clearSeq++
 
 	// Reset the hash seed to make it more difficult for attackers to
 	// repeatedly trigger hash collisions. See issue 25237.

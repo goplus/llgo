@@ -13,14 +13,18 @@ var (
 	printFormatPrefixHex  = c.Str("%lx")
 )
 
+func throwCurrent(cur *Defer) {
+	setjmp.Longjmp((*setjmp.JmpBuf)(cur.Addr), 1)
+}
+
 // Rethrow rethrows a panic.
 // In baremetal single-threaded environment, we use longjmp to execute defers.
 // Note: recover() will return nil for now (panic value not stored).
-func Rethrow(link *Defer) {
-	if link == nil {
+func Rethrow(cur *Defer) {
+	if cur == nil {
 		c.Printf(c.Str("fatal error\n"))
 		c.Exit(2)
 	} else {
-		setjmp.Longjmp((*setjmp.JmpBuf)(link.Addr), 1)
+		setjmp.Longjmp((*setjmp.JmpBuf)(cur.Addr), 1)
 	}
 }

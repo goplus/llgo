@@ -52,6 +52,50 @@ func constBool(v ssa.Value) (ret bool, ok bool) {
 	return
 }
 
+func (p *context) offsetofExpr(v ssa.Value) (llssa.Expr, bool) {
+	offset, ok := p.offsetofValue(v)
+	if !ok {
+		return llssa.Nil, false
+	}
+	return p.prog.IntVal(uint64(offset), p.prog.Uintptr()), true
+}
+
+func (p *context) offsetofValue(v ssa.Value) (uintptr, bool) {
+	switch v := v.(type) {
+	case *ssa.UnOp:
+		if v.Op == token.MUL {
+			return p.offsetofValue(v.X)
+		}
+	case *ssa.FieldAddr:
+		ptr, ok := types.Unalias(v.X.Type()).Underlying().(*types.Pointer)
+		if !ok {
+			return 0, false
+		}
+		if _, ok := types.Unalias(ptr.Elem()).Underlying().(*types.Struct); !ok {
+			return 0, false
+		}
+		offset := uintptr(p.prog.OffsetOf(p.type_(ptr.Elem(), llssa.InGo), v.Field))
+		base, ok := v.X.(*ssa.FieldAddr)
+		if !ok {
+			return offset, true
+		}
+		basePtr, ok := types.Unalias(base.X.Type()).Underlying().(*types.Pointer)
+		if !ok {
+			return 0, false
+		}
+		baseStruct, ok := types.Unalias(basePtr.Elem()).Underlying().(*types.Struct)
+		if !ok || !baseStruct.Field(base.Field).Anonymous() {
+			return offset, ok
+		}
+		baseOffset, ok := p.offsetofValue(base)
+		if !ok {
+			return 0, false
+		}
+		return baseOffset + offset, true
+	}
+	return 0, false
+}
+
 // func pystr(string) *py.Object
 func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
@@ -681,8 +725,39 @@ func (p *context) pkgNoInit(pkg *types.Package) bool {
 // -----------------------------------------------------------------------------
 
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
+	parentSynthetic := p.goFn != nil && p.goFn.Synthetic != ""
+	keepRecoverContext := false
+	if fn := p.goFn; fn != nil && fn.Parent() != nil && fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		if fn.Pkg.Pkg.Path() == "github.com/goplus/llgo/runtime/internal/lib/reflect" &&
+			strings.HasPrefix(fn.Name(), "MakeFunc$") && fn.Parent().Name() == "MakeFunc" {
+			keepRecoverContext = true
+		}
+	}
+	setRecoverTokenFn := func() llssa.Function {
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+		return b.Pkg.NewFunc(llssa.PkgRuntime+".SetRecoverToken",
+			types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+	}
+	callMaybeSuspendRecover := func(fn llssa.Expr, args []llssa.Expr, allowSuspend bool) llssa.Expr {
+		if act != llssa.Call || !allowSuspend || parentSynthetic || keepRecoverContext || p.pkg.Path() == llssa.PkgRuntime {
+			return b.Do(act, fn, llssa.Builder.Call, args...)
+		}
+		prev := b.InlineCall(setRecoverTokenFn().Expr, b.Prog.Nil(b.Prog.VoidPtr()))
+		ret := b.Do(act, fn, llssa.Builder.Call, args...)
+		b.InlineCall(setRecoverTokenFn().Expr, prev)
+		return ret
+	}
 	cv := call.Value
 	if mthd := call.Method; mthd != nil {
+		if !p.pkg.NeedAbiInit {
+			if pkg := mthd.Pkg(); pkg != nil && pkg.Path() == "reflect" {
+				switch mthd.Name() {
+				case "Method", "MethodByName":
+					p.pkg.NeedAbiInit = true
+				}
+			}
+		}
 		o := p.compileValue(b, cv)
 		fn := b.Imethod(o, mthd)
 		hasVArg := fnNormal
@@ -690,7 +765,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			hasVArg = fnHasVArg
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
-		ret = b.Do(act, fn, llssa.Builder.Call, args...)
+		ret = callMaybeSuspendRecover(fn, args, true)
 		return
 	}
 	kind := p.funcKind(cv)
@@ -723,25 +798,50 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 				b.Str(constant.StringVal(args[2].(*ssa.Const).Value)))
 			b.Panic(errv)
 			b.SetBlockEx(blks[1], llssa.AtEnd, true)
+		} else if fn == "ssa:deferstack" {
+			if p.fn != nil && p.fn.SharedDeferFunc0() {
+				b.EnsureSharedDeferFunc0()
+			}
+			if sig := call.Signature(); sig != nil && sig.Results().Len() == 1 {
+				ret = b.ChangeType(p.type_(sig.Results().At(0).Type(), llssa.InGo), b.DeferData())
+			} else {
+				ret = b.DeferData()
+			}
+		} else if fn == "Offsetof" {
+			if len(args) != 1 {
+				panic("unsafe.Offsetof: invalid arguments")
+			}
+			if offset, ok := p.offsetofExpr(args[0]); ok {
+				ret = offset
+				break
+			}
+			panic("unsafe.Offsetof: unsupported argument")
 		} else {
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
+			ret = callMaybeSuspendRecover(llssa.Builtin(fn), args, fn != "recover" && fn != "panic")
 		}
 	case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)
+		suspend := cv.Synthetic == ""
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
 		case cFunc:
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			ret = b.Do(act, aFn.Expr, llssa.Builder.Call, args...)
+			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, aFn.Expr, llssa.Builder.Call, args...)
+			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, pyFn.Expr, llssa.Builder.Call, args...)
+			ret = callMaybeSuspendRecover(pyFn.Expr, args, suspend)
+		case goFunc:
+			args := p.compileValues(b, args, kind)
+			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
+		case pyFunc:
+			args := p.compileValues(b, args, kind)
+			ret = callMaybeSuspendRecover(pyFn.Expr, args, suspend)
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)
@@ -846,7 +946,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	default:
 		fn := p.compileValue(b, cv)
 		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, fn, llssa.Builder.Call, args...)
+		ret = callMaybeSuspendRecover(fn, args, true)
 	}
 	return
 }

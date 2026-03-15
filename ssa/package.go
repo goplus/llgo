@@ -117,12 +117,12 @@ type aProgram struct {
 	py    *types.Package
 	pyget func() *types.Package
 
-	target  *Target
-	td      llvm.TargetData
-	tm      llvm.TargetMachine
-	named   map[string]Type
+	target   *Target
+	td       llvm.TargetData
+	tm       llvm.TargetMachine
+	named    map[string]Type
 	building map[string]bool
-	fnnamed map[string]int
+	fnnamed  map[string]int
 
 	intType   llvm.Type
 	int1Type  llvm.Type

@@ -2,7 +2,12 @@
 
 package runtime
 
-import "unsafe"
+import (
+	"strings"
+	"unsafe"
+
+	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
+)
 
 var pprofLabel unsafe.Pointer
 
@@ -56,27 +61,85 @@ func runtime_pprof_readProfile() (data []uint64, tags []unsafe.Pointer, eof bool
 }
 
 //go:linkname pprof_goroutineProfileWithLabels runtime.pprof_goroutineProfileWithLabels
-func pprof_goroutineProfileWithLabels(p []StackRecord, labels []unsafe.Pointer) (n int, ok bool) {
+func pprof_goroutineProfileWithLabels(p []rawStackRecord, labels []unsafe.Pointer) (n int, ok bool) {
 	return 0, true
+}
+
+func isRuntimeProfileFrame(name string) bool {
+	return strings.HasPrefix(name, "runtime.") ||
+		strings.HasPrefix(name, "github.com/goplus/llgo/runtime/internal/runtime.") ||
+		strings.HasPrefix(name, "github.com/goplus/llgo/runtime/internal/lib/runtime.") ||
+		strings.HasPrefix(name, "__llgo_") ||
+		strings.HasPrefix(name, "GC_") ||
+		strings.HasPrefix(name, "_pthread_")
+}
+
+func trimProfileStack(callers []uintptr) []uintptr {
+	if len(callers) == 0 {
+		return callers
+	}
+	frames := CallersFrames(callers)
+	start := -1
+	end := len(callers)
+	userCount := 0
+	for i := 0; i < len(callers); i++ {
+		fr, more := frames.Next()
+		if isRuntimeProfileFrame(fr.Function) {
+			if userCount > 0 {
+				end = i
+				break
+			}
+		} else {
+			if start < 0 {
+				start = i
+			}
+			userCount++
+			end = i + 1
+			if userCount >= 2 {
+				break
+			}
+		}
+		if !more {
+			break
+		}
+	}
+	if start < 0 {
+		return callers
+	}
+	return callers[start:end]
 }
 
 //go:linkname pprof_memProfileInternal runtime.pprof_memProfileInternal
-func pprof_memProfileInternal(p []MemProfileRecord, inuseZero bool) (n int, ok bool) {
-	return 0, true
+func pprof_memProfileInternal(p []rawMemProfileRecord, inuseZero bool) (n int, ok bool) {
+	n = iruntime.MemProfileSiteCount()
+	if n > len(p) {
+		return n, false
+	}
+	i := 0
+	iruntime.MemProfileIterate(func(stack []uintptr, allocBytes, allocObjects int64) {
+		stack = trimProfileStack(stack)
+		p[i] = rawMemProfileRecord{
+			AllocBytes:   allocBytes,
+			AllocObjects: allocObjects,
+			Stack:        append([]uintptr(nil), stack...),
+		}
+		i++
+	})
+	return n, true
 }
 
 //go:linkname pprof_blockProfileInternal runtime.pprof_blockProfileInternal
-func pprof_blockProfileInternal(p []BlockProfileRecord) (n int, ok bool) {
+func pprof_blockProfileInternal(p []rawBlockProfileRecord) (n int, ok bool) {
 	return 0, true
 }
 
 //go:linkname pprof_mutexProfileInternal runtime.pprof_mutexProfileInternal
-func pprof_mutexProfileInternal(p []BlockProfileRecord) (n int, ok bool) {
+func pprof_mutexProfileInternal(p []rawBlockProfileRecord) (n int, ok bool) {
 	return 0, true
 }
 
 //go:linkname pprof_threadCreateInternal runtime.pprof_threadCreateInternal
-func pprof_threadCreateInternal(p []StackRecord) (n int, ok bool) {
+func pprof_threadCreateInternal(p []rawStackRecord) (n int, ok bool) {
 	return 0, true
 }
 

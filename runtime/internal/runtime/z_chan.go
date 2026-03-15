@@ -38,7 +38,7 @@ type Chan struct {
 	getp  int
 	len   int
 	cap   int
-	sops  []*selectOp
+	sops  []*selectReg
 	sends uint16
 	close bool
 }
@@ -81,8 +81,8 @@ func ChanCap(p *Chan) int {
 }
 
 func notifyOps(p *Chan) {
-	for _, sop := range p.sops {
-		sop.notify()
+	for _, reg := range p.sops {
+		reg.op.notify()
 	}
 }
 
@@ -113,6 +113,9 @@ func ChanTrySend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 			panic(plainError("send on closed channel"))
 		}
 		if p.getp != chanHasRecv {
+			if len(p.sops) != 0 {
+				notifyOps(p)
+			}
 			p.mutex.Unlock()
 			return false
 		}
@@ -147,6 +150,9 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 	p.mutex.Lock()
 	if n == 0 {
 		for p.getp != chanHasRecv && !p.close {
+			if len(p.sops) != 0 {
+				notifyOps(p)
+			}
 			p.sends++
 			p.cond.Wait(&p.mutex)
 			p.sends--
@@ -197,9 +203,11 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 			p.mutex.Unlock()
 			return
 		}
+		slot := c.Advance(p.data, p.getp*eltSize)
 		if v != nil {
-			c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
+			c.Memcpy(v, slot, uintptr(eltSize))
 		}
+		c.Memset(slot, 0, uintptr(eltSize))
 		p.getp = (p.getp + 1) % n
 		p.len--
 	}
@@ -244,9 +252,11 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 			}
 			p.cond.Wait(&p.mutex)
 		}
+		slot := c.Advance(p.data, p.getp*eltSize)
 		if v != nil {
-			c.Memcpy(v, c.Advance(p.data, p.getp*eltSize), uintptr(eltSize))
+			c.Memcpy(v, slot, uintptr(eltSize))
 		}
+		c.Memset(slot, 0, uintptr(eltSize))
 		p.getp = (p.getp + 1) % n
 		p.len--
 	}
@@ -272,6 +282,13 @@ type selectOp struct {
 	mutex sync.Mutex
 	cond  sync.Cond
 	sem   bool
+	regs  []*selectReg
+}
+
+type selectReg struct {
+	op  *selectOp
+	c   *Chan
+	idx int
 }
 
 func (p *selectOp) init() {
@@ -281,8 +298,9 @@ func (p *selectOp) init() {
 }
 
 func (p *selectOp) end() {
-	p.mutex.Destroy()
-	p.cond.Destroy()
+	// selectOp may still be observed by concurrent notify paths that raced with
+	// select teardown on another channel. Keep the sync primitives alive for the
+	// lifetime of the heap object to avoid use-after-destroy.
 }
 
 func (p *selectOp) notify() {
@@ -334,7 +352,7 @@ func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
 
 // Select executes a blocking select operation.
 func Select(ops ...ChanOp) (isel int, recvOK bool) {
-	selOp := new(selectOp) // TODO(xsw): use c.AllocaNew[selectOp]()
+	selOp := new(selectOp)
 	selOp.init()
 	for _, op := range ops {
 		if op.C == nil {
@@ -371,7 +389,9 @@ func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	if c.cap == 0 && isSend {
 		c.sends++
 	}
-	c.sops = append(c.sops, selOp)
+	reg := &selectReg{op: selOp, c: c, idx: len(c.sops)}
+	c.sops = append(c.sops, reg)
+	selOp.regs = append(selOp.regs, reg)
 	if c.cap == 0 && isSend {
 		// A newly-registered select-send can make a select-recv runnable.
 		notifyOps(c)
@@ -384,11 +404,23 @@ func endSelect(c *Chan, selOp *selectOp, isSend bool) {
 	if c.cap == 0 && isSend {
 		c.sends--
 	}
-	for i, op := range c.sops {
-		if op == selOp {
-			c.sops = append(c.sops[:i], c.sops[i+1:]...)
+	for _, reg := range selOp.regs {
+		if reg == nil || reg.c != c {
+			continue
+		}
+		last := len(c.sops) - 1
+		if last < 0 || reg.idx > last {
 			break
 		}
+		if reg.idx != last {
+			moved := c.sops[last]
+			c.sops[reg.idx] = moved
+			moved.idx = reg.idx
+		}
+		c.sops[last] = nil
+		c.sops = c.sops[:last]
+		reg.c = nil
+		break
 	}
 	c.mutex.Unlock()
 }

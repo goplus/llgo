@@ -72,7 +72,14 @@ func (p Program) Closure(sig *types.Signature) Type {
 	return p.rawType(closure)
 }
 
+func isOpaqueGoSSAType(typ types.Type) bool {
+	return fmt.Sprintf("%T", typ) == "*ssa.opaqueType"
+}
+
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
+	if isOpaqueGoSSAType(typ) {
+		return typ, false
+	}
 	switch t := typ.(type) {
 	case *types.Basic:
 	case *types.Pointer:

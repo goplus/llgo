@@ -20,6 +20,7 @@ import (
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
+	"github.com/goplus/llgo/runtime/internal/clite/pthread"
 	"github.com/goplus/llgo/runtime/internal/runtime"
 )
 
@@ -47,13 +48,18 @@ func NumCPU() int {
 }
 
 func Gosched() {
-	// LLGo's runtime does not currently have a scheduler handoff primitive.
-	// Keep the symbol available for compatibility; callers that need to poll
-	// for progress already pair Gosched with blocking operations or sleeps.
+	// LLGo maps goroutines to native threads. A tiny sleep is the closest
+	// portable approximation to Go's scheduler yield and prevents tight loops
+	// from starving GC/helper threads.
+	c.Usleep(1)
 }
 
 func Goexit() {
 	runtime.Goexit()
+}
+
+func runMain(routine func(unsafe.Pointer) unsafe.Pointer, arg unsafe.Pointer) {
+	runtime.RunMain(pthread.RoutineFunc(routine), c.Pointer(arg))
 }
 
 func Breakpoint() {

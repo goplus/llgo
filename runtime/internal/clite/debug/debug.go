@@ -28,6 +28,9 @@ func Addrinfo(addr unsafe.Pointer, info *Info) c.Int
 //go:linkname stacktrace C.llgo_stacktrace
 func stacktrace(skip c.Int, ctx unsafe.Pointer, fn func(ctx, pc, offset, sp unsafe.Pointer, name *c.Char) c.Int)
 
+//go:linkname stacktracePCs C.llgo_stacktrace_pcs
+func stacktracePCs(skip c.Int, pcs *unsafe.Pointer, n c.Int) c.Int
+
 type Frame struct {
 	PC     uintptr
 	Offset uintptr
@@ -43,6 +46,23 @@ func StackTrace(skip int, fn func(fr *Frame) bool) {
 		}
 		return 1
 	})
+}
+
+func StackTracePC(skip int, fn func(pc uintptr) bool) {
+	stacktrace(c.Int(1+skip), unsafe.Pointer(&fn), func(ctx, pc, offset, sp unsafe.Pointer, name *c.Char) c.Int {
+		fn := *(*func(pc uintptr) bool)(ctx)
+		if !fn(uintptr(pc)) {
+			return 0
+		}
+		return 1
+	})
+}
+
+func StackTracePCs(skip int, dst []uintptr) int {
+	if len(dst) == 0 {
+		return 0
+	}
+	return int(stacktracePCs(c.Int(1+skip), (*unsafe.Pointer)(unsafe.Pointer(&dst[0])), c.Int(len(dst))))
 }
 
 func PrintStack(skip int) {

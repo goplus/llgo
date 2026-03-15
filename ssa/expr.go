@@ -1136,6 +1136,8 @@ var (
 		"reflect.StructOf":           {},
 		"reflect.PointerTo":          {},
 		"reflect.PtrTo":              {},
+		"reflect.Type.Method":        {},
+		"reflect.Type.MethodByName":  {},
 		"reflect.Value.Method":       {},
 		"reflect.Value.MethodByName": {},
 	}

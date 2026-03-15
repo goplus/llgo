@@ -135,6 +135,11 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	prog := b.Prog
 	typ := x.Type
 	tabi := b.abiType(typ.raw.Type)
+	if !directIfaceType(typ.raw.Type) {
+		vptr := b.AllocU(typ)
+		b.Store(vptr, x)
+		return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
+	}
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
@@ -167,8 +172,35 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
 
+func (b Builder) MakeInterfaceFromPtr(tinter Type, ptr Expr) (ret Expr) {
+	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
+	prog := b.Prog
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+
+	typ := prog.Elem(ptr.Type)
+	tabi := b.abiType(typ.raw.Type)
+	if directIfaceType(typ.raw.Type) {
+		return b.MakeInterface(tinter, b.Load(ptr))
+	}
+
+	vptr := b.AllocU(typ)
+	dst := b.Convert(prog.VoidPtr(), vptr)
+	src := b.Convert(prog.VoidPtr(), ptr)
+	b.Call(b.Pkg.rtFunc("Typedmemmove"), tabi, dst, src)
+	return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
+}
+
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog
+	if !directIfaceType(typ.raw.Type) {
+		impl := b.impl
+		tll := typ.ll
+		tptr := llvm.PointerType(tll, 0)
+		ptr := llvm.CreatePointerCast(impl, data, tptr)
+		return Expr{llvm.CreateLoad(impl, tll, ptr), typ}
+	}
 	kind, real, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
@@ -219,7 +251,7 @@ func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
 	case *types.Array:
 		telem := b.Prog.rawType(t.Elem())
 		elem := b.buildVal(telem, val, lvl-1)
-		return Expr{llvm.ConstArray(typ.ll, []llvm.Value{elem.impl}), typ}
+		return Expr{aggregateValue(b.impl, typ.ll, elem.impl), typ}
 	}
 	panic("todo")
 }

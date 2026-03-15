@@ -242,8 +242,6 @@ func checkRange(idx Expr, max Expr) (checkMin, checkMax bool) {
 // check index >= 0 && index < max and size to uint
 func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 	prog := b.Prog
-	// check range
-	checkMin, checkMax := checkRange(idx, max)
 	// fit size
 	var typ Type
 	if idx.kind == vkSigned {
@@ -256,24 +254,11 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 		idx.Type = typ
 		idx.impl = castUintptr(b, idx.impl, srcType, typ)
 	}
-	// check range expr
-	var check Expr
-	if checkMin {
-		zero := llvm.ConstInt(idx.ll, 0, false)
-		check = Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
+	idx.Type = typ
+	if idx.kind == vkSigned {
+		return b.InlineCall(b.Pkg.rtFunc("CheckIndexInt"), idx, max)
 	}
-	if checkMax {
-		r := Expr{llvm.CreateICmp(b.impl, llvm.IntSGE, idx.impl, max.impl), prog.Bool()}
-		if check.IsNil() {
-			check = r
-		} else {
-			check = Expr{b.impl.CreateOr(r.impl, check.impl, ""), prog.Bool()}
-		}
-	}
-	if !check.IsNil() {
-		b.InlineCall(b.Pkg.rtFunc("AssertIndexRange"), check)
-	}
-	return idx
+	return b.InlineCall(b.Pkg.rtFunc("CheckIndexUint"), idx, max)
 }
 
 // The Index instruction yields element Index of collection X, an array,
@@ -300,19 +285,33 @@ func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr
 		telem = prog.rawType(types.Typ[types.Byte])
 		ptr = b.StringData(x)
 		max = b.StringLen(x)
+	case *types.Slice:
+		telem = prog.Index(x.Type)
+		ptr = b.SliceData(x)
+		max = b.SliceLen(x)
+	case *types.Pointer:
+		ar, ok := t.Elem().Underlying().(*types.Array)
+		if !ok {
+			panic(fmt.Errorf("invalid operation: cannot index %v", t))
+		}
+		telem = prog.Index(x.Type)
+		nilPtr := llvm.ConstNull(x.impl.Type())
+		isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+		ptr = x
+		max = prog.IntVal(uint64(ar.Len()), prog.Int())
 	case *types.Array:
 		telem = prog.Index(x.Type)
 		ptr, zero = takeAddr()
 		max = prog.IntVal(uint64(t.Len()), prog.Int())
+	default:
+		panic(fmt.Errorf("invalid operation: cannot index %v", x.raw.Type))
 	}
 	idx = b.checkIndex(idx, max)
 	if zero {
 		return prog.Zero(telem)
 	}
 	if ptr.IsNil() {
-		if x.impl.IsConstant() {
-			return Expr{llvm.ConstExtractElement(x.impl, idx.impl), telem}
-		}
 		ptr = b.Alloc(x.Type, false)
 		b.impl.CreateStore(x.impl, ptr.impl)
 	}
@@ -342,19 +341,25 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	var nCap Expr
+	var nLen Expr
 	var nEltSize Expr
 	var base Expr
+	useUnsigned := (!low.IsNil() && low.kind == vkUnsigned) || (!high.IsNil() && high.kind == vkUnsigned) || (!max.IsNil() && max.kind == vkUnsigned)
 	var lowIsNil = low.IsNil()
 	if lowIsNil {
-		low = prog.IntVal(0, prog.Int())
+		if useUnsigned {
+			low = prog.IntVal(0, prog.Uint())
+		} else {
+			low = prog.IntVal(0, prog.Int())
+		}
 	} else {
-		low = b.fitIntSize(low)
+		low = b.fitIndexSize(low, useUnsigned)
 	}
 	if !high.IsNil() {
-		high = b.fitIntSize(high)
+		high = b.fitIndexSize(high, useUnsigned)
 	}
 	if !max.IsNil() {
-		max = b.fitIntSize(max)
+		max = b.fitIndexSize(max, useUnsigned)
 	}
 	switch t := x.raw.Type.Underlying().(type) {
 	case *types.Basic:
@@ -362,16 +367,21 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			panic(fmt.Errorf("invalid operation: cannot slice %v", t))
 		}
 		if high.IsNil() {
-			high = b.StringLen(x)
+			high = b.fitIndexSize(b.StringLen(x), useUnsigned)
 		}
 		ret.Type = x.Type
-		ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSlice"), x, low, high).impl
+		if useUnsigned {
+			ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSliceU"), x, low, high).impl
+		} else {
+			ret.impl = b.InlineCall(b.Pkg.rtFunc("StringSlice"), x, low, high).impl
+		}
 		return
 	case *types.Slice:
 		nEltSize = SizeOf(prog, prog.Index(x.Type))
 		nCap = b.SliceCap(x)
+		nLen = b.SliceLen(x)
 		if high.IsNil() {
-			high = b.SliceLen(x)
+			high = b.fitIndexSize(nLen, useUnsigned)
 		}
 		ret.Type = x.Type
 		base = b.SliceData(x)
@@ -383,20 +393,61 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 			ret.Type = prog.Slice(elem)
 			nEltSize = SizeOf(prog, elem)
 			nCap = prog.IntVal(uint64(te.Len()), prog.Int())
+			nLen = nCap
 			if high.IsNil() {
 				if lowIsNil && max.IsNil() {
 					ret.impl = b.unsafeSlice(x, nCap.impl, nCap.impl).impl
 					return
 				}
-				high = nCap
+				high = b.fitIndexSize(nCap, useUnsigned)
 			}
 			base = x
 		}
 	}
 	if max.IsNil() {
-		max = nCap
+		if useUnsigned {
+			switch x.raw.Type.Underlying().(type) {
+			case *types.Slice:
+				if ret.Type != nil {
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice2CapU"), base, nEltSize, nCap, low, high).impl
+					return
+				}
+			default:
+				if ret.Type != nil {
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice2LenU"), base, nEltSize, nLen, low, high).impl
+					return
+				}
+			}
+		} else {
+			switch x.raw.Type.Underlying().(type) {
+			case *types.Slice:
+				if ret.Type != nil {
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice2Cap"), base, nEltSize, nCap, low, high).impl
+					return
+				}
+			default:
+				if ret.Type != nil {
+					ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice2Len"), base, nEltSize, nLen, low, high).impl
+					return
+				}
+			}
+		}
 	}
-	ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
+	if useUnsigned {
+		switch x.raw.Type.Underlying().(type) {
+		case *types.Slice:
+			ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3CapU"), base, nEltSize, nCap, low, high, max).impl
+		default:
+			ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3LenU"), base, nEltSize, nLen, low, high, max).impl
+		}
+		return
+	}
+	switch x.raw.Type.Underlying().(type) {
+	case *types.Slice:
+		ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3"), base, nEltSize, nCap, low, high, max).impl
+	default:
+		ret.impl = b.InlineCall(b.Pkg.rtFunc("NewSlice3Len"), base, nEltSize, nLen, low, high, max).impl
+	}
 	return
 }
 
@@ -448,6 +499,21 @@ func (b Builder) fitIntSize(n Expr) Expr {
 		n.Type = typ
 		n.impl = castInt(b, n.impl, srcType, typ)
 	}
+	return n
+}
+
+func (b Builder) fitIndexSize(n Expr, useUnsigned bool) Expr {
+	prog := b.Prog
+	typ := prog.Int()
+	if useUnsigned {
+		typ = prog.Uint()
+	}
+	if prog.SizeOf(n.Type) != prog.SizeOf(typ) || n.Type.kind != typ.kind {
+		srcType := n.Type
+		n.Type = typ
+		n.impl = castUintptr(b, n.impl, srcType, typ)
+	}
+	n.Type = typ
 	return n
 }
 
@@ -564,7 +630,7 @@ func (b Builder) Range(x Expr) Expr {
 		return b.InlineCall(b.Pkg.rtFunc("NewStringIter"), x)
 	case vkMap:
 		typ := b.abiType(x.raw.Type)
-		return b.InlineCall(b.Pkg.rtFunc("NewMapIter"), typ, x)
+		return b.InlineCall(b.Pkg.rtFunc("NewRangeMapIter"), typ, x)
 	}
 	panic("unsupport range for " + x.raw.Type.String())
 }
@@ -587,36 +653,55 @@ func (b Builder) Range(x Expr) Expr {
 // Example printed form:
 //
 //	t1 = next t0
-func (b Builder) Next(typ Type, iter Expr, isString bool) Expr {
+func (b Builder) Next(src Type, ktyp, vtyp Type, iter Expr, isString bool) Expr {
 	if isString {
 		return b.InlineCall(b.Pkg.rtFunc("StringIterNext"), iter)
 	}
 	prog := b.Prog
-	ktyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Key(), InGo)
-	vtyp := prog.Type(typ.raw.Type.Underlying().(*types.Map).Elem(), InGo)
-	rets := b.InlineCall(b.Pkg.rtFunc("MapIterNext"), iter)
+	styp := src.raw.Type.Underlying().(*types.Map)
+	kloadTyp := prog.Type(styp.Key(), InGo)
+	vloadTyp := prog.Type(styp.Elem(), InGo)
+	rets := b.InlineCall(b.Pkg.rtFunc("RangeMapIterNext"), iter)
 	ok := b.impl.CreateExtractValue(rets.impl, 0, "")
-	t := prog.Struct(prog.Bool(), ktyp, vtyp)
+	typ := prog.Struct(prog.Bool(), ktyp, vtyp)
 	blks := b.Func.MakeBlocks(3)
 	b.If(Expr{ok, prog.Bool()}, blks[0], blks[1])
 	b.SetBlockEx(blks[2], AtEnd, false)
-	phi := b.Phi(t)
+	phi := b.Phi(typ)
 	phi.AddIncoming(b, blks[:2], func(i int, blk BasicBlock) Expr {
 		b.SetBlockEx(blk, AtEnd, false)
 		if i == 0 {
 			k := b.impl.CreateExtractValue(rets.impl, 1, "")
 			v := b.impl.CreateExtractValue(rets.impl, 2, "")
-			valTrue := aggregateValue(b.impl, t.ll, prog.BoolVal(true).impl,
-				llvm.CreateLoad(b.impl, ktyp.ll, k),
-				llvm.CreateLoad(b.impl, vtyp.ll, v))
+			key := Expr{llvm.CreateLoad(b.impl, kloadTyp.ll, k), kloadTyp}
+			val := Expr{llvm.CreateLoad(b.impl, vloadTyp.ll, v), vloadTyp}
+			if _, ok := ktyp.raw.Type.Underlying().(*types.Interface); ok {
+				if _, loaded := kloadTyp.raw.Type.Underlying().(*types.Interface); loaded {
+					key = b.ChangeType(ktyp, key)
+				} else {
+					key = b.MakeInterface(ktyp, key)
+				}
+			} else {
+				key = b.ChangeType(ktyp, key)
+			}
+			if _, ok := vtyp.raw.Type.Underlying().(*types.Interface); ok {
+				if _, loaded := vloadTyp.raw.Type.Underlying().(*types.Interface); loaded {
+					val = b.ChangeType(vtyp, val)
+				} else {
+					val = b.MakeInterface(vtyp, val)
+				}
+			} else {
+				val = b.ChangeType(vtyp, val)
+			}
+			valTrue := aggregateValue(b.impl, typ.ll, prog.BoolVal(true).impl, key.impl, val.impl)
 			b.Jump(blks[2])
-			return Expr{valTrue, t}
+			return Expr{valTrue, typ}
 		}
-		valFalse := aggregateValue(b.impl, t.ll, prog.BoolVal(false).impl,
-			llvm.ConstNull(ktyp.ll),
-			llvm.ConstNull(vtyp.ll))
+		valFalse := aggregateValue(b.impl, typ.ll, prog.BoolVal(false).impl,
+			prog.Zero(ktyp).impl,
+			prog.Zero(vtyp).impl)
 		b.Jump(blks[2])
-		return Expr{valFalse, t}
+		return Expr{valFalse, typ}
 	})
 	b.SetBlockEx(blks[2], AtEnd, false)
 	b.blk.last = blks[2].last
@@ -664,16 +749,31 @@ func (b Builder) Send(ch Expr, x Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(ch.Type)), prog.Int())
-	ret = b.InlineCall(b.Pkg.rtFunc("ChanSend"), ch, b.toPtr(x), eltSize)
+	ptr, cleanup := b.toPtr(x)
+	ret = b.InlineCall(b.Pkg.rtFunc("ChanSend"), ch, ptr, eltSize)
+	cleanup()
 	return
 }
 
-func (b Builder) toPtr(x Expr) Expr {
+func (b Builder) toPtr(x Expr) (Expr, func()) {
 	typ := x.Type
 	vtyp := b.Prog.VoidPtr()
+	size := b.Prog.IntVal(b.Prog.SizeOf(typ), b.Prog.Int())
+	if x.impl.Type().TypeKind() == llvm.PointerTypeKind {
+		switch x.kind {
+		case vkSlice, vkString, vkStruct, vkArray, vkTuple, vkIface, vkEface, vkClosure:
+			ptr := b.ChangeType(vtyp, x)
+			return ptr, func() {
+				b.zeroinit(ptr, size)
+			}
+		}
+	}
 	vptr := b.Alloc(typ, false)
 	b.Store(vptr, x)
-	return Expr{vptr.impl, vtyp}
+	ptr := Expr{vptr.impl, vtyp}
+	return ptr, func() {
+		b.zeroinit(ptr, size)
+	}
 }
 
 func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
@@ -685,12 +785,21 @@ func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	etyp := prog.Elem(ch.Type)
 	ptr := b.Alloc(etyp, false)
 	ok := b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
+	zeroRecvTmp := func() {
+		// Drop references held in the hidden receive temporary as soon as the
+		// loaded value is materialized. Otherwise large pointer-bearing channel
+		// elements can remain live across later GC calls in the same frame.
+		b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), eltSize)
+	}
 	if commaOk {
 		val := b.Load(ptr)
+		zeroRecvTmp()
 		t := prog.Struct(etyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok.impl)
 	} else {
-		return b.Load(ptr)
+		val := b.Load(ptr)
+		zeroRecvTmp()
+		return val
 	}
 }
 
@@ -783,7 +892,7 @@ func (b Builder) chanOp(s *SelectState) Expr {
 	var val Expr
 	var size Expr
 	if s.Send {
-		val = b.toPtr(s.Value)
+		val, _ = b.toPtr(s.Value)
 		size = prog.IntVal(prog.SizeOf(s.Value.Type), prog.Int32())
 	} else {
 		etyp := prog.Elem(s.Chan.Type)
