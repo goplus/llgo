@@ -97,6 +97,30 @@ func TestHostSkipMatch(t *testing.T) {
 	}
 }
 
+func TestTimeoutMatch(t *testing.T) {
+	cfg := xfailConfig{
+		Timeouts: []timeoutEntry{{
+			Version:   "go1.24",
+			Platform:  "darwin/arm64",
+			Directive: "run",
+			Case:      "fixedbugs/*",
+			Timeout:   "90s",
+			Reason:    "slow case",
+		}},
+	}
+	tc := testCase{RelPath: "fixedbugs/bug123.go", Directive: "run"}
+	timeout, reason, ok := cfg.MatchTimeout("go1.24.11", "darwin/arm64", tc)
+	if !ok {
+		t.Fatal("expected timeout match")
+	}
+	if timeout != 90*time.Second {
+		t.Fatalf("timeout=%s, want 90s", timeout)
+	}
+	if reason != "slow case" {
+		t.Fatalf("reason=%q, want slow case", reason)
+	}
+}
+
 func TestRunProgramTimeout(t *testing.T) {
 	if os.Getenv("LLGO_GOROOT_HELPER") == "sleep" {
 		time.Sleep(200 * time.Millisecond)

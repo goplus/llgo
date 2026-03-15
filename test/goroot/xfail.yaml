@@ -29,11 +29,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: finprofiled.go
-    reason: finalizer-heavy heap profiling still times out under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: chan/doubleselect.go
     reason: select send/recv race still crashes with SIGBUS on darwin/arm64
   - version: go1.24
@@ -236,3 +231,11 @@ xfails:
     directive: run
     case: ken/chan.go
     reason: ken channel stress case hangs under llgo on darwin/arm64
+
+timeouts:
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: finprofiled.go
+    timeout: 90s
+    reason: finalizer-heavy heap profiling passes but needs a longer per-case timeout on darwin/arm64

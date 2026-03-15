@@ -67,8 +67,9 @@ type testCase struct {
 }
 
 type xfailConfig struct {
-	Entries   []xfailEntry `yaml:"xfails"`
-	HostSkips []xfailEntry `yaml:"host_skips"`
+	Entries   []xfailEntry   `yaml:"xfails"`
+	HostSkips []xfailEntry   `yaml:"host_skips"`
+	Timeouts  []timeoutEntry `yaml:"timeouts"`
 }
 
 type xfailEntry struct {
@@ -76,6 +77,15 @@ type xfailEntry struct {
 	Platform  string `yaml:"platform"`
 	Directive string `yaml:"directive"`
 	Case      string `yaml:"case"`
+	Reason    string `yaml:"reason"`
+}
+
+type timeoutEntry struct {
+	Version   string `yaml:"version"`
+	Platform  string `yaml:"platform"`
+	Directive string `yaml:"directive"`
+	Case      string `yaml:"case"`
+	Timeout   string `yaml:"timeout"`
 	Reason    string `yaml:"reason"`
 }
 
@@ -121,7 +131,12 @@ func TestGoRootRunCases(t *testing.T) {
 			if match, reason := xfails.MatchHostSkip(envInfo.GOVERSION, runtime.GOOS+"/"+runtime.GOARCH, tc); match {
 				t.Skipf("skipping host-unsafe case: %s", reason)
 			}
-			err := runCase(t, repoRoot, goroot, goCmd, llgoBin, tc)
+			runTimeout := *flagRunTO
+			if timeout, reason, ok := xfails.MatchTimeout(envInfo.GOVERSION, envInfo.GOOS+"/"+envInfo.GOARCH, tc); ok {
+				runTimeout = timeout
+				t.Logf("using timeout override %s: %s", timeout, reason)
+			}
+			err := runCase(t, repoRoot, goroot, goCmd, llgoBin, tc, runTimeout)
 			match, reason := xfails.Match(envInfo.GOVERSION, envInfo.GOOS+"/"+envInfo.GOARCH, tc)
 			switch {
 			case err == nil && match:
@@ -309,7 +324,7 @@ func parseDirective(filePath string) (string, []string, bool) {
 	return "", nil, false
 }
 
-func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase) error {
+func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, runTimeout time.Duration) error {
 	t.Helper()
 	workRoot, cleanup, err := prepareWorkTree(tc.Dir)
 	if err != nil {
@@ -319,11 +334,11 @@ func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase)
 		defer cleanup()
 	}
 
-	goStdout, goStderr, goExit, err := runProgram(workRoot, goCmd, runnerEnv(repoRoot, goroot), *flagRunTO, "run", tc.FileName)
+	goStdout, goStderr, goExit, err := runProgram(workRoot, goCmd, runnerEnv(repoRoot, goroot), runTimeout, "run", tc.FileName)
 	if err != nil {
 		return commandFailure("baseline go run", err, goStdout, goStderr, goExit)
 	}
-	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBin, runnerEnv(repoRoot, goroot), *flagRunTO, "run", tc.FileName)
+	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBin, runnerEnv(repoRoot, goroot), runTimeout, "run", tc.FileName)
 	if err != nil {
 		return commandFailure("llgo run", err, llgoStdout, llgoStderr, llgoExit)
 	}
@@ -565,22 +580,28 @@ func (cfg xfailConfig) MatchHostSkip(goVersion, platform string, tc testCase) (b
 	return matchEntries(cfg.HostSkips, goVersion, platform, tc)
 }
 
+func (cfg xfailConfig) MatchTimeout(goVersion, platform string, tc testCase) (time.Duration, string, bool) {
+	for _, entry := range cfg.Timeouts {
+		if !entry.matches(goVersion, platform, tc) {
+			continue
+		}
+		timeout, err := time.ParseDuration(entry.Timeout)
+		if err != nil {
+			return 0, fmt.Sprintf("invalid timeout override %q for %s: %v", entry.Timeout, entry.Case, err), false
+		}
+		reason := entry.Reason
+		if reason == "" {
+			reason = entry.Case
+		}
+		return timeout, reason, true
+	}
+	return 0, "", false
+}
+
 func matchEntries(entries []xfailEntry, goVersion, platform string, tc testCase) (bool, string) {
 	for _, entry := range entries {
-		if entry.Version != "" && !strings.HasPrefix(goVersion, entry.Version) {
+		if !entry.matches(goVersion, platform, tc) {
 			continue
-		}
-		if entry.Platform != "" && entry.Platform != platform {
-			continue
-		}
-		if entry.Directive != "" && entry.Directive != tc.Directive {
-			continue
-		}
-		if entry.Case != "" {
-			ok, err := path.Match(entry.Case, tc.RelPath)
-			if err != nil || !ok {
-				continue
-			}
 		}
 		reason := entry.Reason
 		if reason == "" {
@@ -589,4 +610,29 @@ func matchEntries(entries []xfailEntry, goVersion, platform string, tc testCase)
 		return true, reason
 	}
 	return false, ""
+}
+
+func (entry xfailEntry) matches(goVersion, platform string, tc testCase) bool {
+	return matchEntry(entry.Version, entry.Platform, entry.Directive, entry.Case, goVersion, platform, tc)
+}
+
+func (entry timeoutEntry) matches(goVersion, platform string, tc testCase) bool {
+	return matchEntry(entry.Version, entry.Platform, entry.Directive, entry.Case, goVersion, platform, tc)
+}
+
+func matchEntry(version, platform, directive, casePattern, goVersion, goPlatform string, tc testCase) bool {
+	if version != "" && !strings.HasPrefix(goVersion, version) {
+		return false
+	}
+	if platform != "" && platform != goPlatform {
+		return false
+	}
+	if directive != "" && directive != tc.Directive {
+		return false
+	}
+	if casePattern == "" {
+		return true
+	}
+	ok, err := path.Match(casePattern, tc.RelPath)
+	return err == nil && ok
 }
