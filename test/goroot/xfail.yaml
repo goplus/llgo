@@ -39,11 +39,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: finprofiled.go
-    reason: finalizer-backed memory profiling is not implemented under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: deferfin.go
     reason: finalizer execution is still unstable under llgo on darwin/arm64
   - version: go1.24
