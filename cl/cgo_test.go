@@ -162,6 +162,27 @@ func f(x []int) int {
 	}
 }
 
+func TestMapUpdateClearsKeyTemp(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+func f(m map[string]int, k string) {
+	m[k] = 1
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo.f")
+	ir := fn.String()
+	idxAssign := strings.Index(ir, "runtime.MapAssign")
+	if idxAssign < 0 {
+		t.Fatalf("missing MapAssign in IR:\n%s", ir)
+	}
+	afterAssign := ir[idxAssign:]
+	if !strings.Contains(afterAssign, "@llvm.memset(") || !strings.Contains(afterAssign, "i64 16") {
+		t.Fatalf("expected key temp zeroing after MapAssign, got:\n%s", ir)
+	}
+}
+
 func TestCgoInstr_Cmacro(t *testing.T) {
 	_, m := mustCompileLLPkgFromSrc(t, `
 package foo

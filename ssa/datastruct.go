@@ -559,17 +559,19 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 	prog := b.Prog
 	typ := b.abiType(x.raw.Type)
 	vtyp := prog.Elem(x.Type)
-	ptr := b.mapKeyPtr(key)
+	keytmp, ptr := b.mapKeyPtr(key)
 	if commaOk {
 		vals := b.Call(b.Pkg.rtFunc("MapAccess2"), typ, x, ptr)
 		val := b.Load(Expr{b.impl.CreateExtractValue(vals.impl, 0, ""), prog.Pointer(vtyp)})
 		ok := b.impl.CreateExtractValue(vals.impl, 1, "")
+		b.clearMapKeyTmp(keytmp)
 		t := prog.Struct(vtyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok)
 	} else {
 		val := b.Call(b.Pkg.rtFunc("MapAccess1"), typ, x, ptr)
 		val.Type = prog.Pointer(vtyp)
 		ret = b.Load(val)
+		b.clearMapKeyTmp(keytmp)
 	}
 	return
 }
@@ -595,19 +597,24 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 		log.Printf("MapUpdate %v[%v] = %v\n", m.impl, k.impl, v.impl)
 	}
 	typ := b.abiType(m.raw.Type)
-	ptr := b.mapKeyPtr(k)
+	keytmp, ptr := b.mapKeyPtr(k)
 	ret := b.Call(b.Pkg.rtFunc("MapAssign"), typ, m, ptr)
 	ret.Type = b.Prog.Pointer(v.Type)
 	b.Store(ret, v)
+	b.clearMapKeyTmp(keytmp)
 }
 
 // key => unsafe.Pointer
-func (b Builder) mapKeyPtr(x Expr) Expr {
+func (b Builder) mapKeyPtr(x Expr) (tmp, ptr Expr) {
 	typ := x.Type
-	vtyp := b.Prog.VoidPtr()
-	vptr := b.AllocU(typ)
-	b.Store(vptr, x)
-	return Expr{vptr.impl, vtyp}
+	tmp = b.AllocU(typ)
+	b.Store(tmp, x)
+	ptr = Expr{tmp.impl, b.Prog.VoidPtr()}
+	return
+}
+
+func (b Builder) clearMapKeyTmp(tmp Expr) {
+	b.zeroinit(tmp, SizeOf(b.Prog, b.Prog.Elem(tmp.Type)))
 }
 
 // -----------------------------------------------------------------------------
