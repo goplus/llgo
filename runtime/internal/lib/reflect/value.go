@@ -22,15 +22,15 @@ package reflect
 
 import (
 	"errors"
+	"internal/goarch"
+	"internal/itoa"
 	"math"
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
 	"github.com/goplus/llgo/runtime/internal/clite/bitcast"
 	"github.com/goplus/llgo/runtime/internal/ffi"
-	"internal/itoa"
 	"github.com/goplus/llgo/runtime/internal/runtime"
-	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
 
 // Value is the reflection interface to a Go value.

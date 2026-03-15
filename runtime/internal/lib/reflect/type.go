@@ -21,6 +21,7 @@
 package reflect
 
 import (
+	"internal/goarch"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -31,7 +32,6 @@ import (
 	"github.com/goplus/llgo/runtime/abi"
 	clite "github.com/goplus/llgo/runtime/internal/clite"
 	_ "github.com/goplus/llgo/runtime/internal/runtime"
-	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
 
 // A Kind represents the specific kind of type that a Type represents.
