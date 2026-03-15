@@ -13,6 +13,12 @@ type Signature = ffi.Cif
 
 type Error int
 
+type signatureHolder struct {
+	Signature
+	args []*Type
+	ret  *Type
+}
+
 func (s Error) Error() string {
 	switch s {
 	case ffi.OK:
@@ -28,27 +34,33 @@ func (s Error) Error() string {
 }
 
 func NewSignature(ret *Type, args ...*Type) (*Signature, error) {
-	var cif Signature
-	var atype **Type
-	if len(args) > 0 {
-		atype = &args[0]
+	cif := &signatureHolder{
+		args: append([]*Type(nil), args...),
+		ret:  ret,
 	}
-	status := ffi.PrepCif(&cif, ffi.DefaultAbi, c.Uint(len(args)), ret, atype)
+	var atype **Type
+	if len(cif.args) > 0 {
+		atype = &cif.args[0]
+	}
+	status := ffi.PrepCif(&cif.Signature, ffi.DefaultAbi, c.Uint(len(cif.args)), ret, atype)
 	if status == 0 {
-		return &cif, nil
+		return &cif.Signature, nil
 	}
 	return nil, Error(status)
 }
 
 func NewSignatureVar(ret *Type, fixed int, args ...*Type) (*Signature, error) {
-	var cif Signature
-	var atype **Type
-	if len(args) > 0 {
-		atype = &args[0]
+	cif := &signatureHolder{
+		args: append([]*Type(nil), args...),
+		ret:  ret,
 	}
-	status := ffi.PrepCifVar(&cif, ffi.DefaultAbi, c.Uint(fixed), c.Uint(len(args)), ret, atype)
+	var atype **Type
+	if len(cif.args) > 0 {
+		atype = &cif.args[0]
+	}
+	status := ffi.PrepCifVar(&cif.Signature, ffi.DefaultAbi, c.Uint(fixed), c.Uint(len(cif.args)), ret, atype)
 	if status == ffi.OK {
-		return &cif, nil
+		return &cif.Signature, nil
 	}
 	return nil, Error(status)
 }

@@ -75,7 +75,7 @@ func (b Builder) Go(fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args .
 	}
 	t := prog.Struct(typs...)
 	voidPtr := prog.VoidPtr()
-	data := Expr{b.aggregateMalloc(t, flds...), voidPtr}
+	data := Expr{b.aggregateAllocU(t, flds...), voidPtr}
 	size := prog.SizeOf(voidPtr)
 	pthd := b.Alloca(prog.IntVal(uint64(size), prog.Uintptr()))
 	b.pthreadCreate(pthd, prog.Nil(voidPtr), pkg.routine(t, fn, buildCall, len(args)), data)

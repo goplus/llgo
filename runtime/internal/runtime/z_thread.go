@@ -23,6 +23,7 @@ import (
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
+	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
@@ -37,8 +38,16 @@ type mainThreadStart struct {
 }
 
 var liveGoroutines int32 = 1
+var pendingThreadStarts struct {
+	mutex sync.Mutex
+	items []*threadStart
+}
 
 const mainThreadStackSize = 64 << 20
+
+func init() {
+	pendingThreadStarts.mutex.Init(nil)
+}
 
 func NumGoroutine() int {
 	return int(atomic.Load(&liveGoroutines))
@@ -48,8 +57,30 @@ func finishGoroutine() {
 	atomic.Add(&liveGoroutines, -1)
 }
 
+func addPendingThreadStart(start *threadStart) {
+	pendingThreadStarts.mutex.Lock()
+	pendingThreadStarts.items = append(pendingThreadStarts.items, start)
+	pendingThreadStarts.mutex.Unlock()
+}
+
+func removePendingThreadStart(start *threadStart) {
+	pendingThreadStarts.mutex.Lock()
+	for i, item := range pendingThreadStarts.items {
+		if item != start {
+			continue
+		}
+		last := len(pendingThreadStarts.items) - 1
+		pendingThreadStarts.items[i] = pendingThreadStarts.items[last]
+		pendingThreadStarts.items[last] = nil
+		pendingThreadStarts.items = pendingThreadStarts.items[:last]
+		break
+	}
+	pendingThreadStarts.mutex.Unlock()
+}
+
 func threadEntry(arg c.Pointer) c.Pointer {
 	start := (*threadStart)(unsafe.Pointer(arg))
+	removePendingThreadStart(start)
 	ret := start.routine(start.arg)
 	finishGoroutine()
 	return ret
@@ -64,7 +95,9 @@ func mainThreadEntry(arg c.Pointer) c.Pointer {
 func CreateThread(th *pthread.Thread, attr *pthread.Attr, routine pthread.RoutineFunc, arg c.Pointer) c.Int {
 	atomic.Add(&liveGoroutines, 1)
 	start := &threadStart{routine: routine, arg: arg}
+	addPendingThreadStart(start)
 	if rc := pthread.Create(th, attr, threadEntry, c.Pointer(unsafe.Pointer(start))); rc != 0 {
+		removePendingThreadStart(start)
 		finishGoroutine()
 		return rc
 	}

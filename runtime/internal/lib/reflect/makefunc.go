@@ -27,13 +27,53 @@ import (
 
 	"github.com/goplus/llgo/runtime/abi"
 	c "github.com/goplus/llgo/runtime/internal/clite"
+	clffi "github.com/goplus/llgo/runtime/internal/clite/ffi"
 	"github.com/goplus/llgo/runtime/internal/ffi"
 )
 
 type funcData struct {
 	ftyp *funcType
 	fn   func(args []Value) (results []Value)
+	cl   *ffi.Closure
+	sig  *ffi.Signature
 	nin  int
+}
+
+func makeFuncClosureArgs(fd *funcData, args *unsafe.Pointer) []Value {
+	var inline [8]Value
+	ins := inline[:0]
+	if fd.nin <= len(inline) {
+		ins = inline[:fd.nin]
+	} else {
+		ins = make([]Value, fd.nin)
+	}
+	for i := 0; i < fd.nin; i++ {
+		ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
+	}
+	return ins
+}
+
+func makeFuncCallback0(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	fd := (*funcData)(userdata)
+	checkMakeFuncResults(fd.ftyp, fd.fn(makeFuncClosureArgs(fd, args)))
+}
+
+func makeFuncCallback1(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	fd := (*funcData)(userdata)
+	out := fd.fn(makeFuncClosureArgs(fd, args))
+	checkMakeFuncResults(fd.ftyp, out)
+	storeMakeFuncResult(ret, fd.ftyp.Out[0], out[0])
+}
+
+func makeFuncCallbackN(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
+	fd := (*funcData)(userdata)
+	outs := fd.fn(makeFuncClosureArgs(fd, args))
+	checkMakeFuncResults(fd.ftyp, outs)
+	var offset uintptr
+	for i, out := range outs {
+		storeMakeFuncResult(add(ret, offset, ""), fd.ftyp.Out[i], out)
+		offset += fd.ftyp.Out[i].Size_
+	}
 }
 
 func checkMakeFuncResults(ftyp *funcType, outs []Value) {
@@ -67,52 +107,30 @@ func MakeFunc(typ Type, fn func(args []Value) (results []Value)) Value {
 		panic(err)
 	}
 	closure := ffi.NewClosure()
+	fd := (*funcData)(unsafe_New(rtypeOf((*funcData)(nil)).Elem()))
+	*fd = funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In), cl: closure, sig: sig}
+
+	var cb clffi.ClosureFunc
 
 	switch len(ftyp.Out) {
 	case 0:
-		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			fd := (*funcData)(userdata)
-			ins := make([]Value, fd.nin)
-			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
-			}
-			checkMakeFuncResults(fd.ftyp, fd.fn(ins))
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		cb = makeFuncCallback0
 	case 1:
-		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			fd := (*funcData)(userdata)
-			ins := make([]Value, fd.nin)
-			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
-			}
-			out := fd.fn(ins)
-			checkMakeFuncResults(fd.ftyp, out)
-			storeMakeFuncResult(ret, fd.ftyp.Out[0], out[0])
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		cb = makeFuncCallback1
 	default:
-		err = closure.Bind(sig, func(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
-			fd := (*funcData)(userdata)
-			ins := make([]Value, fd.nin)
-			for i := 0; i < fd.nin; i++ {
-				ins[i] = ffiToValue(ffi.Index(args, uintptr(i+1)), fd.ftyp.In[i])
-			}
-			outs := fd.fn(ins)
-			checkMakeFuncResults(fd.ftyp, outs)
-			var offset uintptr = 0
-			for i, out := range outs {
-				storeMakeFuncResult(add(ret, offset, ""), fd.ftyp.Out[i], out)
-				offset += fd.ftyp.Out[i].Size_
-			}
-		}, unsafe.Pointer(&funcData{ftyp: ftyp, fn: fn, nin: len(ftyp.In)}))
+		cb = makeFuncCallbackN
 	}
+	err = closure.Bind(sig, cb, unsafe.Pointer(fd))
 	if err != nil {
 		panic("libffi error: " + err.Error())
 	}
 	styp := closureOf(ftyp)
-	fv := &struct {
+	fv := (*struct {
 		fn  unsafe.Pointer
 		env unsafe.Pointer
-	}{closure.Fn, unsafe.Pointer(&fn)}
+	})(unsafe_New(styp))
+	fv.fn = closure.Fn
+	fv.env = unsafe.Pointer(fd)
 	return Value{styp, unsafe.Pointer(fv), flagIndir | flag(Func)}
 }
 
