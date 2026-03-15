@@ -38,19 +38,28 @@ import (
 	}
 }
 
-func TestBuildAltOverlayRewritesInternalSyncFiles(t *testing.T) {
-	overlay, err := buildAltOverlay(nil, env.LLGoRuntimeDir(), []string{"internal/sync"})
-	if err != nil {
-		t.Fatal(err)
+func TestBuildAltOverlayRewritesMirrorFiles(t *testing.T) {
+	tests := []struct {
+		pkgPath string
+		files   []string
+	}{
+		{pkgPath: "internal/sync", files: []string{"mutex.go", "hashtriemap.go"}},
+		{pkgPath: "internal/reflectlite", files: []string{"type.go", "value.go"}},
 	}
-	for _, name := range []string{"mutex.go", "hashtriemap.go"} {
-		file := filepath.Join(env.LLGoRuntimeDir(), "internal", "lib", "internal", "sync", name)
-		got := string(overlay[file])
-		if got == "" {
-			t.Fatalf("missing overlay for %s", name)
+	for _, tt := range tests {
+		overlay, err := buildAltOverlay(nil, env.LLGoRuntimeDir(), []string{tt.pkgPath})
+		if err != nil {
+			t.Fatalf("%s: %v", tt.pkgPath, err)
 		}
-		if !strings.Contains(got, altPkgPathPrefix+"internal/") {
-			t.Fatalf("overlay for %s was not rewritten: %s", name, got)
+		for _, name := range tt.files {
+			file := filepath.Join(env.LLGoRuntimeDir(), "internal", "lib", filepath.FromSlash(tt.pkgPath), name)
+			got := string(overlay[file])
+			if got == "" {
+				t.Fatalf("%s: missing overlay for %s", tt.pkgPath, name)
+			}
+			if !strings.Contains(got, altPkgPathPrefix+"internal/") {
+				t.Fatalf("%s: overlay for %s was not rewritten: %s", tt.pkgPath, name, got)
+			}
 		}
 	}
 }
