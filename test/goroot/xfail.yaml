@@ -115,7 +115,7 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue27518b.go
-    reason: panic/defer liveness around return slots still finalizes the heap object too early under llgo on darwin/arm64
+    reason: last-use clearing for panic/defer return values and caller locals still keeps the heap object reachable too long under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -125,7 +125,7 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue32477.go
-    reason: defer-path liveness still finalizes the heap object too early under llgo on darwin/arm64
+    reason: defer-path last-use clearing still keeps the heap object reachable too long under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
