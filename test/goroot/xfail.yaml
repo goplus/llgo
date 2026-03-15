@@ -174,16 +174,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue58300.go
-    reason: traceback symbol names still leak __llgo_stub wrappers under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue58300b.go
-    reason: traceback symbol names still leak __llgo_stub wrappers under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue5856.go
     reason: defer caller location metadata is still incomplete under llgo on darwin/arm64
   - version: go1.24

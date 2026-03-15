@@ -109,6 +109,7 @@ func unknownFunctionName(pc uintptr) string {
 }
 
 func userVisibleFuncName(fn string) string {
+	fn = strings.TrimPrefix(fn, "__llgo_stub.")
 	if strings.HasPrefix(fn, "command-line-arguments.") {
 		return "main." + strings.TrimPrefix(fn, "command-line-arguments.")
 	}
