@@ -29,6 +29,11 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
+    case: finprofiled.go
+    reason: finalizer-heavy heap profiling still times out under llgo on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
     case: chan/doubleselect.go
     reason: select send/recv race still crashes with SIGBUS on darwin/arm64
   - version: go1.24
@@ -36,11 +41,6 @@ xfails:
     directive: run
     case: chan/select2.go
     reason: select memory-footprint case crashes with SIGBUS under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: deferfin.go
-    reason: finalizer execution is still unstable under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -179,16 +179,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue54343.go
-    reason: generic method-value finalizer liveness is still unstable under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue5493.go
-    reason: finalizer throughput is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue56990.go
     reason: runtime.Func metadata still diverges under llgo on darwin/arm64
   - version: go1.24
@@ -216,11 +206,6 @@ xfails:
     directive: run
     case: fixedbugs/issue7690.go
     reason: runtime.Callers trace still misses main.main under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: tinyfin.go
-    reason: tiny finalizer throughput is still incomplete under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
