@@ -1,3 +1,30 @@
+host_skips:
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25897b.go
+    reason: this stress case previously triggered a host kernel panic via command-line-arguments on macOS 26.2 arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27695.go
+    reason: this stress case previously triggered a host kernel panic via command-line-arguments on macOS 26.2 arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue39541.go
+    reason: this stress case previously triggered a host kernel panic via command-line-arguments on macOS 26.2 arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: ddd.go
+    reason: this stress case previously triggered a host kernel panic via command-line-arguments on macOS 26.2 arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: gcgort.go
+    reason: this stress case previously triggered a host kernel panic via command-line-arguments on macOS 26.2 arm64
+
 xfails:
   - version: go1.24
     platform: darwin/arm64
@@ -7,38 +34,8 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: chanlinear.go
-    reason: channel dequeue linearity case hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/powser1.go
-    reason: power series channel case hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/powser2.go
-    reason: interface power series channel case hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: chan/select2.go
-    reason: select memory-footprint case hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/select6.go
-    reason: select waiter queue case hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/select7.go
-    reason: select discard-value case hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: interface/fake.go
-    reason: reflect-produced interface equality still mismatches under llgo on darwin/arm64
+    reason: select memory-footprint case crashes with SIGBUS under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -52,93 +49,8 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: heapsampling.go
-    reason: heap-sampling case still crashes in llgo SSA generation on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: init1.go
-    reason: GC/finalizer accounting still diverges during package init under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: inline_literal.go
-    reason: runtime symbolization is incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: mallocfin.go
     reason: finalizer throughput is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: nilptr2.go
-    reason: nil pointer panic matrix still hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: noinit.go
-    reason: link-time init task elimination is incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: peano.go
-    reason: recursive named type lowering still overflows the compiler stack on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: recover.go
-    reason: recover stack semantics still diverge under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: recover1.go
-    reason: nested recover semantics still diverge under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: recover4.go
-    reason: recover stress case still crashes with SIGBUS under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: reflectmethod1.go
-    reason: reflect method value boxing still hits bad indir under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: reflectmethod2.go
-    reason: reflect method value boxing still hits bad indir under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: reflectmethod3.go
-    reason: reflect method value boxing still hits bad indir under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: reflectmethod5.go
-    reason: reflect method value boxing still hits bad indir under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: reflectmethod6.go
-    reason: reflect method value boxing still hits bad indir under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: reflectmethod7.go
-    reason: reflect method value boxing stress case still hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: slicecap.go
-    reason: slice/string reslicing still computes unstable base pointers under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: stack.go
-    reason: stack growth stress case still crashes with SIGSEGV under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -167,16 +79,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/bug257.go
-    reason: emitted IR still triggers an LLVM loop-simplify crash in crypto/internal/fips140/drbg on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue12133.go
-    reason: go/ssa still materializes invalid untyped shift expressions under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue13169.go
     reason: deep stack/channel stress case still crashes with SIGBUS under llgo on darwin/arm64
   - version: go1.24
@@ -187,18 +89,8 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue15175.go
-    reason: go/ssa still materializes invalid untyped shift expressions under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue15281.go
     reason: runtime memory statistics accounting is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue16037_run.go
-    reason: //go:linkname strict resolution still diverges under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -227,11 +119,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue23017.go
-    reason: concurrency stress case still hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue23837.go
     reason: concurrency stress case still hangs under llgo on darwin/arm64
   - version: go1.24
@@ -244,11 +131,6 @@ xfails:
     directive: run
     case: fixedbugs/issue25897a.go
     reason: concurrency stress case still hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue26335.go
-    reason: reflect.Call type validation still diverges under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -267,23 +149,8 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue30116.go
-    reason: int64/uint64 bounds checks still miss many index and slice panic paths under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue30116u.go
-    reason: int64/uint64 bounds checks still miss many index and slice panic paths under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue32477.go
     reason: finalizer retention timing is still unstable under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue33724.go
-    reason: promoted nil-receiver panic and stack trimming still diverge under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -317,16 +184,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue53137.go
-    reason: generic field offset metadata still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue53635.go
-    reason: generic lowering still hits an unsupported basic-type path under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue54343.go
     reason: generic method-value finalizer liveness is still unstable under llgo on darwin/arm64
   - version: go1.24
@@ -339,11 +196,6 @@ xfails:
     directive: run
     case: fixedbugs/issue56990.go
     reason: runtime.Func metadata still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue5704.go
-    reason: empty slice nilness semantics still diverge under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -367,48 +219,13 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue59411.go
-    reason: map clear during iteration still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue5963.go
-    reason: runtime.Goexit deadlock semantics still diverge under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue71675.go
-    reason: generic lowering still cannot convert *ssa.opaqueType under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue7550.go
-    reason: expected panic propagation still diverges under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue7690.go
     reason: runtime.Callers trace still misses main.main under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue8606b.go
-    reason: string comparison ordering still dereferences invalid backing stores before scalar mismatch checks under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: switch.go
-    reason: switch lowering still hits an unsupported const type path under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: tinyfin.go
     reason: tiny finalizer throughput is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: zerosize.go
-    reason: zero-sized globals still do not share a single zerobase address under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -424,16 +241,6 @@ xfails:
     directive: run
     case: typeparam/chans.go
     reason: generic ranger finalizer path still hangs under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: typeparam/mdempsky/17.go
-    reason: generic range-to-interface lowering still emits invalid forward-referenced IR under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: typeparam/nested.go
-    reason: local generic runtime type canonicalization still misses enclosing function instantiation context under llgo on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

@@ -67,7 +67,8 @@ type testCase struct {
 }
 
 type xfailConfig struct {
-	Entries []xfailEntry `yaml:"xfails"`
+	Entries   []xfailEntry `yaml:"xfails"`
+	HostSkips []xfailEntry `yaml:"host_skips"`
 }
 
 type xfailEntry struct {
@@ -117,6 +118,9 @@ func TestGoRootRunCases(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.RelPath, func(t *testing.T) {
+			if match, reason := xfails.MatchHostSkip(envInfo.GOVERSION, runtime.GOOS+"/"+runtime.GOARCH, tc); match {
+				t.Skipf("skipping host-unsafe case: %s", reason)
+			}
 			err := runCase(t, repoRoot, goroot, goCmd, llgoBin, tc)
 			match, reason := xfails.Match(envInfo.GOVERSION, envInfo.GOOS+"/"+envInfo.GOARCH, tc)
 			switch {
@@ -554,7 +558,15 @@ func parseGoVersion(goVersion string) (int, int, bool) {
 }
 
 func (cfg xfailConfig) Match(goVersion, platform string, tc testCase) (bool, string) {
-	for _, entry := range cfg.Entries {
+	return matchEntries(cfg.Entries, goVersion, platform, tc)
+}
+
+func (cfg xfailConfig) MatchHostSkip(goVersion, platform string, tc testCase) (bool, string) {
+	return matchEntries(cfg.HostSkips, goVersion, platform, tc)
+}
+
+func matchEntries(entries []xfailEntry, goVersion, platform string, tc testCase) (bool, string) {
+	for _, entry := range entries {
 		if entry.Version != "" && !strings.HasPrefix(goVersion, entry.Version) {
 			continue
 		}

@@ -77,6 +77,26 @@ func TestXFailMatch(t *testing.T) {
 	}
 }
 
+func TestHostSkipMatch(t *testing.T) {
+	cfg := xfailConfig{
+		HostSkips: []xfailEntry{{
+			Version:   "go1.24",
+			Platform:  "darwin/arm64",
+			Directive: "run",
+			Case:      "fixedbugs/*",
+			Reason:    "host-unsafe",
+		}},
+	}
+	tc := testCase{RelPath: "fixedbugs/bug123.go", Directive: "run"}
+	match, reason := cfg.MatchHostSkip("go1.24.11", "darwin/arm64", tc)
+	if !match {
+		t.Fatal("expected host skip match")
+	}
+	if reason != "host-unsafe" {
+		t.Fatalf("reason=%q, want host-unsafe", reason)
+	}
+}
+
 func TestRunProgramTimeout(t *testing.T) {
 	if os.Getenv("LLGO_GOROOT_HELPER") == "sleep" {
 		time.Sleep(200 * time.Millisecond)
