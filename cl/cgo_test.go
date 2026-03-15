@@ -142,6 +142,26 @@ func _C2func_sum(a int32, b int32) (int32, error) {
 	}
 }
 
+func TestTypeAssertFromMakeInterfaceSameTypeAvoidsBoxing(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+func f(x []int) int {
+	var h interface{} = x
+	return h.([]int)[0]
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo.f")
+	ir := fn.String()
+	if strings.Contains(ir, "runtime.AllocU") {
+		t.Fatalf("unexpected interface boxing alloc in typeassert fast-path:\n%s", ir)
+	}
+	if strings.Contains(ir, "MakeTypeAssertionError") {
+		t.Fatalf("unexpected runtime type assertion check in typeassert fast-path:\n%s", ir)
+	}
+}
+
 func TestCgoInstr_Cmacro(t *testing.T) {
 	_, m := mustCompileLLPkgFromSrc(t, `
 package foo

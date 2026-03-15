@@ -1095,6 +1095,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 						return
 					}
 				}
+			case *ssa.TypeAssert:
+				if types.Identical(v.X.Type(), ref.AssertedType) {
+					return
+				}
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
@@ -1123,6 +1127,16 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		bindings := p.compileValues(b, v.Bindings, 0)
 		ret = b.MakeClosure(fn, bindings)
 	case *ssa.TypeAssert:
+		if mi, ok := v.X.(*ssa.MakeInterface); ok && types.Identical(mi.X.Type(), v.AssertedType) {
+			val := p.compileValue(b, mi.X)
+			if v.CommaOk {
+				t := p.type_(v.AssertedType, llssa.InGo)
+				ret = b.Aggregate(p.prog.Struct(t, p.prog.Bool()), val, p.prog.BoolVal(true))
+			} else {
+				ret = val
+			}
+			break
+		}
 		x := p.compileValue(b, v.X)
 		t := p.type_(v.AssertedType, llssa.InGo)
 		ret = b.TypeAssert(x, t, v.CommaOk)
