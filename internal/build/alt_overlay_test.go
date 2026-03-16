@@ -47,6 +47,7 @@ func TestBuildAltOverlayRewritesMirrorFiles(t *testing.T) {
 		{pkgPath: "internal/reflectlite", files: []string{"type.go", "value.go"}},
 		{pkgPath: "internal/runtime/maps", files: []string{"maps.go"}},
 		{pkgPath: "reflect", files: []string{"value.go", "type.go", "swapper.go"}},
+		{pkgPath: "runtime", files: []string{"reflect_linkname_llgo.go"}},
 	}
 	for _, tt := range tests {
 		overlay, err := buildAltOverlay(nil, env.LLGoRuntimeDir(), []string{tt.pkgPath})

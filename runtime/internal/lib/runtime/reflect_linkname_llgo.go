@@ -2,7 +2,7 @@ package runtime
 
 import (
 	"github.com/goplus/llgo/runtime/abi"
-	_ "github.com/goplus/llgo/runtime/internal/lib/internal/reflectlite"
+	_ "internal/reflectlite"
 	llrt "github.com/goplus/llgo/runtime/internal/runtime"
 	"unsafe"
 	_ "unsafe"
