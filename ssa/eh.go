@@ -388,9 +388,9 @@ func (b Builder) callFunc0Defer(argsPtr Expr) {
 		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
 		b.Store(argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
 		callFn := b.getField(data, 1)
-		prev := b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), recoverTokenExpr(b, callFn))
+		prev := b.InlineCall(b.Pkg.rtFunc("SwapRecoverToken"), recoverTokenExpr(b, callFn))
 		b.Call(callFn)
-		b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), prev)
+		b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
 		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
 	})
 }
@@ -574,9 +574,9 @@ func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr,
 				return
 			}
 		}
-		prev := b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), recoverTokenExpr(b, callFn))
+		prev := b.InlineCall(b.Pkg.rtFunc("SwapRecoverToken"), recoverTokenExpr(b, callFn))
 		buildCall(b, callFn, args...)
-		b.InlineCall(b.Pkg.rtFunc("SetRecoverToken"), prev)
+		b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
 	}
 	if typ == nil {
 		callWithRecoverToken(fn, args)

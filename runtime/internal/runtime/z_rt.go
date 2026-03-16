@@ -51,6 +51,11 @@ type panicTrace struct {
 	stack [32]uintptr
 }
 
+type recoverState struct {
+	tok unsafe.Pointer
+	pan unsafe.Pointer
+}
+
 // Recover recovers a panic.
 func Recover(tok unsafe.Pointer) (ret any) {
 	key := recoverKey.Get()
@@ -100,11 +105,36 @@ var (
 	mainThread    pthread.Thread
 )
 
-func SetRecoverToken(tok unsafe.Pointer) (prev unsafe.Pointer) {
-	prev = recoverKey.Get()
+func SwapRecoverToken(tok unsafe.Pointer) unsafe.Pointer {
+	state := (*recoverState)(c.Malloc(unsafe.Sizeof(recoverState{})))
+	state.tok = recoverKey.Get()
+	state.pan = recoverPan.Get()
 	recoverKey.Set(tok)
-	recoverPan.Set(excepKey.Get())
-	return
+	if tok == nil {
+		recoverPan.Set(nil)
+	} else {
+		recoverPan.Set(excepKey.Get())
+	}
+	return unsafe.Pointer(state)
+}
+
+func ForwardRecoverToken(tok unsafe.Pointer) unsafe.Pointer {
+	if recoverKey.Get() == nil {
+		return nil
+	}
+	return SwapRecoverToken(tok)
+}
+
+func RestoreRecoverToken(state unsafe.Pointer) {
+	if state == nil {
+		recoverKey.Set(nil)
+		recoverPan.Set(nil)
+		return
+	}
+	prev := (*recoverState)(state)
+	recoverKey.Set(prev.tok)
+	recoverPan.Set(prev.pan)
+	c.Free(state)
 }
 
 func HasRecoverKey() bool {

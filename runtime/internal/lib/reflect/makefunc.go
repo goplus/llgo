@@ -39,8 +39,11 @@ type funcData struct {
 	nin  int
 }
 
-//go:linkname llgoSetRecoverToken github.com/goplus/llgo/runtime/internal/runtime.SetRecoverToken
-func llgoSetRecoverToken(tok unsafe.Pointer) unsafe.Pointer
+//go:linkname llgoSwapRecoverToken github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken
+func llgoSwapRecoverToken(tok unsafe.Pointer) unsafe.Pointer
+
+//go:linkname llgoRestoreRecoverToken github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken
+func llgoRestoreRecoverToken(state unsafe.Pointer)
 
 //go:linkname llgoHasRecoverKey github.com/goplus/llgo/runtime/internal/runtime.HasRecoverKey
 func llgoHasRecoverKey() bool
@@ -70,8 +73,8 @@ func callMakeFunc(fd *funcData, args *unsafe.Pointer) []Value {
 	if !llgoHasRecoverKey() {
 		return fd.fn(makeFuncClosureArgs(fd, args))
 	}
-	prev := llgoSetRecoverToken(makeFuncRecoverToken(fd.fn))
-	defer llgoSetRecoverToken(prev)
+	prev := llgoSwapRecoverToken(makeFuncRecoverToken(fd.fn))
+	defer llgoRestoreRecoverToken(prev)
 	return fd.fn(makeFuncClosureArgs(fd, args))
 }
 

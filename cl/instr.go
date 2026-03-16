@@ -758,6 +758,14 @@ func recoverTokenExprCL(b llssa.Builder, fn llssa.Expr) llssa.Expr {
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
 	parentSynthetic := p.goFn != nil && p.goFn.Synthetic != ""
 	keepRecoverContext := false
+	wrapperRecoverContext := false
+	if fn := p.goFn; fn != nil {
+		if strings.HasPrefix(fn.Synthetic, "wrapper for func ") {
+			// SSA method wrappers forward an interface-call entry point to the
+			// real method body. recover() must observe the callee's token there.
+			wrapperRecoverContext = true
+		}
+	}
 	if fn := p.goFn; fn != nil && fn.Pkg != nil && fn.Pkg.Pkg != nil {
 		if pkgPath := fn.Pkg.Pkg.Path(); pkgPath == "reflect" || pkgPath == "github.com/goplus/llgo/runtime/internal/lib/reflect" {
 			if fn.Parent() != nil && strings.HasPrefix(fn.Name(), "MakeFunc$") && fn.Parent().Name() == "MakeFunc" {
@@ -772,28 +780,39 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			}
 		}
 	}
-	setRecoverTokenFn := func() llssa.Function {
+	swapRecoverTokenFn := func() llssa.Function {
 		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
 		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
-		return b.Pkg.NewFunc(llssa.PkgRuntime+".SetRecoverToken",
+		return b.Pkg.NewFunc(llssa.PkgRuntime+".SwapRecoverToken",
 			types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+	}
+	forwardRecoverTokenFn := func() llssa.Function {
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+		return b.Pkg.NewFunc(llssa.PkgRuntime+".ForwardRecoverToken",
+			types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+	}
+	restoreRecoverTokenFn := func() llssa.Function {
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+		return b.Pkg.NewFunc(llssa.PkgRuntime+".RestoreRecoverToken",
+			types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
 	}
 	callMaybeSuspendRecover := func(fn llssa.Expr, args []llssa.Expr, allowSuspend bool) llssa.Expr {
 		if act != llssa.Call || !allowSuspend || p.pkg.Path() == llssa.PkgRuntime {
 			return b.Do(act, fn, llssa.Builder.Call, args...)
 		}
-		if keepRecoverContext {
-			prev := b.InlineCall(setRecoverTokenFn().Expr, recoverTokenExprCL(b, fn))
+		if keepRecoverContext || wrapperRecoverContext {
+			prev := b.InlineCall(forwardRecoverTokenFn().Expr, recoverTokenExprCL(b, fn))
 			ret := b.Do(act, fn, llssa.Builder.Call, args...)
-			b.InlineCall(setRecoverTokenFn().Expr, prev)
+			b.InlineCall(restoreRecoverTokenFn().Expr, prev)
 			return ret
 		}
 		if parentSynthetic {
 			return b.Do(act, fn, llssa.Builder.Call, args...)
 		}
-		prev := b.InlineCall(setRecoverTokenFn().Expr, b.Prog.Nil(b.Prog.VoidPtr()))
+		prev := b.InlineCall(swapRecoverTokenFn().Expr, b.Prog.Nil(b.Prog.VoidPtr()))
 		ret := b.Do(act, fn, llssa.Builder.Call, args...)
-		b.InlineCall(setRecoverTokenFn().Expr, prev)
+		b.InlineCall(restoreRecoverTokenFn().Expr, prev)
 		return ret
 	}
 	cv := call.Value
