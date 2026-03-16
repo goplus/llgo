@@ -491,6 +491,27 @@ func f() {
 	}
 }
 
+func TestPointerAllocUsesHiddenUintptrSlot(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{}
+
+func f() (x *T) {
+	x = new(T)
+	defer func() { recover() }()
+	*(*int)(nil) = 0
+	return
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, "alloca i64") {
+		t.Fatalf("missing hidden uintptr slot for pointer alloc:\n%s", body)
+	}
+	if !strings.Contains(body, "xor i64") {
+		t.Fatalf("missing hidden pointer encoding for pointer alloc:\n%s", body)
+	}
+}
+
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
 	_, err := build.Do([]string{"math"}, conf)

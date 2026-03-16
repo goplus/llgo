@@ -127,6 +127,7 @@ type context struct {
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
 	recvTuples  map[ssa.Value]*recvTupleState
 	stackClears map[ssa.Instruction][]*ssa.Alloc
+	hiddenPtrAllocs map[*ssa.Alloc]bool
 	paramClears map[ssa.Instruction][]int
 	paramValueClears map[ssa.Instruction][]int
 	valuePreClears  map[ssa.Instruction][]ssa.Value
@@ -465,6 +466,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
 			p.recvTuples = make(map[ssa.Value]*recvTupleState)
 			p.stackClears = p.collectStackClearPlans(f)
+			p.hiddenPtrAllocs = p.collectHiddenPointerAllocs(f)
 			p.paramClears = p.collectParamClearPlans(f)
 			p.paramValueClears = p.collectParamValueClearPlans(f)
 			p.valuePreClears, p.valuePostClears = p.collectPointerValueClearPlans(f)
@@ -1410,6 +1412,43 @@ func (p *context) shouldTrackStackClear(v *ssa.Alloc) bool {
 	return p.canPromoteHeapAllocToStack(v)
 }
 
+func (p *context) canHidePointerAlloc(v *ssa.Alloc) bool {
+	if v == nil || v.Heap || v.Comment == "varargs" || v.Comment == "makeslice" {
+		return false
+	}
+	ptr, ok := v.Type().Underlying().(*types.Pointer)
+	if !ok || ptr == nil {
+		return false
+	}
+	if _, ok := ptr.Elem().Underlying().(*types.Pointer); !ok {
+		return false
+	}
+	if containsInstantiatedNamedType(ptr.Elem(), map[types.Type]bool{}) {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil || len(*refs) == 0 {
+		return false
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Store:
+			if ref.Addr != v {
+				return false
+			}
+		case *ssa.UnOp:
+			if ref.Op != token.MUL || ref.X != v {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 func (p *context) collectStackClearPlans(fn *ssa.Function) map[ssa.Instruction][]*ssa.Alloc {
 	plans := make(map[ssa.Instruction][]*ssa.Alloc)
 	for _, blk := range fn.Blocks {
@@ -1428,6 +1467,19 @@ func (p *context) collectStackClearPlans(fn *ssa.Function) map[ssa.Instruction][
 		}
 	}
 	return plans
+}
+
+func (p *context) collectHiddenPointerAllocs(fn *ssa.Function) map[*ssa.Alloc]bool {
+	ret := make(map[*ssa.Alloc]bool)
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			alloc, ok := instr.(*ssa.Alloc)
+			if ok && p.canHidePointerAlloc(alloc) {
+				ret[alloc] = true
+			}
+		}
+	}
+	return ret
 }
 
 func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
@@ -1751,6 +1803,10 @@ func (p *context) clearDeadStackAllocs(b llssa.Builder, instr ssa.Instruction) {
 		if ptr.Type == nil {
 			continue
 		}
+		if p.hiddenPtrAllocs[alloc] {
+			b.Store(ptr, p.prog.Zero(b.Prog.Uintptr()))
+			continue
+		}
 		elem := p.type_(alloc.Type().(*types.Pointer).Elem(), llssa.InGo)
 		if p.prog.SizeOf(elem) > 256 {
 			continue
@@ -1918,6 +1974,16 @@ func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction)
 func isSendInstr(instr ssa.Instruction) bool {
 	_, ok := instr.(*ssa.Send)
 	return ok
+}
+
+func (p *context) hiddenPointerKey(b llssa.Builder, ptr llssa.Expr) llssa.Expr {
+	key := b.Convert(b.Prog.Uintptr(), ptr)
+	return b.BinOp(token.XOR, key, b.Prog.IntVal(0xffff, b.Prog.Uintptr()))
+}
+
+func (p *context) hiddenPointerDecode(b llssa.Builder, key llssa.Expr, t types.Type) llssa.Expr {
+	raw := b.BinOp(token.XOR, key, b.Prog.IntVal(0xffff, b.Prog.Uintptr()))
+	return b.Convert(p.type_(t, llssa.InGo), raw)
 }
 
 func (p *context) compileSingleUseMakeSliceSend(b llssa.Builder, ch llssa.Expr, v ssa.Value) bool {
@@ -2103,6 +2169,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
 		if v.Op == token.MUL {
+			if alloc, ok := v.X.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
+				slot := p.compileValue(b, v.X)
+				key := b.Load(slot)
+				ret = p.hiddenPointerDecode(b, key, v.Type())
+				break
+			}
 			if _, ok := v.X.(*ssa.UnOp); ok {
 				if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
 					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
@@ -2159,6 +2231,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return
 		}
 		elem := p.type_(t.Elem(), llssa.InGo)
+		if p.hiddenPtrAllocs[v] {
+			ret = b.AllocaT(p.type_(types.Typ[types.Uintptr], llssa.InGo))
+			break
+		}
 		ret = b.Alloc(elem, v.Heap && !p.canPromoteHeapAllocToStack(v))
 	case *ssa.IndexAddr:
 		vx := v.X
@@ -2409,6 +2485,12 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 					return
 				}
 			}
+		}
+		if alloc, ok := va.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
+			slot := p.compileValue(b, va)
+			val := p.compileValue(b, v.Val)
+			b.Store(slot, p.hiddenPointerKey(b, val))
+			return
 		}
 		ptr := p.compileValue(b, va)
 		val := p.compileValue(b, v.Val)
