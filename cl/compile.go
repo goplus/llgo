@@ -386,6 +386,22 @@ type hiddenStaticCallShimPlan struct {
 	hiddenName string
 }
 
+func isRuntimeMetadataPointer(t types.Type) bool {
+	pt, ok := types.Unalias(t).Underlying().(*types.Pointer)
+	if !ok || pt == nil {
+		return false
+	}
+	named, ok := types.Unalias(pt.Elem()).(*types.Named)
+	if !ok || named == nil || named.Obj() == nil || named.Obj().Pkg() == nil {
+		return false
+	}
+	path := named.Obj().Pkg().Path()
+	return path == "internal/abi" ||
+		path == "internal/runtime/sys" ||
+		strings.HasPrefix(path, "github.com/goplus/llgo/runtime/abi") ||
+		strings.HasPrefix(path, "github.com/goplus/llgo/runtime/internal/runtime")
+}
+
 func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *types.Signature {
 	if sig == nil || len(hidden) == 0 {
 		return sig
@@ -461,6 +477,9 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
 		return nil
 	}
+	if len(f.Blocks) == 0 {
+		return nil
+	}
 	if f.Signature == nil || f.Signature.Recv() != nil || f.Signature.Variadic() {
 		return nil
 	}
@@ -475,6 +494,9 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 	for i, param := range f.Params {
 		if _, ok := param.Type().Underlying().(*types.Pointer); ok {
 			if ptrIdx >= 0 {
+				return nil
+			}
+			if isRuntimeMetadataPointer(param.Type()) {
 				return nil
 			}
 			if containsInstantiatedNamedType(param.Type(), map[types.Type]bool{}) {
@@ -502,6 +524,9 @@ func (p *context) hiddenStaticCallShimPlanFor(name string, f *ssa.Function) *hid
 	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
 		return nil
 	}
+	if len(f.Blocks) == 0 {
+		return nil
+	}
 	if f.Signature == nil || f.Signature.Variadic() {
 		return nil
 	}
@@ -516,6 +541,9 @@ func (p *context) hiddenStaticCallShimPlanFor(name string, f *ssa.Function) *hid
 	for i, param := range f.Params {
 		if _, ok := param.Type().Underlying().(*types.Pointer); ok {
 			if ptrIdx >= 0 {
+				return nil
+			}
+			if isRuntimeMetadataPointer(param.Type()) {
 				return nil
 			}
 			if containsInstantiatedNamedType(param.Type(), map[types.Type]bool{}) {
@@ -2419,6 +2447,28 @@ func (p *context) decodeHiddenAggregateValue(b llssa.Builder, val llssa.Expr, t 
 		return b.SetInterfaceData(val, p.hiddenPointerDecode(b, key, data.RawType()))
 	default:
 		return val
+	}
+}
+
+func (p *context) decodeHiddenAggregateData(b llssa.Builder, val llssa.Expr, t types.Type) (llssa.Expr, bool) {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return llssa.Expr{}, false
+		}
+		data := b.StringData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return p.hiddenPointerDecode(b, key, data.RawType()), true
+	case *types.Slice:
+		data := b.SliceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return p.hiddenPointerDecode(b, key, data.RawType()), true
+	case *types.Interface:
+		data := b.InterfaceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return p.hiddenPointerDecode(b, key, data.RawType()), true
+	default:
+		return llssa.Expr{}, false
 	}
 }
 

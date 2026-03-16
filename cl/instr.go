@@ -888,6 +888,24 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				break
 			}
 			panic("unsafe.Offsetof: unsupported argument")
+		} else if fn == "StringData" && len(args) == 1 {
+			if data, ok := p.hiddenAggregateArgData(b, args[0]); ok {
+				p.clearPreCallValues(b, owner)
+				ret = b.ChangeType(b.Prog.Pointer(b.Prog.Byte()), data)
+				break
+			}
+			ret = callMaybeSuspendRecover(llssa.Builtin(fn), true, func() []llssa.Expr {
+				return p.compileValuesForInstr(b, owner, args, kind)
+			})
+		} else if fn == "SliceData" && len(args) == 1 {
+			if data, ok := p.hiddenAggregateArgData(b, args[0]); ok {
+				p.clearPreCallValues(b, owner)
+				ret = data
+				break
+			}
+			ret = callMaybeSuspendRecover(llssa.Builtin(fn), true, func() []llssa.Expr {
+				return p.compileValuesForInstr(b, owner, args, kind)
+			})
 		} else {
 			ret = callMaybeSuspendRecover(llssa.Builtin(fn), fn != "recover" && fn != "panic", func() []llssa.Expr {
 				return p.compileValuesForInstr(b, owner, args, kind)
@@ -1121,6 +1139,24 @@ func (p *context) hiddenPointerArgKey(b llssa.Builder, arg ssa.Value) (llssa.Exp
 		return b.Load(slot), true
 	}
 	return llssa.Expr{}, false
+}
+
+func (p *context) hiddenAggregateArgData(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
+	if p.hiddenValueUsesUintptrSlot(arg.Type()) {
+		return llssa.Expr{}, false
+	}
+	slot, ok := p.valueSlots[arg]
+	if !ok || slot.Type == nil || !p.hiddenValueSlots[arg] {
+		return llssa.Expr{}, false
+	}
+	if iv, ok := arg.(instrOrValue); ok {
+		if _, compiled := p.bvals[arg]; !compiled {
+			p.compileInstrOrValue(b, iv, false)
+		}
+	} else if _, ok := p.bvals[arg]; !ok {
+		return llssa.Expr{}, false
+	}
+	return p.decodeHiddenAggregateData(b, b.Load(slot), arg.Type())
 }
 
 func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Expr, llssa.Expr, bool) {

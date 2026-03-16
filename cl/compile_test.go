@@ -528,6 +528,67 @@ func f() (x *T) {
 	}
 }
 
+func TestUnsafeStringDataUsesHiddenDataFastPath(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "unsafe"
+
+func use(*byte) {}
+
+func f(x, y string) {
+	s := x + y
+	p := unsafe.StringData(s)
+	use(p)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, "@foo.use(")
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing foo.use call:\n%s", body)
+	}
+	loadIdx := strings.LastIndex(body[:callIdx], `load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr`)
+	if loadIdx < 0 {
+		t.Fatalf("missing hidden string slot load before foo.use:\n%s", body)
+	}
+	if strings.Contains(body[loadIdx:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.String"`) {
+		t.Fatalf("unsafe.StringData rebuilt the full string from its hidden slot:\n%s", body)
+	}
+}
+
+func TestUnsafeSliceDataUsesHiddenDataFastPath(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "unsafe"
+
+func use(*byte) {}
+
+func f() {
+	s := make([]byte, 4)
+	s[0] = 1
+	p := unsafe.SliceData(s)
+	use(p)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, "@foo.use(")
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing foo.use call:\n%s", body)
+	}
+	loadIdx := strings.LastIndex(body[:callIdx], `load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr`)
+	if loadIdx < 0 {
+		t.Fatalf("missing hidden slice slot load before foo.use:\n%s", body)
+	}
+	if strings.Contains(body[loadIdx:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("unsafe.SliceData rebuilt the full slice from its hidden slot:\n%s", body)
+	}
+}
+
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
 	_, err := build.Do([]string{"math"}, conf)
