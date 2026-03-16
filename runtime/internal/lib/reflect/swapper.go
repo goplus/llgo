@@ -1,7 +1,7 @@
 package reflect
 
 import (
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 	"internal/goarch"
 	"unsafe"
 )

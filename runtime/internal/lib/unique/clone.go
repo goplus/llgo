@@ -5,7 +5,7 @@
 package unique
 
 import (
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 	"unsafe"
 )
 

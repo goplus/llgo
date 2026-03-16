@@ -23,7 +23,7 @@
 package reflect
 
 import (
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"

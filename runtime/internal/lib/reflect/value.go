@@ -22,7 +22,7 @@ package reflect
 
 import (
 	"errors"
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 	"internal/goarch"
 	"internal/itoa"
 	"math"

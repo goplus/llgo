@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/internal/runtime"

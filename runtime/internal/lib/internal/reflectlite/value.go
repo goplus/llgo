@@ -5,10 +5,10 @@
 package reflectlite
 
 import (
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
+	_ "github.com/goplus/llgo/runtime/internal/runtime"
 	"internal/goarch"
 	"unsafe"
-	_ "github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 // Value is the reflection interface to a Go value.

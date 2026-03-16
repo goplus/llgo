@@ -24,7 +24,6 @@ func HasAdditiveAltPkg(path string) bool {
 }
 
 var altPkgs = map[string]altPkgMode{
-	"internal/abi":            altPkgReplace,
 	"internal/goarch":         altPkgReplace,
 	"internal/itoa":           altPkgReplace,
 	"internal/race":           altPkgReplace,

@@ -95,9 +95,9 @@ const (
 
 const (
 	// TODO (khr, drchase) why aren't these in TFlag?  Investigate, fix if possible.
-	KindDirectIface uint8 = 1 << 5
-	KindGCProg      uint8 = 1 << 6 // Type.gc points to GC program
-	KindMask        uint8 = (1 << 5) - 1
+	KindDirectIface = 1 << 5
+	KindGCProg      = 1 << 6 // Type.gc points to GC program
+	KindMask        = (1 << 5) - 1
 )
 
 // String returns the name of k.

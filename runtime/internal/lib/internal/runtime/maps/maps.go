@@ -1,7 +1,7 @@
 package maps
 
 import (
-	"internal/abi"
+	"github.com/goplus/llgo/runtime/abi"
 	"unsafe"
 )
 

@@ -14,7 +14,6 @@ func TestRewriteAltImports(t *testing.T) {
 	src := []byte(`package p
 
 import (
-	"internal/abi"
 	"internal/goarch"
 	"internal/race"
 	"sync/atomic"
@@ -29,7 +28,6 @@ import (
 	}
 	s := string(got)
 	for _, want := range []string{
-		`"` + altPkgPathPrefix + `internal/abi"`,
 		`"` + altPkgPathPrefix + `internal/goarch"`,
 		`"` + altPkgPathPrefix + `internal/race"`,
 		`"sync/atomic"`,
@@ -46,11 +44,10 @@ func TestBuildAltOverlayRewritesMirrorFiles(t *testing.T) {
 		files   []string
 	}{
 		{pkgPath: "internal/sync", files: []string{"mutex.go", "hashtriemap.go"}},
-		{pkgPath: "internal/reflectlite", files: []string{"type.go", "value.go"}},
-		{pkgPath: "internal/runtime/maps", files: []string{"maps.go"}},
-		{pkgPath: "reflect", files: []string{"makefunc.go", "value.go", "type.go", "type_go122.go", "type_go123.go", "swapper.go"}},
-		{pkgPath: "runtime", files: []string{"mcleanup.go", "mfinal.go", "reflect_linkname_llgo.go"}},
-		{pkgPath: "unique", files: []string{"clone.go", "handle.go"}},
+		{pkgPath: "internal/reflectlite", files: []string{"value.go"}},
+		{pkgPath: "reflect", files: []string{"value.go", "type.go", "swapper.go"}},
+		{pkgPath: "runtime", files: []string{"reflect_linkname_llgo.go"}},
+		{pkgPath: "unique", files: []string{"handle.go"}},
 	}
 	for _, tt := range tests {
 		overlay, err := buildAltOverlay(nil, env.LLGoRuntimeDir(), []string{tt.pkgPath})
