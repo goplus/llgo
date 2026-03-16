@@ -45,6 +45,7 @@ func TestBuildAltOverlayRewritesMirrorFiles(t *testing.T) {
 	}{
 		{pkgPath: "internal/sync", files: []string{"mutex.go", "hashtriemap.go"}},
 		{pkgPath: "internal/reflectlite", files: []string{"type.go", "value.go"}},
+		{pkgPath: "internal/runtime/maps", files: []string{"maps.go"}},
 		{pkgPath: "reflect", files: []string{"value.go", "type.go", "swapper.go"}},
 	}
 	for _, tt := range tests {
