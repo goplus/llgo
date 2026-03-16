@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"reflect"
 	"sync"
 	"unsafe"
 )
@@ -73,7 +74,11 @@ func (p Program) Closure(sig *types.Signature) Type {
 }
 
 func isOpaqueGoSSAType(typ types.Type) bool {
-	return fmt.Sprintf("%T", typ) == "*ssa.opaqueType"
+	rt := reflect.TypeOf(typ)
+	return rt != nil &&
+		rt.Kind() == reflect.Pointer &&
+		rt.Elem().PkgPath() == "golang.org/x/tools/go/ssa" &&
+		rt.Elem().Name() == "opaqueType"
 }
 
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {

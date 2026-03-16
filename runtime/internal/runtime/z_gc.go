@@ -75,7 +75,6 @@ func ensureCleanupRunner() {
 		var th pthread.Thread
 		if rc := CreateThread(&th, nil, cleanupThread, nil); rc != 0 {
 			fatal("failed to create cleanup thread")
-			c.Exit(2)
 		}
 		// Match the Go runtime: the dedicated finalizer worker is not a user
 		// goroutine that should skew runtime.NumGoroutine().
@@ -97,15 +96,27 @@ func cleanupThread(c.Pointer) c.Pointer {
 		e.next = nil
 		cleanupState.mu.Unlock()
 
-		if atomic.Load(&e.stop) != 1 {
-			if e.valueFn != nil {
-				e.valueFn(e.obj)
-			} else {
-				e.fn()
-			}
-		}
+		runCleanupEntry(e)
 		e.obj = nil
 	}
+}
+
+func runCleanupEntry(e *entry) {
+	if atomic.Load(&e.stop) == 1 {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			print("panic: cleanup function: ")
+			printany(r)
+			print("\n")
+		}
+	}()
+	if e.valueFn != nil {
+		e.valueFn(e.obj)
+		return
+	}
+	e.fn()
 }
 
 func enqueueCleanup(e *entry) {
@@ -134,7 +145,7 @@ func finalizer(ptr unsafe.Pointer, cb unsafe.Pointer) {
 		return
 	}
 	if e.copySize == 0 {
-		e.obj = ptr
+		e.obj = zeroAlloc()
 	} else {
 		snap := bdwgc.Malloc(e.copySize)
 		c.Memmove(snap, ptr, e.copySize)

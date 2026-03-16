@@ -9,7 +9,6 @@ import (
 	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
 	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
-	_ "unsafe"
 )
 
 const memProfileMaxStack = 8
@@ -26,7 +25,7 @@ var (
 	memProfileMu           psync.Mutex
 	memProfileSites        *memProfileSite
 	memProfileSnapshotting int32
-	memProfileRatePtr      *int
+	memProfileRatePtr      unsafe.Pointer
 )
 
 func init() {
@@ -34,14 +33,15 @@ func init() {
 }
 
 func SetMemProfileRatePtr(p *int) {
-	memProfileRatePtr = p
+	atomic.Store(&memProfileRatePtr, unsafe.Pointer(p))
 }
 
 func memProfileEnabled() bool {
-	if memProfileRatePtr == nil {
+	ratePtr := loadMemProfileRatePtr()
+	if ratePtr == nil {
 		return false
 	}
-	rate := *memProfileRatePtr
+	rate := atomic.Load(ratePtr)
 	return rate > 0 && rate <= 64*1024 && atomic.Load(&memProfileSnapshotting) == 0
 }
 
@@ -49,10 +49,11 @@ func DisableMemProfileRecording() {
 }
 
 func memProfileShouldSample(size uintptr) bool {
-	if memProfileRatePtr == nil {
+	ratePtr := loadMemProfileRatePtr()
+	if ratePtr == nil {
 		return false
 	}
-	rate := uintptr(*memProfileRatePtr)
+	rate := uintptr(atomic.Load(ratePtr))
 	if rate <= 1 {
 		return true
 	}
@@ -69,6 +70,14 @@ func memProfileShouldSample(size uintptr) bool {
 		return true
 	}
 	return uint64(uint32(fastrand64())) < threshold
+}
+
+func loadMemProfileRatePtr() *int {
+	ptr := atomic.Load(&memProfileRatePtr)
+	if ptr == nil {
+		return nil
+	}
+	return (*int)(ptr)
 }
 
 func equalMemProfileStack(a [memProfileMaxStack]uintptr, an int, b [memProfileMaxStack]uintptr, bn int) bool {

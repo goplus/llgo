@@ -29,7 +29,6 @@ const (
 	// introduce dependencies on errors and internal/reflectlite packages that cause
 	// linking issues in c-shared and c-archive build modes.
 	SIGSEGV = c.Int(0xb)
-	SIGBUS  = c.Int(0xa)
 )
 
 // This file contains platform-specific runtime initialization for non-wasm targets.
