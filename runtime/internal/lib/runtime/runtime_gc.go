@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
+	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 var (
@@ -51,6 +52,7 @@ func GC() {
 	// Run one extra cycle so weak-pointer cleanup hooks (unique/weak) see
 	// finalized state before we trigger map cleanup callbacks.
 	bdwgc.Gcollect()
+	iruntime.WaitCleanupDrain()
 	gcCyclesEstimate += 2
 	lastBytesSinceGC = 0
 	unique_runtime_notifyMapCleanup()

@@ -82,6 +82,17 @@ func threadEntry(arg c.Pointer) c.Pointer {
 	start := (*threadStart)(unsafe.Pointer(arg))
 	removePendingThreadStart(start)
 	ret := start.routine(start.arg)
+	// Boehm scans native thread stacks conservatively. Clear thread-local
+	// goroutine state before returning to pthread so completed goroutines do not
+	// keep dead heap objects alive across an explicit runtime.GC.
+	start.routine = nil
+	start.arg = nil
+	ClearThreadDefer()
+	excepKey.Set(nil)
+	goexitKey.Set(nil)
+	recoverKey.Set(nil)
+	recoverPan.Set(nil)
+	panicTraceKey.Set(nil)
 	finishGoroutine()
 	return ret
 }

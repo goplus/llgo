@@ -65,11 +65,13 @@ type entry struct {
 }
 
 var cleanupState struct {
-	once syncOnce
-	mu   psync.Mutex
-	cond psync.Cond
-	head *entry
-	tail *entry
+	once    syncOnce
+	mu      psync.Mutex
+	cond    psync.Cond
+	head    *entry
+	tail    *entry
+	started int32
+	pending int
 }
 
 type syncOnce = psync.Once
@@ -78,6 +80,7 @@ func ensureCleanupRunner() {
 	cleanupState.once.Do(func() {
 		cleanupState.mu.Init(nil)
 		cleanupState.cond.Init(nil)
+		atomic.Store(&cleanupState.started, 1)
 		var th pthread.Thread
 		if rc := CreateThread(&th, nil, cleanupThread, nil); rc != 0 {
 			fatal("failed to create cleanup thread")
@@ -104,6 +107,13 @@ func cleanupThread(c.Pointer) c.Pointer {
 
 		runCleanupEntry(e)
 		e.obj = nil
+
+		cleanupState.mu.Lock()
+		cleanupState.pending--
+		if cleanupState.pending == 0 {
+			cleanupState.cond.Broadcast()
+		}
+		cleanupState.mu.Unlock()
 	}
 }
 
@@ -127,6 +137,7 @@ func runCleanupEntry(e *entry) {
 
 func enqueueCleanup(e *entry) {
 	cleanupState.mu.Lock()
+	cleanupState.pending++
 	e.next = nil
 	if cleanupState.tail == nil {
 		cleanupState.head = e
@@ -135,6 +146,17 @@ func enqueueCleanup(e *entry) {
 	}
 	cleanupState.tail = e
 	cleanupState.cond.Signal()
+	cleanupState.mu.Unlock()
+}
+
+func WaitCleanupDrain() {
+	if atomic.Load(&cleanupState.started) == 0 {
+		return
+	}
+	cleanupState.mu.Lock()
+	for cleanupState.pending != 0 {
+		cleanupState.cond.Wait(&cleanupState.mu)
+	}
 	cleanupState.mu.Unlock()
 }
 
