@@ -7,9 +7,9 @@
 package runtime
 
 import (
+	"internal/abi"
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/abi"
 	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 	"github.com/goplus/llgo/runtime/internal/ffi"
 	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
