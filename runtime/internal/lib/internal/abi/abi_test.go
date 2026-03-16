@@ -6,6 +6,9 @@ import (
 )
 
 func TestMirroredKinds(t *testing.T) {
+	if Array != rabi.Array {
+		t.Fatalf("Array=%v want %v", Array, rabi.Array)
+	}
 	if Bool != rabi.Bool {
 		t.Fatalf("Bool=%v want %v", Bool, rabi.Bool)
 	}
@@ -14,6 +17,12 @@ func TestMirroredKinds(t *testing.T) {
 	}
 	if Pointer != rabi.Pointer {
 		t.Fatalf("Pointer=%v want %v", Pointer, rabi.Pointer)
+	}
+	if String != rabi.String {
+		t.Fatalf("String=%v want %v", String, rabi.String)
+	}
+	if Struct != rabi.Struct {
+		t.Fatalf("Struct=%v want %v", Struct, rabi.Struct)
 	}
 	if UnsafePointer != rabi.UnsafePointer {
 		t.Fatalf("UnsafePointer=%v want %v", UnsafePointer, rabi.UnsafePointer)

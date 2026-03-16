@@ -39,9 +39,12 @@ func FuncPCABIInternal(f interface{}) uintptr {
 type Type = abi.Type
 
 const (
+	Array         = abi.Array
 	Bool          = abi.Bool
 	Func          = abi.Func
 	Pointer       = abi.Pointer
+	String        = abi.String
+	Struct        = abi.Struct
 	UnsafePointer = abi.UnsafePointer
 )
 
