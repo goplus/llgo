@@ -462,6 +462,10 @@ func g(s *StkObj) {
 		t.Fatalf("f should not materialize an object interface for SetFinalizer after typed lowering:\n%s", fBody)
 	}
 	callIdx := strings.Index(fBody, `@"example.com/stackobjir.g"(`)
+	hiddenCallIdx := strings.Index(fBody, `@"example.com/stackobjir.g$hiddencall"(`)
+	if hiddenCallIdx > callIdx {
+		callIdx = hiddenCallIdx
+	}
 	if callIdx < 0 {
 		t.Fatalf("missing g call in f:\n%s", fBody)
 	}

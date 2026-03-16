@@ -943,6 +943,11 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 					callee = hiddenFn.Expr
 					hiddenParamIdx = plan.paramIdx
 				}
+			} else if plan := p.hiddenStaticCallShimPlanFor(aFn.Name(), cv); plan != nil {
+				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
+					callee = hiddenFn.Expr
+					hiddenParamIdx = plan.paramIdx
+				}
 			}
 			ret = callMaybeSuspendRecover(callee, suspend, func() []llssa.Expr {
 				args := p.compileValuesForInstr(b, owner, args, kind)

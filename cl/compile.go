@@ -380,6 +380,12 @@ type hiddenParamWrapperPlan struct {
 	hiddenName string
 }
 
+type hiddenStaticCallShimPlan struct {
+	paramIdx   int
+	hiddenSig  *types.Signature
+	hiddenName string
+}
+
 func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *types.Signature {
 	if sig == nil || len(hidden) == 0 {
 		return sig
@@ -399,6 +405,31 @@ func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *typ
 		newParams[i] = types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ)
 	}
 	return types.NewSignatureType(recv, nil, nil, types.NewTuple(newParams...), sig.Results(), sig.Variadic())
+}
+
+func rewriteHiddenStaticCallSignature(sig *types.Signature, hiddenParamIdx int) *types.Signature {
+	if sig == nil || hiddenParamIdx < 0 {
+		return sig
+	}
+	params := sig.Params()
+	newParams := make([]*types.Var, 0, params.Len()+1)
+	if recv := sig.Recv(); recv != nil {
+		typ := recv.Type()
+		if hiddenParamIdx == 0 {
+			typ = types.Typ[types.Uintptr]
+		}
+		newParams = append(newParams, types.NewParam(recv.Pos(), recv.Pkg(), recv.Name(), typ))
+	}
+	base := len(newParams)
+	for i := 0; i < params.Len(); i++ {
+		param := params.At(i)
+		typ := param.Type()
+		if hiddenParamIdx == i+base {
+			typ = types.Typ[types.Uintptr]
+		}
+		newParams = append(newParams, types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ))
+	}
+	return types.NewSignatureType(nil, nil, nil, types.NewTuple(newParams...), sig.Results(), sig.Variadic())
 }
 
 func hasSelfCall(fn *ssa.Function) bool {
@@ -464,6 +495,46 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 		paramIdx:   ptrIdx,
 		hiddenSig:  rewriteHiddenParamSignature(p.patchType(f.Signature).(*types.Signature), hidden),
 		hiddenName: name + "$hiddenparam",
+	}
+}
+
+func (p *context) hiddenStaticCallShimPlanFor(name string, f *ssa.Function) *hiddenStaticCallShimPlan {
+	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
+		return nil
+	}
+	if f.Signature == nil || f.Signature.Variadic() {
+		return nil
+	}
+	if functionHasDefer(f) || isCgoExternSymbol(f) {
+		return nil
+	}
+	obj, ok := f.Object().(*types.Func)
+	if !ok || obj.Exported() {
+		return nil
+	}
+	ptrIdx := -1
+	for i, param := range f.Params {
+		if _, ok := param.Type().Underlying().(*types.Pointer); ok {
+			if ptrIdx >= 0 {
+				return nil
+			}
+			if containsInstantiatedNamedType(param.Type(), map[types.Type]bool{}) {
+				return nil
+			}
+			ptrIdx = i
+		}
+	}
+	if ptrIdx < 0 {
+		return nil
+	}
+	callsites, ok := p.staticPointerParamCallsites(f)
+	if !ok || len(callsites) == 0 {
+		return nil
+	}
+	return &hiddenStaticCallShimPlan{
+		paramIdx:   ptrIdx,
+		hiddenSig:  rewriteHiddenStaticCallSignature(p.patchType(f.Signature).(*types.Signature), ptrIdx),
+		hiddenName: name + "$hiddencall",
 	}
 }
 
@@ -575,6 +646,41 @@ func (p *context) enqueueHiddenParamWrapper(fn, hiddenFn llssa.Function, f *ssa.
 	})
 }
 
+func (p *context) enqueueHiddenStaticCallShim(fn, targetFn llssa.Function, f *ssa.Function, hiddenParamIdx int, dbgEnabled bool) {
+	p.inits = append(p.inits, func() {
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		entry := fn.Block(0)
+		b.SetBlock(entry)
+		args := make([]llssa.Expr, len(f.Params))
+		for i, param := range f.Params {
+			arg := b.Param(i)
+			if i == hiddenParamIdx {
+				arg = p.hiddenPointerDecode(b, arg, param.Type())
+			}
+			args[i] = arg
+		}
+		call := b.Call(targetFn.Expr, args...)
+		switch n := f.Signature.Results().Len(); n {
+		case 0:
+			b.Return()
+		case 1:
+			b.Return(call)
+		default:
+			results := make([]llssa.Expr, n)
+			for i := 0; i < n; i++ {
+				results[i] = b.Extract(call, i)
+			}
+			b.Return(results...)
+		}
+		b.EndBuild()
+	})
+}
+
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
@@ -618,7 +724,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	isCgo := isCgoExternSymbol(f)
 	var hiddenPlan *hiddenParamWrapperPlan
+	var hiddenShimPlan *hiddenStaticCallShimPlan
 	var bodyFn llssa.Function
+	var hiddenShimFn llssa.Function
 	var hiddenParamKeys map[int]bool
 	bodyFn = fn
 	if !hasCtx && !isCgo {
@@ -633,6 +741,18 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 				bodyFn.SetGenericTypeArgs(targs)
 			}
 			bodyFn.Inline(llssa.NoInline)
+		} else {
+			hiddenShimPlan = p.hiddenStaticCallShimPlanFor(name, f)
+			if hiddenShimPlan != nil {
+				hiddenShimFn = pkg.FuncOf(hiddenShimPlan.hiddenName)
+				if hiddenShimFn == nil {
+					hiddenShimFn = pkg.NewFuncEx(hiddenShimPlan.hiddenName, hiddenShimPlan.hiddenSig, llssa.Background(ftype), false, isInstance(f))
+					hiddenShimFn.SetGenericTypeArgs(genericTypeArgsOf(f))
+				} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+					hiddenShimFn.SetGenericTypeArgs(targs)
+				}
+				hiddenShimFn.Inline(llssa.NoInline)
+			}
 		}
 	}
 	if sharedDeferFunc0Eligible(f) {
@@ -657,6 +777,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			bodyFn.MakeBlocks(nblk) // to set bodyFn.HasBody() = true
 		} else {
 			fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+			if hiddenShimPlan != nil {
+				hiddenShimFn.MakeBlocks(1)
+			}
 		}
 		if f.Recover != nil { // set recover block
 			bodyFn.SetRecover(bodyFn.Block(f.Recover.Index))
@@ -667,6 +790,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.enqueueHiddenParamWrapper(fn, bodyFn, f, hiddenParamKeys, dbgEnabled)
 		}
 		p.enqueueCompileFuncBody(bodyFn, f, state, dbgEnabled, dbgSymsEnabled, isCgo, hiddenParamKeys)
+		if hiddenShimPlan != nil {
+			p.enqueueHiddenStaticCallShim(hiddenShimFn, fn, f, hiddenShimPlan.paramIdx, dbgEnabled)
+		}
 		for _, af := range f.AnonFuncs {
 			p.compileFuncDecl(pkg, af)
 		}

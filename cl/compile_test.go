@@ -399,6 +399,10 @@ func f() {
 `)
 	body := functionBody(t, ir, "foo.f")
 	callIdx := strings.Index(body, "@foo.g(")
+	hiddenCallIdx := strings.Index(body, "@\"foo.g$hiddencall\"(")
+	if hiddenCallIdx > callIdx {
+		callIdx = hiddenCallIdx
+	}
 	if callIdx < 0 {
 		t.Fatalf("missing foo.g call:\n%s", body)
 	}
@@ -474,6 +478,10 @@ func f() {
 `)
 	body := functionBody(t, ir, "foo.f")
 	callIdx := strings.Index(body, "@foo.use(")
+	hiddenCallIdx := strings.Index(body, "@\"foo.use$hiddencall\"(")
+	if hiddenCallIdx > callIdx {
+		callIdx = hiddenCallIdx
+	}
 	if callIdx < 0 {
 		t.Fatalf("missing foo.use call:\n%s", body)
 	}
