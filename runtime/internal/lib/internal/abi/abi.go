@@ -38,6 +38,13 @@ func FuncPCABIInternal(f interface{}) uintptr {
 
 type Type = abi.Type
 
+const (
+	Bool          = abi.Bool
+	Func          = abi.Func
+	Pointer       = abi.Pointer
+	UnsafePointer = abi.UnsafePointer
+)
+
 type EmptyInterface struct {
 	Type *Type
 	Data unsafe.Pointer

@@ -4,7 +4,7 @@
 package reflect
 
 import (
-	"github.com/goplus/llgo/runtime/abi"
+	"internal/abi"
 )
 
 // Type is the representation of a Go type.
