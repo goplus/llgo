@@ -279,6 +279,13 @@ func MakeSlice(len, cap int, etSize int) Slice {
 	return Slice{AllocZ(mem), len, cap}
 }
 
+func MakeSliceTo(dst *Slice, len, cap int, etSize int) {
+	if dst == nil {
+		return
+	}
+	*dst = MakeSlice(len, cap, etSize)
+}
+
 func panicmakeslicelen() {
 	panic(errorString("makeslice: len out of range"))
 }

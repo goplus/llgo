@@ -862,6 +862,99 @@ func makeSliceAllocCap(v ssa.Value) (int64, bool) {
 	return arr.Len(), true
 }
 
+func skipMakeSliceAlloc(v *ssa.Alloc) bool {
+	if _, ok := makeSliceAllocCap(v); !ok {
+		return false
+	}
+	refs := *v.Referrers()
+	if len(refs) != 1 {
+		return false
+	}
+	slice, ok := refs[0].(*ssa.Slice)
+	if !ok {
+		return false
+	}
+	return slice.X == v && slice.Low == nil && slice.Max == nil
+}
+
+func singleRef(v ssa.Value) (ssa.Instruction, bool) {
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, false
+	}
+	var ref ssa.Instruction
+	n := 0
+	for _, item := range *refs {
+		if _, ok := item.(*ssa.DebugRef); ok {
+			continue
+		}
+		ref = item
+		n++
+	}
+	return ref, n == 1
+}
+
+func isSendInstr(instr ssa.Instruction) bool {
+	_, ok := instr.(*ssa.Send)
+	return ok
+}
+
+func (p *context) compileSingleUseMakeSliceSend(b llssa.Builder, ch llssa.Expr, v ssa.Value) bool {
+	ref, ok := singleRef(v)
+	if !ok {
+		return false
+	}
+	if !isSendInstr(ref) {
+		return false
+	}
+	voidPtr := types.Typ[types.UnsafePointer]
+	intTyp := types.Typ[types.Int]
+	makeSliceToFn := b.Pkg.NewFunc(llssa.PkgRuntime+".MakeSliceTo",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), nil, false), llssa.InGo)
+	chanSendFn := b.Pkg.NewFunc(llssa.PkgRuntime+".ChanSend",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Bool])), false), llssa.InGo)
+	var t llssa.Type
+	var nLen, nCap llssa.Expr
+	switch v := v.(type) {
+	case *ssa.MakeSlice:
+		t = p.type_(v.Type(), llssa.InGo)
+		nLen = p.compileValue(b, v.Len)
+		nCap = p.compileValue(b, v.Cap)
+	case *ssa.Slice:
+		capLen, ok := makeSliceAllocCap(v.X)
+		if !ok || v.Low != nil || v.Max != nil {
+			return false
+		}
+		t = p.type_(v.Type(), llssa.InGo)
+		nLen = p.prog.IntVal(uint64(capLen), p.prog.Int())
+		if v.High != nil {
+			nLen = p.compileValue(b, v.High)
+		}
+		nCap = p.prog.IntVal(uint64(capLen), p.prog.Int())
+	default:
+		return false
+	}
+	slot := b.Alloc(t, false)
+	telem := p.prog.Index(t)
+	teSize := p.prog.IntVal(p.prog.SizeOf(telem), p.prog.Int())
+	slotPtr := b.ChangeType(p.prog.VoidPtr(), slot)
+	b.InlineCall(makeSliceToFn.Expr, slotPtr, nLen, nCap, teSize)
+	eltSize := p.prog.IntVal(p.prog.SizeOf(p.prog.Elem(ch.Type)), p.prog.Int())
+	chPtr := b.ChangeType(p.prog.VoidPtr(), ch)
+	b.InlineCall(chanSendFn.Expr, chPtr, slotPtr, eltSize)
+	b.Store(slot, p.prog.Zero(t))
+	return true
+}
+
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -1022,6 +1115,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if p.checkVArgs(v, t) { // varargs: this maybe a varargs allocation
 			return
 		}
+		if skipMakeSliceAlloc(v) {
+			return
+		}
 		elem := p.type_(t.Elem(), llssa.InGo)
 		ret = b.Alloc(elem, v.Heap)
 	case *ssa.IndexAddr:
@@ -1051,6 +1147,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Slice:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
+			return
+		}
+		if ref, ok := singleRef(v); ok && isSendInstr(ref) {
 			return
 		}
 		if capLen, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
@@ -1108,6 +1207,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
+		if ref, ok := singleRef(v); ok {
+			if isSendInstr(ref) {
+				return
+			}
+		}
 		t := p.type_(v.Type(), llssa.InGo)
 		nLen := p.compileValue(b, v.Len)
 		nCap := p.compileValue(b, v.Cap)
@@ -1296,6 +1400,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		b.Panic(arg)
 	case *ssa.Send:
 		ch := p.compileValue(b, v.Chan)
+		if p.compileSingleUseMakeSliceSend(b, ch, v.X) {
+			return
+		}
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
