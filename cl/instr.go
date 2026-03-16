@@ -898,17 +898,17 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			}
 		}
 		if isSetFinalizerFunc(cv) && len(args) == 2 {
-			if objType, objPtr, ok := p.setFinalizerTypeArg(b, args[0]); ok {
+			if objType, objKey, ok := p.setFinalizerTypeArg(b, args[0]); ok {
 				anyTy := types.NewInterfaceType(nil, nil).Complete()
 				params := types.NewTuple(
 					types.NewParam(token.NoPos, nil, "", b.Prog.AbiTypePtr().RawType()),
-					types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+					types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
 					types.NewParam(token.NoPos, nil, "", anyTy),
 				)
-				helper := b.Pkg.NewFunc("runtime.SetFinalizerType",
+				helper := b.Pkg.NewFunc("runtime.SetFinalizerTypeHidden",
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
 				finalizer := p.compileValue(b, args[1])
-				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{objType, objPtr, finalizer}, false)
+				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{objType, objKey, finalizer}, false)
 				return
 			}
 		}
@@ -1065,7 +1065,9 @@ func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Exp
 	if ptr.Type == nil {
 		return llssa.Expr{}, llssa.Expr{}, false
 	}
-	return b.AbiTypeOf(arg.Type()), b.ChangeType(b.Prog.VoidPtr(), ptr), true
+	key := b.Convert(b.Prog.Uintptr(), ptr)
+	key = b.BinOp(token.XOR, key, b.Prog.IntVal(0xffff, b.Prog.Uintptr()))
+	return b.AbiTypeOf(arg.Type()), key, true
 }
 
 // -----------------------------------------------------------------------------

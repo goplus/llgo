@@ -81,6 +81,15 @@ func KeepAlivePointer(p unsafe.Pointer) {
 	c.Memcmp(p, p, 0)
 }
 
+//go:noinline
+func ShadowCopyPointee(dst, src unsafe.Pointer, size uintptr) {
+	if src == nil {
+		return
+	}
+	c.Memmove(dst, src, size)
+	c.Memset(src, 0, size)
+}
+
 //go:linkname c_write C.write
 func c_write(fd c.Int, p unsafe.Pointer, n c.SizeT) c.SsizeT
 

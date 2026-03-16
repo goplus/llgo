@@ -107,6 +107,10 @@ func SetFinalizerType(objType *abi.Type, obj unsafe.Pointer, finalizer any) {
 	setFinalizer(objType, obj, finalizer)
 }
 
+func SetFinalizerTypeHidden(objType *abi.Type, obj uintptr, finalizer any) {
+	setFinalizer(objType, unsafe.Pointer(obj^0xffff), finalizer)
+}
+
 func finalizerFFIType(typ *abi.Type) *ffi.Type {
 	if typ.IsClosure() {
 		return ffi.ArrayOf(ffi.TypePointer, 2)

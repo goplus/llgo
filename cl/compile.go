@@ -128,6 +128,7 @@ type context struct {
 	recvTuples  map[ssa.Value]*recvTupleState
 	stackClears map[ssa.Instruction][]*ssa.Alloc
 	paramClears map[ssa.Instruction][]int
+	paramShadow map[int]llssa.Expr
 	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
@@ -460,6 +461,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.recvTuples = make(map[ssa.Value]*recvTupleState)
 			p.stackClears = p.collectStackClearPlans(f)
 			p.paramClears = p.collectParamClearPlans(f)
+			p.paramShadow = make(map[int]llssa.Expr)
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -639,6 +641,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
 	p.clearExpiredRecvTuples(b, block)
+	if block.Index == 0 {
+		p.initKeepAliveParamShadows(b, block.Parent())
+	}
 	if block.Index == 0 && enableCallTracing && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
 		b.Printf("call " + fn.Name() + "\n\x00")
 	}
@@ -1145,6 +1150,25 @@ func canSkipSetFinalizerObjectMakeInterface(v *ssa.MakeInterface) bool {
 	return ok
 }
 
+func isKeepAliveOnlyPointerParam(param *ssa.Parameter) bool {
+	refs := param.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	switch ref := (*refs)[0].(type) {
+	case *ssa.MakeInterface:
+		return ref.X == param && canSkipKeepAliveMakeInterface(ref)
+	case *ssa.Call:
+		fn, ok := ref.Call.Value.(*ssa.Function)
+		if !ok {
+			return false
+		}
+		return len(ref.Call.Args) == 1 && ref.Call.Args[0] == param && isPointerKeepAliveCall(fn, param)
+	default:
+		return false
+	}
+}
+
 func recvValueUseBlock(v *ssa.UnOp) *ssa.BasicBlock {
 	if v == nil {
 		return nil
@@ -1595,6 +1619,56 @@ func (p *context) clearDeadStackAllocs(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
+func (p *context) initKeepAliveParamShadows(b llssa.Builder, fn *ssa.Function) {
+	if fn == nil || len(p.paramClears) == 0 {
+		return
+	}
+	shadowable := make(map[int]bool)
+	for _, idxs := range p.paramClears {
+		for _, idx := range idxs {
+			if idx >= 0 && idx < len(fn.Params) && isKeepAliveOnlyPointerParam(fn.Params[idx]) {
+				shadowable[idx] = true
+			}
+		}
+	}
+	if len(shadowable) == 0 {
+		return
+	}
+	indices := make([]int, 0, len(shadowable))
+	for idx := range shadowable {
+		indices = append(indices, idx)
+	}
+	sort.Ints(indices)
+	voidPtr := b.Prog.VoidPtr()
+	uintPtr := b.Prog.Uintptr()
+	params := types.NewTuple(
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+	)
+	helper := b.Pkg.NewFunc("runtime.ShadowCopyPointee",
+		types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+	for _, idx := range indices {
+		param := fn.Params[idx]
+		pt, ok := param.Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		elem := p.type_(pt.Elem(), llssa.InGo)
+		size := p.prog.SizeOf(elem)
+		if size <= 0 || size > 256 {
+			continue
+		}
+		shadow := b.AllocaT(elem)
+		b.Store(shadow, p.prog.Zero(elem))
+		dst := b.ChangeType(voidPtr, shadow)
+		src := b.ChangeType(voidPtr, b.Param(idx))
+		b.Call(helper.Expr, dst, src, p.prog.IntVal(uint64(size), uintPtr))
+		p.paramShadow[idx] = shadow
+		p.bvals[param] = shadow
+	}
+}
+
 func (p *context) clearDeadParams(b llssa.Builder, instr ssa.Instruction) {
 	fn := instr.Parent()
 	if fn == nil {
@@ -1610,6 +1684,10 @@ func (p *context) clearDeadParams(b llssa.Builder, instr ssa.Instruction) {
 		}
 		elem := p.type_(pt.Elem(), llssa.InGo)
 		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		if shadow, ok := p.paramShadow[idx]; ok {
+			b.Store(shadow, p.prog.Zero(elem))
 			continue
 		}
 		b.Store(b.Param(idx), p.prog.Zero(elem))
@@ -2255,6 +2333,9 @@ func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) l
 }
 
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+	if val, ok := p.bvals[v]; ok {
+		return val
+	}
 	if iv, ok := v.(instrOrValue); ok {
 		return p.compileInstrOrValue(b, iv, true)
 	}

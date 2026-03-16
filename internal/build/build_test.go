@@ -323,8 +323,8 @@ func f(x *T) {
 		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
 	}
 	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/setfinalizer.f")
-	if !strings.Contains(body, "@runtime.SetFinalizerType(") {
-		t.Fatalf("f should use the typed SetFinalizer helper:\n%s", body)
+	if !strings.Contains(body, "@runtime.SetFinalizerTypeHidden(") {
+		t.Fatalf("f should use the hidden typed SetFinalizer helper:\n%s", body)
 	}
 	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
 		t.Fatalf("f should not call SetFinalizer directly:\n%s", body)
@@ -381,8 +381,8 @@ func f() {
 		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
 	}
 	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/stackobjfinalizer.f")
-	if !strings.Contains(body, "@runtime.SetFinalizerType(") {
-		t.Fatalf("f should use the typed SetFinalizer helper for field closures:\n%s", body)
+	if !strings.Contains(body, "@runtime.SetFinalizerTypeHidden(") {
+		t.Fatalf("f should use the hidden typed SetFinalizer helper for field closures:\n%s", body)
 	}
 	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
 		t.Fatalf("f should not call SetFinalizer directly for field closures:\n%s", body)
@@ -455,8 +455,8 @@ func g(s *StkObj) {
 	ir := pkgs[0].LPkg.String()
 	fBody := functionBody(t, ir, "example.com/stackobjir.f")
 	gBody := functionBody(t, ir, "example.com/stackobjir.g")
-	if !strings.Contains(fBody, "@runtime.SetFinalizerType(") {
-		t.Fatalf("f should use SetFinalizerType:\n%s", fBody)
+	if !strings.Contains(fBody, "@runtime.SetFinalizerTypeHidden(") {
+		t.Fatalf("f should use SetFinalizerTypeHidden:\n%s", fBody)
 	}
 	if strings.Contains(fBody, `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"*_llgo_example.com/stackobjir.HeapObj"`) {
 		t.Fatalf("f should not materialize an object interface for SetFinalizer after typed lowering:\n%s", fBody)
@@ -471,12 +471,15 @@ func g(s *StkObj) {
 	if !strings.Contains(gBody, "@runtime.KeepAlivePointer(") {
 		t.Fatalf("g should lower KeepAlive to the pointer helper:\n%s", gBody)
 	}
+	if !strings.Contains(gBody, "@runtime.ShadowCopyPointee(") {
+		t.Fatalf("g should shadow-copy the caller pointee before KeepAlive-only liveness checks:\n%s", gBody)
+	}
 	keepAliveIdx := strings.Index(gBody, "@runtime.KeepAlivePointer(")
 	if keepAliveIdx < 0 {
 		t.Fatalf("missing pointer KeepAlive helper in g:\n%s", gBody)
 	}
-	if clearIdx := strings.Index(gBody[keepAliveIdx:], `zeroinitializer, ptr %0`); clearIdx < 0 {
-		t.Fatalf("g should clear the pointee after the last KeepAlive use:\n%s", gBody)
+	if !strings.Contains(gBody[keepAliveIdx:], `zeroinitializer`) {
+		t.Fatalf("g should clear the shadow pointee after the last KeepAlive use:\n%s", gBody)
 	}
 }
 
