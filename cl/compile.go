@@ -877,6 +877,136 @@ func skipMakeSliceAlloc(v *ssa.Alloc) bool {
 	return slice.X == v && slice.Low == nil && slice.Max == nil
 }
 
+type paramEscapeKey struct {
+	fn  *ssa.Function
+	idx int
+}
+
+func (p *context) canPromoteHeapAllocToStack(v *ssa.Alloc) bool {
+	if !v.Heap || v.Comment == "varargs" || v.Comment == "makeslice" {
+		return false
+	}
+	return p.valueDoesNotEscape(v, map[ssa.Value]bool{}, map[paramEscapeKey]bool{})
+}
+
+func (p *context) valueDoesNotEscape(v ssa.Value, seen map[ssa.Value]bool, params map[paramEscapeKey]bool) bool {
+	if seen[v] {
+		return true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return true
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.FieldAddr:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.IndexAddr:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.ChangeType:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.Convert:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.Phi:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.MakeInterface:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.Store:
+			if ref.Addr == v {
+				continue
+			}
+			return false
+		case *ssa.UnOp:
+			if ref.Op == token.MUL {
+				continue
+			}
+			return false
+		case *ssa.Call:
+			if !p.callArgDoesNotEscape(&ref.Call, v, params) {
+				return false
+			}
+		case *ssa.Defer:
+			if !p.callArgDoesNotEscape(&ref.Call, v, params) {
+				return false
+			}
+		case *ssa.Go:
+			return false
+		case *ssa.Return, *ssa.MapUpdate, *ssa.Send, *ssa.Range:
+			return false
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) callArgDoesNotEscape(call *ssa.CallCommon, arg ssa.Value, params map[paramEscapeKey]bool) bool {
+	if call == nil || call.IsInvoke() {
+		return false
+	}
+	var fn *ssa.Function
+	switch v := call.Value.(type) {
+	case *ssa.Function:
+		fn = v
+	default:
+		return false
+	}
+	if isKeepAliveFunc(fn) {
+		return true
+	}
+	if fn.Blocks == nil {
+		return false
+	}
+	for i, actual := range call.Args {
+		if actual != arg {
+			continue
+		}
+		if !p.paramDoesNotEscape(fn, i, params) {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) paramDoesNotEscape(fn *ssa.Function, idx int, params map[paramEscapeKey]bool) bool {
+	if fn == nil || idx < 0 || idx >= len(fn.Params) {
+		return false
+	}
+	key := paramEscapeKey{fn: fn, idx: idx}
+	if params[key] {
+		return true
+	}
+	params[key] = true
+	return p.valueDoesNotEscape(fn.Params[idx], map[ssa.Value]bool{}, params)
+}
+
+func isKeepAliveFunc(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil || fn.Name() != "KeepAlive" {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "runtime", "github.com/goplus/llgo/runtime/internal/lib/runtime":
+		return true
+	default:
+		return false
+	}
+}
+
 func singleRef(v ssa.Value) (ssa.Instruction, bool) {
 	refs := v.Referrers()
 	if refs == nil {
@@ -1119,7 +1249,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return
 		}
 		elem := p.type_(t.Elem(), llssa.InGo)
-		ret = b.Alloc(elem, v.Heap)
+		ret = b.Alloc(elem, v.Heap && !p.canPromoteHeapAllocToStack(v))
 	case *ssa.IndexAddr:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index

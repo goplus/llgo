@@ -218,6 +218,79 @@ func TestRunPrintfWithStdioNobuf(t *testing.T) {
 	mockRun([]string{"../../cl/_testdata/printf"}, &Config{Mode: ModeRun})
 }
 
+func TestModeGenKeepAliveOverlayPromotesStackAlloc(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-keepalive-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/keepalive\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type HeapObj [8]int64
+type StkObj struct{ h *HeapObj }
+
+func g(s *StkObj) {
+	runtime.KeepAlive(s)
+}
+
+func f() {
+	var s StkObj
+	s.h = new(HeapObj)
+	g(&s)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/keepalive.f")
+	if !strings.Contains(body, `alloca %"example.com/keepalive.StkObj"`) {
+		t.Fatalf("f should use a stack slot for StkObj:\n%s", body)
+	}
+	if strings.Contains(body, `@"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)`) {
+		t.Fatalf("f should not heap-allocate the local StkObj:\n%s", body)
+	}
+}
+
+func functionBody(t *testing.T, ir, name string) string {
+	t.Helper()
+	marker := `define void @"` + name + `"`
+	start := strings.Index(ir, marker)
+	if start < 0 {
+		t.Fatalf("function %s not found in IR", name)
+	}
+	rest := ir[start:]
+	if next := strings.Index(rest[len(marker):], "\ndefine "); next >= 0 {
+		return rest[:len(marker)+next]
+	}
+	return rest
+}
+
 func TestTestOutputFileLogic(t *testing.T) {
 	// Test output file path determination logic for test mode
 	tests := []struct {
