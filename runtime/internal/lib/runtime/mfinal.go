@@ -20,6 +20,8 @@ type finalizerClosure struct {
 	env unsafe.Pointer
 }
 
+const hiddenPointerMask = ^uintptr(0)
+
 var (
 	finalizerInitOnce psync.Once
 	finalizerMu       psync.Mutex
@@ -71,7 +73,7 @@ func setFinalizer(objType *abi.Type, objPtr unsafe.Pointer, finalizer any) {
 	}
 
 	ensureFinalizerInit()
-	key := uintptr(objPtr) ^ 0xffff
+	key := uintptr(objPtr) ^ hiddenPointerMask
 	cancelFinalizer(key)
 
 	if typeOf(finalizer) == nil {
@@ -108,7 +110,7 @@ func SetFinalizerType(objType *abi.Type, obj unsafe.Pointer, finalizer any) {
 }
 
 func SetFinalizerTypeHidden(objType *abi.Type, obj uintptr, finalizer any) {
-	setFinalizer(objType, unsafe.Pointer(obj^0xffff), finalizer)
+	setFinalizer(objType, unsafe.Pointer(obj^hiddenPointerMask), finalizer)
 }
 
 func finalizerFFIType(typ *abi.Type) *ffi.Type {

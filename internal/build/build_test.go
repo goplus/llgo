@@ -389,6 +389,66 @@ func f() {
 	}
 }
 
+func TestModeGenSetFinalizerReusesHiddenPointerKey(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-stringdata-setfinalizer-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/stringdatafinalizer\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import (
+	"runtime"
+	"unsafe"
+)
+
+func f(s string) {
+	p := unsafe.StringData(s)
+	runtime.SetFinalizer(p, func(*byte) {})
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/stringdatafinalizer.f")
+	callIdx := strings.Index(body, "@runtime.SetFinalizerTypeHidden(")
+	if callIdx < 0 {
+		t.Fatalf("f should use SetFinalizerTypeHidden:\n%s", body)
+	}
+	loadIdx := strings.LastIndex(body[:callIdx], "load i64, ptr")
+	if loadIdx < 0 {
+		t.Fatalf("f should load a hidden pointer key before SetFinalizerTypeHidden:\n%s", body)
+	}
+	window := body[loadIdx:callIdx]
+	if strings.Contains(window, "ptrtoint") || strings.Contains(window, "inttoptr") {
+		t.Fatalf("f should reuse the hidden pointer key without decoding/re-encoding it:\n%s", body)
+	}
+}
+
 func TestModeGenStackobjClearsLivenessRoots(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {

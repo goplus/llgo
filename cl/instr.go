@@ -1087,6 +1087,42 @@ func (p *context) keepAlivePointerArg(b llssa.Builder, arg ssa.Value) (llssa.Exp
 	return b.ChangeType(b.Prog.VoidPtr(), ptr), true
 }
 
+func (p *context) hiddenPointerArgKey(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
+	if mi, ok := arg.(*ssa.MakeInterface); ok {
+		arg = mi.X
+	}
+	t, ok := arg.Type().Underlying().(*types.Pointer)
+	if !ok || t == nil {
+		return llssa.Expr{}, false
+	}
+	switch v := arg.(type) {
+	case *ssa.Parameter:
+		fn := v.Parent()
+		if fn == nil {
+			return llssa.Expr{}, false
+		}
+		for idx, param := range fn.Params {
+			if param == v && p.hiddenParamKeys[idx] {
+				return b.Param(idx), true
+			}
+		}
+	default:
+		slot, ok := p.valueSlots[arg]
+		if !ok || slot.Type == nil || !p.hiddenValueSlots[arg] {
+			return llssa.Expr{}, false
+		}
+		if iv, ok := arg.(instrOrValue); ok {
+			if _, compiled := p.bvals[arg]; !compiled {
+				p.compileInstrOrValue(b, iv, false)
+			}
+		} else if _, ok := p.bvals[arg]; !ok {
+			return llssa.Expr{}, false
+		}
+		return b.Load(slot), true
+	}
+	return llssa.Expr{}, false
+}
+
 func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Expr, llssa.Expr, bool) {
 	if mi, ok := arg.(*ssa.MakeInterface); ok {
 		arg = mi.X
@@ -1094,6 +1130,9 @@ func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Exp
 	t, ok := arg.Type().Underlying().(*types.Pointer)
 	if !ok || t == nil {
 		return llssa.Expr{}, llssa.Expr{}, false
+	}
+	if key, ok := p.hiddenPointerArgKey(b, arg); ok {
+		return b.AbiTypeOf(arg.Type()), key, true
 	}
 	ptr := p.compileValue(b, arg)
 	if ptr.Type == nil {

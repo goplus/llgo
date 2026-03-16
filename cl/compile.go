@@ -1514,6 +1514,47 @@ func containsInstantiatedNamedType(t types.Type, seen map[types.Type]bool) bool 
 	return false
 }
 
+func hasConservativeGCPointers(t types.Type, seen map[types.Type]bool) bool {
+	if t == nil {
+		return false
+	}
+	if seen[t] {
+		return false
+	}
+	seen[t] = true
+	switch tt := types.Unalias(t).(type) {
+	case *types.Named:
+		return hasConservativeGCPointers(tt.Underlying(), seen)
+	case *types.Tuple:
+		for i := 0; i < tt.Len(); i++ {
+			if hasConservativeGCPointers(tt.At(i).Type(), seen) {
+				return true
+			}
+		}
+		return false
+	case *types.Basic:
+		switch tt.Kind() {
+		case types.String, types.UnsafePointer:
+			return true
+		default:
+			return false
+		}
+	case *types.Pointer, *types.Signature, *types.Chan, *types.Map, *types.Interface, *types.Slice:
+		return true
+	case *types.Array:
+		return tt.Len() != 0 && hasConservativeGCPointers(tt.Elem(), seen)
+	case *types.Struct:
+		for i := 0; i < tt.NumFields(); i++ {
+			if hasConservativeGCPointers(tt.Field(i).Type(), seen) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
 func recvValueUseBlock(v *ssa.UnOp) *ssa.BasicBlock {
 	if v == nil {
 		return nil
@@ -1630,6 +1671,21 @@ func (p *context) singleUseBlock(v ssa.Value, seen map[ssa.Value]bool) (*ssa.Bas
 		switch ref := ref.(type) {
 		case *ssa.DebugRef:
 			continue
+		case *ssa.Field:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.Index:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.Extract:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
 		case *ssa.FieldAddr:
 			refBlk, ok := p.singleUseBlock(ref, seen)
 			if !ok || (refBlk != nil && !setBlock(refBlk)) {
@@ -1710,7 +1766,13 @@ func (p *context) canHidePointerAlloc(v *ssa.Alloc) bool {
 	if !ok || ptr == nil {
 		return false
 	}
-	if _, ok := ptr.Elem().Underlying().(*types.Pointer); !ok {
+	switch tt := types.Unalias(ptr.Elem()).Underlying().(type) {
+	case *types.Pointer, *types.Slice, *types.Interface:
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return false
+		}
+	default:
 		return false
 	}
 	if containsInstantiatedNamedType(ptr.Elem(), map[types.Type]bool{}) {
@@ -1853,7 +1915,7 @@ func (p *context) isPointerValueClearCandidate(v ssa.Value) bool {
 	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
 		return false
 	}
-	if _, ok := v.Type().Underlying().(*types.Pointer); !ok {
+	if !hasConservativeGCPointers(v.Type(), map[types.Type]bool{}) {
 		return false
 	}
 	if alloc, ok := v.(*ssa.Alloc); ok && p.shouldTrackStackClear(alloc) {
@@ -1867,24 +1929,169 @@ func (p *context) isPointerValueClearCandidate(v ssa.Value) bool {
 	return ok
 }
 
+func isDerivedValueUse(instr ssa.Instruction) bool {
+	switch instr.(type) {
+	case *ssa.Field, *ssa.FieldAddr, *ssa.Index, *ssa.IndexAddr,
+		*ssa.Extract, *ssa.ChangeType, *ssa.Convert,
+		*ssa.MakeInterface, *ssa.ChangeInterface, *ssa.Slice, *ssa.TypeAssert:
+		return true
+	default:
+		return false
+	}
+}
+
+func operandUsesValue(instr ssa.Instruction, v ssa.Value) bool {
+	for _, op := range instr.Operands(nil) {
+		if op != nil && *op == v {
+			return true
+		}
+	}
+	return false
+}
+
+func isValueClearAnchor(instr ssa.Instruction) bool {
+	switch instr.(type) {
+	case *ssa.Return, *ssa.If, *ssa.Jump, *ssa.Panic, *ssa.RunDefers:
+		return false
+	default:
+		return true
+	}
+}
+
+func (p *context) collectValueUseBlocks(v ssa.Value, blocks map[*ssa.BasicBlock]bool, seen map[ssa.Value]bool) bool {
+	if v == nil || seen[v] {
+		return true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return true
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Phi:
+			return false
+		default:
+			if isDerivedValueUse(ref) {
+				refVal, ok := ref.(ssa.Value)
+				if !ok {
+					return false
+				}
+				if !p.collectValueUseBlocks(refVal, blocks, seen) {
+					return false
+				}
+				continue
+			}
+			if !isValueClearAnchor(ref) {
+				return false
+			}
+			blk := ref.Block()
+			if blk == nil || !operandUsesValue(ref, v) {
+				return false
+			}
+			blocks[blk] = true
+		}
+	}
+	return true
+}
+
+func deepestUseBlock(blocks map[*ssa.BasicBlock]bool) (*ssa.BasicBlock, bool) {
+	var last *ssa.BasicBlock
+	for blk := range blocks {
+		if last == nil {
+			last = blk
+			continue
+		}
+		switch {
+		case dominatesBlock(last, blk):
+			last = blk
+		case dominatesBlock(blk, last):
+		default:
+			return nil, false
+		}
+	}
+	return last, true
+}
+
+func (p *context) valueLastUseBlock(v ssa.Value) (*ssa.BasicBlock, bool) {
+	blocks := make(map[*ssa.BasicBlock]bool)
+	if !p.collectValueUseBlocks(v, blocks, map[ssa.Value]bool{}) {
+		return nil, false
+	}
+	if len(blocks) == 0 {
+		return nil, true
+	}
+	return deepestUseBlock(blocks)
+}
+
+func (p *context) lastUseInBlock(v ssa.Value, blk *ssa.BasicBlock, order map[ssa.Instruction]int, seen map[ssa.Value]bool) (ssa.Instruction, bool) {
+	if v == nil || seen[v] {
+		return nil, true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, true
+	}
+	var last ssa.Instruction
+	updateLast := func(instr ssa.Instruction) {
+		if instr == nil {
+			return
+		}
+		if last == nil || order[instr] > order[last] {
+			last = instr
+		}
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Phi:
+			return nil, false
+		default:
+			if isDerivedValueUse(ref) {
+				refVal, ok := ref.(ssa.Value)
+				if !ok {
+					return nil, false
+				}
+				use, ok := p.lastUseInBlock(refVal, blk, order, seen)
+				if !ok {
+					return nil, false
+				}
+				updateLast(use)
+				continue
+			}
+			if ref.Block() == blk && operandUsesValue(ref, v) {
+				if !isValueClearAnchor(ref) {
+					return nil, false
+				}
+				updateLast(ref)
+			}
+		}
+	}
+	return last, true
+}
+
 func (p *context) collectPointerValueClearPlans(fn *ssa.Function) (map[ssa.Instruction][]ssa.Value, map[ssa.Instruction][]ssa.Value) {
 	pre := make(map[ssa.Instruction][]ssa.Value)
 	post := make(map[ssa.Instruction][]ssa.Value)
 	for _, blk := range fn.Blocks {
-		order := make(map[ssa.Instruction]int, len(blk.Instrs))
-		for i, instr := range blk.Instrs {
-			order[instr] = i
-		}
 		for _, instr := range blk.Instrs {
 			val, ok := instr.(ssa.Value)
 			if !ok || !p.isPointerValueClearCandidate(val) {
 				continue
 			}
-			useBlk, ok := p.singleUseBlock(val, map[ssa.Value]bool{})
+			useBlk, ok := p.valueLastUseBlock(val)
 			if !ok || useBlk == nil {
 				continue
 			}
-			last, ok := p.lastSameBlockStackUse(val, useBlk, order, map[ssa.Value]bool{})
+			order := make(map[ssa.Instruction]int, len(useBlk.Instrs))
+			for i, useInstr := range useBlk.Instrs {
+				order[useInstr] = i
+			}
+			last, ok := p.lastUseInBlock(val, useBlk, order, map[ssa.Value]bool{})
 			if !ok || last == nil {
 				continue
 			}
@@ -2001,6 +2208,33 @@ func (p *context) lastSameBlockStackUse(v ssa.Value, blk *ssa.BasicBlock, order 
 		switch ref := ref.(type) {
 		case *ssa.DebugRef:
 			continue
+		case *ssa.Field:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.Index:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.Extract:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
 		case *ssa.FieldAddr:
 			if ref.Block() != blk {
 				return nil, false
@@ -2100,7 +2334,8 @@ func (p *context) clearDeadStackAllocs(b llssa.Builder, instr ssa.Instruction) {
 			continue
 		}
 		if p.hiddenPtrAllocs[alloc] {
-			b.Store(ptr, p.prog.Zero(b.Prog.Uintptr()))
+			elem := alloc.Type().(*types.Pointer).Elem()
+			b.Store(ptr, p.hiddenZeroStoredValue(b, elem))
 			continue
 		}
 		elem := p.type_(alloc.Type().(*types.Pointer).Elem(), llssa.InGo)
@@ -2132,7 +2367,7 @@ func (p *context) initValueSlots(b llssa.Builder, fn *ssa.Function) {
 			if !ok || !values[val] {
 				continue
 			}
-			if p.hiddenValueSlots[val] {
+			if p.hiddenValueSlots[val] && p.hiddenValueUsesUintptrSlot(val.Type()) {
 				p.valueSlots[val] = b.AllocaT(p.type_(types.Typ[types.Uintptr], llssa.InGo))
 				continue
 			}
@@ -2141,11 +2376,82 @@ func (p *context) initValueSlots(b llssa.Builder, fn *ssa.Function) {
 	}
 }
 
+func (p *context) hiddenValueUsesUintptrSlot(t types.Type) bool {
+	_, ok := types.Unalias(t).Underlying().(*types.Pointer)
+	return ok
+}
+
+func (p *context) encodeHiddenAggregateValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return val
+		}
+		data := b.StringData(val)
+		return b.SetStringData(val, b.Convert(data.Type, p.hiddenPointerKey(b, data)))
+	case *types.Slice:
+		data := b.SliceData(val)
+		return b.SetSliceData(val, b.Convert(data.Type, p.hiddenPointerKey(b, data)))
+	case *types.Interface:
+		data := b.InterfaceData(val)
+		return b.SetInterfaceData(val, b.Convert(data.Type, p.hiddenPointerKey(b, data)))
+	default:
+		return val
+	}
+}
+
+func (p *context) decodeHiddenAggregateValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return val
+		}
+		data := b.StringData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return b.SetStringData(val, p.hiddenPointerDecode(b, key, data.RawType()))
+	case *types.Slice:
+		data := b.SliceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return b.SetSliceData(val, p.hiddenPointerDecode(b, key, data.RawType()))
+	case *types.Interface:
+		data := b.InterfaceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return b.SetInterfaceData(val, p.hiddenPointerDecode(b, key, data.RawType()))
+	default:
+		return val
+	}
+}
+
+func (p *context) encodeHiddenStoredValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	if p.hiddenValueUsesUintptrSlot(t) {
+		return p.hiddenPointerKey(b, val)
+	}
+	return p.encodeHiddenAggregateValue(b, val, t)
+}
+
+func (p *context) decodeHiddenStoredValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	if p.hiddenValueUsesUintptrSlot(t) {
+		return p.hiddenPointerDecode(b, val, t)
+	}
+	return p.decodeHiddenAggregateValue(b, val, t)
+}
+
+func (p *context) hiddenZeroStoredValue(b llssa.Builder, t types.Type) llssa.Expr {
+	zero := p.prog.Zero(p.type_(t, llssa.InGo))
+	return p.encodeHiddenStoredValue(b, zero, t)
+}
+
 func (p *context) canHidePointerValue(v ssa.Value) bool {
 	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
 		return false
 	}
-	if _, ok := v.Type().Underlying().(*types.Pointer); !ok {
+	switch types.Unalias(v.Type()).Underlying().(type) {
+	case *types.Pointer, *types.Slice, *types.Interface:
+	case *types.Basic:
+		if types.Unalias(v.Type()).Underlying().(*types.Basic).Kind() != types.String {
+			return false
+		}
+	default:
 		return false
 	}
 	switch v.(type) {
@@ -2301,10 +2607,10 @@ func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction)
 			continue
 		}
 		if p.hiddenValueSlots[v] {
-			b.Store(slot, p.hiddenPointerKey(b, p.prog.Nil(p.type_(v.Type(), llssa.InGo))))
+			b.Store(slot, p.hiddenZeroStoredValue(b, v.Type()))
 			continue
 		}
-		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
 	}
 }
 
@@ -2315,11 +2621,11 @@ func isSendInstr(instr ssa.Instruction) bool {
 
 func (p *context) hiddenPointerKey(b llssa.Builder, ptr llssa.Expr) llssa.Expr {
 	key := b.Convert(b.Prog.Uintptr(), ptr)
-	return b.BinOp(token.XOR, key, b.Prog.IntVal(0xffff, b.Prog.Uintptr()))
+	return b.BinOp(token.XOR, key, b.Prog.IntVal(^uint64(0), b.Prog.Uintptr()))
 }
 
 func (p *context) hiddenPointerDecode(b llssa.Builder, key llssa.Expr, t types.Type) llssa.Expr {
-	raw := b.BinOp(token.XOR, key, b.Prog.IntVal(0xffff, b.Prog.Uintptr()))
+	raw := b.BinOp(token.XOR, key, b.Prog.IntVal(^uint64(0), b.Prog.Uintptr()))
 	return b.Convert(p.type_(t, llssa.InGo), raw)
 }
 
@@ -2456,7 +2762,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
 			if _, compiled := p.bvals[iv]; compiled {
 				if p.hiddenValueSlots[iv] {
-					return p.hiddenPointerDecode(b, b.Load(slot), iv.Type())
+					return p.decodeHiddenStoredValue(b, b.Load(slot), iv.Type())
 				}
 				return b.Load(slot)
 			}
@@ -2511,8 +2817,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if v.Op == token.MUL {
 			if alloc, ok := v.X.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
 				slot := p.compileValue(b, v.X)
-				key := b.Load(slot)
-				ret = p.hiddenPointerDecode(b, key, v.Type())
+				ret = p.decodeHiddenStoredValue(b, b.Load(slot), v.Type())
 				break
 			}
 			if _, ok := v.X.(*ssa.UnOp); ok {
@@ -2572,7 +2877,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		elem := p.type_(t.Elem(), llssa.InGo)
 		if p.hiddenPtrAllocs[v] {
-			ret = b.AllocaT(p.type_(types.Typ[types.Uintptr], llssa.InGo))
+			if p.hiddenValueUsesUintptrSlot(t.Elem()) {
+				ret = b.AllocaT(p.type_(types.Typ[types.Uintptr], llssa.InGo))
+			} else {
+				ret = b.AllocaT(elem)
+			}
 			break
 		}
 		ret = b.Alloc(elem, v.Heap && !p.canPromoteHeapAllocToStack(v))
@@ -2764,7 +3073,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil && ret.Type != nil {
 		if p.hiddenValueSlots[iv] {
-			b.Store(slot, p.hiddenPointerKey(b, ret))
+			b.Store(slot, p.encodeHiddenStoredValue(b, ret, iv.Type()))
 		} else {
 			b.Store(slot, ret)
 		}
@@ -2833,7 +3142,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		if alloc, ok := va.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
 			slot := p.compileValue(b, va)
 			val := p.compileValue(b, v.Val)
-			b.Store(slot, p.hiddenPointerKey(b, val))
+			b.Store(slot, p.encodeHiddenStoredValue(b, val, alloc.Type().(*types.Pointer).Elem()))
 			return
 		}
 		ptr := p.compileValue(b, va)
@@ -2991,7 +3300,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if slot, ok := p.valueSlots[v]; ok && slot.Type != nil {
 		if _, compiled := p.bvals[v]; compiled {
 			if p.hiddenValueSlots[v] {
-				return p.hiddenPointerDecode(b, b.Load(slot), v.Type())
+				return p.decodeHiddenStoredValue(b, b.Load(slot), v.Type())
 			}
 			return b.Load(slot)
 		}
@@ -3094,11 +3403,11 @@ func (p *context) clearPreCallValues(b llssa.Builder, owner ssa.Instruction) {
 			continue
 		}
 		if p.hiddenValueSlots[v] {
-			b.Store(slot, p.hiddenPointerKey(b, p.prog.Nil(p.type_(v.Type(), llssa.InGo))))
+			b.Store(slot, p.hiddenZeroStoredValue(b, v.Type()))
 			cleared[v] = true
 			continue
 		}
-		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
 		cleared[v] = true
 	}
 }

@@ -67,6 +67,15 @@ func (b Builder) getField(x Expr, idx int) Expr {
 	return Expr{fld, tfld}
 }
 
+// SetField yields the aggregate value x with field idx replaced by y.
+func (b Builder) SetField(x Expr, idx int, y Expr) Expr {
+	if debugInstr {
+		log.Printf("SetField %v, %d, %v\n", x.impl, idx, y.impl)
+	}
+	agg := b.impl.CreateInsertValue(x.impl, y.impl, idx, "")
+	return Expr{agg, x.Type}
+}
+
 // -----------------------------------------------------------------------------
 
 func (b Builder) Complex(r, i Expr) Expr {
@@ -119,6 +128,14 @@ func (b Builder) StringLen(x Expr) Expr {
 	return Expr{ptr, b.Prog.Int()}
 }
 
+// SetStringData yields x with its data pointer replaced by data.
+func (b Builder) SetStringData(x, data Expr) Expr {
+	if debugInstr {
+		log.Printf("SetStringData %v, %v\n", x.impl, data.impl)
+	}
+	return b.aggregateValue(x.Type, data.impl, b.StringLen(x).impl)
+}
+
 // -----------------------------------------------------------------------------
 
 // SliceData returns the data pointer of a slice.
@@ -148,6 +165,14 @@ func (b Builder) SliceCap(x Expr) Expr {
 	}
 	ptr := llvm.CreateExtractValue(b.impl, x.impl, 2)
 	return Expr{ptr, b.Prog.Int()}
+}
+
+// SetSliceData yields x with its data pointer replaced by data.
+func (b Builder) SetSliceData(x, data Expr) Expr {
+	if debugInstr {
+		log.Printf("SetSliceData %v, %v\n", x.impl, data.impl)
+	}
+	return b.aggregateValue(x.Type, data.impl, b.SliceLen(x).impl, b.SliceCap(x).impl)
 }
 
 // -----------------------------------------------------------------------------

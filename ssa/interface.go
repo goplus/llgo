@@ -389,6 +389,14 @@ func (b Builder) InterfaceData(x Expr) Expr {
 	return Expr{b.faceData(x.impl), b.Prog.VoidPtr()}
 }
 
+// SetInterfaceData yields x with its data word replaced by data.
+func (b Builder) SetInterfaceData(x, data Expr) Expr {
+	if debugInstr {
+		log.Printf("SetInterfaceData %v, %v\n", x.impl, data.impl)
+	}
+	return b.aggregateValue(x.Type, b.faceItab(x.impl), data.impl)
+}
+
 func (b Builder) faceData(x llvm.Value) llvm.Value {
 	return llvm.CreateExtractValue(b.impl, x, 1)
 }

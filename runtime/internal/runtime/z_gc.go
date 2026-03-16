@@ -28,6 +28,8 @@ import (
 	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
+const hiddenPointerMask = ^uintptr(0)
+
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
 	if size == 0 {
@@ -190,9 +192,9 @@ func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
 	var oldCb unsafe.Pointer
 	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
 	if oldCb != nil {
-		n := uintptr(ptr) ^ 0xffff // hides the pointer from escape analysis
+		n := uintptr(ptr) ^ hiddenPointerMask // hides the pointer from escape analysis
 		fn := func() {
-			oldFn((unsafe.Pointer)(n^0xffff), oldCb)
+			oldFn((unsafe.Pointer)(n^hiddenPointerMask), oldCb)
 		}
 		atomic.Store(&e.prev, unsafe.Pointer(&fn))
 	}
@@ -208,9 +210,9 @@ func AddCleanupValuePtr(ptr unsafe.Pointer, size uintptr, cleanup func(unsafe.Po
 	var oldCb unsafe.Pointer
 	bdwgc.RegisterFinalizer(ptr, finalizer, unsafe.Pointer(e), &oldFn, &oldCb)
 	if oldCb != nil {
-		n := uintptr(ptr) ^ 0xffff
+		n := uintptr(ptr) ^ hiddenPointerMask
 		fn := func() {
-			oldFn((unsafe.Pointer)(n^0xffff), oldCb)
+			oldFn((unsafe.Pointer)(n^hiddenPointerMask), oldCb)
 		}
 		atomic.Store(&e.prev, unsafe.Pointer(&fn))
 	}

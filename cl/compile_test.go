@@ -495,7 +495,7 @@ func f() {
 		t.Fatalf("missing pointer slot load before foo.use:\n%s", body)
 	}
 	clearIdx := strings.LastIndex(rest, "store ptr null, ptr")
-	hiddenClearIdx := strings.LastIndex(rest, "store i64 65535, ptr")
+	hiddenClearIdx := strings.LastIndex(rest, "store i64 -1, ptr")
 	if hiddenClearIdx > clearIdx {
 		clearIdx = hiddenClearIdx
 	}
