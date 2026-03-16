@@ -201,23 +201,14 @@ func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, boo
 }
 
 func (p *context) canSkipMakeInterfaceLoad(v *ssa.MakeInterface) bool {
-	refs := v.Referrers()
-	if refs == nil || len(*refs) != 1 {
-		return true
-	}
-	store, ok := (*refs)[0].(*ssa.Store)
-	if !ok {
-		return true
-	}
-	va, ok := store.Addr.(*ssa.IndexAddr)
-	if !ok {
-		return true
-	}
-	alloc, ok := va.X.(*ssa.Alloc)
-	if !ok {
-		return true
-	}
-	return !isAllocVargs(p, alloc)
+	_ = p
+	_ = v
+	// MakeInterface consumers in llgo sometimes fold back to the original SSA
+	// operand (for example identical type-asserts and a few intrinsic helpers).
+	// Skipping the backing load here leaves those paths without a materialized
+	// value and trips compileValue's dominance cache. Prefer correctness over
+	// this micro-optimization.
+	return false
 }
 
 func isBlankFieldStore(addr ssa.Value) bool {

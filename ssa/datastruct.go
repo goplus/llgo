@@ -783,6 +783,25 @@ func (b Builder) toPtr(x Expr) (Expr, func()) {
 	}
 }
 
+func recvTempCanBeZeroed(t Type) bool {
+	switch t.kind {
+	case vkSlice, vkString, vkStruct, vkArray, vkTuple, vkIface, vkEface, vkClosure:
+		return false
+	default:
+		return true
+	}
+}
+
+func (b Builder) materializeRecvValue(ptr Expr, t Type) Expr {
+	val := b.Load(ptr)
+	if recvTempCanBeZeroed(t) {
+		return val
+	}
+	stable := b.Alloc(t, false)
+	b.Store(stable, val)
+	return b.Load(stable)
+}
+
 func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("Recv %v, %v\n", ch.impl, commaOk)
@@ -796,15 +815,18 @@ func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 		// Drop references held in the hidden receive temporary as soon as the
 		// loaded value is materialized. Otherwise large pointer-bearing channel
 		// elements can remain live across later GC calls in the same frame.
+		if !recvTempCanBeZeroed(etyp) {
+			return
+		}
 		b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), eltSize)
 	}
 	if commaOk {
-		val := b.Load(ptr)
+		val := b.materializeRecvValue(ptr, etyp)
 		zeroRecvTmp()
 		t := prog.Struct(etyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok.impl)
 	} else {
-		val := b.Load(ptr)
+		val := b.materializeRecvValue(ptr, etyp)
 		zeroRecvTmp()
 		return val
 	}
