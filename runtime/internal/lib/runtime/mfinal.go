@@ -62,12 +62,10 @@ func finalizerFunc(v any) (finalizerClosure, *ffi.Signature) {
 	return *(*finalizerClosure)(e.data), sig
 }
 
-func SetFinalizer(obj any, finalizer any) {
-	objType := typeOf(obj)
+func setFinalizer(objType *abi.Type, objPtr unsafe.Pointer, finalizer any) {
 	if objType == nil || objType.Kind() != abi.Pointer {
 		panic("runtime.SetFinalizer: first argument must be pointer")
 	}
-	objPtr := (*eface)(unsafe.Pointer(&obj)).data
 	if objPtr == nil {
 		return
 	}
@@ -99,6 +97,14 @@ func SetFinalizer(obj any, finalizer any) {
 	finalizerMu.Lock()
 	finalizerCancels[key] = cancel
 	finalizerMu.Unlock()
+}
+
+func SetFinalizer(obj any, finalizer any) {
+	setFinalizer(typeOf(obj), (*eface)(unsafe.Pointer(&obj)).data, finalizer)
+}
+
+func SetFinalizerType(objType *abi.Type, obj unsafe.Pointer, finalizer any) {
+	setFinalizer(objType, obj, finalizer)
 }
 
 func finalizerFFIType(typ *abi.Type) *ffi.Type {

@@ -126,6 +126,8 @@ type context struct {
 	btails      map[*ssa.BasicBlock]llssa.BasicBlock
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
 	recvTuples  map[ssa.Value]*recvTupleState
+	stackClears map[ssa.Instruction][]*ssa.Alloc
+	paramClears map[ssa.Instruction][]int
 	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
@@ -155,6 +157,11 @@ type recvTupleState struct {
 	ok        llssa.Expr
 	recvBlock *ssa.BasicBlock
 	useBlock  *ssa.BasicBlock
+}
+
+type staticCallSite struct {
+	caller *ssa.Function
+	call   *ssa.Call
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -451,6 +458,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.vblks = make(map[ssa.Value]llssa.BasicBlock)
 			p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
 			p.recvTuples = make(map[ssa.Value]*recvTupleState)
+			p.stackClears = p.collectStackClearPlans(f)
+			p.paramClears = p.collectParamClearPlans(f)
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -705,6 +714,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		} else {
 			p.compileInstr(b, instr)
 		}
+		p.clearDeadStackAllocs(b, instr)
+		p.clearDeadParams(b, instr)
 	}
 	// is cgo cfunc but not return yet, some funcs has multiple blocks
 	if (isCgoCfunc || isCgoC2 || isCgoCmacro) && !cgoReturned {
@@ -1020,6 +1031,18 @@ func isKeepAliveFunc(fn *ssa.Function) bool {
 	}
 }
 
+func isSetFinalizerFunc(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil || fn.Name() != "SetFinalizer" {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "runtime", "github.com/goplus/llgo/runtime/internal/lib/runtime":
+		return true
+	default:
+		return false
+	}
+}
+
 func singleRef(v ssa.Value) (ssa.Instruction, bool) {
 	refs := v.Referrers()
 	if refs == nil {
@@ -1073,6 +1096,53 @@ func canLowerLazyRecvTuple(v *ssa.UnOp) bool {
 		return false
 	}
 	return true
+}
+
+func isPointerKeepAliveCall(fn *ssa.Function, arg ssa.Value) bool {
+	if !isKeepAliveFunc(fn) {
+		return false
+	}
+	if mi, ok := arg.(*ssa.MakeInterface); ok {
+		arg = mi.X
+	}
+	_, ok := arg.Type().Underlying().(*types.Pointer)
+	return ok
+}
+
+func canSkipKeepAliveMakeInterface(v *ssa.MakeInterface) bool {
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	call, ok := (*refs)[0].(*ssa.Call)
+	if !ok {
+		return false
+	}
+	fn, ok := call.Call.Value.(*ssa.Function)
+	if !ok {
+		return false
+	}
+	return len(call.Call.Args) == 1 && call.Call.Args[0] == v && isPointerKeepAliveCall(fn, v)
+}
+
+func canSkipSetFinalizerObjectMakeInterface(v *ssa.MakeInterface) bool {
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	call, ok := (*refs)[0].(*ssa.Call)
+	if !ok {
+		return false
+	}
+	fn, ok := call.Call.Value.(*ssa.Function)
+	if !ok || !isSetFinalizerFunc(fn) {
+		return false
+	}
+	if len(call.Call.Args) != 2 || call.Call.Args[0] != v {
+		return false
+	}
+	_, ok = v.X.Type().Underlying().(*types.Pointer)
+	return ok
 }
 
 func recvValueUseBlock(v *ssa.UnOp) *ssa.BasicBlock {
@@ -1164,6 +1234,385 @@ func (p *context) clearExpiredRecvTuples(b llssa.Builder, blk *ssa.BasicBlock) {
 			continue
 		}
 		b.ClearRecvTemp(state.ptr)
+	}
+}
+
+func (p *context) singleUseBlock(v ssa.Value, seen map[ssa.Value]bool) (*ssa.BasicBlock, bool) {
+	if v == nil || seen[v] {
+		return nil, true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, true
+	}
+	var blk *ssa.BasicBlock
+	setBlock := func(refBlk *ssa.BasicBlock) bool {
+		if refBlk == nil {
+			return false
+		}
+		if blk == nil {
+			blk = refBlk
+			return true
+		}
+		return blk == refBlk
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.FieldAddr:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.IndexAddr:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.ChangeType:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.Convert:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.MakeInterface:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.UnOp:
+			if ref.Op != token.MUL || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Store:
+			if ref.Addr != v || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Call:
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Defer:
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		default:
+			return nil, false
+		}
+	}
+	return blk, true
+}
+
+func (p *context) shouldTrackStackClear(v *ssa.Alloc) bool {
+	if v == nil || v.Comment == "varargs" || v.Comment == "makeslice" {
+		return false
+	}
+	if !v.Heap {
+		return true
+	}
+	return p.canPromoteHeapAllocToStack(v)
+}
+
+func (p *context) collectStackClearPlans(fn *ssa.Function) map[ssa.Instruction][]*ssa.Alloc {
+	plans := make(map[ssa.Instruction][]*ssa.Alloc)
+	for _, blk := range fn.Blocks {
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		for _, instr := range blk.Instrs {
+			alloc, ok := instr.(*ssa.Alloc)
+			if !ok || !p.shouldTrackStackClear(alloc) {
+				continue
+			}
+			if last, ok := p.lastSameBlockStackUse(alloc, blk, order, map[ssa.Value]bool{}); ok && last != nil {
+				plans[last] = append(plans[last], alloc)
+			}
+		}
+	}
+	return plans
+}
+
+func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
+	plans := make(map[ssa.Instruction][]int)
+	callsites, ok := p.staticPointerParamCallsites(fn)
+	if !ok {
+		return plans
+	}
+	for idx, param := range fn.Params {
+		pt, ok := param.Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		elem := p.type_(pt.Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		blk, ok := p.singleUseBlock(param, map[ssa.Value]bool{})
+		if !ok || blk == nil {
+			continue
+		}
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		last, ok := p.lastSameBlockStackUse(param, blk, order, map[ssa.Value]bool{})
+		if !ok || last == nil {
+			continue
+		}
+		if !p.allStaticCallArgsClearable(callsites, idx, pt.Elem()) {
+			continue
+		}
+		plans[last] = append(plans[last], idx)
+	}
+	return plans
+}
+
+func (p *context) staticPointerParamCallsites(fn *ssa.Function) ([]staticCallSite, bool) {
+	if fn == nil || fn.Pkg == nil || fn.Parent() != nil || fn.Synthetic != "" {
+		return nil, false
+	}
+	obj, ok := fn.Object().(*types.Func)
+	if !ok || obj.Exported() || fn.Signature.Recv() != nil {
+		return nil, false
+	}
+	var sites []staticCallSite
+	seen := make(map[*ssa.Function]bool)
+	var scan func(*ssa.Function) bool
+	scan = func(cur *ssa.Function) bool {
+		if cur == nil || seen[cur] {
+			return true
+		}
+		seen[cur] = true
+		for _, blk := range cur.Blocks {
+			for _, instr := range blk.Instrs {
+				for _, op := range instr.Operands(nil) {
+					if op == nil || *op != fn {
+						continue
+					}
+					call, ok := instr.(*ssa.Call)
+					if !ok || call.Call.Value != fn {
+						return false
+					}
+					sites = append(sites, staticCallSite{caller: cur, call: call})
+					break
+				}
+			}
+		}
+		for _, anon := range cur.AnonFuncs {
+			if !scan(anon) {
+				return false
+			}
+		}
+		return true
+	}
+	for _, member := range fn.Pkg.Members {
+		memberFn, ok := member.(*ssa.Function)
+		if !ok {
+			continue
+		}
+		if !scan(memberFn) {
+			return nil, false
+		}
+	}
+	if len(sites) == 0 {
+		return nil, false
+	}
+	return sites, true
+}
+
+func (p *context) allStaticCallArgsClearable(callsites []staticCallSite, idx int, elem types.Type) bool {
+	for _, site := range callsites {
+		if site.call == nil || idx >= len(site.call.Call.Args) {
+			return false
+		}
+		alloc, ok := site.call.Call.Args[idx].(*ssa.Alloc)
+		if !ok || !p.shouldTrackStackClear(alloc) {
+			return false
+		}
+		argPtr, ok := alloc.Type().Underlying().(*types.Pointer)
+		if !ok || !types.Identical(argPtr.Elem(), elem) {
+			return false
+		}
+		blk := site.call.Block()
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		last, ok := p.lastSameBlockStackUse(alloc, blk, order, map[ssa.Value]bool{})
+		if !ok || last != site.call {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) lastSameBlockStackUse(v ssa.Value, blk *ssa.BasicBlock, order map[ssa.Instruction]int, seen map[ssa.Value]bool) (ssa.Instruction, bool) {
+	if v == nil || seen[v] {
+		return nil, true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, true
+	}
+	var last ssa.Instruction
+	updateLast := func(instr ssa.Instruction) {
+		if instr == nil {
+			return
+		}
+		if last == nil || order[instr] > order[last] {
+			last = instr
+		}
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.FieldAddr:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.IndexAddr:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.ChangeType:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.Convert:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.MakeInterface:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.UnOp:
+			if ref.Block() != blk || ref.Op != token.MUL {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Store:
+			if ref.Block() != blk || ref.Addr != v {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Call:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Defer:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, false
+			}
+			updateLast(ref)
+		default:
+			return nil, false
+		}
+	}
+	return last, true
+}
+
+func (p *context) clearDeadStackAllocs(b llssa.Builder, instr ssa.Instruction) {
+	for _, alloc := range p.stackClears[instr] {
+		ptr := p.compileValue(b, alloc)
+		if ptr.Type == nil {
+			continue
+		}
+		elem := p.type_(alloc.Type().(*types.Pointer).Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		b.Store(ptr, p.prog.Zero(elem))
+	}
+}
+
+func (p *context) clearDeadParams(b llssa.Builder, instr ssa.Instruction) {
+	fn := instr.Parent()
+	if fn == nil {
+		return
+	}
+	for _, idx := range p.paramClears[instr] {
+		if idx < 0 || idx >= len(fn.Params) {
+			continue
+		}
+		pt, ok := fn.Params[idx].Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		elem := p.type_(pt.Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		b.Store(b.Param(idx), p.prog.Zero(elem))
 	}
 }
 
@@ -1464,6 +1913,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.Slice(x, low, high, max)
 		ret.Type = b.Prog.Type(v.Type(), llssa.InGo)
 	case *ssa.MakeInterface:
+		if canSkipKeepAliveMakeInterface(v) || canSkipSetFinalizerObjectMakeInterface(v) {
+			return
+		}
 		if refs := *v.Referrers(); len(refs) == 1 {
 			switch ref := refs[0].(type) {
 			case *ssa.Store:

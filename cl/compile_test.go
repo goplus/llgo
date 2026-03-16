@@ -383,6 +383,81 @@ func fn(ch chan []byte, start int64) {
 	}
 }
 
+func TestStackAllocClearedAfterLastSameBlockUse(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{ p *int }
+
+func g(*T) {}
+
+func f() {
+	var s T
+	s.p = new(int)
+	g(&s)
+	println(0)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, "@foo.g(")
+	if callIdx < 0 {
+		t.Fatalf("missing foo.g call:\n%s", body)
+	}
+	rest := body[callIdx:]
+	clearIdx := strings.Index(rest, `store %foo.T zeroinitializer`)
+	if clearIdx < 0 {
+		t.Fatalf("missing stack slot clear after last use:\n%s", body)
+	}
+}
+
+func TestPointerKeepAliveUsesPointerHelper(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{ p *int }
+
+func g(s *T) {
+	runtime.KeepAlive(s)
+}
+`)
+	body := functionBody(t, ir, "foo.g")
+	if !strings.Contains(body, "@runtime.KeepAlivePointer(") {
+		t.Fatalf("missing pointer keepalive helper:\n%s", body)
+	}
+	if strings.Contains(body, `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface"`) {
+		t.Fatalf("unexpected eface materialization for pointer KeepAlive:\n%s", body)
+	}
+}
+
+func TestStaticPointerParamClearedAfterLastUse(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{ p *int }
+
+func g(s *T) {
+	runtime.KeepAlive(s)
+}
+
+func f() {
+	var s T
+	s.p = new(int)
+	g(&s)
+}
+`)
+	body := functionBody(t, ir, "foo.g")
+	callIdx := strings.Index(body, "@runtime.KeepAlivePointer(")
+	if callIdx < 0 {
+		t.Fatalf("missing pointer keepalive helper:\n%s", body)
+	}
+	rest := body[callIdx:]
+	clearIdx := strings.Index(rest, `store %foo.T zeroinitializer`)
+	if clearIdx < 0 {
+		t.Fatalf("missing pointee clear after final parameter use:\n%s", body)
+	}
+}
+
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
 	_, err := build.Do([]string{"math"}, conf)

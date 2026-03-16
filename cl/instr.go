@@ -888,6 +888,30 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			ret = callMaybeSuspendRecover(llssa.Builtin(fn), args, fn != "recover" && fn != "panic")
 		}
 	case *ssa.Function:
+		if isKeepAliveFunc(cv) && len(args) == 1 {
+			if ptrArg, ok := p.keepAlivePointerArg(b, args[0]); ok {
+				params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+				helper := b.Pkg.NewFunc("runtime.KeepAlivePointer",
+					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{ptrArg}, false)
+				return
+			}
+		}
+		if isSetFinalizerFunc(cv) && len(args) == 2 {
+			if objType, objPtr, ok := p.setFinalizerTypeArg(b, args[0]); ok {
+				anyTy := types.NewInterfaceType(nil, nil).Complete()
+				params := types.NewTuple(
+					types.NewParam(token.NoPos, nil, "", b.Prog.AbiTypePtr().RawType()),
+					types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+					types.NewParam(token.NoPos, nil, "", anyTy),
+				)
+				helper := b.Pkg.NewFunc("runtime.SetFinalizerType",
+					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+				finalizer := p.compileValue(b, args[1])
+				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{objType, objPtr, finalizer}, false)
+				return
+			}
+		}
 		aFn, pyFn, ftype := p.compileFunction(cv)
 		suspend := cv.Synthetic == ""
 		// TODO(xsw): check ca != llssa.Call
@@ -1010,6 +1034,38 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		ret = callMaybeSuspendRecover(fn, args, true)
 	}
 	return
+}
+
+// -----------------------------------------------------------------------------
+
+func (p *context) keepAlivePointerArg(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
+	if mi, ok := arg.(*ssa.MakeInterface); ok {
+		arg = mi.X
+	}
+	t, ok := arg.Type().Underlying().(*types.Pointer)
+	if !ok || t == nil {
+		return llssa.Expr{}, false
+	}
+	ptr := p.compileValue(b, arg)
+	if ptr.Type == nil {
+		return llssa.Expr{}, false
+	}
+	return b.ChangeType(b.Prog.VoidPtr(), ptr), true
+}
+
+func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Expr, llssa.Expr, bool) {
+	if mi, ok := arg.(*ssa.MakeInterface); ok {
+		arg = mi.X
+	}
+	t, ok := arg.Type().Underlying().(*types.Pointer)
+	if !ok || t == nil {
+		return llssa.Expr{}, llssa.Expr{}, false
+	}
+	ptr := p.compileValue(b, arg)
+	if ptr.Type == nil {
+		return llssa.Expr{}, llssa.Expr{}, false
+	}
+	return b.AbiTypeOf(arg.Type()), b.ChangeType(b.Prog.VoidPtr(), ptr), true
 }
 
 // -----------------------------------------------------------------------------

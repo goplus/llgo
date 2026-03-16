@@ -585,6 +585,11 @@ func (b Builder) abiType(t types.Type) Expr {
 	}), prog.AbiTypePtr()}
 }
 
+// AbiTypeOf returns the runtime *abi.Type descriptor for t.
+func (b Builder) AbiTypeOf(t types.Type) Expr {
+	return b.abiType(t)
+}
+
 func (p Package) getAbiTypesFor(name string, selected []string) Expr {
 	prog := p.Prog
 	var names []string

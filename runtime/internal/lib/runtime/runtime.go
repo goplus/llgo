@@ -74,6 +74,13 @@ func KeepAlive(x any) {
 	c.Memcmp(unsafe.Pointer(&x), unsafe.Pointer(&x), 0)
 }
 
+//go:noinline
+func KeepAlivePointer(p unsafe.Pointer) {
+	// Pointer-only variant used by the compiler to avoid materializing an
+	// interface wrapper when the KeepAlive argument is already a pointer.
+	c.Memcmp(p, p, 0)
+}
+
 //go:linkname c_write C.write
 func c_write(fd c.Int, p unsafe.Pointer, n c.SizeT) c.SsizeT
 

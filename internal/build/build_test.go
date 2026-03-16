@@ -277,6 +277,209 @@ func f() {
 	}
 }
 
+func TestModeGenSetFinalizerUsesTypedHelper(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-setfinalizer-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/setfinalizer\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type T struct{ p *int }
+
+func fin(*T) {}
+
+func f(x *T) {
+	runtime.SetFinalizer(x, fin)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/setfinalizer.f")
+	if !strings.Contains(body, "@runtime.SetFinalizerType(") {
+		t.Fatalf("f should use the typed SetFinalizer helper:\n%s", body)
+	}
+	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
+		t.Fatalf("f should not call SetFinalizer directly:\n%s", body)
+	}
+}
+
+func TestModeGenSetFinalizerUsesTypedHelperForFieldClosure(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-stackobj-setfinalizer-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/stackobjfinalizer\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type HeapObj [8]int64
+
+type StkObj struct {
+	h *HeapObj
+}
+
+func f() {
+	var s StkObj
+	s.h = new(HeapObj)
+	runtime.SetFinalizer(s.h, func(h *HeapObj) {})
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/stackobjfinalizer.f")
+	if !strings.Contains(body, "@runtime.SetFinalizerType(") {
+		t.Fatalf("f should use the typed SetFinalizer helper for field closures:\n%s", body)
+	}
+	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
+		t.Fatalf("f should not call SetFinalizer directly for field closures:\n%s", body)
+	}
+}
+
+func TestModeGenStackobjClearsLivenessRoots(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-stackobj-ir-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/stackobjir\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type HeapObj [8]int64
+
+type StkObj struct {
+	h *HeapObj
+}
+
+func gc() {
+	runtime.GC()
+	runtime.GC()
+	runtime.GC()
+}
+
+func f() {
+	var s StkObj
+	s.h = new(HeapObj)
+	runtime.SetFinalizer(s.h, func(h *HeapObj) {})
+	g(&s)
+	gc()
+}
+
+func g(s *StkObj) {
+	gc()
+	runtime.KeepAlive(s)
+	gc()
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	ir := pkgs[0].LPkg.String()
+	fBody := functionBody(t, ir, "example.com/stackobjir.f")
+	gBody := functionBody(t, ir, "example.com/stackobjir.g")
+	if !strings.Contains(fBody, "@runtime.SetFinalizerType(") {
+		t.Fatalf("f should use SetFinalizerType:\n%s", fBody)
+	}
+	if strings.Contains(fBody, `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"*_llgo_example.com/stackobjir.HeapObj"`) {
+		t.Fatalf("f should not materialize an object interface for SetFinalizer after typed lowering:\n%s", fBody)
+	}
+	callIdx := strings.Index(fBody, `@"example.com/stackobjir.g"(`)
+	if callIdx < 0 {
+		t.Fatalf("missing g call in f:\n%s", fBody)
+	}
+	if clearIdx := strings.Index(fBody[callIdx:], `zeroinitializer, ptr %0`); clearIdx < 0 {
+		t.Fatalf("f should clear the stack object after calling g:\n%s", fBody)
+	}
+	if !strings.Contains(gBody, "@runtime.KeepAlivePointer(") {
+		t.Fatalf("g should lower KeepAlive to the pointer helper:\n%s", gBody)
+	}
+	keepAliveIdx := strings.Index(gBody, "@runtime.KeepAlivePointer(")
+	if keepAliveIdx < 0 {
+		t.Fatalf("missing pointer KeepAlive helper in g:\n%s", gBody)
+	}
+	if clearIdx := strings.Index(gBody[keepAliveIdx:], `zeroinitializer, ptr %0`); clearIdx < 0 {
+		t.Fatalf("g should clear the pointee after the last KeepAlive use:\n%s", gBody)
+	}
+}
+
 func functionBody(t *testing.T, ir, name string) string {
 	t.Helper()
 	marker := `define void @"` + name + `"`
