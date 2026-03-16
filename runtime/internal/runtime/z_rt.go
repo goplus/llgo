@@ -53,7 +53,8 @@ type panicTrace struct {
 
 // Recover recovers a panic.
 func Recover(tok unsafe.Pointer) (ret any) {
-	if tok == nil || recoverKey.Get() == nil {
+	key := recoverKey.Get()
+	if tok == nil || key == nil || tok != key {
 		return nil
 	}
 	ptr := recoverPan.Get()
@@ -104,6 +105,10 @@ func SetRecoverToken(tok unsafe.Pointer) (prev unsafe.Pointer) {
 	recoverKey.Set(tok)
 	recoverPan.Set(excepKey.Get())
 	return
+}
+
+func HasRecoverKey() bool {
+	return recoverKey.Get() != nil
 }
 
 func storePanicTrace(stack []uintptr, n int) {

@@ -207,6 +207,22 @@ func callWithRecover(fn func()) (recovered any) {
 	return
 }
 
+func callReflectMakeFuncRecover() (recovered any) {
+	defer func() {
+		if recovered != nil {
+			_ = recover()
+			return
+		}
+		recovered = recover()
+	}()
+	f := reflect.MakeFunc(reflect.TypeOf((func())(nil)), func(args []reflect.Value) []reflect.Value {
+		recovered = recover()
+		return nil
+	}).Interface().(func())
+	defer f()
+	panic("reflect-makefunc-recover")
+}
+
 func loopBranchEven(order *[]string, i int) {
 	label := "even:" + strconv.Itoa(i)
 	defer func() { *order = append(*order, label) }()
@@ -257,6 +273,13 @@ func TestLoopBranchRecoverMixed(t *testing.T) {
 	}
 	if s, ok := recovered[0].(string); !ok || s != "odd-no-recover" {
 		t.Fatalf("unexpected recovered value: got %v, want %q", recovered[0], "odd-no-recover")
+	}
+}
+
+func TestReflectMakeFuncRecover(t *testing.T) {
+	got := callReflectMakeFuncRecover()
+	if s, ok := got.(string); !ok || s != "reflect-makefunc-recover" {
+		t.Fatalf("unexpected recovered value: got %v, want %q", got, "reflect-makefunc-recover")
 	}
 }
 

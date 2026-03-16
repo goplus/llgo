@@ -39,6 +39,12 @@ type funcData struct {
 	nin  int
 }
 
+//go:linkname llgoSetRecoverToken github.com/goplus/llgo/runtime/internal/runtime.SetRecoverToken
+func llgoSetRecoverToken(tok unsafe.Pointer) unsafe.Pointer
+
+//go:linkname llgoHasRecoverKey github.com/goplus/llgo/runtime/internal/runtime.HasRecoverKey
+func llgoHasRecoverKey() bool
+
 func makeFuncClosureArgs(fd *funcData, args *unsafe.Pointer) []Value {
 	var inline [8]Value
 	ins := inline[:0]
@@ -53,21 +59,37 @@ func makeFuncClosureArgs(fd *funcData, args *unsafe.Pointer) []Value {
 	return ins
 }
 
+func makeFuncRecoverToken(fn func(args []Value) (results []Value)) unsafe.Pointer {
+	if fn == nil {
+		return nil
+	}
+	return c.Func(fn)
+}
+
+func callMakeFunc(fd *funcData, args *unsafe.Pointer) []Value {
+	if !llgoHasRecoverKey() {
+		return fd.fn(makeFuncClosureArgs(fd, args))
+	}
+	prev := llgoSetRecoverToken(makeFuncRecoverToken(fd.fn))
+	defer llgoSetRecoverToken(prev)
+	return fd.fn(makeFuncClosureArgs(fd, args))
+}
+
 func makeFuncCallback0(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 	fd := (*funcData)(userdata)
-	checkMakeFuncResults(fd.ftyp, fd.fn(makeFuncClosureArgs(fd, args)))
+	checkMakeFuncResults(fd.ftyp, callMakeFunc(fd, args))
 }
 
 func makeFuncCallback1(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 	fd := (*funcData)(userdata)
-	out := fd.fn(makeFuncClosureArgs(fd, args))
+	out := callMakeFunc(fd, args)
 	checkMakeFuncResults(fd.ftyp, out)
 	storeMakeFuncResult(ret, fd.ftyp.Out[0], out[0])
 }
 
 func makeFuncCallbackN(cif *ffi.Signature, ret unsafe.Pointer, args *unsafe.Pointer, userdata unsafe.Pointer) {
 	fd := (*funcData)(userdata)
-	outs := fd.fn(makeFuncClosureArgs(fd, args))
+	outs := callMakeFunc(fd, args)
 	checkMakeFuncResults(fd.ftyp, outs)
 	var offset uintptr
 	for i, out := range outs {

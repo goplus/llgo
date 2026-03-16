@@ -385,20 +385,33 @@ func (p *context) stringData(b llssa.Builder, args []ssa.Value) (ret llssa.Expr)
 
 // func funcAddr(fn any) unsafe.Pointer
 func (p *context) funcAddr(b llssa.Builder, args []ssa.Value) llssa.Expr {
-	if len(args) == 1 {
-		if fn, ok := args[0].(*ssa.MakeInterface); ok {
-			switch f := fn.X.(type) {
-			case *ssa.Function:
-				if aFn, _, _ := p.compileFunction(f); aFn != nil {
-					return aFn.Expr
-				}
-			default:
-				v := p.compileValue(b, f)
-				if _, ok := v.Type.RawType().Underlying().(*types.Signature); ok {
-					return v
-				}
+	if len(args) != 1 {
+		panic("funcAddr(<func>): invalid arguments")
+	}
+	src := args[0]
+	if fn, ok := src.(*ssa.MakeInterface); ok {
+		src = fn.X
+	}
+	switch f := src.(type) {
+	case *ssa.Function:
+		if aFn, _, _ := p.compileFunction(f); aFn != nil {
+			return aFn.Expr
+		}
+		panic(fmt.Sprintf("funcAddr(<func>): unsupported ssa.Function %s synthetic=%q", f.String(), f.Synthetic))
+	default:
+		v := p.compileValue(b, f)
+		if _, ok := v.Type.RawType().Underlying().(*types.Signature); ok {
+			return v
+		}
+		if st, ok := types.Unalias(v.Type.RawType()).Underlying().(*types.Struct); ok && llssa.IsClosure(st) {
+			return b.Field(v, 0)
+		}
+		if pt, ok := types.Unalias(v.Type.RawType()).Underlying().(*types.Pointer); ok {
+			if st, ok := types.Unalias(pt.Elem()).Underlying().(*types.Struct); ok && llssa.IsClosure(st) {
+				return b.Field(b.Load(v), 0)
 			}
 		}
+		panic(fmt.Sprintf("funcAddr(<func>): invalid argument %T compiled as %v", f, v.Type.RawType()))
 	}
 	panic("funcAddr(<func>): invalid arguments")
 }
@@ -722,15 +735,41 @@ func (p *context) pkgNoInit(pkg *types.Package) bool {
 	return false
 }
 
+func recoverTokenExprCL(b llssa.Builder, fn llssa.Expr) llssa.Expr {
+	prog := b.Prog
+	if fn.IsNil() {
+		return prog.Nil(prog.VoidPtr())
+	}
+	raw := types.Unalias(fn.Type.RawType())
+	switch t := raw.(type) {
+	case *types.Signature:
+		return b.Convert(prog.VoidPtr(), fn)
+	case *types.Named:
+		raw = t.Underlying()
+	}
+	if st, ok := raw.(*types.Struct); ok && llssa.IsClosure(st) {
+		return b.Convert(prog.VoidPtr(), b.Field(fn, 0))
+	}
+	return prog.Nil(prog.VoidPtr())
+}
+
 // -----------------------------------------------------------------------------
 
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
 	parentSynthetic := p.goFn != nil && p.goFn.Synthetic != ""
 	keepRecoverContext := false
-	if fn := p.goFn; fn != nil && fn.Parent() != nil && fn.Pkg != nil && fn.Pkg.Pkg != nil {
-		if fn.Pkg.Pkg.Path() == "github.com/goplus/llgo/runtime/internal/lib/reflect" &&
-			strings.HasPrefix(fn.Name(), "MakeFunc$") && fn.Parent().Name() == "MakeFunc" {
-			keepRecoverContext = true
+	if fn := p.goFn; fn != nil && fn.Pkg != nil && fn.Pkg.Pkg != nil {
+		if pkgPath := fn.Pkg.Pkg.Path(); pkgPath == "reflect" || pkgPath == "github.com/goplus/llgo/runtime/internal/lib/reflect" {
+			if fn.Parent() != nil && strings.HasPrefix(fn.Name(), "MakeFunc$") && fn.Parent().Name() == "MakeFunc" {
+				keepRecoverContext = true
+			}
+			switch fn.Name() {
+			case "makeFuncCallback0", "makeFuncCallback1", "makeFuncCallbackN", "callMakeFunc":
+				// reflect.MakeFunc crosses the libffi callback bridge before it invokes
+				// the user closure. Clearing the recover token here would make recover()
+				// inside the user-provided function observe nil.
+				keepRecoverContext = true
+			}
 		}
 	}
 	setRecoverTokenFn := func() llssa.Function {
@@ -740,7 +779,16 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
 	}
 	callMaybeSuspendRecover := func(fn llssa.Expr, args []llssa.Expr, allowSuspend bool) llssa.Expr {
-		if act != llssa.Call || !allowSuspend || parentSynthetic || keepRecoverContext || p.pkg.Path() == llssa.PkgRuntime {
+		if act != llssa.Call || !allowSuspend || p.pkg.Path() == llssa.PkgRuntime {
+			return b.Do(act, fn, llssa.Builder.Call, args...)
+		}
+		if keepRecoverContext {
+			prev := b.InlineCall(setRecoverTokenFn().Expr, recoverTokenExprCL(b, fn))
+			ret := b.Do(act, fn, llssa.Builder.Call, args...)
+			b.InlineCall(setRecoverTokenFn().Expr, prev)
+			return ret
+		}
+		if parentSynthetic {
 			return b.Do(act, fn, llssa.Builder.Call, args...)
 		}
 		prev := b.InlineCall(setRecoverTokenFn().Expr, b.Prog.Nil(b.Prog.VoidPtr()))
