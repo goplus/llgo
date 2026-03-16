@@ -517,10 +517,42 @@ func (b Builder) abiType(t types.Type) Expr {
 	}), prog.AbiTypePtr()}
 }
 
-func (p Package) getAbiTypes(name string) Expr {
+func (p Package) getAbiTypes(abiInit int, name string) Expr {
 	prog := p.Prog
-	names := make([]string, 0, len(prog.abiSymbol))
-	for k := range prog.abiSymbol {
+	var names []string
+	for k, sym := range prog.abiSymbol {
+		switch sym.RawType().(type) {
+		case *types.Array:
+			if abiInit&ReflectArrayOf == 0 {
+				continue
+			}
+		case *types.Chan:
+			if abiInit&ReflectChanOf == 0 {
+				continue
+			}
+		case *types.Signature:
+			if abiInit&ReflectFuncOf == 0 && abiInit&ReflectMethodMask == 0 {
+				continue
+			}
+		case *types.Map:
+			if abiInit&ReflectMapOf == 0 {
+				continue
+			}
+		case *types.Pointer:
+			if abiInit&ReflectPointerTo == 0 {
+				continue
+			}
+		case *types.Slice:
+			if abiInit&ReflectSliceOf == 0 {
+				continue
+			}
+		case *types.Struct:
+			if abiInit&ReflectStructOf == 0 {
+				continue
+			}
+		default:
+			continue
+		}
 		names = append(names, k)
 	}
 	sort.Strings(names)
@@ -553,7 +585,7 @@ func (p Package) getAbiTypes(name string) Expr {
 	return g.Expr
 }
 
-func (p Package) InitAbiTypes(fname string) Function {
+func (p Package) InitAbiTypes(abiInit int, fname string) Function {
 	if len(p.Prog.abiSymbol) == 0 {
 		return nil
 	}
@@ -561,7 +593,7 @@ func (p Package) InitAbiTypes(fname string) Function {
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
 	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
-	b.Store(g.Expr, b.Load(p.getAbiTypes(fname)))
+	b.Store(g.Expr, b.Load(p.getAbiTypes(abiInit, fname)))
 	b.Return()
 	return initFn
 }

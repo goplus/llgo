@@ -1375,7 +1375,7 @@ func TestAbiTables(t *testing.T) {
 	bNE := fnNE.MakeBody(1)
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 
-	fn := pkg.InitAbiTypes(pkg.Path() + ".init$abitables")
+	fn := pkg.InitAbiTypes(ReflectStructOf, pkg.Path()+".init$abitables")
 	s := fn.impl.String()
 	if !strings.Contains(s, `define void @"foo/bar.init$abitables"()`) ||
 		!strings.Contains(s, `@"foo/bar.init$abitables$slice"`) ||
