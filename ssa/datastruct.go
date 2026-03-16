@@ -783,23 +783,8 @@ func (b Builder) toPtr(x Expr) (Expr, func()) {
 	}
 }
 
-func recvTempCanBeZeroed(t Type) bool {
-	switch t.kind {
-	case vkSlice, vkString, vkStruct, vkArray, vkTuple, vkIface, vkEface, vkClosure:
-		return false
-	default:
-		return true
-	}
-}
-
-func (b Builder) materializeRecvValue(ptr Expr, t Type) Expr {
-	val := b.Load(ptr)
-	if recvTempCanBeZeroed(t) {
-		return val
-	}
-	stable := b.Alloc(t, false)
-	b.Store(stable, val)
-	return b.Load(stable)
+func (b Builder) materializeRecvValue(ptr Expr) Expr {
+	return b.Load(ptr)
 }
 
 func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
@@ -813,20 +798,18 @@ func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	ok := b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
 	zeroRecvTmp := func() {
 		// Drop references held in the hidden receive temporary as soon as the
-		// loaded value is materialized. Otherwise large pointer-bearing channel
-		// elements can remain live across later GC calls in the same frame.
-		if !recvTempCanBeZeroed(etyp) {
-			return
-		}
+		// loaded value is materialized. The loaded SSA value remains usable after
+		// we clear the stack slot, but conservative stack scanning should no
+		// longer see stale pointers in the compiler-generated receive temporary.
 		b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), eltSize)
 	}
 	if commaOk {
-		val := b.materializeRecvValue(ptr, etyp)
+		val := b.materializeRecvValue(ptr)
 		zeroRecvTmp()
 		t := prog.Struct(etyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok.impl)
 	} else {
-		val := b.materializeRecvValue(ptr, etyp)
+		val := b.materializeRecvValue(ptr)
 		zeroRecvTmp()
 		return val
 	}

@@ -1114,6 +1114,36 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i
 `)
 }
 
+func TestRecvZeroesPointerBearingTemp(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	chType := types.NewChan(types.SendRecv, types.NewSlice(types.Typ[types.Byte]))
+	params := types.NewTuple(types.NewVar(0, nil, "ch", chType))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Recv(fn.Param(0), true)
+	b.Return()
+
+	ir := pkg.String()
+	sliceAlloca := `alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`
+	if got := strings.Count(ir, sliceAlloca); got != 1 {
+		t.Fatalf("recv should use one slice temp, got %d:\n%s", got, ir)
+	}
+	if strings.Contains(ir, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("recv should not spill slice result into a second temp:\n%s", ir)
+	}
+	if got := strings.Count(ir, "call void @llvm.memset"); got != 2 {
+		t.Fatalf("recv temp should be zeroed before and after use, got %d memsets:\n%s", got, ir)
+	}
+}
+
 func TestBasicType(t *testing.T) {
 	type typeInfo struct {
 		typ  Type
