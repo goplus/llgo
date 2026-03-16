@@ -797,21 +797,25 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 		return b.Pkg.NewFunc(llssa.PkgRuntime+".RestoreRecoverToken",
 			types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
 	}
-	callMaybeSuspendRecover := func(fn llssa.Expr, args []llssa.Expr, allowSuspend bool) llssa.Expr {
-		if act != llssa.Call || !allowSuspend || p.pkg.Path() == llssa.PkgRuntime {
+	callMaybeSuspendRecover := func(fn llssa.Expr, allowSuspend bool, compileArgs func() []llssa.Expr) llssa.Expr {
+		doCall := func() llssa.Expr {
+			args := compileArgs()
 			return b.Do(act, fn, llssa.Builder.Call, args...)
+		}
+		if act != llssa.Call || !allowSuspend || p.pkg.Path() == llssa.PkgRuntime {
+			return doCall()
 		}
 		if keepRecoverContext || wrapperRecoverContext {
 			prev := b.InlineCall(forwardRecoverTokenFn().Expr, recoverTokenExprCL(b, fn))
-			ret := b.Do(act, fn, llssa.Builder.Call, args...)
+			ret := doCall()
 			b.InlineCall(restoreRecoverTokenFn().Expr, prev)
 			return ret
 		}
 		if parentSynthetic {
-			return b.Do(act, fn, llssa.Builder.Call, args...)
+			return doCall()
 		}
 		prev := b.InlineCall(swapRecoverTokenFn().Expr, b.Prog.Nil(b.Prog.VoidPtr()))
-		ret := b.Do(act, fn, llssa.Builder.Call, args...)
+		ret := doCall()
 		b.InlineCall(restoreRecoverTokenFn().Expr, prev)
 		return ret
 	}
@@ -831,8 +835,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 		if llssa.HasNameValist(call.Signature()) {
 			hasVArg = fnHasVArg
 		}
-		args := p.compileValuesForInstr(b, owner, call.Args, hasVArg)
-		ret = callMaybeSuspendRecover(fn, args, true)
+		ret = callMaybeSuspendRecover(fn, true, func() []llssa.Expr {
+			return p.compileValuesForInstr(b, owner, call.Args, hasVArg)
+		})
 		return
 	}
 	kind := p.funcKind(cv)
@@ -884,8 +889,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 			}
 			panic("unsafe.Offsetof: unsupported argument")
 		} else {
-			args := p.compileValuesForInstr(b, owner, args, kind)
-			ret = callMaybeSuspendRecover(llssa.Builtin(fn), args, fn != "recover" && fn != "panic")
+			ret = callMaybeSuspendRecover(llssa.Builtin(fn), fn != "recover" && fn != "panic", func() []llssa.Expr {
+				return p.compileValuesForInstr(b, owner, args, kind)
+			})
 		}
 	case *ssa.Function:
 		if isKeepAliveFunc(cv) && len(args) == 1 {
@@ -894,7 +900,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				helper := b.Pkg.NewFunc("runtime.KeepAlivePointer",
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
 				p.clearPreCallValues(b, owner)
-				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{ptrArg}, false)
+				callMaybeSuspendRecover(helper.Expr, false, func() []llssa.Expr {
+					return []llssa.Expr{ptrArg}
+				})
 				return
 			}
 		}
@@ -910,7 +918,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
 				finalizer := p.compileValue(b, args[1])
 				p.clearPreCallValues(b, owner)
-				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{objType, objKey, finalizer}, false)
+				callMaybeSuspendRecover(helper.Expr, false, func() []llssa.Expr {
+					return []llssa.Expr{objType, objKey, finalizer}
+				})
 				return
 			}
 		}
@@ -920,15 +930,31 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 		switch ftype {
 		case cFunc:
 			p.inCFunc = true
-			args := p.compileValuesForInstr(b, owner, args, kind)
-			p.inCFunc = false
-			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
+			ret = callMaybeSuspendRecover(aFn.Expr, suspend, func() []llssa.Expr {
+				args := p.compileValuesForInstr(b, owner, args, kind)
+				p.inCFunc = false
+				return args
+			})
 		case goFunc:
-			args := p.compileValuesForInstr(b, owner, args, kind)
-			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
+			callee := aFn.Expr
+			hiddenParamIdx := -1
+			if plan := p.hiddenParamWrapperPlanFor(aFn.Name(), cv); plan != nil {
+				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
+					callee = hiddenFn.Expr
+					hiddenParamIdx = plan.paramIdx
+				}
+			}
+			ret = callMaybeSuspendRecover(callee, suspend, func() []llssa.Expr {
+				args := p.compileValuesForInstr(b, owner, args, kind)
+				if hiddenParamIdx >= 0 {
+					args[hiddenParamIdx] = p.hiddenPointerKey(b, args[hiddenParamIdx])
+				}
+				return args
+			})
 		case pyFunc:
-			args := p.compileValuesForInstr(b, owner, args, kind)
-			ret = callMaybeSuspendRecover(pyFn.Expr, args, suspend)
+			ret = callMaybeSuspendRecover(pyFn.Expr, suspend, func() []llssa.Expr {
+				return p.compileValuesForInstr(b, owner, args, kind)
+			})
 		case llgoPyList:
 			args := p.compileValuesForInstr(b, owner, args, fnHasVArg)
 			ret = b.PyList(args...)
@@ -1032,8 +1058,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 		}
 	default:
 		fn := p.compileValue(b, cv)
-		args := p.compileValuesForInstr(b, owner, args, kind)
-		ret = callMaybeSuspendRecover(fn, args, true)
+		ret = callMaybeSuspendRecover(fn, true, func() []llssa.Expr {
+			return p.compileValuesForInstr(b, owner, args, kind)
+		})
 	}
 	return
 }

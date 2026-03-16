@@ -479,10 +479,18 @@ func f() {
 	}
 	rest := body[:callIdx]
 	loadIdx := strings.LastIndex(rest, "load ptr, ptr")
+	hiddenLoadIdx := strings.LastIndex(rest, "load i64, ptr")
+	if hiddenLoadIdx > loadIdx {
+		loadIdx = hiddenLoadIdx
+	}
 	if loadIdx < 0 {
 		t.Fatalf("missing pointer slot load before foo.use:\n%s", body)
 	}
 	clearIdx := strings.LastIndex(rest, "store ptr null, ptr")
+	hiddenClearIdx := strings.LastIndex(rest, "store i64 65535, ptr")
+	if hiddenClearIdx > clearIdx {
+		clearIdx = hiddenClearIdx
+	}
 	if clearIdx < 0 {
 		t.Fatalf("missing pointer slot clear before foo.use:\n%s", body)
 	}

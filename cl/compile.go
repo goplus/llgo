@@ -110,32 +110,34 @@ type pkgInfo struct {
 type none = struct{}
 
 type context struct {
-	prog        llssa.Program
-	pkg         llssa.Package
-	fn          llssa.Function
-	goFn        *ssa.Function
-	fset        *token.FileSet
-	goProg      *ssa.Program
-	goTyps      *types.Package
-	goPkg       *ssa.Package
-	pyMod       string
-	skips       map[string]none
-	loaded      map[*types.Package]*pkgInfo // loaded packages
-	bvals       map[ssa.Value]llssa.Expr    // block values
-	vblks       map[ssa.Value]llssa.BasicBlock
-	btails      map[*ssa.BasicBlock]llssa.BasicBlock
-	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
-	recvTuples  map[ssa.Value]*recvTupleState
-	stackClears map[ssa.Instruction][]*ssa.Alloc
-	hiddenPtrAllocs map[*ssa.Alloc]bool
-	paramClears map[ssa.Instruction][]int
+	prog             llssa.Program
+	pkg              llssa.Package
+	fn               llssa.Function
+	goFn             *ssa.Function
+	fset             *token.FileSet
+	goProg           *ssa.Program
+	goTyps           *types.Package
+	goPkg            *ssa.Package
+	pyMod            string
+	skips            map[string]none
+	loaded           map[*types.Package]*pkgInfo // loaded packages
+	bvals            map[ssa.Value]llssa.Expr    // block values
+	vblks            map[ssa.Value]llssa.BasicBlock
+	btails           map[*ssa.BasicBlock]llssa.BasicBlock
+	vargs            map[*ssa.Alloc][]llssa.Expr // varargs
+	recvTuples       map[ssa.Value]*recvTupleState
+	stackClears      map[ssa.Instruction][]*ssa.Alloc
+	hiddenPtrAllocs  map[*ssa.Alloc]bool
+	paramClears      map[ssa.Instruction][]int
 	paramValueClears map[ssa.Instruction][]int
-	valuePreClears  map[ssa.Instruction][]ssa.Value
-	valuePostClears map[ssa.Instruction][]ssa.Value
-	valueSlots      map[ssa.Value]llssa.Expr
-	paramShadow map[int]llssa.Expr
-	paramSlots  map[int]llssa.Expr
-	paramDIVars map[*types.Var]llssa.DIVar
+	valuePreClears   map[ssa.Instruction][]ssa.Value
+	valuePostClears  map[ssa.Instruction][]ssa.Value
+	valueSlots       map[ssa.Value]llssa.Expr
+	hiddenValueSlots map[ssa.Value]bool
+	hiddenParamKeys  map[int]bool
+	paramShadow      map[int]llssa.Expr
+	paramSlots       map[int]llssa.Expr
+	paramDIVars      map[*types.Var]llssa.DIVar
 
 	patches  Patches
 	blkInfos []blocks.Info
@@ -372,6 +374,207 @@ func genericTypeArgsOf(f *ssa.Function) []types.Type {
 	return nil
 }
 
+type hiddenParamWrapperPlan struct {
+	paramIdx   int
+	hiddenSig  *types.Signature
+	hiddenName string
+}
+
+func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *types.Signature {
+	if sig == nil || len(hidden) == 0 {
+		return sig
+	}
+	params := sig.Params()
+	var recv *types.Var
+	if sig.Recv() != nil {
+		recv = types.NewParam(sig.Recv().Pos(), sig.Recv().Pkg(), sig.Recv().Name(), sig.Recv().Type())
+	}
+	newParams := make([]*types.Var, params.Len())
+	for i := 0; i < params.Len(); i++ {
+		param := params.At(i)
+		typ := param.Type()
+		if hidden[i] {
+			typ = types.Typ[types.Uintptr]
+		}
+		newParams[i] = types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ)
+	}
+	return types.NewSignatureType(recv, nil, nil, types.NewTuple(newParams...), sig.Results(), sig.Variadic())
+}
+
+func hasSelfCall(fn *ssa.Function) bool {
+	if fn == nil {
+		return false
+	}
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			switch instr := instr.(type) {
+			case *ssa.Call:
+				if callee, ok := instr.Call.Value.(*ssa.Function); ok && callee == fn {
+					return true
+				}
+			case *ssa.Defer:
+				if callee, ok := instr.Call.Value.(*ssa.Function); ok && callee == fn {
+					return true
+				}
+			case *ssa.Go:
+				if callee, ok := instr.Call.Value.(*ssa.Function); ok && callee == fn {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hiddenParamWrapperPlan {
+	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
+		return nil
+	}
+	if f.Signature == nil || f.Signature.Recv() != nil || f.Signature.Variadic() {
+		return nil
+	}
+	if !functionHasDefer(f) || isCgoExternSymbol(f) {
+		return nil
+	}
+	obj, ok := f.Object().(*types.Func)
+	if !ok || obj.Exported() {
+		return nil
+	}
+	ptrIdx := -1
+	for i, param := range f.Params {
+		if _, ok := param.Type().Underlying().(*types.Pointer); ok {
+			if ptrIdx >= 0 {
+				return nil
+			}
+			if containsInstantiatedNamedType(param.Type(), map[types.Type]bool{}) {
+				return nil
+			}
+			ptrIdx = i
+		}
+	}
+	if ptrIdx < 0 {
+		return nil
+	}
+	callsites, ok := p.staticPointerParamCallsites(f)
+	if !ok || len(callsites) == 0 {
+		return nil
+	}
+	hidden := map[int]bool{ptrIdx: true}
+	return &hiddenParamWrapperPlan{
+		paramIdx:   ptrIdx,
+		hiddenSig:  rewriteHiddenParamSignature(p.patchType(f.Signature).(*types.Signature), hidden),
+		hiddenName: name + "$hiddenparam",
+	}
+}
+
+func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, state pkgState, dbgEnabled, dbgSymsEnabled, isCgo bool, hiddenParamKeys map[int]bool) {
+	p.inits = append(p.inits, func() {
+		p.fn = fn
+		p.goFn = f
+		p.state = state
+		p.hiddenParamKeys = hiddenParamKeys
+		defer func() {
+			p.fn = nil
+			p.goFn = nil
+			p.hiddenParamKeys = nil
+		}()
+		p.phis = nil
+		if dbgSymsEnabled {
+			p.paramDIVars = make(map[*types.Var]llssa.DIVar)
+		} else {
+			p.paramDIVars = nil
+		}
+		if debugGoSSA {
+			f.WriteTo(os.Stderr)
+		}
+		if debugInstr {
+			log.Println("==> FuncBody", fn.Name())
+		}
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		p.bvals = make(map[ssa.Value]llssa.Expr)
+		p.vblks = make(map[ssa.Value]llssa.BasicBlock)
+		p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
+		p.recvTuples = make(map[ssa.Value]*recvTupleState)
+		p.stackClears = p.collectStackClearPlans(f)
+		p.hiddenPtrAllocs = p.collectHiddenPointerAllocs(f)
+		p.paramClears = p.collectParamClearPlans(f)
+		p.paramValueClears = p.collectParamValueClearPlans(f)
+		p.valuePreClears, p.valuePostClears = p.collectPointerValueClearPlans(f)
+		p.valueSlots = make(map[ssa.Value]llssa.Expr)
+		p.hiddenValueSlots = p.collectHiddenPointerValueSlots()
+		p.paramShadow = make(map[int]llssa.Expr)
+		p.paramSlots = make(map[int]llssa.Expr)
+		off := make([]int, len(f.Blocks))
+		if isCgo {
+			p.cgoArgs = make([]llssa.Expr, len(f.Params))
+			for i, param := range f.Params {
+				p.cgoArgs[i] = p.compileValue(b, param)
+			}
+		} else {
+			for i, block := range f.Blocks {
+				off[i] = p.compilePhis(b, block)
+			}
+		}
+		p.blkInfos = blocks.Infos(f.Blocks)
+		i := 0
+		for {
+			block := f.Blocks[i]
+			doModInit := (i == 1 && f.Name() == "init" && f.Signature.Recv() == nil)
+			p.compileBlock(b, block, off[i], doModInit)
+			if isCgo {
+				break
+			}
+			if i = p.blkInfos[i].Next; i < 0 {
+				break
+			}
+		}
+		for _, phi := range p.phis {
+			phi()
+		}
+		b.EndBuild()
+	})
+}
+
+func (p *context) enqueueHiddenParamWrapper(fn, hiddenFn llssa.Function, f *ssa.Function, hiddenParamKeys map[int]bool, dbgEnabled bool) {
+	p.inits = append(p.inits, func() {
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		entry := fn.Block(0)
+		b.SetBlock(entry)
+		args := make([]llssa.Expr, len(f.Params))
+		for i := range f.Params {
+			arg := b.Param(i)
+			if hiddenParamKeys[i] {
+				arg = p.hiddenPointerKey(b, arg)
+			}
+			args[i] = arg
+		}
+		call := b.Call(hiddenFn.Expr, args...)
+		switch n := f.Signature.Results().Len(); n {
+		case 0:
+			b.Return()
+		case 1:
+			b.Return(call)
+		default:
+			results := make([]llssa.Expr, n)
+			for i := 0; i < n; i++ {
+				results[i] = b.Extract(call, i)
+			}
+			b.Return(results...)
+		}
+		b.EndBuild()
+	})
+}
+
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
@@ -413,96 +616,57 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
 		fn.SetGenericTypeArgs(targs)
 	}
+	isCgo := isCgoExternSymbol(f)
+	var hiddenPlan *hiddenParamWrapperPlan
+	var bodyFn llssa.Function
+	var hiddenParamKeys map[int]bool
+	bodyFn = fn
+	if !hasCtx && !isCgo {
+		hiddenPlan = p.hiddenParamWrapperPlanFor(name, f)
+		if hiddenPlan != nil {
+			hiddenParamKeys = map[int]bool{hiddenPlan.paramIdx: true}
+			bodyFn = pkg.FuncOf(hiddenPlan.hiddenName)
+			if bodyFn == nil {
+				bodyFn = pkg.NewFuncEx(hiddenPlan.hiddenName, hiddenPlan.hiddenSig, llssa.Background(ftype), false, isInstance(f))
+				bodyFn.SetGenericTypeArgs(genericTypeArgsOf(f))
+			} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+				bodyFn.SetGenericTypeArgs(targs)
+			}
+			bodyFn.Inline(llssa.NoInline)
+		}
+	}
 	if sharedDeferFunc0Eligible(f) {
-		fn.SetSharedDeferFunc0(true)
+		bodyFn.SetSharedDeferFunc0(true)
 	}
 	if needsOptNone(f) {
-		fn.Inline(llssa.NoInline)
-		fn.Inline(llssa.OptNone)
+		bodyFn.Inline(llssa.NoInline)
+		bodyFn.Inline(llssa.OptNone)
+		if hiddenPlan != nil {
+			fn.Inline(llssa.NoInline)
+			fn.Inline(llssa.OptNone)
+		}
 	}
-	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
 		p.cgoArgs = nil
 		p.cgoErrno = llssa.Nil
 		if isCgo {
 			fn.MakeBlocks(1)
+		} else if hiddenPlan != nil {
+			fn.MakeBlocks(1)
+			bodyFn.MakeBlocks(nblk) // to set bodyFn.HasBody() = true
 		} else {
 			fn.MakeBlocks(nblk) // to set fn.HasBody() = true
 		}
 		if f.Recover != nil { // set recover block
-			fn.SetRecover(fn.Block(f.Recover.Index))
+			bodyFn.SetRecover(bodyFn.Block(f.Recover.Index))
 		}
 		dbgEnabled := enableDbg && (f == nil || f.Origin() == nil)
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
-		p.inits = append(p.inits, func() {
-			p.fn = fn
-			p.goFn = f
-			p.state = state // restore pkgState when compiling funcBody
-			defer func() {
-				p.fn = nil
-				p.goFn = nil
-			}()
-			p.phis = nil
-			if dbgSymsEnabled {
-				p.paramDIVars = make(map[*types.Var]llssa.DIVar)
-			} else {
-				p.paramDIVars = nil
-			}
-			if debugGoSSA {
-				f.WriteTo(os.Stderr)
-			}
-			if debugInstr {
-				log.Println("==> FuncBody", name)
-			}
-			b := fn.NewBuilder()
-			if dbgEnabled {
-				pos := p.goProg.Fset.Position(f.Pos())
-				bodyPos := p.getFuncBodyPos(f)
-				b.DebugFunction(fn, pos, bodyPos)
-			}
-			p.bvals = make(map[ssa.Value]llssa.Expr)
-			p.vblks = make(map[ssa.Value]llssa.BasicBlock)
-			p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
-			p.recvTuples = make(map[ssa.Value]*recvTupleState)
-			p.stackClears = p.collectStackClearPlans(f)
-			p.hiddenPtrAllocs = p.collectHiddenPointerAllocs(f)
-			p.paramClears = p.collectParamClearPlans(f)
-			p.paramValueClears = p.collectParamValueClearPlans(f)
-			p.valuePreClears, p.valuePostClears = p.collectPointerValueClearPlans(f)
-			p.valueSlots = make(map[ssa.Value]llssa.Expr)
-			p.paramShadow = make(map[int]llssa.Expr)
-			p.paramSlots = make(map[int]llssa.Expr)
-			off := make([]int, len(f.Blocks))
-			if isCgo {
-				p.cgoArgs = make([]llssa.Expr, len(f.Params))
-				for i, param := range f.Params {
-					p.cgoArgs[i] = p.compileValue(b, param)
-				}
-			} else {
-				for i, block := range f.Blocks {
-					off[i] = p.compilePhis(b, block)
-				}
-			}
-			p.blkInfos = blocks.Infos(f.Blocks)
-			i := 0
-			for {
-				block := f.Blocks[i]
-				doModInit := (i == 1 && isInit)
-				p.compileBlock(b, block, off[i], doModInit)
-				if isCgo {
-					// just process first block for performance
-					break
-				}
-				if i = p.blkInfos[i].Next; i < 0 {
-					break
-				}
-			}
-			for _, phi := range p.phis {
-				phi()
-			}
-			b.EndBuild()
-		})
+		if hiddenPlan != nil {
+			p.enqueueHiddenParamWrapper(fn, bodyFn, f, hiddenParamKeys, dbgEnabled)
+		}
+		p.enqueueCompileFuncBody(bodyFn, f, state, dbgEnabled, dbgSymsEnabled, isCgo, hiddenParamKeys)
 		for _, af := range f.AnonFuncs {
 			p.compileFuncDecl(pkg, af)
 		}
@@ -1489,6 +1653,9 @@ func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][
 		return plans
 	}
 	for idx, param := range fn.Params {
+		if p.hiddenParamKeys[idx] {
+			continue
+		}
 		pt, ok := param.Type().Underlying().(*types.Pointer)
 		if !ok || pt == nil {
 			continue
@@ -1520,6 +1687,9 @@ func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][
 func (p *context) collectParamValueClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
 	plans := make(map[ssa.Instruction][]int)
 	for idx, param := range fn.Params {
+		if p.hiddenParamKeys[idx] {
+			continue
+		}
 		pt, ok := param.Type().Underlying().(*types.Pointer)
 		if !ok || pt == nil {
 			continue
@@ -1836,9 +2006,46 @@ func (p *context) initValueSlots(b llssa.Builder, fn *ssa.Function) {
 			if !ok || !values[val] {
 				continue
 			}
+			if p.hiddenValueSlots[val] {
+				p.valueSlots[val] = b.AllocaT(p.type_(types.Typ[types.Uintptr], llssa.InGo))
+				continue
+			}
 			p.valueSlots[val] = b.AllocaT(p.type_(val.Type(), llssa.InGo))
 		}
 	}
+}
+
+func (p *context) canHidePointerValue(v ssa.Value) bool {
+	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
+		return false
+	}
+	if _, ok := v.Type().Underlying().(*types.Pointer); !ok {
+		return false
+	}
+	switch v.(type) {
+	case *ssa.Alloc, *ssa.Parameter:
+		return false
+	}
+	return true
+}
+
+func (p *context) collectHiddenPointerValueSlots() map[ssa.Value]bool {
+	ret := make(map[ssa.Value]bool)
+	for _, vals := range p.valuePreClears {
+		for _, v := range vals {
+			if p.canHidePointerValue(v) {
+				ret[v] = true
+			}
+		}
+	}
+	for _, vals := range p.valuePostClears {
+		for _, v := range vals {
+			if p.canHidePointerValue(v) {
+				ret[v] = true
+			}
+		}
+	}
+	return ret
 }
 
 func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
@@ -1965,6 +2172,10 @@ func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction)
 	for _, v := range p.valuePostClears[instr] {
 		slot, ok := p.valueSlots[v]
 		if !ok || slot.Type == nil {
+			continue
+		}
+		if p.hiddenValueSlots[v] {
+			b.Store(slot, p.hiddenPointerKey(b, p.prog.Nil(p.type_(v.Type(), llssa.InGo))))
 			continue
 		}
 		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
@@ -2118,6 +2329,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	if asValue {
 		if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
 			if _, compiled := p.bvals[iv]; compiled {
+				if p.hiddenValueSlots[iv] {
+					return p.hiddenPointerDecode(b, b.Load(slot), iv.Type())
+				}
 				return b.Load(slot)
 			}
 		}
@@ -2423,7 +2637,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
 	if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil && ret.Type != nil {
-		b.Store(slot, ret)
+		if p.hiddenValueSlots[iv] {
+			b.Store(slot, p.hiddenPointerKey(b, ret))
+		} else {
+			b.Store(slot, ret)
+		}
 	}
 	p.bvals[iv] = ret
 	if usesSplitPhiIncoming(iv) {
@@ -2646,6 +2864,9 @@ func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) l
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if slot, ok := p.valueSlots[v]; ok && slot.Type != nil {
 		if _, compiled := p.bvals[v]; compiled {
+			if p.hiddenValueSlots[v] {
+				return p.hiddenPointerDecode(b, b.Load(slot), v.Type())
+			}
 			return b.Load(slot)
 		}
 	}
@@ -2660,6 +2881,9 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		fn := v.Parent()
 		for idx, param := range fn.Params {
 			if param == v {
+				if p.hiddenParamKeys[idx] {
+					return p.hiddenPointerDecode(b, b.Param(idx), v.Type())
+				}
 				if shadow, ok := p.paramShadow[idx]; ok && shadow.Type != nil {
 					return shadow
 				}
@@ -2741,6 +2965,11 @@ func (p *context) clearPreCallValues(b llssa.Builder, owner ssa.Instruction) {
 		}
 		slot, ok := p.valueSlots[v]
 		if !ok || slot.Type == nil {
+			continue
+		}
+		if p.hiddenValueSlots[v] {
+			b.Store(slot, p.hiddenPointerKey(b, p.prog.Nil(p.type_(v.Type(), llssa.InGo))))
+			cleared[v] = true
 			continue
 		}
 		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
