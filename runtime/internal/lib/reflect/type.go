@@ -21,6 +21,7 @@
 package reflect
 
 import (
+	"internal/abi"
 	"internal/goarch"
 	"strconv"
 	"unicode"
@@ -29,7 +30,6 @@ import (
 
 	"sync"
 
-	"github.com/goplus/llgo/runtime/abi"
 	clite "github.com/goplus/llgo/runtime/internal/clite"
 	_ "github.com/goplus/llgo/runtime/internal/runtime"
 )

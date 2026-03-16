@@ -16,13 +16,7 @@
 
 package abi
 
-import (
-	"unsafe"
-
-	"github.com/goplus/llgo/runtime/abi"
-)
-
-type InterfaceType = abi.InterfaceType
+import "unsafe"
 
 func NoEscape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
@@ -35,37 +29,6 @@ func FuncPCABI0(f interface{}) uintptr
 func FuncPCABIInternal(f interface{}) uintptr {
 	return FuncPCABI0(f)
 }
-
-type Type = abi.Type
-
-const (
-	Array         = abi.Array
-	Bool          = abi.Bool
-	Chan          = abi.Chan
-	Complex64     = abi.Complex64
-	Complex128    = abi.Complex128
-	Func          = abi.Func
-	Float32       = abi.Float32
-	Float64       = abi.Float64
-	Int           = abi.Int
-	Int8          = abi.Int8
-	Int16         = abi.Int16
-	Int32         = abi.Int32
-	Int64         = abi.Int64
-	Interface     = abi.Interface
-	Map           = abi.Map
-	Pointer       = abi.Pointer
-	Slice         = abi.Slice
-	String        = abi.String
-	Struct        = abi.Struct
-	Uint          = abi.Uint
-	Uint8         = abi.Uint8
-	Uint16        = abi.Uint16
-	Uint32        = abi.Uint32
-	Uint64        = abi.Uint64
-	Uintptr       = abi.Uintptr
-	UnsafePointer = abi.UnsafePointer
-)
 
 type EmptyInterface struct {
 	Type *Type

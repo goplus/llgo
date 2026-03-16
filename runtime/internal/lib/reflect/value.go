@@ -22,12 +22,12 @@ package reflect
 
 import (
 	"errors"
+	"internal/abi"
 	"internal/goarch"
 	"internal/itoa"
 	"math"
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/abi"
 	"github.com/goplus/llgo/runtime/internal/clite/bitcast"
 	"github.com/goplus/llgo/runtime/internal/ffi"
 	"github.com/goplus/llgo/runtime/internal/runtime"
@@ -2119,7 +2119,7 @@ func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
 func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int {
 	rdst := *(*runtime.Slice)(unsafe.Pointer(&dst))
 	rsrc := *(*runtime.Slice)(unsafe.Pointer(&src))
-	return runtime.Typedslicecopy(t, rdst, rsrc)
+	return runtime.Typedslicecopy((*runtime.Type)(unsafe.Pointer(t)), rdst, rsrc)
 }
 
 /*
@@ -2595,7 +2595,7 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
-	} else if v.flag&flagIndir == 0 && runtime.DirectIfaceData(t) {
+	} else if v.flag&flagIndir == 0 && directIfaceData(t) {
 		*(*unsafe.Pointer)(p) = unsafe.Pointer(&v.ptr)
 	} else {
 		*(*unsafe.Pointer)(p) = v.ptr
@@ -2603,10 +2603,14 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 }
 
 func ifacePtrData(i *nonEmptyInterface) unsafe.Pointer {
-	if runtime.DirectIfaceData(i.itab.typ) {
+	if directIfaceData(i.itab.typ) {
 		return unsafe.Pointer(&i.word)
 	}
 	return i.word
+}
+
+func directIfaceData(typ *abi.Type) bool {
+	return typ != nil && typ.IsDirectIface()
 }
 
 var stringType = rtypeOf("")
@@ -3283,7 +3287,7 @@ func mapassign(t *abi.Type, m unsafe.Pointer, key, val unsafe.Pointer) {
 	contentEscapes(key)
 	contentEscapes(val)
 	p := mapassign0(t, m, key)
-	runtime.Typedmemmove(t.Elem(), p, val)
+	runtime.Typedmemmove((*runtime.Type)(unsafe.Pointer(t.Elem())), p, val)
 }
 
 // //go:noescape

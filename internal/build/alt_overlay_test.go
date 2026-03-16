@@ -1,11 +1,13 @@
 package build
 
 import (
+	"go/token"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/env"
+	ipackages "github.com/goplus/llgo/internal/packages"
 )
 
 func TestRewriteAltImports(t *testing.T) {
@@ -65,5 +67,37 @@ func TestBuildAltOverlayRewritesMirrorFiles(t *testing.T) {
 				t.Fatalf("%s: overlay for %s was not rewritten: %s", tt.pkgPath, name, got)
 			}
 		}
+	}
+}
+
+func TestBuildAltOverlayLoadsReflectAltPackage(t *testing.T) {
+	mode := ipackages.NeedName |
+		ipackages.NeedFiles |
+		ipackages.NeedCompiledGoFiles |
+		ipackages.NeedImports |
+		ipackages.NeedTypes |
+		ipackages.NeedTypesSizes |
+		ipackages.NeedSyntax |
+		ipackages.NeedTypesInfo
+	cfg := &ipackages.Config{
+		Dir:   env.LLGoRuntimeDir(),
+		Fset:  token.NewFileSet(),
+		Mode:  mode,
+		Tests: false,
+	}
+	overlay, err := buildAltOverlay(nil, cfg.Dir, []string{"reflect"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Overlay = overlay
+	pkgs, err := ipackages.LoadEx(ipackages.NewDeduper(), nil, cfg, altPkgPathPrefix+"reflect")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("loaded %d packages, want 1", len(pkgs))
+	}
+	if len(pkgs[0].Errors) != 0 {
+		t.Fatalf("reflect alt package has errors: %v", pkgs[0].Errors)
 	}
 }
