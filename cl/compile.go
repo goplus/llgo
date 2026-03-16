@@ -123,6 +123,7 @@ type context struct {
 	loaded      map[*types.Package]*pkgInfo // loaded packages
 	bvals       map[ssa.Value]llssa.Expr    // block values
 	vblks       map[ssa.Value]llssa.BasicBlock
+	btails      map[*ssa.BasicBlock]llssa.BasicBlock
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
 	paramDIVars map[*types.Var]llssa.DIVar
 
@@ -449,6 +450,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			}
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			p.vblks = make(map[ssa.Value]llssa.BasicBlock)
+			p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -729,6 +731,7 @@ end:
 		b.Store(modPtr, b.PyImportMod(modPath))
 		b.Jump(jumpTo)
 	}
+	p.btails[block] = b.Block()
 	return ret
 }
 
@@ -907,6 +910,9 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 			edge := v.Edges[i]
 			b.SetBlockEx(blk, llssa.BeforeLast, false)
 			val := p.compileValue(b, edge)
+			if tail, ok := p.btails[preds[i]]; ok && tail != nil {
+				return val, tail
+			}
 			if usesSplitPhiIncoming(edge) {
 				if edgeBlk, ok := p.vblks[edge]; ok && edgeBlk != nil {
 					return val, edgeBlk

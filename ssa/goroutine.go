@@ -60,7 +60,7 @@ func (b Builder) Go(fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args .
 	pkg := b.Pkg
 
 	var offset int
-	if fn != Nil && fn.kind != vkBuiltin {
+	if !fn.IsNil() && fn.kind != vkBuiltin {
 		offset = 1
 	}
 	typs := make([]Type, len(args)+offset)
@@ -94,7 +94,7 @@ func (p Package) routine(t Type, fn Expr, buildCall func(Builder, Expr, ...Expr)
 	data := Expr{llvm.CreateLoad(b.impl, t.ll, param.impl), t}
 	args := make([]Expr, n)
 	var offset int
-	if fn != Nil && fn.kind != vkBuiltin {
+	if !fn.IsNil() && fn.kind != vkBuiltin {
 		fn = b.getField(data, 0)
 		offset = 1
 	}

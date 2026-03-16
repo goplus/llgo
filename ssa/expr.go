@@ -1144,7 +1144,7 @@ var (
 )
 
 func logCall(da string, fn Expr, args []Expr) {
-	if fn == Nil || fn.kind == vkBuiltin {
+	if fn.IsNil() || fn.kind == vkBuiltin {
 		return
 	}
 	var b bytes.Buffer

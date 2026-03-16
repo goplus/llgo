@@ -539,12 +539,12 @@ free(node)
 */
 
 func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, args []Expr) Type {
-	if kind != DeferInLoop && fn != Nil && fn.kind != vkClosure && len(args) == 0 {
+	if kind != DeferInLoop && !fn.IsNil() && fn.kind != vkClosure && len(args) == 0 {
 		return nil
 	}
 	prog := b.Prog
 	offset := 2 // prev + id
-	if fn != Nil && fn.kind == vkClosure {
+	if !fn.IsNil() && fn.kind == vkClosure {
 		offset++
 	}
 	typs := make([]Type, len(args)+offset)
@@ -553,7 +553,7 @@ func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, ar
 	flds[0] = b.Load(self.argsPtr).impl
 	typs[1] = prog.Uintptr()
 	flds[1] = id.impl
-	if fn != Nil && fn.kind == vkClosure {
+	if !fn.IsNil() && fn.kind == vkClosure {
 		typs[2] = fn.Type
 		flds[2] = fn.impl
 	}
@@ -569,7 +569,7 @@ func (b Builder) saveDeferArgs(self *aDefer, kind DoAction, id Expr, fn Expr, ar
 
 func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr, ...Expr) Expr, fn Expr, args []Expr) {
 	callWithRecoverToken := func(callFn Expr, args []Expr) {
-		if callFn.kind == vkBuiltin {
+		if !callFn.IsNil() && callFn.kind == vkBuiltin {
 			if bi, ok := callFn.raw.Type.(*builtinTy); ok && bi.name == "recover" {
 				buildCall(b, callFn, args...)
 				return
@@ -595,7 +595,7 @@ func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr,
 		data := b.Load(Expr{ptr.impl, prog.Pointer(typ)})
 		offset := 2 // prev + id
 		b.Store(self.argsPtr, Expr{b.getField(data, 0).impl, prog.VoidPtr()})
-		if fn != Nil && fn.kind == vkClosure {
+		if !fn.IsNil() && fn.kind == vkClosure {
 			fn = b.getField(data, 2)
 			offset++
 		}
@@ -715,6 +715,9 @@ func (b Builder) Recover() Expr {
 
 func recoverTokenExpr(b Builder, fn Expr) Expr {
 	prog := b.Prog
+	if fn.IsNil() {
+		return prog.Nil(prog.VoidPtr())
+	}
 	switch fn.kind {
 	case vkClosure:
 		fn = b.Field(fn, 0)

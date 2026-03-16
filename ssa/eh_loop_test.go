@@ -95,3 +95,33 @@ func TestDeferAtomicInLoopIR(t *testing.T) {
 		t.Fatalf("expected loop defer node free in IR, got:\n%s", ir)
 	}
 }
+
+func TestDeferAtomicNilCalleeIR(t *testing.T) {
+	prog := ssatest.NewProgram(t, nil)
+	pkg := prog.NewPackage("foo", "foo")
+
+	int64PtrType := types.NewPointer(types.Typ[types.Int64])
+	params := types.NewTuple(types.NewParam(token.NoPos, nil, "", int64PtrType))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("main", sig, ssa.InGo)
+	b := fn.MakeBody(1)
+	fn.SetRecover(fn.MakeBlock())
+
+	b.Return()
+	b.SetBlockEx(fn.Block(0), ssa.BeforeLast, true)
+
+	ptr := fn.Param(0)
+	val := b.Const(constant.MakeInt64(1), prog.Int64())
+	b.Defer(ssa.DeferAlways, ssa.Nil, func(b ssa.Builder, _ ssa.Expr, args ...ssa.Expr) ssa.Expr {
+		return b.Store(ptr, val).SetOrdering(ssa.OrderingSeqConsistent)
+	})
+	b.EndBuild()
+
+	ir := pkg.Module().String()
+	if !strings.Contains(ir, "store atomic i64 1, ptr %0 seq_cst") {
+		t.Fatalf("expected deferred buildCall in IR, got:\n%s", ir)
+	}
+	if !strings.Contains(ir, "FreeDeferNode") {
+		t.Fatalf("expected defer node free in IR, got:\n%s", ir)
+	}
+}
