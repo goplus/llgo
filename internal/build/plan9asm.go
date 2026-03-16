@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go/build"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +17,83 @@ import (
 	llruntime "github.com/goplus/llgo/runtime"
 	gllvm "github.com/goplus/llvm"
 )
+
+func shouldSkipPlan9AsmFile(pkgPath, goos, sfile string) bool {
+	if pkgPath == "syscall" && strings.HasPrefix(filepath.Base(sfile), "zsyscall_") {
+		return true
+	}
+	return false
+}
+
+func buildTagsFromFlags(flags []string) []string {
+	if len(flags) == 0 {
+		return nil
+	}
+	var tags []string
+	for i := 0; i < len(flags); i++ {
+		flag := flags[i]
+		if strings.HasPrefix(flag, "-tags=") {
+			tags = append(tags, strings.FieldsFunc(strings.TrimPrefix(flag, "-tags="), func(r rune) bool {
+				return r == ',' || r == ' '
+			})...)
+			continue
+		}
+		if flag == "-tags" && i+1 < len(flags) {
+			i++
+			tags = append(tags, strings.FieldsFunc(flags[i], func(r rune) bool {
+				return r == ',' || r == ' '
+			})...)
+		}
+	}
+	return tags
+}
+
+func hasTag(tags string, tag string) bool {
+	for _, t := range strings.FieldsFunc(tags, func(r rune) bool {
+		return r == ',' || r == ' '
+	}) {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
+func matchLocalSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
+	if ctx == nil || pkg == nil || pkg.Dir == "" {
+		return nil, nil
+	}
+	ctxt := build.Default
+	ctxt.GOOS = ctx.buildConf.Goos
+	ctxt.GOARCH = ctx.buildConf.Goarch
+	ctxt.BuildTags = buildTagsFromFlags(ctx.conf.BuildFlags)
+
+	entries, err := os.ReadDir(pkg.Dir)
+	if err != nil {
+		return nil, err
+	}
+	paths := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !(strings.HasSuffix(name, ".s") || strings.HasSuffix(name, ".S")) {
+			continue
+		}
+		if isPkgTestSFile(name) {
+			continue
+		}
+		match, err := ctxt.MatchFile(pkg.Dir, name)
+		if err != nil {
+			return nil, err
+		}
+		if match {
+			paths = append(paths, filepath.Join(pkg.Dir, name))
+		}
+	}
+	return paths, nil
+}
 
 // compilePkgSFiles translates Go/Plan9 assembly files selected by `go list -json`
 // for this package/target into LLVM IR, compiles them to .o, and returns the
@@ -55,6 +133,16 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 
 	objFiles := make([]string, 0, len(sfiles))
 	for _, sfile := range sfiles {
+		if shouldSkipPlan9AsmFile(pkg.PkgPath, ctx.buildConf.Goos, sfile) {
+			continue
+		}
+		hasText, err := llplan9asm.HasAnyTextAsm(ctx.conf.Overlay, []string{sfile})
+		if err != nil {
+			return nil, fmt.Errorf("%s: inspect %s: %w", pkg.PkgPath, sfile, err)
+		}
+		if !hasText {
+			continue
+		}
 		src, err := llplan9asm.ReadFileWithOverlay(ctx.conf.Overlay, sfile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
@@ -219,6 +307,16 @@ func plan9asmSigsForPkg(ctx *context, pkgPath string) (map[string]struct{}, erro
 		return nil, err
 	}
 	for _, sfile := range sfiles {
+		if shouldSkipPlan9AsmFile(pkg.PkgPath, ctx.buildConf.Goos, sfile) {
+			continue
+		}
+		hasText, err := llplan9asm.HasAnyTextAsm(ctx.conf.Overlay, []string{sfile})
+		if err != nil {
+			return nil, fmt.Errorf("%s: inspect %s: %w", pkg.PkgPath, sfile, err)
+		}
+		if !hasText {
+			continue
+		}
 		src, err := llplan9asm.ReadFileWithOverlay(ctx.conf.Overlay, sfile)
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
@@ -300,6 +398,11 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if !llruntime.HasAltPkg(pkgPath) {
 		return false
 	}
+	if pkgPath == "internal/runtime/syscall" {
+		if conf == nil || (conf.Target == "" && !hasTag(conf.Tags, "baremetal")) {
+			return false
+		}
+	}
 	if llruntime.HasAdditiveAltPkg(pkgPath) {
 		return true
 	}
@@ -361,6 +464,15 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	}
 	if v, ok := ctx.sfilesCache[pkg.ID]; ok {
 		return v, nil
+	}
+
+	if strings.HasPrefix(pkg.PkgPath, altPkgPathPrefix) {
+		paths, err := matchLocalSFiles(ctx, pkg)
+		if err != nil {
+			return nil, fmt.Errorf("match local .s files for %s: %w", pkg.PkgPath, err)
+		}
+		ctx.sfilesCache[pkg.ID] = paths
+		return paths, nil
 	}
 
 	args := []string{"list", "-json"}

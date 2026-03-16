@@ -102,7 +102,7 @@ func (p Package) routine(t Type, fn Expr, buildCall func(Builder, Expr, ...Expr)
 		args[i] = b.getField(data, i+offset)
 	}
 	buildCall(b, fn, args...)
-	b.free(param)
+	b.Call(b.Pkg.rtFunc("FreeAllocU"), param)
 	b.Return(prog.Nil(prog.VoidPtr()))
 	return routine.Expr
 }

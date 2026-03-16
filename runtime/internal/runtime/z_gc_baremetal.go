@@ -40,6 +40,9 @@ func AllocZ(size uintptr) unsafe.Pointer {
 	return tinygogc.Alloc(size)
 }
 
+func FreeAllocU(ptr unsafe.Pointer) {
+}
+
 // AddCleanupPtr is not implemented in baremetal builds because tinygogc
 // does not support finalizers. Cleanup functions will never be called.
 //

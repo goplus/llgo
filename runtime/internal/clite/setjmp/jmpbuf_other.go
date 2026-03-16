@@ -6,3 +6,8 @@ const (
 	SigjmpBufSize = 200
 	JmpBufSize    = 200
 )
+
+type (
+	sigjmpBuf [SigjmpBufSize]byte
+	jmpBuf    [JmpBufSize]byte
+)

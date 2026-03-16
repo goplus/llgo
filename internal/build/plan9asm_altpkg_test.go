@@ -19,6 +19,49 @@ func TestHasAltPkgForTarget_AllowsAdditivePatchWithPlan9Asm(t *testing.T) {
 	}
 }
 
+func TestHasAltPkgForTarget_UsesBytealgAltPkgOnWasm(t *testing.T) {
+	conf := &Config{Goarch: "wasm", AbiMode: cabi.ModeAllFunc}
+	if plan9asmEnabledByDefault(conf, "internal/bytealg") {
+		t.Fatal("plan9asm should not be enabled by default for internal/bytealg on wasm")
+	}
+	if !hasAltPkgForTarget(conf, "internal/bytealg") {
+		t.Fatal("internal/bytealg should use its alt package on wasm")
+	}
+}
+
+func TestHasAltPkgForTarget_InternalAbiStaysAdditive(t *testing.T) {
+	conf := &Config{Goarch: "arm64", AbiMode: cabi.ModeAllFunc}
+	if !plan9asmEnabledByDefault(conf, "internal/abi") {
+		t.Fatal("plan9asm should remain enabled by default for internal/abi")
+	}
+	if !hasAltPkgForTarget(conf, "internal/abi") {
+		t.Fatal("internal/abi should keep its additive patch package")
+	}
+}
+
+func TestHasAltPkgForTarget_InternalRuntimeSyscallOnlyOnBaremetal(t *testing.T) {
+	baremetal := &Config{Goarch: "arm", AbiMode: cabi.ModeAllFunc, Target: "esp32"}
+	if !hasAltPkgForTarget(baremetal, "internal/runtime/syscall") {
+		t.Fatal("internal/runtime/syscall should use alt package on baremetal targets")
+	}
+	normal := &Config{Goarch: "arm", AbiMode: cabi.ModeAllFunc}
+	if hasAltPkgForTarget(normal, "internal/runtime/syscall") {
+		t.Fatal("internal/runtime/syscall should not use alt package without baremetal")
+	}
+}
+
+func TestShouldSkipPlan9AsmFile(t *testing.T) {
+	if !shouldSkipPlan9AsmFile("syscall", "darwin", "/goroot/src/syscall/zsyscall_darwin_arm64.s") {
+		t.Fatal("darwin syscall zsyscall trampolines should be skipped")
+	}
+	if shouldSkipPlan9AsmFile("syscall", "darwin", "/goroot/src/syscall/asm_darwin_arm64.s") {
+		t.Fatal("non-zsyscall syscall asm should not be skipped")
+	}
+	if shouldSkipPlan9AsmFile("runtime", "darwin", "/goroot/src/runtime/sys_darwin_arm64.s") {
+		t.Fatal("other packages should not be skipped")
+	}
+}
+
 func TestIsPkgTestSFile(t *testing.T) {
 	tests := []struct {
 		name string

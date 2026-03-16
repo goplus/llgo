@@ -85,10 +85,9 @@ func (p Program) tyStacksave() *types.Signature {
 
 func (b Builder) AllocaSigjmpBuf() Expr {
 	prog := b.Prog
-	sigjmpBufTy := prog.rtType("SigjmpBuf") // Get type from runtime (target architecture)
-	n := prog.SizeOf(sigjmpBufTy)           // Get size for target architecture
-	size := prog.IntVal(n, prog.Uintptr())
-	return b.Alloca(size)
+	sigjmpBufTy := prog.rtType("SigjmpBuf")
+	ptr := b.AllocaT(sigjmpBufTy)
+	return b.ChangeType(prog.VoidPtr(), ptr)
 }
 
 // declare ptr @llvm.stacksave.p0()

@@ -6,7 +6,6 @@ package unique
 
 import (
 	"github.com/goplus/llgo/runtime/abi"
-	isync "internal/sync"
 	"runtime"
 	"sync"
 	"unsafe"
@@ -38,9 +37,9 @@ func Make[T comparable](value T) Handle[T] {
 	if typ.Size() == 0 {
 		return Handle[T]{(*T)(unsafe.Pointer(&zero))}
 	}
-	ma, ok := uniqueMaps.Load(typ)
+	ma, ok := loadUniqueMap(typ)
 	if !ok {
-		setupMake.Do(registerCleanup)
+		ensureSetupMake()
 		ma = addUniqueMap[T](typ)
 	}
 	m := ma.(*uniqueMap[T])
@@ -75,7 +74,8 @@ func Make[T comparable](value T) Handle[T] {
 }
 
 var (
-	uniqueMaps isync.HashTrieMap[*abi.Type, any]
+	uniqueMapsMu sync.Mutex
+	uniqueMaps   map[*abi.Type]any
 
 	cleanupMu      sync.Mutex
 	cleanupFuncsMu sync.Mutex
@@ -84,13 +84,22 @@ var (
 )
 
 type uniqueMap[T comparable] struct {
-	isync.HashTrieMap[T, weak.Pointer[T]]
+	mu sync.Mutex
+	m  map[T]weak.Pointer[T]
 	cloneSeq
 }
 
+type uniqueEntry[T comparable] struct {
+	key   T
+	value weak.Pointer[T]
+}
+
 func addUniqueMap[T comparable](typ *abi.Type) *uniqueMap[T] {
-	m := &uniqueMap[T]{cloneSeq: makeCloneSeq(typ)}
-	a, loaded := uniqueMaps.LoadOrStore(typ, m)
+	m := &uniqueMap[T]{
+		m:        make(map[T]weak.Pointer[T]),
+		cloneSeq: makeCloneSeq(typ),
+	}
+	a, loaded := loadOrStoreUniqueMap(typ, m)
 	if !loaded {
 		cleanupFuncsMu.Lock()
 		cleanupFuncs = append(cleanupFuncs, func() {
@@ -106,7 +115,93 @@ func addUniqueMap[T comparable](typ *abi.Type) *uniqueMap[T] {
 	return a.(*uniqueMap[T])
 }
 
-var setupMake sync.Once
+var (
+	setupMakeMu sync.Mutex
+	setupMade   bool
+)
+
+func ensureSetupMake() {
+	setupMakeMu.Lock()
+	if !setupMade {
+		registerCleanup()
+		setupMade = true
+	}
+	setupMakeMu.Unlock()
+}
+
+func loadUniqueMap(typ *abi.Type) (any, bool) {
+	uniqueMapsMu.Lock()
+	if uniqueMaps == nil {
+		uniqueMapsMu.Unlock()
+		return nil, false
+	}
+	v, ok := uniqueMaps[typ]
+	uniqueMapsMu.Unlock()
+	return v, ok
+}
+
+func loadOrStoreUniqueMap(typ *abi.Type, value any) (any, bool) {
+	uniqueMapsMu.Lock()
+	if uniqueMaps == nil {
+		uniqueMaps = make(map[*abi.Type]any)
+	}
+	if existing, ok := uniqueMaps[typ]; ok {
+		uniqueMapsMu.Unlock()
+		return existing, true
+	}
+	uniqueMaps[typ] = value
+	uniqueMapsMu.Unlock()
+	return value, false
+}
+
+func (m *uniqueMap[T]) Load(key T) (weak.Pointer[T], bool) {
+	m.mu.Lock()
+	v, ok := m.m[key]
+	m.mu.Unlock()
+	if !ok {
+		var zero weak.Pointer[T]
+		return zero, false
+	}
+	return v, true
+}
+
+func (m *uniqueMap[T]) LoadOrStore(key T, value weak.Pointer[T]) (weak.Pointer[T], bool) {
+	m.mu.Lock()
+	if existing, ok := m.m[key]; ok {
+		m.mu.Unlock()
+		return existing, true
+	}
+	m.m[key] = value
+	m.mu.Unlock()
+	return value, false
+}
+
+func (m *uniqueMap[T]) CompareAndDelete(key T, old weak.Pointer[T]) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	v, ok := m.m[key]
+	if !ok || v != old {
+		return false
+	}
+	delete(m.m, key)
+	return true
+}
+
+func (m *uniqueMap[T]) All() func(func(T, weak.Pointer[T]) bool) {
+	return func(yield func(T, weak.Pointer[T]) bool) {
+		m.mu.Lock()
+		items := make([]uniqueEntry[T], 0, len(m.m))
+		for k, v := range m.m {
+			items = append(items, uniqueEntry[T]{key: k, value: v})
+		}
+		m.mu.Unlock()
+		for _, item := range items {
+			if !yield(item.key, item.value) {
+				return
+			}
+		}
+	}
+}
 
 func registerCleanup() {
 	runtime_registerUniqueMapCleanup(func() {

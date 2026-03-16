@@ -78,6 +78,12 @@ const (
 	EPROTOTYPE      Errno = 67
 	ERANGE          Errno = 68
 	EROFS           Errno = 69
+	// WASI does not define these socket-specific errno values.
+	// Keep libuv's error table buildable by mapping them to the
+	// closest available WASI equivalents.
+	ESHUTDOWN       Errno = ENOTCONN
+	EHOSTDOWN       Errno = EHOSTUNREACH
+	ESOCKTNOSUPPORT Errno = ENOTSUP
 	ESPIPE          Errno = 70
 	ESRCH           Errno = 71
 	ESTALE          Errno = 72

@@ -20,7 +20,6 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
-	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 )
 
@@ -130,7 +129,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	if u == nil {
 		ret.fun[0] = 0
 	} else {
-		data := (*uintptr)(c.Advance(ptr, int(itabHdrSize)))
+		data := unsafe.Add(ptr, itabHdrSize)
 		mthds := u.Methods()
 		for i, m := range inter.Methods {
 			fn, matched := findMethod(mthds, m)
@@ -144,7 +143,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 				// and only panics on call, not at assertion time.
 				fn = abi.Text(uintptr(0))
 			}
-			*c.Advance(data, i) = uintptr(fn)
+			*(*uintptr)(unsafe.Add(data, uintptr(i)*pointerSize)) = uintptr(fn)
 		}
 	}
 	if ret.fun[0] != 0 {

@@ -8,20 +8,24 @@ import (
 )
 
 var (
-	uniqueMapCleanup     chan struct{}
-	uniqueMapCleanupOnce sync.Once
+	uniqueMapCleanup   chan struct{}
+	uniqueMapCleanupMu sync.Mutex
+	uniqueMapCleanupOK bool
 )
 
 //go:linkname unique_runtime_registerUniqueMapCleanup unique.runtime_registerUniqueMapCleanup
 func unique_runtime_registerUniqueMapCleanup(cleanup func()) {
-	uniqueMapCleanupOnce.Do(func() {
+	uniqueMapCleanupMu.Lock()
+	if !uniqueMapCleanupOK {
 		uniqueMapCleanup = make(chan struct{}, 1)
+		uniqueMapCleanupOK = true
 		go func() {
 			for range uniqueMapCleanup {
 				cleanup()
 			}
 		}()
-	})
+	}
+	uniqueMapCleanupMu.Unlock()
 }
 
 func unique_runtime_notifyMapCleanup() {

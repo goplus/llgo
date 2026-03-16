@@ -218,4 +218,9 @@ func TestExtraAsmSigsAndDeclMap(t *testing.T) {
 			t.Fatalf("missing amd64 manual sig %s", name)
 		}
 	}
+
+	abi := extraAsmSigsAndDeclMap("internal/abi", "amd64")
+	if _, ok := abi["internal/abi.FuncPCTestFn"]; !ok {
+		t.Fatal("missing internal/abi manual sig for FuncPCTestFn")
+	}
 }

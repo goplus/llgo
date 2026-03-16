@@ -48,6 +48,12 @@ func AllocZ(size uintptr) unsafe.Pointer {
 	return c.Memset(ret, 0, size)
 }
 
+func FreeAllocU(ptr unsafe.Pointer) {
+	if ptr != nil {
+		bdwgc.Free(c.Pointer(ptr))
+	}
+}
+
 type entry struct {
 	fn       func()
 	valueFn  func(unsafe.Pointer)

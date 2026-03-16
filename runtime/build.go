@@ -1,5 +1,7 @@
 package runtime
 
+import "sort"
+
 type altPkgMode uint8
 
 const (
@@ -23,19 +25,37 @@ func HasAdditiveAltPkg(path string) bool {
 	return altPkgs[path] == altPkgAdditive
 }
 
+func AltPkgPaths() []string {
+	paths := make([]string, 0, len(altPkgs))
+	for path := range altPkgs {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	return paths
+}
+
 var altPkgs = map[string]altPkgMode{
-	"internal/goarch":         altPkgReplace,
-	"internal/itoa":           altPkgReplace,
-	"internal/race":           altPkgReplace,
-	"internal/reflectlite":    altPkgReplace,
-	"internal/sync":           altPkgReplace,
-	"internal/runtime/atomic": altPkgReplace,
-	"internal/runtime/maps":   altPkgReplace,
-	"internal/runtime/sys":    altPkgAdditive,
-	"iter":                    altPkgReplace,
-	"reflect":                 altPkgReplace,
-	"runtime":                 altPkgReplace,
-	"sync/atomic":             altPkgReplace,
-	"unique":                  altPkgReplace,
-	"syscall/js":              altPkgReplace,
+	"crypto/internal/fips140deps/godebug": altPkgReplace,
+	"internal/abi":                        altPkgAdditive,
+	"internal/bisect":                     altPkgReplace,
+	"internal/bytealg":                    altPkgReplace,
+	"internal/byteorder":                  altPkgReplace,
+	"internal/chacha8rand":                altPkgReplace,
+	"internal/goarch":                     altPkgReplace,
+	"internal/godebug":                    altPkgReplace,
+	"internal/godebugs":                   altPkgReplace,
+	"internal/itoa":                       altPkgReplace,
+	"internal/race":                       altPkgReplace,
+	"internal/reflectlite":                altPkgReplace,
+	"internal/runtime/atomic":             altPkgReplace,
+	"internal/runtime/maps":               altPkgReplace,
+	"internal/runtime/sys":                altPkgAdditive,
+	"internal/runtime/syscall":            altPkgReplace,
+	"internal/sync":                       altPkgReplace,
+	"iter":                                altPkgReplace,
+	"reflect":                             altPkgReplace,
+	"runtime":                             altPkgReplace,
+	"sync/atomic":                         altPkgReplace,
+	"syscall/js":                          altPkgReplace,
+	"unique":                              altPkgReplace,
 }
