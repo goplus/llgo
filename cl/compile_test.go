@@ -68,6 +68,34 @@ func compileIR(t *testing.T, src string) string {
 	return ret.String()
 }
 
+func functionBody(t *testing.T, ir, name string) string {
+	t.Helper()
+	marker := ""
+	for _, line := range strings.Split(ir, "\n") {
+		if !strings.HasPrefix(line, "define ") {
+			continue
+		}
+		if strings.Contains(line, "@"+name+"(") ||
+			strings.Contains(line, `@"`+name+`"`) ||
+			(!strings.Contains(name, ".") && (strings.Contains(line, "."+name+"(") || strings.Contains(line, "."+name+`"`))) {
+			marker = line
+			break
+		}
+	}
+	start := -1
+	if marker != "" {
+		start = strings.Index(ir, marker)
+	}
+	if start < 0 {
+		t.Fatalf("function %s not found in IR", name)
+	}
+	rest := ir[start:]
+	if next := strings.Index(rest[len(marker):], "\ndefine "); next >= 0 {
+		return rest[:len(marker)+next]
+	}
+	return rest
+}
+
 func requireEmbedTest(t *testing.T) {
 	t.Helper()
 	if os.Getenv("LLGO_EMBED_TESTS") != "1" {
@@ -322,6 +350,36 @@ func fn(ch chan []byte, n int) {
 	}
 	if strings.Contains(ir, `call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"`) {
 		t.Fatalf("unexpected direct MakeSlice aggregate in send path:\n%s", ir)
+	}
+}
+
+func TestCommaOkRecvDefersValueMaterialization(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+func fn(ch chan []byte, start int64) {
+	x, ok := <-ch
+	if !ok {
+		return
+	}
+	if start < 0 {
+		println(x)
+	}
+	println([]byte(nil))
+}
+`)
+	body := functionBody(t, ir, "fn")
+	recvIdx := strings.Index(body, `@"github.com/goplus/llgo/runtime/internal/runtime.ChanRecv"`)
+	if recvIdx < 0 {
+		t.Fatalf("missing ChanRecv in fn:\n%s", body)
+	}
+	rest := body[recvIdx:]
+	brIdx := strings.Index(rest, "br i1")
+	if brIdx < 0 {
+		t.Fatalf("missing ok branch after ChanRecv:\n%s", body)
+	}
+	loadIdx := strings.Index(rest, `load %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`)
+	if loadIdx >= 0 && loadIdx < brIdx {
+		t.Fatalf("comma-ok recv value materialized before ok branch:\n%s", body)
 	}
 }
 

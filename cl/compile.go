@@ -125,6 +125,7 @@ type context struct {
 	vblks       map[ssa.Value]llssa.BasicBlock
 	btails      map[*ssa.BasicBlock]llssa.BasicBlock
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
+	recvTuples  map[ssa.Value]*recvTupleState
 	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
@@ -147,6 +148,13 @@ type context struct {
 	rewrites   map[string]string
 	embedMap   goembed.VarMap
 	embedInits []embedInit
+}
+
+type recvTupleState struct {
+	ptr       llssa.Expr
+	ok        llssa.Expr
+	recvBlock *ssa.BasicBlock
+	useBlock  *ssa.BasicBlock
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -442,6 +450,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.bvals = make(map[ssa.Value]llssa.Expr)
 			p.vblks = make(map[ssa.Value]llssa.BasicBlock)
 			p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
+			p.recvTuples = make(map[ssa.Value]*recvTupleState)
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -620,6 +629,7 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
+	p.clearExpiredRecvTuples(b, block)
 	if block.Index == 0 && enableCallTracing && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
 		b.Printf("call " + fn.Name() + "\n\x00")
 	}
@@ -649,6 +659,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	isCgoC2 := isCgoC2func(fnName)
 	isCgoCmacro := isCgoCmacro(fnName)
 	for i, instr := range instrs {
+		if iv, ok := instr.(instrOrValue); ok && canDeferValueInstr(iv) {
+			continue
+		}
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
@@ -1024,6 +1037,136 @@ func singleRef(v ssa.Value) (ssa.Instruction, bool) {
 	return ref, n == 1
 }
 
+func canDeferValueInstr(iv instrOrValue) bool {
+	switch v := iv.(type) {
+	case *ssa.Extract:
+		_, ok := singleRef(v)
+		return ok
+	default:
+		return false
+	}
+}
+
+func canLowerLazyRecvTuple(v *ssa.UnOp) bool {
+	if v == nil || v.Op != token.ARROW || !v.CommaOk {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	hasValueExtract := false
+	for _, ref := range *refs {
+		switch ex := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Extract:
+			if ex.Index == 0 {
+				hasValueExtract = true
+			}
+			continue
+		default:
+			return false
+		}
+	}
+	if hasValueExtract && recvValueUseBlock(v) == nil {
+		return false
+	}
+	return true
+}
+
+func recvValueUseBlock(v *ssa.UnOp) *ssa.BasicBlock {
+	if v == nil {
+		return nil
+	}
+	refs := v.Referrers()
+	if refs == nil {
+		return nil
+	}
+	var useBlk *ssa.BasicBlock
+	for _, ref := range *refs {
+		ex, ok := ref.(*ssa.Extract)
+		if !ok || ex.Index != 0 {
+			continue
+		}
+		use, ok := singleRef(ex)
+		if !ok {
+			return nil
+		}
+		blk := use.Block()
+		if blk == nil {
+			return nil
+		}
+		if useBlk == nil {
+			useBlk = blk
+			continue
+		}
+		if useBlk != blk {
+			return nil
+		}
+	}
+	return useBlk
+}
+
+func dominatesBlock(dom, blk *ssa.BasicBlock) bool {
+	if dom == nil || blk == nil || dom.Parent() != blk.Parent() {
+		return false
+	}
+	if dom == blk {
+		return true
+	}
+	entry := dom.Parent().Blocks[0]
+	return !canReachBlockWithout(entry, blk, dom)
+}
+
+func canReachBlockWithout(from, to, avoid *ssa.BasicBlock) bool {
+	if from == nil || to == nil {
+		return false
+	}
+	if from == avoid {
+		return false
+	}
+	seen := map[*ssa.BasicBlock]bool{}
+	var walk func(*ssa.BasicBlock) bool
+	walk = func(cur *ssa.BasicBlock) bool {
+		if cur == nil || cur == avoid || seen[cur] {
+			return false
+		}
+		if cur == to {
+			return true
+		}
+		seen[cur] = true
+		for _, succ := range cur.Succs {
+			if walk(succ) {
+				return true
+			}
+		}
+		return false
+	}
+	return walk(from)
+}
+
+func (p *context) clearExpiredRecvTuples(b llssa.Builder, blk *ssa.BasicBlock) {
+	for _, state := range p.recvTuples {
+		if state == nil || state.ptr.Type == nil {
+			continue
+		}
+		if blk == nil || state.recvBlock == nil || state.useBlock == nil {
+			continue
+		}
+		if blk == state.recvBlock || blk == state.useBlock {
+			continue
+		}
+		if !dominatesBlock(state.recvBlock, blk) {
+			continue
+		}
+		if canReachBlockWithout(blk, state.useBlock, state.recvBlock) {
+			continue
+		}
+		b.ClearRecvTemp(state.ptr)
+	}
+}
+
 func isSendInstr(instr ssa.Instruction) bool {
 	_, ok := instr.(*ssa.Send)
 	return ok
@@ -1162,6 +1305,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
+		if canDeferValueInstr(iv) {
+			return p.compileInstrOrValue(b, iv, false)
+		}
 		fn := "<nil>"
 		if p.goFn != nil {
 			fn = p.goFn.String()
@@ -1225,7 +1371,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
-			ret = b.Recv(x, v.CommaOk)
+			if canLowerLazyRecvTuple(v) {
+				ptr, ok := b.RecvToTemp(x)
+				p.recvTuples[v] = &recvTupleState{
+					ptr:       ptr,
+					ok:        ok,
+					recvBlock: v.Block(),
+					useBlock:  recvValueUseBlock(v),
+				}
+				ret = p.prog.Zero(p.type_(v.Type(), llssa.InGo))
+			} else {
+				ret = b.Recv(x, v.CommaOk)
+			}
 		} else {
 			ret = b.UnOp(v.Op, x)
 		}
@@ -1372,6 +1529,14 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		t := p.type_(v.AssertedType, llssa.InGo)
 		ret = b.TypeAssert(x, t, v.CommaOk)
 	case *ssa.Extract:
+		if recv, ok := p.recvTuples[v.Tuple]; ok {
+			if v.Index == 0 {
+				ret = b.RecvFromTemp(recv.ptr)
+			} else {
+				ret = recv.ok
+			}
+			break
+		}
 		x := p.compileValue(b, v.Tuple)
 		ret = b.Extract(x, v.Index)
 	case *ssa.Range:

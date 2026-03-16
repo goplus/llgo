@@ -787,31 +787,46 @@ func (b Builder) materializeRecvValue(ptr Expr) Expr {
 	return b.Load(ptr)
 }
 
+func (b Builder) RecvToTemp(ch Expr) (ptr Expr, ok Expr) {
+	if debugInstr {
+		log.Printf("RecvToTemp %v\n", ch.impl)
+	}
+	prog := b.Prog
+	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(ch.Type)), prog.Int())
+	etyp := prog.Elem(ch.Type)
+	ptr = b.Alloc(etyp, false)
+	ok = b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
+	return
+}
+
+func (b Builder) RecvFromTemp(ptr Expr) Expr {
+	val := b.materializeRecvValue(ptr)
+	b.ClearRecvTemp(ptr)
+	return val
+}
+
+func (b Builder) ClearRecvTemp(ptr Expr) {
+	prog := b.Prog
+	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(ptr.Type)), prog.Int())
+	// Drop references held in the hidden receive temporary as soon as this
+	// receive result is no longer needed on the current path.
+	b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), eltSize)
+}
+
 func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("Recv %v, %v\n", ch.impl, commaOk)
 	}
 	prog := b.Prog
-	eltSize := prog.IntVal(prog.SizeOf(prog.Elem(ch.Type)), prog.Int())
 	etyp := prog.Elem(ch.Type)
-	ptr := b.Alloc(etyp, false)
-	ok := b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
-	zeroRecvTmp := func() {
-		// Drop references held in the hidden receive temporary as soon as the
-		// loaded value is materialized. The loaded SSA value remains usable after
-		// we clear the stack slot, but conservative stack scanning should no
-		// longer see stale pointers in the compiler-generated receive temporary.
-		b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), eltSize)
-	}
+	ptr, ok := b.RecvToTemp(ch)
 	if commaOk {
 		val := b.materializeRecvValue(ptr)
-		zeroRecvTmp()
+		b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), prog.IntVal(prog.SizeOf(etyp), prog.Int()))
 		t := prog.Struct(etyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok.impl)
 	} else {
-		val := b.materializeRecvValue(ptr)
-		zeroRecvTmp()
-		return val
+		return b.RecvFromTemp(ptr)
 	}
 }
 
