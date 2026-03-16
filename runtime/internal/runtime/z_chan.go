@@ -281,10 +281,10 @@ func ChanRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool) {
 // -----------------------------------------------------------------------------
 
 type selectOp struct {
-	mutex sync.Mutex
-	cond  sync.Cond
-	sem   bool
-	regs  []*selectReg
+	mutex  sync.Mutex
+	cond   sync.Cond
+	sem    bool
+	regs   []*selectReg
 	gen    uint64
 	active bool
 	next   *selectOp

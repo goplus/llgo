@@ -836,12 +836,6 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
 			ret = callMaybeSuspendRecover(pyFn.Expr, args, suspend)
-		case goFunc:
-			args := p.compileValues(b, args, kind)
-			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
-		case pyFunc:
-			args := p.compileValues(b, args, kind)
-			ret = callMaybeSuspendRecover(pyFn.Expr, args, suspend)
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)

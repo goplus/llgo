@@ -39,15 +39,15 @@ type Defer struct {
 }
 
 type panicRecord struct {
-	link unsafe.Pointer
-	pan  unsafe.Pointer
-	val  any
-	nstk int32
+	link  unsafe.Pointer
+	pan   unsafe.Pointer
+	val   any
+	nstk  int32
 	stack [32]uintptr
 }
 
 type panicTrace struct {
-	nstk int32
+	nstk  int32
 	stack [32]uintptr
 }
 
@@ -91,12 +91,12 @@ func Panic(v any) {
 }
 
 var (
-	excepKey   pthread.Key
-	goexitKey  pthread.Key
-	recoverKey pthread.Key
-	recoverPan pthread.Key
+	excepKey      pthread.Key
+	goexitKey     pthread.Key
+	recoverKey    pthread.Key
+	recoverPan    pthread.Key
 	panicTraceKey pthread.Key
-	mainThread pthread.Thread
+	mainThread    pthread.Thread
 )
 
 func SetRecoverToken(tok unsafe.Pointer) (prev unsafe.Pointer) {

@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	llgoMaxStack   int
-	llgoGCPercent  int32 = 100
-	llgoMemLimit   int64
-	llgoMaxThreads int
+	llgoMaxStack     int
+	llgoGCPercent    int32 = 100
+	llgoMemLimit     int64
+	llgoMaxThreads   int
 	llgoPanicOnFault bool
 )
 
