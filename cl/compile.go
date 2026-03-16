@@ -128,7 +128,12 @@ type context struct {
 	recvTuples  map[ssa.Value]*recvTupleState
 	stackClears map[ssa.Instruction][]*ssa.Alloc
 	paramClears map[ssa.Instruction][]int
+	paramValueClears map[ssa.Instruction][]int
+	valuePreClears  map[ssa.Instruction][]ssa.Value
+	valuePostClears map[ssa.Instruction][]ssa.Value
+	valueSlots      map[ssa.Value]llssa.Expr
 	paramShadow map[int]llssa.Expr
+	paramSlots  map[int]llssa.Expr
 	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
@@ -461,7 +466,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			p.recvTuples = make(map[ssa.Value]*recvTupleState)
 			p.stackClears = p.collectStackClearPlans(f)
 			p.paramClears = p.collectParamClearPlans(f)
+			p.paramValueClears = p.collectParamValueClearPlans(f)
+			p.valuePreClears, p.valuePostClears = p.collectPointerValueClearPlans(f)
+			p.valueSlots = make(map[ssa.Value]llssa.Expr)
 			p.paramShadow = make(map[int]llssa.Expr)
+			p.paramSlots = make(map[int]llssa.Expr)
 			off := make([]int, len(f.Blocks))
 			if isCgo {
 				p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -642,6 +651,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	b.SetBlock(ret)
 	p.clearExpiredRecvTuples(b, block)
 	if block.Index == 0 {
+		p.initValueSlots(b, block.Parent())
+		p.initParamSlots(b, block.Parent())
 		p.initKeepAliveParamShadows(b, block.Parent())
 	}
 	if block.Index == 0 && enableCallTracing && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
@@ -721,6 +732,8 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		}
 		p.clearDeadStackAllocs(b, instr)
 		p.clearDeadParams(b, instr)
+		p.clearDeadParamValues(b, instr)
+		p.clearDeadPointerValues(b, instr)
 	}
 	// is cgo cfunc but not return yet, some funcs has multiple blocks
 	if (isCgoCfunc || isCgoC2 || isCgoCmacro) && !cgoReturned {
@@ -1169,6 +1182,46 @@ func isKeepAliveOnlyPointerParam(param *ssa.Parameter) bool {
 	}
 }
 
+func containsInstantiatedNamedType(t types.Type, seen map[types.Type]bool) bool {
+	if t == nil {
+		return false
+	}
+	if seen[t] {
+		return false
+	}
+	seen[t] = true
+	switch tt := t.(type) {
+	case *types.Named:
+		if args := tt.TypeArgs(); args != nil && args.Len() != 0 {
+			return true
+		}
+		return containsInstantiatedNamedType(tt.Underlying(), seen)
+	case *types.Pointer:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Slice:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Array:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Chan:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Map:
+		return containsInstantiatedNamedType(tt.Key(), seen) || containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Struct:
+		for i := 0; i < tt.NumFields(); i++ {
+			if containsInstantiatedNamedType(tt.Field(i).Type(), seen) {
+				return true
+			}
+		}
+	case *types.Tuple:
+		for i := 0; i < tt.Len(); i++ {
+			if containsInstantiatedNamedType(tt.At(i).Type(), seen) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func recvValueUseBlock(v *ssa.UnOp) *ssa.BasicBlock {
 	if v == nil {
 		return nil
@@ -1412,6 +1465,93 @@ func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][
 	return plans
 }
 
+func (p *context) collectParamValueClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
+	plans := make(map[ssa.Instruction][]int)
+	for idx, param := range fn.Params {
+		pt, ok := param.Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		if containsInstantiatedNamedType(param.Type(), map[types.Type]bool{}) {
+			continue
+		}
+		blk, ok := p.singleUseBlock(param, map[ssa.Value]bool{})
+		if !ok || blk == nil {
+			continue
+		}
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		last, ok := p.lastSameBlockStackUse(param, blk, order, map[ssa.Value]bool{})
+		if !ok || last == nil {
+			continue
+		}
+		plans[last] = append(plans[last], idx)
+	}
+	return plans
+}
+
+func isCallLikeInstr(instr ssa.Instruction) bool {
+	switch instr.(type) {
+	case *ssa.Call, *ssa.Defer, *ssa.Go:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *context) isPointerValueClearCandidate(v ssa.Value) bool {
+	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
+		return false
+	}
+	if _, ok := v.Type().Underlying().(*types.Pointer); !ok {
+		return false
+	}
+	if alloc, ok := v.(*ssa.Alloc); ok && p.shouldTrackStackClear(alloc) {
+		return false
+	}
+	switch v.(type) {
+	case *ssa.Phi, *ssa.MakeInterface:
+		return false
+	}
+	_, ok := v.(instrOrValue)
+	return ok
+}
+
+func (p *context) collectPointerValueClearPlans(fn *ssa.Function) (map[ssa.Instruction][]ssa.Value, map[ssa.Instruction][]ssa.Value) {
+	pre := make(map[ssa.Instruction][]ssa.Value)
+	post := make(map[ssa.Instruction][]ssa.Value)
+	for _, blk := range fn.Blocks {
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		for _, instr := range blk.Instrs {
+			val, ok := instr.(ssa.Value)
+			if !ok || !p.isPointerValueClearCandidate(val) {
+				continue
+			}
+			useBlk, ok := p.singleUseBlock(val, map[ssa.Value]bool{})
+			if !ok || useBlk == nil {
+				continue
+			}
+			last, ok := p.lastSameBlockStackUse(val, useBlk, order, map[ssa.Value]bool{})
+			if !ok || last == nil {
+				continue
+			}
+			if isCallLikeInstr(last) {
+				pre[last] = append(pre[last], val)
+				continue
+			}
+			if last != instr {
+				post[last] = append(post[last], val)
+			}
+		}
+	}
+	return pre, post
+}
+
 func (p *context) staticPointerParamCallsites(fn *ssa.Function) ([]staticCallSite, bool) {
 	if fn == nil || fn.Pkg == nil || fn.Parent() != nil || fn.Synthetic != "" {
 		return nil, false
@@ -1619,6 +1759,60 @@ func (p *context) clearDeadStackAllocs(b llssa.Builder, instr ssa.Instruction) {
 	}
 }
 
+func (p *context) initValueSlots(b llssa.Builder, fn *ssa.Function) {
+	if fn == nil || (len(p.valuePreClears) == 0 && len(p.valuePostClears) == 0) {
+		return
+	}
+	values := make(map[ssa.Value]bool)
+	for _, vals := range p.valuePreClears {
+		for _, v := range vals {
+			values[v] = true
+		}
+	}
+	for _, vals := range p.valuePostClears {
+		for _, v := range vals {
+			values[v] = true
+		}
+	}
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			val, ok := instr.(ssa.Value)
+			if !ok || !values[val] {
+				continue
+			}
+			p.valueSlots[val] = b.AllocaT(p.type_(val.Type(), llssa.InGo))
+		}
+	}
+}
+
+func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
+	if fn == nil || len(p.paramValueClears) == 0 {
+		return
+	}
+	slotIdxs := make(map[int]bool)
+	for _, idxs := range p.paramValueClears {
+		for _, idx := range idxs {
+			if idx >= 0 && idx < len(fn.Params) && p.paramShadow[idx].Type == nil {
+				slotIdxs[idx] = true
+			}
+		}
+	}
+	if len(slotIdxs) == 0 {
+		return
+	}
+	indices := make([]int, 0, len(slotIdxs))
+	for idx := range slotIdxs {
+		indices = append(indices, idx)
+	}
+	sort.Ints(indices)
+	for _, idx := range indices {
+		param := fn.Params[idx]
+		slot := b.AllocaT(p.type_(param.Type(), llssa.InGo))
+		b.Store(slot, b.Param(idx))
+		p.paramSlots[idx] = slot
+	}
+}
+
 func (p *context) initKeepAliveParamShadows(b llssa.Builder, fn *ssa.Function) {
 	if fn == nil || len(p.paramClears) == 0 {
 		return
@@ -1691,6 +1885,33 @@ func (p *context) clearDeadParams(b llssa.Builder, instr ssa.Instruction) {
 			continue
 		}
 		b.Store(b.Param(idx), p.prog.Zero(elem))
+	}
+}
+
+func (p *context) clearDeadParamValues(b llssa.Builder, instr ssa.Instruction) {
+	fn := instr.Parent()
+	if fn == nil {
+		return
+	}
+	for _, idx := range p.paramValueClears[instr] {
+		if idx < 0 || idx >= len(fn.Params) {
+			continue
+		}
+		slot, ok := p.paramSlots[idx]
+		if !ok || slot.Type == nil {
+			continue
+		}
+		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
+	}
+}
+
+func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction) {
+	for _, v := range p.valuePostClears[instr] {
+		slot, ok := p.valueSlots[v]
+		if !ok || slot.Type == nil {
+			continue
+		}
+		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
 	}
 }
 
@@ -1829,6 +2050,11 @@ func usesSplitPhiIncoming(edge ssa.Value) bool {
 
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	if asValue {
+		if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
+			if _, compiled := p.bvals[iv]; compiled {
+				return b.Load(slot)
+			}
+		}
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
@@ -1843,7 +2069,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
-		ret = p.call(b, llssa.Call, &v.Call)
+		ret = p.call(b, llssa.Call, v, &v.Call)
 	case *ssa.BinOp:
 		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
 			if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
@@ -2120,6 +2346,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
+	if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil && ret.Type != nil {
+		b.Store(slot, ret)
+	}
 	p.bvals[iv] = ret
 	if usesSplitPhiIncoming(iv) {
 		p.vblks[iv] = b.Block()
@@ -2215,9 +2444,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		if p.compileSharedDeferFunc0(b, v) {
 			return
 		}
-		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
+		p.call(b, p.blkInfos[v.Block().Index].Kind, v, &v.Call)
 	case *ssa.Go:
-		p.call(b, llssa.Go, &v.Call)
+		p.call(b, llssa.Go, v, &v.Call)
 	case *ssa.RunDefers:
 		b.RunDefers()
 	case *ssa.Panic:
@@ -2333,6 +2562,11 @@ func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) l
 }
 
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+	if slot, ok := p.valueSlots[v]; ok && slot.Type != nil {
+		if _, compiled := p.bvals[v]; compiled {
+			return b.Load(slot)
+		}
+	}
 	if val, ok := p.bvals[v]; ok {
 		return val
 	}
@@ -2344,6 +2578,12 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		fn := v.Parent()
 		for idx, param := range fn.Params {
 			if param == v {
+				if shadow, ok := p.paramShadow[idx]; ok && shadow.Type != nil {
+					return shadow
+				}
+				if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+					return b.Load(slot)
+				}
 				return b.Param(idx)
 			}
 		}
@@ -2405,6 +2645,30 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 	if hasVArg > 0 {
 		ret = p.compileVArg(ret, b, vals[n])
 	}
+	return ret
+}
+
+func (p *context) clearPreCallValues(b llssa.Builder, owner ssa.Instruction) {
+	if owner == nil {
+		return
+	}
+	cleared := make(map[ssa.Value]bool)
+	for _, v := range p.valuePreClears[owner] {
+		if cleared[v] {
+			continue
+		}
+		slot, ok := p.valueSlots[v]
+		if !ok || slot.Type == nil {
+			continue
+		}
+		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
+		cleared[v] = true
+	}
+}
+
+func (p *context) compileValuesForInstr(b llssa.Builder, owner ssa.Instruction, vals []ssa.Value, hasVArg int) []llssa.Expr {
+	ret := p.compileValues(b, vals, hasVArg)
+	p.clearPreCallValues(b, owner)
 	return ret
 }
 

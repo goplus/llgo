@@ -755,7 +755,7 @@ func recoverTokenExprCL(b llssa.Builder, fn llssa.Expr) llssa.Expr {
 
 // -----------------------------------------------------------------------------
 
-func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
+func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instruction, call *ssa.CallCommon) (ret llssa.Expr) {
 	parentSynthetic := p.goFn != nil && p.goFn.Synthetic != ""
 	keepRecoverContext := false
 	wrapperRecoverContext := false
@@ -831,7 +831,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		if llssa.HasNameValist(call.Signature()) {
 			hasVArg = fnHasVArg
 		}
-		args := p.compileValues(b, call.Args, hasVArg)
+		args := p.compileValuesForInstr(b, owner, call.Args, hasVArg)
 		ret = callMaybeSuspendRecover(fn, args, true)
 		return
 	}
@@ -884,7 +884,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			}
 			panic("unsafe.Offsetof: unsupported argument")
 		} else {
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = callMaybeSuspendRecover(llssa.Builtin(fn), args, fn != "recover" && fn != "panic")
 		}
 	case *ssa.Function:
@@ -893,6 +893,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 				params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
 				helper := b.Pkg.NewFunc("runtime.KeepAlivePointer",
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+				p.clearPreCallValues(b, owner)
 				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{ptrArg}, false)
 				return
 			}
@@ -908,6 +909,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 				helper := b.Pkg.NewFunc("runtime.SetFinalizerTypeHidden",
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
 				finalizer := p.compileValue(b, args[1])
+				p.clearPreCallValues(b, owner)
 				callMaybeSuspendRecover(helper.Expr, []llssa.Expr{objType, objKey, finalizer}, false)
 				return
 			}
@@ -918,20 +920,20 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		switch ftype {
 		case cFunc:
 			p.inCFunc = true
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			p.inCFunc = false
 			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
 		case goFunc:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = callMaybeSuspendRecover(aFn.Expr, args, suspend)
 		case pyFunc:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = callMaybeSuspendRecover(pyFn.Expr, args, suspend)
 		case llgoPyList:
-			args := p.compileValues(b, args, fnHasVArg)
+			args := p.compileValuesForInstr(b, owner, args, fnHasVArg)
 			ret = b.PyList(args...)
 		case llgoPyTuple:
-			args := p.compileValues(b, args, fnHasVArg)
+			args := p.compileValuesForInstr(b, owner, args, fnHasVArg)
 			ret = b.PyTuple(args...)
 		case llgoPyStr:
 			ret = pystr(b, args)
@@ -994,33 +996,33 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		case llgoAtomicLoad:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicLoad(b, args)
 			}, args...)
 		case llgoAtomicStore:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicStore(b, args)
 			}, args...)
 		case llgoAtomicCmpXchg:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicCmpXchg(b, args)
 			}, args...)
 		case llgoAtomicCmpXchgOK:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicCmpXchgOK(b, args)
 			}, args...)
 		case llgoAtomicAddReturnNew:
-			args := p.compileValues(b, args, kind)
+			args := p.compileValuesForInstr(b, owner, args, kind)
 			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return b.BinOp(token.ADD, p.atomic(b, llssa.OpAdd, args), args[1])
 			}, args...)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
-				args := p.compileValues(b, args, kind)
+				args := p.compileValuesForInstr(b, owner, args, kind)
 				ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 					return p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
 				}, args...)
@@ -1030,7 +1032,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		}
 	default:
 		fn := p.compileValue(b, cv)
-		args := p.compileValues(b, args, kind)
+		args := p.compileValuesForInstr(b, owner, args, kind)
 		ret = callMaybeSuspendRecover(fn, args, true)
 	}
 	return

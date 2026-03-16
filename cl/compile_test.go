@@ -458,6 +458,39 @@ func f() {
 	}
 }
 
+func TestPointerValueClearedBeforeLastCallUse(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{}
+
+func mk() *T { return new(T) }
+func use(*T) {}
+
+func f() {
+	x := mk()
+	use(x)
+	println(0)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, "@foo.use(")
+	if callIdx < 0 {
+		t.Fatalf("missing foo.use call:\n%s", body)
+	}
+	rest := body[:callIdx]
+	loadIdx := strings.LastIndex(rest, "load ptr, ptr")
+	if loadIdx < 0 {
+		t.Fatalf("missing pointer slot load before foo.use:\n%s", body)
+	}
+	clearIdx := strings.LastIndex(rest, "store ptr null, ptr")
+	if clearIdx < 0 {
+		t.Fatalf("missing pointer slot clear before foo.use:\n%s", body)
+	}
+	if clearIdx < loadIdx {
+		t.Fatalf("pointer slot cleared before last-use load:\n%s", body)
+	}
+}
+
 func TestGoPkgMath(t *testing.T) {
 	conf := build.NewDefaultConf(build.ModeInstall)
 	_, err := build.Do([]string{"math"}, conf)

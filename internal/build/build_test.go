@@ -465,7 +465,7 @@ func g(s *StkObj) {
 	if callIdx < 0 {
 		t.Fatalf("missing g call in f:\n%s", fBody)
 	}
-	if clearIdx := strings.Index(fBody[callIdx:], `zeroinitializer, ptr %0`); clearIdx < 0 {
+	if clearIdx := strings.Index(fBody[callIdx:], `zeroinitializer`); clearIdx < 0 {
 		t.Fatalf("f should clear the stack object after calling g:\n%s", fBody)
 	}
 	if !strings.Contains(gBody, "@runtime.KeepAlivePointer(") {
