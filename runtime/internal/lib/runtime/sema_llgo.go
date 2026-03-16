@@ -5,71 +5,102 @@ package runtime
 import (
 	"unsafe"
 
-	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	c "github.com/goplus/llgo/runtime/internal/clite"
 	latomic "github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
 )
 
-// Minimal semaphore + notify list support for stdlib sync on llgo/darwin.
+// Minimal semaphore + notify list support for stdlib sync on llgo/darwin+linux.
+//
+// Keep the API surface close to Go's runtime hooks, but avoid pthread condvars
+// in this path. We use a lock-free state table keyed by the wait address and a
+// sequence counter to break sleepers out of short usleep backoff loops.
 
-type semaState struct {
-	mu      psync.Mutex
-	cond    psync.Cond
+type waitState struct {
+	key     uintptr
+	seq     uint32
 	waiters uint32
+	next    unsafe.Pointer // *waitState
 }
 
-var semaOnce psync.Once
-var semaMu psync.Mutex
-var semaMap map[uintptr]*semaState
+var waitStateHead unsafe.Pointer // *waitState
 
-func initSemaMap() {
-	semaMu.Init(nil)
-	semaMap = make(map[uintptr]*semaState)
-}
-
-func getSemaState(addr *uint32) *semaState {
-	semaOnce.Do(initSemaMap)
-	key := uintptr(unsafe.Pointer(addr))
-	semaMu.Lock()
-	st := semaMap[key]
-	if st == nil {
-		st = &semaState{}
-		st.mu.Init(nil)
-		st.cond.Init(nil)
-		semaMap[key] = st
+func findWaitState(key uintptr) *waitState {
+	for st := (*waitState)(latomic.LoadPointer(&waitStateHead)); st != nil; st = (*waitState)(latomic.LoadPointer(&st.next)) {
+		if st.key == key {
+			return st
+		}
 	}
-	semaMu.Unlock()
-	return st
+	return nil
+}
+
+func getWaitState(key uintptr) *waitState {
+	for {
+		if st := findWaitState(key); st != nil {
+			return st
+		}
+		head := latomic.LoadPointer(&waitStateHead)
+		st := &waitState{key: key}
+		latomic.StorePointer(&st.next, head)
+		if latomic.CompareAndSwapPointer(&waitStateHead, head, unsafe.Pointer(st)) {
+			return st
+		}
+	}
+}
+
+func beginWait(st *waitState) uint32 {
+	seq := latomic.LoadUint32(&st.seq)
+	latomic.AddUint32(&st.waiters, 1)
+	return seq
+}
+
+func endWait(st *waitState) {
+	latomic.AddUint32(&st.waiters, ^uint32(0))
+}
+
+func wakeWaiters(st *waitState) {
+	if st == nil || latomic.LoadUint32(&st.waiters) == 0 {
+		return
+	}
+	latomic.AddUint32(&st.seq, 1)
+}
+
+func waitForWake(st *waitState, seq uint32) {
+	usec := c.Uint(1)
+	for latomic.LoadUint32(&st.seq) == seq {
+		c.Usleep(usec)
+		if usec < 128 {
+			usec <<= 1
+		}
+	}
+}
+
+func less(a, b uint32) bool {
+	return int32(a-b) < 0
 }
 
 func semaAcquire(addr *uint32) {
+	key := uintptr(unsafe.Pointer(addr))
 	for {
 		v := latomic.LoadUint32(addr)
 		if v != 0 && latomic.CompareAndSwapUint32(addr, v, v-1) {
 			return
 		}
-		st := getSemaState(addr)
-		st.mu.Lock()
-		for {
-			v = latomic.LoadUint32(addr)
-			if v != 0 && latomic.CompareAndSwapUint32(addr, v, v-1) {
-				st.mu.Unlock()
-				return
-			}
-			st.waiters++
-			st.cond.Wait(&st.mu)
-			st.waiters--
+
+		st := getWaitState(key)
+		seq := beginWait(st)
+		v = latomic.LoadUint32(addr)
+		if v != 0 && latomic.CompareAndSwapUint32(addr, v, v-1) {
+			endWait(st)
+			return
 		}
+		waitForWake(st, seq)
+		endWait(st)
 	}
 }
 
 func semaRelease(addr *uint32) {
 	latomic.AddUint32(addr, 1)
-	st := getSemaState(addr)
-	st.mu.Lock()
-	if st.waiters != 0 {
-		st.cond.Signal()
-	}
-	st.mu.Unlock()
+	wakeWaiters(findWaitState(uintptr(unsafe.Pointer(addr))))
 }
 
 // sync_runtime_Semacquire should be an internal detail, but is linknamed.
@@ -179,35 +210,6 @@ type notifyList struct {
 	tail   unsafe.Pointer
 }
 
-type notifyState struct {
-	mu   psync.Mutex
-	cond psync.Cond
-}
-
-var notifyOnce psync.Once
-var notifyMu psync.Mutex
-var notifyMap map[uintptr]*notifyState
-
-func initNotifyMap() {
-	notifyMu.Init(nil)
-	notifyMap = make(map[uintptr]*notifyState)
-}
-
-func getNotifyState(l *notifyList) *notifyState {
-	notifyOnce.Do(initNotifyMap)
-	key := uintptr(unsafe.Pointer(l))
-	notifyMu.Lock()
-	st := notifyMap[key]
-	if st == nil {
-		st = &notifyState{}
-		st.mu.Init(nil)
-		st.cond.Init(nil)
-		notifyMap[key] = st
-	}
-	notifyMu.Unlock()
-	return st
-}
-
 //go:linkname sync_runtime_notifyListAdd sync.runtime_notifyListAdd
 func sync_runtime_notifyListAdd(l *notifyList) uint32 {
 	return latomic.AddUint32(&l.wait, 1) - 1
@@ -215,32 +217,40 @@ func sync_runtime_notifyListAdd(l *notifyList) uint32 {
 
 //go:linkname sync_runtime_notifyListWait sync.runtime_notifyListWait
 func sync_runtime_notifyListWait(l *notifyList, t uint32) {
-	st := getNotifyState(l)
-	st.mu.Lock()
-	for latomic.LoadUint32(&l.notify) == t {
-		st.cond.Wait(&st.mu)
+	key := uintptr(unsafe.Pointer(l))
+	for {
+		if less(t, latomic.LoadUint32(&l.notify)) {
+			return
+		}
+		st := getWaitState(key)
+		seq := beginWait(st)
+		if less(t, latomic.LoadUint32(&l.notify)) {
+			endWait(st)
+			return
+		}
+		waitForWake(st, seq)
+		endWait(st)
 	}
-	st.mu.Unlock()
 }
 
 //go:linkname sync_runtime_notifyListNotifyAll sync.runtime_notifyListNotifyAll
 func sync_runtime_notifyListNotifyAll(l *notifyList) {
-	st := getNotifyState(l)
-	st.mu.Lock()
 	latomic.StoreUint32(&l.notify, latomic.LoadUint32(&l.wait))
-	st.cond.Broadcast()
-	st.mu.Unlock()
+	wakeWaiters(findWaitState(uintptr(unsafe.Pointer(l))))
 }
 
 //go:linkname sync_runtime_notifyListNotifyOne sync.runtime_notifyListNotifyOne
 func sync_runtime_notifyListNotifyOne(l *notifyList) {
-	st := getNotifyState(l)
-	st.mu.Lock()
-	if latomic.LoadUint32(&l.notify) != latomic.LoadUint32(&l.wait) {
-		latomic.AddUint32(&l.notify, 1)
-		st.cond.Signal()
+	for {
+		notify := latomic.LoadUint32(&l.notify)
+		if notify == latomic.LoadUint32(&l.wait) {
+			return
+		}
+		if latomic.CompareAndSwapUint32(&l.notify, notify, notify+1) {
+			wakeWaiters(findWaitState(uintptr(unsafe.Pointer(l))))
+			return
+		}
 	}
-	st.mu.Unlock()
 }
 
 //go:linkname sync_runtime_notifyListCheck sync.runtime_notifyListCheck
