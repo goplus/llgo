@@ -406,6 +406,9 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 
 	paths := make([]string, 0, len(lp.SFiles))
 	for _, f := range lp.SFiles {
+		if isPkgTestSFile(f) {
+			continue
+		}
 		if lp.Dir == "" {
 			continue
 		}
@@ -413,4 +416,8 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	}
 	ctx.sfilesCache[pkg.ID] = paths
 	return paths, nil
+}
+
+func isPkgTestSFile(name string) bool {
+	return strings.HasSuffix(name, "_test.s") || strings.HasSuffix(name, "_test.S")
 }
