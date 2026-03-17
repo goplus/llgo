@@ -996,10 +996,12 @@ _llgo_0:
 
 func TestZeroMapUsesNullPointer(t *testing.T) {
 	prog := NewProgram(nil)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
 	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(PkgRuntime)
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
 		return pkg
 	})
 	pkg := prog.NewPackage("bar", "foo/bar")
@@ -1017,6 +1019,45 @@ func TestZeroMapUsesNullPointer(t *testing.T) {
 	}
 	if !strings.Contains(ir, "store ptr null") {
 		t.Fatalf("zero map store should use a null pointer:\n%s", ir)
+	}
+}
+
+func TestLookupCommaOkSkipsNilValueLoad(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	mapType := types.NewMap(types.Typ[types.Int], types.Typ[types.Int])
+	params := types.NewTuple(
+		types.NewVar(0, nil, "m", mapType),
+		types.NewVar(0, nil, "k", types.Typ[types.Int]),
+	)
+	rets := types.NewTuple(
+		types.NewVar(0, nil, "", types.Typ[types.Int]),
+		types.NewVar(0, nil, "", types.Typ[types.Bool]),
+	)
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("lookup", sig, InGo)
+	b := fn.MakeBody(1)
+	vals := b.Lookup(fn.Param(0), fn.Param(1), true)
+	b.Return(b.Extract(vals, 0), b.Extract(vals, 1))
+
+	ir := fn.impl.String()
+	if !strings.Contains(ir, `call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"`) {
+		t.Fatalf("lookup should call MapAccess2:\n%s", ir)
+	}
+	if !strings.Contains(ir, "br i1") {
+		t.Fatalf("comma-ok lookup should branch on ok before loading value:\n%s", ir)
+	}
+	if strings.Contains(ir, "call void @\"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref\"(i1 %") &&
+		!strings.Contains(ir, "store i64 0") {
+		t.Fatalf("comma-ok lookup should materialize a zero slot instead of unconditional nil-deref:\n%s", ir)
 	}
 }
 

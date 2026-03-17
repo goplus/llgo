@@ -587,9 +587,15 @@ func (b Builder) Lookup(x, key Expr, commaOk bool) (ret Expr) {
 	keytmp, ptr := b.mapKeyPtr(key)
 	if commaOk {
 		vals := b.Call(b.Pkg.rtFunc("MapAccess2"), typ, x, ptr)
-		val := b.Load(Expr{b.impl.CreateExtractValue(vals.impl, 0, ""), prog.Pointer(vtyp)})
 		ok := b.impl.CreateExtractValue(vals.impl, 1, "")
 		b.clearMapKeyTmp(keytmp)
+		valSlot := b.AllocU(vtyp)
+		b.Store(valSlot, prog.Zero(vtyp))
+		b.IfThen(Expr{ok, prog.Bool()}, func() {
+			valPtr := Expr{b.impl.CreateExtractValue(vals.impl, 0, ""), prog.Pointer(vtyp)}
+			b.Store(valSlot, b.Load(valPtr))
+		})
+		val := b.Load(valSlot)
 		t := prog.Struct(vtyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok)
 	} else {
