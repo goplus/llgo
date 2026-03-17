@@ -1898,12 +1898,27 @@ func (p *context) collectHiddenPointerAllocs(fn *ssa.Function) map[*ssa.Alloc]bo
 	return ret
 }
 
+func (p *context) loopBlocks(fn *ssa.Function) map[*ssa.BasicBlock]bool {
+	ret := make(map[*ssa.BasicBlock]bool)
+	if fn == nil {
+		return ret
+	}
+	infos := blocks.Infos(fn.Blocks)
+	for _, blk := range fn.Blocks {
+		if infos[blk.Index].Kind == llssa.DeferInLoop {
+			ret[blk] = true
+		}
+	}
+	return ret
+}
+
 func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
 	plans := make(map[ssa.Instruction][]int)
 	callsites, ok := p.staticPointerParamCallsites(fn)
 	if !ok {
 		return plans
 	}
+	loopBlock := p.loopBlocks(fn)
 	for idx, param := range fn.Params {
 		if p.hiddenParamKeys[idx] {
 			continue
@@ -1928,6 +1943,9 @@ func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][
 		if !ok || last == nil {
 			continue
 		}
+		if loopBlock[blk] {
+			continue
+		}
 		if !p.allStaticCallArgsClearable(callsites, idx, pt.Elem()) {
 			continue
 		}
@@ -1938,6 +1956,7 @@ func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][
 
 func (p *context) collectParamValueClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
 	plans := make(map[ssa.Instruction][]int)
+	loopBlock := p.loopBlocks(fn)
 	for idx, param := range fn.Params {
 		if p.hiddenParamKeys[idx] {
 			continue
@@ -1959,6 +1978,9 @@ func (p *context) collectParamValueClearPlans(fn *ssa.Function) map[ssa.Instruct
 		}
 		last, ok := p.lastSameBlockStackUse(param, blk, order, map[ssa.Value]bool{})
 		if !ok || last == nil {
+			continue
+		}
+		if loopBlock[blk] {
 			continue
 		}
 		plans[last] = append(plans[last], idx)
@@ -2141,15 +2163,7 @@ func (p *context) lastUseInBlock(v ssa.Value, blk *ssa.BasicBlock, order map[ssa
 func (p *context) collectPointerValueClearPlans(fn *ssa.Function) (map[ssa.Instruction][]ssa.Value, map[ssa.Instruction][]ssa.Value) {
 	pre := make(map[ssa.Instruction][]ssa.Value)
 	post := make(map[ssa.Instruction][]ssa.Value)
-	loopBlock := make(map[*ssa.BasicBlock]bool)
-	if fn != nil {
-		infos := blocks.Infos(fn.Blocks)
-		for _, blk := range fn.Blocks {
-			if infos[blk.Index].Kind == llssa.DeferInLoop {
-				loopBlock[blk] = true
-			}
-		}
-	}
+	loopBlock := p.loopBlocks(fn)
 	for _, blk := range fn.Blocks {
 		for _, instr := range blk.Instrs {
 			val, ok := instr.(ssa.Value)

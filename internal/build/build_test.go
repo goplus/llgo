@@ -629,6 +629,66 @@ func f(t *Uncommon) {
 	}
 }
 
+func TestModeGenLoopParamValueClearSkipsLoopCarriedPointer(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-loop-param-clear-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/loopparamclear\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+type Meta struct {
+	BucketSize uint16
+}
+
+var sink bool
+
+func bucketEvacuated(t *Meta, bucket uintptr) bool {
+	return bucket < uintptr(t.BucketSize)
+}
+
+func f(t *Meta, stop uintptr) {
+	cur := uintptr(0)
+	for cur != stop && bucketEvacuated(t, cur) {
+		cur++
+	}
+	sink = cur == stop
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/loopparamclear.f")
+	loopClear := regexp.MustCompile(`(?s)load ptr, ptr (%\d+), align 8.*call i1 @"example\.com/loopparamclear\.bucketEvacuated"\(ptr %\d+, i64 %\d+\).*store ptr null, ptr (%\d+), align 8`)
+	if m := loopClear.FindStringSubmatch(body); m != nil && m[1] == m[2] {
+		t.Fatalf("f should not clear a loop-carried parameter slot inside the loop:\n%s", body)
+	}
+}
+
 func functionBody(t *testing.T, ir, name string) string {
 	t.Helper()
 	marker := `define void @"` + name + `"`
