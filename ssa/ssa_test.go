@@ -989,9 +989,35 @@ _llgo_0:
 define void @main() {
 _llgo_0:
   call void @fn({ i64, ptr } zeroinitializer)
-  ret void
+	ret void
 }
 `)
+}
+
+func TestZeroMapUsesNullPointer(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	mapType := types.NewMap(types.Typ[types.Int], types.Typ[types.Int])
+
+	fn := pkg.NewFunc("zeroMap", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+	slot := b.AllocaT(prog.Type(mapType, InGo))
+	b.Store(slot, prog.Zero(prog.Type(mapType, InGo)))
+	b.Return()
+
+	ir := fn.impl.String()
+	if strings.Contains(ir, "memset") {
+		t.Fatalf("zero map store should not lower to memset:\n%s", ir)
+	}
+	if !strings.Contains(ir, "store ptr null") {
+		t.Fatalf("zero map store should use a null pointer:\n%s", ir)
+	}
 }
 
 func TestFuncMultiRet(t *testing.T) {
