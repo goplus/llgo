@@ -103,9 +103,44 @@ void llgo_store_hidden_pointer_root(void *dst, uintptr_t key)
     memset(&src, 0, sizeof(src));
 }
 
+uintptr_t llgo_load_hidden_pointer_key(uintptr_t key)
+{
+    void **src = (void **)llgo_decode_hidden_pointer_key(key);
+    void *ptr = *src;
+    uintptr_t out = llgo_encode_hidden_pointer_key((uintptr_t)ptr);
+    memset(&ptr, 0, sizeof(ptr));
+    return out;
+}
+
 void llgo_clobber_pointer_regs(uintptr_t a0, uintptr_t a1, uintptr_t a2, uintptr_t a3,
     uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7)
 {
     volatile uintptr_t sink = a0 | a1 | a2 | a3 | a4 | a5 | a6 | a7;
     (void)sink;
+#if defined(__aarch64__)
+    __asm__ volatile(
+        "mov x0, xzr\n\t"
+        "mov x1, xzr\n\t"
+        "mov x2, xzr\n\t"
+        "mov x3, xzr\n\t"
+        "mov x4, xzr\n\t"
+        "mov x5, xzr\n\t"
+        "mov x6, xzr\n\t"
+        "mov x7, xzr\n\t"
+        "mov x8, xzr\n\t"
+        "mov x9, xzr\n\t"
+        "mov x10, xzr\n\t"
+        "mov x11, xzr\n\t"
+        "mov x12, xzr\n\t"
+        "mov x13, xzr\n\t"
+        "mov x14, xzr\n\t"
+        "mov x15, xzr\n\t"
+        "mov x16, xzr\n\t"
+        "mov x17, xzr\n\t"
+        :
+        :
+        : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
+          "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15",
+          "x16", "x17");
+#endif
 }

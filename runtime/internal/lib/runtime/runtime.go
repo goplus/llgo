@@ -113,6 +113,9 @@ func c_store_hidden_pointee(key uintptr, src unsafe.Pointer, size uintptr)
 //go:linkname c_store_hidden_pointer_root C.llgo_store_hidden_pointer_root
 func c_store_hidden_pointer_root(dst unsafe.Pointer, key uintptr)
 
+//go:linkname c_load_hidden_pointer_key C.llgo_load_hidden_pointer_key
+func c_load_hidden_pointer_key(key uintptr) uintptr
+
 //go:noinline
 func LoadHiddenPointee(dst unsafe.Pointer, key uintptr, size uintptr) {
 	runtime.AssertNilDeref(key == runtime.HiddenNilPointerKey())
@@ -143,8 +146,26 @@ func StoreHiddenPointee(key uintptr, src unsafe.Pointer, size uintptr) {
 
 //go:noinline
 func StoreHiddenPointerRoot(dst unsafe.Pointer, key uintptr) {
-	runtime.AssertNilDeref(key == runtime.HiddenNilPointerKey())
+	if key == runtime.HiddenNilPointerKey() {
+		*(*unsafe.Pointer)(dst) = nil
+		dst = nil
+		key = 0
+		ClobberPointerRegs()
+		return
+	}
 	c_store_hidden_pointer_root(dst, key)
+	dst = nil
+	key = 0
+	ClobberPointerRegs()
+}
+
+//go:noinline
+func LoadHiddenPointerKey(key uintptr) uintptr {
+	runtime.AssertNilDeref(key == runtime.HiddenNilPointerKey())
+	out := c_load_hidden_pointer_key(key)
+	key = 0
+	ClobberPointerRegs()
+	return out
 }
 
 //go:linkname c_write C.write
