@@ -511,6 +511,51 @@ func f(s S, b bool) {
 	}
 }
 
+func TestHiddenCallArgClearClobbersPointerRegs(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H [8]int64
+
+func gc() { runtime.GC() }
+func g(h *H) {
+	gc()
+	_ = h[0]
+	defer func() {
+		gc()
+		recover()
+	}()
+	*(*int)(nil) = 0
+}
+func mk() *H {
+	h := new(H)
+	return h
+}
+func f() {
+	h := mk()
+	g(h)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.g$hiddenparam"(`)
+	if callIdx < 0 {
+		t.Fatalf("missing hidden-param caller path:\n%s", body)
+	}
+	window := body[:callIdx]
+	clearIdx := strings.LastIndex(window, "store ptr null, ptr")
+	if clearIdx < 0 {
+		t.Fatalf("missing caller-side pointer clear before hidden call:\n%s", body)
+	}
+	clobberIdx := strings.LastIndex(window, "@runtime.ClobberPointerRegs(")
+	if clobberIdx < 0 {
+		t.Fatalf("missing pointer clobber after caller-side clear:\n%s", body)
+	}
+	if clobberIdx < clearIdx {
+		t.Fatalf("pointer clobber ran before caller-side clear:\n%s", body)
+	}
+}
+
 func TestPointerKeepAliveUsesPointerHelper(t *testing.T) {
 	ir := compileIR(t, `package foo
 

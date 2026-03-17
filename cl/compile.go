@@ -4223,6 +4223,7 @@ func (p *context) clearPreCallValues(b llssa.Builder, owner ssa.Instruction) {
 		return
 	}
 	cleared := make(map[ssa.Value]bool)
+	didClear := false
 	for _, v := range p.valuePreClears[owner] {
 		if cleared[v] {
 			continue
@@ -4237,10 +4238,15 @@ func (p *context) clearPreCallValues(b llssa.Builder, owner ssa.Instruction) {
 				b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
 			}
 			cleared[v] = true
+			didClear = true
 			continue
 		}
 		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
 		cleared[v] = true
+		didClear = true
+	}
+	if didClear {
+		p.clobberPointerRegs(b)
 	}
 }
 
