@@ -20,22 +20,43 @@ type finalizerClosure struct {
 	env unsafe.Pointer
 }
 
-const hiddenPointerMask = ^uintptr(0)
+type finalizerKey struct {
+	a uintptr
+	b uintptr
+}
+
+func mixFinalizerKeyWord(x uintptr, salt uint64) uintptr {
+	v := uint64(x) + salt
+	v ^= v >> 30
+	v *= 0xbf58476d1ce4e5b9
+	v ^= v >> 27
+	v *= 0x94d049bb133111eb
+	v ^= v >> 31
+	return uintptr(v)
+}
+
+func makeFinalizerKey(objPtr unsafe.Pointer) finalizerKey {
+	x := uintptr(objPtr)
+	return finalizerKey{
+		a: mixFinalizerKeyWord(x, 0x9e3779b97f4a7c15),
+		b: mixFinalizerKeyWord(x, 0x243f6a8885a308d3),
+	}
+}
 
 var (
 	finalizerInitOnce psync.Once
 	finalizerMu       psync.Mutex
-	finalizerCancels  map[uintptr]func()
+	finalizerCancels  map[finalizerKey]func()
 )
 
 func ensureFinalizerInit() {
 	finalizerInitOnce.Do(func() {
 		finalizerMu.Init(nil)
-		finalizerCancels = make(map[uintptr]func())
+		finalizerCancels = make(map[finalizerKey]func())
 	})
 }
 
-func cancelFinalizer(key uintptr) {
+func cancelFinalizer(key finalizerKey) {
 	finalizerMu.Lock()
 	cancel := finalizerCancels[key]
 	delete(finalizerCancels, key)
@@ -73,7 +94,7 @@ func setFinalizer(objType *abi.Type, objPtr unsafe.Pointer, finalizer any) {
 	}
 
 	ensureFinalizerInit()
-	key := uintptr(objPtr) ^ hiddenPointerMask
+	key := makeFinalizerKey(objPtr)
 	cancelFinalizer(key)
 
 	if typeOf(finalizer) == nil {
@@ -110,7 +131,7 @@ func SetFinalizerType(objType *abi.Type, obj unsafe.Pointer, finalizer any) {
 }
 
 func SetFinalizerTypeHidden(objType *abi.Type, obj uintptr, finalizer any) {
-	setFinalizer(objType, unsafe.Pointer(obj^hiddenPointerMask), finalizer)
+	setFinalizer(objType, iruntime.DecodeHiddenPointerKey(obj), finalizer)
 }
 
 func finalizerFFIType(typ *abi.Type) *ffi.Type {

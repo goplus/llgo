@@ -707,6 +707,46 @@ func TestExprCoverageHelpers(t *testing.T) {
 	b.Return()
 }
 
+func TestClearLoadSource(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+
+	raw := types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, nil, "ptr", types.NewPointer(types.Typ[types.Byte]), false),
+		types.NewField(token.NoPos, nil, "len", types.Typ[types.Int], false),
+		types.NewField(token.NoPos, nil, "cap", types.Typ[types.Int], false),
+	}, nil)
+	aggTy := prog.Type(raw, InGo)
+	ptr := b.ChangeType(prog.Pointer(prog.Byte()), prog.IntVal(1, prog.Uintptr()))
+	val := b.Aggregate(aggTy, ptr, prog.Val(1), prog.Val(1))
+	slotDirect := b.AllocaT(aggTy)
+	b.Store(slotDirect, val)
+	if ok := b.ClearLoadSource(Expr{slotDirect.impl, aggTy}); !ok {
+		t.Fatal("ClearLoadSource should clear direct alloca-backed temp")
+	}
+	slotLoad := b.AllocaT(aggTy)
+	b.Store(slotLoad, val)
+	if ok := b.ClearLoadSource(b.Load(slotLoad)); !ok {
+		t.Fatal("ClearLoadSource should clear load-backed temp")
+	}
+	b.Return()
+
+	ir := fn.impl.String()
+	if strings.Count(ir, "zeroinitializer") < 2 {
+		t.Fatalf("missing zero stores after ClearLoadSource:\n%s", ir)
+	}
+}
+
 func TestTypes(t *testing.T) {
 	ctx := llvm.NewContext()
 	llvmIntType(ctx, 4)

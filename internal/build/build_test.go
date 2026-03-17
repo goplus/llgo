@@ -330,6 +330,21 @@ func f(x *T) {
 	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
 		t.Fatalf("f should not call SetFinalizer directly:\n%s", body)
 	}
+	callIdx := strings.Index(body, "@runtime.SetFinalizerTypeHidden(")
+	if callIdx < 0 {
+		t.Fatalf("missing SetFinalizerTypeHidden call:\n%s", body)
+	}
+	window := body[:callIdx]
+	hasXor := strings.Contains(window, "xor i64") || strings.Contains(window, "xor i32")
+	hasMul := strings.Contains(window, "mul i64") || strings.Contains(window, "mul i32")
+	hasRotate := strings.Contains(window, "shl i64") || strings.Contains(window, "shl i32")
+	hasRotate = hasRotate && (strings.Contains(window, "lshr i64") || strings.Contains(window, "lshr i32"))
+	if !hasXor || !hasMul || !hasRotate {
+		t.Fatalf("f should encode the finalizer key before SetFinalizerTypeHidden:\n%s", body)
+	}
+	if !strings.Contains(body[callIdx:], "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("f should clobber transient pointer registers after SetFinalizerTypeHidden:\n%s", body)
+	}
 }
 
 func TestModeGenSetFinalizerUsesTypedHelperForFieldClosure(t *testing.T) {
@@ -447,6 +462,9 @@ func f(s string) {
 	window := body[loadIdx:callIdx]
 	if strings.Contains(window, "ptrtoint") || strings.Contains(window, "inttoptr") {
 		t.Fatalf("f should reuse the hidden pointer key without decoding/re-encoding it:\n%s", body)
+	}
+	if !strings.Contains(body[callIdx:], "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("f should clobber transient pointer registers after SetFinalizerTypeHidden:\n%s", body)
 	}
 }
 

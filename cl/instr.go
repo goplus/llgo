@@ -763,7 +763,16 @@ func recoverTokenExprCL(b llssa.Builder, fn llssa.Expr) llssa.Expr {
 
 // -----------------------------------------------------------------------------
 
-func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instruction, call *ssa.CallCommon) (ret llssa.Expr) {
+func (p *context) callResultUsesHiddenPointerKey(owner ssa.Instruction) bool {
+	v, ok := owner.(ssa.Value)
+	if !ok || v == nil {
+		return false
+	}
+	slot, ok := p.valueSlots[v]
+	return ok && slot.Type != nil && p.hiddenValueSlots[v] && p.hiddenValueUsesUintptrSlot(v.Type())
+}
+
+func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instruction, call *ssa.CallCommon, asValue bool) (ret llssa.Expr) {
 	parentSynthetic := p.goFn != nil && p.goFn.Synthetic != ""
 	keepRecoverContext := false
 	wrapperRecoverContext := false
@@ -897,6 +906,13 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 			}
 			panic("unsafe.Offsetof: unsupported argument")
 		} else if fn == "StringData" && len(args) == 1 {
+			if p.callResultUsesHiddenPointerKey(owner) {
+				if key, ok := p.hiddenAggregateArgKey(b, args[0]); ok {
+					p.clearPreCallValues(b, owner)
+					ret = key
+					break
+				}
+			}
 			if data, ok := p.hiddenAggregateArgData(b, args[0]); ok {
 				p.clearPreCallValues(b, owner)
 				ret = b.ChangeType(b.Prog.Pointer(b.Prog.Byte()), data)
@@ -906,6 +922,13 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				return p.compileValuesForInstr(b, owner, args, kind)
 			})
 		} else if fn == "SliceData" && len(args) == 1 {
+			if p.callResultUsesHiddenPointerKey(owner) {
+				if key, ok := p.hiddenAggregateArgKey(b, args[0]); ok {
+					p.clearPreCallValues(b, owner)
+					ret = key
+					break
+				}
+			}
 			if data, ok := p.hiddenAggregateArgData(b, args[0]); ok {
 				p.clearPreCallValues(b, owner)
 				ret = data
@@ -942,11 +965,14 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				)
 				helper := b.Pkg.NewFunc("runtime.SetFinalizerTypeHidden",
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+				clobber := b.Pkg.NewFunc("runtime.ClobberPointerRegs",
+					types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InGo)
 				finalizer := p.compileValue(b, args[1])
 				p.clearPreCallValues(b, owner)
 				callMaybeSuspendRecover(helper.Expr, false, func() []llssa.Expr {
 					return []llssa.Expr{objType, objKey, finalizer}
 				})
+				callMaybeSuspendRecover(clobber.Expr, false, func() []llssa.Expr { return nil })
 				return
 			}
 		}
@@ -964,6 +990,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 		case goFunc:
 			callee := aFn.Expr
 			hiddenParamIdx := -1
+			hiddenResult := false
+			hiddenResultType := types.Type(nil)
 			if plan := p.hiddenParamWrapperPlanFor(aFn.Name(), cv); plan != nil {
 				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
 					callee = hiddenFn.Expr
@@ -973,15 +1001,33 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
 					callee = hiddenFn.Expr
 					hiddenParamIdx = plan.paramIdx
+					hiddenResult = plan.resultHidden
+					hiddenResultType = plan.resultRawType
 				}
 			}
 			ret = callMaybeSuspendRecover(callee, suspend, func() []llssa.Expr {
-				args := p.compileValuesForInstr(b, owner, args, kind)
-				if hiddenParamIdx >= 0 {
-					args[hiddenParamIdx] = p.hiddenPointerKey(b, args[hiddenParamIdx])
+				if hiddenParamIdx < 0 {
+					return p.compileValuesForInstr(b, owner, args, kind)
 				}
-				return args
+				llargs := make([]llssa.Expr, len(args))
+				for i, arg := range args {
+					if i == hiddenParamIdx {
+						if key, ok := p.hiddenPointerArgKey(b, arg); ok {
+							llargs[i] = key
+							continue
+						}
+					}
+					llargs[i] = p.compileValue(b, arg)
+				}
+				p.clearPreCallValues(b, owner)
+				if llargs[hiddenParamIdx].Type != nil && !types.Identical(llargs[hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
+					llargs[hiddenParamIdx] = p.hiddenPointerKey(b, llargs[hiddenParamIdx])
+				}
+				return llargs
 			})
+			if hiddenResult && ret.Type != nil && (asValue || !p.callResultUsesHiddenPointerKey(owner)) {
+				ret = p.hiddenPointerDecode(b, ret, hiddenResultType)
+			}
 		case pyFunc:
 			ret = callMaybeSuspendRecover(pyFn.Expr, suspend, func() []llssa.Expr {
 				return p.compileValuesForInstr(b, owner, args, kind)
@@ -1167,6 +1213,37 @@ func (p *context) hiddenAggregateArgData(b llssa.Builder, arg ssa.Value) (llssa.
 	return p.decodeHiddenAggregateData(b, b.Load(slot), arg.Type())
 }
 
+func (p *context) hiddenAggregateArgKey(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
+	if p.hiddenValueUsesUintptrSlot(arg.Type()) {
+		return llssa.Expr{}, false
+	}
+	slot, ok := p.valueSlots[arg]
+	if !ok || slot.Type == nil || !p.hiddenValueSlots[arg] {
+		return llssa.Expr{}, false
+	}
+	if iv, ok := arg.(instrOrValue); ok {
+		if _, compiled := p.bvals[arg]; !compiled {
+			p.compileInstrOrValue(b, iv, false)
+		}
+	} else if _, ok := p.bvals[arg]; !ok {
+		return llssa.Expr{}, false
+	}
+	val := b.Load(slot)
+	switch tt := types.Unalias(arg.Type()).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return llssa.Expr{}, false
+		}
+		return b.Convert(b.Prog.Uintptr(), b.StringData(val)), true
+	case *types.Slice:
+		return b.Convert(b.Prog.Uintptr(), b.SliceData(val)), true
+	case *types.Interface:
+		return b.Convert(b.Prog.Uintptr(), b.InterfaceData(val)), true
+	default:
+		return llssa.Expr{}, false
+	}
+}
+
 func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Expr, llssa.Expr, bool) {
 	if mi, ok := arg.(*ssa.MakeInterface); ok {
 		arg = mi.X
@@ -1182,9 +1259,7 @@ func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Exp
 	if ptr.Type == nil {
 		return llssa.Expr{}, llssa.Expr{}, false
 	}
-	key := b.Convert(b.Prog.Uintptr(), ptr)
-	key = b.BinOp(token.XOR, key, b.Prog.IntVal(0xffff, b.Prog.Uintptr()))
-	return b.AbiTypeOf(arg.Type()), key, true
+	return b.AbiTypeOf(arg.Type()), p.hiddenPointerKey(b, ptr), true
 }
 
 // -----------------------------------------------------------------------------

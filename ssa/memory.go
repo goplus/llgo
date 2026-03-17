@@ -374,6 +374,27 @@ func (b Builder) Store(ptr, val Expr) Expr {
 	return Expr{b.impl.CreateStore(val.impl, ptr.impl), b.Prog.Void()}
 }
 
+// ClearLoadSource zeroes the temporary alloca backing an aggregate value.
+// The value might be represented either as a direct alloca-backed temporary
+// or as a load from one. This is useful when the aggregate has been
+// re-encoded into a hidden slot and the original raw temp would otherwise
+// remain a conservative GC root.
+func (b Builder) ClearLoadSource(val Expr) bool {
+	src := val.impl.IsAAllocaInst()
+	if src.IsNil() {
+		load := val.impl.IsALoadInst()
+		if load.IsNil() {
+			return false
+		}
+		src = load.Operand(0).IsAAllocaInst()
+		if src.IsNil() {
+			return false
+		}
+	}
+	b.Store(Expr{src, b.Prog.Pointer(val.Type)}, b.Prog.Zero(val.Type))
+	return true
+}
+
 // Advance returns the pointer ptr advanced by offset.
 func (b Builder) Advance(ptr Expr, offset Expr) Expr {
 	if debugInstr {

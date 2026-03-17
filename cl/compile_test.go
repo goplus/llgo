@@ -495,9 +495,13 @@ func f() {
 		t.Fatalf("missing pointer slot load before foo.use:\n%s", body)
 	}
 	clearIdx := strings.LastIndex(rest, "store ptr null, ptr")
-	hiddenClearIdx := strings.LastIndex(rest, "store i64 -1, ptr")
-	if hiddenClearIdx > clearIdx {
-		clearIdx = hiddenClearIdx
+	if hiddenLoadIdx >= 0 {
+		if rel := strings.LastIndex(rest[hiddenLoadIdx:], "store i64 "); rel >= 0 {
+			hiddenClearIdx := hiddenLoadIdx + rel
+			if hiddenClearIdx > clearIdx {
+				clearIdx = hiddenClearIdx
+			}
+		}
 	}
 	if clearIdx < 0 {
 		t.Fatalf("missing pointer slot clear before foo.use:\n%s", body)
@@ -586,6 +590,130 @@ func f() {
 	}
 	if strings.Contains(body[loadIdx:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
 		t.Fatalf("unsafe.SliceData rebuilt the full slice from its hidden slot:\n%s", body)
+	}
+}
+
+func TestHiddenMakeSliceUsesStackSlotHelper(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "unsafe"
+
+func use(*byte) {}
+
+func f() {
+	s := make([]byte, 4)
+	s[0] = 1
+	p := unsafe.SliceData(s)
+	use(p)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, `@"github.com/goplus/llgo/runtime/internal/runtime.MakeSliceTo"`) {
+		t.Fatalf("missing MakeSliceTo helper for hidden make slice path:\n%s", body)
+	}
+	if strings.Contains(body, `call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"`) {
+		t.Fatalf("unexpected direct MakeSlice aggregate in hidden make slice path:\n%s", body)
+	}
+}
+
+func TestMakeSliceLocalClearedAfterLastUse(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "unsafe"
+
+func use(*byte) {}
+
+func f() {
+	s := make([]byte, 4)
+	s[0] = 1
+	p := unsafe.SliceData(s)
+	use(p)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, "@foo.use(")
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing foo.use call:\n%s", body)
+	}
+	window := body[:callIdx]
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, ptr`) {
+		t.Fatalf("missing raw make-slice local clear after last use:\n%s", body)
+	}
+}
+
+func TestHiddenPointerDerefUsesLoadHelper(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "unsafe"
+
+func wait() {}
+func g(x *byte) *byte { return x }
+
+func f(x, y string) {
+	s := x + y
+	p := unsafe.StringData(s)
+	h := g(p)
+	_ = *h
+	wait()
+}
+	`)
+	body := functionBody(t, ir, "foo.f")
+	scalarLoadIdx := strings.Index(body, "@runtime.LoadHiddenUint8(")
+	loadIdx := scalarLoadIdx
+	if loadIdx < 0 {
+		loadIdx = strings.Index(body, "@runtime.LoadHiddenPointee(")
+	}
+	if loadIdx < 0 {
+		t.Fatalf("missing hidden pointee load helper:\n%s", body)
+	}
+	if scalarLoadIdx >= 0 {
+		waitIdx := strings.Index(body[scalarLoadIdx:], "@foo.wait(")
+		if waitIdx < 0 {
+			t.Fatalf("missing wait call after scalar hidden load helper:\n%s", body)
+		}
+	} else {
+		clobberIdx := strings.Index(body[loadIdx:], "@runtime.ClobberPointerRegs(")
+		if clobberIdx < 0 {
+			t.Fatalf("missing pointer clobber after hidden pointee load:\n%s", body)
+		}
+		waitIdx := strings.Index(body[loadIdx+clobberIdx:], "@foo.wait(")
+		if waitIdx < 0 {
+			t.Fatalf("missing wait call after pointer clobber:\n%s", body)
+		}
+	}
+}
+
+func TestHiddenSliceIndexAddrUsesAdvanceHelper(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+func use(*byte) {}
+
+func f() {
+	s := make([]byte, 4)
+	p := &s[0]
+	use(p)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, "@runtime.AdvanceHiddenPointer(") {
+		t.Fatalf("missing hidden slice index helper:\n%s", body)
+	}
+}
+
+func TestHiddenIndexStoreUsesStoreHelper(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+func f() {
+	s := make([]byte, 4)
+	s[0] = 1
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, "@runtime.StoreHiddenPointee(") {
+		t.Fatalf("missing hidden pointee store helper:\n%s", body)
 	}
 }
 

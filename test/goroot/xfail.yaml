@@ -159,11 +159,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue57823.go
-    reason: last-use liveness for slice and string backing pointers still keeps the finalizable object reachable under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: chanlinear.go
     reason: goroutine-equals-thread select stress still times out under llgo on darwin/arm64
   - version: go1.24
@@ -219,3 +214,9 @@ timeouts:
     case: finprofiled.go
     timeout: 90s
     reason: finalizer-heavy heap profiling passes but needs a longer per-case timeout on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue57823.go
+    timeout: 240s
+    reason: hidden-pointer finalizer case now passes semantically but a cold llgo run still spends about 190s rebuilding runtime on darwin/arm64
