@@ -703,3 +703,77 @@ entry:
 		t.Fatalf("non-runtime large aggregate should still be wrapped:\n%s", mixed.String())
 	}
 }
+
+func TestModeAllFunc_CallCopiesLoadedByvalArgBeforeSourceClear(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%Method = type { ptr, i64, ptr }
+
+declare void @"pkg.callee"(%Method)
+
+define void @"pkg.caller"(%Method %0) {
+entry:
+  %1 = alloca %Method, align 8
+  store %Method %0, ptr %1, align 8
+  %2 = load %Method, ptr %1, align 8
+  store %Method zeroinitializer, ptr %1, align 8
+  call void @"pkg.callee"(%Method %2)
+  ret void
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modeall_copy_loaded_byval_arg.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeAllFunc, runtime.GOARCH)
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.TransformModule("test", mod)
+
+	caller := mod.NamedFunction("pkg.caller")
+	if caller.IsNil() {
+		t.Fatal("pkg.caller not found")
+	}
+	ir := caller.String()
+	zeroIdx := strings.Index(ir, `store %Method zeroinitializer, ptr %`)
+	callIdx := strings.Index(ir, `call void @pkg.callee(ptr %`)
+	if zeroIdx >= 0 && callIdx > zeroIdx {
+		zeroLine := ir[zeroIdx:]
+		if nl := strings.IndexByte(zeroLine, '\n'); nl >= 0 {
+			zeroLine = zeroLine[:nl]
+		}
+		callLine := ir[callIdx:]
+		if nl := strings.IndexByte(callLine, '\n'); nl >= 0 {
+			callLine = callLine[:nl]
+		}
+		zeroSlot := strings.TrimSuffix(strings.TrimPrefix(zeroLine, `store %Method zeroinitializer, ptr `), `, align 8`)
+		callSlot := strings.TrimSuffix(strings.TrimPrefix(callLine, `call void @pkg.callee(ptr `), `)`)
+		if zeroSlot == callSlot {
+			t.Fatalf("rewritten call should not pass the cleared source slot by byval:\n%s", ir)
+		}
+	}
+	if !strings.Contains(ir, `call void @pkg.callee(ptr`) {
+		t.Fatalf("rewritten call missing indirect aggregate arg:\n%s", ir)
+	}
+}

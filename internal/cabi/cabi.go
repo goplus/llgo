@@ -553,19 +553,6 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 		case AttrVoid:
 			// none
 		case AttrPointer:
-			if p.optimize {
-				if rv := param.IsALoadInst(); !rv.IsNil() {
-					ptr := rv.Operand(0)
-					if p.sys.SupportByVal() {
-						nparams = append(nparams, ptr)
-					} else {
-						nptr := createAlloca(ti.Type)
-						p.callMemcpy(m, ctx, b, nptr, ptr, ti.Size)
-						nparams = append(nparams, nptr)
-					}
-					break
-				}
-			}
 			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
 			nparams = append(nparams, ptr)

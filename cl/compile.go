@@ -402,6 +402,30 @@ func isRuntimeMetadataPointer(t types.Type) bool {
 		strings.HasPrefix(path, "github.com/goplus/llgo/runtime/internal/runtime")
 }
 
+func shouldSkipHiddenPointerRewrite(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "internal/reflectlite",
+		"reflect",
+		"github.com/goplus/llgo/runtime/internal/lib/internal/reflectlite",
+		"github.com/goplus/llgo/runtime/internal/lib/reflect":
+		switch fn.Name() {
+		case "toType", "toRType", "TypeOf":
+			return true
+		}
+	}
+	return false
+}
+
+func isRuntimeSSAFunction(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil {
+		return false
+	}
+	return isRuntimePackagePath(fn.Pkg.Pkg.Path())
+}
+
 func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *types.Signature {
 	if sig == nil || len(hidden) == 0 {
 		return sig
@@ -477,6 +501,9 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
 		return nil
 	}
+	if shouldSkipHiddenPointerRewrite(f) {
+		return nil
+	}
 	if len(f.Blocks) == 0 {
 		return nil
 	}
@@ -522,6 +549,9 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 
 func (p *context) hiddenStaticCallShimPlanFor(name string, f *ssa.Function) *hiddenStaticCallShimPlan {
 	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
+		return nil
+	}
+	if shouldSkipHiddenPointerRewrite(f) {
 		return nil
 	}
 	if len(f.Blocks) == 0 {
@@ -606,6 +636,12 @@ func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, sta
 		p.valuePreClears, p.valuePostClears = p.collectPointerValueClearPlans(f)
 		p.valueSlots = make(map[ssa.Value]llssa.Expr)
 		p.hiddenValueSlots = p.collectHiddenPointerValueSlots()
+		if isRuntimeSSAFunction(f) {
+			// Runtime metadata helpers such as findMethod/NewItab are extremely
+			// sensitive to aggregate value lowering. Keep runtime internals on the
+			// conservative path until the hidden-value pipeline is proven there.
+			p.hiddenValueSlots = nil
+		}
 		p.paramShadow = make(map[int]llssa.Expr)
 		p.paramSlots = make(map[int]llssa.Expr)
 		off := make([]int, len(f.Blocks))
@@ -2105,6 +2141,15 @@ func (p *context) lastUseInBlock(v ssa.Value, blk *ssa.BasicBlock, order map[ssa
 func (p *context) collectPointerValueClearPlans(fn *ssa.Function) (map[ssa.Instruction][]ssa.Value, map[ssa.Instruction][]ssa.Value) {
 	pre := make(map[ssa.Instruction][]ssa.Value)
 	post := make(map[ssa.Instruction][]ssa.Value)
+	loopBlock := make(map[*ssa.BasicBlock]bool)
+	if fn != nil {
+		infos := blocks.Infos(fn.Blocks)
+		for _, blk := range fn.Blocks {
+			if infos[blk.Index].Kind == llssa.DeferInLoop {
+				loopBlock[blk] = true
+			}
+		}
+	}
 	for _, blk := range fn.Blocks {
 		for _, instr := range blk.Instrs {
 			val, ok := instr.(ssa.Value)
@@ -2121,6 +2166,13 @@ func (p *context) collectPointerValueClearPlans(fn *ssa.Function) (map[ssa.Instr
 			}
 			last, ok := p.lastUseInBlock(val, useBlk, order, map[ssa.Value]bool{})
 			if !ok || last == nil {
+				continue
+			}
+			defInstr, _ := val.(ssa.Instruction)
+			if loopBlock[useBlk] && defInstr != nil && defInstr.Block() != useBlk {
+				// A block-local "last use" inside a loop is not a global last use
+				// for values defined outside that loop block. Clearing the slot here
+				// would nil out loop-carried invariants on the first iteration.
 				continue
 			}
 			if isCallLikeInstr(last) {

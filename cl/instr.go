@@ -34,6 +34,14 @@ var asmRegisterRegex = regexp.MustCompile(`\{[a-zA-Z]+\}`)
 
 // -----------------------------------------------------------------------------
 
+func isRuntimePackagePath(path string) bool {
+	root := strings.TrimSuffix(llssa.PkgRuntime, "/internal/runtime")
+	if path == root || strings.HasPrefix(path, root+"/") {
+		return true
+	}
+	return path == "runtime" || strings.HasPrefix(path, "runtime/")
+}
+
 func constStr(v ssa.Value) (ret string, ok bool) {
 	if c, ok := v.(*ssa.Const); ok {
 		if v := c.Value; v.Kind() == constant.String {
@@ -802,7 +810,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 			args := compileArgs()
 			return b.Do(act, fn, llssa.Builder.Call, args...)
 		}
-		if act != llssa.Call || !allowSuspend || p.pkg.Path() == llssa.PkgRuntime {
+		if act != llssa.Call || !allowSuspend || isRuntimePackagePath(p.pkg.Path()) {
 			return doCall()
 		}
 		if keepRecoverContext || wrapperRecoverContext {

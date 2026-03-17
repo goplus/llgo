@@ -962,6 +962,38 @@ _llgo_0:
 `)
 }
 
+func TestFuncCallStructArg(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	st := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "id", types.Typ[types.Int]),
+		types.NewVar(0, nil, "typ", types.NewPointer(types.Typ[types.Int])),
+	}, nil)
+	params := types.NewTuple(types.NewVar(0, nil, "m", st))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	fn.MakeBody(1).Return()
+
+	b := pkg.NewFunc("main", NoArgsNoRet, InGo).MakeBody(1)
+	b.Call(fn.Expr, prog.Zero(prog.Type(st, InGo)))
+	b.Return()
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @fn({ i64, ptr } %0) {
+_llgo_0:
+  ret void
+}
+
+define void @main() {
+_llgo_0:
+  call void @fn({ i64, ptr } zeroinitializer)
+  ret void
+}
+`)
+}
+
 func TestFuncMultiRet(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")

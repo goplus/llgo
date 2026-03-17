@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -544,6 +545,87 @@ func g(s *StkObj) {
 	}
 	if !strings.Contains(gBody[keepAliveIdx:], `zeroinitializer`) {
 		t.Fatalf("g should clear the shadow pointee after the last KeepAlive use:\n%s", gBody)
+	}
+}
+
+func TestModeGenLoopValueClearSkipsLoopCarriedPointer(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-loop-value-clear-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/loopvalueclear\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "unsafe"
+
+type Method struct {
+	A uintptr
+	B uintptr
+	C uintptr
+	D uintptr
+	E uintptr
+}
+
+type Uncommon struct {
+	Mcount uint16
+	Xcount uint16
+	Moff   uint32
+}
+
+var sink unsafe.Pointer
+
+func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p) + x)
+}
+
+func f(t *Uncommon) {
+	if t.Mcount == 0 {
+		return
+	}
+	methodsPtr := add(unsafe.Pointer(t), uintptr(t.Moff))
+	for i := 0; i < int(t.Mcount); i++ {
+		sink = add(methodsPtr, uintptr(i)*unsafe.Sizeof(Method{}))
+	}
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/loopvalueclear.f")
+	loopBody := body
+	if start := strings.Index(body, "_llgo_4:"); start >= 0 {
+		loopBody = body[start:]
+		if end := strings.Index(loopBody, "_llgo_5:"); end >= 0 {
+			loopBody = loopBody[:end]
+		}
+	}
+	loopClear := regexp.MustCompile(`(?s)%\d+ = load ptr, ptr (%\d+), align 8\s+store ptr null, ptr (%\d+), align 8\s+%\d+ = call ptr @"example\.com/loopvalueclear\.add"\(ptr %\d+, i64 %\d+\)`)
+	if m := loopClear.FindStringSubmatch(loopBody); m != nil && m[1] == m[2] {
+		t.Fatalf("f should not clear a loop-carried pointer slot before the next add call:\n%s", body)
 	}
 }
 
