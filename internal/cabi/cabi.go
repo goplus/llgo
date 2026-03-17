@@ -544,6 +544,10 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 
 	operandCount := len(info.Params)
 	var nparams []llvm.Value
+	var postCallClears []struct {
+		ptr llvm.Value
+		typ llvm.Type
+	}
 	for i := 0; i < operandCount; i++ {
 		param := call.Operand(i)
 		ti := info.Params[i]
@@ -561,6 +565,10 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 			b.CreateStore(param, ptr)
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(ti.Type1, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type1, iptr, ""))
+			postCallClears = append(postCallClears, struct {
+				ptr llvm.Value
+				typ llvm.Type
+			}{ptr: ptr, typ: ti.Type})
 		case AttrWidthType2:
 			ptr := createAlloca(ti.Type)
 			b.CreateStore(param, ptr)
@@ -568,6 +576,10 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 			iptr := b.CreateBitCast(ptr, llvm.PointerType(typ, 0), "")
 			nparams = append(nparams, b.CreateLoad(ti.Type1, b.CreateStructGEP(typ, iptr, 0, ""), ""))
 			nparams = append(nparams, b.CreateLoad(ti.Type2, b.CreateStructGEP(typ, iptr, 1, ""), ""))
+			postCallClears = append(postCallClears, struct {
+				ptr llvm.Value
+				typ llvm.Type
+			}{ptr: ptr, typ: ti.Type})
 		case AttrExtract:
 			nsubs := ti.Type.StructElementTypesCount()
 			for i := 0; i < nsubs; i++ {
@@ -602,6 +614,9 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 	default:
 		instr = llvm.CreateCall(b, nft, nfn, nparams)
 		updateCallAttr(instr)
+	}
+	for _, clear := range postCallClears {
+		b.CreateStore(llvm.ConstNull(clear.typ), clear.ptr)
 	}
 	call.ReplaceAllUsesWith(instr)
 	call.RemoveFromParentAsInstruction()

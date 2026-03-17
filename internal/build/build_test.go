@@ -707,6 +707,83 @@ func f(t *Meta, stop uintptr) {
 	}
 }
 
+func TestModeGenByValueParamSpillClobbersPointerRegs(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-byvalue-param-spill-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/byvalueparamspill\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+type H struct{}
+type S struct{ h *H }
+
+var null S
+var sink *H
+
+func use(*S) {}
+func wait() {}
+
+func f(s S, b bool) {
+	var p *S
+	if b {
+		p = &s
+	} else {
+		p = &null
+	}
+	use(p)
+	sink = p.h
+	sink = nil
+	wait()
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/byvalueparamspill.f")
+	waitIdx := strings.Index(body, "@\"example.com/byvalueparamspill.wait\"(")
+	if waitIdx < 0 {
+		waitIdx = strings.Index(body, "@example.com/byvalueparamspill.wait(")
+	}
+	if waitIdx < 0 {
+		t.Fatalf("missing wait call:\n%s", body)
+	}
+	window := body[:waitIdx]
+	if !strings.Contains(window, "@runtime.LoadHiddenPointerKey(") {
+		t.Fatalf("f should load p.h through the hidden pointer key helper:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("f should store sink through the hidden pointer root helper:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("f should clobber pointer registers after spilling the by-value param:\n%s", body)
+	}
+}
+
 func functionBody(t *testing.T, ir, name string) string {
 	t.Helper()
 	marker := `define void @"` + name + `"`

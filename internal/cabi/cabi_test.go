@@ -777,3 +777,61 @@ entry:
 		t.Fatalf("rewritten call missing indirect aggregate arg:\n%s", ir)
 	}
 }
+
+func TestModeAllFunc_CallClearsWidthArgTempAfterCall(t *testing.T) {
+	testIR := `; ModuleID = 'test'
+source_filename = "test"
+
+%StkObj = type { ptr }
+
+declare void @"pkg.callee"(%StkObj)
+
+define void @"pkg.caller"(%StkObj %0) {
+entry:
+  call void @"pkg.callee"(%StkObj %0)
+  ret void
+}
+`
+
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	tmpfile := filepath.Join(t.TempDir(), "modeall_clear_width_arg_temp.ll")
+	if err := os.WriteFile(tmpfile, []byte(testIR), 0644); err != nil {
+		t.Fatalf("Failed to write test IR: %v", err)
+	}
+
+	buf, err := llvm.NewMemoryBufferFromFile(tmpfile)
+	if err != nil {
+		t.Fatalf("Failed to read test IR: %v", err)
+	}
+	mod, err := ctx.ParseIR(buf)
+	if err != nil {
+		t.Fatalf("Failed to parse test IR: %v", err)
+	}
+	defer mod.Dispose()
+
+	conf, _ := buildConf(cabi.ModeAllFunc, runtime.GOARCH)
+	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
+	if err != nil {
+		t.Fatalf("Failed to build demo: %v", err)
+	}
+	prog := pkgs[0].LPkg.Prog
+
+	tr := cabi.NewTransformer(prog, "", "", cabi.ModeAllFunc, true)
+	tr.TransformModule("test", mod)
+
+	caller := mod.NamedFunction("pkg.caller")
+	if caller.IsNil() {
+		t.Fatal("pkg.caller not found")
+	}
+	ir := caller.String()
+	callIdx := strings.Index(ir, `call void @pkg.callee(i64 `)
+	if callIdx < 0 {
+		t.Fatalf("rewritten call missing width-arg call:\n%s", ir)
+	}
+	zeroIdx := strings.Index(ir[callIdx:], `store %StkObj zeroinitializer, ptr %`)
+	if zeroIdx < 0 {
+		t.Fatalf("rewritten call missing width-arg temp clear after call:\n%s", ir)
+	}
+}
