@@ -1012,7 +1012,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				llargs := make([]llssa.Expr, len(args))
 				for i, arg := range args {
 					if i == hiddenParamIdx {
-						if key, ok := p.hiddenPointerArgKey(b, arg); ok {
+						if key, ok := p.hiddenScalarArgValue(b, arg); ok {
 							llargs[i] = key
 							continue
 						}
@@ -1021,7 +1021,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				}
 				p.clearPreCallValues(b, owner)
 				if llargs[hiddenParamIdx].Type != nil && !types.Identical(llargs[hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
-					llargs[hiddenParamIdx] = p.hiddenPointerKey(b, llargs[hiddenParamIdx])
+					llargs[hiddenParamIdx] = p.encodeHiddenStoredValue(b, llargs[hiddenParamIdx], args[hiddenParamIdx].Type())
 				}
 				return llargs
 			})
@@ -1193,6 +1193,51 @@ func (p *context) hiddenPointerArgKey(b llssa.Builder, arg ssa.Value) (llssa.Exp
 		return b.Load(slot), true
 	}
 	return llssa.Expr{}, false
+}
+
+func (p *context) hiddenScalarArgValue(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
+	if mi, ok := arg.(*ssa.MakeInterface); ok {
+		if _, ok := types.Unalias(mi.X.Type()).Underlying().(*types.Pointer); ok {
+			arg = mi.X
+		}
+	}
+	if !p.hiddenValueUsesUintptrSlot(arg.Type()) {
+		return llssa.Expr{}, false
+	}
+	switch v := arg.(type) {
+	case *ssa.Parameter:
+		fn := v.Parent()
+		if fn == nil {
+			return llssa.Expr{}, false
+		}
+		for idx, param := range fn.Params {
+			if param != v || !p.hiddenParamKeys[idx] {
+				continue
+			}
+			if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+				if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
+					return p.encodeHiddenStoredValue(b, b.Load(slot), v.Type()), true
+				}
+				return b.Load(slot), true
+			}
+			break
+		}
+	}
+	if slot, ok := p.valueSlots[arg]; ok && slot.Type != nil && p.hiddenValueSlots[arg] {
+		if iv, ok := arg.(instrOrValue); ok {
+			if _, compiled := p.bvals[arg]; !compiled {
+				p.compileInstrOrValue(b, iv, false)
+			}
+		} else if _, ok := p.bvals[arg]; !ok {
+			return llssa.Expr{}, false
+		}
+		return b.Load(slot), true
+	}
+	val := p.compileValue(b, arg)
+	if val.Type == nil {
+		return llssa.Expr{}, false
+	}
+	return p.encodeHiddenStoredValue(b, val, arg.Type()), true
 }
 
 func (p *context) hiddenAggregateArgData(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {

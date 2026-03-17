@@ -417,6 +417,100 @@ func f() {
 	}
 }
 
+func TestByValueParamClearedAfterLastUse(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type H struct{}
+type S struct{ h *H }
+
+var null S
+var sink *H
+
+func use(*S) {}
+func wait() {}
+
+func f(s S, b bool) {
+	var p *S
+	if b {
+		p = &s
+	} else {
+		p = &null
+	}
+	use(p)
+	sink = p.h
+	sink = nil
+	wait()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	waitIdx := strings.Index(body, "@foo.wait(")
+	if waitIdx < 0 {
+		t.Fatalf("missing foo.wait call:\n%s", body)
+	}
+	window := body[:waitIdx]
+	if !strings.Contains(window, `store %foo.S zeroinitializer`) &&
+		!strings.Contains(window, `store i64 0, ptr`) {
+		t.Fatalf("missing by-value param clear before foo.wait:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.LoadHiddenPointerKey(") {
+		t.Fatalf("missing hidden pointer load helper for p.h:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("missing hidden root store helper for sink assignment:\n%s", body)
+	}
+	clobberIdx := strings.LastIndex(window, "@runtime.ClobberPointerRegs(")
+	if clobberIdx < 0 {
+		t.Fatalf("missing pointer clobber after by-value param clear:\n%s", body)
+	}
+}
+
+func TestByValueParamClearsDeadBranchBeforeFirstGC(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+type S struct{ h *H }
+
+var null S
+var sink *H
+
+func use(*S) {}
+func gc() { runtime.GC() }
+
+func f(s S, b bool) {
+	var p *S
+	if b {
+		p = &s
+	} else {
+		p = &null
+	}
+	use(p)
+	gc()
+	sink = p.h
+	sink = nil
+	gc()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	firstGCIdx := strings.Index(body, "@foo.gc(")
+	if firstGCIdx < 0 {
+		t.Fatalf("missing first gc call:\n%s", body)
+	}
+	secondGCRel := strings.Index(body[firstGCIdx+1:], "@foo.gc(")
+	if secondGCRel < 0 {
+		t.Fatalf("missing second gc call:\n%s", body)
+	}
+	secondGCIdx := firstGCIdx + 1 + secondGCRel
+	if strings.Count(body, `store %foo.S zeroinitializer`) < 2 {
+		t.Fatalf("missing branch-sensitive by-value clears across both paths:\n%s", body)
+	}
+	if !strings.Contains(body[firstGCIdx:secondGCIdx], `store %foo.S zeroinitializer`) &&
+		!strings.Contains(body[firstGCIdx:secondGCIdx], `store i64 0, ptr`) {
+		t.Fatalf("missing late by-value clear before second gc:\n%s", body)
+	}
+}
+
 func TestPointerKeepAliveUsesPointerHelper(t *testing.T) {
 	ir := compileIR(t, `package foo
 
@@ -519,6 +613,84 @@ func f() {
 	}
 }
 
+func TestParamValueClearClobbersPointerRegs(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{}
+
+func use(*T) {}
+func wait() {}
+
+func f(x *T) {
+	use(x)
+	wait()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, "@foo.use(")
+	hiddenBodyCallIdx := strings.Index(body, "@\"foo.use$hiddenparam\"(")
+	hiddenCallIdx := strings.Index(body, "@\"foo.use$hiddencall\"(")
+	if hiddenBodyCallIdx > callIdx {
+		callIdx = hiddenBodyCallIdx
+	}
+	if hiddenCallIdx > callIdx {
+		callIdx = hiddenCallIdx
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing foo.use call:\n%s", body)
+	}
+	waitIdx := strings.Index(body[callIdx:], "@foo.wait(")
+	if waitIdx < 0 {
+		t.Fatalf("missing foo.wait call:\n%s", body)
+	}
+	window := body[callIdx : callIdx+waitIdx]
+	clearIdx := strings.Index(window, "store ptr null, ptr")
+	if clearIdx < 0 {
+		t.Fatalf("missing parameter slot clear after foo.use:\n%s", body)
+	}
+	clobberIdx := strings.Index(window, "@runtime.ClobberPointerRegs(")
+	if clobberIdx < 0 {
+		t.Fatalf("missing pointer clobber after parameter slot clear:\n%s", body)
+	}
+	if clobberIdx < clearIdx {
+		t.Fatalf("pointer clobber ran before parameter slot clear:\n%s", body)
+	}
+}
+
+func TestNilPointerStoreClobbersPointerRegs(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{}
+
+var sink *T
+
+func wait() {}
+
+func f(x *T) {
+	sink = x
+	sink = nil
+	wait()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	waitIdx := strings.Index(body, "@foo.wait(")
+	if waitIdx < 0 {
+		t.Fatalf("missing foo.wait call:\n%s", body)
+	}
+	window := body[:waitIdx]
+	clearIdx := strings.LastIndex(window, "store ptr null, ptr")
+	if clearIdx < 0 {
+		t.Fatalf("missing nil store before foo.wait:\n%s", body)
+	}
+	clobberIdx := strings.LastIndex(window, "@runtime.ClobberPointerRegs(")
+	if clobberIdx < 0 {
+		t.Fatalf("missing pointer clobber after nil store:\n%s", body)
+	}
+	if clobberIdx < clearIdx {
+		t.Fatalf("pointer clobber ran before nil store:\n%s", body)
+	}
+}
+
 func TestGcSensitivePointerParamUsesHiddenBody(t *testing.T) {
 	ir := compileIR(t, `package foo
 
@@ -560,6 +732,48 @@ func f() {
 	}
 	if !strings.Contains(window, "zeroinitializer") {
 		t.Fatalf("missing shadow clear before second gc:\n%s", hiddenBody)
+	}
+}
+
+func TestGcSensitiveByValueStructParamUsesHiddenBody(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+type S struct{ h *H }
+
+var sink *H
+
+func gc() { runtime.GC() }
+func g(s S) {
+	gc()
+	sink = s.h
+	sink = nil
+	gc()
+}
+func f() {
+	var s S
+	s.h = new(H)
+	g(s)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, `@"foo.g$hiddenparam"(`) {
+		t.Fatalf("missing hidden-param call for gc-sensitive by-value callee:\n%s", body)
+	}
+	hiddenBody := functionBody(t, ir, `foo.g$hiddenparam`)
+	if !strings.Contains(hiddenBody, "@runtime.LoadHiddenPointee(") &&
+		!strings.Contains(hiddenBody, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("missing hidden by-value param decode:\n%s", hiddenBody)
+	}
+	secondGCIdx := strings.LastIndex(hiddenBody, "@foo.gc(")
+	if secondGCIdx < 0 {
+		t.Fatalf("missing trailing gc call in hidden body:\n%s", hiddenBody)
+	}
+	window := hiddenBody[:secondGCIdx]
+	if !strings.Contains(window, "store %foo.S zeroinitializer") && !strings.Contains(window, "store i64 0, ptr") {
+		t.Fatalf("missing by-value param clear before second gc:\n%s", hiddenBody)
 	}
 }
 
