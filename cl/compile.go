@@ -538,7 +538,7 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 	if f.Signature == nil || f.Signature.Recv() != nil || f.Signature.Variadic() {
 		return nil
 	}
-	if !functionHasDefer(f) || isCgoExternSymbol(f) {
+	if isCgoExternSymbol(f) {
 		return nil
 	}
 	obj, ok := f.Object().(*types.Func)
@@ -567,10 +567,16 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 	if !ok || len(callsites) == 0 {
 		return nil
 	}
+	patchedSig := p.patchType(f.Signature).(*types.Signature)
+	if !functionHasDefer(f) {
+		if _, _, resultHidden := rewriteHiddenPointerResultSignature(patchedSig); resultHidden {
+			return nil
+		}
+	}
 	hidden := map[int]bool{ptrIdx: true}
 	return &hiddenParamWrapperPlan{
 		paramIdx:   ptrIdx,
-		hiddenSig:  rewriteHiddenParamSignature(p.patchType(f.Signature).(*types.Signature), hidden),
+		hiddenSig:  rewriteHiddenParamSignature(patchedSig, hidden),
 		hiddenName: name + "$hiddenparam",
 	}
 }
@@ -1960,7 +1966,7 @@ func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][
 	}
 	loopBlock := p.loopBlocks(fn)
 	for idx, param := range fn.Params {
-		if p.hiddenParamKeys[idx] {
+		if p.hiddenParamKeys[idx] && !isKeepAliveOnlyPointerParam(param) {
 			continue
 		}
 		pt, ok := param.Type().Underlying().(*types.Pointer)
@@ -2682,7 +2688,9 @@ func (p *context) compileHiddenPointerDeref(b llssa.Builder, key llssa.Expr, t t
 		key,
 		p.prog.IntVal(uint64(p.prog.SizeOf(dstType)), uintPtr),
 	)
-	return b.Load(dst)
+	ret := b.Load(dst)
+	b.ClearLoadSource(ret)
+	return ret
 }
 
 func (p *context) compileHiddenSliceIndexAddrKey(b llssa.Builder, key llssa.Expr, length llssa.Expr, idx llssa.Expr, idxType types.Type, elemSize uint64) llssa.Expr {
@@ -2770,7 +2778,10 @@ func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
 	slotIdxs := make(map[int]bool)
 	for _, idxs := range p.paramValueClears {
 		for _, idx := range idxs {
-			if idx >= 0 && idx < len(fn.Params) && p.paramShadow[idx].Type == nil {
+			if idx < 0 || idx >= len(fn.Params) {
+				continue
+			}
+			if p.hiddenParamKeys[idx] || p.paramShadow[idx].Type == nil {
 				slotIdxs[idx] = true
 			}
 		}
@@ -2784,8 +2795,13 @@ func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
 	}
 	sort.Ints(indices)
 	for _, idx := range indices {
-		param := fn.Params[idx]
-		slot := b.AllocaT(p.type_(param.Type(), llssa.InGo))
+		var slot llssa.Expr
+		if p.hiddenParamKeys[idx] {
+			slot = b.AllocaT(b.Param(idx).Type)
+		} else {
+			param := fn.Params[idx]
+			slot = b.AllocaT(p.type_(param.Type(), llssa.InGo))
+		}
 		b.Store(slot, b.Param(idx))
 		p.paramSlots[idx] = slot
 	}
@@ -2834,7 +2850,15 @@ func (p *context) initKeepAliveParamShadows(b llssa.Builder, fn *ssa.Function) {
 		shadow := b.AllocaT(elem)
 		b.Store(shadow, p.prog.Zero(elem))
 		dst := b.ChangeType(voidPtr, shadow)
-		src := b.ChangeType(voidPtr, b.Param(idx))
+		srcPtr := b.Param(idx)
+		if p.hiddenParamKeys[idx] {
+			if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+				srcPtr = p.hiddenPointerDecode(b, b.Load(slot), param.Type())
+			} else {
+				srcPtr = p.hiddenPointerDecode(b, srcPtr, param.Type())
+			}
+		}
+		src := b.ChangeType(voidPtr, srcPtr)
 		b.Call(helper.Expr, dst, src, p.prog.IntVal(uint64(size), uintPtr))
 		p.paramShadow[idx] = shadow
 		p.bvals[param] = shadow
@@ -2862,6 +2886,9 @@ func (p *context) clearDeadParams(b llssa.Builder, instr ssa.Instruction) {
 			b.Store(shadow, p.prog.Zero(elem))
 			continue
 		}
+		if p.hiddenParamKeys[idx] {
+			continue
+		}
 		b.Store(b.Param(idx), p.prog.Zero(elem))
 	}
 }
@@ -2877,6 +2904,12 @@ func (p *context) clearDeadParamValues(b llssa.Builder, instr ssa.Instruction) {
 		}
 		slot, ok := p.paramSlots[idx]
 		if !ok || slot.Type == nil {
+			continue
+		}
+		if p.hiddenParamKeys[idx] {
+			nilKey := p.hiddenPointerKey(b, p.prog.Nil(p.type_(fn.Params[idx].Type(), llssa.InGo)))
+			b.Store(slot, nilKey)
+			p.clobberPointerRegs(b)
 			continue
 		}
 		b.Store(slot, p.prog.Nil(b.Prog.Elem(slot.Type)))
@@ -3787,6 +3820,9 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		for idx, param := range fn.Params {
 			if param == v {
 				if p.hiddenParamKeys[idx] {
+					if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+						return p.hiddenPointerDecode(b, b.Load(slot), v.Type())
+					}
 					return p.hiddenPointerDecode(b, b.Param(idx), v.Type())
 				}
 				if shadow, ok := p.paramShadow[idx]; ok && shadow.Type != nil {

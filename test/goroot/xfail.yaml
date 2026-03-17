@@ -39,11 +39,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: stackobj.go
-    reason: stack object GC liveness is still incomplete under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: stackobj3.go
     reason: stack object liveness tracking still diverges under llgo on darwin/arm64
   - version: go1.24
@@ -220,3 +215,9 @@ timeouts:
     case: fixedbugs/issue57823.go
     timeout: 240s
     reason: hidden-pointer finalizer case now passes semantically but a cold llgo run still spends about 190s rebuilding runtime on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: stackobj.go
+    timeout: 240s
+    reason: stack object GC liveness now passes semantically but a cold llgo run still spends about 180s rebuilding runtime on darwin/arm64

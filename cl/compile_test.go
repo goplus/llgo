@@ -399,7 +399,11 @@ func f() {
 `)
 	body := functionBody(t, ir, "foo.f")
 	callIdx := strings.Index(body, "@foo.g(")
+	hiddenBodyCallIdx := strings.Index(body, "@\"foo.g$hiddenparam\"(")
 	hiddenCallIdx := strings.Index(body, "@\"foo.g$hiddencall\"(")
+	if hiddenBodyCallIdx > callIdx {
+		callIdx = hiddenBodyCallIdx
+	}
 	if hiddenCallIdx > callIdx {
 		callIdx = hiddenCallIdx
 	}
@@ -478,7 +482,11 @@ func f() {
 `)
 	body := functionBody(t, ir, "foo.f")
 	callIdx := strings.Index(body, "@foo.use(")
+	hiddenBodyCallIdx := strings.Index(body, "@\"foo.use$hiddenparam\"(")
 	hiddenCallIdx := strings.Index(body, "@\"foo.use$hiddencall\"(")
+	if hiddenBodyCallIdx > callIdx {
+		callIdx = hiddenBodyCallIdx
+	}
 	if hiddenCallIdx > callIdx {
 		callIdx = hiddenCallIdx
 	}
@@ -508,6 +516,50 @@ func f() {
 	}
 	if clearIdx < loadIdx {
 		t.Fatalf("pointer slot cleared before last-use load:\n%s", body)
+	}
+}
+
+func TestGcSensitivePointerParamUsesHiddenBody(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{ p *int }
+
+func gc() { runtime.GC() }
+func g(s *T) {
+	gc()
+	runtime.KeepAlive(s)
+	gc()
+}
+func f() {
+	var s T
+	s.p = new(int)
+	g(&s)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, `@"foo.g$hiddenparam"(`) {
+		t.Fatalf("missing hidden-param call for gc-sensitive pointer callee:\n%s", body)
+	}
+	if strings.Contains(body, `@"foo.g$hiddencall"(`) {
+		t.Fatalf("unexpected caller-side hidden shim for gc-sensitive pointer callee:\n%s", body)
+	}
+	hiddenBody := functionBody(t, ir, `foo.g$hiddenparam`)
+	keepAliveIdx := strings.Index(hiddenBody, "@runtime.KeepAlivePointer(")
+	if keepAliveIdx < 0 {
+		t.Fatalf("missing pointer keepalive helper in hidden body:\n%s", hiddenBody)
+	}
+	nextGCIdx := strings.Index(hiddenBody[keepAliveIdx:], "@foo.gc(")
+	if nextGCIdx < 0 {
+		t.Fatalf("missing trailing gc call in hidden body:\n%s", hiddenBody)
+	}
+	window := hiddenBody[keepAliveIdx : keepAliveIdx+nextGCIdx]
+	if !strings.Contains(hiddenBody, "@runtime.ShadowCopyPointee(") {
+		t.Fatalf("missing shadow copy for hidden pointer param body:\n%s", hiddenBody)
+	}
+	if !strings.Contains(window, "zeroinitializer") {
+		t.Fatalf("missing shadow clear before second gc:\n%s", hiddenBody)
 	}
 }
 
@@ -546,7 +598,10 @@ func f(x, y string) {
 }
 `)
 	body := functionBody(t, ir, "foo.f")
-	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	callIdx := strings.Index(body, `@"foo.use$hiddenparam"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `@"foo.use$hiddencall"(`)
+	}
 	if callIdx < 0 {
 		callIdx = strings.Index(body, "@foo.use(")
 	}
@@ -577,7 +632,10 @@ func f() {
 }
 `)
 	body := functionBody(t, ir, "foo.f")
-	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	callIdx := strings.Index(body, `@"foo.use$hiddenparam"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `@"foo.use$hiddencall"(`)
+	}
 	if callIdx < 0 {
 		callIdx = strings.Index(body, "@foo.use(")
 	}
@@ -631,7 +689,10 @@ func f() {
 }
 `)
 	body := functionBody(t, ir, "foo.f")
-	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	callIdx := strings.Index(body, `@"foo.use$hiddenparam"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `@"foo.use$hiddencall"(`)
+	}
 	if callIdx < 0 {
 		callIdx = strings.Index(body, "@foo.use(")
 	}
@@ -678,6 +739,10 @@ func f(x, y string) {
 		clobberIdx := strings.Index(body[loadIdx:], "@runtime.ClobberPointerRegs(")
 		if clobberIdx < 0 {
 			t.Fatalf("missing pointer clobber after hidden pointee load:\n%s", body)
+		}
+		clearIdx := strings.Index(body[loadIdx:loadIdx+clobberIdx], "store ptr null, ptr")
+		if clearIdx < 0 {
+			t.Fatalf("missing hidden pointee temp clear before pointer clobber:\n%s", body)
 		}
 		waitIdx := strings.Index(body[loadIdx+clobberIdx:], "@foo.wait(")
 		if waitIdx < 0 {
