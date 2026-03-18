@@ -709,7 +709,7 @@ type aPackage struct {
 
 	NeedRuntime   bool
 	NeedPyInit    bool
-	NeedAbiInit   int // need load all abi types for reflect make type
+	NeedAbiInit   int // bitmask of Reflect* flags indicating which reflect type-construction operations are used
 	MethodByIndex map[int]none
 	MethodByName  map[string]none
 

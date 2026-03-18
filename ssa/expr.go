@@ -1152,8 +1152,8 @@ func (b Builder) checkReflect(fn Expr, args []Expr) {
 				pkg.NeedAbiInit |= ReflectMethodByIndex
 				return
 			}
+			pkg.NeedAbiInit |= ReflectMethodDynamic
 		}
-		pkg.NeedAbiInit |= ReflectMethodDynamic
 	case "reflect.Value.MethodByName":
 		if len(args) == 2 {
 			if v, ok := extractConstString(args[1].impl); ok {
@@ -1164,8 +1164,8 @@ func (b Builder) checkReflect(fn Expr, args []Expr) {
 				pkg.NeedAbiInit |= ReflectMethodByName
 				return
 			}
+			pkg.NeedAbiInit |= ReflectMethodDynamic
 		}
-		pkg.NeedAbiInit |= ReflectMethodDynamic
 	}
 }
 
