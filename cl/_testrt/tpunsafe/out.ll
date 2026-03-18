@@ -211,5 +211,5 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 !llgo.useiface = !{!0, !1}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[bool]).check", ptr @_llgo_string}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[int64]).check", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[bool]).check", !"_llgo_string"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[int64]).check", !"_llgo_string"}

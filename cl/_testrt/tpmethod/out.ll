@@ -219,6 +219,12 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
-!llgo.useiface = !{!0}
+!llgo.useifacemethod = !{!0}
+!llgo.useiface = !{!1}
+!llgo.methodoff = !{!2, !3, !4}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.Async[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]"}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", !"Then", !"_llgo_func$YDtAFTesCi1EpIfGs4nqPSJzLIDwkg-8FAbVKMCx8cg"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpmethod.Async[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", !"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]"}
+!2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", i32 0, !"Get", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w"}
+!3 = !{!"_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]", i32 0, !"Get", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w"}
+!4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/tpmethod.future[github.com/goplus/llgo/cl/_testrt/tpmethod.Tuple[error]]", i32 0, !"Then", !"_llgo_func$YDtAFTesCi1EpIfGs4nqPSJzLIDwkg-8FAbVKMCx8cg"}

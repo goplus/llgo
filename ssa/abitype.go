@@ -406,6 +406,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	ft := prog.rtType("Method")
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
+	typeName, _ := b.Pkg.abi.TypeName(t)
 	pkg, _ := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
 	if anonymous {
@@ -413,12 +414,10 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	}
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
-		obj := m.Obj()
+		obj := m.Obj().(*types.Func)
 		mName := obj.Name()
-		name := b.Str(mName).impl
-		if !token.IsExported(mName) {
-			name = b.Str(abi.FullName(obj.Pkg(), mName)).impl
-		}
+		normalizedName := normalizedMethodName(obj)
+		name := b.Str(normalizedName).impl
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
 		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
@@ -435,6 +434,8 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+		mtypName, _ := b.Pkg.abi.TypeName(ftyp)
+		b.Pkg.emitMethodOff(typeName, i, normalizedName, mtypName)
 	}
 	return llvm.ConstArray(ft.ll, fields)
 }

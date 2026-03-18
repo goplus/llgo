@@ -257,5 +257,5 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0, !1}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/selects.main", ptr @_llgo_string}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/selects.main$1", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/selects.main", !"_llgo_string"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/selects.main$1", !"_llgo_string"}

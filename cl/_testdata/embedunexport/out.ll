@@ -60,3 +60,7 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+
+!llgo.useifacemethod = !{!0}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use", !"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}

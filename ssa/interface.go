@@ -82,6 +82,14 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	}
 	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
+	intfTypeName, _ := b.Pkg.abi.TypeName(intf.raw.Type)
+	mtypName, _ := b.Pkg.abi.TypeName(funcType(prog, method.Type()))
+	b.Pkg.emitUseIfaceMethod(
+		b.Func.impl,
+		intfTypeName,
+		normalizedMethodName(method),
+		mtypName,
+	)
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
@@ -122,7 +130,8 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	// value is already an interface, this conversion does not expose a new
 	// concrete type to deadcode analysis.
 	if _, ok := typ.raw.Type.Underlying().(*types.Interface); !ok {
-		b.Pkg.emitUseIface(b.Func.impl, b.abiTypeGlobal(typ.raw.Type).impl)
+		typeName, _ := b.Pkg.abi.TypeName(typ.raw.Type)
+		b.Pkg.emitUseIface(b.Func.impl, typeName)
 	}
 	tabi := b.abiType(typ.raw.Type)
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)

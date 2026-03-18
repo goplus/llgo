@@ -143,5 +143,5 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0, !1}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/returnorder.main", ptr @_llgo_int}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/returnorder.main", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/returnorder.main", !"_llgo_int"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/returnorder.main", !"_llgo_string"}

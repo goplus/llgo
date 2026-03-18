@@ -207,6 +207,6 @@ declare %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/interna
 
 !llgo.useiface = !{!0, !1, !2}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main", ptr @_llgo_string}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main", ptr @_llgo_int}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main$1", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main", !"_llgo_string"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main", !"_llgo_int"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main$1", !"_llgo_string"}

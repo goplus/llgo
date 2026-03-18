@@ -541,4 +541,4 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"githu
 
 !llgo.useiface = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/builtin.main", ptr @_llgo_int}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/builtin.main", !"_llgo_int"}

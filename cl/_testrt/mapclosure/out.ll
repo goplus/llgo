@@ -248,7 +248,11 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"gith
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-!llgo.useiface = !{!0, !1}
+!llgo.useifacemethod = !{!0}
+!llgo.useiface = !{!1, !2}
+!llgo.methodoff = !{!3}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.main", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.demo", !"_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.Type", !"String", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.main", !"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.main", !"_llgo_string"}
+!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ", i32 0, !"String", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}

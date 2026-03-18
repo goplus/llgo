@@ -211,4 +211,4 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/strucintf.Foo", ptr @"github.com/goplus/llgo/cl/_testgo/strucintf.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88"}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/strucintf.Foo", !"github.com/goplus/llgo/cl/_testgo/strucintf.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88"}

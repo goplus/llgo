@@ -528,11 +528,11 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.assert", ptr @_llgo_string}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#3", ptr @_llgo_int}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#3", ptr @_llgo_string}
-!3 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", ptr @_llgo_int}
-!4 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", ptr @"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw"}
-!5 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T"}
-!6 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", ptr @_llgo_string}
-!7 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N"}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.assert", !"_llgo_string"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#3", !"_llgo_int"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#3", !"_llgo_string"}
+!3 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_int"}
+!4 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw"}
+!5 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T"}
+!6 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_string"}
+!7 = !{ptr @"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N"}

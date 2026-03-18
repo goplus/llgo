@@ -171,5 +171,5 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 
 !llgo.useiface = !{!0, !1}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.check", ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.check", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.check", !"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/funcdecl.check", !"_llgo_string"}

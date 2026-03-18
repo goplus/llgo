@@ -175,6 +175,6 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0, !1, !2}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/typed.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.T"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/typed.main", ptr @_llgo_string}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/typed.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A"}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/typed.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/typed.T"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/typed.main", !"_llgo_string"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/typed.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A"}

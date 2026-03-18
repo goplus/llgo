@@ -255,4 +255,4 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"
 
 !llgo.useiface = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/unsafe.main", ptr @_llgo_string}
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/unsafe.main", !"_llgo_string"}
