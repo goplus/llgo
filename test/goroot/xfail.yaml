@@ -203,8 +203,8 @@ timeouts:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue27518b.go
-    timeout: 300s
-    reason: panic/defer finalizer case now passes semantically but a cold llgo run still spends about 208s rebuilding runtime on darwin/arm64
+    timeout: 60s
+    reason: panic/defer finalizer case passes semantically but still needs a modest per-case timeout bump on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
