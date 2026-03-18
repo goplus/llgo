@@ -104,11 +104,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue32477.go
-    reason: defer-path last-use clearing still keeps the heap object reachable too long under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue45045.go
     reason: conservative GC still retains finalizer-backed map keys too long under llgo on darwin/arm64
   - version: go1.24
@@ -205,6 +200,12 @@ timeouts:
     case: fixedbugs/issue27518b.go
     timeout: 60s
     reason: panic/defer finalizer case passes semantically but still needs a modest per-case timeout bump on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue32477.go
+    timeout: 300s
+    reason: defer-path finalizer case now passes semantically but a cold llgo run still spends about 233s rebuilding runtime on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

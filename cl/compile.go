@@ -3160,8 +3160,9 @@ func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
 		var slot llssa.Expr
 		if p.hiddenParamKeys[idx] {
 			if _, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer); ok {
-				slot = b.AllocaT(b.Param(idx).Type)
-				b.Store(slot, b.Param(idx))
+				typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+				slot = b.AllocaT(typ)
+				b.Store(slot, p.hiddenPointerDecode(b, b.Param(idx), fn.Params[idx].Type()))
 			} else {
 				typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
 				slot = b.AllocaT(typ)

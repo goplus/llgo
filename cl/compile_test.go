@@ -858,6 +858,40 @@ func f() {
 	}
 }
 
+func TestGcSensitivePointerParamKeepsRootAcrossInitialGC(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+
+func gc() { runtime.GC() }
+func (h *H) check() {}
+
+func g(h *H) {
+	gc()
+	h.check()
+}
+
+func f() {
+	h := new(H)
+	g(h)
+}
+`)
+	hiddenBody := functionBody(t, ir, `foo.g$hiddenparam`)
+	firstGCIdx := strings.Index(hiddenBody, "@foo.gc(")
+	if firstGCIdx < 0 {
+		t.Fatalf("missing initial gc call in hidden body:\n%s", hiddenBody)
+	}
+	window := hiddenBody[:firstGCIdx]
+	if !strings.Contains(window, "store ptr") {
+		t.Fatalf("missing raw pointer root materialization before initial gc:\n%s", hiddenBody)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing pointer register clobber after raw pointer root materialization:\n%s", hiddenBody)
+	}
+}
+
 func TestGcSensitivePointerCallClearsHiddenKeyTemp(t *testing.T) {
 	ir := compileIR(t, `package foo
 
@@ -973,6 +1007,104 @@ func f() {
 	}
 	if strings.Contains(body, `@"foo.(*H).check"(`) {
 		t.Fatalf("unexpected raw receiver method call in hidden body:\n%s", body)
+	}
+}
+
+func TestDeferingHiddenPointerParamClearsBeforeDeferSetup(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+
+func gc(bool) { runtime.GC() }
+
+func (h *H) check() {}
+
+func g(h *H) {
+	gc(false)
+	h.check()
+	defer func() {
+		gc(true)
+		recover()
+	}()
+	*(*int)(nil) = 0
+}
+`)
+	name := "foo.g$hiddenparam"
+	if !strings.Contains(ir, `@"foo.g$hiddenparam"(`) {
+		name = "foo.g"
+	}
+	body := functionBody(t, ir, name)
+	deferIdx := strings.Index(body, "@\"github.com/goplus/llgo/runtime/internal/runtime.GetThreadDefer\"(")
+	if deferIdx < 0 {
+		deferIdx = strings.Index(body, "@\"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer\"(")
+	}
+	if deferIdx < 0 {
+		t.Fatalf("missing defer setup in hidden body:\n%s", body)
+	}
+	checkIdx := strings.Index(body, `.check$hiddencall"(`)
+	if checkIdx < 0 {
+		checkIdx = strings.Index(body, `@"foo.(*H).check"(`)
+	}
+	if checkIdx < 0 {
+		t.Fatalf("missing receiver check call in hidden body:\n%s", body)
+	}
+	window := body[checkIdx:deferIdx]
+	if !strings.Contains(window, "store i64") && !strings.Contains(window, "store ptr null, ptr") {
+		t.Fatalf("missing hidden param clear after last use and before defer setup:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing pointer register clobber after hidden param clear:\n%s", body)
+	}
+}
+
+func TestIssue32477CallerClearsPointerLocalBeforeCall(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type HeapObj [8]int64
+
+func gc(bool) { runtime.GC(); runtime.GC(); runtime.GC() }
+
+func (h *HeapObj) init() {}
+func (h *HeapObj) check() {}
+
+func g(h *HeapObj) {
+	gc(false)
+	h.check()
+	defer func() {
+		gc(true)
+		recover()
+	}()
+	*(*int)(nil) = 0
+}
+
+func main() {
+	h := new(HeapObj)
+	h.init()
+	gc(false)
+	g(h)
+}
+`)
+	body := functionBody(t, ir, "foo.main")
+	callIdx := strings.Index(body, `@"foo.g$hiddenparam"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `@"foo.g$hiddencall"(`)
+	}
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `@foo.g(`)
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing g call in main body:\n%s", body)
+	}
+	window := body[:callIdx]
+	if !strings.Contains(window, "store ptr null, ptr") && !strings.Contains(window, "store i64 0, ptr") {
+		t.Fatalf("missing pointer local clear before issue32477 call:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing pointer register clobber before issue32477 call:\n%s", body)
 	}
 }
 
