@@ -3626,7 +3626,14 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return v
 		}
 		if canDeferValueInstr(iv) {
-			return p.compileInstrOrValue(b, iv, false)
+			p.compileInstrOrValue(b, iv, false)
+			if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
+				if p.hiddenValueSlots[iv] {
+					return p.decodeHiddenStoredValue(b, b.Load(slot), iv.Type())
+				}
+				return b.Load(slot)
+			}
+			return p.bvals[iv]
 		}
 		fn := "<nil>"
 		if p.goFn != nil {
