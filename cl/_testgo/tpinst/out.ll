@@ -258,3 +258,9 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, ptr)
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[int]"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", ptr @_llgo_string}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]"}

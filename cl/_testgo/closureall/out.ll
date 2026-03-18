@@ -274,3 +274,8 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/closureall.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/closureall.main", ptr @_llgo_string}

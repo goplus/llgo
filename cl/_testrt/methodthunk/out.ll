@@ -235,3 +235,9 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.main", ptr @"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.main", ptr @"_llgo_closure$ygdobeQSbhO1hSbeWA66ORl_cNKHor-iD8MqRFtuWHg"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.main", ptr @_llgo_string}

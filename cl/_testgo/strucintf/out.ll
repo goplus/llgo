@@ -208,3 +208,7 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/go
 declare %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.F"()
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/strucintf.Foo", ptr @"github.com/goplus/llgo/cl/_testgo/strucintf.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88"}

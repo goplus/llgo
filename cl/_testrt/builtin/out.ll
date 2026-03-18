@@ -538,3 +538,7 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/g
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
+
+!llgo.useiface = !{!0}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/builtin.main", ptr @_llgo_int}

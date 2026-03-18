@@ -1073,3 +1073,12 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"
 declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reader.NopCloser", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reader.NopCloser", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reader.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader"}
+!3 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reader.newError", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString"}
+!4 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo", ptr @_llgo_string}
+!5 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo", ptr @_llgo_string}

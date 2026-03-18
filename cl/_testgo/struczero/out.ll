@@ -198,3 +198,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/struczero.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo"}

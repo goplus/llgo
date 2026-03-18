@@ -120,3 +120,8 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare i32 @printf(ptr, ...)
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testdata/vargs.main", ptr @_llgo_int}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testdata/vargs.test", ptr @_llgo_string}

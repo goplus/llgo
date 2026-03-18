@@ -1756,3 +1756,33 @@ _llgo_0:
 }
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22, !23, !24, !25, !26}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous1", ptr @"*github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous1", ptr @_llgo_string}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous2", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8"}
+!3 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous2", ptr @_llgo_string}
+!4 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous3", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088"}
+!5 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous3", ptr @_llgo_string}
+!6 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous4", ptr @"*github.com/goplus/llgo/cl/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088"}
+!7 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous4", ptr @_llgo_string}
+!8 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous5", ptr @"*github.com/goplus/llgo/cl/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088"}
+!9 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous5", ptr @_llgo_string}
+!10 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous6", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8"}
+!11 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous6", ptr @_llgo_string}
+!12 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous7", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8"}
+!13 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous7", ptr @_llgo_string}
+!14 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous8", ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8"}
+!15 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous8", ptr @_llgo_string}
+!16 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymousBuffer", ptr @"*github.com/goplus/llgo/cl/_testgo/abimethod.struct$RGW016k7zllXgGPm1CvD5-IBe-9lphOOTCFtYyDGLjY"}
+!17 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymousBuffer", ptr @_llgo_string}
+!18 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.Pointer[any]"}
+!19 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric", ptr @_llgo_string}
+!20 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric$1", ptr @_llgo_int}
+!21 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed1", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.T"}
+!22 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed1", ptr @_llgo_string}
+!23 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed2", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.T"}
+!24 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed2", ptr @_llgo_string}
+!25 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed3", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.T"}
+!26 = !{ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed3", ptr @_llgo_string}

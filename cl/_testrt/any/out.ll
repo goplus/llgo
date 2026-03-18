@@ -117,3 +117,10 @@ _llgo_0:
 }
 
 declare i32 @printf(ptr, ...)
+
+!llgo.useiface = !{!0, !1, !2, !3}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/any.hi", ptr @_llgo_string}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/any.incVal", ptr @_llgo_string}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/any.main", ptr @"*_llgo_int8"}
+!3 = !{ptr @"github.com/goplus/llgo/cl/_testrt/any.main", ptr @_llgo_int}

@@ -118,6 +118,12 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	typ := x.Type
+	// Emit useiface only for concrete-to-interface conversions. If the source
+	// value is already an interface, this conversion does not expose a new
+	// concrete type to deadcode analysis.
+	if _, ok := typ.raw.Type.Underlying().(*types.Interface); !ok {
+		b.Pkg.emitUseIface(b.Func.impl, b.abiTypeGlobal(typ.raw.Type).impl)
+	}
 	tabi := b.abiType(typ.raw.Type)
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {

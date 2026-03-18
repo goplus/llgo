@@ -153,3 +153,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+
+!llgo.useiface = !{!0}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/interface1370.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle"}

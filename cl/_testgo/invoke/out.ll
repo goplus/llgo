@@ -518,3 +518,20 @@ _llgo_0:
 }
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1"}
+!3 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1"}
+!4 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2"}
+!5 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2"}
+!6 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3"}
+!7 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4"}
+!8 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4"}
+!9 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5"}
+!10 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5"}
+!11 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6"}
+!12 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6"}
+!13 = !{ptr @"github.com/goplus/llgo/cl/_testgo/invoke.main", ptr @_llgo_string}

@@ -247,3 +247,8 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.main", ptr @_llgo_string}

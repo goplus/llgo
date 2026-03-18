@@ -876,3 +876,9 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/abinamed.T"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.main", ptr @"_llgo_github.com/goplus/llgo/runtime/abi.Type"}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.main", ptr @_llgo_string}

@@ -480,3 +480,9 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.main", ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/ifaceprom.impl"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.main", ptr @_llgo_int}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/ifaceprom.main", ptr @_llgo_string}

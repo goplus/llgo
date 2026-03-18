@@ -137,3 +137,8 @@ _llgo_0:
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/closureiface.main", ptr @"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/closureiface.main", ptr @_llgo_string}

@@ -1132,3 +1132,27 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.TypeOf
 declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.MapOf(%"github.com/goplus/llgo/runtime/internal/runtime.iface", %"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 declare %reflect.Value @reflect.MakeMap(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callClosure", ptr @"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callClosure", ptr @_llgo_int}
+!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callClosure", ptr @_llgo_string}
+!3 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callFunc", ptr @"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"}
+!4 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callFunc", ptr @_llgo_int}
+!5 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callFunc", ptr @_llgo_string}
+!6 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callIMethod", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T"}
+!7 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callIMethod", ptr @_llgo_int}
+!8 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callIMethod", ptr @_llgo_string}
+!9 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callMethod", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T"}
+!10 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callMethod", ptr @_llgo_int}
+!11 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callMethod", ptr @_llgo_string}
+!12 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callSlice", ptr @"_llgo_closure$FjMjjQr3-2iTiWyZP1IIQFOz0hUCa0OS6pEm5uVV6Pk"}
+!13 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callSlice", ptr @_llgo_int}
+!14 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.callSlice", ptr @"[]_llgo_any"}
+!15 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.demo", ptr @_llgo_string}
+!16 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo1", ptr @"map[_llgo_int]_llgo_string"}
+!17 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo1", ptr @_llgo_string}
+!18 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo1", ptr @_llgo_int}
+!19 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo2", ptr @_llgo_int}
+!20 = !{ptr @"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo2", ptr @_llgo_string}

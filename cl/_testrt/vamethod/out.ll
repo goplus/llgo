@@ -239,3 +239,8 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/vamethod.main", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt"}
+!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/vamethod.main", ptr @_llgo_string}
