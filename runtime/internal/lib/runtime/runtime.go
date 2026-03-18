@@ -81,6 +81,14 @@ func KeepAlivePointer(p unsafe.Pointer) {
 	c.Memcmp(p, p, 0)
 }
 
+//go:noinline
+func HiddenPointerKey(p unsafe.Pointer) uintptr {
+	key := runtime.EncodeHiddenPointerKey(p)
+	p = nil
+	ClobberPointerRegs()
+	return key
+}
+
 //go:linkname c_clobber_pointer_regs C.llgo_clobber_pointer_regs
 func c_clobber_pointer_regs(a0, a1, a2, a3, a4, a5, a6, a7 uintptr)
 

@@ -641,6 +641,9 @@ func f() {
 	if loadIdx < 0 {
 		t.Fatalf("missing pointer slot load before foo.use:\n%s", body)
 	}
+	if hiddenLoadIdx >= 0 && !strings.Contains(rest, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("missing helper-backed visible root store for hidden pointer value:\n%s", body)
+	}
 	clearIdx := strings.LastIndex(rest, "store ptr null, ptr")
 	if hiddenLoadIdx >= 0 {
 		if rel := strings.LastIndex(rest[hiddenLoadIdx:], "store i64 "); rel >= 0 {
@@ -655,6 +658,78 @@ func f() {
 	}
 	if clearIdx < loadIdx {
 		t.Fatalf("pointer slot cleared before last-use load:\n%s", body)
+	}
+}
+
+func TestPointerValuePostCallClobbersRegs(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{}
+
+func mk() *T { return new(T) }
+func use(*T) {}
+func wait() {}
+
+func f() {
+	x := mk()
+	use(x)
+	wait()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, "@foo.use(")
+	hiddenBodyCallIdx := strings.Index(body, "@\"foo.use$hiddenparam\"(")
+	hiddenCallIdx := strings.Index(body, "@\"foo.use$hiddencall\"(")
+	if hiddenBodyCallIdx > callIdx {
+		callIdx = hiddenBodyCallIdx
+	}
+	if hiddenCallIdx > callIdx {
+		callIdx = hiddenCallIdx
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing foo.use call:\n%s", body)
+	}
+	waitIdx := strings.Index(body[callIdx:], "@foo.wait(")
+	if waitIdx < 0 {
+		t.Fatalf("missing foo.wait call after foo.use:\n%s", body)
+	}
+	window := body[:callIdx+waitIdx]
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing register clobber between last-use pointer call and following wait:\n%s", body)
+	}
+}
+
+func TestHiddenPointerValueStoreClobbersRegs(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{}
+
+func mk() *T { return new(T) }
+func wait() {}
+var sink *T
+
+func f() {
+	x := mk()
+	wait()
+	sink = x
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	waitIdx := strings.Index(body, "@foo.wait(")
+	if waitIdx < 0 {
+		t.Fatalf("missing foo.wait call:\n%s", body)
+	}
+	window := body[:waitIdx]
+	storeIdx := strings.LastIndex(window, "@runtime.StoreHiddenPointerRoot(")
+	if storeIdx < 0 {
+		t.Fatalf("missing helper-backed hidden pointer root store before foo.wait:\n%s", body)
+	}
+	clobberIdx := strings.LastIndex(window, "@runtime.ClobberPointerRegs(")
+	if clobberIdx < 0 {
+		t.Fatalf("missing register clobber after hidden pointer value store:\n%s", body)
+	}
+	if clobberIdx < storeIdx {
+		t.Fatalf("register clobber ran before hidden pointer value store:\n%s", body)
 	}
 }
 
@@ -693,7 +768,7 @@ func f(x *T) {
 	if clearIdx < 0 {
 		t.Fatalf("missing parameter slot clear after foo.use:\n%s", body)
 	}
-	clobberIdx := strings.Index(window, "@runtime.ClobberPointerRegs(")
+	clobberIdx := strings.LastIndex(window, "@runtime.ClobberPointerRegs(")
 	if clobberIdx < 0 {
 		t.Fatalf("missing pointer clobber after parameter slot clear:\n%s", body)
 	}
@@ -759,6 +834,9 @@ func f() {
 	if !strings.Contains(body, `@"foo.g$hiddenparam"(`) {
 		t.Fatalf("missing hidden-param call for gc-sensitive pointer callee:\n%s", body)
 	}
+	if !strings.Contains(body, "@runtime.HiddenPointerKey(") {
+		t.Fatalf("missing helper-based hidden pointer encoding in caller:\n%s", body)
+	}
 	if strings.Contains(body, `@"foo.g$hiddencall"(`) {
 		t.Fatalf("unexpected caller-side hidden shim for gc-sensitive pointer callee:\n%s", body)
 	}
@@ -777,6 +855,82 @@ func f() {
 	}
 	if !strings.Contains(window, "zeroinitializer") {
 		t.Fatalf("missing shadow clear before second gc:\n%s", hiddenBody)
+	}
+}
+
+func TestGcSensitiveHiddenBodyUsesHiddenPointerResult(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{}
+type S struct{ h *T }
+
+func gc() { runtime.GC() }
+
+func g(p *S) (v *T) {
+	gc()
+	v = p.h
+	defer func() {
+		gc()
+		recover()
+		gc()
+	}()
+	*(*int)(nil) = 0
+	return
+}
+
+func f() *T {
+	var s S
+	s.h = new(T)
+	return g(&s)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.g$hiddenparam"(`)
+	if callIdx < 0 {
+		t.Fatalf("missing hidden-param call for defering gc-sensitive callee:\n%s", body)
+	}
+	window := body[callIdx:]
+	if strings.Contains(window, "ptrtoint ptr") {
+		t.Fatalf("caller materialized raw pointer return before encoding hidden result:\n%s", body)
+	}
+	if !strings.Contains(body, `call i64 @"foo.g$hiddenparam"(`) {
+		t.Fatalf("caller did not receive hidden pointer result as uintptr:\n%s", body)
+	}
+}
+
+func TestGcSensitivePointerRecvMethodUsesHiddenCall(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+
+func (h *H) check() {
+	runtime.GC()
+}
+
+func g(h *H) {
+	h.check()
+	runtime.KeepAlive(h)
+}
+
+func f() {
+	h := new(H)
+	g(h)
+}
+	`)
+	name := "foo.g$hiddenparam"
+	if !strings.Contains(ir, `@"foo.g$hiddenparam"(`) {
+		name = "foo.g"
+	}
+	body := functionBody(t, ir, name)
+	if !strings.Contains(body, `.check$hiddencall"(`) {
+		t.Fatalf("missing hidden method call in gc-sensitive hidden body:\n%s", body)
+	}
+	if strings.Contains(body, `@"foo.(*H).check"(`) {
+		t.Fatalf("unexpected raw receiver method call in hidden body:\n%s", body)
 	}
 }
 
@@ -835,11 +989,63 @@ func f() (x *T) {
 }
 `)
 	body := functionBody(t, ir, "foo.f")
-	if !strings.Contains(body, "alloca i64") {
-		t.Fatalf("missing hidden uintptr slot for pointer alloc:\n%s", body)
+	if strings.Contains(body, "alloca i64") {
+		t.Fatalf("unexpected hidden uintptr slot for deferred return pointer alloc:\n%s", body)
 	}
-	if !strings.Contains(body, "xor i64") {
-		t.Fatalf("missing hidden pointer encoding for pointer alloc:\n%s", body)
+	if !strings.Contains(body, "alloca ptr") {
+		t.Fatalf("missing raw pointer slot for deferred return pointer alloc:\n%s", body)
+	}
+	if strings.Contains(body, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("unexpected hidden root helper for deferred return pointer alloc:\n%s", body)
+	}
+}
+
+func TestDeferredReturnClearsNamedPointerSlot(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{}
+type S struct{ h *T }
+
+func gc() { runtime.GC() }
+
+func g(p *S) (v *T) {
+	gc()
+	v = p.h
+	defer func() {
+		gc()
+		recover()
+		gc()
+	}()
+	*(*int)(nil) = 0
+	return
+}
+`)
+	name := "foo.g$hiddenparam"
+	if !strings.Contains(ir, `@"foo.g$hiddenparam"(`) {
+		name = "foo.g"
+	}
+	body := functionBody(t, ir, name)
+	count := 0
+	for off := 0; ; {
+		rel := strings.Index(body[off:], "ret ptr")
+		if rel < 0 {
+			break
+		}
+		retIdx := off + rel
+		start := retIdx - 120
+		if start < 0 {
+			start = 0
+		}
+		if !strings.Contains(body[start:retIdx], "store ptr null, ptr") {
+			t.Fatalf("missing named return slot clear before ret:\n%s", body)
+		}
+		count++
+		off = retIdx + len("ret ptr")
+	}
+	if count == 0 {
+		t.Fatalf("missing pointer return in function body:\n%s", body)
 	}
 }
 

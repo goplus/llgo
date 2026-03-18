@@ -99,11 +99,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue27518b.go
-    reason: last-use clearing for panic/defer return values and caller locals still keeps the heap object reachable too long under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue29504.go
     reason: traceback frame metadata is still incomplete under llgo on darwin/arm64
   - version: go1.24
@@ -204,6 +199,12 @@ timeouts:
     case: finprofiled.go
     timeout: 90s
     reason: finalizer-heavy heap profiling passes but needs a longer per-case timeout on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27518b.go
+    timeout: 300s
+    reason: panic/defer finalizer case now passes semantically but a cold llgo run still spends about 208s rebuilding runtime on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

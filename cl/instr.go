@@ -996,6 +996,8 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
 					callee = hiddenFn.Expr
 					hiddenParamIdx = plan.paramIdx
+					hiddenResult = plan.resultHidden
+					hiddenResultType = plan.resultRawType
 				}
 			} else if plan := p.hiddenStaticCallShimPlanFor(aFn.Name(), cv); plan != nil {
 				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
@@ -1025,6 +1027,9 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				}
 				return llargs
 			})
+			if hiddenResult || (ret.Type == nil && (hiddenParamIdx >= 0 || p.shouldPostCallClobber(owner))) {
+				p.clobberPointerRegs(b)
+			}
 			if hiddenResult && ret.Type != nil && (asValue || !p.callResultUsesHiddenPointerKey(owner)) {
 				ret = p.hiddenPointerDecode(b, ret, hiddenResultType)
 			}
@@ -1237,6 +1242,12 @@ func (p *context) hiddenScalarArgValue(b llssa.Builder, arg ssa.Value) (llssa.Ex
 	if val.Type == nil {
 		return llssa.Expr{}, false
 	}
+	if _, ok := types.Unalias(arg.Type()).Underlying().(*types.Pointer); ok {
+		return p.hiddenPointerKeyCall(b, val), true
+	}
+	if idx, _, ok := hiddenScalarStructField(arg.Type()); ok {
+		return p.hiddenPointerKeyCall(b, b.Field(val, idx)), true
+	}
 	return p.encodeHiddenStoredValue(b, val, arg.Type()), true
 }
 
@@ -1304,7 +1315,7 @@ func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Exp
 	if ptr.Type == nil {
 		return llssa.Expr{}, llssa.Expr{}, false
 	}
-	return b.AbiTypeOf(arg.Type()), p.hiddenPointerKey(b, ptr), true
+	return b.AbiTypeOf(arg.Type()), p.hiddenPointerKeyCall(b, ptr), true
 }
 
 // -----------------------------------------------------------------------------
