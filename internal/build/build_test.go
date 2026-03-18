@@ -345,6 +345,10 @@ func f(x *T) {
 	if !strings.Contains(body[callIdx:], "@runtime.ClobberPointerRegs(") {
 		t.Fatalf("f should clobber transient pointer registers after SetFinalizerTypeHidden:\n%s", body)
 	}
+	pre := body[:callIdx]
+	if !strings.Contains(pre, "store i64 0, ptr") {
+		t.Fatalf("f should clear the hidden finalizer key temp before SetFinalizerTypeHidden:\n%s", body)
+	}
 }
 
 func TestModeGenSetFinalizerUsesTypedHelperForFieldClosure(t *testing.T) {
@@ -465,6 +469,10 @@ func f(s string) {
 	}
 	if !strings.Contains(body[callIdx:], "@runtime.ClobberPointerRegs(") {
 		t.Fatalf("f should clobber transient pointer registers after SetFinalizerTypeHidden:\n%s", body)
+	}
+	pre := body[:callIdx]
+	if !strings.Contains(pre, "store i64 0, ptr") {
+		t.Fatalf("f should clear the hidden pointer key temp before SetFinalizerTypeHidden:\n%s", body)
 	}
 }
 

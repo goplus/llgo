@@ -968,6 +968,10 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				clobber := b.Pkg.NewFunc("runtime.ClobberPointerRegs",
 					types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InGo)
 				finalizer := p.compileValue(b, args[1])
+				keySlot := b.AllocaT(b.Prog.Uintptr())
+				b.Store(keySlot, objKey)
+				objKey = b.Load(keySlot)
+				b.Store(keySlot, p.prog.Zero(b.Prog.Elem(keySlot.Type)))
 				p.clearPreCallValues(b, owner)
 				callMaybeSuspendRecover(helper.Expr, false, func() []llssa.Expr {
 					return []llssa.Expr{objType, objKey, finalizer}
@@ -992,6 +996,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 			hiddenParamIdx := -1
 			hiddenResult := false
 			hiddenResultType := types.Type(nil)
+			hiddenArgTemp := false
 			if plan := p.hiddenParamWrapperPlanFor(aFn.Name(), cv); plan != nil {
 				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
 					callee = hiddenFn.Expr
@@ -1025,9 +1030,16 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				if llargs[hiddenParamIdx].Type != nil && !types.Identical(llargs[hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
 					llargs[hiddenParamIdx] = p.encodeHiddenStoredValue(b, llargs[hiddenParamIdx], args[hiddenParamIdx].Type())
 				}
+				if llargs[hiddenParamIdx].Type != nil && types.Identical(llargs[hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
+					hiddenArgSlot := b.AllocaT(b.Prog.Uintptr())
+					b.Store(hiddenArgSlot, llargs[hiddenParamIdx])
+					llargs[hiddenParamIdx] = b.Load(hiddenArgSlot)
+					b.Store(hiddenArgSlot, p.prog.Zero(b.Prog.Elem(hiddenArgSlot.Type)))
+					hiddenArgTemp = true
+				}
 				return llargs
 			})
-			if hiddenResult || (ret.Type == nil && (hiddenParamIdx >= 0 || p.shouldPostCallClobber(owner))) {
+			if hiddenResult || hiddenArgTemp || (ret.Type == nil && (hiddenParamIdx >= 0 || p.shouldPostCallClobber(owner))) {
 				p.clobberPointerRegs(b)
 			}
 			if hiddenResult && ret.Type != nil && (asValue || !p.callResultUsesHiddenPointerKey(owner)) {

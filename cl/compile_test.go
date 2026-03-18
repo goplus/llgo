@@ -858,6 +858,48 @@ func f() {
 	}
 }
 
+func TestGcSensitivePointerCallClearsHiddenKeyTemp(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{ p *int }
+
+func gc() { runtime.GC() }
+
+func g(s *T) {
+	gc()
+	runtime.KeepAlive(s)
+}
+
+func wait() {}
+
+func f() {
+	var s T
+	s.p = new(int)
+	g(&s)
+	wait()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.g$hiddenparam"(`)
+	if callIdx < 0 {
+		t.Fatalf("missing hidden-param call for gc-sensitive pointer callee:\n%s", body)
+	}
+	waitRel := strings.Index(body[callIdx:], "@foo.wait(")
+	if waitRel < 0 {
+		t.Fatalf("missing wait call after hidden-param call:\n%s", body)
+	}
+	pre := body[:callIdx]
+	if !strings.Contains(pre, "store i64 0, ptr") {
+		t.Fatalf("missing hidden key temp clear before hidden-param call:\n%s", body)
+	}
+	window := body[callIdx : callIdx+waitRel]
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing pointer clobber after hidden key temp clear:\n%s", body)
+	}
+}
+
 func TestGcSensitiveHiddenBodyUsesHiddenPointerResult(t *testing.T) {
 	ir := compileIR(t, `package foo
 
