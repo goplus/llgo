@@ -31,7 +31,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -911,7 +910,9 @@ func compileExtraFiles(ctx *context, verbose bool) ([]string, error) {
 func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPath string, verbose bool) error {
 	needRuntime := false
 	needPyInit := false
-	needAbiInit := false
+	var needAbiInit int
+	methodByIndex := make(map[int]none)
+	methodByName := make(map[string]none)
 	allPkgs := []*packages.Package{pkg}
 	for _, v := range pkgs {
 		allPkgs = append(allPkgs, v.Package)
@@ -966,8 +967,12 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		need1, need2 := aPkg.isNeedRuntimeOrPyInit()
 		needRuntime = needRuntime || need1
 		needPyInit = needPyInit || need2
-		if aPkg.LPkg.NeedAbiInit {
-			needAbiInit = true
+		needAbiInit |= aPkg.LPkg.NeedAbiInit
+		for k, _ := range aPkg.LPkg.MethodByIndex {
+			methodByIndex[k] = none{}
+		}
+		for k, _ := range aPkg.LPkg.MethodByName {
+			methodByName[k] = none{}
 		}
 
 		linkArgs = append(linkArgs, aPkg.LinkArgs...)
@@ -982,12 +987,17 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		archiveInputs = append(archiveInputs, rtLinkInputs...)
 	}
 
-	abiSymbols := linkedModuleGlobals(linkedOrder)
-
 	// Generate main module file (needed for global variables even in library modes)
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
-	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit, abiSymbols)
+	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{
+		rtInit:        needRuntime,
+		pyInit:        needPyInit,
+		abiInit:       needAbiInit,
+		methodByIndex: methodByIndex,
+		methodByName:  methodByName,
+		abiSymbols:    linkedModuleGlobals(linkedOrder),
+	})
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
@@ -1027,25 +1037,20 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	return nil
 }
 
-func linkedModuleGlobals(pkgs []Package) []string {
+func linkedModuleGlobals(pkgs []Package) map[string]none {
 	if len(pkgs) == 0 {
 		return nil
 	}
-	seen := make(map[string]struct{})
+	seen := make(map[string]none)
 	for _, pkg := range pkgs {
 		if pkg == nil || pkg.LPkg == nil {
 			continue
 		}
 		for g := pkg.LPkg.Module().FirstGlobal(); !g.IsNil(); g = gllvm.NextGlobal(g) {
-			seen[g.Name()] = struct{}{}
+			seen[g.Name()] = none{}
 		}
 	}
-	names := make([]string, 0, len(seen))
-	for name := range seen {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	return names
+	return seen
 }
 
 // isRuntimePkg reports whether the package path belongs to the llgo runtime tree.

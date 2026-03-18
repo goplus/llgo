@@ -509,7 +509,7 @@ func (b Builder) abiType(t types.Type) Expr {
 		g.impl.SetInitializer(llvm.ConstNamedStruct(g.impl.GlobalValueType(), fields))
 		g.impl.SetGlobalConstant(true)
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
-		prog.abiSymbol[name] = g.Type
+		prog.abiSymbol[name] = &AbiSymbol{Name: name, PkgPath: pkg.Path(), Raw: t, Typ: g.Type, MSet: mset}
 	}
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 		llvm.ConstInt(prog.Int32().ll, 0, false),
@@ -517,18 +517,18 @@ func (b Builder) abiType(t types.Type) Expr {
 	}), prog.AbiTypePtr()}
 }
 
-func (p Package) getAbiTypesFor(name string, selected []string) Expr {
+func (p Package) getAbiTypesFor(name string, filter func(sym *AbiSymbol) bool) Expr {
 	prog := p.Prog
 	var names []string
-	if selected == nil {
+	if filter == nil {
 		names = make([]string, 0, len(prog.abiSymbol))
 		for k := range prog.abiSymbol {
 			names = append(names, k)
 		}
 	} else {
-		names = make([]string, 0, len(selected))
-		for _, k := range selected {
-			if _, ok := prog.abiSymbol[k]; ok {
+		names = make([]string, 0, len(prog.abiSymbol))
+		for k, sym := range prog.abiSymbol {
+			if filter(sym) {
 				names = append(names, k)
 			}
 		}
@@ -536,7 +536,7 @@ func (p Package) getAbiTypesFor(name string, selected []string) Expr {
 	sort.Strings(names)
 	fields := make([]llvm.Value, len(names))
 	for i, name := range names {
-		g := p.doNewVar(name, prog.abiSymbol[name])
+		g := p.doNewVar(name, prog.abiSymbol[name].Typ)
 		g.impl.SetLinkage(llvm.ExternalLinkage)
 		g.impl.SetGlobalConstant(true)
 		ptr := Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
@@ -567,19 +567,15 @@ func (p Package) getAbiTypes(name string) Expr {
 	return p.getAbiTypesFor(name, nil)
 }
 
-func (p Package) InitAbiTypesFor(fname string, selected []string) Function {
-	if selected == nil {
-		if len(p.Prog.abiSymbol) == 0 {
-			return nil
-		}
-	} else if len(selected) == 0 {
+func (p Package) InitAbiTypesFor(fname string, filter func(sym *AbiSymbol) bool) Function {
+	if len(p.Prog.abiSymbol) == 0 {
 		return nil
 	}
 	prog := p.Prog
 	initFn := p.NewFunc(fname, NoArgsNoRet, InC)
 	b := initFn.MakeBody(1)
 	g := p.NewVarEx(PkgRuntime+".typelist", prog.Pointer(prog.Slice(prog.AbiTypePtr())))
-	b.Store(g.Expr, b.Load(p.getAbiTypesFor(fname, selected)))
+	b.Store(g.Expr, b.Load(p.getAbiTypesFor(fname, filter)))
 	b.Return()
 	return initFn
 }
