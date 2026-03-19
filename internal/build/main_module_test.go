@@ -38,11 +38,21 @@ func TestGenMainModuleExecutable(t *testing.T) {
 		"define i32 @main(",
 		"call void @Py_Initialize()",
 		"call void @\"example.com/foo.init\"()",
+		"define ptr @__llgo_main_routine(",
+		"call void @runtime.runMain(",
 		"define weak void @_start()",
 	}
 	for _, want := range checks {
 		if !strings.Contains(ir, want) {
 			t.Fatalf("main module IR missing %q:\n%s", want, ir)
+		}
+	}
+	entryStart := strings.Index(ir, "define i32 @main(")
+	entryEnd := strings.Index(ir[entryStart:], "}\n")
+	if entryStart >= 0 && entryEnd > 0 {
+		entryBody := ir[entryStart : entryStart+entryEnd]
+		if strings.Contains(entryBody, "call void @Py_Initialize()") {
+			t.Fatalf("entry function should not call Py_Initialize directly:\n%s", entryBody)
 		}
 	}
 }

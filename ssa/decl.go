@@ -110,9 +110,13 @@ func (p Package) doNewVar(name string, t Type, define bool) Global {
 			if rt := p.Prog.runtime(); rt != nil {
 				zeroName := FullName(rt, "zeroSizedAlloc")
 				if name != zeroName {
-					zerobase := p.mod.NamedGlobal(zeroName)
+					const moduleZeroName = "__llgo.moduleZeroSizedAlloc"
+					zerobase := p.mod.NamedGlobal(moduleZeroName)
 					if zerobase.IsNil() {
-						zerobase = llvm.AddGlobal(p.mod, p.Prog.Byte().ll, zeroName)
+						zerobase = llvm.AddGlobal(p.mod, p.Prog.Byte().ll, moduleZeroName)
+						zerobase.SetInitializer(llvm.ConstNull(p.Prog.Byte().ll))
+						zerobase.SetLinkage(llvm.PrivateLinkage)
+						zerobase.SetUnnamedAddr(true)
 					}
 					aliasee := llvm.ConstBitCast(zerobase, llvm.PointerType(typ, 0))
 					gbl = llvm.AddAlias(p.mod, typ, 0, aliasee, name)

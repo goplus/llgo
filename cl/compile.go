@@ -3896,13 +3896,33 @@ func (p *context) collectHiddenPointerValueSlots(fn *ssa.Function) map[ssa.Value
 }
 
 func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
-	if fn == nil || len(p.paramValueClears) == 0 {
+	if fn == nil {
+		return
+	}
+	needsHiddenByRefSlots := false
+	for idx := range fn.Params {
+		if p.hiddenParamByRefs[idx] {
+			needsHiddenByRefSlots = true
+			break
+		}
+	}
+	if len(p.paramValueClears) == 0 && !needsHiddenByRefSlots {
 		return
 	}
 	slotIdxs := make(map[int]bool)
+	if needsHiddenByRefSlots {
+		for idx := range fn.Params {
+			if isNameValistParam(fn, idx) {
+				continue
+			}
+			if p.hiddenParamByRefs[idx] {
+				slotIdxs[idx] = true
+			}
+		}
+	}
 	for _, idxs := range p.paramValueClears {
 		for _, idx := range idxs {
-			if idx < 0 || idx >= len(fn.Params) {
+			if idx < 0 || idx >= len(fn.Params) || isNameValistParam(fn, idx) {
 				continue
 			}
 			if p.hiddenParamKeys[idx] || p.paramShadow[idx].Type == nil {
@@ -3982,6 +4002,13 @@ func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
 	if clobber {
 		p.clobberPointerRegs(b)
 	}
+}
+
+func isNameValistParam(fn *ssa.Function, idx int) bool {
+	if fn == nil || idx < 0 || idx >= len(fn.Params) || !llssa.HasNameValist(fn.Signature) {
+		return false
+	}
+	return fn.Params[idx].Name() == llssa.NameValist
 }
 
 func (p *context) initKeepAliveParamShadows(b llssa.Builder, fn *ssa.Function) {

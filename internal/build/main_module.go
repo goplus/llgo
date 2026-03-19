@@ -86,7 +86,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
 	mainMain := declareNoArgFunc(mainPkg, pkg.PkgPath+".main")
-	mainRoutine := defineMainRoutine(mainPkg, mainInit, mainMain)
+	mainRoutine := defineMainRoutine(mainPkg, pyInit, mainInit, mainMain)
 	runMain := declareRunMainFunc(mainPkg, prog.VoidPtr().RawType())
 
 	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, runMain, mainRoutine, pyInit, rtInit, abiInit)
@@ -124,9 +124,6 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	if IsStdioNobuf() {
 		emitStdioNobuf(b, pkg, ctx.buildConf.Goos)
 	}
-	if pyInit != nil {
-		b.Call(pyInit.Expr)
-	}
 	if rtInit != nil {
 		b.Call(rtInit.Expr)
 	}
@@ -160,9 +157,12 @@ func declareRunMainFunc(pkg llssa.Package, ptrType types.Type) llssa.Function {
 	return pkg.NewFunc("runtime.runMain", sig, llssa.InC)
 }
 
-func defineMainRoutine(pkg llssa.Package, mainInit, mainMain llssa.Function) llssa.Function {
+func defineMainRoutine(pkg llssa.Package, pyInit, mainInit, mainMain llssa.Function) llssa.Function {
 	routine := pkg.NewFunc("__llgo_main_routine", newRoutineSignature(pkg.Prog.VoidPtr().RawType()), llssa.InC)
 	b := routine.MakeBody(1)
+	if pyInit != nil {
+		b.Call(pyInit.Expr)
+	}
 	b.Call(mainInit.Expr)
 	b.Call(mainMain.Expr)
 	b.Return(pkg.Prog.Nil(pkg.Prog.VoidPtr()))

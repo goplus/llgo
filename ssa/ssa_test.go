@@ -875,6 +875,33 @@ _llgo_0:
 `)
 }
 
+func TestZeroSizedVarAliasUsesModuleBase(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	typ := types.NewPointer(types.NewStruct(nil, nil))
+	a := pkg.NewVar("foo/bar.a", typ, InGo)
+	if pkg.NewVar("foo/bar.a", typ, InGo) != a {
+		t.Fatal("NewVar(a) failed")
+	}
+	pkg.NewVarEx("foo/bar.a", prog.Type(typ, InGo))
+	ir := pkg.String()
+	if !strings.Contains(ir, `@__llgo.moduleZeroSizedAlloc = private unnamed_addr global i8 0`) {
+		t.Fatalf("missing module-local zero-sized anchor:\n%s", ir)
+	}
+	if !strings.Contains(ir, `@"foo/bar.a" = alias`) {
+		t.Fatalf("missing zero-sized alias for foo/bar.a:\n%s", ir)
+	}
+	if strings.Contains(ir, `@runtime.zeroSizedAlloc`) || strings.Contains(ir, `runtime/internal/runtime.zeroSizedAlloc`) {
+		t.Fatalf("zero-sized alias still targets imported runtime symbol:\n%s", ir)
+	}
+}
+
 func TestStruct(t *testing.T) {
 	empty := types.NewStruct(nil, nil)
 

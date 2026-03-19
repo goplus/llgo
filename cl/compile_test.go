@@ -1338,6 +1338,63 @@ func g(h *H) {
 	}
 }
 
+func TestHiddenByRefParamInitializesSlotWithoutClearPlan(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+
+func force() { runtime.GC() }
+
+func (h *H) check() {}
+
+func g(h *H) {
+	force()
+	h.check()
+}
+
+func f(h *H) {
+	g(h)
+}
+`)
+	name := "foo.g$hiddenparam"
+	if !strings.Contains(ir, `@"foo.g$hiddenparam"(`) {
+		name = "foo.g"
+	}
+	body := functionBody(t, ir, name)
+	if strings.Contains(body, "and ptr %0") {
+		t.Fatalf("hidden by-ref param used raw param pointer as hidden key:\n%s", body)
+	}
+	if !strings.Contains(body, "load ptr, ptr %0") {
+		t.Fatalf("hidden by-ref param body did not materialize the raw pointer from the caller slot:\n%s", body)
+	}
+	if !strings.Contains(body, `.check$hiddencall"(`) {
+		t.Fatalf("missing hidden method call in by-ref hidden body:\n%s", body)
+	}
+}
+
+func TestVariadicMethodParamInitSkipsNameValist(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T struct{}
+
+func (t *T) Printf(args ...int) {
+	runtime.GC()
+}
+
+func f(t *T) {
+	t.Printf(1)
+}
+`)
+	body := functionBody(t, ir, "foo.(*T).Printf")
+	if !strings.Contains(body, "@runtime.GC(") {
+		t.Fatalf("missing runtime.GC call in variadic method body:\n%s", body)
+	}
+}
+
 func TestIssue32477CallerClearsPointerLocalBeforeCall(t *testing.T) {
 	ir := compileIR(t, `package foo
 
