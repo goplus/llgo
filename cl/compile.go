@@ -140,6 +140,8 @@ type context struct {
 	valueRootSlots           map[ssa.Value]llssa.Expr
 	hiddenValueSlots         map[ssa.Value]bool
 	hiddenParamKeys          map[int]bool
+	hiddenParamByRefs        map[int]bool
+	hiddenParamSlots         map[int]llssa.Expr
 	hiddenResultType         types.Type
 	hiddenAllocSlots         map[*ssa.Alloc]llssa.Expr
 	paramShadow              map[int]llssa.Expr
@@ -408,11 +410,12 @@ func genericTypeArgsOf(f *ssa.Function) []types.Type {
 }
 
 type hiddenParamWrapperPlan struct {
-	paramIdx      int
-	hiddenSig     *types.Signature
-	hiddenName    string
-	resultHidden  bool
-	resultRawType types.Type
+	paramIdx         int
+	hiddenSig        *types.Signature
+	hiddenName       string
+	hiddenParamByRef bool
+	resultHidden     bool
+	resultRawType    types.Type
 }
 
 type hiddenStaticCallShimPlan struct {
@@ -482,7 +485,7 @@ func isRuntimeSSAFunction(fn *ssa.Function) bool {
 	return isRuntimePackagePath(fn.Pkg.Pkg.Path())
 }
 
-func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *types.Signature {
+func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool, byRef map[int]bool) *types.Signature {
 	if sig == nil || len(hidden) == 0 {
 		return sig
 	}
@@ -496,13 +499,30 @@ func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool) *typ
 		param := params.At(i)
 		typ := param.Type()
 		if hidden[i] {
-			if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
+			if byRef[i] {
+				if _, ok := types.Unalias(typ).Underlying().(*types.Pointer); ok {
+					typ = types.NewPointer(typ)
+				} else if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
+					typ = types.NewPointer(hiddenTyp)
+				}
+			} else if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
 				typ = hiddenTyp
 			}
 		}
 		newParams[i] = types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ)
 	}
 	return types.NewSignatureType(recv, nil, nil, types.NewTuple(newParams...), sig.Results(), sig.Variadic())
+}
+
+func (p *context) shouldUseHiddenParamByRef(fn *ssa.Function, idx int) bool {
+	if fn == nil || idx < 0 || idx >= len(fn.Params) {
+		return false
+	}
+	if !p.functionNeedsStrongPointerClobber(fn) {
+		return false
+	}
+	_, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer)
+	return ok
 }
 
 func hiddenScalarStructField(t types.Type) (fieldIdx int, fieldType types.Type, ok bool) {
@@ -713,7 +733,12 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 	}
 	patchedSig := p.patchType(f.Signature).(*types.Signature)
 	hidden := map[int]bool{ptrIdx: true}
-	hiddenSig := rewriteHiddenParamSignature(patchedSig, hidden)
+	hiddenParamByRef := p.shouldUseHiddenParamByRef(f, ptrIdx)
+	hiddenByRef := map[int]bool{}
+	if hiddenParamByRef {
+		hiddenByRef[ptrIdx] = true
+	}
+	hiddenSig := rewriteHiddenParamSignature(patchedSig, hidden, hiddenByRef)
 	var resultRawType types.Type
 	var resultHidden bool
 	if !functionHasDefer(f) {
@@ -724,11 +749,12 @@ func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hidde
 		hiddenSig, resultRawType, resultHidden = rewriteHiddenResultSignature(hiddenSig)
 	}
 	return &hiddenParamWrapperPlan{
-		paramIdx:      ptrIdx,
-		hiddenSig:     hiddenSig,
-		hiddenName:    name + "$hiddenparam",
-		resultHidden:  resultHidden,
-		resultRawType: resultRawType,
+		paramIdx:         ptrIdx,
+		hiddenSig:        hiddenSig,
+		hiddenName:       name + "$hiddenparam",
+		hiddenParamByRef: hiddenParamByRef,
+		resultHidden:     resultHidden,
+		resultRawType:    resultRawType,
 	}
 }
 
@@ -817,7 +843,7 @@ func (p *context) singleExtractCallShimPlanFor(name string, f *ssa.Function, idx
 	hiddenParamByRef := hiddenParamIdx >= 0 && hiddenOpaqueAggregateSlotType(f.Params[hiddenParamIdx].Type()) != nil
 	shimSig := p.patchType(f.Signature).(*types.Signature)
 	if hiddenParamIdx >= 0 {
-		shimSig = rewriteHiddenParamSignature(shimSig, map[int]bool{hiddenParamIdx: true})
+		shimSig = rewriteHiddenParamSignature(shimSig, map[int]bool{hiddenParamIdx: true}, nil)
 	}
 	shimSig = rewriteSingleExtractCallSignature(shimSig, idx)
 	outSig := (*types.Signature)(nil)
@@ -826,7 +852,7 @@ func (p *context) singleExtractCallShimPlanFor(name string, f *ssa.Function, idx
 	if resultHidden && hiddenOpaqueAggregateSlotType(resultRawType) != nil {
 		baseSig := p.patchType(f.Signature).(*types.Signature)
 		if hiddenParamIdx >= 0 {
-			baseSig = rewriteHiddenParamSignature(baseSig, map[int]bool{hiddenParamIdx: true})
+			baseSig = rewriteHiddenParamSignature(baseSig, map[int]bool{hiddenParamIdx: true}, nil)
 		}
 		baseSig = rewriteSingleExtractCallSignature(baseSig, idx)
 		outSig = rewriteSingleExtractCallOutSignature(baseSig, hiddenParamIdx, hiddenParamByRef, resultRawType)
@@ -845,12 +871,13 @@ func (p *context) singleExtractCallShimPlanFor(name string, f *ssa.Function, idx
 	}
 }
 
-func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, state pkgState, dbgEnabled, dbgSymsEnabled, isCgo bool, hiddenParamKeys map[int]bool, hiddenResultType types.Type) {
+func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, state pkgState, dbgEnabled, dbgSymsEnabled, isCgo bool, hiddenParamKeys, hiddenParamByRefs map[int]bool, hiddenResultType types.Type) {
 	p.inits = append(p.inits, func() {
 		p.fn = fn
 		p.goFn = f
 		p.state = state
 		p.hiddenParamKeys = hiddenParamKeys
+		p.hiddenParamByRefs = hiddenParamByRefs
 		p.hiddenResultType = hiddenResultType
 		p.strongPtrClobber = p.functionNeedsStrongPointerClobber(f)
 		p.singleExtractCallResults = nil
@@ -858,6 +885,8 @@ func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, sta
 			p.fn = nil
 			p.goFn = nil
 			p.hiddenParamKeys = nil
+			p.hiddenParamByRefs = nil
+			p.hiddenParamSlots = nil
 			p.hiddenResultType = nil
 			p.singleExtractCallResults = nil
 			p.strongPtrClobber = false
@@ -904,6 +933,7 @@ func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, sta
 		}
 		p.paramShadow = make(map[int]llssa.Expr)
 		p.paramSlots = make(map[int]llssa.Expr)
+		p.hiddenParamSlots = make(map[int]llssa.Expr)
 		off := make([]int, len(f.Blocks))
 		if isCgo {
 			p.cgoArgs = make([]llssa.Expr, len(f.Params))
@@ -935,7 +965,7 @@ func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, sta
 	})
 }
 
-func (p *context) enqueueHiddenParamWrapper(fn, hiddenFn llssa.Function, f *ssa.Function, hiddenParamKeys map[int]bool, resultHidden bool, resultRawType types.Type, dbgEnabled bool) {
+func (p *context) enqueueHiddenParamWrapper(fn, hiddenFn llssa.Function, f *ssa.Function, hiddenParamKeys, hiddenParamByRefs map[int]bool, resultHidden bool, resultRawType types.Type, dbgEnabled bool) {
 	p.inits = append(p.inits, func() {
 		oldStrong := p.strongPtrClobber
 		p.strongPtrClobber = true
@@ -952,7 +982,20 @@ func (p *context) enqueueHiddenParamWrapper(fn, hiddenFn llssa.Function, f *ssa.
 		for i := range f.Params {
 			arg := b.Param(i)
 			if hiddenParamKeys[i] {
-				arg = p.encodeHiddenCallValue(b, arg, f.Params[i].Type())
+				if hiddenParamByRefs[i] {
+					if _, ok := types.Unalias(f.Params[i].Type()).Underlying().(*types.Pointer); ok {
+						slot := b.AllocaT(arg.Type)
+						b.Store(slot, arg)
+						arg = slot
+					} else {
+						key := p.encodeHiddenCallValue(b, arg, f.Params[i].Type())
+						slot := b.AllocaT(key.Type)
+						b.Store(slot, key)
+						arg = slot
+					}
+				} else {
+					arg = p.encodeHiddenCallValue(b, arg, f.Params[i].Type())
+				}
 			}
 			args[i] = arg
 		}
@@ -1166,6 +1209,7 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	var bodyFn llssa.Function
 	var hiddenShimFn llssa.Function
 	var hiddenParamKeys map[int]bool
+	var hiddenParamByRefs map[int]bool
 	var extractShimFns []llssa.Function
 	var extractOutShimFns []llssa.Function
 	bodyFn = fn
@@ -1173,6 +1217,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		hiddenPlan = p.hiddenParamWrapperPlanFor(name, f)
 		if hiddenPlan != nil {
 			hiddenParamKeys = map[int]bool{hiddenPlan.paramIdx: true}
+			if hiddenPlan.hiddenParamByRef {
+				hiddenParamByRefs = map[int]bool{hiddenPlan.paramIdx: true}
+			}
 			bodyFn = pkg.FuncOf(hiddenPlan.hiddenName)
 			if bodyFn == nil {
 				bodyFn = pkg.NewFuncEx(hiddenPlan.hiddenName, hiddenPlan.hiddenSig, llssa.Background(ftype), false, isInstance(f))
@@ -1272,9 +1319,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		dbgEnabled := enableDbg && (f == nil || f.Origin() == nil)
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
 		if hiddenPlan != nil {
-			p.enqueueHiddenParamWrapper(fn, bodyFn, f, hiddenParamKeys, hiddenPlan.resultHidden, hiddenPlan.resultRawType, dbgEnabled)
+			p.enqueueHiddenParamWrapper(fn, bodyFn, f, hiddenParamKeys, hiddenParamByRefs, hiddenPlan.resultHidden, hiddenPlan.resultRawType, dbgEnabled)
 		}
-		p.enqueueCompileFuncBody(bodyFn, f, state, dbgEnabled, dbgSymsEnabled, isCgo, hiddenParamKeys, hiddenPlanResultType(hiddenPlan))
+		p.enqueueCompileFuncBody(bodyFn, f, state, dbgEnabled, dbgSymsEnabled, isCgo, hiddenParamKeys, hiddenParamByRefs, hiddenPlanResultType(hiddenPlan))
 		if hiddenShimPlan != nil {
 			p.enqueueHiddenStaticCallShim(hiddenShimFn, fn, f, hiddenShimPlan.paramIdx, hiddenShimPlan.resultHidden, hiddenShimPlan.resultRawType, dbgEnabled)
 		}
@@ -3474,6 +3521,14 @@ func (p *context) hiddenPointerKeyForValue(b llssa.Builder, v ssa.Value) (llssa.
 		fn := param.Parent()
 		for idx, candidate := range fn.Params {
 			if candidate == param && p.hiddenParamKeys[idx] {
+				if p.hiddenParamByRefs[idx] {
+					if slot, ok := p.hiddenParamSlots[idx]; ok && slot.Type != nil {
+						return b.Load(slot), true
+					}
+					if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+						return p.encodeHiddenStoredValue(b, b.Load(slot), v.Type()), true
+					}
+				}
 				return b.Param(idx), true
 			}
 		}
@@ -3847,7 +3902,30 @@ func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
 	for _, idx := range indices {
 		var slot llssa.Expr
 		if p.hiddenParamKeys[idx] {
-			if _, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer); ok {
+			if p.hiddenParamByRefs[idx] {
+				if _, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer); ok {
+					typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+					slot = b.AllocaT(typ)
+					b.Store(slot, b.Load(b.Param(idx)))
+					p.touchConservativeSlot(b, slot, false)
+					keySlot := b.AllocaT(b.Prog.Uintptr())
+					b.Store(keySlot, p.hiddenPointerKeyCall(b, b.Load(slot)))
+					p.hiddenParamSlots[idx] = keySlot
+					b.Store(b.Param(idx), p.prog.Zero(b.Prog.Elem(b.Param(idx).Type)))
+					p.touchConservativeSlot(b, b.Param(idx), false)
+				} else {
+					hiddenSlotType := b.Prog.Elem(b.Param(idx).Type)
+					keySlot := b.AllocaT(hiddenSlotType)
+					key := b.Load(b.Param(idx))
+					b.Store(keySlot, key)
+					p.hiddenParamSlots[idx] = keySlot
+					typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+					slot = b.AllocaT(typ)
+					p.storeHiddenPointerRoot(b, slot, key)
+					b.Store(b.Param(idx), p.prog.Zero(b.Prog.Elem(b.Param(idx).Type)))
+					p.touchConservativeSlot(b, b.Param(idx), true)
+				}
+			} else if _, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer); ok {
 				typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
 				slot = b.AllocaT(typ)
 				b.Store(slot, p.hiddenPointerDecode(b, b.Param(idx), fn.Params[idx].Type()))
@@ -3987,6 +4065,10 @@ func (p *context) clearDeadParamValues(b llssa.Builder, instr ssa.Instruction) {
 			continue
 		}
 		if p.hiddenParamKeys[idx] {
+			if keySlot, ok := p.hiddenParamSlots[idx]; ok && keySlot.Type != nil {
+				b.Store(keySlot, p.prog.Zero(b.Prog.Elem(keySlot.Type)))
+				p.touchConservativeSlot(b, keySlot, true)
+			}
 			b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
 			p.touchConservativeSlot(b, slot, true)
 			cleared = true
@@ -4400,7 +4482,19 @@ func (p *context) materializeValueSlot(b llssa.Builder, iv instrOrValue, ret lls
 		return ret, false
 	}
 	if p.hiddenValueSlots[iv] {
-		if p.hiddenValueUsesUintptrSlot(iv.Type()) || p.hiddenValueUsesOpaqueSlot(iv.Type()) {
+		if p.hiddenValueUsesUintptrSlot(iv.Type()) {
+			if slotElem := b.Prog.Elem(slot.Type); slotElem != nil && slotElem.RawType() != nil &&
+				types.Identical(ret.Type.RawType(), slotElem.RawType()) {
+				b.Store(slot, ret)
+				if root, ok := p.valueRootSlots[iv]; ok && root.Type != nil {
+					p.storeHiddenPointerRoot(b, root, ret)
+				}
+				if !asValue {
+					ret = p.prog.Zero(p.type_(iv.Type(), llssa.InGo))
+				}
+				return ret, true
+			}
+		} else if p.hiddenValueUsesOpaqueSlot(iv.Type()) {
 			if slotElem := b.Prog.Elem(slot.Type); slotElem != nil && slotElem.RawType() != nil &&
 				types.Identical(ret.Type.RawType(), slotElem.RawType()) {
 				b.Store(slot, ret)
@@ -5065,8 +5159,8 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				return
 			}
 		}
-		ptr := p.compileValue(b, va)
 		val := p.compileValue(b, v.Val)
+		ptr := p.compileValue(b, va)
 		b.Store(ptr, val)
 		if storeClearsConservativePointerRoot(v) {
 			p.clobberPointerRegs(b)
@@ -5267,11 +5361,23 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		for idx, param := range fn.Params {
 			if param == v {
 				if p.hiddenParamKeys[idx] {
+					if p.hiddenParamByRefs[idx] {
+						if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+							if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
+								return b.Load(slot)
+							}
+						}
+					}
 					if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
 						if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
 							return b.Load(slot)
 						}
 						return p.decodeHiddenCallValue(b, b.Load(slot), v.Type())
+					}
+					if p.hiddenParamByRefs[idx] {
+						if slot, ok := p.hiddenParamSlots[idx]; ok && slot.Type != nil {
+							return p.decodeHiddenCallValue(b, b.Load(slot), v.Type())
+						}
 					}
 					return p.decodeHiddenCallValue(b, b.Param(idx), v.Type())
 				}

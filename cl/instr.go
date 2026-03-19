@@ -1038,6 +1038,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 					if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
 						callee = hiddenFn.Expr
 						hiddenParamIdx = plan.paramIdx
+						hiddenParamByRef = plan.hiddenParamByRef
 						hiddenResult = plan.resultHidden
 						hiddenResultType = plan.resultRawType
 					}
@@ -1070,13 +1071,24 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				copy(llargs, prefix)
 				for i, arg := range args {
 					if i == hiddenParamIdx {
-						if hiddenParamByRef && p.hiddenValueUsesOpaqueSlot(arg.Type()) {
-							hiddenArg := p.compileValue(b, arg)
-							if !types.Identical(hiddenArg.Type.RawType(), hiddenCallABIType(arg.Type())) {
-								hiddenArg = p.encodeHiddenCallValue(b, hiddenArg, arg.Type())
+						if hiddenParamByRef {
+							var hiddenArgSlot llssa.Expr
+							if _, ok := types.Unalias(arg.Type()).Underlying().(*types.Pointer); ok {
+								rawArg := p.compileValue(b, arg)
+								hiddenArgSlot = b.AllocaT(rawArg.Type)
+								b.Store(hiddenArgSlot, rawArg)
+								p.touchConservativeSlot(b, hiddenArgSlot, false)
+							} else {
+								hiddenArg, ok := p.hiddenScalarArgValue(b, arg)
+								if !ok {
+									hiddenArg = p.compileValue(b, arg)
+									if hiddenArg.Type != nil && !types.Identical(hiddenArg.Type.RawType(), hiddenCallABIType(arg.Type())) {
+										hiddenArg = p.encodeHiddenCallValue(b, hiddenArg, arg.Type())
+									}
+								}
+								hiddenArgSlot = b.AllocaT(hiddenArg.Type)
+								b.Store(hiddenArgSlot, hiddenArg)
 							}
-							hiddenArgSlot := b.AllocaT(hiddenArg.Type)
-							b.Store(hiddenArgSlot, hiddenArg)
 							llargs[base+i] = hiddenArgSlot
 							hiddenArgTemp = true
 							hiddenArgClearSlot = hiddenArgSlot
@@ -1102,6 +1114,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 						b.Store(hiddenArgSlot, llargs[base+hiddenParamIdx])
 						llargs[base+hiddenParamIdx] = b.Load(hiddenArgSlot)
 						b.Store(hiddenArgSlot, p.prog.Zero(b.Prog.Elem(hiddenArgSlot.Type)))
+						p.touchConservativeSlot(b, hiddenArgSlot, true)
 					}
 				}
 				return llargs
@@ -1263,6 +1276,14 @@ func (p *context) hiddenPointerArgKey(b llssa.Builder, arg ssa.Value) (llssa.Exp
 		}
 		for idx, param := range fn.Params {
 			if param == v && p.hiddenParamKeys[idx] {
+				if p.hiddenParamByRefs[idx] {
+					if slot, ok := p.hiddenParamSlots[idx]; ok && slot.Type != nil {
+						return b.Load(slot), true
+					}
+					if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+						return p.encodeHiddenStoredValue(b, b.Load(slot), v.Type()), true
+					}
+				}
 				return b.Param(idx), true
 			}
 		}
@@ -1302,9 +1323,33 @@ func (p *context) hiddenScalarArgValue(b llssa.Builder, arg ssa.Value) (llssa.Ex
 			if param != v || !p.hiddenParamKeys[idx] {
 				continue
 			}
+			if p.hiddenParamByRefs[idx] {
+				if slot, ok := p.hiddenParamSlots[idx]; ok && slot.Type != nil {
+					return b.Load(slot), true
+				}
+				if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+					if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
+						raw := b.Load(slot)
+						if _, ok := types.Unalias(v.Type()).Underlying().(*types.Pointer); ok {
+							return p.hiddenPointerKeyCall(b, raw), true
+						}
+						if fieldIdx, _, ok := hiddenScalarStructField(v.Type()); ok {
+							return p.hiddenPointerKeyCall(b, b.Field(raw, fieldIdx)), true
+						}
+						return p.encodeHiddenStoredValue(b, raw, v.Type()), true
+					}
+				}
+			}
 			if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
 				if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
-					return p.encodeHiddenStoredValue(b, b.Load(slot), v.Type()), true
+					raw := b.Load(slot)
+					if _, ok := types.Unalias(v.Type()).Underlying().(*types.Pointer); ok {
+						return p.hiddenPointerKeyCall(b, raw), true
+					}
+					if fieldIdx, _, ok := hiddenScalarStructField(v.Type()); ok {
+						return p.hiddenPointerKeyCall(b, b.Field(raw, fieldIdx)), true
+					}
+					return p.encodeHiddenStoredValue(b, raw, v.Type()), true
 				}
 				return b.Load(slot), true
 			}

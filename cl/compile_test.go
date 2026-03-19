@@ -841,8 +841,8 @@ func f() {
 	if !strings.Contains(body, `@"foo.g$hiddenparam"(`) {
 		t.Fatalf("missing hidden-param call for gc-sensitive pointer callee:\n%s", body)
 	}
-	if !strings.Contains(body, "@runtime.HiddenPointerKey(") {
-		t.Fatalf("missing helper-based hidden pointer encoding in caller:\n%s", body)
+	if !strings.Contains(body, "@runtime.HiddenPointerKey(") && !strings.Contains(body, "store ptr ") {
+		t.Fatalf("missing caller-side hidden param materialization:\n%s", body)
 	}
 	if strings.Contains(body, `@"foo.g$hiddencall"(`) {
 		t.Fatalf("unexpected caller-side hidden shim for gc-sensitive pointer callee:\n%s", body)
@@ -891,8 +891,11 @@ func f() {
 		t.Fatalf("missing initial gc call in hidden body:\n%s", hiddenBody)
 	}
 	window := hiddenBody[:firstGCIdx]
-	if !strings.Contains(window, "store ptr") {
+	if !strings.Contains(window, "store ptr") && !strings.Contains(window, "@runtime.StoreHiddenPointerRoot(") {
 		t.Fatalf("missing raw pointer root materialization before initial gc:\n%s", hiddenBody)
+	}
+	if !strings.Contains(window, "@runtime.TouchConservativeSlot(") {
+		t.Fatalf("missing conservative-slot touch for initial raw pointer root:\n%s", hiddenBody)
 	}
 	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
 		t.Fatalf("missing pointer register clobber after raw pointer root materialization:\n%s", hiddenBody)
@@ -1178,6 +1181,40 @@ func f() {
 	}
 }
 
+func TestHiddenScalarArgTempTouchesClearedSlot(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{ n int }
+
+//go:noinline
+func use(*T) {}
+
+func f() {
+	x := new(T)
+	use(x)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `@"foo.use$hiddencall"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `@"foo.use$hiddenparam"(`)
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing hidden call for foo.use:\n%s", body)
+	}
+	start := callIdx - 240
+	if start < 0 {
+		start = 0
+	}
+	window := body[start:callIdx]
+	if !strings.Contains(window, `store i64 0, ptr`) {
+		t.Fatalf("missing hidden scalar arg temp clear before hidden call:\n%s", body)
+	}
+	if !strings.Contains(window, `@runtime.TouchConservativeSlot(`) {
+		t.Fatalf("missing conservative-slot touch for hidden scalar arg temp:\n%s", body)
+	}
+}
+
 func TestGcSensitivePointerRecvMethodUsesHiddenCall(t *testing.T) {
 	ir := compileIR(t, `package foo
 
@@ -1310,6 +1347,133 @@ func main() {
 	}
 }
 
+func TestIssue32477HiddenParamUsesCallerRawRootSlot(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type HeapObj [8]int64
+
+func gc(bool) { runtime.GC(); runtime.GC(); runtime.GC() }
+
+func (h *HeapObj) init() {}
+func (h *HeapObj) check() {}
+
+func g(h *HeapObj) {
+	gc(false)
+	h.check()
+	defer func() {
+		gc(true)
+		recover()
+	}()
+	*(*int)(nil) = 0
+}
+
+func main() {
+	h := new(HeapObj)
+	h.init()
+	gc(false)
+	g(h)
+}
+`)
+	body := functionBody(t, ir, "foo.main")
+	callIdx := strings.Index(body, `@"foo.g$hiddenparam"(`)
+	if callIdx < 0 {
+		t.Fatalf("missing hidden-param call in issue32477 main body:\n%s", body)
+	}
+	windowStart := callIdx - 320
+	if windowStart < 0 {
+		windowStart = 0
+	}
+	windowEnd := callIdx + 200
+	if windowEnd > len(body) {
+		windowEnd = len(body)
+	}
+	window := body[windowStart:windowEnd]
+	if !strings.Contains(window, "alloca ptr") || !strings.Contains(window, "store ptr ") {
+		t.Fatalf("missing caller raw-root slot materialization for issue32477 hidden call:\n%s", body)
+	}
+	if strings.Contains(window, "@runtime.HiddenPointerKey(") {
+		t.Fatalf("unexpected caller-side hidden-key encode for issue32477 hidden call:\n%s", body)
+	}
+	if !strings.Contains(window, `@"foo.g$hiddenparam"(ptr`) {
+		t.Fatalf("issue32477 hidden call is not passing a raw-root slot pointer:\n%s", body)
+	}
+}
+
+func TestIssue32477HiddenParamClearsBeforeDeferSetup(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+var finalized bool
+var err string
+
+type HeapObj [8]int64
+
+const filler int64 = 0x123456789abcdef0
+
+func (h *HeapObj) init() {
+	for i := 0; i < len(*h); i++ {
+		h[i] = filler
+	}
+}
+
+func (h *HeapObj) check() {
+	for i := 0; i < len(*h); i++ {
+		if h[i] != filler {
+			err = "filler overwritten"
+		}
+	}
+}
+
+func gc(bool) {
+	runtime.GC()
+	runtime.GC()
+	runtime.GC()
+}
+
+func g(h *HeapObj) {
+	gc(false)
+	h.check()
+	defer func() {
+		gc(true)
+		recover()
+	}()
+	*(*int)(nil) = 0
+}
+`)
+	name := "foo.g$hiddenparam"
+	if !strings.Contains(ir, `@"foo.g$hiddenparam"(`) {
+		name = "foo.g"
+	}
+	body := functionBody(t, ir, name)
+	deferIdx := strings.Index(body, "@\"github.com/goplus/llgo/runtime/internal/runtime.GetThreadDefer\"(")
+	if deferIdx < 0 {
+		deferIdx = strings.Index(body, "@\"github.com/goplus/llgo/runtime/internal/runtime.SetThreadDefer\"(")
+	}
+	if deferIdx < 0 {
+		t.Fatalf("missing defer setup in issue32477 hidden body:\n%s", body)
+	}
+	checkIdx := strings.Index(body, `.check$hiddencall"(`)
+	if checkIdx < 0 {
+		checkIdx = strings.Index(body, `@"foo.(*HeapObj).check"(`)
+	}
+	if checkIdx < 0 {
+		t.Fatalf("missing receiver check call in issue32477 hidden body:\n%s", body)
+	}
+	window := body[checkIdx:deferIdx]
+	if strings.Contains(window, "@runtime.HiddenPointerKey(") {
+		t.Fatalf("unexpected raw receiver re-encode in issue32477 hidden body:\n%s", body)
+	}
+	if !strings.Contains(window, "store i64 0, ptr") && !strings.Contains(window, "store ptr null, ptr") {
+		t.Fatalf("missing issue32477 hidden param clear after check and before defer setup:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing issue32477 pointer register clobber before defer setup:\n%s", body)
+	}
+}
+
 func TestGcSensitiveByValueStructParamUsesHiddenBody(t *testing.T) {
 	ir := compileIR(t, `package foo
 
@@ -1401,6 +1565,39 @@ func f() {
 	}
 	if strings.Contains(body, `AllocZ"(i64 80)`) {
 		t.Fatalf("raw heap array alloc should not survive in gc-sensitive function:\n%s", body)
+	}
+}
+
+func TestHiddenHeapAllocKeepsRootAcrossCall(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type H struct{}
+var sink *H
+
+func gc() { runtime.GC() }
+func g(*H) {}
+func mark(h *H) { sink = h; sink = nil }
+
+func f() {
+	h := new(H)
+	mark(h)
+	gc()
+	g(h)
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	gcIdx := strings.Index(body, "@foo.gc(")
+	if gcIdx < 0 {
+		t.Fatalf("missing gc call:\n%s", body)
+	}
+	window := body[:gcIdx]
+	if !strings.Contains(window, "@runtime.AllocZHidden(") {
+		t.Fatalf("missing hidden heap alloc helper:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("missing raw root materialization before gc:\n%s", body)
 	}
 }
 
