@@ -63,4 +63,4 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 
 !llgo.useifacemethod = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use", !"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}
+!0 = !{!"github.com/goplus/llgo/cl/_testdata/embedunexport.Use", !"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}

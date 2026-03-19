@@ -91,4 +91,4 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 
 !llgo.useifacemethod = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape", !"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", !"github.com/goplus/llgo/cl/_testdata/geometry1370.setID", !"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA"}
+!0 = !{!"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape", !"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", !"github.com/goplus/llgo/cl/_testdata/geometry1370.setID", !"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA"}

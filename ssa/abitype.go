@@ -198,10 +198,7 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 		for i := 0; i < n; i++ {
 			f := t.Method(i)
 			var values []llvm.Value
-			name := f.Name()
-			if !token.IsExported(name) {
-				name = abi.FullName(f.Pkg(), name)
-			}
+			name := mthName(f)
 			values = append(values, b.Str(name).impl)
 			ftyp := funcType(prog, f.Type())
 			values = append(values, b.abiType(ftyp).impl)
@@ -415,17 +412,17 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
 		obj := m.Obj().(*types.Func)
-		mName := obj.Name()
-		normalizedName := normalizedMethodName(obj)
-		name := b.Str(normalizedName).impl
+		rawName := obj.Name()
+		fullName := mthName(obj)
+		name := b.Str(fullName).impl
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
-		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
+		tfn = b.abiMethodFunc(anonymous, pkg, rawName, mSig)
 		ifn = tfn
 		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
 			pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(mSig.Recv().Type()))
 			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
-			ifn = b.abiMethodFunc(anonymous, pkg, mName, pSig)
+			ifn = b.abiMethodFunc(anonymous, pkg, rawName, pSig)
 		}
 		var values []llvm.Value
 		values = append(values, name)
@@ -435,9 +432,17 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 		mtypName, _ := b.Pkg.abi.TypeName(ftyp)
-		b.Pkg.emitMethodOff(typeName, i, normalizedName, mtypName)
+		b.Pkg.emitMethodOff(typeName, i, fullName, mtypName)
 	}
 	return llvm.ConstArray(ft.ll, fields)
+}
+
+func mthName(method *types.Func) string {
+	name := method.Name()
+	if !token.IsExported(name) {
+		return abi.FullName(method.Pkg(), name)
+	}
+	return name
 }
 
 // closure func type

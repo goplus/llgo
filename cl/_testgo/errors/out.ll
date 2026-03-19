@@ -128,6 +128,6 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 !llgo.methodoff = !{!1}
 !llgo.useifacemethod = !{!2}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/errors.New", !"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString"}
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/errors.New", !"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString"}
 !1 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString", i32 0, !"Error", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/errors.main", !"_llgo_error", !"Error", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/errors.main", !"_llgo_error", !"Error", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}

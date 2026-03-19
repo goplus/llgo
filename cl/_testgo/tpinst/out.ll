@@ -262,13 +262,13 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, pt
 !llgo.methodoff = !{!3, !4, !5, !6}
 !llgo.useifacemethod = !{!7, !8, !9}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[int]"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"_llgo_string"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]"}
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[int]"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]"}
 !3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[int]", i32 0, !"Value", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
 !4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[int]", i32 1, !"github.com/goplus/llgo/cl/_testgo/tpinst.value", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
 !5 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]", i32 0, !"Value", !"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8"}
 !6 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]", i32 1, !"github.com/goplus/llgo/cl/_testgo/tpinst.value", !"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8"}
-!7 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]", !"Value", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
-!8 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[float64]", !"Value", !"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8"}
-!9 = !{ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww", !"github.com/goplus/llgo/cl/_testgo/tpinst.value", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!7 = !{!"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]", !"Value", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!8 = !{!"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[float64]", !"Value", !"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8"}
+!9 = !{!"github.com/goplus/llgo/cl/_testgo/tpinst.demo", !"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww", !"github.com/goplus/llgo/cl/_testgo/tpinst.value", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}

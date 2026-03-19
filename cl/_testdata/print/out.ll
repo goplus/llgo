@@ -1209,18 +1209,18 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/go
 
 !llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_float32"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_float64"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_string"}
-!3 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_bool"}
-!4 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int32"}
-!5 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int8"}
-!6 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int16"}
-!7 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int64"}
-!8 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int"}
-!9 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint8"}
-!10 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint16"}
-!11 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint32"}
-!12 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint64"}
-!13 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uintptr"}
-!14 = !{ptr @"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_complex128"}
+!0 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_float32"}
+!1 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_float64"}
+!2 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_string"}
+!3 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_bool"}
+!4 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int32"}
+!5 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int8"}
+!6 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int16"}
+!7 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int64"}
+!8 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_int"}
+!9 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint8"}
+!10 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint16"}
+!11 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint32"}
+!12 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uint64"}
+!13 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_uintptr"}
+!14 = !{!"github.com/goplus/llgo/cl/_testdata/print.main", !"_llgo_complex128"}

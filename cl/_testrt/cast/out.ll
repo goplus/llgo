@@ -330,15 +330,15 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 !llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32", !"_llgo_string"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U", !"_llgo_string"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F", !"_llgo_string"}
-!3 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8", !"_llgo_string"}
-!4 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U", !"_llgo_string"}
-!5 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64", !"_llgo_string"}
-!6 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F", !"_llgo_string"}
-!7 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F", !"_llgo_string"}
-!8 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F", !"_llgo_string"}
-!9 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8", !"_llgo_string"}
-!10 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U", !"_llgo_string"}
-!11 = !{ptr @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr", !"_llgo_string"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F", !"_llgo_string"}
+!3 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8", !"_llgo_string"}
+!4 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U", !"_llgo_string"}
+!5 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64", !"_llgo_string"}
+!6 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F", !"_llgo_string"}
+!7 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F", !"_llgo_string"}
+!8 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F", !"_llgo_string"}
+!9 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8", !"_llgo_string"}
+!10 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U", !"_llgo_string"}
+!11 = !{!"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr", !"_llgo_string"}

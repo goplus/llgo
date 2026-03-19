@@ -239,9 +239,9 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 !llgo.useiface = !{!0, !1, !2}
 !llgo.methodoff = !{!3, !4, !5}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.main", !"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.main", !"_llgo_closure$ygdobeQSbhO1hSbeWA66ORl_cNKHor-iD8MqRFtuWHg"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/methodthunk.main", !"_llgo_string"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/methodthunk.main", !"_llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/methodthunk.main", !"_llgo_closure$ygdobeQSbhO1hSbeWA66ORl_cNKHor-iD8MqRFtuWHg"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/methodthunk.main", !"_llgo_string"}
 !3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/methodthunk.inner", i32 0, !"M", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/methodthunk.outer", i32 0, !"M", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !5 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/methodthunk.InnerInt", i32 0, !"M", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}

@@ -439,6 +439,7 @@ func TestIfaceMethodClosureCallIR(t *testing.T) {
 	rawIface := types.NewInterfaceType([]*types.Func{rawMeth}, nil)
 	rawIface.Complete()
 	namedIface := types.NewNamed(types.NewTypeName(0, pkgTypes, "IFmt", nil), rawIface, nil)
+	pkgTypes.Scope().Insert(namedIface.Obj())
 	recv := types.NewVar(0, pkgTypes, "recv", namedIface)
 	recvSig := types.NewSignatureType(recv, nil, nil, types.NewTuple(VArg()),
 		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), true)
@@ -474,6 +475,10 @@ _llgo_0:
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+
+!llgo.useifacemethod = !{!0}
+
+!0 = !{!"caller", !"_llgo_foo/bar.IFmt", !"Printf", !"_llgo_func$_RYiBYcSxJjuvzYmA4xYm18hT18pH0_ng6z76aK77Bk"}
 `)
 }
 

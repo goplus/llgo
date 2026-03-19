@@ -473,9 +473,9 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 !llgo.useiface = !{!0, !1, !2}
 !llgo.methodoff = !{!3, !4, !5, !6, !7, !8}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/ifaceconv.main", !"_llgo_string"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/ifaceconv.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testgo/ifaceconv.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2"}
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/ifaceconv.main", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/ifaceconv.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/ifaceconv.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2"}
 !3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1", i32 0, !"github.com/goplus/llgo/cl/_testgo/ifaceconv.f", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !4 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1", i32 0, !"github.com/goplus/llgo/cl/_testgo/ifaceconv.f", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !5 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2", i32 0, !"github.com/goplus/llgo/cl/_testgo/ifaceconv.f", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}

@@ -239,8 +239,8 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 !llgo.methodoff = !{!2, !3, !4, !5, !6, !7, !8}
 !llgo.useifacemethod = !{!9}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testgo/interface.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testgo/interface.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2"}
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/interface.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/interface.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2"}
 !2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !4 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
@@ -248,4 +248,4 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 !6 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !7 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
 !8 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2", i32 0, !"github.com/goplus/llgo/cl/_testgo/interface.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!9 = !{ptr @"github.com/goplus/llgo/cl/_testgo/interface.main", !"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
+!9 = !{!"github.com/goplus/llgo/cl/_testgo/interface.main", !"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}

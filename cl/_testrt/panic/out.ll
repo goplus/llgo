@@ -56,4 +56,4 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 
 !llgo.useiface = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/panic.main", !"_llgo_string"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/panic.main", !"_llgo_string"}

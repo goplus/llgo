@@ -160,7 +160,7 @@ _llgo_0:
 
 !llgo.useiface = !{!0, !1, !2, !3}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/float2any.check32", !"_llgo_string"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/float2any.check64", !"_llgo_string"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/float2any.main", !"_llgo_float32"}
-!3 = !{ptr @"github.com/goplus/llgo/cl/_testrt/float2any.main", !"_llgo_float64"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.check32", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.check64", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.main", !"_llgo_float32"}
+!3 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.main", !"_llgo_float64"}

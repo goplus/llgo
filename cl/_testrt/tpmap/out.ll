@@ -224,4 +224,4 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/tpmap.main", !"_llgo_int"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/tpmap.main", !"_llgo_int"}

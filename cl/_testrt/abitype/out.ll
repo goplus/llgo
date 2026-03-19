@@ -118,6 +118,6 @@ _llgo_0:
 
 !llgo.useiface = !{!0, !1, !2}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_int32"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_string"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_uint8"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_int32"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_uint8"}

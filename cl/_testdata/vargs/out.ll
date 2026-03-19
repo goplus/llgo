@@ -123,5 +123,5 @@ declare i32 @printf(ptr, ...)
 
 !llgo.useiface = !{!0, !1}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testdata/vargs.main", !"_llgo_int"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testdata/vargs.test", !"_llgo_string"}
+!0 = !{!"github.com/goplus/llgo/cl/_testdata/vargs.main", !"_llgo_int"}
+!1 = !{!"github.com/goplus/llgo/cl/_testdata/vargs.test", !"_llgo_string"}

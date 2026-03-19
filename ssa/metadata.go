@@ -1,27 +1,24 @@
 package ssa
 
 import (
-	"go/token"
-	"go/types"
 	"strconv"
 	"strings"
 
-	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
 
 const (
 	// llgoUseIfaceMetadata is a module-level named metadata table whose rows are
-	// {owner, concrete type name}. Each row means that if the owner function is
-	// reachable, the named concrete type should enter the UsedInIface semantic
-	// state during deadcode analysis. Type references are encoded as ABI symbol
-	// names so metadata emission does not force extra type globals into the
-	// module.
+	// {owner name, concrete type name}. Each row means that if the named owner
+	// function is reachable, the named concrete type should enter the UsedInIface
+	// semantic state during deadcode analysis. Metadata stores only symbol names
+	// so emission does not force extra LLVM globals into the module.
 	llgoUseIfaceMetadata = "llgo.useiface"
 	// llgoUseIfaceMethodMetadata is a module-level named metadata table whose
-	// rows are {owner, interface type name, normalized method name, mtyp name}.
-	// Each row means that if the owner function is reachable, the referenced
-	// interface method demand should participate in later method matching.
+	// rows are {owner name, interface type name, normalized method name, mtyp
+	// name}. Each row means that if the named owner function is reachable, the
+	// referenced interface method demand should participate in later method
+	// matching.
 	llgoUseIfaceMethodMetadata = "llgo.useifacemethod"
 	// llgoMethodOffMetadata is a module-level named metadata table whose rows are
 	// {concrete type name, method index, normalized method name, mtyp name}. Each
@@ -53,10 +50,6 @@ func metadataKey(parts ...string) string {
 	return strings.Join(parts, ":")
 }
 
-func metadataSymbol(v llvm.Value) llvm.Metadata {
-	return v.ConstantAsMetadata()
-}
-
 func metadataString(ctx llvm.Context, s string) llvm.Metadata {
 	return ctx.MDString(s)
 }
@@ -65,38 +58,30 @@ func metadataInt32(ctx llvm.Context, i int) llvm.Metadata {
 	return llvm.ConstInt(ctx.Int32Type(), uint64(i), false).ConstantAsMetadata()
 }
 
-func normalizedMethodName(method *types.Func) string {
-	name := method.Name()
-	if !token.IsExported(name) {
-		return abi.FullName(method.Pkg(), name)
-	}
-	return name
-}
-
-func (p Package) emitUseIface(owner llvm.Value, target string) {
-	if owner.IsNil() || target == "" {
+func (p Package) emitUseIface(owner, target string) {
+	if owner == "" || target == "" {
 		return
 	}
 	ctx := p.mod.Context()
 	p.semMetaEmitter.add(
 		p.mod,
 		llgoUseIfaceMetadata,
-		metadataKey(owner.Name(), target),
-		metadataSymbol(owner),
+		metadataKey(owner, target),
+		metadataString(ctx, owner),
 		metadataString(ctx, target),
 	)
 }
 
-func (p Package) emitUseIfaceMethod(owner llvm.Value, target, name, mtyp string) {
-	if owner.IsNil() || target == "" || name == "" || mtyp == "" {
+func (p Package) emitUseIfaceMethod(owner, target, name, mtyp string) {
+	if owner == "" || target == "" || name == "" || mtyp == "" {
 		return
 	}
 	ctx := p.mod.Context()
 	p.semMetaEmitter.add(
 		p.mod,
 		llgoUseIfaceMethodMetadata,
-		metadataKey(owner.Name(), target, name, mtyp),
-		metadataSymbol(owner),
+		metadataKey(owner, target, name, mtyp),
+		metadataString(ctx, owner),
 		metadataString(ctx, target),
 		metadataString(ctx, name),
 		metadataString(ctx, mtyp),

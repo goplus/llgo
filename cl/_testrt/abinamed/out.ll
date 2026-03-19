@@ -880,9 +880,9 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 !llgo.useiface = !{!0, !1, !2}
 !llgo.methodoff = !{!3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22, !23, !24, !25, !26, !27, !28, !29, !30, !31, !32, !33, !34, !35, !36, !37, !38, !39, !40, !41, !42, !43, !44, !45, !46, !47, !48, !49, !50, !51, !52, !53, !54, !55, !56, !57, !58, !59, !60, !61, !62, !63, !64, !65, !66, !67, !68, !69, !70, !71, !72, !73, !74, !75, !76, !77, !78, !79, !80, !81, !82, !83, !84, !85, !86, !87, !88, !89, !90, !91, !92, !93, !94, !95, !96, !97, !98, !99, !100, !101, !102, !103, !104, !105, !106, !107, !108, !109, !110, !111, !112, !113, !114, !115, !116, !117, !118, !119, !120, !121, !122, !123, !124, !125, !126, !127, !128, !129, !130, !131, !132, !133, !134, !135, !136, !137, !138, !139, !140, !141, !142, !143, !144, !145, !146, !147, !148, !149, !150, !151, !152, !153, !154, !155, !156, !157, !158, !159, !160}
 
-!0 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/abinamed.T"}
-!1 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.main", !"_llgo_github.com/goplus/llgo/runtime/abi.Type"}
-!2 = !{ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.main", !"_llgo_string"}
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/abinamed.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/abinamed.T"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/abinamed.main", !"_llgo_github.com/goplus/llgo/runtime/abi.Type"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/abinamed.main", !"_llgo_string"}
 !3 = !{!"*_llgo_github.com/goplus/llgo/runtime/abi.Type", i32 0, !"Align", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
 !4 = !{!"*_llgo_github.com/goplus/llgo/runtime/abi.ArrayType", i32 0, !"Align", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
 !5 = !{!"*_llgo_github.com/goplus/llgo/runtime/abi.ArrayType", i32 1, !"ArrayType", !"_llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk"}
