@@ -33,6 +33,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/ssa/mdtest"
 	"github.com/goplus/llvm"
 )
 
@@ -480,6 +481,134 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 
 !0 = !{!"caller", !"_llgo_foo/bar.IFmt", !"Printf", !"_llgo_func$_RYiBYcSxJjuvzYmA4xYm18hT18pH0_ng6z76aK77Bk"}
 `)
+
+	useIfaceMethodRows := mdtest.GetNamedMetadataOperands(pkg.Module(), llgoUseIfaceMethodMetadata)
+	requireMetadataRows(t, llgoUseIfaceMethodMetadata, useIfaceMethodRows, 1)
+	useIfaceMethodFields := requireMetadataFields(t, llgoUseIfaceMethodMetadata, useIfaceMethodRows[0], 4)
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 0, "caller")
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 1, "_llgo_foo/bar.IFmt")
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 2, "Printf")
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 3, "_llgo_func$_RYiBYcSxJjuvzYmA4xYm18hT18pH0_ng6z76aK77Bk")
+}
+
+func TestNamedMetadataReadback(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+
+	pkgTypes := types.NewPackage("foo/bar", "bar")
+
+	rawIfaceSig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])),
+		false)
+	rawIfaceMeth := types.NewFunc(0, pkgTypes, "Add", rawIfaceSig)
+	rawIface := types.NewInterfaceType([]*types.Func{rawIfaceMeth}, nil)
+	rawIface.Complete()
+
+	namedIface := types.NewNamed(types.NewTypeName(0, pkgTypes, "IFmt", nil), rawIface, nil)
+	pkgTypes.Scope().Insert(namedIface.Obj())
+
+	ifaceRecv := types.NewVar(0, pkgTypes, "recv", namedIface)
+	ifaceMethSig := types.NewSignatureType(ifaceRecv, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])),
+		false)
+	ifaceMeth := types.NewFunc(0, pkgTypes, "Add", ifaceMethSig)
+
+	namedStruct := types.NewNamed(types.NewTypeName(0, pkgTypes, "S", nil), types.NewStruct(nil, nil), nil)
+	pkgTypes.Scope().Insert(namedStruct.Obj())
+	structRecv := types.NewVar(0, pkgTypes, "recv", types.NewPointer(namedStruct))
+	structMethSig := types.NewSignatureType(structRecv, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "x", types.Typ[types.Int])),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])),
+		false)
+	structMeth := types.NewFunc(0, pkgTypes, "Add", structMethSig)
+	namedStruct.AddMethod(structMeth)
+
+	pkg := prog.NewPackage("bar", "foo/bar")
+	caller := pkg.NewFunc("caller", types.NewSignatureType(nil, nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])), false), InGo)
+	b := caller.MakeBody(1)
+	ptrType := prog.Type(types.NewPointer(namedStruct), InGo)
+	ifaceType := prog.Type(namedIface, InGo)
+	x := prog.Zero(ptrType)
+	intf := b.MakeInterface(ifaceType, x)
+	closure := b.Imethod(intf, ifaceMeth)
+	b.Return(b.Call(closure, prog.Val(1)))
+
+	mtypName, _ := pkg.abi.TypeName(funcType(prog, structMeth.Type()))
+	structTypeName, _ := pkg.abi.TypeName(types.NewPointer(namedStruct))
+	ifaceTypeName, _ := pkg.abi.TypeName(namedIface)
+
+	useIfaceRows := mdtest.GetNamedMetadataOperands(pkg.Module(), llgoUseIfaceMetadata)
+	requireMetadataRows(t, llgoUseIfaceMetadata, useIfaceRows, 1)
+	useIfaceFields := requireMetadataFields(t, llgoUseIfaceMetadata, useIfaceRows[0], 2)
+	requireMDString(t, llgoUseIfaceMetadata, useIfaceFields, 0, "caller")
+	requireMDString(t, llgoUseIfaceMetadata, useIfaceFields, 1, structTypeName)
+
+	methodOffRows := mdtest.GetNamedMetadataOperands(pkg.Module(), llgoMethodOffMetadata)
+	requireMetadataRows(t, llgoMethodOffMetadata, methodOffRows, 1)
+	methodOffFields := requireMetadataFields(t, llgoMethodOffMetadata, methodOffRows[0], 4)
+	requireMDString(t, llgoMethodOffMetadata, methodOffFields, 0, structTypeName)
+	requireMDUint(t, llgoMethodOffMetadata, methodOffFields, 1, 0)
+	requireMDString(t, llgoMethodOffMetadata, methodOffFields, 2, "Add")
+	requireMDString(t, llgoMethodOffMetadata, methodOffFields, 3, mtypName)
+
+	useIfaceMethodRows := mdtest.GetNamedMetadataOperands(pkg.Module(), llgoUseIfaceMethodMetadata)
+	requireMetadataRows(t, llgoUseIfaceMethodMetadata, useIfaceMethodRows, 1)
+	useIfaceMethodFields := requireMetadataFields(t, llgoUseIfaceMethodMetadata, useIfaceMethodRows[0], 4)
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 0, "caller")
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 1, ifaceTypeName)
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 2, "Add")
+	requireMDString(t, llgoUseIfaceMethodMetadata, useIfaceMethodFields, 3, mtypName)
+}
+
+func requireMetadataRows(t *testing.T, table string, rows []llvm.Value, want int) {
+	t.Helper()
+	if got := len(rows); got != want {
+		t.Fatalf("%s rows len = %d, want %d", table, got, want)
+	}
+}
+
+func requireMetadataFields(t *testing.T, table string, row llvm.Value, want int) []llvm.Value {
+	t.Helper()
+	fields := mdtest.GetMDNodeOperands(row)
+	if got := len(fields); got != want {
+		t.Fatalf("%s field len = %d, want %d", table, got, want)
+	}
+	return fields
+}
+
+func requireMDString(t *testing.T, table string, fields []llvm.Value, index int, want string) {
+	t.Helper()
+	if index >= len(fields) {
+		t.Fatalf("%s field index %d out of range", table, index)
+	}
+	if !mdtest.IsAMDString(fields[index]) {
+		t.Fatalf("%s field[%d] should be MDString", table, index)
+	}
+	got := mdtest.GetMDString(fields[index])
+	if got != want {
+		t.Fatalf("%s field[%d] string = %q, want %q", table, index, got, want)
+	}
+}
+
+func requireMDUint(t *testing.T, table string, fields []llvm.Value, index int, want uint64) {
+	t.Helper()
+	if index >= len(fields) {
+		t.Fatalf("%s field index %d out of range", table, index)
+	}
+	got := fields[index].ZExtValue()
+	if got != want {
+		t.Fatalf("%s field[%d] uint = %d, want %d", table, index, got, want)
+	}
 }
 
 func TestClosureCtxHelpers(t *testing.T) {
