@@ -1136,6 +1136,7 @@ declare %reflect.Value @reflect.MakeMap(%"github.com/goplus/llgo/runtime/interna
 !llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20}
 !llgo.useifacemethod = !{!21, !22, !23, !24, !25, !26, !27, !28}
 !llgo.methodoff = !{!29}
+!llgo.reflectmethod = !{!30, !31}
 
 !0 = !{!"github.com/goplus/llgo/cl/_testgo/reflect.callClosure", !"_llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk"}
 !1 = !{!"github.com/goplus/llgo/cl/_testgo/reflect.callClosure", !"_llgo_int"}
@@ -1167,3 +1168,5 @@ declare %reflect.Value @reflect.MakeMap(%"github.com/goplus/llgo/runtime/interna
 !27 = !{!"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo2", !"_llgo_reflect.Type", !"Key", !"_llgo_func$b6KOG2Oj7wt8ogb9H8QPbhEfXhxMMjdxRZgPLK_UOwI"}
 !28 = !{!"github.com/goplus/llgo/cl/_testgo/reflect.mapDemo2", !"_llgo_reflect.Type", !"Elem", !"_llgo_func$b6KOG2Oj7wt8ogb9H8QPbhEfXhxMMjdxRZgPLK_UOwI"}
 !29 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reflect.T", i32 0, !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
+!30 = !{!"github.com/goplus/llgo/cl/_testgo/reflect.callIMethod"}
+!31 = !{!"github.com/goplus/llgo/cl/_testgo/reflect.callMethod"}

@@ -1,6 +1,7 @@
 package ssa
 
 import (
+	"go/token"
 	"strconv"
 	"strings"
 
@@ -25,6 +26,16 @@ const (
 	// row describes one concrete method candidate in the canonical abi.Method
 	// order.
 	llgoMethodOffMetadata = "llgo.methodoff"
+	// llgoUseNamedMethodMetadata is a module-level named metadata table whose
+	// rows are {owner name, normalized method name}. Each row means that if the
+	// named owner function is reachable, deadcode analysis should treat the named
+	// method as requested by MethodByName-like semantics.
+	llgoUseNamedMethodMetadata = "llgo.usenamedmethod"
+	// llgoReflectMethodMetadata is a module-level named metadata table whose rows
+	// are {owner name}. Each row means that if the named owner function is
+	// reachable, deadcode analysis should conservatively keep reachable exported
+	// methods for reflection-driven method lookup.
+	llgoReflectMethodMetadata = "llgo.reflectmethod"
 )
 
 type semMetaEmitter struct {
@@ -59,9 +70,6 @@ func metadataInt32(ctx llvm.Context, i int) llvm.Metadata {
 }
 
 func (p Package) emitUseIface(owner, target string) {
-	if owner == "" || target == "" {
-		return
-	}
 	ctx := p.mod.Context()
 	p.semMetaEmitter.add(
 		p.mod,
@@ -73,9 +81,6 @@ func (p Package) emitUseIface(owner, target string) {
 }
 
 func (p Package) emitUseIfaceMethod(owner, target, name, mtyp string) {
-	if owner == "" || target == "" || name == "" || mtyp == "" {
-		return
-	}
 	ctx := p.mod.Context()
 	p.semMetaEmitter.add(
 		p.mod,
@@ -102,4 +107,40 @@ func (p Package) emitMethodOff(owner string, index int, name, mtyp string) {
 		metadataString(ctx, name),
 		metadataString(ctx, mtyp),
 	)
+}
+
+func (p Package) emitUseNamedMethod(owner, name string) {
+	if !token.IsExported(name) && p.Path() != "" {
+		name = p.Path() + "." + name
+	}
+	ctx := p.mod.Context()
+	p.semMetaEmitter.add(
+		p.mod,
+		llgoUseNamedMethodMetadata,
+		metadataKey(owner, name),
+		metadataString(ctx, owner),
+		metadataString(ctx, name),
+	)
+}
+
+func (p Package) emitReflectMethod(owner string) {
+	ctx := p.mod.Context()
+	p.semMetaEmitter.add(
+		p.mod,
+		llgoReflectMethodMetadata,
+		owner,
+		metadataString(ctx, owner),
+	)
+}
+
+// EmitUseNamedMethod records a MethodByName-like exact method-name demand for
+// later whole-program deadcode analysis.
+func (p Package) EmitUseNamedMethod(owner, name string) {
+	p.emitUseNamedMethod(owner, name)
+}
+
+// EmitReflectMethod records a conservative reflection marker for later
+// whole-program deadcode analysis.
+func (p Package) EmitReflectMethod(owner string) {
+	p.emitReflectMethod(owner)
 }
