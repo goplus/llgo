@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"fmt"
+	"go/token"
 	"go/types"
 	"log"
 
@@ -635,6 +636,21 @@ func (b Builder) MapUpdate(m, k, v Expr) {
 	b.clearMapKeyTmp(keytmp)
 }
 
+func (b Builder) MapUpdatePtr(m, keyPtr, v Expr) {
+	if v.kind == vkFuncDecl {
+		typ := b.Prog.Type(v.raw.Type, InGo)
+		v = checkExpr(v, typ.raw.Type, b)
+	}
+	if debugInstr {
+		log.Printf("MapUpdatePtr %v[%v] = %v\n", m.impl, keyPtr.impl, v.impl)
+	}
+	typ := b.abiType(m.raw.Type)
+	keyPtr = b.ChangeType(b.Prog.VoidPtr(), keyPtr)
+	ret := b.Call(b.Pkg.rtFunc("MapAssign"), typ, m, keyPtr)
+	ret.Type = b.Prog.Pointer(v.Type)
+	b.Store(ret, v)
+}
+
 // key => unsafe.Pointer
 func (b Builder) mapKeyPtr(x Expr) (tmp, ptr Expr) {
 	typ := x.Type
@@ -645,7 +661,17 @@ func (b Builder) mapKeyPtr(x Expr) (tmp, ptr Expr) {
 }
 
 func (b Builder) clearMapKeyTmp(tmp Expr) {
-	b.zeroinit(tmp, SizeOf(b.Prog, b.Prog.Elem(tmp.Type)))
+	size := SizeOf(b.Prog, b.Prog.Elem(tmp.Type))
+	b.zeroinit(tmp, size)
+	helper := b.Pkg.NewFunc("runtime.TouchConservativeSlot",
+		types.NewSignatureType(nil, nil, nil,
+			types.NewTuple(
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+			),
+			nil, false),
+		InGo)
+	b.InlineCall(helper.Expr, b.ChangeType(b.Prog.VoidPtr(), tmp), size)
 }
 
 // -----------------------------------------------------------------------------

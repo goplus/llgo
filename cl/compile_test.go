@@ -1027,6 +1027,46 @@ func f() int {
 	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer`) {
 		t.Fatalf("caller did not clear raw slice root before gc:\n%s", body)
 	}
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %`) {
+		t.Fatalf("caller did not materialize raw slice root slot from hidden result:\n%s", body)
+	}
+}
+
+func TestGcSensitiveStringCallUsesRawRootSlot(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+func gc() { runtime.GC() }
+
+//go:noinline
+func g(x string) string { return x }
+
+func f(s string) int {
+	x := g(s)
+	if len(x) == 0 {
+		return -1
+	}
+	gc()
+	return 0
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `call { i64, i64 } @"foo.g$hiddencall"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `call { i64, i64 } @"foo.g$hiddenparam"(`)
+	}
+	if callIdx < 0 {
+		t.Fatalf("caller did not receive hidden string result:\n%s", body)
+	}
+	gcIdx := strings.Index(body[callIdx:], `call void @foo.gc()`)
+	if gcIdx < 0 {
+		t.Fatalf("missing gc call in caller:\n%s", body)
+	}
+	window := body[callIdx : callIdx+gcIdx]
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.String" %`) {
+		t.Fatalf("caller did not materialize raw string root slot from hidden result:\n%s", body)
+	}
 }
 
 func TestSingleExtractSliceCallUsesHiddenResult(t *testing.T) {
@@ -1805,6 +1845,37 @@ func f() {
 	}
 	if strings.Contains(body[:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
 		t.Fatalf("unsafe.SliceData rebuilt the full slice before foo.use:\n%s", body)
+	}
+}
+
+func TestHiddenStringCallShimClearsRawResultBeforeReturn(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+func gc() { runtime.GC() }
+
+//go:noinline
+func g(x string) string { return x }
+
+func f(s string) int {
+	x := g(s)
+	if len(x) == 0 {
+		return -1
+	}
+	gc()
+	return 0
+}
+`)
+	body := functionBody(t, ir, "foo.g$hiddencall")
+	if !strings.Contains(body, `store %"github.com/goplus/llgo/runtime/internal/runtime.String"`) {
+		t.Fatalf("hidden string shim did not materialize raw result in a local slot:\n%s", body)
+	}
+	if !strings.Contains(body, `store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer`) {
+		t.Fatalf("hidden string shim did not clear raw result slot before return:\n%s", body)
+	}
+	if !strings.Contains(body, `TouchConservativeSlot(`) {
+		t.Fatalf("hidden string shim did not anchor raw result clear:\n%s", body)
 	}
 }
 

@@ -1061,7 +1061,11 @@ func (p *context) enqueueHiddenStaticCallShim(fn, targetFn llssa.Function, f *ss
 			b.Return()
 		case 1:
 			if resultHidden {
-				ret := p.encodeHiddenCallValue(b, call, resultRawType)
+				rawSlot := b.AllocaT(call.Type)
+				b.Store(rawSlot, call)
+				ret := p.encodeHiddenCallValue(b, b.Load(rawSlot), resultRawType)
+				b.Store(rawSlot, p.prog.Zero(b.Prog.Elem(rawSlot.Type)))
+				p.touchConservativeSlot(b, rawSlot, true)
 				p.clobberPointerRegs(b)
 				b.Return(ret)
 				break
@@ -3400,6 +3404,22 @@ func (p *context) decodeHiddenValueSlot(b llssa.Builder, slot llssa.Expr, t type
 	return p.decodeHiddenStoredValue(b, val, t)
 }
 
+func (p *context) loadValueSlot(b llssa.Builder, v ssa.Value) llssa.Expr {
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil {
+		return llssa.Expr{}
+	}
+	if p.hiddenValueSlots[v] {
+		if p.hiddenValueUsesOpaqueSlot(v.Type()) {
+			if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+				return b.Load(root)
+			}
+		}
+		return p.decodeHiddenValueSlot(b, slot, v.Type())
+	}
+	return b.Load(slot)
+}
+
 func (p *context) storeHiddenAggregateSlotValue(b llssa.Builder, slot, root, val llssa.Expr, t types.Type) {
 	tmpType := p.type_(t, llssa.InGo)
 	tmp := b.AllocaT(tmpType)
@@ -4209,6 +4229,34 @@ func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction)
 	}
 }
 
+func (p *context) mapUpdateKeyPtr(b llssa.Builder, key ssa.Value) (llssa.Expr, bool) {
+	if key == nil {
+		return llssa.Expr{}, false
+	}
+	if iv, ok := key.(instrOrValue); ok {
+		if _, compiled := p.bvals[key]; !compiled {
+			p.compileInstrOrValue(b, iv, false)
+		}
+	} else if _, ok := p.bvals[key]; !ok {
+		return llssa.Expr{}, false
+	}
+	if p.hiddenValueSlots[key] {
+		if !p.hiddenValueUsesOpaqueSlot(key.Type()) {
+			return llssa.Expr{}, false
+		}
+		root, ok := p.valueRootSlots[key]
+		if !ok || root.Type == nil {
+			return llssa.Expr{}, false
+		}
+		return root, true
+	}
+	slot, ok := p.valueSlots[key]
+	if !ok || slot.Type == nil {
+		return llssa.Expr{}, false
+	}
+	return slot, true
+}
+
 func isNilConstValue(v ssa.Value) bool {
 	c, ok := v.(*ssa.Const)
 	return ok && c.Value == nil
@@ -4498,8 +4546,13 @@ func (p *context) materializeValueSlot(b llssa.Builder, iv instrOrValue, ret lls
 			if slotElem := b.Prog.Elem(slot.Type); slotElem != nil && slotElem.RawType() != nil &&
 				types.Identical(ret.Type.RawType(), slotElem.RawType()) {
 				b.Store(slot, ret)
+				if root, ok := p.valueRootSlots[iv]; ok && root.Type != nil {
+					b.Store(root, p.decodeHiddenOpaqueSlotValue(b, ret, iv.Type()))
+				}
 				if !asValue {
 					ret = p.prog.Zero(p.type_(iv.Type(), llssa.InGo))
+				} else {
+					ret = p.loadValueSlot(b, iv)
 				}
 				return ret, true
 			}
@@ -4535,10 +4588,15 @@ func (p *context) materializeValueSlot(b llssa.Builder, iv instrOrValue, ret lls
 		}
 		if !asValue {
 			ret = p.prog.Zero(p.type_(iv.Type(), llssa.InGo))
+		} else {
+			ret = p.loadValueSlot(b, iv)
 		}
 		return ret, true
 	}
 	b.Store(slot, ret)
+	if asValue {
+		ret = p.loadValueSlot(b, iv)
+	}
 	return ret, true
 }
 
@@ -4573,12 +4631,12 @@ func (p *context) copyEquivalentValueSlot(b llssa.Builder, dst, src ssa.Value, a
 		if !asValue {
 			return p.prog.Zero(p.type_(dst.Type(), llssa.InGo)), true
 		}
-		return p.decodeHiddenValueSlot(b, dstSlot, dst.Type()), true
+		return p.loadValueSlot(b, dst), true
 	}
 	if !asValue {
 		return p.prog.Zero(p.type_(dst.Type(), llssa.InGo)), true
 	}
-	return b.Load(dstSlot), true
+	return p.loadValueSlot(b, dst), true
 }
 
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
@@ -4587,10 +4645,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	if asValue {
 		if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
 			if _, compiled := p.bvals[iv]; compiled {
-				if p.hiddenValueSlots[iv] {
-					return p.decodeHiddenValueSlot(b, slot, iv.Type())
-				}
-				return b.Load(slot)
+				return p.loadValueSlot(b, iv)
 			}
 		}
 		if v, ok := p.bvals[iv]; ok {
@@ -4599,10 +4654,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if canDeferValueInstr(iv) {
 			p.compileInstrOrValue(b, iv, false)
 			if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
-				if p.hiddenValueSlots[iv] {
-					return p.decodeHiddenValueSlot(b, slot, iv.Type())
-				}
-				return b.Load(slot)
+				return p.loadValueSlot(b, iv)
 			}
 			return p.bvals[iv]
 		}
@@ -5209,9 +5261,17 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		b.If(cond, thenb, elseb)
 	case *ssa.MapUpdate:
 		m := p.compileValue(b, v.Map)
-		key := p.compileValue(b, v.Key)
 		val := p.compileValue(b, v.Value)
-		b.MapUpdate(m, key, val)
+		if keyPtr, ok := p.mapUpdateKeyPtr(b, v.Key); ok {
+			b.MapUpdatePtr(m, keyPtr, val)
+		} else {
+			key := p.compileValue(b, v.Key)
+			b.MapUpdate(m, key, val)
+		}
+		p.clearDeadStackAllocs(b, v)
+		p.clearDeadParams(b, v)
+		p.clearDeadParamValues(b, v)
+		p.clearDeadPointerValues(b, v)
 	case *ssa.Defer:
 		if p.compileSharedDeferFunc0(b, v) {
 			return
@@ -5343,10 +5403,7 @@ func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) l
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if slot, ok := p.valueSlots[v]; ok && slot.Type != nil {
 		if _, compiled := p.bvals[v]; compiled {
-			if p.hiddenValueSlots[v] {
-				return p.decodeHiddenValueSlot(b, slot, v.Type())
-			}
-			return b.Load(slot)
+			return p.loadValueSlot(b, v)
 		}
 	}
 	if val, ok := p.bvals[v]; ok {

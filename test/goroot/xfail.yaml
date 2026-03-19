@@ -104,11 +104,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue45045.go
-    reason: conservative GC still retains finalizer-backed map keys too long under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue4562.go
     reason: runtime.Caller and traceback metadata are still stubbed under llgo on darwin/arm64
   - version: go1.24
@@ -201,12 +196,6 @@ timeouts:
     case: fixedbugs/issue32477.go
     timeout: 60s
     reason: defer-path finalizer case now passes semantically but still needs a modest per-case timeout bump on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue46725.go
-    timeout: 60s
-    reason: interface-held finalizer case now passes semantically but still needs a modest per-case timeout bump on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
