@@ -25,6 +25,7 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -415,6 +416,9 @@ func f() {
 	if clearIdx < 0 {
 		t.Fatalf("missing stack slot clear after last use:\n%s", body)
 	}
+	if !strings.Contains(rest[clearIdx:], "@runtime.TouchConservativeSlot(") {
+		t.Fatalf("missing conservative-slot touch after stack slot clear:\n%s", body)
+	}
 }
 
 func TestByValueParamClearedAfterLastUse(t *testing.T) {
@@ -594,6 +598,9 @@ func f() {
 }
 `)
 	body := functionBody(t, ir, "foo.g")
+	if strings.Contains(body, `@"foo.g$hiddenparam"(`) {
+		body = functionBody(t, ir, `foo.g$hiddenparam`)
+	}
 	callIdx := strings.Index(body, "@runtime.KeepAlivePointer(")
 	if callIdx < 0 {
 		t.Fatalf("missing pointer keepalive helper:\n%s", body)
@@ -976,6 +983,201 @@ func f() *T {
 	}
 }
 
+func TestGcSensitiveSliceCallUsesHiddenSliceResult(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T [4]int
+
+func gc() { runtime.GC() }
+
+//go:noinline
+func g(x []*T) []*T { return x }
+
+func f() int {
+	s := [10]*T{{1}}
+	x := g(s[:])
+	if x[0][0] != 1 {
+		return -1
+	}
+	gc()
+	return 0
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `call { i64, i64, i64 } @"foo.g$hiddencall"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `call { i64, i64, i64 } @"foo.g$hiddenparam"(`)
+	}
+	if callIdx < 0 {
+		t.Fatalf("caller did not receive hidden slice result:\n%s", body)
+	}
+	gcIdx := strings.Index(body[callIdx:], `call void @foo.gc()`)
+	if gcIdx < 0 {
+		t.Fatalf("missing gc call in caller:\n%s", body)
+	}
+	window := body[callIdx : callIdx+gcIdx]
+	if !strings.Contains(window, `store { i64, i64, i64 } zeroinitializer`) {
+		t.Fatalf("caller did not clear hidden slice result before gc:\n%s", body)
+	}
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer`) {
+		t.Fatalf("caller did not clear raw slice root before gc:\n%s", body)
+	}
+}
+
+func TestSingleExtractSliceCallUsesHiddenResult(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T [4]int
+
+func gc() { runtime.GC() }
+
+//go:noinline
+func g(x []*T) ([]*T, []*T) { return x, x }
+
+func f() int {
+	s := [10]*T{{1}}
+	h, _ := g(s[:])
+	if h[0][0] != 1 {
+		return -1
+	}
+	gc()
+	return 0
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `call void @"foo.g$extract0$out"(`)
+	if callIdx < 0 {
+		t.Fatalf("caller did not use hidden single-extract shim:\n%s", body)
+	}
+	if strings.Contains(body[:callIdx], `call { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" } @foo.g(`) {
+		t.Fatalf("caller still materialized raw tuple-return call before hidden extract shim:\n%s", body)
+	}
+	if strings.Contains(body[:callIdx], `call void @"foo.g$extract0"(ptr sret(`) {
+		t.Fatalf("caller still materialized sret hidden extract temp before out-shim:\n%s", body)
+	}
+}
+
+func TestSingleExtractSliceCallShimClearsTupleBeforeReturn(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T [4]int
+
+//go:noinline
+func g(x []*T) ([]*T, []*T) { return x, x }
+
+func f() int {
+	s := [10]*T{{1}}
+	h, _ := g(s[:])
+	return h[0][0]
+}
+`)
+	body := functionBody(t, ir, "foo.g$extract0$out")
+	if !strings.Contains(body, `store { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" }`) {
+		t.Fatalf("single-extract shim did not materialize raw tuple in a local slot:\n%s", body)
+	}
+	if !strings.Contains(body, `store { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" } zeroinitializer`) {
+		t.Fatalf("single-extract shim did not clear raw tuple slot before return:\n%s", body)
+	}
+	if !strings.Contains(body, `store { i64, i64, i64 }`) {
+		t.Fatalf("single-extract out-shim did not store encoded hidden result into caller slot:\n%s", body)
+	}
+	if !strings.Contains(body, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("single-extract out-shim did not store raw result into caller root slot:\n%s", body)
+	}
+	if !strings.Contains(body, `TouchConservativeSlot(`) {
+		t.Fatalf("single-extract shim did not anchor tuple slot clear:\n%s", body)
+	}
+	if !strings.Contains(body, "x20") {
+		t.Fatalf("single-extract shim did not emit arm64 strong clobber:\n%s", body)
+	}
+}
+
+func TestIssue46725TupleInterfaceClearsBeforeSecondGC(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T [4]int
+
+func gc() { runtime.GC() }
+
+//go:noinline
+func g(x []*T) ([]*T, []*T) { return x, x }
+
+func f() int {
+	s := [10]*T{{1}}
+	var h, _ interface{} = g(s[:])
+	gc()
+	if h.([]*T)[0][0] != 1 {
+		return -1
+	}
+	gc()
+	return 0
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `call void @"foo.g$extract0$out"(`)
+	if callIdx < 0 {
+		t.Fatalf("caller did not use hidden single-extract shim:\n%s", body)
+	}
+	secondGCRel := strings.LastIndex(body, `call void @foo.gc()`)
+	if secondGCRel < 0 {
+		t.Fatalf("missing second gc call:\n%s", body)
+	}
+	window := body[:secondGCRel]
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer`) {
+		t.Fatalf("caller did not clear raw slice root before second gc:\n%s", body)
+	}
+	if !strings.Contains(window, `store { i64, i64, i64 } zeroinitializer`) {
+		t.Fatalf("caller did not clear hidden slice slot before second gc:\n%s", body)
+	}
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer`) {
+		t.Fatalf("caller did not clear interface value before second gc:\n%s", body)
+	}
+}
+
+func TestSameTypeInterfaceSliceAssertClearsBeforeSecondWait(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{ x int }
+
+//go:noinline
+func wait() {}
+
+func f() {
+	s := [10]*T{{1}}
+	var h interface{} = s[:]
+	wait()
+	_ = h.([]*T)[0].x
+	wait()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	first := strings.Index(body, `call void @foo.wait()`)
+	if first < 0 {
+		t.Fatalf("missing first wait call:\n%s", body)
+	}
+	secondRel := strings.Index(body[first+1:], `call void @foo.wait()`)
+	if secondRel < 0 {
+		t.Fatalf("missing second wait call:\n%s", body)
+	}
+	second := first + 1 + secondRel
+	window := body[first:second]
+	if !strings.Contains(window, `store { i64, i64, i64 } zeroinitializer`) {
+		t.Fatalf("missing hidden slice clear before second wait:\n%s", body)
+	}
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer`) {
+		t.Fatalf("missing raw slice root clear before second wait:\n%s", body)
+	}
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer`) {
+		t.Fatalf("missing interface clear before second wait:\n%s", body)
+	}
+}
+
 func TestGcSensitivePointerRecvMethodUsesHiddenCall(t *testing.T) {
 	ir := compileIR(t, `package foo
 
@@ -1163,14 +1365,110 @@ func f() (x *T) {
 }
 `)
 	body := functionBody(t, ir, "foo.f")
-	if strings.Contains(body, "alloca i64") {
-		t.Fatalf("unexpected hidden uintptr slot for deferred return pointer alloc:\n%s", body)
-	}
 	if !strings.Contains(body, "alloca ptr") {
 		t.Fatalf("missing raw pointer slot for deferred return pointer alloc:\n%s", body)
 	}
-	if strings.Contains(body, "@runtime.StoreHiddenPointerRoot(") {
-		t.Fatalf("unexpected hidden root helper for deferred return pointer alloc:\n%s", body)
+	if !strings.Contains(body, "alloca i64") {
+		t.Fatalf("missing hidden uintptr slot for deferred return pointer alloc:\n%s", body)
+	}
+	if !strings.Contains(body, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("missing hidden root helper for deferred return pointer alloc:\n%s", body)
+	}
+	if !strings.Contains(body, "store i64 -") && !strings.Contains(body, "store i64 0, ptr %0") {
+		t.Fatalf("missing hidden slot clear for deferred return pointer alloc:\n%s", body)
+	}
+}
+
+func TestGCSensitiveHeapAllocUsesHiddenKey(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+import "runtime"
+
+type T [4]int
+
+//go:noinline
+func g(x []*T) []*T { return x }
+
+func f() {
+	s := [10]*T{{}}
+	_ = g(s[:])
+	runtime.GC()
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, "AllocZHidden") {
+		t.Fatalf("missing hidden heap alloc helper in gc-sensitive function:\n%s", body)
+	}
+	if strings.Contains(body, `AllocZ"(i64 80)`) {
+		t.Fatalf("raw heap array alloc should not survive in gc-sensitive function:\n%s", body)
+	}
+}
+
+func TestSingleExtractCallResultDoesNotCrossWait(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T struct{ n int }
+
+//go:noinline
+func g(x *T) (*T, *T) { return x, x }
+
+//go:noinline
+func wait() bool { return false }
+
+func f() int {
+	p := &T{1}
+	h, _ := g(p)
+	if wait() {
+		return -1
+	}
+	if h.n != 1 {
+		return -2
+	}
+	if !wait() {
+		return -3
+	}
+	return 0
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	m := regexp.MustCompile(`(%[0-9]+) = call .*@"foo.g\$(?:extract0|hiddenparam)"`).FindStringSubmatch(body)
+	if len(m) != 2 {
+		t.Fatalf("missing hidden call result for foo.g:\n%s", body)
+	}
+	callIdx := strings.Index(body, m[0])
+	if callIdx < 0 {
+		t.Fatalf("missing hidden call site for foo.g:\n%s", body)
+	}
+	waitIdxRel := strings.Index(body[callIdx:], `call i1 @foo.wait()`)
+	if waitIdxRel < 0 {
+		t.Fatalf("missing wait call after foo.g$extract0:\n%s", body)
+	}
+	if strings.Contains(body[callIdx+waitIdxRel:], m[1]) {
+		t.Fatalf("single-extract call result %s still live across wait:\n%s", m[1], body)
+	}
+}
+
+func TestSliceStaticCallUsesHiddenShim(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T [4]int
+
+//go:noinline
+func g(x []*T) []*T { return x }
+
+func f() int {
+	p := &T{1}
+	x := g([]*T{p})
+	return x[0][0]
+}
+
+`)
+	body := functionBody(t, ir, "foo.f")
+	if !strings.Contains(body, `@"foo.g$hiddenparam"(`) && !strings.Contains(body, `@"foo.g$hiddencall"(`) {
+		t.Fatalf("missing hidden slice shim call:\n%s", body)
+	}
+	if strings.Contains(body, `@foo.g(%"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("raw slice call should not survive in caller:\n%s", body)
 	}
 }
 
@@ -1208,8 +1506,10 @@ func g(p *S) (v *T) {
 			break
 		}
 		retIdx := off + rel
-		start := retIdx - 120
-		if start < 0 {
+		start := strings.LastIndex(body[:retIdx], "\n\n")
+		if start >= 0 {
+			start += 2
+		} else {
 			start = 0
 		}
 		if !strings.Contains(body[start:retIdx], "store ptr null, ptr") {
@@ -1220,6 +1520,35 @@ func g(p *S) (v *T) {
 	}
 	if count == 0 {
 		t.Fatalf("missing pointer return in function body:\n%s", body)
+	}
+}
+
+func TestReturnedSliceParamClearsBeforeRet(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T [4]int
+
+//go:noinline
+func g(x []*T) []*T { return x }
+`)
+	body := functionBody(t, ir, "foo.g")
+	retIdx := strings.Index(body, `ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`)
+	if retIdx < 0 {
+		t.Fatalf("missing slice return in function body:\n%s", body)
+	}
+	start := retIdx - 240
+	if start < 0 {
+		start = 0
+	}
+	window := body[start:retIdx]
+	if !strings.Contains(window, `zeroinitializer, ptr`) {
+		t.Fatalf("missing returned param slot clear before ret:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.TouchConservativeSlot(") {
+		t.Fatalf("missing conservative-slot touch before ret:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("missing pointer register clobber before ret:\n%s", body)
 	}
 }
 
@@ -1247,12 +1576,8 @@ func f(x, y string) {
 	if callIdx < 0 {
 		t.Fatalf("missing foo.use call:\n%s", body)
 	}
-	loadIdx := strings.LastIndex(body[:callIdx], `load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr`)
-	if loadIdx < 0 {
-		t.Fatalf("missing hidden string slot load before foo.use:\n%s", body)
-	}
-	if strings.Contains(body[loadIdx:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.String"`) {
-		t.Fatalf("unsafe.StringData rebuilt the full string from its hidden slot:\n%s", body)
+	if strings.Contains(body[:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.String"`) {
+		t.Fatalf("unsafe.StringData rebuilt the full string before foo.use:\n%s", body)
 	}
 }
 
@@ -1281,12 +1606,8 @@ func f() {
 	if callIdx < 0 {
 		t.Fatalf("missing foo.use call:\n%s", body)
 	}
-	loadIdx := strings.LastIndex(body[:callIdx], `load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr`)
-	if loadIdx < 0 {
-		t.Fatalf("missing hidden slice slot load before foo.use:\n%s", body)
-	}
-	if strings.Contains(body[loadIdx:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
-		t.Fatalf("unsafe.SliceData rebuilt the full slice from its hidden slot:\n%s", body)
+	if strings.Contains(body[:callIdx], `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("unsafe.SliceData rebuilt the full slice before foo.use:\n%s", body)
 	}
 }
 
@@ -1339,8 +1660,8 @@ func f() {
 		t.Fatalf("missing foo.use call:\n%s", body)
 	}
 	window := body[:callIdx]
-	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer, ptr`) {
-		t.Fatalf("missing raw make-slice local clear after last use:\n%s", body)
+	if !strings.Contains(window, `zeroinitializer, ptr`) {
+		t.Fatalf("missing hidden make-slice slot clear after last use:\n%s", body)
 	}
 }
 

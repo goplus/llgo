@@ -114,11 +114,6 @@ xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue46725.go
-    reason: last-use liveness for interface-held values still keeps the finalizable object reachable under llgo on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue25897b.go
     reason: finalizer-backed map key retention still hangs under llgo on darwin/arm64
   - version: go1.24
@@ -206,6 +201,12 @@ timeouts:
     case: fixedbugs/issue32477.go
     timeout: 300s
     reason: defer-path finalizer case now passes semantically but a cold llgo run still spends about 233s rebuilding runtime on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue46725.go
+    timeout: 300s
+    reason: interface-held finalizer case now passes semantically but a cold llgo run still spends about 225s rebuilding runtime on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run

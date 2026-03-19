@@ -3,10 +3,9 @@
 package runtime
 
 import (
-	"runtime"
-
 	"github.com/goplus/llgo/runtime/internal/clite/bdwgc"
 	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
+	"runtime"
 )
 
 var (

@@ -89,6 +89,15 @@ func HiddenPointerKey(p unsafe.Pointer) uintptr {
 	return key
 }
 
+//go:noinline
+func AllocZHidden(size uintptr) uintptr {
+	ptr := runtime.AllocZ(size)
+	key := runtime.EncodeHiddenPointerKey(ptr)
+	ptr = nil
+	ClobberPointerRegs()
+	return key
+}
+
 //go:linkname c_clobber_pointer_regs C.llgo_clobber_pointer_regs
 func c_clobber_pointer_regs(a0, a1, a2, a3, a4, a5, a6, a7 uintptr)
 
@@ -98,6 +107,16 @@ func ClobberPointerRegs() {
 	// This reduces the chance that conservative stack/register scanning keeps
 	// transient raw pointer values alive after hidden-pointer lowering.
 	c_clobber_pointer_regs(0, 0, 0, 0, 0, 0, 0, 0)
+}
+
+//go:noinline
+func TouchConservativeSlot(p unsafe.Pointer, size uintptr) {
+	if p == nil || size == 0 {
+		return
+	}
+	c.Memcmp(p, p, c.SizeT(size))
+	p = nil
+	size = 0
 }
 
 //go:noinline

@@ -772,7 +772,29 @@ func (p *context) callResultUsesHiddenPointerKey(owner ssa.Instruction) bool {
 	return ok && slot.Type != nil && p.hiddenValueSlots[v] && p.hiddenValueUsesUintptrSlot(v.Type())
 }
 
-func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instruction, call *ssa.CallCommon, asValue bool) (ret llssa.Expr) {
+func (p *context) callResultUsesHiddenABIValue(owner ssa.Instruction) bool {
+	v, ok := owner.(ssa.Value)
+	if !ok || v == nil {
+		return false
+	}
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil || !p.hiddenValueSlots[v] {
+		return false
+	}
+	return p.hiddenValueUsesUintptrSlot(v.Type()) || p.hiddenValueUsesOpaqueSlot(v.Type())
+}
+
+type staticCallOverride struct {
+	callee           llssa.Expr
+	hiddenParamIdx   int
+	hiddenParamByRef bool
+	hiddenResult     bool
+	hiddenResultType types.Type
+	outHiddenSlot    llssa.Expr
+	outRawSlot       llssa.Expr
+}
+
+func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instruction, call *ssa.CallCommon, asValue bool, override *staticCallOverride) (ret llssa.Expr) {
 	parentSynthetic := p.goFn != nil && p.goFn.Synthetic != ""
 	keepRecoverContext := false
 	wrapperRecoverContext := false
@@ -960,23 +982,27 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 				anyTy := types.NewInterfaceType(nil, nil).Complete()
 				params := types.NewTuple(
 					types.NewParam(token.NoPos, nil, "", b.Prog.AbiTypePtr().RawType()),
-					types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+					types.NewParam(token.NoPos, nil, "", types.NewPointer(types.Typ[types.Uintptr])),
 					types.NewParam(token.NoPos, nil, "", anyTy),
+					types.NewParam(token.NoPos, nil, "", types.NewPointer(types.Typ[types.UnsafePointer])),
 				)
-				helper := b.Pkg.NewFunc("runtime.SetFinalizerTypeHidden",
+				helper := b.Pkg.NewFunc("runtime.SetFinalizerTypeHiddenSlotKeepalive",
 					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
-				clobber := b.Pkg.NewFunc("runtime.ClobberPointerRegs",
-					types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InGo)
 				finalizer := p.compileValue(b, args[1])
 				keySlot := b.AllocaT(b.Prog.Uintptr())
+				keepSlot := b.AllocaT(b.Prog.VoidPtr())
+				b.Store(keepSlot, p.prog.Nil(b.Prog.VoidPtr()))
 				b.Store(keySlot, objKey)
-				objKey = b.Load(keySlot)
-				b.Store(keySlot, p.prog.Zero(b.Prog.Elem(keySlot.Type)))
 				p.clearPreCallValues(b, owner)
 				callMaybeSuspendRecover(helper.Expr, false, func() []llssa.Expr {
-					return []llssa.Expr{objType, objKey, finalizer}
+					return []llssa.Expr{objType, keySlot, finalizer, keepSlot}
 				})
-				callMaybeSuspendRecover(clobber.Expr, false, func() []llssa.Expr { return nil })
+				b.Store(keySlot, p.prog.IntVal(0, b.Prog.Uintptr()))
+				p.touchConservativeSlot(b, keySlot, false)
+				p.clobberPointerRegs(b)
+				b.Store(keepSlot, p.prog.Nil(b.Prog.VoidPtr()))
+				p.touchConservativeSlot(b, keepSlot, false)
+				p.clobberPointerRegs(b)
 				return
 			}
 		}
@@ -994,56 +1020,101 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, owner ssa.Instructio
 		case goFunc:
 			callee := aFn.Expr
 			hiddenParamIdx := -1
+			hiddenParamByRef := false
 			hiddenResult := false
 			hiddenResultType := types.Type(nil)
 			hiddenArgTemp := false
-			if plan := p.hiddenParamWrapperPlanFor(aFn.Name(), cv); plan != nil {
-				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
-					callee = hiddenFn.Expr
-					hiddenParamIdx = plan.paramIdx
-					hiddenResult = plan.resultHidden
-					hiddenResultType = plan.resultRawType
-				}
-			} else if plan := p.hiddenStaticCallShimPlanFor(aFn.Name(), cv); plan != nil {
-				if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
-					callee = hiddenFn.Expr
-					hiddenParamIdx = plan.paramIdx
-					hiddenResult = plan.resultHidden
-					hiddenResultType = plan.resultRawType
+			hiddenArgClearSlot := llssa.Expr{}
+			hasOutSlots := false
+			if override != nil {
+				callee = override.callee
+				hiddenParamIdx = override.hiddenParamIdx
+				hiddenParamByRef = override.hiddenParamByRef
+				hiddenResult = override.hiddenResult
+				hiddenResultType = override.hiddenResultType
+				hasOutSlots = override.outHiddenSlot.Type != nil || override.outRawSlot.Type != nil
+			} else {
+				if plan := p.hiddenParamWrapperPlanFor(aFn.Name(), cv); plan != nil {
+					if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
+						callee = hiddenFn.Expr
+						hiddenParamIdx = plan.paramIdx
+						hiddenResult = plan.resultHidden
+						hiddenResultType = plan.resultRawType
+					}
+				} else if plan := p.hiddenStaticCallShimPlanFor(aFn.Name(), cv); plan != nil {
+					if hiddenFn := aFn.Pkg.FuncOf(plan.hiddenName); hiddenFn != nil {
+						callee = hiddenFn.Expr
+						hiddenParamIdx = plan.paramIdx
+						hiddenResult = plan.resultHidden
+						hiddenResultType = plan.resultRawType
+					}
 				}
 			}
 			ret = callMaybeSuspendRecover(callee, suspend, func() []llssa.Expr {
-				if hiddenParamIdx < 0 {
-					return p.compileValuesForInstr(b, owner, args, kind)
+				prefix := make([]llssa.Expr, 0, 2)
+				if override != nil && override.outHiddenSlot.Type != nil {
+					prefix = append(prefix, override.outHiddenSlot)
 				}
-				llargs := make([]llssa.Expr, len(args))
+				if override != nil && override.outRawSlot.Type != nil {
+					prefix = append(prefix, override.outRawSlot)
+				}
+				if hiddenParamIdx < 0 {
+					llargs := p.compileValuesForInstr(b, owner, args, kind)
+					if len(prefix) == 0 {
+						return llargs
+					}
+					return append(prefix, llargs...)
+				}
+				base := len(prefix)
+				llargs := make([]llssa.Expr, base+len(args))
+				copy(llargs, prefix)
 				for i, arg := range args {
 					if i == hiddenParamIdx {
+						if hiddenParamByRef && p.hiddenValueUsesOpaqueSlot(arg.Type()) {
+							hiddenArg := p.compileValue(b, arg)
+							if !types.Identical(hiddenArg.Type.RawType(), hiddenCallABIType(arg.Type())) {
+								hiddenArg = p.encodeHiddenCallValue(b, hiddenArg, arg.Type())
+							}
+							hiddenArgSlot := b.AllocaT(hiddenArg.Type)
+							b.Store(hiddenArgSlot, hiddenArg)
+							llargs[base+i] = hiddenArgSlot
+							hiddenArgTemp = true
+							hiddenArgClearSlot = hiddenArgSlot
+							continue
+						}
 						if key, ok := p.hiddenScalarArgValue(b, arg); ok {
-							llargs[i] = key
+							llargs[base+i] = key
 							continue
 						}
 					}
-					llargs[i] = p.compileValue(b, arg)
+					llargs[base+i] = p.compileValue(b, arg)
 				}
 				p.clearPreCallValues(b, owner)
-				if llargs[hiddenParamIdx].Type != nil && !types.Identical(llargs[hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
-					llargs[hiddenParamIdx] = p.encodeHiddenStoredValue(b, llargs[hiddenParamIdx], args[hiddenParamIdx].Type())
-				}
-				if llargs[hiddenParamIdx].Type != nil && types.Identical(llargs[hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
-					hiddenArgSlot := b.AllocaT(b.Prog.Uintptr())
-					b.Store(hiddenArgSlot, llargs[hiddenParamIdx])
-					llargs[hiddenParamIdx] = b.Load(hiddenArgSlot)
-					b.Store(hiddenArgSlot, p.prog.Zero(b.Prog.Elem(hiddenArgSlot.Type)))
-					hiddenArgTemp = true
+				hiddenArgTemp = true
+				if !hiddenParamByRef {
+					if wantHidden := hiddenCallABIType(args[hiddenParamIdx].Type()); wantHidden != nil &&
+						llargs[base+hiddenParamIdx].Type != nil &&
+						!types.Identical(llargs[base+hiddenParamIdx].Type.RawType(), wantHidden) {
+						llargs[base+hiddenParamIdx] = p.encodeHiddenCallValue(b, llargs[base+hiddenParamIdx], args[hiddenParamIdx].Type())
+					}
+					if llargs[base+hiddenParamIdx].Type != nil && types.Identical(llargs[base+hiddenParamIdx].Type.RawType(), types.Typ[types.Uintptr]) {
+						hiddenArgSlot := b.AllocaT(b.Prog.Uintptr())
+						b.Store(hiddenArgSlot, llargs[base+hiddenParamIdx])
+						llargs[base+hiddenParamIdx] = b.Load(hiddenArgSlot)
+						b.Store(hiddenArgSlot, p.prog.Zero(b.Prog.Elem(hiddenArgSlot.Type)))
+					}
 				}
 				return llargs
 			})
-			if hiddenResult || hiddenArgTemp || (ret.Type == nil && (hiddenParamIdx >= 0 || p.shouldPostCallClobber(owner))) {
+			if hiddenArgClearSlot.Type != nil {
+				b.Store(hiddenArgClearSlot, p.prog.Zero(b.Prog.Elem(hiddenArgClearSlot.Type)))
+				p.touchConservativeSlot(b, hiddenArgClearSlot, true)
+			}
+			if hiddenResult || hiddenArgTemp || (ret.Type == nil && (hiddenParamIdx >= 0 || hasOutSlots || p.shouldPostCallClobber(owner))) {
 				p.clobberPointerRegs(b)
 			}
-			if hiddenResult && ret.Type != nil && (asValue || !p.callResultUsesHiddenPointerKey(owner)) {
-				ret = p.hiddenPointerDecode(b, ret, hiddenResultType)
+			if hiddenResult && ret.Type != nil && (asValue || !p.callResultUsesHiddenABIValue(owner)) {
+				ret = p.decodeHiddenCallValue(b, ret, hiddenResultType)
 			}
 		case pyFunc:
 			ret = callMaybeSuspendRecover(pyFn.Expr, suspend, func() []llssa.Expr {
@@ -1260,7 +1331,7 @@ func (p *context) hiddenScalarArgValue(b llssa.Builder, arg ssa.Value) (llssa.Ex
 	if idx, _, ok := hiddenScalarStructField(arg.Type()); ok {
 		return p.hiddenPointerKeyCall(b, b.Field(val, idx)), true
 	}
-	return p.encodeHiddenStoredValue(b, val, arg.Type()), true
+	return p.encodeHiddenCallValue(b, val, arg.Type()), true
 }
 
 func (p *context) hiddenAggregateArgData(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
@@ -1277,6 +1348,20 @@ func (p *context) hiddenAggregateArgData(b llssa.Builder, arg ssa.Value) (llssa.
 		}
 	} else if _, ok := p.bvals[arg]; !ok {
 		return llssa.Expr{}, false
+	}
+	if p.hiddenValueUsesOpaqueSlot(arg.Type()) {
+		val := b.Load(slot)
+		switch tt := types.Unalias(arg.Type()).Underlying().(type) {
+		case *types.Basic:
+			if tt.Kind() != types.String {
+				return llssa.Expr{}, false
+			}
+			return p.hiddenPointerDecode(b, b.Field(val, 0), types.NewPointer(types.Typ[types.Byte])), true
+		case *types.Slice:
+			return p.hiddenPointerDecode(b, b.Field(val, 0), types.NewPointer(tt.Elem())), true
+		default:
+			return llssa.Expr{}, false
+		}
 	}
 	return p.decodeHiddenAggregateData(b, b.Load(slot), arg.Type())
 }
@@ -1295,6 +1380,9 @@ func (p *context) hiddenAggregateArgKey(b llssa.Builder, arg ssa.Value) (llssa.E
 		}
 	} else if _, ok := p.bvals[arg]; !ok {
 		return llssa.Expr{}, false
+	}
+	if p.hiddenValueUsesOpaqueSlot(arg.Type()) {
+		return b.Field(b.Load(slot), 0), true
 	}
 	val := b.Load(slot)
 	switch tt := types.Unalias(arg.Type()).Underlying().(type) {
@@ -1328,6 +1416,10 @@ func (p *context) setFinalizerTypeArg(b llssa.Builder, arg ssa.Value) (llssa.Exp
 		return llssa.Expr{}, llssa.Expr{}, false
 	}
 	return b.AbiTypeOf(arg.Type()), p.hiddenPointerKeyCall(b, ptr), true
+}
+
+func (p *context) setFinalizerPointerArg(b llssa.Builder, arg ssa.Value) (llssa.Expr, bool) {
+	return llssa.Expr{}, false
 }
 
 // -----------------------------------------------------------------------------

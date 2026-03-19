@@ -103,23 +103,34 @@ func setFinalizer(objType *abi.Type, objPtr unsafe.Pointer, finalizer any) {
 	fn, sig := finalizerFunc(finalizer)
 	fnptr := fn.fn
 	env0 := fn.env
+	invokeKey := key
+	invokeFnptr := fnptr
+	invokeEnv0 := env0
+	invokeSig := sig
 
 	var cancel func()
 	invoke := func(p unsafe.Pointer) {
-		cancelFinalizer(key)
-		env := env0
+		cancelFinalizer(invokeKey)
+		env := invokeEnv0
 		arg := p
 		var ret unsafe.Pointer
-		if sig.RType != ffi.TypeVoid {
-			ret = iruntime.AllocZ(sig.RType.Size)
+		if invokeSig.RType != ffi.TypeVoid {
+			ret = iruntime.AllocZ(invokeSig.RType.Size)
 		}
-		ffi.Call(sig, fnptr, ret, unsafe.Pointer(&env), unsafe.Pointer(&arg))
+		ffi.Call(invokeSig, invokeFnptr, ret, unsafe.Pointer(&env), unsafe.Pointer(&arg))
 	}
 	cancel = iruntime.AddCleanupValuePtr(objPtr, objType.Elem().Size(), invoke)
 
 	finalizerMu.Lock()
 	finalizerCancels[key] = cancel
 	finalizerMu.Unlock()
+
+	objPtr = nil
+	cancel = nil
+	fnptr = nil
+	env0 = nil
+	sig = nil
+	ClobberPointerRegs()
 }
 
 func SetFinalizer(obj any, finalizer any) {
@@ -132,6 +143,36 @@ func SetFinalizerType(objType *abi.Type, obj unsafe.Pointer, finalizer any) {
 
 func SetFinalizerTypeHidden(objType *abi.Type, obj uintptr, finalizer any) {
 	setFinalizer(objType, iruntime.DecodeHiddenPointerKey(obj), finalizer)
+}
+
+func SetFinalizerTypeHiddenSlot(objType *abi.Type, obj *uintptr, finalizer any) {
+	if obj == nil {
+		return
+	}
+	key := *obj
+	*obj = 0
+	setFinalizer(objType, iruntime.DecodeHiddenPointerKey(key), finalizer)
+	key = 0
+	ClobberPointerRegs()
+}
+
+func SetFinalizerTypeHiddenSlotKeepalive(objType *abi.Type, obj *uintptr, finalizer any, keep *unsafe.Pointer) {
+	if obj == nil {
+		return
+	}
+	key := *obj
+	*obj = 0
+	ptr := iruntime.DecodeHiddenPointerKey(key)
+	if keep != nil {
+		*keep = ptr
+	}
+	setFinalizer(objType, ptr, finalizer)
+	if keep != nil {
+		*keep = nil
+	}
+	ptr = nil
+	key = 0
+	ClobberPointerRegs()
 }
 
 func finalizerFFIType(typ *abi.Type) *ffi.Type {
