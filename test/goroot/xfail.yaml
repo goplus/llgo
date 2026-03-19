@@ -176,35 +176,3 @@ xfails:
     directive: run
     case: ken/chan.go
     reason: ken channel stress case hangs under llgo on darwin/arm64
-
-timeouts:
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: finprofiled.go
-    timeout: 90s
-    reason: finalizer-heavy heap profiling passes but needs a longer per-case timeout on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue27518b.go
-    timeout: 60s
-    reason: panic/defer finalizer case passes semantically but still needs a modest per-case timeout bump on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue32477.go
-    timeout: 60s
-    reason: defer-path finalizer case now passes semantically but still needs a modest per-case timeout bump on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue57823.go
-    timeout: 240s
-    reason: hidden-pointer finalizer case now passes semantically but a cold llgo run still spends about 190s rebuilding runtime on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: stackobj.go
-    timeout: 240s
-    reason: stack object GC liveness now passes semantically but a cold llgo run still spends about 180s rebuilding runtime on darwin/arm64
