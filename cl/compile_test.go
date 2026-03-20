@@ -144,7 +144,6 @@ var embedTargetConfigs = []embedTargetConfig{
 				"./_testrt/complex",  // unexpected output
 				"./_testrt/fprintf",  // link error: ld.lld undefined symbol __stderrp
 				"./_testrt/hello",    // panic: cannot build SSA for packages
-				"./_testrt/len",      // panic: runtime index out of range
 				"./_testrt/linkname", // unexpected output
 				"./_testrt/strlen",   // panic: runtime index out of range
 				"./_testrt/struct",   // panic: runtime index out of range
