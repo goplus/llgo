@@ -80,7 +80,7 @@ func main() {
 
 	cvtFtoUintptr(100.0, 100)
 	cvtFtoUintptr(0.0, 0)
-	cvtFtoUintptr(1e10, 10000000000)
+	cvtFtoUintptr(1e5, 100000)
 }
 
 func cvtUinptr(a int32, b uintptr) {

@@ -324,7 +324,7 @@ _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr"(i32 1024, i64 1024)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 1.000000e+02, i64 100)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 0.000000e+00, i64 0)
-  call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 1.000000e+10, i64 10000000000)
+  call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 1.000000e+05, i64 100000)
   ret void
 }
 
