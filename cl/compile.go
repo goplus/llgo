@@ -5144,7 +5144,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if tupleCall, ok := v.Tuple.(*ssa.Call); ok {
 			if cached, ok := p.singleExtractCallResults[tupleCall]; ok {
 				ret = cached
-				delete(p.singleExtractCallResults, tupleCall)
 				break
 			}
 			if override, idx, ok := p.singleExtractCallOverrideFor(tupleCall); ok && idx == v.Index {

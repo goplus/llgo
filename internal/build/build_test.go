@@ -330,6 +330,57 @@ func main() {
 	}
 }
 
+func TestModeBuildNamedStringInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-named-string-iface-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/namedstringiface\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type E string
+
+func main() {
+	var x any = E("boom")
+	fmt.Println(x.(E))
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "namedstringiface")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "boom\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
 func TestModeBuildMultiResultSliceInterfaceBoxing(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -379,6 +430,62 @@ func main() {
 	}
 	if got := runBinary(t, binPath); got != "1\n" {
 		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeTestMultiResultSliceInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multi-slice-iface-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multisliceifacetest\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package iface
+
+import "testing"
+
+func pair(x []int) ([]int, []int) { return x, x }
+
+func TestIface(t *testing.T) {
+	x, _ := pair([]int{1})
+	v := any(x)
+	got := v.([]int)
+	if len(got) != 1 || got[0] != 1 {
+		t.Fatalf("unexpected slice in interface: %#v", got)
+	}
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "iface_test.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "iface.test")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeTest, CompileOnly: true, OutFile: binPath, AppExt: ".test"}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeTest compile failed: %v", err)
+	}
+	got := runBinary(t, binPath, "-test.run", "^TestIface$")
+	if !strings.Contains(got, "PASS\n") {
+		t.Fatalf("unexpected test binary output: %q", got)
 	}
 }
 
