@@ -239,6 +239,22 @@ func TestRunEmbedEmulator(t *testing.T) {
 	}
 }
 
+func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
+	output, err := cltest.RunAndCapture("./_testgo/select", "")
+	if err != nil {
+		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	got := string(output)
+	allowed := map[string]struct{}{
+		"100\nch1\nch2\n":   {},
+		"100\nexit\nch1\n":  {},
+		"200\nexit\nexit\n": {},
+	}
+	if _, ok := allowed[got]; !ok {
+		t.Fatalf("unexpected select output:\n%s", got)
+	}
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy")
 }
