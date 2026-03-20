@@ -1139,6 +1139,35 @@ func f() int {
 	}
 }
 
+func TestSingleExtractSliceInterfaceBoxingUsesRawValue(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+type T [4]int
+
+//go:noinline
+func g(x []*T) ([]*T, []*T) { return x, x }
+
+func f() int {
+	s := [10]*T{{1}}
+	x, _ := g(s[:])
+	var h any = x
+	return h.([]*T)[0][0]
+}
+`)
+	body := functionBody(t, ir, "foo.f")
+	callIdx := strings.Index(body, `call { i64, i64, i64 } @"foo.g$extract0"(`)
+	if callIdx < 0 {
+		callIdx = strings.Index(body, `call void @"foo.g$extract0$out"(`)
+	}
+	if callIdx < 0 {
+		t.Fatalf("caller did not use single-extract slice shim:\n%s", body)
+	}
+	window := body[callIdx:]
+	if !strings.Contains(window, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %`) {
+		t.Fatalf("caller did not materialize raw slice value before interface boxing:\n%s", body)
+	}
+}
+
 func TestIssue46725TupleInterfaceClearsBeforeSecondGC(t *testing.T) {
 	ir := compileIR(t, `package foo
 
