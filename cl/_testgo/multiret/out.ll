@@ -30,17 +30,25 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/multiret.main"() {
 _llgo_0:
-  %0 = call { i64, double } @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(double 2.000000e+00)
-  %1 = extractvalue { i64, double } %0, 0
-  %2 = extractvalue { i64, double } %0, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %1 = call { i64, double } @"github.com/goplus/llgo/cl/_testgo/multiret.foo"(double 2.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %0)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %3 = extractvalue { i64, double } %1, 0
+  %4 = extractvalue { i64, double } %1, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %2)
   ret void
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

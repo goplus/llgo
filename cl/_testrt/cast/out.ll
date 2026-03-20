@@ -28,6 +28,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float %0, i32 %1) {
@@ -49,6 +52,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F"(float %0, double %1) {
@@ -66,6 +72,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float %0, i8 %1) {
@@ -84,6 +93,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float %0, i8 %1) {
@@ -105,6 +117,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64"(i32 %0, i64 %1) {
@@ -122,6 +137,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F"(double %0, float %1) {
@@ -139,6 +157,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F"(i64 %0, double %1) {
@@ -156,6 +177,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F"(i64 %0, double %1) {
@@ -173,6 +197,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 %0, i8 %1) {
@@ -190,6 +217,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U"(i64 %0, i8 %1) {
@@ -207,6 +237,9 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr"(i32 %0, i64 %1) {
@@ -236,6 +269,12 @@ _llgo_3:                                          ; preds = %_llgo_2
 
 _llgo_4:                                          ; preds = %_llgo_2
   ret void
+
+_llgo_5:                                          ; No predecessors!
+  unreachable
+
+_llgo_6:                                          ; No predecessors!
+  unreachable
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.init"() {
@@ -254,58 +293,162 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/cast.main"() {
 _llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 0, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %0)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 127, i8 127)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %1)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 128, i8 -128)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %2)
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 -128, i8 -128)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 -129, i8 127)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %4)
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8"(i64 256, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %5)
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U"(i64 0, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %6)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U"(i64 255, i8 -1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %7)
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U"(i64 256, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %8)
+  %9 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U"(i64 257, i8 1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %9)
+  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to8U"(i64 -1, i8 -1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %10)
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float 0x3FB99999A0000000, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %11)
+  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float 0x405FC66660000000, i8 127)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %12)
+  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float 0x4060033340000000, i8 -128)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %13)
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float 0xC060033340000000, i8 -128)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %14)
+  %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float 0xC060233340000000, i8 127)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %15)
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8"(float 0x40700199A0000000, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %16)
+  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float 0.000000e+00, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %17)
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float 2.550000e+02, i8 -1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %18)
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float 2.560000e+02, i8 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %19)
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float 2.570000e+02, i8 1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %20)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto8U"(float -1.000000e+00, i8 -1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %21)
+  %22 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32"(float 0.000000e+00, i32 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %22)
+  %23 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32"(float 1.500000e+00, i32 1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %23)
+  %24 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32"(float 0x41D1194D80000000, i32 1147483648)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %24)
+  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32"(float 0xC1E0000000000000, i32 -2147483648)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %25)
+  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 0.000000e+00, i32 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %26)
+  %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 1.500000e+00, i32 1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %27)
+  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 0x41F0000000000000, i32 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %28)
+  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 0x41F3B9ACA0000000, i32 1000000000)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %29)
+  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 0xC1F0000000000000, i32 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %30)
+  %31 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 0xC1D34BE880000000, i32 -1294967296)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %31)
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto32U"(float 0xBFF19999A0000000, i32 -1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %32)
+  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F"(float 0.000000e+00, double 0.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %33)
+  %34 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F"(float 1.500000e+00, double 1.500000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %34)
+  %35 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F"(float 1.000000e+10, double 1.000000e+10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %35)
+  %36 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32Fto64F"(float -1.000000e+10, double -1.000000e+10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %36)
+  %37 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F"(double 0.000000e+00, float 0.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %37)
+  %38 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F"(double 1.500000e+00, float 1.500000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %38)
+  %39 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F"(double 1.000000e+10, float 1.000000e+10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %39)
+  %40 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Fto32F"(double -1.000000e+10, float -1.000000e+10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %40)
+  %41 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F"(i64 0, double 0.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %41)
+  %42 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F"(i64 10000000000, double 1.000000e+10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %42)
+  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F"(i64 9223372036854775807, double 0x43E0000000000000)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %43)
+  %44 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64to64F"(i64 -9223372036854775807, double 0xC3E0000000000000)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %44)
+  %45 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F"(i64 0, double 0.000000e+00)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %45)
+  %46 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F"(i64 10000000000, double 1.000000e+10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %46)
+  %47 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F"(i64 9223372036854775807, double 0x43E0000000000000)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %47)
+  %48 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt64Uto64F"(i64 -1, double 0x43F0000000000000)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %48)
+  %49 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64"(i32 0, i64 0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %49)
+  %50 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64"(i32 2147483647, i64 2147483647)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %50)
+  %51 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr"(i32 1024, i64 1024)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %51)
   ret void
 }
 
@@ -313,16 +456,24 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.strequal")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
@@ -330,3 +481,5 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)

@@ -29,13 +29,15 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/tprecur.main"() {
 _llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testgo/tprecur.recursive"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %0)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/tprecur.recursive"() {
 _llgo_0:
-  %0 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 5)
+  %0 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.0.1]"(i64 5)
   %1 = icmp ne i64 %0, 110
   br i1 %1, label %_llgo_1, label %_llgo_2
 
@@ -48,11 +50,18 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
+
+_llgo_3:                                          ; No predecessors!
+  unreachable
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
-define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %0) {
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
+
+define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.0.1]"(i64 %0) {
 _llgo_0:
   %1 = icmp eq i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -62,7 +71,7 @@ _llgo_1:                                          ; preds = %_llgo_3, %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_3
   %2 = sub i64 %0, 1
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %2)
+  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/cl/_testgo/tprecur.T.0.1]"(i64 %2)
   %4 = mul i64 %0, %3
   ret i64 %4
 
@@ -75,78 +84,142 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.strequal")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %0) {
+define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/cl/_testgo/tprecur.T.0.1]"(i64 %0) {
 _llgo_0:
-  %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 8)
-  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 1
+  %1 = alloca i64, align 8
+  %2 = alloca ptr, align 8
+  store ptr null, ptr %2, align 8
+  %3 = alloca i64, align 8
+  %4 = alloca ptr, align 8
+  store ptr null, ptr %4, align 8
+  %5 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 8)
+  %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %3 = phi i64 [ -1, %_llgo_0 ], [ %4, %_llgo_2 ]
-  %4 = add i64 %3, 1
-  %5 = icmp slt i64 %4, %2
-  br i1 %5, label %_llgo_2, label %_llgo_3
+  %7 = phi i64 [ -1, %_llgo_0 ], [ %8, %_llgo_2 ]
+  %8 = add i64 %7, 1
+  %9 = icmp slt i64 %8, %6
+  br i1 %9, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %6 = add i64 %4, 1
-  %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 0
-  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 1
-  %9 = icmp slt i64 %4, 0
-  %10 = icmp sge i64 %4, %8
-  %11 = or i1 %10, %9
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %11)
-  %12 = getelementptr inbounds i64, ptr %7, i64 %4
-  store i64 %6, ptr %12, align 4
+  %10 = add i64 %8, 1
+  %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 0
+  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 1
+  %13 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.CheckIndexInt"(i64 %8, i64 %12)
+  %14 = getelementptr inbounds i64, ptr %11, i64 %13
+  %15 = ptrtoint ptr %14 to i64
+  %16 = and i64 %15, 72057594037927935
+  %17 = xor i64 %16, 25399393228665167
+  %18 = shl i64 %17, 17
+  %19 = select i1 false, i64 0, i64 %18
+  %20 = lshr i64 %17, 39
+  %21 = select i1 false, i64 0, i64 %20
+  %22 = or i64 %19, %21
+  %23 = and i64 %22, 72057594037927935
+  %24 = or i64 %23, -6557241057451442176
+  store i64 %24, ptr %1, align 4
+  call void @runtime.StoreHiddenPointerRoot(ptr %2, i64 %24)
+  call void @runtime.ClobberPointerRegs()
+  %25 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %25)
+  %26 = load i64, ptr %1, align 4
+  %27 = alloca i64, align 8
+  store i64 %10, ptr %27, align 4
+  call void @runtime.StoreHiddenPointee(i64 %26, ptr %27, i64 8)
+  store i64 0, ptr %27, align 4
+  store i64 0, ptr %1, align 4
+  call void @runtime.TouchConservativeSlot(ptr %1, i64 8)
+  store ptr null, ptr %2, align 8
+  call void @runtime.TouchConservativeSlot(ptr %2, i64 8)
+  call void @runtime.ClobberPointerRegs()
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %13 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 1
+  %28 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 1
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_5, %_llgo_3
-  %14 = phi i64 [ 0, %_llgo_3 ], [ %26, %_llgo_5 ]
-  %15 = phi i64 [ -1, %_llgo_3 ], [ %16, %_llgo_5 ]
-  %16 = add i64 %15, 1
-  %17 = icmp slt i64 %16, %13
-  br i1 %17, label %_llgo_5, label %_llgo_6
+  %29 = phi i64 [ 0, %_llgo_3 ], [ %52, %_llgo_5 ]
+  %30 = phi i64 [ -1, %_llgo_3 ], [ %31, %_llgo_5 ]
+  %31 = add i64 %30, 1
+  %32 = icmp slt i64 %31, %28
+  br i1 %32, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
-  %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 0
-  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 1
-  %20 = icmp slt i64 %16, 0
-  %21 = icmp sge i64 %16, %19
-  %22 = or i1 %21, %20
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %22)
-  %23 = getelementptr inbounds i64, ptr %18, i64 %16
-  %24 = icmp eq ptr %23, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %24)
-  %25 = load i64, ptr %23, align 4
-  %26 = add i64 %14, %25
+  %33 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 0
+  %34 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, 1
+  %35 = call i64 @"github.com/goplus/llgo/runtime/internal/runtime.CheckIndexInt"(i64 %31, i64 %34)
+  %36 = getelementptr inbounds i64, ptr %33, i64 %35
+  %37 = ptrtoint ptr %36 to i64
+  %38 = and i64 %37, 72057594037927935
+  %39 = xor i64 %38, 25399393228665167
+  %40 = shl i64 %39, 17
+  %41 = select i1 false, i64 0, i64 %40
+  %42 = lshr i64 %39, 39
+  %43 = select i1 false, i64 0, i64 %42
+  %44 = or i64 %41, %43
+  %45 = and i64 %44, 72057594037927935
+  %46 = or i64 %45, -6557241057451442176
+  store i64 %46, ptr %3, align 4
+  call void @runtime.StoreHiddenPointerRoot(ptr %4, i64 %46)
+  call void @runtime.ClobberPointerRegs()
+  %47 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %47)
+  %48 = load i64, ptr %3, align 4
+  %49 = alloca i64, align 8
+  call void @runtime.LoadHiddenPointee(ptr %49, i64 %48, i64 8)
+  %50 = icmp eq ptr %49, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %50)
+  %51 = load i64, ptr %49, align 4
+  store i64 0, ptr %49, align 4
+  store i64 0, ptr %3, align 4
+  call void @runtime.TouchConservativeSlot(ptr %3, i64 8)
+  store ptr null, ptr %4, align 8
+  call void @runtime.TouchConservativeSlot(ptr %4, i64 8)
+  call void @runtime.ClobberPointerRegs()
+  %52 = add i64 %29, %51
   br label %_llgo_4
 
 _llgo_6:                                          ; preds = %_llgo_4
-  %27 = sub i64 %0, 1
-  %28 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %27)
-  %29 = add i64 %14, %28
-  ret i64 %29
+  %53 = sub i64 %0, 1
+  %54 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.0.1]"(i64 %53)
+  %55 = add i64 %29, %54
+  ret i64 %55
 }
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64, i64, i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.CheckIndexInt"(i64, i64)
+
+declare void @runtime.StoreHiddenPointerRoot(ptr, i64)
+
+declare void @runtime.ClobberPointerRegs()
+
+declare void @runtime.StoreHiddenPointee(i64, ptr, i64)
+
+declare void @runtime.TouchConservativeSlot(ptr, i64)
+
+declare void @runtime.LoadHiddenPointee(ptr, i64, i64)

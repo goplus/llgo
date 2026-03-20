@@ -15,6 +15,8 @@ cleanup() {
 trap cleanup EXIT
 
 export LLGO_ROOT="$workdir"
+go_test_timeout="${LLGO_GO_TEST_TIMEOUT:-30m}"
+llgo_test_timeout="${LLGO_LLGO_TEST_TIMEOUT:-30m}"
 
 log_section() {
 	printf "\n==== %s ====\n" "$1"
@@ -229,7 +231,7 @@ log_section "Go Build"
 (cd "$workdir" && go build ./...)
 
 log_section "Go Test"
-(cd "$workdir" && go test -timeout 30m ./...)
+(cd "$workdir" && go test -timeout "$go_test_timeout" ./...)
 
 log_section "Install llgo"
 (cd "$workdir" && go install -tags=dev ./cmd/llgo)
@@ -241,7 +243,7 @@ fi
 export PATH="$gobin:$PATH"
 
 log_section "llgo test"
-(cd "$workdir" && llgo test -timeout 30m ./...)
+(cd "$workdir" && llgo test -timeout "$llgo_test_timeout" ./...)
 
 log_section "Demo Tests"
 demo_jobs="${LLGO_DEMO_JOBS:-}"

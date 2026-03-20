@@ -57,22 +57,32 @@ _llgo_0:
 
 define linkonce %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"(ptr %0) {
 _llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"()
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" %1
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1")
+  %2 = tail call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %1)
+  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" %2
 }
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 define linkonce %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"(ptr %0) {
 _llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"()
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1")
+  %2 = tail call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %1)
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %2
 }
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 define linkonce %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"(ptr %0) {
 _llgo_0:
-  %1 = tail call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"()
-  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" %1
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1")
+  %2 = tail call %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %1)
+  ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" %2
 }
 
 define linkonce [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[[0]byte]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[[0]byte]" %0) {
@@ -88,6 +98,8 @@ _llgo_0:
 
 define linkonce [0 x i8] @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"(ptr %0) {
 _llgo_0:
-  %1 = tail call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"()
-  ret [0 x i8] %1
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1")
+  %2 = tail call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %1)
+  ret [0 x i8] %2
 }
