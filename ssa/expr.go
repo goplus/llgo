@@ -957,6 +957,9 @@ func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 	if x.Type().TypeKind() == llvm.PointerTypeKind {
 		return llvm.CreatePtrToInt(b.impl, x, typ.ll)
 	}
+	if xtyp.kind == vkFloat {
+		return castFloatToInt(b, x, typ)
+	}
 	return castInt(b, x, xtyp, typ)
 }
 

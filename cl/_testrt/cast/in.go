@@ -77,6 +77,10 @@ func main() {
 	cvt32to64(2147483647, 2147483647)
 
 	cvtUinptr(1024, 1024)
+
+	cvtFtoUintptr(100.0, 100)
+	cvtFtoUintptr(0.0, 0)
+	cvtFtoUintptr(1e10, 10000000000)
 }
 
 func cvtUinptr(a int32, b uintptr) {
@@ -84,6 +88,12 @@ func cvtUinptr(a int32, b uintptr) {
 		panic("error")
 	}
 	if int32(b) != a {
+		panic("error")
+	}
+}
+
+func cvtFtoUintptr(a float64, b uintptr) {
+	if uintptr(a) != b {
 		panic("error")
 	}
 }
