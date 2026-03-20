@@ -32,6 +32,16 @@ else
   done
 fi
 
+host_optional_skips=()
+if [ "$mode" = "host" ]; then
+  if ! pkg-config --exists cargs >/dev/null 2>&1; then
+    host_optional_skips+=("./_demo/c/cargs")
+  fi
+  if ! python3 -c 'import torch' >/dev/null 2>&1; then
+    host_optional_skips+=("./_demo/py/tensor")
+  fi
+fi
+
 embedded_targets=()
 emulator=0
 if [ "$mode" = "embedded" ]; then
@@ -206,6 +216,16 @@ should_ignore() {
   return 1
 }
 
+should_skip_host_optional_dep() {
+  local dir="$1"
+  for skip in "${host_optional_skips[@]}"; do
+    if [ "$dir" = "$skip" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 run_dirs=()
 run_targets=()
 run_labels=()
@@ -224,6 +244,10 @@ if [ "$mode" = "embedded" ]; then
   done
 else
   for d in "${cases[@]}"; do
+    if should_skip_host_optional_dep "$d"; then
+      echo "SKIP $d (missing optional host dependency)"
+      continue
+    fi
     run_dirs+=("$d")
     run_targets+=("")
     run_labels+=("$d")

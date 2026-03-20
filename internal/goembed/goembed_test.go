@@ -11,6 +11,13 @@ import (
 	"testing"
 )
 
+func skipIfRootPermissionTest(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS != "windows" && os.Geteuid() == 0 {
+		t.Skip("permission-denial checks are not reliable when running as root")
+	}
+}
+
 func TestParsePatterns(t *testing.T) {
 	doc := &ast.CommentGroup{
 		List: []*ast.Comment{
@@ -527,6 +534,7 @@ func TestResolvePatternsDuplicateAndReadFailure(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		return
 	}
+	skipIfRootPermissionTest(t)
 	noRead := filepath.Join(dir, "noread.txt")
 	if err := os.WriteFile(noRead, []byte("secret"), 0o600); err != nil {
 		t.Fatalf("write noread.txt: %v", err)
@@ -544,6 +552,7 @@ func TestResolvePatternsWalkDirError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("directory permissions behavior differs on windows")
 	}
+	skipIfRootPermissionTest(t)
 	dir := t.TempDir()
 	root := filepath.Join(dir, "root")
 	locked := filepath.Join(root, "locked")

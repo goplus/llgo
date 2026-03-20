@@ -13,11 +13,19 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 )
+
+func skipIfRootPermissionTest(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS != "windows" && os.Geteuid() == 0 {
+		t.Skip("permission-denial checks are not reliable when running as root")
+	}
+}
 
 // Helper function to create a test tar.gz archive
 func createTestTarGz(t *testing.T, files map[string]string) string {
@@ -687,6 +695,8 @@ func TestExtractZip(t *testing.T) {
 
 	// 3. Test non-writable destination
 	t.Run("UnwritableDestination", func(t *testing.T) {
+		skipIfRootPermissionTest(t)
+
 		// Create test ZIP file
 		if err := createTestZip(zipPath); err != nil {
 			t.Fatal(err)

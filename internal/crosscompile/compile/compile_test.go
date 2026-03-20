@@ -5,11 +5,19 @@ package compile
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/xtool/nm"
 )
+
+func skipIfRootPermissionTest(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS != "windows" && os.Geteuid() == 0 {
+		t.Skip("permission-denial checks are not reliable when running as root")
+	}
+}
 
 func TestIsCompiled(t *testing.T) {
 	t.Run("IsCompiled Not Exists", func(t *testing.T) {
@@ -73,6 +81,8 @@ func TestCompile(t *testing.T) {
 	})
 
 	t.Run("TmpDir Fail", func(t *testing.T) {
+		skipIfRootPermissionTest(t)
+
 		tmpDir := filepath.Join(t.TempDir(), "test-compile")
 		os.RemoveAll(tmpDir)
 

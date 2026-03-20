@@ -22,6 +22,13 @@ import (
 	"golang.org/x/tools/go/ssa/ssautil"
 )
 
+func skipIfRootPermissionTest(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS != "windows" && os.Geteuid() == 0 {
+		t.Skip("permission-denial checks are not reliable when running as root")
+	}
+}
+
 func mustPanicContains(t *testing.T, want string, fn func()) {
 	t.Helper()
 	defer func() {
@@ -629,6 +636,7 @@ func TestResolveEmbedPatterns_DuplicateAndReadFailure(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		return
 	}
+	skipIfRootPermissionTest(t)
 	noRead := filepath.Join(dir, "noread.txt")
 	if err := os.WriteFile(noRead, []byte("secret"), 0o600); err != nil {
 		t.Fatalf("write noread.txt: %v", err)
@@ -646,6 +654,7 @@ func TestResolveEmbedPatterns_WalkDirError(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("directory permissions behavior differs on windows")
 	}
+	skipIfRootPermissionTest(t)
 	dir := t.TempDir()
 	root := filepath.Join(dir, "root")
 	locked := filepath.Join(root, "locked")

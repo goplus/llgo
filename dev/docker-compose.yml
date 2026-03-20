@@ -35,7 +35,7 @@ services:
     <<: *llgo-service
     build:
       <<: *llgo-build
-      target: base
+      target: pydeps
     platform: linux/arm64
     volumes:
       - .:/repo:delegated
