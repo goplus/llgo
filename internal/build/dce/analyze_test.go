@@ -471,10 +471,22 @@ func TestAnalyzeModuleOutputs(t *testing.T) {
 			golden: "testdata/invoke.txt",
 		},
 		{
+			name:   "reader",
+			llPath: "../../../cl/_testgo/reader/out.ll",
+			root:   "github.com/goplus/llgo/cl/_testgo/reader.main",
+			golden: "testdata/reader.txt",
+		},
+		{
 			name:   "reflectmethod",
 			llPath: "../../../cl/_testgo/reflectmethod/out.ll",
 			root:   "github.com/goplus/llgo/cl/_testgo/reflectmethod.main",
 			golden: "testdata/reflectmethod.txt",
+		},
+		{
+			name:   "ifaceconv",
+			llPath: "../../../cl/_testgo/ifaceconv/out.ll",
+			root:   "github.com/goplus/llgo/cl/_testgo/ifaceconv.main",
+			golden: "testdata/ifaceconv.txt",
 		},
 	}
 	for _, tt := range tests {
