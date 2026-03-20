@@ -410,6 +410,34 @@ func TestAnalyzeReflectmethodModule(t *testing.T) {
 	}
 }
 
+func TestAnalyzeInvokeModule(t *testing.T) {
+	mod := loadIRModule(t, "../../../cl/_testgo/invoke/out.ll")
+	got, err := Analyze([]llvm.Module{mod}, []string{
+		"github.com/goplus/llgo/cl/_testgo/invoke.main",
+	})
+	if err != nil {
+		t.Fatalf("Analyze(invoke) error = %v", err)
+	}
+	want := Result{
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T":  {0: {}},
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1": {0: {}},
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2": {0: {}},
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3": {0: {}},
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4": {0: {}},
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5": {0: {}},
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6": {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T":   {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1":  {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2":  {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4":  {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5":  {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6":  {0: {}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Analyze(invoke) = %#v, want %#v", got, want)
+	}
+}
+
 func loadIRModule(t *testing.T, rel string) llvm.Module {
 	t.Helper()
 
