@@ -1,6 +1,8 @@
 package dce
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -373,4 +375,60 @@ func TestAnalyzeInputReflectKeepsExportedMethods(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("AnalyzeInput(reflect) = %#v, want %#v", got, want)
 	}
+}
+
+func TestAnalyzeClosureallModule(t *testing.T) {
+	mod := loadIRModule(t, "../../../cl/_testgo/closureall/out.ll")
+	got, err := Analyze([]llvm.Module{mod}, []string{
+		"github.com/goplus/llgo/cl/_testgo/closureall.main",
+	})
+	if err != nil {
+		t.Fatalf("Analyze(closureall) error = %v", err)
+	}
+	want := Result{
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S": {0: {}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Analyze(closureall) = %#v, want %#v", got, want)
+	}
+}
+
+func TestAnalyzeReflectmethodModule(t *testing.T) {
+	mod := loadIRModule(t, "../../../cl/_testgo/reflectmethod/out.ll")
+	got, err := Analyze([]llvm.Module{mod}, []string{
+		"github.com/goplus/llgo/cl/_testgo/reflectmethod.main",
+	})
+	if err != nil {
+		t.Fatalf("Analyze(reflectmethod) error = %v", err)
+	}
+	want := Result{
+		"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmethod.T": {0: {}},
+		"_llgo_github.com/goplus/llgo/cl/_testgo/reflectmethod.T":  {0: {}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Analyze(reflectmethod) = %#v, want %#v", got, want)
+	}
+}
+
+func loadIRModule(t *testing.T, rel string) llvm.Module {
+	t.Helper()
+
+	path := filepath.Clean(rel)
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("Stat(%s) error = %v", path, err)
+	}
+	buf, err := llvm.NewMemoryBufferFromFile(path)
+	if err != nil {
+		t.Fatalf("NewMemoryBufferFromFile(%s) error = %v", path, err)
+	}
+
+	ctx := llvm.NewContext()
+	t.Cleanup(ctx.Dispose)
+
+	mod, err := (&ctx).ParseIR(buf)
+	if err != nil {
+		t.Fatalf("ParseIR(%s) error = %v", path, err)
+	}
+	t.Cleanup(mod.Dispose)
+	return mod
 }
