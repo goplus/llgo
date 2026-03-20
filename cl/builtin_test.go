@@ -413,10 +413,10 @@ func TestErrImport(t *testing.T) {
 
 func TestErrInitLinkname(t *testing.T) {
 	var ctx context
-	ctx.initLinkname("//llgo:link abc", func(name string, isExport bool) (string, bool, bool) {
+	ctx.initLinkname("//llgo:link abc", true, func(name string, isExport bool) (string, bool, bool) {
 		return "", false, false
 	})
-	ctx.initLinkname("//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
+	ctx.initLinkname("//go:linkname Printf printf", true, func(name string, isExport bool) (string, bool, bool) {
 		return "", false, false
 	})
 	defer func() {
@@ -424,7 +424,7 @@ func TestErrInitLinkname(t *testing.T) {
 			t.Fatal("initLinkname: no error?")
 		}
 	}()
-	ctx.initLinkname("//go:linkname Printf printf", func(name string, isExport bool) (string, bool, bool) {
+	ctx.initLinkname("//go:linkname Printf printf", true, func(name string, isExport bool) (string, bool, bool) {
 		return "foo.Printf", false, name == "Printf"
 	})
 }
@@ -598,7 +598,7 @@ func TestHandleExportDiffName(t *testing.T) {
 			}
 
 			// Call initLinkname with closure that mimics initLinknameByDoc behavior
-			ret := ctx.initLinkname(tt.line, func(name string, isExport bool) (string, bool, bool) {
+			ret := ctx.initLinkname(tt.line, true, func(name string, isExport bool) (string, bool, bool) {
 				return tt.fullName, false, name == tt.inPkgName || (isExport && enableExportRename)
 			})
 
@@ -692,7 +692,7 @@ func TestInitLinknameByDocExportDiffNames(t *testing.T) {
 			}
 
 			// Call initLinknameByDoc
-			ctx.initLinknameByDoc(tt.doc, tt.fullName, tt.inPkgName, false)
+			ctx.processLinknameByDoc(tt.doc, tt.fullName, tt.inPkgName, false, true)
 
 			// Verify export behavior
 			exports := pkg.ExportFuncs()
@@ -754,7 +754,7 @@ func TestInitLinkExportDiffNames(t *testing.T) {
 				pkg:  pkg,
 			}
 
-			ctx.initLinkname(tt.line, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+			ctx.initLinkname(tt.line, true, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 				// Simulate initLinknames scenario: symbol not found (like in decl packages)
 				return "", false, false
 			})
