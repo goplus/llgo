@@ -36,6 +36,7 @@ import "C"
 
 import (
 	"fmt"
+	"strings"
 	"unsafe"
 
 	llvm "github.com/goplus/llvm"
@@ -47,6 +48,8 @@ const (
 	llgoMethodOffMetadata      = "llgo.methodoff"
 	llgoUseNamedMethodMetadata = "llgo.usenamedmethod"
 	llgoReflectMethodMetadata  = "llgo.reflectmethod"
+
+	runtimeABIPrefix = "github.com/goplus/llgo/runtime/abi."
 )
 
 // BuildInput constructs the phase-1 analyzer input from LLVM modules.
@@ -56,12 +59,15 @@ func BuildInput(mods []llvm.Module) (Input, error) {
 	input := Input{
 		OrdinaryEdges: make(map[string]map[string]struct{}),
 		TypeChildren:  make(map[string]map[string]struct{}),
+		MethodRefs:    make(map[string]map[int]map[string]struct{}),
 	}
 	for _, mod := range mods {
 		if mod.IsNil() {
 			continue
 		}
 		scanModuleOrdinaryEdges(input.OrdinaryEdges, mod)
+		scanModuleTypeChildren(input.TypeChildren, mod)
+		scanModuleMethodRefs(input.MethodRefs, mod)
 		if err := scanModuleMetadata(&input, mod); err != nil {
 			return Input{}, err
 		}
@@ -90,8 +96,25 @@ func scanModuleOrdinaryEdges(edges map[string]map[string]struct{}, mod llvm.Modu
 		if init.IsNil() {
 			continue
 		}
+		if isTypeGlobal(g) {
+			collectTypeGlobalOrdinaryEdges(edges, src, g)
+			continue
+		}
 		collectValueEdges(edges, src, init)
 	}
+}
+
+func collectTypeGlobalOrdinaryEdges(edges map[string]map[string]struct{}, src string, g llvm.Value) {
+	init := g.Initializer()
+	if init.IsNil() {
+		return
+	}
+	if !hasUncommonTypeLayout(g.GlobalValueType()) || init.OperandsCount() != 3 {
+		collectValueEdges(edges, src, init)
+		return
+	}
+	collectValueEdges(edges, src, init.Operand(0))
+	collectValueEdges(edges, src, init.Operand(1))
 }
 
 func collectValueEdges(edges map[string]map[string]struct{}, src string, root llvm.Value) {
@@ -134,6 +157,142 @@ func symbolNameOf(v llvm.Value) string {
 		return ""
 	}
 	return v.Name()
+}
+
+func scanModuleTypeChildren(typeChildren map[string]map[string]struct{}, mod llvm.Module) {
+	globals := make(map[string]llvm.Value)
+	for g := mod.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
+		if name := g.Name(); name != "" {
+			globals[name] = g
+		}
+	}
+	for _, g := range globals {
+		if !isTypeGlobal(g) {
+			continue
+		}
+		scanTypeChildren(typeChildren, g)
+	}
+}
+
+func scanTypeChildren(typeChildren map[string]map[string]struct{}, g llvm.Value) {
+	src := g.Name()
+	init := g.Initializer()
+	if src == "" || init.IsNil() {
+		return
+	}
+	seen := make(map[unsafe.Pointer]struct{})
+	var visit func(v llvm.Value)
+	visit = func(v llvm.Value) {
+		if v.IsNil() {
+			return
+		}
+		ptr := unsafe.Pointer(v.C)
+		if _, ok := seen[ptr]; ok {
+			return
+		}
+		seen[ptr] = struct{}{}
+
+		for i := 0; i < v.OperandsCount(); i++ {
+			op := v.Operand(i)
+			if op.IsNil() {
+				continue
+			}
+			if !op.IsAGlobalVariable().IsNil() {
+				dst := op.Name()
+				if dst == "" || dst == src {
+					continue
+				}
+				if isTypeGlobal(op) {
+					addEdge(typeChildren, src, dst)
+					continue
+				}
+				if init := op.Initializer(); !init.IsNil() {
+					visit(init)
+				}
+				continue
+			}
+			visit(op)
+		}
+	}
+	visit(init)
+}
+
+func scanModuleMethodRefs(methodRefs map[string]map[int]map[string]struct{}, mod llvm.Module) {
+	for g := mod.FirstGlobal(); !g.IsNil(); g = llvm.NextGlobal(g) {
+		if !isTypeGlobal(g) {
+			continue
+		}
+		scanMethodRefs(methodRefs, g)
+	}
+}
+
+func scanMethodRefs(methodRefs map[string]map[int]map[string]struct{}, g llvm.Value) {
+	if !hasUncommonTypeLayout(g.GlobalValueType()) {
+		return
+	}
+	init := g.Initializer()
+	if init.IsNil() || init.OperandsCount() != 3 {
+		return
+	}
+	methods := init.Operand(2)
+	for i := 0; i < methods.OperandsCount(); i++ {
+		method := methods.Operand(i)
+		if method.IsNil() || method.OperandsCount() != 4 {
+			continue
+		}
+		for j := 1; j < 4; j++ {
+			if ref := symbolNameOf(method.Operand(j)); ref != "" {
+				addMethodRef(methodRefs, g.Name(), i, ref)
+			}
+		}
+	}
+}
+
+func addMethodRef(methodRefs map[string]map[int]map[string]struct{}, typeName string, index int, sym string) {
+	if typeName == "" || sym == "" {
+		return
+	}
+	byIndex := methodRefs[typeName]
+	if byIndex == nil {
+		byIndex = make(map[int]map[string]struct{})
+		methodRefs[typeName] = byIndex
+	}
+	refs := byIndex[index]
+	if refs == nil {
+		refs = make(map[string]struct{})
+		byIndex[index] = refs
+	}
+	refs[sym] = struct{}{}
+}
+
+func isTypeGlobal(v llvm.Value) bool {
+	if v.IsNil() || v.IsAGlobalVariable().IsNil() {
+		return false
+	}
+	return isABITypeDescriptor(v.GlobalValueType())
+}
+
+func isABITypeDescriptor(t llvm.Type) bool {
+	if t.IsNil() || t.TypeKind() != llvm.StructTypeKind {
+		return false
+	}
+	if isRuntimeABIType(t) {
+		return true
+	}
+	elems := t.StructElementTypes()
+	return len(elems) != 0 && isRuntimeABIType(elems[0])
+}
+
+func isRuntimeABIType(t llvm.Type) bool {
+	return t.TypeKind() == llvm.StructTypeKind && strings.HasPrefix(t.StructName(), runtimeABIPrefix)
+}
+
+func hasUncommonTypeLayout(t llvm.Type) bool {
+	if t.IsNil() || t.TypeKind() != llvm.StructTypeKind {
+		return false
+	}
+	elems := t.StructElementTypes()
+	return len(elems) == 3 && elems[1].TypeKind() == llvm.StructTypeKind && elems[1].StructName() == runtimeABIPrefix+"UncommonType"
 }
 
 func scanModuleMetadata(input *Input, mod llvm.Module) error {

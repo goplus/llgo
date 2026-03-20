@@ -28,6 +28,9 @@ func TestBuildInputEmpty(t *testing.T) {
 	if input.TypeChildren == nil {
 		t.Fatal("BuildInput(empty) returned nil TypeChildren")
 	}
+	if input.MethodRefs == nil {
+		t.Fatal("BuildInput(empty) returned nil MethodRefs")
+	}
 }
 
 func TestBuildInputReadsMetadataAndOrdinaryEdges(t *testing.T) {
@@ -122,5 +125,252 @@ func TestBuildInputReadsMetadataAndOrdinaryEdges(t *testing.T) {
 		Owner: "owner.reflect",
 	}}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ReflectMethod = %#v, want %#v", got, want)
+	}
+}
+
+func TestBuildInputReadsTypeChildren(t *testing.T) {
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	mod := ctx.NewModule("types")
+	defer mod.Dispose()
+
+	i32 := ctx.Int32Type()
+	abiType := ctx.StructCreateNamed(runtimeABIPrefix + "Type")
+	abiType.StructSetBody([]llvm.Type{i32}, false)
+
+	zeroABIType := llvm.ConstNamedStruct(abiType, []llvm.Value{
+		llvm.ConstInt(i32, 0, false),
+	})
+
+	typeC := llvm.AddGlobal(mod, abiType, "_llgo_type.C")
+	typeC.SetInitializer(zeroABIType)
+
+	typeBType := llvm.StructType([]llvm.Type{abiType, llvm.PointerType(abiType, 0)}, false)
+	typeB := llvm.AddGlobal(mod, typeBType, "_llgo_type.B")
+	typeB.SetInitializer(llvm.ConstNamedStruct(typeBType, []llvm.Value{
+		zeroABIType,
+		typeC,
+	}))
+
+	helperElem := llvm.PointerType(abiType, 0)
+	helper := llvm.AddGlobal(mod, llvm.ArrayType(helperElem, 1), "helper")
+	helper.SetInitializer(llvm.ConstArray(helperElem, []llvm.Value{typeB}))
+
+	typeAType := llvm.StructType([]llvm.Type{abiType, llvm.PointerType(helper.GlobalValueType(), 0)}, false)
+	typeA := llvm.AddGlobal(mod, typeAType, "_llgo_type.A")
+	typeA.SetInitializer(llvm.ConstNamedStruct(typeAType, []llvm.Value{
+		zeroABIType,
+		helper,
+	}))
+
+	input, err := BuildInput([]llvm.Module{mod})
+	if err != nil {
+		t.Fatalf("BuildInput(type children) error = %v", err)
+	}
+
+	if got, want := input.TypeChildren["_llgo_type.A"], map[string]struct{}{
+		"_llgo_type.B": {},
+	}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("TypeChildren[A] = %#v, want %#v", got, want)
+	}
+	if got, want := input.TypeChildren["_llgo_type.B"], map[string]struct{}{
+		"_llgo_type.C": {},
+	}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("TypeChildren[B] = %#v, want %#v", got, want)
+	}
+	if _, ok := input.TypeChildren["_llgo_type.C"]; ok {
+		t.Fatalf("TypeChildren[C] = %#v, want no direct children", input.TypeChildren["_llgo_type.C"])
+	}
+	if _, ok := input.TypeChildren["helper"]; ok {
+		t.Fatalf("TypeChildren[helper] = %#v, helper global should not be a type node", input.TypeChildren["helper"])
+	}
+}
+
+func TestBuildInputSeparatesMethodRefsFromOrdinaryEdges(t *testing.T) {
+	ctx := llvm.NewContext()
+	defer ctx.Dispose()
+
+	mod := ctx.NewModule("methods")
+	defer mod.Dispose()
+
+	i32 := ctx.Int32Type()
+	void := ctx.VoidType()
+
+	abiType := ctx.StructCreateNamed(runtimeABIPrefix + "Type")
+	abiType.StructSetBody([]llvm.Type{i32}, false)
+	uncommonType := ctx.StructCreateNamed(runtimeABIPrefix + "UncommonType")
+	uncommonType.StructSetBody([]llvm.Type{i32}, false)
+	methodType := ctx.StructCreateNamed(runtimeABIPrefix + "Method")
+	methodType.StructSetBody([]llvm.Type{
+		abiType,
+		llvm.PointerType(void, 0),
+		llvm.PointerType(void, 0),
+		llvm.PointerType(void, 0),
+	}, false)
+
+	zeroABIType := llvm.ConstNamedStruct(abiType, []llvm.Value{
+		llvm.ConstInt(i32, 0, false),
+	})
+	zeroUncommon := llvm.ConstNamedStruct(uncommonType, []llvm.Value{
+		llvm.ConstInt(i32, 0, false),
+	})
+
+	mtyp := llvm.AddGlobal(mod, abiType, "_llgo_func$abc")
+	mtyp.SetInitializer(zeroABIType)
+
+	fnType := llvm.FunctionType(void, nil, false)
+	ifn := llvm.AddFunction(mod, "pkg.T.ifn", fnType)
+	ifnBlock := ctx.AddBasicBlock(ifn, "entry")
+	builder := ctx.NewBuilder()
+	defer builder.Dispose()
+	builder.SetInsertPointAtEnd(ifnBlock)
+	builder.CreateRetVoid()
+
+	tfn := llvm.AddFunction(mod, "pkg.T.tfn", fnType)
+	tfnBlock := ctx.AddBasicBlock(tfn, "entry")
+	builder.SetInsertPointAtEnd(tfnBlock)
+	builder.CreateRetVoid()
+
+	methods := llvm.ConstArray(methodType, []llvm.Value{
+		llvm.ConstNamedStruct(methodType, []llvm.Value{
+			zeroABIType,
+			mtyp,
+			ifn,
+			tfn,
+		}),
+	})
+	typeTType := llvm.StructType([]llvm.Type{abiType, uncommonType, llvm.ArrayType(methodType, 1)}, false)
+	typeT := llvm.AddGlobal(mod, typeTType, "_llgo_type.T")
+	typeT.SetInitializer(llvm.ConstNamedStruct(typeTType, []llvm.Value{
+		zeroABIType,
+		zeroUncommon,
+		methods,
+	}))
+
+	input, err := BuildInput([]llvm.Module{mod})
+	if err != nil {
+		t.Fatalf("BuildInput(method refs) error = %v", err)
+	}
+
+	if got, want := input.MethodRefs["_llgo_type.T"][0], map[string]struct{}{
+		"_llgo_func$abc": {},
+		"pkg.T.ifn":      {},
+		"pkg.T.tfn":      {},
+	}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("MethodRefs[T][0] = %#v, want %#v", got, want)
+	}
+	if got := input.OrdinaryEdges["_llgo_type.T"]; len(got) != 0 {
+		t.Fatalf("OrdinaryEdges[type] = %#v, want no method refs in ordinary graph", got)
+	}
+}
+
+func TestAnalyzeInputFollowsMethodRefs(t *testing.T) {
+	input := Input{
+		OrdinaryEdges: map[string]map[string]struct{}{
+			"root":       {"owner.useiface": {}},
+			"method.one": {"owner.named": {}},
+		},
+		TypeChildren: make(map[string]map[string]struct{}),
+		MethodRefs: map[string]map[int]map[string]struct{}{
+			"_llgo_type.T": {
+				0: {"method.one": {}},
+				1: {"method.two": {}},
+			},
+		},
+		UseIface: []UseIfaceRow{{
+			Owner:  "owner.useiface",
+			Target: "_llgo_type.T",
+		}},
+		UseIfaceMethod: []UseIfaceMethodRow{{
+			Owner: "owner.useiface",
+			Name:  "IfaceM",
+			MTyp:  "_llgo_func$iface",
+		}},
+		MethodOff: []MethodOffRow{
+			{TypeName: "_llgo_type.T", Index: 0, Name: "IfaceM", MTyp: "_llgo_func$iface"},
+			{TypeName: "_llgo_type.T", Index: 1, Name: "NamedM", MTyp: "_llgo_func$named"},
+		},
+		UseNamedMethod: []UseNamedMethodRow{{
+			Owner: "owner.named",
+			Name:  "NamedM",
+		}},
+	}
+
+	got := AnalyzeInput(input, []string{"root"})
+	want := Result{
+		"_llgo_type.T": {
+			0: {},
+			1: {},
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("AnalyzeInput(method refs) = %#v, want %#v", got, want)
+	}
+}
+
+func TestAnalyzeInputPropagatesUsedInIfaceToChildTypes(t *testing.T) {
+	input := Input{
+		OrdinaryEdges: map[string]map[string]struct{}{
+			"root": {"owner.useiface": {}},
+		},
+		TypeChildren: map[string]map[string]struct{}{
+			"_llgo_type.Parent": {"_llgo_type.Child": {}},
+		},
+		MethodRefs: map[string]map[int]map[string]struct{}{
+			"_llgo_type.Child": {0: {"child.method": {}}},
+		},
+		UseIface: []UseIfaceRow{{
+			Owner:  "owner.useiface",
+			Target: "_llgo_type.Parent",
+		}},
+		UseIfaceMethod: []UseIfaceMethodRow{{
+			Owner: "owner.useiface",
+			Name:  "M",
+			MTyp:  "_llgo_func$child",
+		}},
+		MethodOff: []MethodOffRow{{
+			TypeName: "_llgo_type.Child",
+			Index:    0,
+			Name:     "M",
+			MTyp:     "_llgo_func$child",
+		}},
+	}
+
+	got := AnalyzeInput(input, []string{"root"})
+	want := Result{
+		"_llgo_type.Child": {0: {}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("AnalyzeInput(used in iface) = %#v, want %#v", got, want)
+	}
+}
+
+func TestAnalyzeInputReflectKeepsExportedMethods(t *testing.T) {
+	input := Input{
+		OrdinaryEdges: map[string]map[string]struct{}{
+			"root": {"owner.reflect": {}},
+		},
+		TypeChildren: make(map[string]map[string]struct{}),
+		MethodRefs:   make(map[string]map[int]map[string]struct{}),
+		UseIface: []UseIfaceRow{{
+			Owner:  "owner.reflect",
+			Target: "_llgo_type.T",
+		}},
+		ReflectMethod: []ReflectMethodRow{{
+			Owner: "owner.reflect",
+		}},
+		MethodOff: []MethodOffRow{
+			{TypeName: "_llgo_type.T", Index: 0, Name: "Exported", MTyp: "_llgo_func$exported"},
+			{TypeName: "_llgo_type.T", Index: 1, Name: "pkg.unexported", MTyp: "_llgo_func$unexported"},
+		},
+	}
+
+	got := AnalyzeInput(input, []string{"root"})
+	want := Result{
+		"_llgo_type.T": {0: {}},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("AnalyzeInput(reflect) = %#v, want %#v", got, want)
 	}
 }
