@@ -120,7 +120,6 @@ ignore_esp32c3_basic=(
   "./_demo/c/asmcall"
   "./_demo/c/asmfullcall"
   "./_demo/c/cargs"
-  "./_demo/c/cabi" # timeout: emulator panic (Store/AMO access fault), no auto-exit
   "./_demo/c/catomic"
   "./_demo/c/cexec"
   "./_demo/c/cgofull"
@@ -145,7 +144,6 @@ ignore_esp32c3_basic=(
   "./_demo/go/async/timeout" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
   "./_demo/go/checkfile"
   "./_demo/go/commandrun"
-  "./_demo/go/complex" # timeout: emulator panic (Store/AMO access fault), no auto-exit
   "./_demo/go/createtemp-1654" # fast fail: panic internal/bytealg selected .s files require plan9asm translation
   "./_demo/go/cgo" # fast fail: build constraints exclude all Go files for esp32c3-basic
   "./_demo/go/embedunexport-1598" # fast fail: missing runtime/internal/lib modules ("no required module provides package ..."; suggests go get)
