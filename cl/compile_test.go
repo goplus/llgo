@@ -114,6 +114,47 @@ var embedTargetConfigs = []embedTargetConfig{
 			},
 		},
 	},
+	{
+		target: "esp32",
+		ignoreByDir: map[string][]string{
+			"./_testgo": {
+				"./_testgo/abimethod", // panic: internal/bytealg selected .s files require plan9asm translation
+				"./_testgo/alias",     // unexpected output
+				"./_testgo/cgodefer",  // panic: cannot build SSA for packages
+				"./_testgo/cgopython", // panic: cannot build SSA for packages
+				"./_testgo/defer4",    // runtime output: fatal error
+				"./_testgo/indexerr",  // runtime output: fatal error
+				"./_testgo/invoke",    // unexpected output
+				"./_testgo/makeslice", // runtime output: fatal error
+				"./_testgo/multiret",  // unexpected output
+				"./_testgo/select",    // timeout: emulator did not auto-exit
+				"./_testgo/sigsegv",   // unexpected output
+				"./_testgo/struczero", // timeout: emulator did not auto-exit
+			},
+			"./_testlibc": {
+				"./_testlibc/atomic",   // unexpected output
+				"./_testlibc/demangle", // link error: ld.lld unknown argument -Wl,-search_paths_first
+				"./_testlibc/once",     // panic: cannot build SSA for packages
+				"./_testlibc/setjmp",   // link error: ld.lld undefined symbol stderr
+				"./_testlibc/sqlite",   // link error: ld.lld unable to find library -lsqlite3
+			},
+			"./_testrt": {
+				"./_testrt/asmfull",  // unexpected output
+				"./_testrt/cast",     // timeout: emulator did not auto-exit
+				"./_testrt/complex",  // unexpected output
+				"./_testrt/fprintf",  // link error: ld.lld undefined symbol __stderrp
+				"./_testrt/hello",    // panic: cannot build SSA for packages
+				"./_testrt/linkname", // unexpected output
+				"./_testrt/strlen",   // panic: runtime index out of range
+				"./_testrt/struct",   // panic: runtime index out of range
+				"./_testrt/tpfunc",   // unexpected output
+				"./_testrt/typalias", // panic: runtime index out of range
+			},
+			"./_testdata": {
+				"./_testdata/cpkgimp", // unexpected output
+			},
+		},
+	},
 }
 
 func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
