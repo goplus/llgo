@@ -278,6 +278,58 @@ func f() {
 	}
 }
 
+func TestModeBuildStringFieldInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-miface-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/miface\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type S struct{ name string }
+
+func main() {
+	s := &S{name: "x"}
+	v := any(s.name)
+	fmt.Println(v.(string))
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "miface")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "x\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
 func TestModeGenSetFinalizerUsesTypedHelper(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {

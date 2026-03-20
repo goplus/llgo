@@ -247,6 +247,30 @@ func (p *context) canSkipMakeInterfaceLoad(v *ssa.MakeInterface) bool {
 	return false
 }
 
+func singleNonDebugMakeInterfaceUse(load *ssa.UnOp) (*ssa.MakeInterface, bool) {
+	if load == nil {
+		return nil, false
+	}
+	refs := load.Referrers()
+	if refs == nil {
+		return nil, false
+	}
+	var mi *ssa.MakeInterface
+	count := 0
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.MakeInterface:
+			mi = ref
+			count++
+		default:
+			return nil, false
+		}
+	}
+	return mi, count == 1 && mi != nil
+}
+
 func sameTypeAssertOnlyMakeInterface(v *ssa.MakeInterface) bool {
 	if v == nil {
 		return false
@@ -4231,8 +4255,34 @@ func (p *context) touchConservativeSlot(b llssa.Builder, slot llssa.Expr, force 
 }
 
 func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction) {
+	skip := make(map[ssa.Value]bool)
+	if ret, ok := instr.(*ssa.Return); ok {
+		for _, r := range ret.Results {
+			load, ok := r.(*ssa.UnOp)
+			if !ok || load.Op != token.MUL {
+				continue
+			}
+			if alloc, ok := load.X.(*ssa.Alloc); ok {
+				// clearReturnValueRoots already clears the pointee for return values
+				// loaded directly from allocs. Do not nil the tracked pointer slot
+				// before that happens.
+				skip[alloc] = true
+			}
+		}
+	}
+	if load, ok := instr.(*ssa.UnOp); ok && load.Op == token.MUL {
+		if alloc, ok := load.X.(*ssa.Alloc); ok && returnedDirectly(load) {
+			skip[alloc] = true
+		}
+		if _, ok := singleNonDebugMakeInterfaceUse(load); ok {
+			skip[load.X] = true
+		}
+	}
 	cleared := false
 	for _, v := range p.valuePostClears[instr] {
+		if skip[v] {
+			continue
+		}
 		slot, ok := p.valueSlots[v]
 		if !ok || slot.Type == nil {
 			continue
@@ -4254,6 +4304,29 @@ func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction)
 	if cleared {
 		p.clobberPointerRegs(b)
 	}
+}
+
+func returnedDirectly(v ssa.Value) bool {
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	foundReturn := false
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Return:
+			if operandUsesValue(ref, v) {
+				foundReturn = true
+				continue
+			}
+			return false
+		default:
+			return false
+		}
+	}
+	return foundReturn
 }
 
 func (p *context) mapUpdateKeyPtr(b llssa.Builder, key ssa.Value) (llssa.Expr, bool) {
@@ -4994,6 +5067,11 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
 			if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
 				ret = b.MakeInterfaceFromPtr(t, ptr)
+				if p.shouldDelayLoadAddrClearToMakeInterface(unop, v) {
+					if p.clearTrackedValueSlot(b, unop.X) {
+						p.clobberPointerRegs(b)
+					}
+				}
 				break
 			}
 		}
@@ -5610,6 +5688,41 @@ func (p *context) clearReturnValueRoots(b llssa.Builder, v ssa.Value) {
 	}
 	b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
 	p.touchConservativeSlot(b, slot, false)
+}
+
+func (p *context) clearTrackedValueSlot(b llssa.Builder, v ssa.Value) bool {
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil {
+		return false
+	}
+	if p.hiddenValueSlots[v] {
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+		p.touchConservativeSlot(b, slot, true)
+		if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+			b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+			p.touchConservativeSlot(b, root, false)
+		}
+		return true
+	}
+	b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+	p.touchConservativeSlot(b, slot, false)
+	return true
+}
+
+func (p *context) shouldDelayLoadAddrClearToMakeInterface(load *ssa.UnOp, mi *ssa.MakeInterface) bool {
+	if load == nil || mi == nil {
+		return false
+	}
+	use, ok := singleNonDebugMakeInterfaceUse(load)
+	if !ok || use != mi {
+		return false
+	}
+	for _, v := range p.valuePostClears[load] {
+		if v == load.X {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *context) clearReturnAllocRoot(b llssa.Builder, alloc *ssa.Alloc) {
