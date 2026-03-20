@@ -1,6 +1,7 @@
 package dce
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -438,6 +439,56 @@ func TestAnalyzeInvokeModule(t *testing.T) {
 	}
 }
 
+func TestFormatResult(t *testing.T) {
+	result := Result{
+		"_llgo_type.B": {2: {}, 0: {}},
+		"_llgo_type.A": {1: {}},
+	}
+	got := FormatResult(result)
+	want := "_llgo_type.A: [1]\n_llgo_type.B: [0 2]\n"
+	if got != want {
+		t.Fatalf("FormatResult() = %q, want %q", got, want)
+	}
+}
+
+func TestAnalyzeModuleOutputs(t *testing.T) {
+	tests := []struct {
+		name   string
+		llPath string
+		root   string
+		golden string
+	}{
+		{
+			name:   "closureall",
+			llPath: "../../../cl/_testgo/closureall/out.ll",
+			root:   "github.com/goplus/llgo/cl/_testgo/closureall.main",
+			golden: "testdata/closureall.txt",
+		},
+		{
+			name:   "invoke",
+			llPath: "../../../cl/_testgo/invoke/out.ll",
+			root:   "github.com/goplus/llgo/cl/_testgo/invoke.main",
+			golden: "testdata/invoke.txt",
+		},
+		{
+			name:   "reflectmethod",
+			llPath: "../../../cl/_testgo/reflectmethod/out.ll",
+			root:   "github.com/goplus/llgo/cl/_testgo/reflectmethod.main",
+			golden: "testdata/reflectmethod.txt",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mod := loadIRModule(t, tt.llPath)
+			got, err := Analyze([]llvm.Module{mod}, []string{tt.root})
+			if err != nil {
+				t.Fatalf("Analyze(%s) error = %v", tt.name, err)
+			}
+			assertGoldenText(t, tt.golden, FormatResult(got))
+		})
+	}
+}
+
 func loadIRModule(t *testing.T, rel string) llvm.Module {
 	t.Helper()
 
@@ -459,4 +510,17 @@ func loadIRModule(t *testing.T, rel string) llvm.Module {
 	}
 	t.Cleanup(mod.Dispose)
 	return mod
+}
+
+func assertGoldenText(t *testing.T, rel string, got string) {
+	t.Helper()
+
+	path := filepath.Clean(rel)
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", path, err)
+	}
+	if !bytes.Equal([]byte(got), want) {
+		t.Fatalf("golden mismatch for %s\n==> got:\n%s==> want:\n%s", path, got, string(want))
+	}
 }

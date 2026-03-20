@@ -1,6 +1,9 @@
 package dce
 
 import (
+	"sort"
+	"strconv"
+	"strings"
 	"unicode"
 
 	llvm "github.com/goplus/llvm"
@@ -256,4 +259,38 @@ func isExportedMethod(name string) bool {
 		return unicode.IsUpper(r)
 	}
 	return false
+}
+
+// FormatResult renders the analyzer output as stable text lines:
+//
+//	type symbol: [sorted method indexes]
+func FormatResult(result Result) string {
+	if len(result) == 0 {
+		return ""
+	}
+	typeNames := make([]string, 0, len(result))
+	for typeName := range result {
+		typeNames = append(typeNames, typeName)
+	}
+	sort.Strings(typeNames)
+
+	var b strings.Builder
+	for _, typeName := range typeNames {
+		indexes := make([]int, 0, len(result[typeName]))
+		for index := range result[typeName] {
+			indexes = append(indexes, index)
+		}
+		sort.Ints(indexes)
+
+		b.WriteString(typeName)
+		b.WriteString(": [")
+		for i, index := range indexes {
+			if i != 0 {
+				b.WriteByte(' ')
+			}
+			b.WriteString(strconv.Itoa(index))
+		}
+		b.WriteString("]\n")
+	}
+	return b.String()
 }
