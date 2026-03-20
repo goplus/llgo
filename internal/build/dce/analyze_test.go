@@ -378,6 +378,29 @@ func TestAnalyzeInputReflectKeepsExportedMethods(t *testing.T) {
 	}
 }
 
+func TestAnalyzeInputKeepsEmptyMethodSetsForPrunableTypes(t *testing.T) {
+	input := Input{
+		UseIface: []UseIfaceRow{{
+			Owner:  "main",
+			Target: "_llgo_type.T",
+		}},
+		MethodOff: []MethodOffRow{{
+			TypeName: "_llgo_type.T",
+			Index:    0,
+			Name:     "M",
+			MTyp:     "_llgo_func$M",
+		}},
+	}
+
+	got := AnalyzeInput(input, []string{"main"})
+	want := Result{
+		"_llgo_type.T": {},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("AnalyzeInput(empty method set) = %#v, want %#v", got, want)
+	}
+}
+
 func TestAnalyzeClosureallModule(t *testing.T) {
 	mod := loadIRModule(t, "../../../cl/_testgo/closureall/out.ll")
 	got, err := Analyze([]llvm.Module{mod}, []string{
@@ -387,6 +410,7 @@ func TestAnalyzeClosureallModule(t *testing.T) {
 		t.Fatalf("Analyze(closureall) error = %v", err)
 	}
 	want := Result{
+		"_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S":  {},
 		"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S": {0: {}},
 	}
 	if !reflect.DeepEqual(got, want) {

@@ -106,6 +106,7 @@ func AnalyzeInput(input Input, roots []string) Result {
 			break
 		}
 	}
+	a.ensurePrunableTypes()
 	return a.result
 }
 
@@ -252,6 +253,18 @@ func (a *analyzer) isReachable(sym string) bool {
 func (a *analyzer) isUsedInIface(typeName string) bool {
 	_, ok := a.usedInIface[typeName]
 	return ok
+}
+
+func (a *analyzer) ensurePrunableTypes() {
+	for _, row := range a.input.MethodOff {
+		if !a.isUsedInIface(row.TypeName) {
+			continue
+		}
+		if _, ok := a.result[row.TypeName]; ok {
+			continue
+		}
+		a.result[row.TypeName] = make(map[int]struct{})
+	}
 }
 
 func isExportedMethod(name string) bool {
