@@ -52,6 +52,60 @@ func constBool(v ssa.Value) (ret bool, ok bool) {
 	return
 }
 
+func isNamedType(t types.Type, pkgPath, name string) bool {
+	named, ok := types.Unalias(t).(*types.Named)
+	if !ok {
+		return false
+	}
+	obj := named.Obj()
+	return obj != nil && obj.Name() == name && obj.Pkg() != nil && obj.Pkg().Path() == pkgPath
+}
+
+func staticCallMethod(call *ssa.CallCommon) (recv types.Type, method string, ok bool) {
+	fn := call.StaticCallee()
+	if fn == nil || fn.Signature == nil || fn.Signature.Recv() == nil {
+		return nil, "", false
+	}
+	return fn.Signature.Recv().Type(), fn.Name(), true
+}
+
+func (p *context) markReflectMethodCall(call *ssa.CallCommon) {
+	owner := p.fn.Name()
+
+	if method := call.Method; method != nil {
+		if !isNamedType(call.Value.Type(), "reflect", "Type") {
+			return
+		}
+		switch method.Name() {
+		case "Method":
+			p.pkg.EmitReflectMethod(owner)
+		case "MethodByName":
+			if name, ok := constStr(call.Args[0]); ok {
+				p.pkg.EmitUseNamedMethod(owner, name)
+				return
+			}
+			p.pkg.EmitReflectMethod(owner)
+		}
+		return
+	}
+
+	recv, methodName, ok := staticCallMethod(call)
+	if ok && isNamedType(recv, "reflect", "Value") {
+		switch methodName {
+		case "Method":
+			p.pkg.EmitReflectMethod(owner)
+		case "MethodByName":
+			if method, ok := constStr(call.Args[len(call.Args)-1]); ok {
+				p.pkg.EmitUseNamedMethod(owner, method)
+				return
+			}
+			p.pkg.EmitReflectMethod(owner)
+		}
+		return
+	}
+
+}
+
 // func pystr(string) *py.Object
 func pystr(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	if len(args) == 1 {
@@ -681,6 +735,7 @@ func (p *context) pkgNoInit(pkg *types.Package) bool {
 // -----------------------------------------------------------------------------
 
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
+	p.markReflectMethodCall(call)
 	cv := call.Value
 	if mthd := call.Method; mthd != nil {
 		o := p.compileValue(b, cv)

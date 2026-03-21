@@ -39,6 +39,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 
 	"github.com/goplus/llgo/cl"
+	"github.com/goplus/llgo/internal/build/dce"
 	"github.com/goplus/llgo/internal/cabi"
 	"github.com/goplus/llgo/internal/clang"
 	"github.com/goplus/llgo/internal/crosscompile"
@@ -988,6 +989,11 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// This is compiled directly to .o and added to linkInputs (not cached)
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit, abiSymbols)
+	if ctx.buildConf.BuildMode == BuildModeExe {
+		if err := applyDCEOverrides(ctx, linkedOrder, entryPkg, verbose); err != nil {
+			return err
+		}
+	}
 	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
 	if err != nil {
 		return err
@@ -1046,6 +1052,42 @@ func linkedModuleGlobals(pkgs []Package) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+func dceEntryRoots() []string {
+	return []string{"main", "_start", "__main_argc_argv"}
+}
+
+func dceSourceModules(pkgs []Package) []gllvm.Module {
+	mods := make([]gllvm.Module, 0, len(pkgs))
+	for _, pkg := range pkgs {
+		if pkg == nil || pkg.LPkg == nil {
+			continue
+		}
+		mods = append(mods, pkg.LPkg.Module())
+	}
+	return mods
+}
+
+func applyDCEOverrides(ctx *context, pkgs []Package, entryPkg Package, verbose bool) error {
+	srcMods := dceSourceModules(pkgs)
+	mods := append(append([]gllvm.Module{}, srcMods...), entryPkg.LPkg.Module())
+	result, err := dce.Analyze(mods, dceEntryRoots())
+	if err != nil {
+		return fmt.Errorf("analyze link-time method reachability: %w", err)
+	}
+	if verbose {
+		report := dce.FormatResult(result)
+		if report == "" {
+			fmt.Fprintln(os.Stderr, "[dce] live methods: none")
+		} else {
+			fmt.Fprintf(os.Stderr, "[dce] live methods:\n%s", report)
+		}
+	}
+	if err := dce.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, result); err != nil {
+		return fmt.Errorf("emit dce type overrides: %w", err)
+	}
+	return nil
 }
 
 // isRuntimePkg reports whether the package path belongs to the llgo runtime tree.

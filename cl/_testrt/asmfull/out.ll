@@ -170,3 +170,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
+
+!llgo.useiface = !{!0}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/asmfull.main", !"_llgo_int"}

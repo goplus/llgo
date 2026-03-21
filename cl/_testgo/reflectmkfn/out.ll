@@ -204,3 +204,9 @@ declare i64 @reflect.Value.Int(%reflect.Value)
 declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @strings.Repeat(%"github.com/goplus/llgo/runtime/internal/runtime.String", i64)
 
 declare %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main", !"_llgo_int"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmkfn.main$1", !"_llgo_string"}

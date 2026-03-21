@@ -239,3 +239,16 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+!llgo.methodoff = !{!2, !3, !4, !5}
+!llgo.useifacemethod = !{!6, !7}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/vamethod.main", !"*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/vamethod.main", !"_llgo_string"}
+!2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.T", i32 0, !"Printf", !"_llgo_func$sSO5Bw-E3E7TeJqIJF_OmmojTYyqWBhYrUwNYJNw7Bs"}
+!3 = !{!"_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt", i32 0, !"Printf", !"_llgo_func$sSO5Bw-E3E7TeJqIJF_OmmojTYyqWBhYrUwNYJNw7Bs"}
+!4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt", i32 0, !"Printf", !"_llgo_func$sSO5Bw-E3E7TeJqIJF_OmmojTYyqWBhYrUwNYJNw7Bs"}
+!5 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.CFmt", i32 1, !"SetFormat", !"_llgo_func$vAfTC3ZLX0_lZI-ZNliu0_DkE266FSmKXxj_cqKPPkA"}
+!6 = !{!"github.com/goplus/llgo/cl/_testrt/vamethod.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.IFmt", !"SetFormat", !"_llgo_func$vAfTC3ZLX0_lZI-ZNliu0_DkE266FSmKXxj_cqKPPkA"}
+!7 = !{!"github.com/goplus/llgo/cl/_testrt/vamethod.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/vamethod.IFmt", !"Printf", !"_llgo_func$sSO5Bw-E3E7TeJqIJF_OmmojTYyqWBhYrUwNYJNw7Bs"}

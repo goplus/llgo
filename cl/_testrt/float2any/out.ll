@@ -157,3 +157,10 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+!llgo.useiface = !{!0, !1, !2, !3}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.check32", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.check64", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.main", !"_llgo_float32"}
+!3 = !{!"github.com/goplus/llgo/cl/_testrt/float2any.main", !"_llgo_float64"}
