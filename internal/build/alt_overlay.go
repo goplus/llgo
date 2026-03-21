@@ -60,6 +60,7 @@ func rewriteAltImports(src []byte) ([]byte, bool, error) {
 // instantiation in importing packages like sync.
 var stdlibSourceAltPkgs = map[string]bool{
 	"internal/sync": true,
+	"math":          true,
 }
 
 func buildAltOverlay(base map[string][]byte, runtimeDir string, pkgPaths []string) (map[string][]byte, error) {

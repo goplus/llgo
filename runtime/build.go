@@ -53,6 +53,7 @@ var altPkgs = map[string]altPkgMode{
 	"internal/runtime/syscall":            altPkgReplace,
 	"internal/sync":                       altPkgReplace,
 	"iter":                                altPkgReplace,
+	"math":                                altPkgReplace,
 	"reflect":                             altPkgReplace,
 	"runtime":                             altPkgReplace,
 	"sync/atomic":                         altPkgReplace,

@@ -50,6 +50,18 @@ func TestHasAltPkgForTarget_InternalRuntimeSyscallOnlyOnBaremetal(t *testing.T) 
 	}
 }
 
+func TestHasAltPkgForTarget_MathOnlyOnWasm(t *testing.T) {
+	wasm := &Config{Goos: "wasip1", Goarch: "wasm", AbiMode: cabi.ModeAllFunc}
+	if !hasAltPkgForTarget(wasm, "math") {
+		t.Fatal("math should use alt package on wasm")
+	}
+
+	amd64 := &Config{Goos: "linux", Goarch: "amd64", AbiMode: cabi.ModeAllFunc}
+	if hasAltPkgForTarget(amd64, "math") {
+		t.Fatal("math should not use alt package on amd64")
+	}
+}
+
 func TestShouldSkipPlan9AsmFile(t *testing.T) {
 	if !shouldSkipPlan9AsmFile("syscall", "darwin", "/goroot/src/syscall/zsyscall_darwin_arm64.s") {
 		t.Fatal("darwin syscall zsyscall trampolines should be skipped")

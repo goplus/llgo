@@ -398,6 +398,11 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 	if !llruntime.HasAltPkg(pkgPath) {
 		return false
 	}
+	if pkgPath == "math" {
+		if conf == nil || conf.Goarch != "wasm" {
+			return false
+		}
+	}
 	if pkgPath == "internal/runtime/syscall" {
 		if conf == nil || (conf.Target == "" && !hasTag(conf.Tags, "baremetal")) {
 			return false
