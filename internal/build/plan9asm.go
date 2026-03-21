@@ -480,11 +480,12 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		return paths, nil
 	}
 
+	lookupPath := pkgSFilesLookupPath(pkg.PkgPath)
 	args := []string{"list", "-json"}
 	if ctx.conf != nil && len(ctx.conf.BuildFlags) > 0 {
 		args = append(args, ctx.conf.BuildFlags...)
 	}
-	args = append(args, pkg.PkgPath)
+	args = append(args, lookupPath)
 
 	cmd := exec.Command("go", args...)
 	cmd.Dir = ctx.conf.Dir
@@ -502,7 +503,7 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 			ctx.sfilesCache[pkg.ID] = nil
 			return nil, nil
 		}
-		return nil, fmt.Errorf("go list -json %s failed: %w\n%s", pkg.PkgPath, err, strings.TrimSpace(errBuf.String()))
+		return nil, fmt.Errorf("go list -json %s (for %s) failed: %w\n%s", lookupPath, pkg.PkgPath, err, strings.TrimSpace(errBuf.String()))
 	}
 
 	var lp struct {
@@ -510,7 +511,7 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		SFiles []string `json:"SFiles"`
 	}
 	if err := json.Unmarshal(out, &lp); err != nil {
-		return nil, fmt.Errorf("go list -json %s: parse: %w", pkg.PkgPath, err)
+		return nil, fmt.Errorf("go list -json %s (for %s): parse: %w", lookupPath, pkg.PkgPath, err)
 	}
 
 	// internal/chacha8rand has highly optimized arch asm on amd64/arm64.
@@ -537,6 +538,13 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	}
 	ctx.sfilesCache[pkg.ID] = paths
 	return paths, nil
+}
+
+func pkgSFilesLookupPath(pkgPath string) string {
+	if strings.HasPrefix(pkgPath, "runtime/internal/") {
+		return "internal/runtime/" + strings.TrimPrefix(pkgPath, "runtime/internal/")
+	}
+	return pkgPath
 }
 
 func shouldIgnorePkgSFilesListFailure(pkgPath, stderr string) bool {
