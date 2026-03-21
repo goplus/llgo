@@ -493,6 +493,10 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		if ee, ok := err.(*exec.ExitError); ok && len(ee.Stderr) > 0 {
 			errBuf.Write(ee.Stderr)
 		}
+		if shouldIgnorePkgSFilesListFailure(pkg.PkgPath, errBuf.String()) {
+			ctx.sfilesCache[pkg.ID] = nil
+			return nil, nil
+		}
 		return nil, fmt.Errorf("go list -json %s failed: %w\n%s", pkg.PkgPath, err, strings.TrimSpace(errBuf.String()))
 	}
 
@@ -528,6 +532,13 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	}
 	ctx.sfilesCache[pkg.ID] = paths
 	return paths, nil
+}
+
+func shouldIgnorePkgSFilesListFailure(pkgPath, stderr string) bool {
+	if pkgPath != "runtime/internal/atomic" {
+		return false
+	}
+	return strings.Contains(stderr, "package runtime/internal/atomic is not in std")
 }
 
 func isPkgTestSFile(name string) bool {
