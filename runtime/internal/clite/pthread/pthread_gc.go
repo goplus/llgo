@@ -77,3 +77,10 @@ func Create(pthread *Thread, attr *Attr, routine RoutineFunc, arg c.Pointer) c.I
 //
 //go:linkname Join C.GC_pthread_join
 func Join(thread Thread, retval *c.Pointer) c.Int
+
+// NativeJoin bypasses Boehm's pthread wrapper. This is used only for
+// joining the process main thread at shutdown, where GC_pthread_join can
+// block indefinitely after heavy GC activity on some hosts.
+//
+//go:linkname NativeJoin C.pthread_join
+func NativeJoin(thread Thread, retval *c.Pointer) c.Int

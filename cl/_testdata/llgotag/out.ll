@@ -10,6 +10,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/llgotag.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/llgotag.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -20,3 +21,5 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

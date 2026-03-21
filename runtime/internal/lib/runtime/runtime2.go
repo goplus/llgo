@@ -5,7 +5,10 @@
 package runtime
 
 import (
+	"strconv"
+
 	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
+	iruntime "github.com/goplus/llgo/runtime/internal/runtime"
 )
 
 // Layout of in-memory per-function information prepared by linker
@@ -17,7 +20,50 @@ type _func struct {
 }
 
 func Stack(buf []byte, all bool) int {
-	return 0
+	if len(buf) == 0 {
+		return 0
+	}
+	n := 0
+	appendString := func(s string) {
+		if n < len(buf) {
+			n += copy(buf[n:], s)
+		} else {
+			n += len(s)
+		}
+	}
+	appendInt := func(v int) {
+		var tmp [32]byte
+		out := strconv.AppendInt(tmp[:0], int64(v), 10)
+		appendString(string(out))
+	}
+	appendString("goroutine 1 [running]:\n")
+	var pcs [64]uintptr
+	npcs := iruntime.PanicTrace(pcs[:])
+	if npcs == 0 {
+		npcs = Callers(1, pcs[:])
+	}
+	frames := CallersFrames(pcs[:npcs])
+	for {
+		fr, more := frames.Next()
+		if fr.Function != "" {
+			appendString(fr.Function)
+		} else {
+			appendString("???")
+		}
+		appendString("\n\t")
+		if fr.File != "" {
+			appendString(fr.File)
+		} else {
+			appendString("???")
+		}
+		appendString(":")
+		appendInt(fr.Line)
+		appendString("\n")
+		if !more {
+			break
+		}
+	}
+	return n
 }
 
 type traceError string

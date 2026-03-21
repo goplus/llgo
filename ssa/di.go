@@ -808,6 +808,9 @@ func (b Builder) DIGlobal(v Expr, name string, pos token.Position) {
 	if _, ok := b.Pkg.glbDbgVars[v]; ok {
 		return
 	}
+	if !v.impl.IsAGlobalAlias().IsNil() {
+		return
+	}
 	gv := b.di().createGlobalVariableExpression(
 		b.Pkg.cu,
 		pos,

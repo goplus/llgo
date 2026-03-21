@@ -8,8 +8,19 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/allocinloop"
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, 1
-  ret i64 %1
+  %1 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, ptr %1, align 8
+  call void @runtime.ClobberPointerRegs()
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %3 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %1, align 8
+  %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %4, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %2)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %1, align 8
+  call void @runtime.TouchConservativeSlot(ptr %1, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  ret i64 %5
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"() {
@@ -17,25 +28,30 @@ _llgo_0:
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %0 = phi i64 [ 0, %_llgo_0 ], [ %4, %_llgo_2 ]
-  %1 = phi i64 [ 0, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %0 = phi i64 [ 0, %_llgo_0 ], [ %5, %_llgo_2 ]
+  %1 = phi i64 [ 0, %_llgo_0 ], [ %6, %_llgo_2 ]
   %2 = icmp slt i64 %1, 10000000
   br i1 %2, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
-  %4 = add i64 %0, %3
-  %5 = add i64 %1, 1
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  %5 = add i64 %0, %4
+  %6 = add i64 %1, 1
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %7)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -49,9 +65,21 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.main"() {
 _llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %0)
   ret void
 }
+
+declare void @runtime.ClobberPointerRegs()
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
+
+declare void @runtime.TouchConservativeSlot(ptr, i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 

@@ -265,7 +265,54 @@ func typeStringWithPkg(t types.Type) string {
 	})
 }
 
+func containsOpaqueGoSSAType(t types.Type) bool {
+	seen := map[types.Type]bool{}
+	var walk func(types.Type) bool
+	walk = func(t types.Type) bool {
+		if t == nil || seen[t] {
+			return false
+		}
+		seen[t] = true
+		if isOpaqueGoSSAType(t) {
+			return true
+		}
+		switch tt := t.(type) {
+		case *types.Pointer:
+			return walk(tt.Elem())
+		case *types.Slice:
+			return walk(tt.Elem())
+		case *types.Array:
+			return walk(tt.Elem())
+		case *types.Map:
+			return walk(tt.Key()) || walk(tt.Elem())
+		case *types.Chan:
+			return walk(tt.Elem())
+		case *types.Tuple:
+			for i := 0; i < tt.Len(); i++ {
+				if walk(tt.At(i).Type()) {
+					return true
+				}
+			}
+		case *types.Signature:
+			return walk(tt.Params()) || walk(tt.Results())
+		case *types.Named:
+			return walk(tt.Underlying())
+		case *types.Struct:
+			for i := 0; i < tt.NumFields(); i++ {
+				if walk(tt.Field(i).Type()) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return walk(t)
+}
+
 func (p Program) rawType(raw types.Type) Type {
+	if containsOpaqueGoSSAType(raw) {
+		return p.toType(raw)
+	}
 	if v := p.typs.At(raw); v != nil {
 		return v.(Type)
 	}
@@ -385,8 +432,11 @@ func (p Program) toType(raw types.Type) Type {
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
-		elem := p.rawType(t.Elem())
-		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
+		// LLVM pointers are opaque in our backend, so lowering the pointee type
+		// is unnecessary and can recurse forever on valid Go types such as:
+		//   type T18 *[10]T19
+		//   type T19 T18
+		return &aType{p.tyVoidPtr(), typ, vkPtr}
 	case *types.Interface:
 		if t.Empty() {
 			return &aType{p.rtEface(), typ, vkEface}
@@ -423,8 +473,10 @@ func (p Program) toLLVMNamedStruct(name string, raw *types.Named, st *types.Stru
 	typ := &aType{t, rawType{raw}, kind}
 	p.named[name] = typ
 	p.typs.Set(raw, typ)
+	p.building[name] = true
 	fields := p.toLLVMFields(st)
 	t.StructSetBody(fields, false)
+	delete(p.building, name)
 	return typ
 }
 
@@ -536,6 +588,15 @@ func isPkgScope(parent, pkgScope *types.Scope) bool {
 func (p Program) toNamed(raw *types.Named) Type {
 	name := p.llvmNameOf(raw)
 	if typ, ok := p.named[name]; ok {
+		if p.building[name] {
+			return typ
+		}
+		// Self-referential named types re-enter here while their LLVM named
+		// struct body is still being filled. Reuse the in-progress placeholder
+		// instead of recursing through equivalence checks.
+		if typ.raw.Type == raw {
+			return typ
+		}
 		if namedTypeEquivalent(typ.raw.Type, raw) || p.namedStructLayoutEquivalent(typ, raw) {
 			return typ
 		}

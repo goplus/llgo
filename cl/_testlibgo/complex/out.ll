@@ -10,26 +10,39 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/complex"
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/complex.f"({ double, double } %0, { double, double } %1) {
 _llgo_0:
-  %2 = call double @"math/cmplx.Abs"({ double, double } %0)
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %3 = call double @"math/cmplx.Abs"({ double, double } %0)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %2)
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 10 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %2)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %3 = extractvalue { double, double } %1, 0
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 11 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %4 = extractvalue { double, double } %1, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %4)
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %6 = extractvalue { double, double } %1, 0
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %5)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 11 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %7)
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %9 = extractvalue { double, double } %1, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %8)
+  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 11 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %10)
   ret void
 }
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/complex.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/complex.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -44,16 +57,26 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/complex.main"() {
 _llgo_0:
+  %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %0)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
   call void @"github.com/goplus/llgo/cl/_testlibgo/complex.f"({ double, double } { double 3.000000e+00, double 4.000000e+00 }, { double, double } { double 3.000000e+00, double 4.000000e+00 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %1)
   ret void
 }
 
 declare double @"math/cmplx.Abs"({ double, double })
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"math/cmplx.init"()

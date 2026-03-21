@@ -117,11 +117,12 @@ type aProgram struct {
 	py    *types.Package
 	pyget func() *types.Package
 
-	target  *Target
-	td      llvm.TargetData
-	tm      llvm.TargetMachine
-	named   map[string]Type
-	fnnamed map[string]int
+	target   *Target
+	td       llvm.TargetData
+	tm       llvm.TargetMachine
+	named    map[string]Type
+	building map[string]bool
+	fnnamed  map[string]int
 
 	intType   llvm.Type
 	int1Type  llvm.Type
@@ -262,7 +263,7 @@ func NewProgram(target *Target) Program {
 	return &aProgram{
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
-		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
+		ptrSize: td.PointerSize(), named: make(map[string]Type), building: make(map[string]bool), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
 }
@@ -323,7 +324,7 @@ func (p Program) Linkname(name string) (link string, ok bool) {
 }
 
 func (p Program) runtime() *types.Package {
-	if p.rt == nil {
+	if p.rt == nil && p.rtget != nil {
 		p.rt = p.rtget()
 	}
 	return p.rt

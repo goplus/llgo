@@ -1,10 +1,9 @@
 package reflect
 
 import (
-	"unsafe"
-
 	"github.com/goplus/llgo/runtime/abi"
-	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
+	"internal/goarch"
+	"unsafe"
 )
 
 // Swapper returns a function that swaps the elements in the provided slice.

@@ -5,10 +5,13 @@
 package runtime
 
 import (
+	"sort"
+	"strings"
 	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	clitedebug "github.com/goplus/llgo/runtime/internal/clite/debug"
+	psync "github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 )
 
 // Frames may be used to get function/file/line information for a
@@ -105,6 +108,48 @@ func unknownFunctionName(pc uintptr) string {
 	return "pc=" + uintptrHex(pc)
 }
 
+func userVisibleFuncName(fn string) string {
+	fn = strings.TrimPrefix(fn, "__llgo_stub.")
+	if strings.HasPrefix(fn, "command-line-arguments.") {
+		return "main." + strings.TrimPrefix(fn, "command-line-arguments.")
+	}
+	return fn
+}
+
+var (
+	synthLineMu   psync.Mutex
+	synthLinePC   map[uintptr]int
+	synthLineFunc map[string][]uintptr
+)
+
+func init() {
+	synthLineMu.Init(nil)
+}
+
+func syntheticLineForPC(fn string, pc uintptr) int {
+	if fn == "" {
+		return 0
+	}
+	synthLineMu.Lock()
+	defer synthLineMu.Unlock()
+	if synthLinePC == nil {
+		synthLinePC = make(map[uintptr]int)
+		synthLineFunc = make(map[string][]uintptr)
+	}
+	pcs := synthLineFunc[fn]
+	i := sort.Search(len(pcs), func(i int) bool { return pcs[i] >= pc })
+	if i == len(pcs) || pcs[i] != pc {
+		pcs = append(pcs, 0)
+		copy(pcs[i+1:], pcs[i:])
+		pcs[i] = pc
+		synthLineFunc[fn] = pcs
+		for idx, fpc := range pcs {
+			synthLinePC[fpc] = idx + 1
+		}
+	}
+	return synthLinePC[pc]
+}
+
 func (ci *Frames) Next() (frame Frame, more bool) {
 	for len(ci.frames) < 2 {
 		// Find the next frame.
@@ -134,13 +179,21 @@ func (ci *Frames) Next() (frame Frame, more bool) {
 		fn := safeGoString(info.Sname, "")
 		if fn == "" {
 			fn = unknownFunctionName(pc)
+		} else {
+			fn = userVisibleFuncName(fn)
+		}
+		line := 0
+		startLine := 0
+		if !strings.HasPrefix(fn, "pc=") {
+			line = syntheticLineForPC(fn, pc)
+			startLine = 1
 		}
 		ci.frames = append(ci.frames, Frame{
 			PC:        pc,
 			Function:  fn,
 			File:      "",
-			Line:      0,
-			startLine: 0,
+			Line:      line,
+			startLine: startLine,
 			Entry:     uintptr(info.Saddr),
 		})
 	}
@@ -179,8 +232,42 @@ type Func struct {
 	opaque struct{} // unexported field to disallow conversions
 }
 
+type funcValue struct {
+	name  string
+	entry uintptr
+}
+
 func (f *Func) Name() string {
-	panic("todo")
+	if f == nil {
+		return ""
+	}
+	return (*funcValue)(unsafe.Pointer(f)).name
+}
+
+func (f *Func) Entry() uintptr {
+	if f == nil {
+		return 0
+	}
+	return (*funcValue)(unsafe.Pointer(f)).entry
+}
+
+func (f *Func) FileLine(pc uintptr) (file string, line int) {
+	if f == nil {
+		return "", 0
+	}
+	info := &clitedebug.Info{}
+	if clitedebug.Addrinfo(unsafe.Pointer(pc), info) == 0 {
+		return "", 0
+	}
+	name := safeGoString(info.Sname, "")
+	if name == "" {
+		return "", 0
+	}
+	name = userVisibleFuncName(name)
+	if name != f.Name() {
+		return "", 0
+	}
+	return "", syntheticLineForPC(name, pc)
 }
 
 // moduledata records information about the layout of the executable

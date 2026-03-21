@@ -22,15 +22,15 @@ package reflect
 
 import (
 	"errors"
+	"github.com/goplus/llgo/runtime/abi"
+	"internal/goarch"
+	"internal/itoa"
 	"math"
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/abi"
 	"github.com/goplus/llgo/runtime/internal/clite/bitcast"
 	"github.com/goplus/llgo/runtime/internal/ffi"
-	"github.com/goplus/llgo/runtime/internal/lib/internal/itoa"
 	"github.com/goplus/llgo/runtime/internal/runtime"
-	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
 
 // Value is the reflection interface to a Go value.
@@ -141,6 +141,22 @@ func packEface(v Value) any {
 	t := v.typ()
 	var i any
 	e := (*emptyInterface)(unsafe.Pointer(&i))
+	if t.Kind() == abi.Func && !t.IsClosure() {
+		ct := closureOf(t.FuncType())
+		if v.flag&flagIndir != 0 {
+			e.word = unsafe_New(ct)
+			*(*closure)(e.word) = closure{
+				fn: *(*unsafe.Pointer)(v.ptr),
+			}
+		} else if v.ptr != nil {
+			e.word = unsafe_New(ct)
+			*(*closure)(e.word) = closure{
+				fn: v.ptr,
+			}
+		}
+		e.typ = ct
+		return i
+	}
 	// First, fill in the data portion of the interface.
 	switch {
 	case t.IfaceIndir():
@@ -2103,7 +2119,7 @@ func typedmemclr(t *abi.Type, ptr unsafe.Pointer)
 func typedslicecopy(t *abi.Type, dst, src unsafeheaderSlice) int {
 	rdst := *(*runtime.Slice)(unsafe.Pointer(&dst))
 	rsrc := *(*runtime.Slice)(unsafe.Pointer(&src))
-	return runtime.Typedslicecopy(t, rdst, rsrc)
+	return runtime.Typedslicecopy((*runtime.Type)(unsafe.Pointer(t)), rdst, rsrc)
 }
 
 /*
@@ -2259,6 +2275,12 @@ type closure struct {
 }
 
 func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
+	if typ.IsClosure() {
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
+		return unsafe.Pointer(&v.ptr)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2279,6 +2301,9 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 	case abi.Chan:
 		return unsafe.Pointer(&v.ptr)
 	case abi.Func:
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
 		return unsafe.Pointer(&v.ptr)
 	case abi.Interface:
 		i := v.Interface()
@@ -2307,6 +2332,9 @@ var (
 )
 
 func toFFIType(typ *abi.Type) *ffi.Type {
+	if typ.IsClosure() {
+		return ffi.ArrayOf(ffi.TypePointer, 2)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2332,9 +2360,15 @@ func toFFIType(typ *abi.Type) *ffi.Type {
 		return ffi.TypeString
 	case abi.Struct:
 		st := typ.StructType()
-		fields := make([]*ffi.Type, len(st.Fields))
-		for i, fs := range st.Fields {
-			fields[i] = toFFIType(fs.Typ)
+		fields := make([]*ffi.Type, 0, len(st.Fields))
+		for _, fs := range st.Fields {
+			if fs.Typ.Size() == 0 {
+				continue
+			}
+			fields = append(fields, toFFIType(fs.Typ))
+		}
+		if len(fields) == 0 {
+			return ffi.TypeVoid
 		}
 		return ffi.StructOf(fields...)
 	case abi.UnsafePointer:
@@ -2445,7 +2479,8 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		}
 	}
 	for i := 0; i < n; i++ {
-		if xt, targ := in[i].Type(), ft.In[i]; !xt.AssignableTo(toRType(targ)) {
+		targ := normalizeFuncABIType(ft.In[i])
+		if xt := in[i].Type(); !xt.AssignableTo(toRType(targ)) {
 			panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
 		}
 	}
@@ -2453,7 +2488,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		// prepare slice for remaining values
 		m := len(in) - n
 		slice := MakeSlice(toRType(ft.In[n]), m, m)
-		elem := toRType(ft.In[n].Elem()) // FIXME cast to slice type and Elem()
+		elem := toRType(normalizeFuncABIType(ft.In[n].Elem())) // FIXME cast to slice type and Elem()
 		for i := 0; i < m; i++ {
 			x := in[n+i]
 			if xt := x.Type(); !xt.AssignableTo(elem) {
@@ -2560,7 +2595,7 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
-	} else if v.flag&flagIndir == 0 && runtime.DirectIfaceData(t) {
+	} else if v.flag&flagIndir == 0 && directIfaceData(t) {
 		*(*unsafe.Pointer)(p) = unsafe.Pointer(&v.ptr)
 	} else {
 		*(*unsafe.Pointer)(p) = v.ptr
@@ -2568,10 +2603,14 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 }
 
 func ifacePtrData(i *nonEmptyInterface) unsafe.Pointer {
-	if runtime.DirectIfaceData(i.itab.typ) {
+	if directIfaceData(i.itab.typ) {
 		return unsafe.Pointer(&i.word)
 	}
 	return i.word
+}
+
+func directIfaceData(typ *abi.Type) bool {
+	return typ != nil && typ.IsDirectIface()
 }
 
 var stringType = rtypeOf("")
@@ -2669,6 +2708,7 @@ type hiter struct {
 	i           uint8
 	bucket      uintptr
 	checkBucket uintptr
+	clearSeq    uint64
 }
 
 func (h *hiter) initialized() bool {
@@ -3247,7 +3287,7 @@ func mapassign(t *abi.Type, m unsafe.Pointer, key, val unsafe.Pointer) {
 	contentEscapes(key)
 	contentEscapes(val)
 	p := mapassign0(t, m, key)
-	runtime.Typedmemmove(t.Elem(), p, val)
+	runtime.Typedmemmove((*runtime.Type)(unsafe.Pointer(t.Elem())), p, val)
 }
 
 // //go:noescape

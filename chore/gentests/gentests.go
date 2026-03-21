@@ -17,6 +17,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,18 +28,56 @@ import (
 	"github.com/goplus/mod"
 )
 
+var (
+	flagDirs      = flag.String("dirs", "", "comma-separated cl test directories to refresh (default: all)")
+	flagGenExpect = flag.Bool("expect", true, "regenerate expect.txt by running cases")
+)
+
 func main() {
+	flag.Parse()
 	dir, _, err := mod.FindGoMod(".")
 	check(err)
 
-	llgenDir(dir + "/cl/_testlibc")
-	llgenDir(dir + "/cl/_testlibgo")
-	llgenDir(dir + "/cl/_testrt")
-	llgenDir(dir + "/cl/_testgo")
-	llgenDir(dir + "/cl/_testpy")
-	llgenDir(dir + "/cl/_testdata")
+	dirs := selectedDirs()
+	for _, relDir := range dirs {
+		llgenDir(filepath.Join(dir, relDir))
+	}
+	if *flagGenExpect {
+		genExpects(dir, dirs)
+	}
+}
 
-	genExpects(dir)
+func selectedDirs() []string {
+	all := []string{
+		"cl/_testlibc",
+		"cl/_testlibgo",
+		"cl/_testrt",
+		"cl/_testgo",
+		"cl/_testpy",
+		"cl/_testdata",
+	}
+	if strings.TrimSpace(*flagDirs) == "" {
+		return all
+	}
+	seen := make(map[string]struct{}, len(all))
+	for _, dir := range all {
+		seen[dir] = struct{}{}
+	}
+	var ret []string
+	for _, item := range strings.Split(*flagDirs, ",") {
+		dir := strings.TrimSpace(item)
+		if dir == "" {
+			continue
+		}
+		if _, ok := seen[dir]; !ok {
+			panic(fmt.Errorf("unknown dir: %s", dir))
+		}
+		ret = append(ret, dir)
+	}
+	if len(ret) == 0 {
+		panic("no valid dirs selected")
+	}
+	return ret
 }
 
 func llgenDir(dir string) {
@@ -56,13 +95,10 @@ func llgenDir(dir string) {
 	}
 }
 
-func genExpects(root string) {
-	runExpectDir(root, "cl/_testlibc")
-	runExpectDir(root, "cl/_testlibgo")
-	runExpectDir(root, "cl/_testrt")
-	runExpectDir(root, "cl/_testgo")
-	runExpectDir(root, "cl/_testpy")
-	runExpectDir(root, "cl/_testdata")
+func genExpects(root string, dirs []string) {
+	for _, relDir := range dirs {
+		runExpectDir(root, relDir)
+	}
 }
 
 func runExpectDir(root, relDir string) {

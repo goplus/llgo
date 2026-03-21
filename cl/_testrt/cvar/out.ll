@@ -7,6 +7,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/cvar"
 
 define void @"github.com/goplus/llgo/cl/_testrt/cvar.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/cvar.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -20,7 +21,13 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/cvar.main"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load { [16 x i8], [2 x ptr] }, ptr @_bar_x, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load { [16 x i8] }, ptr @_bar_y, align 1
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
+declare void @unsafe.init()

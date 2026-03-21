@@ -17,6 +17,7 @@
 package runtime
 
 import (
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
@@ -37,28 +38,80 @@ func (e plainError) Error() string {
 	return string(e)
 }
 
+type runtimePlainError string
+
+func (e runtimePlainError) RuntimeError() {}
+
+func (e runtimePlainError) Error() string {
+	return string(e)
+}
+
 func AssertRuntimeError(b bool, msg string) {
 	if b {
-		panic(errorString(msg).Error())
+		panic(errorString(msg))
 	}
 }
 
 func AssertNegativeShift(b bool) {
 	if b {
-		panic(errorString("negative shift amount").Error())
+		panic(errorString("negative shift amount"))
 	}
 }
 
 func AssertIndexRange(b bool) {
 	if b {
-		panic(errorString("index out of range").Error())
+		panic(errorString("index out of range"))
 	}
+}
+
+func CheckIndexInt(x, y int) int {
+	if x < 0 || x >= y {
+		panic(boundsError{x: int64(x), signed: true, y: y, code: boundsIndex})
+	}
+	return x
+}
+
+func CheckIndexUint(x uint, y int) uint {
+	if x >= uint(y) {
+		panic(boundsError{x: int64(x), signed: false, y: y, code: boundsIndex})
+	}
+	return x
 }
 
 func AssertDivideByZero(b bool) {
 	if b {
-		panic(errorString("integer divide by zero").Error())
+		panic(errorString("integer divide by zero"))
 	}
+}
+
+func AssertNilDeref(b bool) {
+	if b {
+		panic(errorString("invalid memory address or nil pointer dereference"))
+	}
+}
+
+func MakeTypeAssertionError(src string, concrete *abi.Type, want, missingMethod string) any {
+	if concrete == nil {
+		return runtimePlainError("interface conversion: " + src + " is nil, not " + want)
+	}
+	cs := concrete.String()
+	if missingMethod != "" {
+		return runtimePlainError("interface conversion: " + cs + " is not " + want + ": missing method " + missingMethod)
+	}
+	msg := "interface conversion: " + src + " is " + cs + ", not " + want
+	if cs == want {
+		msg += " (types from different scopes)"
+	}
+	return runtimePlainError(msg)
+}
+
+func MakePanicWrapError(recvType, method string) any {
+	recvType = strings.ReplaceAll(recvType, "command-line-arguments.", "main.")
+	short := recvType
+	if i := strings.LastIndex(recvType, "."); i >= 0 && i+1 < len(recvType) {
+		short = recvType[i+1:]
+	}
+	return plainError("value method " + recvType + "." + method + " called using nil *" + short + " pointer")
 }
 
 // printany prints an argument passed to panic.

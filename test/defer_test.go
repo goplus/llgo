@@ -207,6 +207,67 @@ func callWithRecover(fn func()) (recovered any) {
 	return
 }
 
+func callReflectMakeFuncRecover() (recovered any) {
+	defer func() {
+		if recovered != nil {
+			_ = recover()
+			return
+		}
+		recovered = recover()
+	}()
+	f := reflect.MakeFunc(reflect.TypeOf((func())(nil)), func(args []reflect.Value) []reflect.Value {
+		recovered = recover()
+		return nil
+	}).Interface().(func())
+	defer f()
+	panic("reflect-makefunc-recover")
+}
+
+func equalAny(a, b any) bool {
+	return a == b
+}
+
+type valueMethodRecoverIface interface {
+	M()
+}
+
+type valueMethodRecover uintptr
+
+var (
+	valueMethodRecoverFirst  any
+	valueMethodRecoverSecond any
+)
+
+func (valueMethodRecover) M() {
+	valueMethodRecoverFirst = recover()
+	valueMethodRecoverSecond = recover()
+}
+
+func runValueMethodInterfaceRecover() (first any, second any) {
+	valueMethodRecoverFirst = nil
+	valueMethodRecoverSecond = nil
+	defer func() {
+		first = valueMethodRecoverFirst
+		second = valueMethodRecoverSecond
+	}()
+	var i valueMethodRecoverIface = valueMethodRecover(0)
+	defer i.M()
+	panic("iface-value-method")
+}
+
+func nestedRecoverAfterHelper() (inner any, second any, outer any) {
+	defer func() { outer = recover() }()
+	defer func() {
+		defer func() {
+			inner = recover()
+			_ = equalAny(inner, "inner-panic")
+			second = recover()
+		}()
+		panic("inner-panic")
+	}()
+	panic("outer-panic")
+}
+
 func loopBranchEven(order *[]string, i int) {
 	label := "even:" + strconv.Itoa(i)
 	defer func() { *order = append(*order, label) }()
@@ -257,6 +318,36 @@ func TestLoopBranchRecoverMixed(t *testing.T) {
 	}
 	if s, ok := recovered[0].(string); !ok || s != "odd-no-recover" {
 		t.Fatalf("unexpected recovered value: got %v, want %q", recovered[0], "odd-no-recover")
+	}
+}
+
+func TestReflectMakeFuncRecover(t *testing.T) {
+	got := callReflectMakeFuncRecover()
+	if s, ok := got.(string); !ok || s != "reflect-makefunc-recover" {
+		t.Fatalf("unexpected recovered value: got %v, want %q", got, "reflect-makefunc-recover")
+	}
+}
+
+func TestNestedRecoverAfterHelperCall(t *testing.T) {
+	inner, second, outer := nestedRecoverAfterHelper()
+	if s, ok := inner.(string); !ok || s != "inner-panic" {
+		t.Fatalf("unexpected inner recover: got %v, want %q", inner, "inner-panic")
+	}
+	if second != nil {
+		t.Fatalf("second recover should be nil, got %v", second)
+	}
+	if s, ok := outer.(string); !ok || s != "outer-panic" {
+		t.Fatalf("unexpected outer recover: got %v, want %q", outer, "outer-panic")
+	}
+}
+
+func TestValueMethodInterfaceRecover(t *testing.T) {
+	first, second := runValueMethodInterfaceRecover()
+	if s, ok := first.(string); !ok || s != "iface-value-method" {
+		t.Fatalf("unexpected first recover: got %v, want %q", first, "iface-value-method")
+	}
+	if second != nil {
+		t.Fatalf("second recover should be nil, got %v", second)
 	}
 }
 

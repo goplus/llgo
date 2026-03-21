@@ -193,6 +193,9 @@ func StripABISuffix(sym string) string {
 
 func extraAsmSigsAndDeclMap(pkgPath string, goarch string) map[string]extplan9asm.FuncSig {
 	manual := map[string]extplan9asm.FuncSig{}
+	if pkgPath == "internal/abi" {
+		manual["internal/abi.FuncPCTestFn"] = extplan9asm.FuncSig{Ret: extplan9asm.Void}
+	}
 	if pkgPath == "internal/bytealg" {
 		switch goarch {
 		case "arm64":

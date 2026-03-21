@@ -268,9 +268,15 @@ _llgo_0:
 define linkonce i64 @%s(ptr %%0, i64 %%1) {
 _llgo_0:
   %%2 = load ptr, ptr %%0, align 8
-  %%3 = tail call i64 %%2(i64 %%1)
-  ret i64 %%3
+  %%3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr %%2)
+  %%4 = tail call i64 %%2(i64 %%1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %%3)
+  ret i64 %%4
 }
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 `, wrapRef, wrapRef)
@@ -707,6 +713,46 @@ func TestExprCoverageHelpers(t *testing.T) {
 	b.Return()
 }
 
+func TestClearLoadSource(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+
+	raw := types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, nil, "ptr", types.NewPointer(types.Typ[types.Byte]), false),
+		types.NewField(token.NoPos, nil, "len", types.Typ[types.Int], false),
+		types.NewField(token.NoPos, nil, "cap", types.Typ[types.Int], false),
+	}, nil)
+	aggTy := prog.Type(raw, InGo)
+	ptr := b.ChangeType(prog.Pointer(prog.Byte()), prog.IntVal(1, prog.Uintptr()))
+	val := b.Aggregate(aggTy, ptr, prog.Val(1), prog.Val(1))
+	slotDirect := b.AllocaT(aggTy)
+	b.Store(slotDirect, val)
+	if ok := b.ClearLoadSource(Expr{slotDirect.impl, aggTy}); !ok {
+		t.Fatal("ClearLoadSource should clear direct alloca-backed temp")
+	}
+	slotLoad := b.AllocaT(aggTy)
+	b.Store(slotLoad, val)
+	if ok := b.ClearLoadSource(b.Load(slotLoad)); !ok {
+		t.Fatal("ClearLoadSource should clear load-backed temp")
+	}
+	b.Return()
+
+	ir := fn.impl.String()
+	if strings.Count(ir, "zeroinitializer") < 2 {
+		t.Fatalf("missing zero stores after ClearLoadSource:\n%s", ir)
+	}
+}
+
 func TestTypes(t *testing.T) {
 	ctx := llvm.NewContext()
 	llvmIntType(ctx, 4)
@@ -833,6 +879,33 @@ _llgo_0:
   ret i1 true
 }
 `)
+}
+
+func TestZeroSizedVarAliasUsesModuleBase(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	typ := types.NewPointer(types.NewStruct(nil, nil))
+	a := pkg.NewVar("foo/bar.a", typ, InGo)
+	if pkg.NewVar("foo/bar.a", typ, InGo) != a {
+		t.Fatal("NewVar(a) failed")
+	}
+	pkg.NewVarEx("foo/bar.a", prog.Type(typ, InGo))
+	ir := pkg.String()
+	if !strings.Contains(ir, `@__llgo.moduleZeroSizedAlloc = private unnamed_addr global i8 0`) {
+		t.Fatalf("missing module-local zero-sized anchor:\n%s", ir)
+	}
+	if !strings.Contains(ir, `@"foo/bar.a" = alias`) {
+		t.Fatalf("missing zero-sized alias for foo/bar.a:\n%s", ir)
+	}
+	if strings.Contains(ir, `@runtime.zeroSizedAlloc`) || strings.Contains(ir, `runtime/internal/runtime.zeroSizedAlloc`) {
+		t.Fatalf("zero-sized alias still targets imported runtime symbol:\n%s", ir)
+	}
 }
 
 func TestStruct(t *testing.T) {
@@ -962,6 +1035,105 @@ _llgo_0:
 `)
 }
 
+func TestFuncCallStructArg(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	st := types.NewStruct([]*types.Var{
+		types.NewVar(0, nil, "id", types.Typ[types.Int]),
+		types.NewVar(0, nil, "typ", types.NewPointer(types.Typ[types.Int])),
+	}, nil)
+	params := types.NewTuple(types.NewVar(0, nil, "m", st))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	fn.MakeBody(1).Return()
+
+	b := pkg.NewFunc("main", NoArgsNoRet, InGo).MakeBody(1)
+	b.Call(fn.Expr, prog.Zero(prog.Type(st, InGo)))
+	b.Return()
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+define void @fn({ i64, ptr } %0) {
+_llgo_0:
+  ret void
+}
+
+define void @main() {
+_llgo_0:
+  call void @fn({ i64, ptr } zeroinitializer)
+	ret void
+}
+`)
+}
+
+func TestZeroMapUsesNullPointer(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	mapType := types.NewMap(types.Typ[types.Int], types.Typ[types.Int])
+
+	fn := pkg.NewFunc("zeroMap", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+	slot := b.AllocaT(prog.Type(mapType, InGo))
+	b.Store(slot, prog.Zero(prog.Type(mapType, InGo)))
+	b.Return()
+
+	ir := fn.impl.String()
+	if strings.Contains(ir, "memset") {
+		t.Fatalf("zero map store should not lower to memset:\n%s", ir)
+	}
+	if !strings.Contains(ir, "store ptr null") {
+		t.Fatalf("zero map store should use a null pointer:\n%s", ir)
+	}
+}
+
+func TestLookupCommaOkSkipsNilValueLoad(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	mapType := types.NewMap(types.Typ[types.Int], types.Typ[types.Int])
+	params := types.NewTuple(
+		types.NewVar(0, nil, "m", mapType),
+		types.NewVar(0, nil, "k", types.Typ[types.Int]),
+	)
+	rets := types.NewTuple(
+		types.NewVar(0, nil, "", types.Typ[types.Int]),
+		types.NewVar(0, nil, "", types.Typ[types.Bool]),
+	)
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("lookup", sig, InGo)
+	b := fn.MakeBody(1)
+	vals := b.Lookup(fn.Param(0), fn.Param(1), true)
+	b.Return(b.Extract(vals, 0), b.Extract(vals, 1))
+
+	ir := fn.impl.String()
+	if !strings.Contains(ir, `call { ptr, i1 } @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess2"`) {
+		t.Fatalf("lookup should call MapAccess2:\n%s", ir)
+	}
+	if !strings.Contains(ir, "br i1") {
+		t.Fatalf("comma-ok lookup should branch on ok before loading value:\n%s", ir)
+	}
+	if strings.Contains(ir, "call void @\"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref\"(i1 %") &&
+		!strings.Contains(ir, "store i64 0") {
+		t.Fatalf("comma-ok lookup should materialize a zero slot instead of unconditional nil-deref:\n%s", ir)
+	}
+}
+
 func TestFuncMultiRet(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
@@ -1078,6 +1250,12 @@ _llgo_0:
 
 func TestUnOp(t *testing.T) {
 	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
 	pkg := prog.NewPackage("bar", "foo/bar")
 	params := types.NewTuple(
 		types.NewVar(0, nil, "p", types.NewPointer(types.Typ[types.Int])),
@@ -1096,12 +1274,46 @@ source_filename = "foo/bar"
 
 define i64 @fn(ptr %0) {
 _llgo_0:
-  %1 = load i64, ptr %0, align 4
-  %2 = xor i64 %1, 1
-  store i64 %2, ptr %0, align 4
-  ret i64 %2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load i64, ptr %0, align 4
+  %3 = xor i64 %2, 1
+  store i64 %3, ptr %0, align 4
+  ret i64 %3
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 `)
+}
+
+func TestRecvZeroesPointerBearingTemp(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	chType := types.NewChan(types.SendRecv, types.NewSlice(types.Typ[types.Byte]))
+	params := types.NewTuple(types.NewVar(0, nil, "ch", chType))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Recv(fn.Param(0), true)
+	b.Return()
+
+	ir := pkg.String()
+	sliceAlloca := `alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`
+	if got := strings.Count(ir, sliceAlloca); got != 1 {
+		t.Fatalf("recv should use one slice temp, got %d:\n%s", got, ir)
+	}
+	if strings.Contains(ir, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("recv should not spill slice result into a second temp:\n%s", ir)
+	}
+	if got := strings.Count(ir, "call void @llvm.memset"); got != 2 {
+		t.Fatalf("recv temp should be zeroed before and after use, got %d memsets:\n%s", got, ir)
+	}
 }
 
 func TestBasicType(t *testing.T) {

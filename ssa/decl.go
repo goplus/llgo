@@ -82,7 +82,16 @@ func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 		return v
 	}
 	t := p.Prog.Type(typ, bg)
-	return p.doNewVar(name, t)
+	return p.doNewVar(name, t, true)
+}
+
+// DeclareVar creates an external global declaration without defining storage.
+func (p Package) DeclareVar(name string, typ types.Type, bg Background) Global {
+	if v, ok := p.vars[name]; ok {
+		return v
+	}
+	t := p.Prog.Type(typ, bg)
+	return p.doNewVar(name, t, false)
 }
 
 // NewVarEx creates a new global variable.
@@ -90,14 +99,36 @@ func (p Package) NewVarEx(name string, t Type) Global {
 	if v, ok := p.vars[name]; ok {
 		return v
 	}
-	return p.doNewVar(name, t)
+	return p.doNewVar(name, t, true)
 }
 
-func (p Package) doNewVar(name string, t Type) Global {
+func (p Package) doNewVar(name string, t Type, define bool) Global {
 	typ := p.Prog.Elem(t).ll
-	gbl := llvm.AddGlobal(p.mod, typ, name)
-	alignment := p.Prog.td.ABITypeAlignment(typ)
-	gbl.SetAlignment(alignment)
+	gbl := p.mod.NamedGlobal(name)
+	if gbl.IsNil() {
+		if define && p.Prog.td.TypeAllocSize(typ) == 0 {
+			if rt := p.Prog.runtime(); rt != nil {
+				zeroName := FullName(rt, "zeroSizedAlloc")
+				if name != zeroName {
+					const moduleZeroName = "__llgo.moduleZeroSizedAlloc"
+					zerobase := p.mod.NamedGlobal(moduleZeroName)
+					if zerobase.IsNil() {
+						zerobase = llvm.AddGlobal(p.mod, p.Prog.Byte().ll, moduleZeroName)
+						zerobase.SetInitializer(llvm.ConstNull(p.Prog.Byte().ll))
+						zerobase.SetLinkage(llvm.PrivateLinkage)
+						zerobase.SetUnnamedAddr(true)
+					}
+					aliasee := llvm.ConstBitCast(zerobase, llvm.PointerType(typ, 0))
+					gbl = llvm.AddAlias(p.mod, typ, 0, aliasee, name)
+				}
+			}
+		}
+		if gbl.IsNil() {
+			gbl = llvm.AddGlobal(p.mod, typ, name)
+			alignment := p.Prog.td.ABITypeAlignment(typ)
+			gbl.SetAlignment(alignment)
+		}
+	}
 	ret := &aGlobal{Expr{gbl, t}}
 	p.vars[name] = ret
 	return ret
@@ -110,10 +141,16 @@ func (p Package) VarOf(name string) Global {
 
 // Init initializes the global variable with the given value.
 func (g Global) Init(v Expr) {
+	if !g.impl.IsAGlobalAlias().IsNil() {
+		return
+	}
 	g.impl.SetInitializer(v.impl)
 }
 
 func (g Global) InitNil() {
+	if !g.impl.IsAGlobalAlias().IsNil() {
+		return
+	}
 	g.impl.SetInitializer(llvm.ConstNull(g.impl.GlobalValueType()))
 }
 
@@ -179,13 +216,16 @@ type aFunction struct {
 
 	blks []BasicBlock
 
-	defer_ *aDefer
-	recov  BasicBlock
+	defer_           *aDefer
+	recov            BasicBlock
+	sharedDeferFunc0 bool
 
 	params   []Type
 	freeVars Expr
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
 	hasVArg  bool
+
+	genericTypeArgs []types.Type
 
 	diFunc DIFunction
 }
@@ -258,6 +298,22 @@ func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {
 // Name returns the function's name.
 func (p Function) Name() string {
 	return p.impl.Name()
+}
+
+func (p Function) SetGenericTypeArgs(typeArgs []types.Type) {
+	p.genericTypeArgs = append(p.genericTypeArgs[:0], typeArgs...)
+}
+
+func (p Function) GenericTypeArgs() []types.Type {
+	return p.genericTypeArgs
+}
+
+func (p Function) SetSharedDeferFunc0(v bool) {
+	p.sharedDeferFunc0 = v
+}
+
+func (p Function) SharedDeferFunc0() bool {
+	return p.sharedDeferFunc0
 }
 
 // Params returns the function's ith parameter.
@@ -358,6 +414,7 @@ const (
 	NoInline inlineAttr = iota
 	AlwaysInline
 	InlineHint
+	OptNone
 )
 
 func (p Function) Inline(inline inlineAttr) {
@@ -365,6 +422,7 @@ func (p Function) Inline(inline inlineAttr) {
 		NoInline:     "noinline",
 		AlwaysInline: "alwaysinline",
 		InlineHint:   "inlinehint",
+		OptNone:      "optnone",
 	}[inline]
 	inlineAttr := p.Pkg.mod.Context().CreateEnumAttribute(llvm.AttributeKindID(inlineAttrName), 0)
 	p.impl.AddFunctionAttr(inlineAttr)

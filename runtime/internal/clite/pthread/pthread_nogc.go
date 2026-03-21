@@ -77,3 +77,6 @@ func Create(pthread *Thread, attr *Attr, routine RoutineFunc, arg c.Pointer) c.I
 //
 //go:linkname Join C.pthread_join
 func Join(thread Thread, retval *c.Pointer) c.Int
+
+//go:linkname NativeJoin C.pthread_join
+func NativeJoin(thread Thread, retval *c.Pointer) c.Int

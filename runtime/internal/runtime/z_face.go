@@ -20,7 +20,6 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/runtime/abi"
-	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread/sync"
 )
 
@@ -130,7 +129,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 	if u == nil {
 		ret.fun[0] = 0
 	} else {
-		data := (*uintptr)(c.Advance(ptr, int(itabHdrSize)))
+		data := unsafe.Add(ptr, itabHdrSize)
 		mthds := u.Methods()
 		for i, m := range inter.Methods {
 			fn, matched := findMethod(mthds, m)
@@ -144,7 +143,7 @@ func NewItab(inter *InterfaceType, typ *Type) *Itab {
 				// and only panics on call, not at assertion time.
 				fn = abi.Text(uintptr(0))
 			}
-			*c.Advance(data, i) = uintptr(fn)
+			*(*uintptr)(unsafe.Add(data, uintptr(i)*pointerSize)) = uintptr(fn)
 		}
 	}
 	if ret.fun[0] != 0 {
@@ -180,13 +179,17 @@ func IfaceType(i iface) *abi.Type {
 
 func IfacePtrData(i iface) unsafe.Pointer {
 	if i.tab == nil {
-		panic(errorString("invalid memory address or nil pointer dereference").Error())
+		panic(errorString("invalid memory address or nil pointer dereference"))
 	}
 	if DirectIfaceData(i.tab._type) {
-		// For direct-iface values, i.data holds the value bits (not a stable
-		// pointer). Interface method calls use the "one-word receiver" ABI which
-		// expects a pointer to the receiver value. We must return a stable
-		// address, not the address of a stack copy of i.
+		// For pointer dynamic types, the direct-iface word already is the
+		// receiver pointer expected by interface-call wrappers.
+		if i.tab._type.Kind() == abi.Pointer {
+			return i.data
+		}
+		// For other direct-iface values, i.data holds inline value bits, not a
+		// stable address. Interface method calls use the one-word receiver ABI,
+		// so materialize an addressable receiver cell.
 		p := AllocU(pointerSize)
 		*(*unsafe.Pointer)(p) = i.data
 		return p
@@ -195,19 +198,30 @@ func IfacePtrData(i iface) unsafe.Pointer {
 }
 
 func DirectIfaceData(typ *abi.Type) bool {
-	switch typ.Kind() {
-	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
-		abi.Uint, abi.Uint8, abi.Uint16, abi.Uint32, abi.Uint64, abi.Uintptr,
-		abi.Float32, abi.Float64, abi.Array, abi.Struct,
-		// These are single-word values stored directly in iface.data.
-		// For interface method calls, non-pointer receivers still require a
-		// pointer to the stored word.
-		abi.Chan, abi.Func, abi.Map, abi.UnsafePointer:
-		if isDirectIface(typ) {
-			return true
+	return typ != nil && isDirectIface(typ)
+}
+
+func sameFuncType(T, V *abi.FuncType) bool {
+	if T == V {
+		return true
+	}
+	if T == nil || V == nil || T.Variadic() != V.Variadic() {
+		return false
+	}
+	if len(T.In) != len(V.In) || len(T.Out) != len(V.Out) {
+		return false
+	}
+	for i, in := range T.In {
+		if in != V.In[i] {
+			return false
 		}
 	}
-	return false
+	for i, out := range T.Out {
+		if out != V.Out[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // MatchesClosure reports whether the type V matches the closure type T for
@@ -215,10 +229,11 @@ func DirectIfaceData(typ *abi.Type) bool {
 func MatchesClosure(T, V *abi.Type) bool {
 	if T == V {
 		return true
-	} else if V == nil || !V.IsClosure() {
+	}
+	if T == nil || V == nil || !T.IsClosure() || !V.IsClosure() {
 		return false
 	}
-	return T.StructType().Fields[0].Typ == V.StructType().Fields[0].Typ
+	return sameFuncType(T.StructType().Fields[0].Typ.FuncType(), V.StructType().Fields[0].Typ.FuncType())
 }
 
 // Implements reports whether the type V implements the interface type T.
@@ -287,13 +302,14 @@ func EfaceEqual(v, u eface) bool {
 	if v._type != u._type {
 		return false
 	}
+	equal := v._type.Equal
+	if equal == nil {
+		panic(errorString("comparing uncomparable type " + v._type.String()))
+	}
 	if isDirectIface(v._type) {
 		return v.data == u.data
 	}
-	if equal := v._type.Equal; equal != nil {
-		return equal(v.data, u.data)
-	}
-	panic(errorString("comparing uncomparable type " + v._type.String()).Error())
+	return equal(v.data, u.data)
 }
 
 func (v eface) Kind() abi.Kind {

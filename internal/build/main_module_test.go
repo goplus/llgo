@@ -45,6 +45,12 @@ func TestGenMainModuleExecutable(t *testing.T) {
 			t.Fatalf("main module IR missing %q:\n%s", want, ir)
 		}
 	}
+	if strings.Contains(ir, "define ptr @__llgo_main_routine(") {
+		t.Fatalf("main module should not emit __llgo_main_routine:\n%s", ir)
+	}
+	if strings.Contains(ir, "call void @runtime.runMain(") {
+		t.Fatalf("main module should not call runtime.runMain:\n%s", ir)
+	}
 }
 
 func TestGenMainModuleLibrary(t *testing.T) {

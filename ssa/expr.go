@@ -163,7 +163,7 @@ func (p Program) Zero(t Type) Expr {
 		}
 		ret = p.Zero(p.rtType(name)).impl
 	case *types.Map:
-		ret = p.Zero(p.rtType("Map")).impl
+		return Expr{llvm.ConstNull(t.ll), t}
 	case *types.Tuple:
 		n := u.Len()
 		flds := make([]llvm.Value, n)
@@ -659,6 +659,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			typ := x.raw.Type.Underlying().(*types.Struct)
 			ret := prog.BoolVal(true)
 			for i, n := 0, typ.NumFields(); i < n; i++ {
+				if typ.Field(i).Name() == "_" {
+					continue
+				}
 				ft := prog.Type(typ.Field(i).Type(), InGo)
 				fx := b.impl.CreateExtractValue(x.impl, i, "")
 				fy := b.impl.CreateExtractValue(y.impl, i, "")
@@ -873,12 +876,21 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 				}
 			case *types.Basic:
-				if x.Type != b.Prog.Int32() {
-					srcType := x.Type
-					x.Type = b.Prog.Int32()
-					x.impl = castInt(b, x.impl, srcType, b.Prog.Int32())
+				if x.Type.kind == vkUnsigned {
+					if x.Type != b.Prog.Uint64() {
+						srcType := x.Type
+						x.Type = b.Prog.Uint64()
+						x.impl = castInt(b, x.impl, srcType, b.Prog.Uint64())
+					}
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromUint64"), x).impl
+					return
 				}
-				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
+				if x.Type != b.Prog.Int64() {
+					srcType := x.Type
+					x.Type = b.Prog.Int64()
+					x.impl = castInt(b, x.impl, srcType, b.Prog.Int64())
+				}
+				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromInt64"), x).impl
 				return
 			}
 		case types.Complex128:
@@ -950,7 +962,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	if types.Identical(dst.Underlying(), x.RawType().Underlying()) {
 		return b.ChangeType(t, x)
 	}
-	panic("todo")
+	panic(fmt.Sprintf("Convert todo: %v <- %v", dst, x.RawType()))
 }
 
 func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
@@ -1124,13 +1136,15 @@ var (
 		"reflect.StructOf":           {},
 		"reflect.PointerTo":          {},
 		"reflect.PtrTo":              {},
+		"reflect.Type.Method":        {},
+		"reflect.Type.MethodByName":  {},
 		"reflect.Value.Method":       {},
 		"reflect.Value.MethodByName": {},
 	}
 )
 
 func logCall(da string, fn Expr, args []Expr) {
-	if fn == Nil || fn.kind == vkBuiltin {
+	if fn.IsNil() || fn.kind == vkBuiltin {
 		return
 	}
 	var b bytes.Buffer
@@ -1212,11 +1226,7 @@ func (b Builder) SelectValue(cond Expr, a Expr, bExpr Expr) Expr {
 func (b Builder) SliceToArrayPointer(x Expr, typ Type) (ret Expr) {
 	ret.Type = typ
 	max := b.Prog.IntVal(uint64(typ.RawType().Underlying().(*types.Pointer).Elem().Underlying().(*types.Array).Len()), b.Prog.Int())
-	failed := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, b.SliceLen(x).impl, max.impl), b.Prog.Bool()}
-	b.IfThen(failed, func() {
-		b.InlineCall(b.Pkg.rtFunc("PanicSliceConvert"), b.SliceLen(x), max)
-	})
-	ret.impl = b.SliceData(x).impl
+	ret = b.PtrCast(typ, b.InlineCall(b.Pkg.rtFunc("SliceToArrayPtr"), x, max))
 	return
 }
 
@@ -1304,6 +1314,11 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	case "recover":
 		return b.Recover()
+	case "panic":
+		if len(args) == 1 {
+			b.Panic(args[0])
+			return
+		}
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
 	case "complex":
@@ -1313,20 +1328,24 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "imag":
 		return b.getField(args[0], 1)
 	case "String": // unsafe.String
-		return b.unsafeString(args[0].impl, args[1].impl)
+		size := b.fitIntSize(args[1])
+		return b.ChangeType(b.Prog.String(), b.InlineCall(b.Pkg.rtFunc("UnsafeString"), args[0], size))
 	case "Slice": // unsafe.Slice
 		size := b.fitIntSize(args[1])
-		return b.unsafeSlice(args[0], size.impl, size.impl)
+		eltSize := b.Prog.IntVal(b.Prog.SizeOf(b.Prog.Elem(args[0].Type)), b.Prog.Int())
+		tslice := b.Prog.Slice(b.Prog.Elem(args[0].Type))
+		return b.ChangeType(tslice, b.InlineCall(b.Pkg.rtFunc("UnsafeSlice"), args[0], size, eltSize))
 	case "StringData":
-		return b.StringData(args[0]) // TODO(xsw): check return type
+		return b.ChangeType(b.Prog.Pointer(b.Prog.Byte()), b.StringData(args[0]))
 	case "SliceData":
 		return b.SliceData(args[0]) // TODO(xsw): check return type
 	case "delete":
 		if len(args) == 2 && args[0].kind == vkMap {
 			m := args[0]
 			t := b.abiType(m.raw.Type)
-			ptr := b.mapKeyPtr(args[1])
+			keytmp, ptr := b.mapKeyPtr(args[1])
 			b.Call(b.Pkg.rtFunc("MapDelete"), t, m, ptr)
+			b.clearMapKeyTmp(keytmp)
 			return
 		}
 	case "clear":

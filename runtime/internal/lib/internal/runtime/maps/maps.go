@@ -1,9 +1,8 @@
 package maps
 
 import (
-	"unsafe"
-
 	"github.com/goplus/llgo/runtime/abi"
+	"unsafe"
 )
 
 //go:linkname runtime_fastrand64 github.com/goplus/llgo/runtime/internal/runtime.fastrand64

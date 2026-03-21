@@ -27,17 +27,38 @@ import (
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
-	return c.Malloc(size)
+	if size == 0 {
+		return zeroAlloc()
+	}
+	p := c.Malloc(size)
+	afterAlloc(size)
+	return p
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
+	if size == 0 {
+		return zeroAlloc()
+	}
 	ret := c.Malloc(size)
+	afterAlloc(size)
 	return c.Memset(ret, 0, size)
+}
+
+func FreeAllocU(ptr unsafe.Pointer) {
+	if ptr != nil {
+		c.Free(ptr)
+	}
 }
 
 // AddCleanupPtr is not implemented when GC is disabled.
 // Cleanup functions will never be called.
 func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
+	return func() {} // no-op cancel
+}
+
+// AddCleanupValuePtr is not implemented when GC is disabled.
+// Cleanup functions will never be called.
+func AddCleanupValuePtr(ptr unsafe.Pointer, size uintptr, cleanup func(unsafe.Pointer)) (cancel func()) {
 	return func() {} // no-op cancel
 }

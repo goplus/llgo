@@ -3,13 +3,12 @@
 // license that can be found in the LICENSE file.
 
 // Package reflectlite implements lightweight version of reflect, not using
-// any package except for "runtime", "unsafe", and "internal/abi"
+// any package except for "runtime", "unsafe", and "github.com/goplus/llgo/runtime/abi"
 package reflectlite
 
 import (
-	"unsafe"
-
 	"github.com/goplus/llgo/runtime/abi"
+	"unsafe"
 )
 
 // Type is the representation of a Go type.

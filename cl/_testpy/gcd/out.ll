@@ -9,12 +9,14 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/gcd"
 
 define void @"github.com/goplus/llgo/cl/_testpy/gcd.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/gcd.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testpy/gcd.init$guard", align 1
   call void @"github.com/goplus/lib/py/math.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = load ptr, ptr @__llgo_py.math, align 8
   call void (ptr, ...) @llgoLoadPyModSyms(ptr %1, ptr @1, ptr @__llgo_py.math.gcd, ptr null)
   br label %_llgo_2
@@ -28,12 +30,15 @@ _llgo_0:
   %0 = call ptr @PyLong_FromLong(i64 60)
   %1 = call ptr @PyLong_FromLong(i64 20)
   %2 = call ptr @PyLong_FromLong(i64 25)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %3 = load ptr, ptr @__llgo_py.math.gcd, align 8
   %4 = call ptr (ptr, ...) @PyObject_CallFunctionObjArgs(ptr %3, ptr %0, ptr %1, ptr %2, ptr null)
   %5 = call i64 @PyLong_AsLong(ptr %4)
   %6 = call i32 (ptr, ...) @printf(ptr @0, i64 %5)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"github.com/goplus/lib/py/math.init"()
 

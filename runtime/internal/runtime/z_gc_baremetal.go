@@ -26,12 +26,21 @@ import (
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
+	if size == 0 {
+		return zeroAlloc()
+	}
 	return tinygogc.Alloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
+	if size == 0 {
+		return zeroAlloc()
+	}
 	return tinygogc.Alloc(size)
+}
+
+func FreeAllocU(ptr unsafe.Pointer) {
 }
 
 // AddCleanupPtr is not implemented in baremetal builds because tinygogc
@@ -40,5 +49,11 @@ func AllocZ(size uintptr) unsafe.Pointer {
 // Returns: a no-op cancel function
 func AddCleanupPtr(ptr unsafe.Pointer, cleanup func()) (cancel func()) {
 	// Not implemented: tinygogc does not support finalizers
+	return func() {} // no-op cancel
+}
+
+// AddCleanupValuePtr is not implemented in baremetal builds because tinygogc
+// does not support finalizers. Cleanup functions will never be called.
+func AddCleanupValuePtr(ptr unsafe.Pointer, size uintptr, cleanup func(unsafe.Pointer)) (cancel func()) {
 	return func() {} // no-op cancel
 }

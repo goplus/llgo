@@ -21,6 +21,8 @@
 package reflect
 
 import (
+	"github.com/goplus/llgo/runtime/abi"
+	"internal/goarch"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
@@ -28,10 +30,8 @@ import (
 
 	"sync"
 
-	"github.com/goplus/llgo/runtime/abi"
 	clite "github.com/goplus/llgo/runtime/internal/clite"
 	_ "github.com/goplus/llgo/runtime/internal/runtime"
-	"github.com/goplus/llgo/runtime/internal/runtime/goarch"
 )
 
 // A Kind represents the specific kind of type that a Type represents.
@@ -349,6 +349,9 @@ func (t *rtype) PkgPath() string {
 	}
 	ut := t.uncommon()
 	if ut == nil {
+		if t.Kind() == UnsafePointer {
+			return "unsafe"
+		}
 		return ""
 	}
 	return ut.PkgPath_
@@ -466,7 +469,7 @@ func (t *rtype) In(i int) Type {
 		panic("reflect: In of non-func type " + t.String())
 	}
 	tt := (*abi.FuncType)(unsafe.Pointer(t))
-	return toType(tt.In[i])
+	return toType(normalizeFuncABIType(tt.In[i]))
 }
 
 func (t *rtype) NumIn() int {
@@ -490,7 +493,7 @@ func (t *rtype) Out(i int) Type {
 		panic("reflect: Out of non-func type " + t.String())
 	}
 	tt := (*abi.FuncType)(unsafe.Pointer(t))
-	return toType(tt.Out[i])
+	return toType(normalizeFuncABIType(tt.Out[i]))
 }
 
 func (t *rtype) IsVariadic() bool {
@@ -1252,23 +1255,24 @@ func FuncOf(in, out []Type, variadic bool) Type {
 	// Build a hash and minimally populate ft.
 	var hash uint32
 	for i, in := range in {
-		t := in.(*rtype)
-		ft.In[i] = &t.t
-		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+		t := in.common()
+		ft.In[i] = t
+		hash = fnv1(hash, byte(t.Hash>>24), byte(t.Hash>>16), byte(t.Hash>>8), byte(t.Hash))
 	}
 	if variadic {
 		hash = fnv1(hash, 'v')
 	}
 	hash = fnv1(hash, '.')
 	for i, out := range out {
-		t := out.(*rtype)
-		ft.Out[i] = &t.t
-		hash = fnv1(hash, byte(t.t.Hash>>24), byte(t.t.Hash>>16), byte(t.t.Hash>>8), byte(t.t.Hash))
+		t := out.common()
+		ft.Out[i] = t
+		hash = fnv1(hash, byte(t.Hash>>24), byte(t.Hash>>16), byte(t.Hash>>8), byte(t.Hash))
 	}
 
 	ft.TFlag = 0
 	ft.Hash = hash
 	ft.Kind_ = uint8(abi.Func)
+	ft.Kind_ |= abi.KindDirectIface
 	if variadic {
 		ft.TFlag |= abi.TFlagVariadic
 	}
@@ -1309,6 +1313,13 @@ func FuncOf(in, out []Type, variadic bool) Type {
 
 func stringFor(t *abi.Type) string {
 	return toRType(t).String()
+}
+
+func normalizeFuncABIType(t *abi.Type) *abi.Type {
+	if t != nil && t.IsClosure() {
+		return &t.StructType().Fields[0].Typ.FuncType().Type
+	}
+	return t
 }
 
 // funcStr builds a string representation of a funcType.

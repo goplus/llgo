@@ -1,5 +1,5 @@
-//go:build go1.23
-// +build go1.23
+//go:build go1.23 && !wasm
+// +build go1.23,!wasm
 
 package runtime
 

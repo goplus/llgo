@@ -2,11 +2,10 @@ package runtime
 
 import "unsafe"
 
-// internal/bytealg.MakeNoZero is implemented in the runtime in upstream Go.
-// We provide it here via linkname so stdlib packages can call it without
-// relying on runtime/internal/lib alt patches.
+// internal/bytealg in llgo calls into this runtime helper through the
+// runtime/internal/lib alt package mirror.
 //
-//go:linkname bytealg_MakeNoZero internal/bytealg.MakeNoZero
+//go:linkname bytealg_MakeNoZero runtime.bytealg_MakeNoZero
 func bytealg_MakeNoZero(n int) []byte {
 	if n < 0 || uintptr(n) > maxAlloc {
 		panicmakeslicelen()

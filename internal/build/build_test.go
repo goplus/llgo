@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -216,6 +217,1058 @@ func runBinary(t *testing.T, path string, args ...string) string {
 func TestRunPrintfWithStdioNobuf(t *testing.T) {
 	t.Setenv(llgoStdioNobuf, "1")
 	mockRun([]string{"../../cl/_testdata/printf"}, &Config{Mode: ModeRun})
+}
+
+func TestModeGenKeepAliveOverlayPromotesStackAlloc(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-keepalive-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/keepalive\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type HeapObj [8]int64
+type StkObj struct{ h *HeapObj }
+
+func g(s *StkObj) {
+	runtime.KeepAlive(s)
+}
+
+func f() {
+	var s StkObj
+	s.h = new(HeapObj)
+	g(&s)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/keepalive.f")
+	if !strings.Contains(body, `alloca %"example.com/keepalive.StkObj"`) {
+		t.Fatalf("f should use a stack slot for StkObj:\n%s", body)
+	}
+	if strings.Contains(body, `@"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)`) {
+		t.Fatalf("f should not heap-allocate the local StkObj:\n%s", body)
+	}
+}
+
+func TestModeBuildStringFieldInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-miface-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/miface\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type S struct{ name string }
+
+func main() {
+	s := &S{name: "x"}
+	v := any(s.name)
+	fmt.Println(v.(string))
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "miface")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "x\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildNamedStringInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-named-string-iface-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/namedstringiface\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type E string
+
+func main() {
+	var x any = E("boom")
+	fmt.Println(x.(E))
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "namedstringiface")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "boom\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildMultiResultSliceInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multi-slice-iface-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multisliceiface\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+func pair(x []int) ([]int, []int) { return x, x }
+
+func main() {
+	x, _ := pair([]int{1})
+	v := any(x)
+	fmt.Println(v.([]int)[0])
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "multisliceiface")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "1\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeTestMultiResultSliceInterfaceBoxing(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multi-slice-iface-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multisliceifacetest\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package iface
+
+import "testing"
+
+func pair(x []int) ([]int, []int) { return x, x }
+
+func TestIface(t *testing.T) {
+	x, _ := pair([]int{1})
+	v := any(x)
+	got := v.([]int)
+	if len(got) != 1 || got[0] != 1 {
+		t.Fatalf("unexpected slice in interface: %#v", got)
+	}
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "iface_test.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "iface.test")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeTest, CompileOnly: true, OutFile: binPath, AppExt: ".test"}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeTest compile failed: %v", err)
+	}
+	got := runBinary(t, binPath, "-test.run", "^TestIface$")
+	if !strings.Contains(got, "PASS\n") {
+		t.Fatalf("unexpected test binary output: %q", got)
+	}
+}
+
+func TestModeBuildMultiResultPointerFirstResult(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multi-ptr-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multiptr\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type T struct{ n int }
+
+func pair(x *T) (*T, *T) { return x, x }
+
+func main() {
+	x, _ := pair(&T{n: 7})
+	fmt.Println(x.n)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "multiptr")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "7\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildMultiResultPointerFieldFirstResult(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multiptr-field-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multiptrfield\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type T struct{ n int }
+type holder struct{ p *T }
+
+//go:noinline
+func pair() (*T, error) {
+	var h holder
+	h.p = &T{n: 7}
+	return h.p, nil
+}
+
+func main() {
+	x, err := pair()
+	if err != nil {
+		panic(err)
+	}
+	if x == nil {
+		panic("nil")
+	}
+	fmt.Println(x.n)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "multiptrfield")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "7\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildMultiResultPointerWrapperReturn(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multiptr-wrap-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multiptrwrap\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type T struct{ n int }
+
+//go:noinline
+func parse(s string) (*T, error) {
+	if len(s) == 0 {
+		return nil, nil
+	}
+	return &T{n: len(s)}, nil
+}
+
+//go:noinline
+func Parse(s string) (*T, error) { return parse(s) }
+
+//go:noinline
+func ParseLocal(s string) (*T, error) {
+	x, err := parse(s)
+	return x, err
+}
+
+func main() {
+	x, err := Parse("abc")
+	if err != nil {
+		panic(err)
+	}
+	if x == nil {
+		panic("nil Parse")
+	}
+	y, err := ParseLocal("abcd")
+	if err != nil {
+		panic(err)
+	}
+	if y == nil {
+		panic("nil ParseLocal")
+	}
+	fmt.Println(x.n, y.n)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "multiptrwrap")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "3 4\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildInterfaceMethodOnPointerFieldValueReceiver(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-iface-pfield-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/ifacepfield\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type I interface{ Len() int }
+type S struct{ p *[]int }
+
+func (s S) Len() int { return len(*s.p) }
+
+func main() {
+	xs := []int{1, 2, 3}
+	var i I = S{p: &xs}
+	fmt.Println(i.Len())
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "ifacepfield")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "3\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeGenSetFinalizerUsesTypedHelper(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-setfinalizer-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/setfinalizer\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type T struct{ p *int }
+
+func fin(*T) {}
+
+func f(x *T) {
+	runtime.SetFinalizer(x, fin)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/setfinalizer.f")
+	if !strings.Contains(body, "@runtime.SetFinalizerTypeHidden(") {
+		t.Fatalf("f should use the hidden typed SetFinalizer helper:\n%s", body)
+	}
+	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
+		t.Fatalf("f should not call SetFinalizer directly:\n%s", body)
+	}
+	callIdx := strings.Index(body, "@runtime.SetFinalizerTypeHidden(")
+	if callIdx < 0 {
+		t.Fatalf("missing SetFinalizerTypeHidden call:\n%s", body)
+	}
+	window := body[:callIdx]
+	hasXor := strings.Contains(window, "xor i64") || strings.Contains(window, "xor i32")
+	hasMul := strings.Contains(window, "mul i64") || strings.Contains(window, "mul i32")
+	hasRotate := strings.Contains(window, "shl i64") || strings.Contains(window, "shl i32")
+	hasRotate = hasRotate && (strings.Contains(window, "lshr i64") || strings.Contains(window, "lshr i32"))
+	if !hasXor || !hasMul || !hasRotate {
+		t.Fatalf("f should encode the finalizer key before SetFinalizerTypeHidden:\n%s", body)
+	}
+	if !strings.Contains(body[callIdx:], "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("f should clobber transient pointer registers after SetFinalizerTypeHidden:\n%s", body)
+	}
+	pre := body[:callIdx]
+	if !strings.Contains(pre, "store i64 0, ptr") {
+		t.Fatalf("f should clear the hidden finalizer key temp before SetFinalizerTypeHidden:\n%s", body)
+	}
+}
+
+func TestModeGenSetFinalizerUsesTypedHelperForFieldClosure(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-stackobj-setfinalizer-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/stackobjfinalizer\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type HeapObj [8]int64
+
+type StkObj struct {
+	h *HeapObj
+}
+
+func f() {
+	var s StkObj
+	s.h = new(HeapObj)
+	runtime.SetFinalizer(s.h, func(h *HeapObj) {})
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/stackobjfinalizer.f")
+	if !strings.Contains(body, "@runtime.SetFinalizerTypeHidden(") {
+		t.Fatalf("f should use the hidden typed SetFinalizer helper for field closures:\n%s", body)
+	}
+	if strings.Contains(body, `call void @runtime.SetFinalizer(`) {
+		t.Fatalf("f should not call SetFinalizer directly for field closures:\n%s", body)
+	}
+}
+
+func TestModeGenSetFinalizerReusesHiddenPointerKey(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-stringdata-setfinalizer-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/stringdatafinalizer\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import (
+	"runtime"
+	"unsafe"
+)
+
+func f(s string) {
+	p := unsafe.StringData(s)
+	runtime.SetFinalizer(p, func(*byte) {})
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/stringdatafinalizer.f")
+	callIdx := strings.Index(body, "@runtime.SetFinalizerTypeHidden(")
+	if callIdx < 0 {
+		t.Fatalf("f should use SetFinalizerTypeHidden:\n%s", body)
+	}
+	loadIdx := strings.LastIndex(body[:callIdx], "load i64, ptr")
+	if loadIdx < 0 {
+		t.Fatalf("f should load a hidden pointer key before SetFinalizerTypeHidden:\n%s", body)
+	}
+	window := body[loadIdx:callIdx]
+	if strings.Contains(window, "ptrtoint") || strings.Contains(window, "inttoptr") {
+		t.Fatalf("f should reuse the hidden pointer key without decoding/re-encoding it:\n%s", body)
+	}
+	if !strings.Contains(body[callIdx:], "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("f should clobber transient pointer registers after SetFinalizerTypeHidden:\n%s", body)
+	}
+	pre := body[:callIdx]
+	if !strings.Contains(pre, "store i64 0, ptr") {
+		t.Fatalf("f should clear the hidden pointer key temp before SetFinalizerTypeHidden:\n%s", body)
+	}
+}
+
+func TestModeGenStackobjClearsLivenessRoots(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-stackobj-ir-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/stackobjir\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "runtime"
+
+type HeapObj [8]int64
+
+type StkObj struct {
+	h *HeapObj
+}
+
+func gc() {
+	runtime.GC()
+	runtime.GC()
+	runtime.GC()
+}
+
+func f() {
+	var s StkObj
+	s.h = new(HeapObj)
+	runtime.SetFinalizer(s.h, func(h *HeapObj) {})
+	g(&s)
+	gc()
+}
+
+func g(s *StkObj) {
+	gc()
+	runtime.KeepAlive(s)
+	gc()
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	ir := pkgs[0].LPkg.String()
+	fBody := functionBody(t, ir, "example.com/stackobjir.f")
+	gBody := functionBody(t, ir, "example.com/stackobjir.g")
+	if !strings.Contains(fBody, "@runtime.SetFinalizerTypeHidden(") {
+		t.Fatalf("f should use SetFinalizerTypeHidden:\n%s", fBody)
+	}
+	if strings.Contains(fBody, `insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"*_llgo_example.com/stackobjir.HeapObj"`) {
+		t.Fatalf("f should not materialize an object interface for SetFinalizer after typed lowering:\n%s", fBody)
+	}
+	callIdx := strings.Index(fBody, `@"example.com/stackobjir.g"(`)
+	hiddenCallIdx := strings.Index(fBody, `@"example.com/stackobjir.g$hiddencall"(`)
+	if hiddenCallIdx > callIdx {
+		callIdx = hiddenCallIdx
+	}
+	if callIdx < 0 {
+		t.Fatalf("missing g call in f:\n%s", fBody)
+	}
+	if clearIdx := strings.Index(fBody[callIdx:], `zeroinitializer`); clearIdx < 0 {
+		t.Fatalf("f should clear the stack object after calling g:\n%s", fBody)
+	}
+	if !strings.Contains(gBody, "@runtime.KeepAlivePointer(") {
+		t.Fatalf("g should lower KeepAlive to the pointer helper:\n%s", gBody)
+	}
+	if !strings.Contains(gBody, "@runtime.ShadowCopyPointee(") {
+		t.Fatalf("g should shadow-copy the caller pointee before KeepAlive-only liveness checks:\n%s", gBody)
+	}
+	keepAliveIdx := strings.Index(gBody, "@runtime.KeepAlivePointer(")
+	if keepAliveIdx < 0 {
+		t.Fatalf("missing pointer KeepAlive helper in g:\n%s", gBody)
+	}
+	if !strings.Contains(gBody[keepAliveIdx:], `zeroinitializer`) {
+		t.Fatalf("g should clear the shadow pointee after the last KeepAlive use:\n%s", gBody)
+	}
+}
+
+func TestModeGenLoopValueClearSkipsLoopCarriedPointer(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-loop-value-clear-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/loopvalueclear\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "unsafe"
+
+type Method struct {
+	A uintptr
+	B uintptr
+	C uintptr
+	D uintptr
+	E uintptr
+}
+
+type Uncommon struct {
+	Mcount uint16
+	Xcount uint16
+	Moff   uint32
+}
+
+var sink unsafe.Pointer
+
+func add(p unsafe.Pointer, x uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(p) + x)
+}
+
+func f(t *Uncommon) {
+	if t.Mcount == 0 {
+		return
+	}
+	methodsPtr := add(unsafe.Pointer(t), uintptr(t.Moff))
+	for i := 0; i < int(t.Mcount); i++ {
+		sink = add(methodsPtr, uintptr(i)*unsafe.Sizeof(Method{}))
+	}
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/loopvalueclear.f")
+	loopBody := body
+	if start := strings.Index(body, "_llgo_4:"); start >= 0 {
+		loopBody = body[start:]
+		if end := strings.Index(loopBody, "_llgo_5:"); end >= 0 {
+			loopBody = loopBody[:end]
+		}
+	}
+	loopClear := regexp.MustCompile(`(?s)%\d+ = load ptr, ptr (%\d+), align 8\s+store ptr null, ptr (%\d+), align 8\s+%\d+ = call ptr @"example\.com/loopvalueclear\.add"\(ptr %\d+, i64 %\d+\)`)
+	if m := loopClear.FindStringSubmatch(loopBody); m != nil && m[1] == m[2] {
+		t.Fatalf("f should not clear a loop-carried pointer slot before the next add call:\n%s", body)
+	}
+}
+
+func TestModeGenLoopParamValueClearSkipsLoopCarriedPointer(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-loop-param-clear-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/loopparamclear\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+type Meta struct {
+	BucketSize uint16
+}
+
+var sink bool
+
+func bucketEvacuated(t *Meta, bucket uintptr) bool {
+	return bucket < uintptr(t.BucketSize)
+}
+
+func f(t *Meta, stop uintptr) {
+	cur := uintptr(0)
+	for cur != stop && bucketEvacuated(t, cur) {
+		cur++
+	}
+	sink = cur == stop
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/loopparamclear.f")
+	loopClear := regexp.MustCompile(`(?s)load ptr, ptr (%\d+), align 8.*call i1 @"example\.com/loopparamclear\.bucketEvacuated"\(ptr %\d+, i64 %\d+\).*store ptr null, ptr (%\d+), align 8`)
+	if m := loopClear.FindStringSubmatch(body); m != nil && m[1] == m[2] {
+		t.Fatalf("f should not clear a loop-carried parameter slot inside the loop:\n%s", body)
+	}
+}
+
+func TestModeGenByValueParamSpillClobbersPointerRegs(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-byvalue-param-spill-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/byvalueparamspill\n\ngo 1.23\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+type H struct{}
+type S struct{ h *H }
+
+var null S
+var sink *H
+
+func use(*S) {}
+func wait() {}
+
+func f(s S, b bool) {
+	var p *S
+	if b {
+		p = &s
+	} else {
+		p = &null
+	}
+	use(p)
+	sink = p.h
+	sink = nil
+	wait()
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	pkgs, err := Do([]string{"."}, &Config{Mode: ModeGen})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("len(pkgs) = %d, want 1", len(pkgs))
+	}
+	body := functionBody(t, pkgs[0].LPkg.String(), "example.com/byvalueparamspill.f")
+	waitIdx := strings.Index(body, "@\"example.com/byvalueparamspill.wait\"(")
+	if waitIdx < 0 {
+		waitIdx = strings.Index(body, "@example.com/byvalueparamspill.wait(")
+	}
+	if waitIdx < 0 {
+		t.Fatalf("missing wait call:\n%s", body)
+	}
+	window := body[:waitIdx]
+	if !strings.Contains(window, "@runtime.LoadHiddenPointerKey(") {
+		t.Fatalf("f should load p.h through the hidden pointer key helper:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.StoreHiddenPointerRoot(") {
+		t.Fatalf("f should store sink through the hidden pointer root helper:\n%s", body)
+	}
+	if !strings.Contains(window, "@runtime.ClobberPointerRegs(") {
+		t.Fatalf("f should clobber pointer registers after spilling the by-value param:\n%s", body)
+	}
+}
+
+func functionBody(t *testing.T, ir, name string) string {
+	t.Helper()
+	marker := `define void @"` + name + `"`
+	start := strings.Index(ir, marker)
+	if start < 0 {
+		t.Fatalf("function %s not found in IR", name)
+	}
+	rest := ir[start:]
+	if next := strings.Index(rest[len(marker):], "\ndefine "); next >= 0 {
+		return rest[:len(marker)+next]
+	}
+	return rest
 }
 
 func TestTestOutputFileLogic(t *testing.T) {

@@ -80,7 +80,14 @@ func (p Package) closureWrapDecl(fn Expr, sig *types.Signature) Function {
 	wrap.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	b := wrap.MakeBody(1)
 	args := closureWrapArgs(wrap)
-	ret := b.Call(fn, args...)
+	var ret Expr
+	if b.Pkg.Prog.runtime() != nil {
+		prev := b.InlineCall(b.Pkg.rtFunc("ForwardRecoverToken"), recoverTokenExpr(b, fn))
+		ret = b.Call(fn, args...)
+		b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
+	} else {
+		ret = b.Call(fn, args...)
+	}
 	closureWrapReturn(b, sig, ret)
 	return wrap
 }
@@ -103,9 +110,16 @@ func (p Package) closureWrapPtr(sig *types.Signature) Function {
 	// ctxArg is expected to be a non-nil pointer to a stored function pointer cell.
 	// We intentionally avoid runtime null checks here; invalid ctx is a compiler/user error.
 	fnPtr := b.Convert(fnPtrType, ctxArg)
-	fnVal := b.Load(fnPtr)
+	fnVal := Expr{llvm.CreateLoad(b.impl, fnType.ll, fnPtr.impl), fnType}
 	args := closureWrapArgs(wrap)
-	ret := b.Call(fnVal, args...)
+	var ret Expr
+	if b.Pkg.Prog.runtime() != nil {
+		prev := b.InlineCall(b.Pkg.rtFunc("ForwardRecoverToken"), recoverTokenExpr(b, fnVal))
+		ret = b.Call(fnVal, args...)
+		b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
+	} else {
+		ret = b.Call(fnVal, args...)
+	}
 	closureWrapReturn(b, sig, ret)
 	return wrap
 }

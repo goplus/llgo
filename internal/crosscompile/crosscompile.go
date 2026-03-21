@@ -108,6 +108,10 @@ func getMacOSSysroot() (string, error) {
 // getESPClangRoot returns the ESP Clang root directory, checking LLGoROOT first,
 // then downloading if needed and platform is supported
 func getESPClangRoot(forceEspClang bool) (clangRoot string, err error) {
+	if needSkipDownload {
+		return filepath.Join(cacheRoot(), "crosscompile", "esp-clang-"+espClangVersion), nil
+	}
+
 	llgoRoot := env.LLGoROOT()
 
 	// First check if clang exists in LLGoROOT
@@ -345,7 +349,6 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			"-Wl,--export-memory",
 			"-Wl,--initial-memory=67108864", // 64MB
 			"-mbulk-memory",
-			"-mmultimemory",
 			"-z", "stack-size=10485760", // 10MB
 			"-Wl,--export=malloc", "-Wl,--export=free",
 			"-lc",
@@ -608,17 +611,19 @@ func UseTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		libcLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
-			CC:      export.CC,
-			Linker:  export.Linker,
-			CCFLAGS: ccflags,
-			LDFLAGS: ldflags,
-		})
-		if err != nil {
-			return
+		if !needSkipDownload {
+			libcLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+				CC:      export.CC,
+				Linker:  export.Linker,
+				CCFLAGS: ccflags,
+				LDFLAGS: ldflags,
+			})
+			if err != nil {
+				return
+			}
+			ldflags = append(ldflags, libcLDFlags...)
 		}
 		cflags = append(cflags, compileConfig.ExportCFlags...)
-		ldflags = append(ldflags, libcLDFlags...)
 
 		libcIncludeDir = compileConfig.ExportCFlags
 		export.Libc = config.Libc
@@ -634,17 +639,19 @@ func UseTarget(targetName string) (export Export, err error) {
 		if err != nil {
 			return
 		}
-		rtLibLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
-			CC:      export.CC,
-			Linker:  export.Linker,
-			CCFLAGS: ccflags,
-			LDFLAGS: ldflags,
-			CFLAGS:  libcIncludeDir,
-		})
-		if err != nil {
-			return
+		if !needSkipDownload {
+			rtLibLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+				CC:      export.CC,
+				Linker:  export.Linker,
+				CCFLAGS: ccflags,
+				LDFLAGS: ldflags,
+				CFLAGS:  libcIncludeDir,
+			})
+			if err != nil {
+				return
+			}
+			ldflags = append(ldflags, rtLibLDFlags...)
 		}
-		ldflags = append(ldflags, rtLibLDFlags...)
 	}
 
 	// Combine with config flags and expand template variables

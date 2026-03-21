@@ -20,11 +20,14 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"go/token"
 	"go/types"
 	"hash"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/runtime/abi"
@@ -136,7 +139,11 @@ type Builder struct {
 	Pkg     string
 	PtrSize uintptr
 	Sizes   types.Sizes
+
+	LocalTypeArgs []string
 }
+
+var localDisplayOrdinals sync.Map
 
 // New creates a new ABI type Builder.
 func New(pkg string, ptrSize uintptr, sizes types.Sizes) *Builder {
@@ -171,10 +178,10 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 		ret, pub = b.TypeName(t.Elem())
 		return fmt.Sprintf("[%v]%s", t.Len(), ret), pub
 	case *types.Named:
-		o := t.Obj()
+		o := namedContextObject(t)
 		pkg := o.Pkg()
 		ids := scopeIndices(o)
-		return "_llgo_" + FullName(pkg, NamedName(t)+ids), (pkg == nil || o.Exported() && ids == "")
+		return "_llgo_" + FullName(pkg, b.namedName(t)+ids), (pkg == nil || o.Exported() && ids == "")
 	case *types.Interface:
 		if t.Empty() {
 			return "_llgo_any", true
@@ -204,64 +211,326 @@ func (b *Builder) TypeName(t types.Type) (ret string, pub bool) {
 }
 
 func NamedName(t *types.Named) string {
+	var b Builder
+	return b.namedName(t)
+}
+
+func (b *Builder) namedName(t *types.Named) string {
+	obj := namedContextObject(t)
+	name := obj.Name()
+	outer, env := b.localTypeContext(obj)
+	if len(outer) == 0 {
+		outer, env = b.fallbackLocalTypeContext(obj, t.TypeArgs())
+	}
 	if targs := t.TypeArgs(); targs != nil {
 		n := targs.Len()
 		infos := make([]string, n)
 		for i := 0; i < n; i++ {
-			infos[i] = typeArgString(targs.At(i))
+			infos[i] = b.typeArgStringWithEnv(targs.At(i), env)
 		}
-		return t.Obj().Name() + "[" + strings.Join(infos, ",") + "]"
+		if len(outer) != 0 {
+			return name + "[" + strings.Join(outer, ",") + ";" + strings.Join(infos, ",") + "]"
+		}
+		return name + "[" + strings.Join(infos, ",") + "]"
 	}
-	return t.Obj().Name()
+	if len(outer) != 0 {
+		return name + "[" + strings.Join(outer, ",") + "]"
+	}
+	return name
 }
 
 func TypeArgs(typeArgs []types.Type) string {
+	var b Builder
+	return b.typeArgs(typeArgs)
+}
+
+func TypeArgStrings(typeArgs []types.Type) []string {
+	var b Builder
+	ret := make([]string, len(typeArgs))
+	for i, t := range typeArgs {
+		ret[i] = b.typeArgString(t)
+	}
+	return ret
+}
+
+func (b *Builder) typeArgs(typeArgs []types.Type) string {
 	targs := make([]string, len(typeArgs))
 	for i, t := range typeArgs {
-		targs[i] = typeArgString(t)
+		targs[i] = b.typeArgString(t)
 	}
 	return "[" + strings.Join(targs, ",") + "]"
 }
 
 func namedLikeTypeArgString(obj types.Object, targs *types.TypeList) string {
+	var b Builder
+	return b.namedLikeTypeArgString(obj, targs)
+}
+
+func (b *Builder) namedLikeTypeArgString(obj types.Object, targs *types.TypeList) string {
 	name := obj.Name()
+	outer, env := b.localTypeContext(obj)
+	if len(outer) == 0 {
+		outer, env = b.fallbackLocalTypeContext(obj, targs)
+	}
 	if targs != nil {
 		n := targs.Len()
 		infos := make([]string, n)
 		for i := 0; i < n; i++ {
-			infos[i] = typeArgString(targs.At(i))
+			infos[i] = b.typeArgStringWithEnv(targs.At(i), env)
 		}
-		name += "[" + strings.Join(infos, ",") + "]"
+		if len(outer) != 0 {
+			name += "[" + strings.Join(outer, ",") + ";" + strings.Join(infos, ",") + "]"
+		} else {
+			name += "[" + strings.Join(infos, ",") + "]"
+		}
+	} else if len(outer) != 0 {
+		name += "[" + strings.Join(outer, ",") + "]"
 	}
 	// Distinct local types may share the same object name (e.g. in stdlib
 	// tests). Disambiguate them in symbol names using stable scope indices.
 	name += scopeIndices(obj)
 	if pkg := obj.Pkg(); pkg != nil {
-		return PathOf(pkg) + "." + name
+		return userPathOf(pkg) + "." + name
 	}
 	return name
 }
 
-func typeArgString(t types.Type) string {
+func (b *Builder) namedDisplayName(t *types.Named) string {
+	obj := namedContextObject(t)
+	registerDisplayScope(obj)
+	name := obj.Name()
+	outer, env := b.localTypeContext(obj)
+	if len(outer) == 0 {
+		outer, env = b.fallbackLocalTypeContext(obj, t.TypeArgs())
+	}
+	if targs := t.TypeArgs(); targs != nil {
+		n := targs.Len()
+		infos := make([]string, n)
+		for i := 0; i < n; i++ {
+			infos[i] = b.displayTypeArgStringWithEnv(targs.At(i), env)
+		}
+		if len(outer) != 0 {
+			return name + "[" + strings.Join(outer, ",") + ";" + strings.Join(infos, ",") + "]"
+		}
+		return name + "[" + strings.Join(infos, ",") + "]"
+	}
+	if len(outer) != 0 {
+		return name + "[" + strings.Join(outer, ",") + "]"
+	}
+	return name
+}
+
+func (b *Builder) displayTypeArgStringWithEnv(t types.Type, env map[string]string) string {
 	switch t := t.(type) {
 	case *types.Alias:
-		return typeArgString(types.Unalias(t))
+		return b.displayTypeArgStringWithEnv(types.Unalias(t), env)
 	case *types.Basic:
 		return t.String()
 	case *types.Named:
-		return namedLikeTypeArgString(t.Obj(), t.TypeArgs())
+		return b.namedLikeDisplayString(namedContextObject(t), t.TypeArgs())
+	case *types.TypeParam:
+		if ret, ok := env[t.Obj().Name()]; ok {
+			return ret
+		}
+		return t.Obj().Name()
 	case *types.Pointer:
-		return "*" + typeArgString(t.Elem())
+		return "*" + b.displayTypeArgStringWithEnv(t.Elem(), env)
 	case *types.Slice:
-		return "[]" + typeArgString(t.Elem())
+		return "[]" + b.displayTypeArgStringWithEnv(t.Elem(), env)
 	case *types.Array:
-		return fmt.Sprintf("[%v]%s", t.Len(), typeArgString(t.Elem()))
+		return fmt.Sprintf("[%v]%s", t.Len(), b.displayTypeArgStringWithEnv(t.Elem(), env))
 	case *types.Map:
-		return fmt.Sprintf("map[%s]%s", typeArgString(t.Key()), typeArgString(t.Elem()))
+		return fmt.Sprintf("map[%s]%s", b.displayTypeArgStringWithEnv(t.Key(), env), b.displayTypeArgStringWithEnv(t.Elem(), env))
+	case *types.Chan:
+		_, s := ChanDir(t.Dir())
+		elem := b.displayTypeArgStringWithEnv(t.Elem(), env)
+		if t.Dir() == types.SendRecv {
+			if ch, ok := t.Elem().(*types.Chan); ok && ch.Dir() == types.RecvOnly {
+				elem = "(" + elem + ")"
+			}
+		}
+		return fmt.Sprintf("%s %s", s, elem)
+	default:
+		return types.TypeString(t, userPathOf)
+	}
+}
+
+func (b *Builder) namedLikeDisplayString(obj types.Object, targs *types.TypeList) string {
+	registerDisplayScope(obj)
+	name := obj.Name()
+	outer, env := b.localTypeContext(obj)
+	if len(outer) == 0 {
+		outer, env = b.fallbackLocalTypeContext(obj, targs)
+	}
+	if targs != nil {
+		n := targs.Len()
+		infos := make([]string, n)
+		for i := 0; i < n; i++ {
+			infos[i] = b.displayTypeArgStringWithEnv(targs.At(i), env)
+		}
+		if len(outer) != 0 {
+			name += "[" + strings.Join(outer, ",") + ";" + strings.Join(infos, ",") + "]"
+		} else {
+			name += "[" + strings.Join(infos, ",") + "]"
+		}
+		if suffix := displayScopeSuffix(obj); suffix != "" {
+			name += suffix
+		}
+	} else if len(outer) != 0 {
+		name += "[" + strings.Join(outer, ",") + "]"
+	}
+	if pkg := obj.Pkg(); pkg != nil {
+		return userPathOf(pkg) + "." + name
+	}
+	return name
+}
+
+func displayScopeSuffix(obj types.Object) string {
+	ord, ok := registerDisplayScope(obj)
+	if !ok {
+		return ""
+	}
+	return "·" + strconv.Itoa(ord)
+}
+
+func registerDisplayScope(obj types.Object) (int, bool) {
+	if obj == nil {
+		return 0, false
+	}
+	if obj.Parent() != nil {
+		return 0, false
+	}
+	pos := obj.Pos()
+	if !pos.IsValid() {
+		return 0, false
+	}
+	if ord, ok := localDisplayOrdinals.Load(pos); ok {
+		return ord.(int), true
+	}
+	ord := 1
+	localDisplayOrdinals.Range(func(_, _ any) bool {
+		ord++
+		return true
+	})
+	actual, _ := localDisplayOrdinals.LoadOrStore(pos, ord)
+	return actual.(int), true
+}
+
+func (b *Builder) fallbackLocalTypeContext(obj types.Object, targs *types.TypeList) ([]string, map[string]string) {
+	if len(b.LocalTypeArgs) == 0 || obj == nil || obj.Parent() != nil || targs == nil || targs.Len() == 0 {
+		return nil, nil
+	}
+	params := typeParamNamesInTypeArgs(targs)
+	if len(params) > len(b.LocalTypeArgs) {
+		return nil, nil
+	}
+	env := make(map[string]string, len(params))
+	for i, name := range params {
+		env[name] = b.LocalTypeArgs[i]
+	}
+	return b.LocalTypeArgs, env
+}
+
+func typeParamNamesInTypeArgs(targs *types.TypeList) []string {
+	if targs == nil || targs.Len() == 0 {
+		return nil
+	}
+	var ret []string
+	seen := make(map[string]struct{})
+	for i := 0; i < targs.Len(); i++ {
+		collectTypeParamNames(targs.At(i), seen, &ret)
+	}
+	return ret
+}
+
+func collectTypeParamNames(t types.Type, seen map[string]struct{}, out *[]string) {
+	switch t := types.Unalias(t).(type) {
+	case *types.TypeParam:
+		name := t.Obj().Name()
+		if _, ok := seen[name]; ok {
+			return
+		}
+		seen[name] = struct{}{}
+		*out = append(*out, name)
+	case *types.Pointer:
+		collectTypeParamNames(t.Elem(), seen, out)
+	case *types.Slice:
+		collectTypeParamNames(t.Elem(), seen, out)
+	case *types.Array:
+		collectTypeParamNames(t.Elem(), seen, out)
+	case *types.Map:
+		collectTypeParamNames(t.Key(), seen, out)
+		collectTypeParamNames(t.Elem(), seen, out)
+	case *types.Chan:
+		collectTypeParamNames(t.Elem(), seen, out)
+	case *types.Named:
+		collectTypeParamNamesInList(t.TypeArgs(), seen, out)
+	case *types.Struct:
+		for i := 0; i < t.NumFields(); i++ {
+			collectTypeParamNames(t.Field(i).Type(), seen, out)
+		}
+	case *types.Interface:
+		for i := 0; i < t.NumMethods(); i++ {
+			collectTypeParamNames(t.Method(i).Type(), seen, out)
+		}
+	case *types.Signature:
+		collectTypeParamNamesInTuple(t.Params(), seen, out)
+		collectTypeParamNamesInTuple(t.Results(), seen, out)
+	}
+}
+
+func collectTypeParamNamesInList(targs *types.TypeList, seen map[string]struct{}, out *[]string) {
+	if targs == nil {
+		return
+	}
+	for i := 0; i < targs.Len(); i++ {
+		collectTypeParamNames(targs.At(i), seen, out)
+	}
+}
+
+func collectTypeParamNamesInTuple(tuple *types.Tuple, seen map[string]struct{}, out *[]string) {
+	if tuple == nil {
+		return
+	}
+	for i := 0; i < tuple.Len(); i++ {
+		collectTypeParamNames(tuple.At(i).Type(), seen, out)
+	}
+}
+
+func typeArgString(t types.Type) string {
+	var b Builder
+	return b.typeArgString(t)
+}
+
+func (b *Builder) typeArgString(t types.Type) string {
+	return b.typeArgStringWithEnv(t, nil)
+}
+
+func (b *Builder) typeArgStringWithEnv(t types.Type, env map[string]string) string {
+	switch t := t.(type) {
+	case *types.Alias:
+		return b.typeArgStringWithEnv(types.Unalias(t), env)
+	case *types.Basic:
+		return t.String()
+	case *types.Named:
+		return b.namedTypeArgString(t)
+	case *types.TypeParam:
+		if ret, ok := env[t.Obj().Name()]; ok {
+			return ret
+		}
+		return t.Obj().Name()
+	case *types.Pointer:
+		return "*" + b.typeArgStringWithEnv(t.Elem(), env)
+	case *types.Slice:
+		return "[]" + b.typeArgStringWithEnv(t.Elem(), env)
+	case *types.Array:
+		return fmt.Sprintf("[%v]%s", t.Len(), b.typeArgStringWithEnv(t.Elem(), env))
+	case *types.Map:
+		return fmt.Sprintf("map[%s]%s", b.typeArgStringWithEnv(t.Key(), env), b.typeArgStringWithEnv(t.Elem(), env))
 	case *types.Chan:
 		_, s := ChanDir(t.Dir())
 		elem := t.Elem()
-		elemStr := typeArgString(elem)
+		elemStr := b.typeArgStringWithEnv(elem, env)
 		// Keep canonical channel formatting for nested directional channels.
 		// Example: chan (<-chan int), not "chan <-chan int" (ambiguous).
 		if t.Dir() == types.SendRecv {
@@ -273,8 +542,74 @@ func typeArgString(t types.Type) string {
 	default:
 		// Fallback for rare type arguments (e.g. signature/interface/struct).
 		// Collisions are mainly caused by local named types, handled above.
-		return types.TypeString(t, PathOf)
+		return types.TypeString(t, userPathOf)
 	}
+}
+
+func (b *Builder) namedTypeArgString(t *types.Named) string {
+	return b.namedLikeTypeArgString(namedContextObject(t), t.TypeArgs())
+}
+
+func namedContextObject(t *types.Named) types.Object {
+	if t == nil {
+		return nil
+	}
+	if orig := t.Origin(); orig != nil {
+		return orig.Obj()
+	}
+	return t.Obj()
+}
+
+func (b *Builder) localTypeContext(obj types.Object) ([]string, map[string]string) {
+	if len(b.LocalTypeArgs) == 0 || obj == nil {
+		return nil, nil
+	}
+	pkg := obj.Pkg()
+	if pkg == nil {
+		return nil, nil
+	}
+	if parent := obj.Parent(); parent == nil || parent == pkg.Scope() {
+		return nil, nil
+	}
+	params := localTypeParams(obj.Parent())
+	if len(params) == 0 {
+		return nil, nil
+	}
+	if len(params) != len(b.LocalTypeArgs) {
+		return nil, nil
+	}
+	env := make(map[string]string, len(params))
+	for i, param := range params {
+		env[param] = b.LocalTypeArgs[i]
+	}
+	return b.LocalTypeArgs, env
+}
+
+func localTypeParams(scope *types.Scope) []string {
+	if scope == nil {
+		return nil
+	}
+	type item struct {
+		name string
+		pos  token.Pos
+	}
+	var items []item
+	for _, name := range scope.Names() {
+		obj := scope.Lookup(name)
+		typ, ok := obj.Type().(*types.TypeParam)
+		if !ok {
+			continue
+		}
+		items = append(items, item{name: typ.Obj().Name(), pos: obj.Pos()})
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].pos < items[j].pos
+	})
+	ret := make([]string, len(items))
+	for i, item := range items {
+		ret[i] = item.name
+	}
+	return ret
 }
 
 const (
@@ -287,6 +622,21 @@ func PathOf(pkg *types.Package) string {
 		return ""
 	}
 	return strings.TrimPrefix(pkg.Path(), PatchPathPrefix)
+}
+
+func userPathOf(pkg *types.Package) string {
+	if pkg == nil {
+		return ""
+	}
+	path := PathOf(pkg)
+	if pkg.Name() == "main" && path == "command-line-arguments" {
+		return "main"
+	}
+	return path
+}
+
+func UserPathOf(pkg *types.Package) string {
+	return userPathOf(pkg)
 }
 
 // FullName returns the full name of a package member.
@@ -417,28 +767,44 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
 	return
 }
 
-func scopeIndex(scope, root *types.Scope, id string) string {
-	parent := scope.Parent()
-	n := parent.NumChildren()
-	for i := 0; i < n; i++ {
-		if parent.Child(i) == scope {
-			id += "." + strconv.Itoa(i)
-			break
-		}
-	}
-	if parent == root {
-		return id
-	}
-	return scopeIndex(parent, root, id)
-}
-
 func scopeIndices(obj types.Object) string {
 	pkg := obj.Pkg()
 	if pkg == nil {
 		return ""
 	}
-	if obj.Parent() != pkg.Scope() {
-		return scopeIndex(obj.Parent(), pkg.Scope(), "")
+	scope := obj.Parent()
+	if scope == nil {
+		if pos := obj.Pos(); pos.IsValid() {
+			return ".pos" + strconv.Itoa(int(pos))
+		}
+		return ""
+	}
+	if scope == pkg.Scope() {
+		return ""
+	}
+	var ids []string
+	for scope != nil && scope != pkg.Scope() {
+		parent := scope.Parent()
+		if parent == nil {
+			break
+		}
+		n := parent.NumChildren()
+		for i := 0; i < n; i++ {
+			if parent.Child(i) == scope {
+				ids = append(ids, strconv.Itoa(i))
+				break
+			}
+		}
+		scope = parent
+	}
+	if scope == pkg.Scope() && len(ids) != 0 {
+		for i, j := 0, len(ids)-1; i < j; i, j = i+1, j-1 {
+			ids[i], ids[j] = ids[j], ids[i]
+		}
+		return "." + strings.Join(ids, ".")
+	}
+	if pos := obj.Pos(); pos.IsValid() {
+		return ".pos" + strconv.Itoa(int(pos))
 	}
 	return ""
 }

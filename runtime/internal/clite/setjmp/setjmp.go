@@ -27,8 +27,8 @@ const (
 )
 
 type (
-	SigjmpBuf [SigjmpBufSize]byte
-	JmpBuf    [JmpBufSize]byte
+	SigjmpBuf sigjmpBuf
+	JmpBuf    jmpBuf
 )
 
 // -----------------------------------------------------------------------------

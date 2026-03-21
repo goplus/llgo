@@ -34,6 +34,11 @@ type slice struct {
 	cap   int
 }
 
+type rangeMapIter struct {
+	it      hiter
+	started bool
+}
+
 func typedmemmove(typ *_type, dst, src unsafe.Pointer) {
 	Typedmemmove(typ, dst, src)
 }
@@ -73,6 +78,12 @@ func NewMapIter(t *maptype, h *hmap) *hiter {
 	return &it
 }
 
+func NewRangeMapIter(t *maptype, h *hmap) *rangeMapIter {
+	var it rangeMapIter
+	mapiterinit(t, h, &it.it)
+	return &it
+}
+
 func MapIterNext(it *hiter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
 	if it.key == nil {
 		return
@@ -81,6 +92,18 @@ func MapIterNext(it *hiter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
 	k, v = it.key, it.elem
 	mapiternext(it)
 	return
+}
+
+func RangeMapIterNext(it *rangeMapIter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
+	if !it.started {
+		it.started = true
+	} else {
+		mapiternext(&it.it)
+	}
+	if it.it.key == nil {
+		return
+	}
+	return true, it.it.key, it.it.elem
 }
 
 func MapLen(h *Map) int {

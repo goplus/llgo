@@ -31,6 +31,7 @@ import (
 	"github.com/goplus/llgo/internal/goembed"
 	"github.com/goplus/llgo/internal/typepatch"
 	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
@@ -110,19 +111,45 @@ type pkgInfo struct {
 type none = struct{}
 
 type context struct {
-	prog        llssa.Program
-	pkg         llssa.Package
-	fn          llssa.Function
-	fset        *token.FileSet
-	goProg      *ssa.Program
-	goTyps      *types.Package
-	goPkg       *ssa.Package
-	pyMod       string
-	skips       map[string]none
-	loaded      map[*types.Package]*pkgInfo // loaded packages
-	bvals       map[ssa.Value]llssa.Expr    // block values
-	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
-	paramDIVars map[*types.Var]llssa.DIVar
+	prog                     llssa.Program
+	pkg                      llssa.Package
+	fn                       llssa.Function
+	goFn                     *ssa.Function
+	fset                     *token.FileSet
+	goProg                   *ssa.Program
+	goTyps                   *types.Package
+	goPkg                    *ssa.Package
+	pyMod                    string
+	skips                    map[string]none
+	loaded                   map[*types.Package]*pkgInfo // loaded packages
+	bvals                    map[ssa.Value]llssa.Expr    // block values
+	vblks                    map[ssa.Value]llssa.BasicBlock
+	btails                   map[*ssa.BasicBlock]llssa.BasicBlock
+	vargs                    map[*ssa.Alloc][]llssa.Expr // varargs
+	recvTuples               map[ssa.Value]*recvTupleState
+	stackClears              map[ssa.Instruction][]*ssa.Alloc
+	stackEntryClears         map[*ssa.BasicBlock][]*ssa.Alloc
+	hiddenPtrAllocs          map[*ssa.Alloc]bool
+	hiddenAllocRoots         map[*ssa.Alloc]bool
+	paramClears              map[ssa.Instruction][]int
+	paramValueClears         map[ssa.Instruction][]int
+	paramSpillClobbers       map[ssa.Instruction]bool
+	valuePreClears           map[ssa.Instruction][]ssa.Value
+	valuePostClears          map[ssa.Instruction][]ssa.Value
+	valueSlots               map[ssa.Value]llssa.Expr
+	valueRootSlots           map[ssa.Value]llssa.Expr
+	hiddenValueSlots         map[ssa.Value]bool
+	hiddenParamKeys          map[int]bool
+	hiddenParamByRefs        map[int]bool
+	hiddenParamSlots         map[int]llssa.Expr
+	hiddenResultType         types.Type
+	hiddenAllocSlots         map[*ssa.Alloc]llssa.Expr
+	paramShadow              map[int]llssa.Expr
+	paramSlots               map[int]llssa.Expr
+	paramDIVars              map[*types.Var]llssa.DIVar
+	allFuncs                 map[*ssa.Function]bool
+	singleExtractCallResults map[*ssa.Call]llssa.Expr
+	strongPtrClobber         bool
 
 	patches  Patches
 	blkInfos []blocks.Info
@@ -144,6 +171,18 @@ type context struct {
 	rewrites   map[string]string
 	embedMap   goembed.VarMap
 	embedInits []embedInit
+}
+
+type recvTupleState struct {
+	ptr       llssa.Expr
+	ok        llssa.Expr
+	recvBlock *ssa.BasicBlock
+	useBlock  *ssa.BasicBlock
+}
+
+type staticCallSite struct {
+	caller *ssa.Function
+	call   *ssa.Call
 }
 
 func (p *context) rewriteValue(name string) (string, bool) {
@@ -197,6 +236,79 @@ func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, boo
 	return value, true
 }
 
+func (p *context) canSkipMakeInterfaceLoad(v *ssa.MakeInterface) bool {
+	_ = p
+	_ = v
+	// MakeInterface consumers in llgo sometimes fold back to the original SSA
+	// operand (for example identical type-asserts and a few intrinsic helpers).
+	// Skipping the backing load here leaves those paths without a materialized
+	// value and trips compileValue's dominance cache. Prefer correctness over
+	// this micro-optimization.
+	return false
+}
+
+func singleNonDebugMakeInterfaceUse(load *ssa.UnOp) (*ssa.MakeInterface, bool) {
+	if load == nil {
+		return nil, false
+	}
+	refs := load.Referrers()
+	if refs == nil {
+		return nil, false
+	}
+	var mi *ssa.MakeInterface
+	count := 0
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.MakeInterface:
+			mi = ref
+			count++
+		default:
+			return nil, false
+		}
+	}
+	return mi, count == 1 && mi != nil
+}
+
+func sameTypeAssertOnlyMakeInterface(v *ssa.MakeInterface) bool {
+	if v == nil {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil || len(*refs) == 0 {
+		return false
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.TypeAssert:
+			if ref.CommaOk || !types.Identical(v.X.Type(), ref.AssertedType) {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func isBlankFieldStore(addr ssa.Value) bool {
+	fieldAddr, ok := addr.(*ssa.FieldAddr)
+	if !ok {
+		return false
+	}
+	switch typ := fieldAddr.X.Type().Underlying().(type) {
+	case *types.Pointer:
+		st, ok := typ.Elem().Underlying().(*types.Struct)
+		return ok && st.Field(fieldAddr.Field).Name() == "_"
+	case *types.Struct:
+		return typ.Field(fieldAddr.Field).Name() == "_"
+	}
+	return false
+}
+
 type pkgState byte
 
 const (
@@ -243,7 +355,12 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	if debugInstr {
 		log.Println("==> NewVar", name, typ)
 	}
-	g := pkg.NewVar(name, typ, llssa.Background(vtype))
+	var g llssa.Global
+	if define {
+		g = pkg.NewVar(name, typ, llssa.Background(vtype))
+	} else {
+		g = pkg.DeclareVar(name, typ, llssa.Background(vtype))
+	}
 	if p.tryEmbedGlobalInit(pkg, gbl, g, name) {
 		return
 	}
@@ -307,6 +424,771 @@ func isInstance(f *ssa.Function) bool {
 	return false
 }
 
+func genericTypeArgsOf(f *ssa.Function) []types.Type {
+	for ; f != nil; f = f.Parent() {
+		if targs := f.TypeArgs(); len(targs) != 0 {
+			return targs
+		}
+	}
+	return nil
+}
+
+type hiddenParamWrapperPlan struct {
+	paramIdx         int
+	hiddenSig        *types.Signature
+	hiddenName       string
+	hiddenParamByRef bool
+	resultHidden     bool
+	resultRawType    types.Type
+}
+
+type hiddenStaticCallShimPlan struct {
+	paramIdx      int
+	hiddenSig     *types.Signature
+	hiddenName    string
+	resultHidden  bool
+	resultRawType types.Type
+}
+
+type singleExtractCallShimPlan struct {
+	extractIdx       int
+	hiddenParamIdx   int
+	hiddenParamByRef bool
+	resultHidden     bool
+	resultRawType    types.Type
+	shimSig          *types.Signature
+	shimName         string
+	outSig           *types.Signature
+	outName          string
+}
+
+func hiddenPlanResultType(plan *hiddenParamWrapperPlan) types.Type {
+	if plan == nil || !plan.resultHidden {
+		return nil
+	}
+	return plan.resultRawType
+}
+
+func isRuntimeMetadataPointer(t types.Type) bool {
+	pt, ok := types.Unalias(t).Underlying().(*types.Pointer)
+	if !ok || pt == nil {
+		return false
+	}
+	named, ok := types.Unalias(pt.Elem()).(*types.Named)
+	if !ok || named == nil || named.Obj() == nil || named.Obj().Pkg() == nil {
+		return false
+	}
+	path := named.Obj().Pkg().Path()
+	return path == "internal/abi" ||
+		path == "internal/runtime/sys" ||
+		strings.HasPrefix(path, "github.com/goplus/llgo/runtime/abi") ||
+		strings.HasPrefix(path, "github.com/goplus/llgo/runtime/internal/runtime")
+}
+
+func shouldSkipHiddenPointerRewrite(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "internal/reflectlite",
+		"reflect",
+		"github.com/goplus/llgo/runtime/internal/lib/internal/reflectlite",
+		"github.com/goplus/llgo/runtime/internal/lib/reflect":
+		switch fn.Name() {
+		case "toType", "toRType", "TypeOf":
+			return true
+		}
+	}
+	return false
+}
+
+func isRuntimeSSAFunction(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil {
+		return false
+	}
+	return isRuntimePackagePath(fn.Pkg.Pkg.Path())
+}
+
+func rewriteHiddenParamSignature(sig *types.Signature, hidden map[int]bool, byRef map[int]bool) *types.Signature {
+	if sig == nil || len(hidden) == 0 {
+		return sig
+	}
+	params := sig.Params()
+	var recv *types.Var
+	if sig.Recv() != nil {
+		recv = types.NewParam(sig.Recv().Pos(), sig.Recv().Pkg(), sig.Recv().Name(), sig.Recv().Type())
+	}
+	newParams := make([]*types.Var, params.Len())
+	for i := 0; i < params.Len(); i++ {
+		param := params.At(i)
+		typ := param.Type()
+		if hidden[i] {
+			if byRef[i] {
+				if _, ok := types.Unalias(typ).Underlying().(*types.Pointer); ok {
+					typ = types.NewPointer(typ)
+				} else if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
+					typ = types.NewPointer(hiddenTyp)
+				}
+			} else if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
+				typ = hiddenTyp
+			}
+		}
+		newParams[i] = types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ)
+	}
+	return types.NewSignatureType(recv, nil, nil, types.NewTuple(newParams...), sig.Results(), sig.Variadic())
+}
+
+func (p *context) shouldUseHiddenParamByRef(fn *ssa.Function, idx int) bool {
+	if fn == nil || idx < 0 || idx >= len(fn.Params) {
+		return false
+	}
+	if !p.functionNeedsStrongPointerClobber(fn) {
+		return false
+	}
+	_, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer)
+	return ok
+}
+
+func hiddenScalarStructField(t types.Type) (fieldIdx int, fieldType types.Type, ok bool) {
+	st, ok := types.Unalias(t).Underlying().(*types.Struct)
+	if !ok || st == nil || st.NumFields() != 1 {
+		return 0, nil, false
+	}
+	fieldType = st.Field(0).Type()
+	if _, ok := types.Unalias(fieldType).Underlying().(*types.Pointer); !ok {
+		return 0, nil, false
+	}
+	if isRuntimeMetadataPointer(fieldType) || containsInstantiatedNamedType(fieldType, map[types.Type]bool{}) {
+		return 0, nil, false
+	}
+	return 0, fieldType, true
+}
+
+func canUseHiddenScalarParamType(t types.Type) bool {
+	if t == nil {
+		return false
+	}
+	if _, ok := types.Unalias(t).Underlying().(*types.Pointer); ok {
+		return !isRuntimeMetadataPointer(t) && !containsInstantiatedNamedType(t, map[types.Type]bool{})
+	}
+	_, _, ok := hiddenScalarStructField(t)
+	return ok
+}
+
+func hiddenCallABIType(t types.Type) types.Type {
+	if canUseHiddenScalarParamType(t) {
+		return types.Typ[types.Uintptr]
+	}
+	return hiddenOpaqueAggregateSlotType(t)
+}
+
+func canUseHiddenParamType(t types.Type) bool {
+	return hiddenCallABIType(t) != nil
+}
+
+func rewriteHiddenStaticCallSignature(sig *types.Signature, hiddenParamIdx int) *types.Signature {
+	if sig == nil || hiddenParamIdx < 0 {
+		return sig
+	}
+	params := sig.Params()
+	newParams := make([]*types.Var, 0, params.Len()+1)
+	if recv := sig.Recv(); recv != nil {
+		typ := recv.Type()
+		if hiddenParamIdx == 0 {
+			if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
+				typ = hiddenTyp
+			}
+		}
+		newParams = append(newParams, types.NewParam(recv.Pos(), recv.Pkg(), recv.Name(), typ))
+	}
+	base := len(newParams)
+	for i := 0; i < params.Len(); i++ {
+		param := params.At(i)
+		typ := param.Type()
+		if hiddenParamIdx == i+base {
+			if hiddenTyp := hiddenCallABIType(typ); hiddenTyp != nil {
+				typ = hiddenTyp
+			}
+		}
+		newParams = append(newParams, types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ))
+	}
+	return types.NewSignatureType(nil, nil, nil, types.NewTuple(newParams...), sig.Results(), sig.Variadic())
+}
+
+func rewriteHiddenResultSignature(sig *types.Signature) (*types.Signature, types.Type, bool) {
+	if sig == nil || sig.Results().Len() != 1 {
+		return sig, nil, false
+	}
+	result := sig.Results().At(0)
+	typ := result.Type()
+	hiddenTyp := hiddenCallABIType(typ)
+	if hiddenTyp == nil {
+		return sig, nil, false
+	}
+	var recv *types.Var
+	if sig.Recv() != nil {
+		recv = types.NewParam(sig.Recv().Pos(), sig.Recv().Pkg(), sig.Recv().Name(), sig.Recv().Type())
+	}
+	params := make([]*types.Var, sig.Params().Len())
+	for i := 0; i < sig.Params().Len(); i++ {
+		param := sig.Params().At(i)
+		params[i] = types.NewParam(param.Pos(), param.Pkg(), param.Name(), param.Type())
+	}
+	results := types.NewTuple(types.NewParam(result.Pos(), result.Pkg(), result.Name(), hiddenTyp))
+	return types.NewSignatureType(recv, nil, nil, types.NewTuple(params...), results, sig.Variadic()), typ, true
+}
+
+func rewriteSingleExtractCallSignature(sig *types.Signature, idx int) *types.Signature {
+	if sig == nil || idx < 0 || sig.Results().Len() <= idx {
+		return sig
+	}
+	var recv *types.Var
+	if sig.Recv() != nil {
+		recv = types.NewParam(sig.Recv().Pos(), sig.Recv().Pkg(), sig.Recv().Name(), sig.Recv().Type())
+	}
+	params := make([]*types.Var, sig.Params().Len())
+	for i := 0; i < sig.Params().Len(); i++ {
+		param := sig.Params().At(i)
+		params[i] = types.NewParam(param.Pos(), param.Pkg(), param.Name(), param.Type())
+	}
+	result := sig.Results().At(idx)
+	results := types.NewTuple(types.NewParam(result.Pos(), result.Pkg(), result.Name(), result.Type()))
+	return types.NewSignatureType(recv, nil, nil, types.NewTuple(params...), results, sig.Variadic())
+}
+
+func rewriteSingleExtractCallOutSignature(sig *types.Signature, hiddenParamIdx int, hiddenParamByRef bool, resultRawType types.Type) *types.Signature {
+	if sig == nil || resultRawType == nil {
+		return nil
+	}
+	hiddenTyp := hiddenCallABIType(resultRawType)
+	if hiddenTyp == nil {
+		return nil
+	}
+	params := make([]*types.Var, 0, sig.Params().Len()+2)
+	params = append(params,
+		types.NewParam(token.NoPos, nil, "", types.NewPointer(hiddenTyp)),
+		types.NewParam(token.NoPos, nil, "", types.NewPointer(resultRawType)),
+	)
+	for i := 0; i < sig.Params().Len(); i++ {
+		param := sig.Params().At(i)
+		typ := param.Type()
+		if hiddenParamByRef && i == hiddenParamIdx {
+			typ = types.NewPointer(typ)
+		}
+		params = append(params, types.NewParam(param.Pos(), param.Pkg(), param.Name(), typ))
+	}
+	return types.NewSignatureType(nil, nil, nil, types.NewTuple(params...), nil, sig.Variadic())
+}
+
+func (p *context) encodeHiddenCallValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	if p.hiddenValueUsesOpaqueSlot(t) {
+		return p.encodeHiddenOpaqueSlotValue(b, val, t)
+	}
+	return p.encodeHiddenStoredValue(b, val, t)
+}
+
+func (p *context) decodeHiddenCallValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	if p.hiddenValueUsesOpaqueSlot(t) {
+		return p.decodeHiddenOpaqueSlotValue(b, val, t)
+	}
+	return p.decodeHiddenStoredValue(b, val, t)
+}
+
+func hasSelfCall(fn *ssa.Function) bool {
+	if fn == nil {
+		return false
+	}
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			switch instr := instr.(type) {
+			case *ssa.Call:
+				if callee, ok := instr.Call.Value.(*ssa.Function); ok && callee == fn {
+					return true
+				}
+			case *ssa.Defer:
+				if callee, ok := instr.Call.Value.(*ssa.Function); ok && callee == fn {
+					return true
+				}
+			case *ssa.Go:
+				if callee, ok := instr.Call.Value.(*ssa.Function); ok && callee == fn {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (p *context) hiddenParamWrapperPlanFor(name string, f *ssa.Function) *hiddenParamWrapperPlan {
+	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
+		return nil
+	}
+	if shouldSkipHiddenPointerRewrite(f) {
+		return nil
+	}
+	if len(f.Blocks) == 0 {
+		return nil
+	}
+	if f.Signature == nil || f.Signature.Recv() != nil || f.Signature.Variadic() {
+		return nil
+	}
+	if isCgoExternSymbol(f) {
+		return nil
+	}
+	obj, ok := f.Object().(*types.Func)
+	if !ok || obj.Exported() {
+		return nil
+	}
+	ptrIdx := -1
+	for i, param := range f.Params {
+		if canUseHiddenParamType(param.Type()) {
+			if ptrIdx >= 0 {
+				return nil
+			}
+			ptrIdx = i
+		}
+	}
+	if ptrIdx < 0 {
+		return nil
+	}
+	callsites, ok := p.staticPointerParamCallsites(f)
+	if !ok || len(callsites) == 0 {
+		return nil
+	}
+	patchedSig := p.patchType(f.Signature).(*types.Signature)
+	hidden := map[int]bool{ptrIdx: true}
+	hiddenParamByRef := p.shouldUseHiddenParamByRef(f, ptrIdx)
+	hiddenByRef := map[int]bool{}
+	if hiddenParamByRef {
+		hiddenByRef[ptrIdx] = true
+	}
+	hiddenSig := rewriteHiddenParamSignature(patchedSig, hidden, hiddenByRef)
+	var resultRawType types.Type
+	var resultHidden bool
+	if !functionHasDefer(f) {
+		if _, _, resultHidden := rewriteHiddenResultSignature(patchedSig); resultHidden {
+			return nil
+		}
+	} else {
+		hiddenSig, resultRawType, resultHidden = rewriteHiddenResultSignature(hiddenSig)
+	}
+	return &hiddenParamWrapperPlan{
+		paramIdx:         ptrIdx,
+		hiddenSig:        hiddenSig,
+		hiddenName:       name + "$hiddenparam",
+		hiddenParamByRef: hiddenParamByRef,
+		resultHidden:     resultHidden,
+		resultRawType:    resultRawType,
+	}
+}
+
+func (p *context) hiddenStaticCallShimPlanFor(name string, f *ssa.Function) *hiddenStaticCallShimPlan {
+	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 || hasSelfCall(f) {
+		return nil
+	}
+	if shouldSkipHiddenPointerRewrite(f) {
+		return nil
+	}
+	if len(f.Blocks) == 0 {
+		return nil
+	}
+	if f.Signature == nil || f.Signature.Variadic() {
+		return nil
+	}
+	if functionHasDefer(f) || isCgoExternSymbol(f) {
+		return nil
+	}
+	obj, ok := f.Object().(*types.Func)
+	if !ok || obj.Exported() {
+		return nil
+	}
+	ptrIdx := -1
+	for i, param := range f.Params {
+		if canUseHiddenParamType(param.Type()) {
+			if ptrIdx >= 0 {
+				return nil
+			}
+			ptrIdx = i
+		}
+	}
+	if ptrIdx < 0 {
+		return nil
+	}
+	callsites, ok := p.staticPointerParamCallsites(f)
+	if !ok || len(callsites) == 0 {
+		return nil
+	}
+	hiddenSig := rewriteHiddenStaticCallSignature(p.patchType(f.Signature).(*types.Signature), ptrIdx)
+	hiddenSig, resultRawType, resultHidden := rewriteHiddenResultSignature(hiddenSig)
+	return &hiddenStaticCallShimPlan{
+		paramIdx:      ptrIdx,
+		hiddenSig:     hiddenSig,
+		hiddenName:    name + "$hiddencall",
+		resultHidden:  resultHidden,
+		resultRawType: resultRawType,
+	}
+}
+
+func (p *context) singleExtractCallShimPlanFor(name string, f *ssa.Function, idx int) *singleExtractCallShimPlan {
+	if f == nil || f.Parent() != nil || f.Synthetic != "" || len(f.FreeVars) != 0 {
+		return nil
+	}
+	if len(f.Blocks) == 0 || f.Signature == nil || f.Signature.Recv() != nil || f.Signature.Variadic() {
+		return nil
+	}
+	if isCgoExternSymbol(f) || f.Signature.Results().Len() <= idx || idx < 0 || f.Signature.Results().Len() < 2 {
+		return nil
+	}
+	obj, ok := f.Object().(*types.Func)
+	if !ok || obj.Exported() {
+		return nil
+	}
+	hiddenParamIdx := -1
+	if hiddenPlan := p.hiddenParamWrapperPlanFor(name, f); hiddenPlan != nil {
+		hiddenParamIdx = hiddenPlan.paramIdx
+	} else if hiddenShimPlan := p.hiddenStaticCallShimPlanFor(name, f); hiddenShimPlan != nil {
+		hiddenParamIdx = hiddenShimPlan.paramIdx
+	}
+	callsites, ok := p.staticCallsites(f)
+	if !ok || len(callsites) == 0 {
+		return nil
+	}
+	found := false
+	for _, site := range callsites {
+		extractIdx, ok := singleExtractTupleUseIndex(site.call)
+		if ok && extractIdx == idx {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil
+	}
+	hiddenParamByRef := hiddenParamIdx >= 0 && hiddenOpaqueAggregateSlotType(f.Params[hiddenParamIdx].Type()) != nil
+	shimSig := p.patchType(f.Signature).(*types.Signature)
+	if hiddenParamIdx >= 0 {
+		shimSig = rewriteHiddenParamSignature(shimSig, map[int]bool{hiddenParamIdx: true}, nil)
+	}
+	shimSig = rewriteSingleExtractCallSignature(shimSig, idx)
+	outSig := (*types.Signature)(nil)
+	outName := ""
+	shimSig, resultRawType, resultHidden := rewriteHiddenResultSignature(shimSig)
+	if resultHidden && hiddenOpaqueAggregateSlotType(resultRawType) != nil {
+		baseSig := p.patchType(f.Signature).(*types.Signature)
+		if hiddenParamIdx >= 0 {
+			baseSig = rewriteHiddenParamSignature(baseSig, map[int]bool{hiddenParamIdx: true}, nil)
+		}
+		baseSig = rewriteSingleExtractCallSignature(baseSig, idx)
+		outSig = rewriteSingleExtractCallOutSignature(baseSig, hiddenParamIdx, hiddenParamByRef, resultRawType)
+		outName = fmt.Sprintf("%s$extract%d$out", name, idx)
+	}
+	return &singleExtractCallShimPlan{
+		extractIdx:       idx,
+		hiddenParamIdx:   hiddenParamIdx,
+		hiddenParamByRef: hiddenParamByRef,
+		resultHidden:     resultHidden,
+		resultRawType:    resultRawType,
+		shimSig:          shimSig,
+		shimName:         fmt.Sprintf("%s$extract%d", name, idx),
+		outSig:           outSig,
+		outName:          outName,
+	}
+}
+
+func (p *context) enqueueCompileFuncBody(fn llssa.Function, f *ssa.Function, state pkgState, dbgEnabled, dbgSymsEnabled, isCgo bool, hiddenParamKeys, hiddenParamByRefs map[int]bool, hiddenResultType types.Type) {
+	p.inits = append(p.inits, func() {
+		p.fn = fn
+		p.goFn = f
+		p.state = state
+		p.hiddenParamKeys = hiddenParamKeys
+		p.hiddenParamByRefs = hiddenParamByRefs
+		p.hiddenResultType = hiddenResultType
+		p.strongPtrClobber = p.functionNeedsStrongPointerClobber(f)
+		p.singleExtractCallResults = nil
+		defer func() {
+			p.fn = nil
+			p.goFn = nil
+			p.hiddenParamKeys = nil
+			p.hiddenParamByRefs = nil
+			p.hiddenParamSlots = nil
+			p.hiddenResultType = nil
+			p.singleExtractCallResults = nil
+			p.strongPtrClobber = false
+		}()
+		p.phis = nil
+		if dbgSymsEnabled {
+			p.paramDIVars = make(map[*types.Var]llssa.DIVar)
+		} else {
+			p.paramDIVars = nil
+		}
+		if debugGoSSA {
+			f.WriteTo(os.Stderr)
+		}
+		if debugInstr {
+			log.Println("==> FuncBody", fn.Name())
+		}
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		p.bvals = make(map[ssa.Value]llssa.Expr)
+		p.vblks = make(map[ssa.Value]llssa.BasicBlock)
+		p.btails = make(map[*ssa.BasicBlock]llssa.BasicBlock)
+		p.recvTuples = make(map[ssa.Value]*recvTupleState)
+		p.stackClears = p.collectStackClearPlans(f)
+		p.stackEntryClears = p.collectBranchStackClearPlans(f)
+		p.hiddenPtrAllocs = p.collectHiddenPointerAllocs(f)
+		p.hiddenAllocRoots = p.collectHiddenPointerAllocRoots(f)
+		p.paramClears = p.collectParamClearPlans(f)
+		p.paramValueClears = p.collectParamValueClearPlans(f)
+		p.paramSpillClobbers = p.collectParamSpillClobberPlans(f)
+		p.valuePreClears, p.valuePostClears = p.collectPointerValueClearPlans(f)
+		p.valueSlots = make(map[ssa.Value]llssa.Expr)
+		p.valueRootSlots = make(map[ssa.Value]llssa.Expr)
+		p.hiddenValueSlots = p.collectHiddenPointerValueSlots(f)
+		p.hiddenAllocSlots = make(map[*ssa.Alloc]llssa.Expr)
+		if isRuntimeSSAFunction(f) {
+			// Runtime metadata helpers such as findMethod/NewItab are extremely
+			// sensitive to aggregate value lowering. Keep runtime internals on the
+			// conservative path until the hidden-value pipeline is proven there.
+			p.hiddenValueSlots = nil
+		}
+		p.paramShadow = make(map[int]llssa.Expr)
+		p.paramSlots = make(map[int]llssa.Expr)
+		p.hiddenParamSlots = make(map[int]llssa.Expr)
+		off := make([]int, len(f.Blocks))
+		if isCgo {
+			p.cgoArgs = make([]llssa.Expr, len(f.Params))
+			for i, param := range f.Params {
+				p.cgoArgs[i] = p.compileValue(b, param)
+			}
+		} else {
+			for i, block := range f.Blocks {
+				off[i] = p.compilePhis(b, block)
+			}
+		}
+		p.blkInfos = blocks.Infos(f.Blocks)
+		i := 0
+		for {
+			block := f.Blocks[i]
+			doModInit := (i == 1 && f.Name() == "init" && f.Signature.Recv() == nil)
+			p.compileBlock(b, block, off[i], doModInit)
+			if isCgo {
+				break
+			}
+			if i = p.blkInfos[i].Next; i < 0 {
+				break
+			}
+		}
+		for _, phi := range p.phis {
+			phi()
+		}
+		b.EndBuild()
+	})
+}
+
+func (p *context) enqueueHiddenParamWrapper(fn, hiddenFn llssa.Function, f *ssa.Function, hiddenParamKeys, hiddenParamByRefs map[int]bool, resultHidden bool, resultRawType types.Type, dbgEnabled bool) {
+	p.inits = append(p.inits, func() {
+		oldStrong := p.strongPtrClobber
+		p.strongPtrClobber = true
+		defer func() { p.strongPtrClobber = oldStrong }()
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		entry := fn.Block(0)
+		b.SetBlock(entry)
+		args := make([]llssa.Expr, len(f.Params))
+		for i := range f.Params {
+			arg := b.Param(i)
+			if hiddenParamKeys[i] {
+				if hiddenParamByRefs[i] {
+					if _, ok := types.Unalias(f.Params[i].Type()).Underlying().(*types.Pointer); ok {
+						slot := b.AllocaT(arg.Type)
+						b.Store(slot, arg)
+						arg = slot
+					} else {
+						key := p.encodeHiddenCallValue(b, arg, f.Params[i].Type())
+						slot := b.AllocaT(key.Type)
+						b.Store(slot, key)
+						arg = slot
+					}
+				} else {
+					arg = p.encodeHiddenCallValue(b, arg, f.Params[i].Type())
+				}
+			}
+			args[i] = arg
+		}
+		call := b.Call(hiddenFn.Expr, args...)
+		switch n := f.Signature.Results().Len(); n {
+		case 0:
+			if len(hiddenParamKeys) != 0 {
+				p.clobberPointerRegs(b)
+			}
+			b.Return()
+		case 1:
+			if resultHidden {
+				ret := p.decodeHiddenCallValue(b, call, resultRawType)
+				p.clobberPointerRegs(b)
+				b.Return(ret)
+				break
+			}
+			if len(hiddenParamKeys) != 0 {
+				p.clobberPointerRegs(b)
+			}
+			b.Return(call)
+		default:
+			results := make([]llssa.Expr, n)
+			for i := 0; i < n; i++ {
+				results[i] = b.Extract(call, i)
+			}
+			if len(hiddenParamKeys) != 0 {
+				p.clobberPointerRegs(b)
+			}
+			b.Return(results...)
+		}
+		b.EndBuild()
+	})
+}
+
+func (p *context) enqueueHiddenStaticCallShim(fn, targetFn llssa.Function, f *ssa.Function, hiddenParamIdx int, resultHidden bool, resultRawType types.Type, dbgEnabled bool) {
+	p.inits = append(p.inits, func() {
+		oldStrong := p.strongPtrClobber
+		p.strongPtrClobber = true
+		defer func() { p.strongPtrClobber = oldStrong }()
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		entry := fn.Block(0)
+		b.SetBlock(entry)
+		args := make([]llssa.Expr, len(f.Params))
+		for i, param := range f.Params {
+			arg := b.Param(i)
+			if i == hiddenParamIdx {
+				arg = p.decodeHiddenCallValue(b, arg, param.Type())
+			}
+			args[i] = arg
+		}
+		call := b.Call(targetFn.Expr, args...)
+		switch n := f.Signature.Results().Len(); n {
+		case 0:
+			if hiddenParamIdx >= 0 {
+				p.clobberPointerRegs(b)
+			}
+			b.Return()
+		case 1:
+			if resultHidden {
+				rawSlot := b.AllocaT(call.Type)
+				b.Store(rawSlot, call)
+				ret := p.encodeHiddenCallValue(b, b.Load(rawSlot), resultRawType)
+				b.Store(rawSlot, p.prog.Zero(b.Prog.Elem(rawSlot.Type)))
+				p.touchConservativeSlot(b, rawSlot, true)
+				p.clobberPointerRegs(b)
+				b.Return(ret)
+				break
+			}
+			if hiddenParamIdx >= 0 {
+				p.clobberPointerRegs(b)
+			}
+			b.Return(call)
+		default:
+			results := make([]llssa.Expr, n)
+			for i := 0; i < n; i++ {
+				results[i] = b.Extract(call, i)
+			}
+			if hiddenParamIdx >= 0 {
+				p.clobberPointerRegs(b)
+			}
+			b.Return(results...)
+		}
+		b.EndBuild()
+	})
+}
+
+func (p *context) enqueueSingleExtractCallShim(fn, targetFn llssa.Function, f *ssa.Function, plan *singleExtractCallShimPlan, dbgEnabled bool) {
+	p.inits = append(p.inits, func() {
+		oldStrong := p.strongPtrClobber
+		p.strongPtrClobber = true
+		defer func() { p.strongPtrClobber = oldStrong }()
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		entry := fn.Block(0)
+		b.SetBlock(entry)
+		args := make([]llssa.Expr, len(f.Params))
+		for i, param := range f.Params {
+			arg := b.Param(i)
+			if i == plan.hiddenParamIdx {
+				arg = p.decodeHiddenCallValue(b, arg, param.Type())
+			}
+			args[i] = arg
+		}
+		call := b.Call(targetFn.Expr, args...)
+		tupleSlot := b.AllocaT(call.Type)
+		b.Store(tupleSlot, call)
+		ret := b.Extract(b.Load(tupleSlot), plan.extractIdx)
+		if plan.resultHidden {
+			ret = p.encodeHiddenCallValue(b, ret, plan.resultRawType)
+			b.Store(tupleSlot, p.prog.Zero(b.Prog.Elem(tupleSlot.Type)))
+			p.touchConservativeSlot(b, tupleSlot, true)
+		}
+		p.clobberPointerRegs(b)
+		b.Return(ret)
+		b.EndBuild()
+	})
+}
+
+func (p *context) enqueueSingleExtractCallOutShim(fn, targetFn llssa.Function, f *ssa.Function, plan *singleExtractCallShimPlan, dbgEnabled bool) {
+	p.inits = append(p.inits, func() {
+		oldStrong := p.strongPtrClobber
+		p.strongPtrClobber = true
+		defer func() { p.strongPtrClobber = oldStrong }()
+		b := fn.NewBuilder()
+		if dbgEnabled {
+			pos := p.goProg.Fset.Position(f.Pos())
+			bodyPos := p.getFuncBodyPos(f)
+			b.DebugFunction(fn, pos, bodyPos)
+		}
+		entry := fn.Block(0)
+		b.SetBlock(entry)
+		outHidden := b.Param(0)
+		outRaw := b.Param(1)
+		args := make([]llssa.Expr, len(f.Params))
+		for i, param := range f.Params {
+			arg := b.Param(i + 2)
+			if i == plan.hiddenParamIdx {
+				if plan.hiddenParamByRef {
+					arg = p.decodeHiddenValueSlot(b, arg, param.Type())
+				} else {
+					arg = p.decodeHiddenCallValue(b, arg, param.Type())
+				}
+			}
+			args[i] = arg
+		}
+		call := b.Call(targetFn.Expr, args...)
+		tupleSlot := b.AllocaT(call.Type)
+		b.Store(tupleSlot, call)
+		ret := b.Extract(b.Load(tupleSlot), plan.extractIdx)
+		b.Store(outRaw, ret)
+		b.Store(outHidden, p.encodeHiddenCallValue(b, ret, plan.resultRawType))
+		b.Store(tupleSlot, p.prog.Zero(b.Prog.Elem(tupleSlot.Type)))
+		p.touchConservativeSlot(b, tupleSlot, true)
+		p.clobberPointerRegs(b)
+		b.Return()
+		b.EndBuild()
+	})
+}
+
 func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Function, llssa.PyObjRef, int) {
 	pkgTypes, name, ftype := p.funcName(f)
 	if ftype != goFunc {
@@ -341,85 +1223,221 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	}
 	if fn == nil {
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
+		fn.SetGenericTypeArgs(genericTypeArgsOf(f))
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
+	} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+		fn.SetGenericTypeArgs(targs)
 	}
 	isCgo := isCgoExternSymbol(f)
+	var hiddenPlan *hiddenParamWrapperPlan
+	var hiddenShimPlan *hiddenStaticCallShimPlan
+	var extractShimPlans []*singleExtractCallShimPlan
+	var bodyFn llssa.Function
+	var hiddenShimFn llssa.Function
+	var hiddenParamKeys map[int]bool
+	var hiddenParamByRefs map[int]bool
+	var extractShimFns []llssa.Function
+	var extractOutShimFns []llssa.Function
+	bodyFn = fn
+	if !hasCtx && !isCgo {
+		hiddenPlan = p.hiddenParamWrapperPlanFor(name, f)
+		if hiddenPlan != nil {
+			hiddenParamKeys = map[int]bool{hiddenPlan.paramIdx: true}
+			if hiddenPlan.hiddenParamByRef {
+				hiddenParamByRefs = map[int]bool{hiddenPlan.paramIdx: true}
+			}
+			bodyFn = pkg.FuncOf(hiddenPlan.hiddenName)
+			if bodyFn == nil {
+				bodyFn = pkg.NewFuncEx(hiddenPlan.hiddenName, hiddenPlan.hiddenSig, llssa.Background(ftype), false, isInstance(f))
+				bodyFn.SetGenericTypeArgs(genericTypeArgsOf(f))
+			} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+				bodyFn.SetGenericTypeArgs(targs)
+			}
+			bodyFn.Inline(llssa.NoInline)
+		} else {
+			hiddenShimPlan = p.hiddenStaticCallShimPlanFor(name, f)
+			if hiddenShimPlan != nil {
+				hiddenShimFn = pkg.FuncOf(hiddenShimPlan.hiddenName)
+				if hiddenShimFn == nil {
+					hiddenShimFn = pkg.NewFuncEx(hiddenShimPlan.hiddenName, hiddenShimPlan.hiddenSig, llssa.Background(ftype), false, isInstance(f))
+					hiddenShimFn.SetGenericTypeArgs(genericTypeArgsOf(f))
+				} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+					hiddenShimFn.SetGenericTypeArgs(targs)
+				}
+				hiddenShimFn.Inline(llssa.NoInline)
+			}
+		}
+		for i := 0; i < f.Signature.Results().Len(); i++ {
+			plan := p.singleExtractCallShimPlanFor(name, f, i)
+			if plan == nil {
+				continue
+			}
+			extractShimPlans = append(extractShimPlans, plan)
+			extractShimFn := pkg.FuncOf(plan.shimName)
+			if extractShimFn == nil {
+				extractShimFn = pkg.NewFuncEx(plan.shimName, plan.shimSig, llssa.Background(ftype), false, false)
+				extractShimFn.SetGenericTypeArgs(genericTypeArgsOf(f))
+			} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+				extractShimFn.SetGenericTypeArgs(targs)
+			}
+			extractShimFn.Inline(llssa.NoInline)
+			extractShimFns = append(extractShimFns, extractShimFn)
+			if plan.outSig != nil {
+				extractOutShimFn := pkg.FuncOf(plan.outName)
+				if extractOutShimFn == nil {
+					extractOutShimFn = pkg.NewFuncEx(plan.outName, plan.outSig, llssa.Background(ftype), false, false)
+					extractOutShimFn.SetGenericTypeArgs(genericTypeArgsOf(f))
+				} else if targs := genericTypeArgsOf(f); len(targs) != 0 {
+					extractOutShimFn.SetGenericTypeArgs(targs)
+				}
+				extractOutShimFn.Inline(llssa.NoInline)
+				extractOutShimFns = append(extractOutShimFns, extractOutShimFn)
+			} else {
+				extractOutShimFns = append(extractOutShimFns, nil)
+			}
+		}
+	}
+	if sharedDeferFunc0Eligible(f) {
+		bodyFn.SetSharedDeferFunc0(true)
+	}
+	if needsOptNone(f) {
+		bodyFn.Inline(llssa.NoInline)
+		bodyFn.Inline(llssa.OptNone)
+		if hiddenPlan != nil {
+			fn.Inline(llssa.NoInline)
+			fn.Inline(llssa.OptNone)
+		}
+	}
 	if nblk := len(f.Blocks); nblk > 0 {
 		p.cgoCalled = false
 		p.cgoArgs = nil
 		p.cgoErrno = llssa.Nil
 		if isCgo {
 			fn.MakeBlocks(1)
+		} else if hiddenPlan != nil {
+			fn.MakeBlocks(1)
+			bodyFn.MakeBlocks(nblk) // to set bodyFn.HasBody() = true
+			for _, extractShimFn := range extractShimFns {
+				extractShimFn.MakeBlocks(1)
+			}
+			for _, extractOutShimFn := range extractOutShimFns {
+				if extractOutShimFn != nil {
+					extractOutShimFn.MakeBlocks(1)
+				}
+			}
 		} else {
 			fn.MakeBlocks(nblk) // to set fn.HasBody() = true
+			if hiddenShimPlan != nil {
+				hiddenShimFn.MakeBlocks(1)
+			}
+			for _, extractShimFn := range extractShimFns {
+				extractShimFn.MakeBlocks(1)
+			}
+			for _, extractOutShimFn := range extractOutShimFns {
+				if extractOutShimFn != nil {
+					extractOutShimFn.MakeBlocks(1)
+				}
+			}
 		}
 		if f.Recover != nil { // set recover block
-			fn.SetRecover(fn.Block(f.Recover.Index))
+			bodyFn.SetRecover(bodyFn.Block(f.Recover.Index))
 		}
 		dbgEnabled := enableDbg && (f == nil || f.Origin() == nil)
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
-		p.inits = append(p.inits, func() {
-			p.fn = fn
-			p.state = state // restore pkgState when compiling funcBody
-			defer func() {
-				p.fn = nil
-			}()
-			p.phis = nil
-			if dbgSymsEnabled {
-				p.paramDIVars = make(map[*types.Var]llssa.DIVar)
-			} else {
-				p.paramDIVars = nil
+		if hiddenPlan != nil {
+			p.enqueueHiddenParamWrapper(fn, bodyFn, f, hiddenParamKeys, hiddenParamByRefs, hiddenPlan.resultHidden, hiddenPlan.resultRawType, dbgEnabled)
+		}
+		p.enqueueCompileFuncBody(bodyFn, f, state, dbgEnabled, dbgSymsEnabled, isCgo, hiddenParamKeys, hiddenParamByRefs, hiddenPlanResultType(hiddenPlan))
+		if hiddenShimPlan != nil {
+			p.enqueueHiddenStaticCallShim(hiddenShimFn, fn, f, hiddenShimPlan.paramIdx, hiddenShimPlan.resultHidden, hiddenShimPlan.resultRawType, dbgEnabled)
+		}
+		for i, extractShimPlan := range extractShimPlans {
+			p.enqueueSingleExtractCallShim(extractShimFns[i], fn, f, extractShimPlan, dbgEnabled)
+			if extractOutShimFns[i] != nil {
+				p.enqueueSingleExtractCallOutShim(extractOutShimFns[i], fn, f, extractShimPlan, dbgEnabled)
 			}
-			if debugGoSSA {
-				f.WriteTo(os.Stderr)
-			}
-			if debugInstr {
-				log.Println("==> FuncBody", name)
-			}
-			b := fn.NewBuilder()
-			if dbgEnabled {
-				pos := p.goProg.Fset.Position(f.Pos())
-				bodyPos := p.getFuncBodyPos(f)
-				b.DebugFunction(fn, pos, bodyPos)
-			}
-			p.bvals = make(map[ssa.Value]llssa.Expr)
-			off := make([]int, len(f.Blocks))
-			if isCgo {
-				p.cgoArgs = make([]llssa.Expr, len(f.Params))
-				for i, param := range f.Params {
-					p.cgoArgs[i] = p.compileValue(b, param)
-				}
-			} else {
-				for i, block := range f.Blocks {
-					off[i] = p.compilePhis(b, block)
-				}
-			}
-			p.blkInfos = blocks.Infos(f.Blocks)
-			i := 0
-			for {
-				block := f.Blocks[i]
-				doModInit := (i == 1 && isInit)
-				p.compileBlock(b, block, off[i], doModInit)
-				if isCgo {
-					// just process first block for performance
-					break
-				}
-				if i = p.blkInfos[i].Next; i < 0 {
-					break
-				}
-			}
-			for _, phi := range p.phis {
-				phi()
-			}
-			b.EndBuild()
-		})
+		}
 		for _, af := range f.AnonFuncs {
 			p.compileFuncDecl(pkg, af)
 		}
 	}
 	return fn, nil, goFunc
+}
+
+func needsOptNone(f *ssa.Function) bool {
+	origin := f
+	if f.Origin() != nil {
+		origin = f.Origin()
+	}
+	if origin.Pkg == nil || origin.Pkg.Pkg == nil {
+		return false
+	}
+	return funcName(origin.Pkg.Pkg, origin, f.Origin() != nil) == "crypto/internal/fips140/drbg.Read"
+}
+
+func sharedDeferFunc0Eligible(root *ssa.Function) bool {
+	hasForeign := false
+	eligible := true
+	var walk func(fn *ssa.Function)
+	walk = func(fn *ssa.Function) {
+		if !eligible || fn == nil || fn.Blocks == nil {
+			return
+		}
+		for _, blk := range fn.Blocks {
+			for _, instr := range blk.Instrs {
+				d, ok := instr.(*ssa.Defer)
+				if !ok {
+					continue
+				}
+				if !isSharedDeferFunc0Site(d) {
+					eligible = false
+					return
+				}
+				if _, ok := foreignDeferStackValue(d); ok {
+					hasForeign = true
+				}
+			}
+		}
+		for _, af := range fn.AnonFuncs {
+			walk(af)
+		}
+	}
+	walk(root)
+	return eligible && hasForeign
+}
+
+func isSharedDeferFunc0Site(d *ssa.Defer) bool {
+	if d == nil || d.Call.Method != nil || len(d.Call.Args) != 0 {
+		return false
+	}
+	sig := d.Call.Signature()
+	if sig == nil || sig.Params().Len() != 0 || sig.Results().Len() != 0 {
+		return false
+	}
+	fn, ok := d.Call.Value.(*ssa.Function)
+	return ok && fn.Parent() != nil
+}
+
+func foreignDeferStackValue(d *ssa.Defer) (ssa.Value, bool) {
+	if d == nil {
+		return nil, false
+	}
+	ops := d.Operands(nil)
+	if len(ops) == 0 || ops[len(ops)-1] == nil {
+		return nil, false
+	}
+	stack := *ops[len(ops)-1]
+	u, ok := stack.(*ssa.UnOp)
+	if !ok {
+		return nil, false
+	}
+	fv, ok := u.X.(*ssa.FreeVar)
+	if !ok || fv.Name() != "defer$stack" {
+		return nil, false
+	}
+	return stack, true
 }
 
 func (p *context) getFuncBodyPos(f *ssa.Function) token.Position {
@@ -489,6 +1507,13 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	var instrs = block.Instrs[n:]
 	var ret = fn.Block(block.Index)
 	b.SetBlock(ret)
+	p.clearExpiredRecvTuples(b, block)
+	p.clearEntryStackAllocs(b, block)
+	if block.Index == 0 {
+		p.initValueSlots(b, block.Parent())
+		p.initParamSlots(b, block.Parent())
+		p.initKeepAliveParamShadows(b, block.Parent())
+	}
 	if block.Index == 0 && enableCallTracing && !strings.HasPrefix(fn.Name(), "github.com/goplus/llgo/runtime/internal/runtime.Print") {
 		b.Printf("call " + fn.Name() + "\n\x00")
 	}
@@ -518,6 +1543,9 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 	isCgoC2 := isCgoC2func(fnName)
 	isCgoCmacro := isCgoCmacro(fnName)
 	for i, instr := range instrs {
+		if iv, ok := instr.(instrOrValue); ok && canDeferValueInstr(iv) {
+			continue
+		}
 		if i == 1 && doModInit && p.state == pkgInPatch { // in patch package but no pkgFNoOldInit
 			initFnNameOld := initFnNameOfHasPatch(p.fn.Name())
 			fnOld := pkg.NewFunc(initFnNameOld, llssa.NoArgsNoRet, llssa.InC)
@@ -561,6 +1589,17 @@ func (p *context) compileBlock(b llssa.Builder, block *ssa.BasicBlock, n int, do
 		} else {
 			p.compileInstr(b, instr)
 		}
+		switch instr.(type) {
+		case *ssa.Return, *ssa.If, *ssa.Panic:
+			continue
+		}
+		if p.paramSpillClobbers[instr] {
+			p.clobberPointerRegs(b)
+		}
+		p.clearDeadStackAllocs(b, instr)
+		p.clearDeadParams(b, instr)
+		p.clearDeadParamValues(b, instr)
+		p.clearDeadPointerValues(b, instr)
 	}
 	// is cgo cfunc but not return yet, some funcs has multiple blocks
 	if (isCgoCfunc || isCgoC2 || isCgoCmacro) && !cgoReturned {
@@ -591,6 +1630,7 @@ end:
 		b.Store(modPtr, b.PyImportMod(modPath))
 		b.Jump(jumpTo)
 	}
+	p.btails[block] = b.Block()
 	return ret
 }
 
@@ -714,6 +1754,2829 @@ func isAllocVargs(ctx *context, v *ssa.Alloc) bool {
 	return false
 }
 
+func makeSliceAllocCap(v ssa.Value) (int64, bool) {
+	alloc, ok := v.(*ssa.Alloc)
+	if !ok || alloc.Comment != "makeslice" {
+		return 0, false
+	}
+	ptr, ok := alloc.Type().(*types.Pointer)
+	if !ok {
+		return 0, false
+	}
+	arr, ok := types.Unalias(ptr.Elem()).(*types.Array)
+	if !ok {
+		return 0, false
+	}
+	return arr.Len(), true
+}
+
+func skipMakeSliceAlloc(v *ssa.Alloc) bool {
+	if _, ok := makeSliceAllocCap(v); !ok {
+		return false
+	}
+	refs := *v.Referrers()
+	if len(refs) != 1 {
+		return false
+	}
+	slice, ok := refs[0].(*ssa.Slice)
+	if !ok {
+		return false
+	}
+	return slice.X == v && slice.Low == nil && slice.Max == nil
+}
+
+type paramEscapeKey struct {
+	fn  *ssa.Function
+	idx int
+}
+
+func (p *context) canPromoteHeapAllocToStack(v *ssa.Alloc) bool {
+	if !v.Heap || v.Comment == "varargs" || v.Comment == "makeslice" {
+		return false
+	}
+	return p.valueDoesNotEscape(v, map[ssa.Value]bool{}, map[paramEscapeKey]bool{})
+}
+
+func (p *context) valueDoesNotEscape(v ssa.Value, seen map[ssa.Value]bool, params map[paramEscapeKey]bool) bool {
+	if seen[v] {
+		return true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return true
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.FieldAddr:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.IndexAddr:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.ChangeType:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.Convert:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.Phi:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.MakeInterface:
+			if !p.valueDoesNotEscape(ref, seen, params) {
+				return false
+			}
+		case *ssa.Store:
+			if ref.Addr == v {
+				continue
+			}
+			return false
+		case *ssa.UnOp:
+			if ref.Op == token.MUL {
+				continue
+			}
+			return false
+		case *ssa.Call:
+			if !p.callArgDoesNotEscape(&ref.Call, v, params) {
+				return false
+			}
+		case *ssa.Defer:
+			if !p.callArgDoesNotEscape(&ref.Call, v, params) {
+				return false
+			}
+		case *ssa.Go:
+			return false
+		case *ssa.Return, *ssa.MapUpdate, *ssa.Send, *ssa.Range:
+			return false
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) callArgDoesNotEscape(call *ssa.CallCommon, arg ssa.Value, params map[paramEscapeKey]bool) bool {
+	if call == nil || call.IsInvoke() {
+		return false
+	}
+	var fn *ssa.Function
+	switch v := call.Value.(type) {
+	case *ssa.Function:
+		fn = v
+	default:
+		return false
+	}
+	if isKeepAliveFunc(fn) {
+		return true
+	}
+	if fn.Blocks == nil {
+		return false
+	}
+	for i, actual := range call.Args {
+		if actual != arg {
+			continue
+		}
+		if !p.paramDoesNotEscape(fn, i, params) {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) paramDoesNotEscape(fn *ssa.Function, idx int, params map[paramEscapeKey]bool) bool {
+	if fn == nil || idx < 0 || idx >= len(fn.Params) {
+		return false
+	}
+	key := paramEscapeKey{fn: fn, idx: idx}
+	if params[key] {
+		return true
+	}
+	params[key] = true
+	return p.valueDoesNotEscape(fn.Params[idx], map[ssa.Value]bool{}, params)
+}
+
+func isKeepAliveFunc(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil || fn.Name() != "KeepAlive" {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "runtime", "github.com/goplus/llgo/runtime/internal/lib/runtime":
+		return true
+	default:
+		return false
+	}
+}
+
+func isSetFinalizerFunc(fn *ssa.Function) bool {
+	if fn == nil || fn.Pkg == nil || fn.Pkg.Pkg == nil || fn.Name() != "SetFinalizer" {
+		return false
+	}
+	switch fn.Pkg.Pkg.Path() {
+	case "runtime", "github.com/goplus/llgo/runtime/internal/lib/runtime":
+		return true
+	default:
+		return false
+	}
+}
+
+func singleRef(v ssa.Value) (ssa.Instruction, bool) {
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, false
+	}
+	var ref ssa.Instruction
+	n := 0
+	for _, item := range *refs {
+		if _, ok := item.(*ssa.DebugRef); ok {
+			continue
+		}
+		ref = item
+		n++
+	}
+	return ref, n == 1
+}
+
+func canDeferValueInstr(iv instrOrValue) bool {
+	switch v := iv.(type) {
+	case *ssa.Extract:
+		ref, ok := singleRef(v)
+		if !ok {
+			return false
+		}
+		_, isReturn := ref.(*ssa.Return)
+		return !isReturn
+	default:
+		return false
+	}
+}
+
+func canLowerLazyRecvTuple(v *ssa.UnOp) bool {
+	if v == nil || v.Op != token.ARROW || !v.CommaOk {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	hasValueExtract := false
+	for _, ref := range *refs {
+		switch ex := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Extract:
+			if ex.Index == 0 {
+				hasValueExtract = true
+			}
+			continue
+		default:
+			return false
+		}
+	}
+	if hasValueExtract && recvValueUseBlock(v) == nil {
+		return false
+	}
+	return true
+}
+
+func hasOnlyReturnUsers(v ssa.Value) bool {
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	seen := false
+	for _, ref := range *refs {
+		if _, ok := ref.(*ssa.DebugRef); ok {
+			continue
+		}
+		seen = true
+		if _, ok := ref.(*ssa.Return); !ok {
+			return false
+		}
+	}
+	return seen
+}
+
+func isPointerKeepAliveCall(fn *ssa.Function, arg ssa.Value) bool {
+	if !isKeepAliveFunc(fn) {
+		return false
+	}
+	if mi, ok := arg.(*ssa.MakeInterface); ok {
+		arg = mi.X
+	}
+	_, ok := arg.Type().Underlying().(*types.Pointer)
+	return ok
+}
+
+func canSkipKeepAliveMakeInterface(v *ssa.MakeInterface) bool {
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	call, ok := (*refs)[0].(*ssa.Call)
+	if !ok {
+		return false
+	}
+	fn, ok := call.Call.Value.(*ssa.Function)
+	if !ok {
+		return false
+	}
+	return len(call.Call.Args) == 1 && call.Call.Args[0] == v && isPointerKeepAliveCall(fn, v)
+}
+
+func canSkipSetFinalizerObjectMakeInterface(v *ssa.MakeInterface) bool {
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	call, ok := (*refs)[0].(*ssa.Call)
+	if !ok {
+		return false
+	}
+	fn, ok := call.Call.Value.(*ssa.Function)
+	if !ok || !isSetFinalizerFunc(fn) {
+		return false
+	}
+	if len(call.Call.Args) != 2 || call.Call.Args[0] != v {
+		return false
+	}
+	_, ok = v.X.Type().Underlying().(*types.Pointer)
+	return ok
+}
+
+func isKeepAliveOnlyPointerParam(param *ssa.Parameter) bool {
+	refs := param.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	switch ref := (*refs)[0].(type) {
+	case *ssa.MakeInterface:
+		return ref.X == param && canSkipKeepAliveMakeInterface(ref)
+	case *ssa.Call:
+		fn, ok := ref.Call.Value.(*ssa.Function)
+		if !ok {
+			return false
+		}
+		return len(ref.Call.Args) == 1 && ref.Call.Args[0] == param && isPointerKeepAliveCall(fn, param)
+	default:
+		return false
+	}
+}
+
+func containsInstantiatedNamedType(t types.Type, seen map[types.Type]bool) bool {
+	if t == nil {
+		return false
+	}
+	if seen[t] {
+		return false
+	}
+	seen[t] = true
+	switch tt := t.(type) {
+	case *types.Named:
+		if args := tt.TypeArgs(); args != nil && args.Len() != 0 {
+			return true
+		}
+		return containsInstantiatedNamedType(tt.Underlying(), seen)
+	case *types.Pointer:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Slice:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Array:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Chan:
+		return containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Map:
+		return containsInstantiatedNamedType(tt.Key(), seen) || containsInstantiatedNamedType(tt.Elem(), seen)
+	case *types.Struct:
+		for i := 0; i < tt.NumFields(); i++ {
+			if containsInstantiatedNamedType(tt.Field(i).Type(), seen) {
+				return true
+			}
+		}
+	case *types.Tuple:
+		for i := 0; i < tt.Len(); i++ {
+			if containsInstantiatedNamedType(tt.At(i).Type(), seen) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasConservativeGCPointers(t types.Type, seen map[types.Type]bool) bool {
+	if t == nil {
+		return false
+	}
+	if seen[t] {
+		return false
+	}
+	seen[t] = true
+	switch tt := types.Unalias(t).(type) {
+	case *types.Named:
+		return hasConservativeGCPointers(tt.Underlying(), seen)
+	case *types.Tuple:
+		for i := 0; i < tt.Len(); i++ {
+			if hasConservativeGCPointers(tt.At(i).Type(), seen) {
+				return true
+			}
+		}
+		return false
+	case *types.Basic:
+		switch tt.Kind() {
+		case types.String, types.UnsafePointer:
+			return true
+		default:
+			return false
+		}
+	case *types.Pointer, *types.Signature, *types.Chan, *types.Map, *types.Interface, *types.Slice:
+		return true
+	case *types.Array:
+		return tt.Len() != 0 && hasConservativeGCPointers(tt.Elem(), seen)
+	case *types.Struct:
+		for i := 0; i < tt.NumFields(); i++ {
+			if hasConservativeGCPointers(tt.Field(i).Type(), seen) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func recvValueUseBlock(v *ssa.UnOp) *ssa.BasicBlock {
+	if v == nil {
+		return nil
+	}
+	refs := v.Referrers()
+	if refs == nil {
+		return nil
+	}
+	var useBlk *ssa.BasicBlock
+	for _, ref := range *refs {
+		ex, ok := ref.(*ssa.Extract)
+		if !ok || ex.Index != 0 {
+			continue
+		}
+		use, ok := singleRef(ex)
+		if !ok {
+			return nil
+		}
+		blk := use.Block()
+		if blk == nil {
+			return nil
+		}
+		if useBlk == nil {
+			useBlk = blk
+			continue
+		}
+		if useBlk != blk {
+			return nil
+		}
+	}
+	return useBlk
+}
+
+func dominatesBlock(dom, blk *ssa.BasicBlock) bool {
+	if dom == nil || blk == nil || dom.Parent() != blk.Parent() {
+		return false
+	}
+	if dom == blk {
+		return true
+	}
+	entry := dom.Parent().Blocks[0]
+	return !canReachBlockWithout(entry, blk, dom)
+}
+
+func canReachBlockWithout(from, to, avoid *ssa.BasicBlock) bool {
+	if from == nil || to == nil {
+		return false
+	}
+	if from == avoid {
+		return false
+	}
+	seen := map[*ssa.BasicBlock]bool{}
+	var walk func(*ssa.BasicBlock) bool
+	walk = func(cur *ssa.BasicBlock) bool {
+		if cur == nil || cur == avoid || seen[cur] {
+			return false
+		}
+		if cur == to {
+			return true
+		}
+		seen[cur] = true
+		for _, succ := range cur.Succs {
+			if walk(succ) {
+				return true
+			}
+		}
+		return false
+	}
+	return walk(from)
+}
+
+func (p *context) clearExpiredRecvTuples(b llssa.Builder, blk *ssa.BasicBlock) {
+	for _, state := range p.recvTuples {
+		if state == nil || state.ptr.Type == nil {
+			continue
+		}
+		if blk == nil || state.recvBlock == nil || state.useBlock == nil {
+			continue
+		}
+		if blk == state.recvBlock || blk == state.useBlock {
+			continue
+		}
+		if !dominatesBlock(state.recvBlock, blk) {
+			continue
+		}
+		if canReachBlockWithout(blk, state.useBlock, state.recvBlock) {
+			continue
+		}
+		b.ClearRecvTemp(state.ptr)
+	}
+}
+
+func (p *context) singleUseBlock(v ssa.Value, seen map[ssa.Value]bool) (*ssa.BasicBlock, bool) {
+	if v == nil || seen[v] {
+		return nil, true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, true
+	}
+	var blk *ssa.BasicBlock
+	setBlock := func(refBlk *ssa.BasicBlock) bool {
+		if refBlk == nil {
+			return false
+		}
+		if blk == nil {
+			blk = refBlk
+			return true
+		}
+		return blk == refBlk
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Field:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.Index:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.Extract:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.FieldAddr:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.IndexAddr:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.ChangeType:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.Convert:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.MakeInterface:
+			refBlk, ok := p.singleUseBlock(ref, seen)
+			if !ok || (refBlk != nil && !setBlock(refBlk)) {
+				return nil, false
+			}
+		case *ssa.UnOp:
+			if ref.Op != token.MUL || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Store:
+			if ref.Addr != v || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Call:
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Defer:
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		case *ssa.Return:
+			if !operandUsesValue(ref, v) || !setBlock(ref.Block()) {
+				return nil, false
+			}
+		default:
+			return nil, false
+		}
+	}
+	return blk, true
+}
+
+func (p *context) shouldTrackStackClear(v *ssa.Alloc) bool {
+	if v == nil || v.Comment == "varargs" {
+		return false
+	}
+	if v.Comment == "makeslice" && skipMakeSliceAlloc(v) {
+		return false
+	}
+	if !v.Heap {
+		return true
+	}
+	return p.canPromoteHeapAllocToStack(v)
+}
+
+func (p *context) canHidePointerAlloc(v *ssa.Alloc) bool {
+	if v == nil || v.Heap || v.Comment == "varargs" || v.Comment == "makeslice" {
+		return false
+	}
+	ptr, ok := v.Type().Underlying().(*types.Pointer)
+	if !ok || ptr == nil {
+		return false
+	}
+	switch tt := types.Unalias(ptr.Elem()).Underlying().(type) {
+	case *types.Pointer, *types.Slice, *types.Interface:
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return false
+		}
+	default:
+		return false
+	}
+	if containsInstantiatedNamedType(ptr.Elem(), map[types.Type]bool{}) {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil || len(*refs) == 0 {
+		return false
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Store:
+			if ref.Addr != v {
+				return false
+			}
+		case *ssa.UnOp:
+			if ref.Op != token.MUL || ref.X != v {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) collectStackClearPlans(fn *ssa.Function) map[ssa.Instruction][]*ssa.Alloc {
+	plans := make(map[ssa.Instruction][]*ssa.Alloc)
+	loopBlock := p.loopBlocks(fn)
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			alloc, ok := instr.(*ssa.Alloc)
+			if !ok || !p.shouldTrackStackClear(alloc) {
+				continue
+			}
+			useBlk, ok := p.valueLastUseBlock(alloc)
+			if !ok || useBlk == nil {
+				continue
+			}
+			order := make(map[ssa.Instruction]int, len(useBlk.Instrs))
+			for i, useInstr := range useBlk.Instrs {
+				order[useInstr] = i
+			}
+			last, ok := p.lastUseInBlock(alloc, useBlk, order, map[ssa.Value]bool{})
+			if !ok || last == nil {
+				continue
+			}
+			if loopBlock[useBlk] && alloc.Block() != useBlk {
+				continue
+			}
+			plans[last] = append(plans[last], alloc)
+		}
+	}
+	return plans
+}
+
+func (p *context) collectValueEdgeUseBlocks(v ssa.Value, blocks map[*ssa.BasicBlock]bool, seen map[ssa.Value]bool) bool {
+	if v == nil || seen[v] {
+		return true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return true
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Phi:
+			phiBlk := ref.Block()
+			if phiBlk == nil {
+				return false
+			}
+			for i, edge := range ref.Edges {
+				if edge != v || i >= len(phiBlk.Preds) {
+					continue
+				}
+				pred := phiBlk.Preds[i]
+				if pred == nil {
+					return false
+				}
+				blocks[pred] = true
+			}
+			continue
+		default:
+			if isDerivedValueUse(ref) {
+				refVal, ok := ref.(ssa.Value)
+				if !ok {
+					return false
+				}
+				if !p.collectValueEdgeUseBlocks(refVal, blocks, seen) {
+					return false
+				}
+				continue
+			}
+			if !isValueClearAnchor(ref) {
+				return false
+			}
+			blk := ref.Block()
+			if blk == nil || !operandUsesValue(ref, v) {
+				return false
+			}
+			blocks[blk] = true
+		}
+	}
+	return true
+}
+
+func (p *context) collectBranchStackClearPlans(fn *ssa.Function) map[*ssa.BasicBlock][]*ssa.Alloc {
+	plans := make(map[*ssa.BasicBlock][]*ssa.Alloc)
+	if fn == nil {
+		return plans
+	}
+	for _, blk := range fn.Blocks {
+		if blk == nil || len(blk.Succs) < 2 {
+			continue
+		}
+		for _, instr := range blk.Instrs {
+			alloc, ok := instr.(*ssa.Alloc)
+			if !ok || !p.shouldTrackStackClear(alloc) {
+				continue
+			}
+			ptr, ok := alloc.Type().Underlying().(*types.Pointer)
+			if !ok || ptr == nil || !hasConservativeGCPointers(ptr.Elem(), map[types.Type]bool{}) {
+				continue
+			}
+			useBlocks := make(map[*ssa.BasicBlock]bool)
+			if !p.collectValueEdgeUseBlocks(alloc, useBlocks, map[ssa.Value]bool{}) {
+				continue
+			}
+			if len(useBlocks) == 0 {
+				continue
+			}
+			liveSucc := make(map[*ssa.BasicBlock]bool, len(blk.Succs))
+			liveCount := 0
+			for _, succ := range blk.Succs {
+				live := false
+				for useBlk := range useBlocks {
+					if succ == useBlk || canReachBlockWithout(succ, useBlk, nil) {
+						live = true
+						break
+					}
+				}
+				if live {
+					liveSucc[succ] = true
+					liveCount++
+				}
+			}
+			if liveCount == 0 || liveCount == len(blk.Succs) {
+				continue
+			}
+			for _, succ := range blk.Succs {
+				if liveSucc[succ] {
+					continue
+				}
+				plans[succ] = append(plans[succ], alloc)
+			}
+		}
+	}
+	return plans
+}
+
+func (p *context) collectHiddenPointerAllocs(fn *ssa.Function) map[*ssa.Alloc]bool {
+	ret := make(map[*ssa.Alloc]bool)
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			alloc, ok := instr.(*ssa.Alloc)
+			if ok && p.canHidePointerAlloc(alloc) {
+				if hiddenAllocReturnUse(alloc, map[ssa.Value]bool{}) {
+					continue
+				}
+				ret[alloc] = true
+			}
+		}
+	}
+	return ret
+}
+
+func hiddenAllocReturnUse(v ssa.Value, seen map[ssa.Value]bool) bool {
+	if v == nil || seen[v] {
+		return false
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Return:
+			if operandUsesValue(ref, v) {
+				return true
+			}
+		case *ssa.Phi:
+			if hiddenAllocReturnUse(ref, seen) {
+				return true
+			}
+		case *ssa.UnOp:
+			if ref.Op == token.MUL && ref.X == v && hiddenAllocReturnUse(ref, seen) {
+				return true
+			}
+		default:
+			if isDerivedValueUse(ref) {
+				if refVal, ok := ref.(ssa.Value); ok && hiddenAllocReturnUse(refVal, seen) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (p *context) collectHiddenPointerAllocRoots(fn *ssa.Function) map[*ssa.Alloc]bool {
+	ret := make(map[*ssa.Alloc]bool)
+	if fn == nil {
+		return ret
+	}
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			alloc, ok := instr.(*ssa.Alloc)
+			if !ok || !p.hiddenPtrAllocs[alloc] {
+				continue
+			}
+			ptr, ok := alloc.Type().Underlying().(*types.Pointer)
+			if !ok || ptr == nil {
+				continue
+			}
+			if _, ok := types.Unalias(ptr.Elem()).Underlying().(*types.Pointer); !ok {
+				continue
+			}
+			if hiddenAllocReturnUse(alloc, map[ssa.Value]bool{}) {
+				ret[alloc] = true
+			}
+		}
+	}
+	return ret
+}
+
+func (p *context) loopBlocks(fn *ssa.Function) map[*ssa.BasicBlock]bool {
+	ret := make(map[*ssa.BasicBlock]bool)
+	if fn == nil {
+		return ret
+	}
+	infos := blocks.Infos(fn.Blocks)
+	for _, blk := range fn.Blocks {
+		if infos[blk.Index].Kind == llssa.DeferInLoop {
+			ret[blk] = true
+		}
+	}
+	return ret
+}
+
+func (p *context) collectParamClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
+	plans := make(map[ssa.Instruction][]int)
+	callsites, ok := p.staticPointerParamCallsites(fn)
+	if !ok {
+		return plans
+	}
+	loopBlock := p.loopBlocks(fn)
+	for idx, param := range fn.Params {
+		if p.hiddenParamKeys[idx] && !isKeepAliveOnlyPointerParam(param) {
+			continue
+		}
+		pt, ok := param.Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		elem := p.type_(pt.Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		blk, ok := p.singleUseBlock(param, map[ssa.Value]bool{})
+		if !ok || blk == nil {
+			continue
+		}
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		last, ok := p.lastSameBlockStackUse(param, blk, order, map[ssa.Value]bool{})
+		if !ok || last == nil {
+			continue
+		}
+		if loopBlock[blk] {
+			continue
+		}
+		if !p.allStaticCallArgsClearable(callsites, idx, pt.Elem()) {
+			continue
+		}
+		plans[last] = append(plans[last], idx)
+	}
+	return plans
+}
+
+func (p *context) collectParamValueClearPlans(fn *ssa.Function) map[ssa.Instruction][]int {
+	plans := make(map[ssa.Instruction][]int)
+	loopBlock := p.loopBlocks(fn)
+	for idx, param := range fn.Params {
+		if containsInstantiatedNamedType(param.Type(), map[types.Type]bool{}) {
+			continue
+		}
+		if !hasConservativeGCPointers(param.Type(), map[types.Type]bool{}) {
+			continue
+		}
+		blk, ok := p.singleUseBlock(param, map[ssa.Value]bool{})
+		if !ok || blk == nil {
+			continue
+		}
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		last, ok := p.lastSameBlockStackUse(param, blk, order, map[ssa.Value]bool{})
+		if !ok || last == nil {
+			continue
+		}
+		if loopBlock[blk] {
+			continue
+		}
+		plans[last] = append(plans[last], idx)
+	}
+	return plans
+}
+
+func (p *context) collectParamSpillClobberPlans(fn *ssa.Function) map[ssa.Instruction]bool {
+	plans := make(map[ssa.Instruction]bool)
+	if fn == nil {
+		return plans
+	}
+	var spillBlock *ssa.BasicBlock
+	var spillInstr ssa.Instruction
+	var spillOrder map[ssa.Instruction]int
+	for idx, param := range fn.Params {
+		if p.hiddenParamKeys[idx] {
+			continue
+		}
+		if !hasConservativeGCPointers(param.Type(), map[types.Type]bool{}) {
+			continue
+		}
+		ref, ok := singleRef(param)
+		if !ok {
+			return plans
+		}
+		store, ok := ref.(*ssa.Store)
+		if !ok || store.Val != param {
+			return plans
+		}
+		alloc, ok := store.Addr.(*ssa.Alloc)
+		if !ok || !p.shouldTrackStackClear(alloc) {
+			return plans
+		}
+		blk := store.Block()
+		if blk == nil {
+			return plans
+		}
+		if spillBlock == nil {
+			spillBlock = blk
+			spillOrder = make(map[ssa.Instruction]int, len(blk.Instrs))
+			for i, instr := range blk.Instrs {
+				spillOrder[instr] = i
+			}
+		} else if spillBlock != blk {
+			return plans
+		}
+		if spillInstr == nil || spillOrder[store] > spillOrder[spillInstr] {
+			spillInstr = store
+		}
+	}
+	if spillInstr != nil {
+		plans[spillInstr] = true
+	}
+	return plans
+}
+
+func isCallLikeInstr(instr ssa.Instruction) bool {
+	switch instr.(type) {
+	case *ssa.Call, *ssa.Defer, *ssa.Go:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *context) isPointerValueClearCandidate(v ssa.Value) bool {
+	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
+		return false
+	}
+	if !hasConservativeGCPointers(v.Type(), map[types.Type]bool{}) {
+		return false
+	}
+	if alloc, ok := v.(*ssa.Alloc); ok && p.shouldTrackStackClear(alloc) {
+		return false
+	}
+	switch v.(type) {
+	case *ssa.Phi:
+		return false
+	case *ssa.MakeInterface:
+		return p.canTrackMakeInterfaceClear(v.(*ssa.MakeInterface))
+	}
+	_, ok := v.(instrOrValue)
+	return ok
+}
+
+func (p *context) canTrackMakeInterfaceClear(v *ssa.MakeInterface) bool {
+	if v == nil {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil || len(*refs) == 0 {
+		return false
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.TypeAssert:
+			if !types.Identical(v.X.Type(), ref.AssertedType) {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func isDerivedValueUse(instr ssa.Instruction) bool {
+	switch instr.(type) {
+	case *ssa.Field, *ssa.FieldAddr, *ssa.Index, *ssa.IndexAddr,
+		*ssa.Extract, *ssa.ChangeType, *ssa.Convert,
+		*ssa.MakeInterface, *ssa.ChangeInterface, *ssa.Slice, *ssa.TypeAssert:
+		return true
+	default:
+		return false
+	}
+}
+
+func operandUsesValue(instr ssa.Instruction, v ssa.Value) bool {
+	for _, op := range instr.Operands(nil) {
+		if op != nil && *op == v {
+			return true
+		}
+	}
+	return false
+}
+
+func isValueClearAnchor(instr ssa.Instruction) bool {
+	switch instr.(type) {
+	case *ssa.Jump, *ssa.RunDefers:
+		return false
+	default:
+		return true
+	}
+}
+
+func (p *context) collectValueUseBlocks(v ssa.Value, blocks map[*ssa.BasicBlock]bool, seen map[ssa.Value]bool) bool {
+	if v == nil || seen[v] {
+		return true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return true
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Phi:
+			if !p.collectValueUseBlocks(ref, blocks, seen) {
+				return false
+			}
+			continue
+		default:
+			if isDerivedValueUse(ref) {
+				refVal, ok := ref.(ssa.Value)
+				if !ok {
+					return false
+				}
+				if !p.collectValueUseBlocks(refVal, blocks, seen) {
+					return false
+				}
+				continue
+			}
+			if !isValueClearAnchor(ref) {
+				return false
+			}
+			blk := ref.Block()
+			if blk == nil || !operandUsesValue(ref, v) {
+				return false
+			}
+			blocks[blk] = true
+		}
+	}
+	return true
+}
+
+func deepestUseBlock(blocks map[*ssa.BasicBlock]bool) (*ssa.BasicBlock, bool) {
+	var last *ssa.BasicBlock
+	for blk := range blocks {
+		if last == nil {
+			last = blk
+			continue
+		}
+		switch {
+		case dominatesBlock(last, blk):
+			last = blk
+		case dominatesBlock(blk, last):
+		default:
+			return nil, false
+		}
+	}
+	return last, true
+}
+
+func (p *context) valueLastUseBlock(v ssa.Value) (*ssa.BasicBlock, bool) {
+	blocks := make(map[*ssa.BasicBlock]bool)
+	if !p.collectValueUseBlocks(v, blocks, map[ssa.Value]bool{}) {
+		return nil, false
+	}
+	if len(blocks) == 0 {
+		return nil, true
+	}
+	return deepestUseBlock(blocks)
+}
+
+func (p *context) lastUseInBlock(v ssa.Value, blk *ssa.BasicBlock, order map[ssa.Instruction]int, seen map[ssa.Value]bool) (ssa.Instruction, bool) {
+	if v == nil || seen[v] {
+		return nil, true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, true
+	}
+	var last ssa.Instruction
+	updateLast := func(instr ssa.Instruction) {
+		if instr == nil {
+			return
+		}
+		if last == nil || order[instr] > order[last] {
+			last = instr
+		}
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Phi:
+			use, ok := p.lastUseInBlock(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+			continue
+		default:
+			if isDerivedValueUse(ref) {
+				refVal, ok := ref.(ssa.Value)
+				if !ok {
+					return nil, false
+				}
+				use, ok := p.lastUseInBlock(refVal, blk, order, seen)
+				if !ok {
+					return nil, false
+				}
+				updateLast(use)
+				continue
+			}
+			if ref.Block() == blk && operandUsesValue(ref, v) {
+				if !isValueClearAnchor(ref) {
+					return nil, false
+				}
+				updateLast(ref)
+			}
+		}
+	}
+	return last, true
+}
+
+func (p *context) collectPointerValueClearPlans(fn *ssa.Function) (map[ssa.Instruction][]ssa.Value, map[ssa.Instruction][]ssa.Value) {
+	pre := make(map[ssa.Instruction][]ssa.Value)
+	post := make(map[ssa.Instruction][]ssa.Value)
+	loopBlock := p.loopBlocks(fn)
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			val, ok := instr.(ssa.Value)
+			if !ok || !p.isPointerValueClearCandidate(val) {
+				continue
+			}
+			useBlk, ok := p.valueLastUseBlock(val)
+			if !ok || useBlk == nil {
+				continue
+			}
+			order := make(map[ssa.Instruction]int, len(useBlk.Instrs))
+			for i, useInstr := range useBlk.Instrs {
+				order[useInstr] = i
+			}
+			last, ok := p.lastUseInBlock(val, useBlk, order, map[ssa.Value]bool{})
+			if !ok || last == nil {
+				continue
+			}
+			defInstr, _ := val.(ssa.Instruction)
+			if loopBlock[useBlk] && defInstr != nil && defInstr.Block() != useBlk {
+				// A block-local "last use" inside a loop is not a global last use
+				// for values defined outside that loop block. Clearing the slot here
+				// would nil out loop-carried invariants on the first iteration.
+				continue
+			}
+			if isCallLikeInstr(last) {
+				pre[last] = append(pre[last], val)
+				continue
+			}
+			if last != instr {
+				post[last] = append(post[last], val)
+			}
+		}
+	}
+	return pre, post
+}
+
+func (p *context) staticCallsites(fn *ssa.Function) ([]staticCallSite, bool) {
+	if fn == nil || fn.Pkg == nil || fn.Parent() != nil || fn.Synthetic != "" {
+		return nil, false
+	}
+	obj, ok := fn.Object().(*types.Func)
+	if !ok || obj.Exported() {
+		return nil, false
+	}
+	var sites []staticCallSite
+	seen := make(map[*ssa.Function]bool)
+	if p.allFuncs == nil && p.goProg != nil {
+		p.allFuncs = ssautil.AllFunctions(p.goProg)
+	}
+	var scan func(*ssa.Function) bool
+	scan = func(cur *ssa.Function) bool {
+		if cur == nil || seen[cur] {
+			return true
+		}
+		seen[cur] = true
+		for _, blk := range cur.Blocks {
+			for _, instr := range blk.Instrs {
+				for _, op := range instr.Operands(nil) {
+					if op == nil || *op != fn {
+						continue
+					}
+					call, ok := instr.(*ssa.Call)
+					if !ok || call.Call.Value != fn {
+						return false
+					}
+					sites = append(sites, staticCallSite{caller: cur, call: call})
+					break
+				}
+			}
+		}
+		for _, anon := range cur.AnonFuncs {
+			if !scan(anon) {
+				return false
+			}
+		}
+		return true
+	}
+	if len(p.allFuncs) != 0 {
+		for cur := range p.allFuncs {
+			if cur == nil {
+				continue
+			}
+			if cur.Pkg != fn.Pkg && cur.Origin() == nil {
+				continue
+			}
+			if !scan(cur) {
+				return nil, false
+			}
+		}
+	} else {
+		for _, member := range fn.Pkg.Members {
+			memberFn, ok := member.(*ssa.Function)
+			if !ok {
+				continue
+			}
+			if !scan(memberFn) {
+				return nil, false
+			}
+		}
+	}
+	if len(sites) == 0 {
+		return nil, false
+	}
+	return sites, true
+}
+
+func (p *context) staticPointerParamCallsites(fn *ssa.Function) ([]staticCallSite, bool) {
+	return p.staticCallsites(fn)
+}
+
+func (p *context) allStaticCallArgsClearable(callsites []staticCallSite, idx int, elem types.Type) bool {
+	for _, site := range callsites {
+		if site.call == nil || idx >= len(site.call.Call.Args) {
+			return false
+		}
+		alloc, ok := site.call.Call.Args[idx].(*ssa.Alloc)
+		if !ok || !p.shouldTrackStackClear(alloc) {
+			return false
+		}
+		argPtr, ok := alloc.Type().Underlying().(*types.Pointer)
+		if !ok || !types.Identical(argPtr.Elem(), elem) {
+			return false
+		}
+		blk := site.call.Block()
+		order := make(map[ssa.Instruction]int, len(blk.Instrs))
+		for i, instr := range blk.Instrs {
+			order[instr] = i
+		}
+		last, ok := p.lastSameBlockStackUse(alloc, blk, order, map[ssa.Value]bool{})
+		if !ok || last != site.call {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) lastSameBlockStackUse(v ssa.Value, blk *ssa.BasicBlock, order map[ssa.Instruction]int, seen map[ssa.Value]bool) (ssa.Instruction, bool) {
+	if v == nil || seen[v] {
+		return nil, true
+	}
+	seen[v] = true
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, true
+	}
+	var last ssa.Instruction
+	updateLast := func(instr ssa.Instruction) {
+		if instr == nil {
+			return
+		}
+		if last == nil || order[instr] > order[last] {
+			last = instr
+		}
+	}
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Field:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.Index:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.Extract:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.FieldAddr:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.IndexAddr:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.ChangeType:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.Convert:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.MakeInterface:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			use, ok := p.lastSameBlockStackUse(ref, blk, order, seen)
+			if !ok {
+				return nil, false
+			}
+			updateLast(use)
+		case *ssa.UnOp:
+			if ref.Block() != blk || ref.Op != token.MUL {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Store:
+			if ref.Block() != blk || ref.Addr != v {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Call:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Defer:
+			if ref.Block() != blk {
+				return nil, false
+			}
+			found := false
+			for _, arg := range ref.Call.Args {
+				if arg == v {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, false
+			}
+			updateLast(ref)
+		case *ssa.Return:
+			if ref.Block() != blk || !operandUsesValue(ref, v) {
+				return nil, false
+			}
+			updateLast(ref)
+		default:
+			return nil, false
+		}
+	}
+	return last, true
+}
+
+func (p *context) clearDeadStackAllocs(b llssa.Builder, instr ssa.Instruction) {
+	cleared := false
+	for _, alloc := range p.stackClears[instr] {
+		ptr := p.compileValue(b, alloc)
+		if ptr.Type == nil {
+			continue
+		}
+		if p.hiddenPtrAllocs[alloc] {
+			elem := alloc.Type().(*types.Pointer).Elem()
+			b.Store(ptr, p.hiddenZeroStoredValue(b, elem))
+			p.touchConservativeSlot(b, ptr, true)
+			if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+				b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+				p.touchConservativeSlot(b, root, false)
+			}
+			cleared = true
+			continue
+		}
+		elem := p.type_(alloc.Type().(*types.Pointer).Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		b.Store(ptr, p.prog.Zero(elem))
+		p.touchConservativeSlot(b, ptr, false)
+		cleared = true
+	}
+	if cleared {
+		p.clobberPointerRegs(b)
+	}
+}
+
+func (p *context) clearEntryStackAllocs(b llssa.Builder, blk *ssa.BasicBlock) {
+	if blk == nil {
+		return
+	}
+	cleared := false
+	for _, alloc := range p.stackEntryClears[blk] {
+		ptr := p.compileValue(b, alloc)
+		if ptr.Type == nil {
+			continue
+		}
+		if p.hiddenPtrAllocs[alloc] {
+			elem := alloc.Type().(*types.Pointer).Elem()
+			b.Store(ptr, p.hiddenZeroStoredValue(b, elem))
+			p.touchConservativeSlot(b, ptr, true)
+			if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+				b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+				p.touchConservativeSlot(b, root, false)
+			}
+			cleared = true
+			continue
+		}
+		elem := p.type_(alloc.Type().(*types.Pointer).Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		b.Store(ptr, p.prog.Zero(elem))
+		p.touchConservativeSlot(b, ptr, false)
+		cleared = true
+	}
+	if cleared {
+		p.clobberPointerRegs(b)
+	}
+}
+
+func (p *context) initValueSlots(b llssa.Builder, fn *ssa.Function) {
+	if fn == nil || (len(p.valuePreClears) == 0 && len(p.valuePostClears) == 0 && len(p.hiddenValueSlots) == 0) {
+		return
+	}
+	values := make(map[ssa.Value]bool)
+	for _, vals := range p.valuePreClears {
+		for _, v := range vals {
+			values[v] = true
+		}
+	}
+	for _, vals := range p.valuePostClears {
+		for _, v := range vals {
+			values[v] = true
+		}
+	}
+	for v := range p.hiddenValueSlots {
+		values[v] = true
+	}
+	for _, blk := range fn.Blocks {
+		for _, instr := range blk.Instrs {
+			val, ok := instr.(ssa.Value)
+			if !ok || !values[val] {
+				continue
+			}
+			if p.hiddenValueSlots[val] && p.hiddenValueUsesUintptrSlot(val.Type()) {
+				p.valueSlots[val] = b.AllocaT(p.hiddenSlotType(val.Type()))
+				p.valueRootSlots[val] = b.AllocaT(p.type_(val.Type(), llssa.InGo))
+				b.Store(p.valueRootSlots[val], p.prog.Nil(p.type_(val.Type(), llssa.InGo)))
+				continue
+			}
+			if p.hiddenValueSlots[val] && p.hiddenValueUsesOpaqueSlot(val.Type()) {
+				p.valueSlots[val] = b.AllocaT(p.hiddenSlotType(val.Type()))
+				p.valueRootSlots[val] = b.AllocaT(p.type_(val.Type(), llssa.InGo))
+				b.Store(p.valueRootSlots[val], p.prog.Zero(p.type_(val.Type(), llssa.InGo)))
+				continue
+			}
+			p.valueSlots[val] = b.AllocaT(p.type_(val.Type(), llssa.InGo))
+		}
+	}
+}
+
+func (p *context) hiddenValueUsesUintptrSlot(t types.Type) bool {
+	if _, ok := types.Unalias(t).Underlying().(*types.Pointer); ok {
+		return true
+	}
+	_, _, ok := hiddenScalarStructField(t)
+	return ok
+}
+
+func hiddenOpaqueAggregateSlotType(t types.Type) types.Type {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return nil
+		}
+		return types.NewStruct([]*types.Var{
+			types.NewField(token.NoPos, nil, "data", types.Typ[types.Uintptr], false),
+			types.NewField(token.NoPos, nil, "len", types.Typ[types.Int], false),
+		}, nil)
+	case *types.Slice:
+		return types.NewStruct([]*types.Var{
+			types.NewField(token.NoPos, nil, "data", types.Typ[types.Uintptr], false),
+			types.NewField(token.NoPos, nil, "len", types.Typ[types.Int], false),
+			types.NewField(token.NoPos, nil, "cap", types.Typ[types.Int], false),
+		}, nil)
+	default:
+		return nil
+	}
+}
+
+func (p *context) hiddenValueUsesOpaqueSlot(t types.Type) bool {
+	return hiddenOpaqueAggregateSlotType(t) != nil
+}
+
+func (p *context) hiddenSlotType(t types.Type) llssa.Type {
+	if p.hiddenValueUsesUintptrSlot(t) {
+		return p.type_(types.Typ[types.Uintptr], llssa.InGo)
+	}
+	if raw := hiddenOpaqueAggregateSlotType(t); raw != nil {
+		return p.type_(raw, llssa.InGo)
+	}
+	return p.type_(t, llssa.InGo)
+}
+
+func (p *context) canClearHiddenAggregateSource(t types.Type) bool {
+	if p.hiddenValueUsesUintptrSlot(t) {
+		return false
+	}
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		return tt.Kind() == types.String
+	case *types.Slice, *types.Interface:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *context) encodeHiddenOpaqueSlotValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	slotType := p.hiddenSlotType(t)
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return val
+		}
+		return b.Aggregate(slotType, p.hiddenPointerKey(b, b.StringData(val)), b.StringLen(val))
+	case *types.Slice:
+		return b.Aggregate(slotType, p.hiddenPointerKey(b, b.SliceData(val)), b.SliceLen(val), b.SliceCap(val))
+	default:
+		return val
+	}
+}
+
+func (p *context) decodeHiddenOpaqueSlotValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	typ := p.type_(t, llssa.InGo)
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return val
+		}
+		data := p.hiddenPointerDecode(b, b.Field(val, 0), types.NewPointer(types.Typ[types.Byte]))
+		return b.Aggregate(typ, data, b.Field(val, 1))
+	case *types.Slice:
+		data := p.hiddenPointerDecode(b, b.Field(val, 0), types.NewPointer(tt.Elem()))
+		return b.Aggregate(typ, data, b.Field(val, 1), b.Field(val, 2))
+	default:
+		return val
+	}
+}
+
+func (p *context) decodeHiddenValueSlot(b llssa.Builder, slot llssa.Expr, t types.Type) llssa.Expr {
+	val := b.Load(slot)
+	if p.hiddenValueUsesOpaqueSlot(t) {
+		return p.decodeHiddenOpaqueSlotValue(b, val, t)
+	}
+	return p.decodeHiddenStoredValue(b, val, t)
+}
+
+func (p *context) loadValueSlot(b llssa.Builder, v ssa.Value) llssa.Expr {
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil {
+		return llssa.Expr{}
+	}
+	if p.hiddenValueSlots[v] {
+		if p.hiddenValueUsesOpaqueSlot(v.Type()) {
+			if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+				return b.Load(root)
+			}
+		}
+		return p.decodeHiddenValueSlot(b, slot, v.Type())
+	}
+	return b.Load(slot)
+}
+
+func (p *context) storeHiddenAggregateSlotValue(b llssa.Builder, slot, root, val llssa.Expr, t types.Type) {
+	tmpType := p.type_(t, llssa.InGo)
+	tmp := b.AllocaT(tmpType)
+	b.Store(tmp, val)
+	raw := b.Load(tmp)
+	if root.Type != nil {
+		b.Store(root, raw)
+	}
+	if p.hiddenValueUsesOpaqueSlot(t) {
+		b.Store(slot, p.encodeHiddenOpaqueSlotValue(b, raw, t))
+	} else {
+		b.Store(slot, p.encodeHiddenStoredValue(b, raw, t))
+	}
+	b.Store(tmp, p.prog.Zero(tmpType))
+	p.touchConservativeSlot(b, tmp, false)
+	p.clobberPointerRegs(b)
+}
+
+func (p *context) encodeHiddenAggregateValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return val
+		}
+		data := b.StringData(val)
+		return b.SetStringData(val, b.Convert(data.Type, p.hiddenPointerKey(b, data)))
+	case *types.Slice:
+		data := b.SliceData(val)
+		return b.SetSliceData(val, b.Convert(data.Type, p.hiddenPointerKey(b, data)))
+	case *types.Interface:
+		data := b.InterfaceData(val)
+		return b.SetInterfaceData(val, b.Convert(data.Type, p.hiddenPointerKey(b, data)))
+	default:
+		return val
+	}
+}
+
+func (p *context) decodeHiddenAggregateValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return val
+		}
+		data := b.StringData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return b.SetStringData(val, p.hiddenPointerDecode(b, key, data.RawType()))
+	case *types.Slice:
+		data := b.SliceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return b.SetSliceData(val, p.hiddenPointerDecode(b, key, data.RawType()))
+	case *types.Interface:
+		data := b.InterfaceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return b.SetInterfaceData(val, p.hiddenPointerDecode(b, key, data.RawType()))
+	default:
+		return val
+	}
+}
+
+func (p *context) decodeHiddenAggregateData(b llssa.Builder, val llssa.Expr, t types.Type) (llssa.Expr, bool) {
+	switch tt := types.Unalias(t).Underlying().(type) {
+	case *types.Basic:
+		if tt.Kind() != types.String {
+			return llssa.Expr{}, false
+		}
+		data := b.StringData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return p.hiddenPointerDecode(b, key, data.RawType()), true
+	case *types.Slice:
+		data := b.SliceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return p.hiddenPointerDecode(b, key, data.RawType()), true
+	case *types.Interface:
+		data := b.InterfaceData(val)
+		key := b.Convert(b.Prog.Uintptr(), data)
+		return p.hiddenPointerDecode(b, key, data.RawType()), true
+	default:
+		return llssa.Expr{}, false
+	}
+}
+
+func (p *context) encodeHiddenStoredValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	if _, ok := types.Unalias(t).Underlying().(*types.Pointer); ok {
+		return p.hiddenPointerKey(b, val)
+	}
+	if idx, _, ok := hiddenScalarStructField(t); ok {
+		return p.hiddenPointerKey(b, b.Field(val, idx))
+	}
+	return p.encodeHiddenAggregateValue(b, val, t)
+}
+
+func (p *context) decodeHiddenStoredValue(b llssa.Builder, val llssa.Expr, t types.Type) llssa.Expr {
+	if _, ok := types.Unalias(t).Underlying().(*types.Pointer); ok {
+		return p.hiddenPointerDecode(b, val, t)
+	}
+	if idx, fieldType, ok := hiddenScalarStructField(t); ok {
+		tt := p.type_(t, llssa.InGo)
+		tmp := b.AllocaT(tt)
+		b.Store(tmp, p.prog.Zero(tt))
+		b.Store(b.FieldAddr(tmp, idx), p.hiddenPointerDecode(b, val, fieldType))
+		ret := b.Load(tmp)
+		b.Store(tmp, p.prog.Zero(tt))
+		p.touchConservativeSlot(b, tmp, false)
+		return ret
+	}
+	return p.decodeHiddenAggregateValue(b, val, t)
+}
+
+func (p *context) hiddenZeroStoredValue(b llssa.Builder, t types.Type) llssa.Expr {
+	zero := p.prog.Zero(p.type_(t, llssa.InGo))
+	return p.encodeHiddenStoredValue(b, zero, t)
+}
+
+func (p *context) hiddenPointerKeyForValue(b llssa.Builder, v ssa.Value) (llssa.Expr, bool) {
+	if v == nil {
+		return llssa.Expr{}, false
+	}
+	if param, ok := v.(*ssa.Parameter); ok {
+		fn := param.Parent()
+		for idx, candidate := range fn.Params {
+			if candidate == param && p.hiddenParamKeys[idx] {
+				if p.hiddenParamByRefs[idx] {
+					if slot, ok := p.hiddenParamSlots[idx]; ok && slot.Type != nil {
+						return b.Load(slot), true
+					}
+					if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+						return p.encodeHiddenStoredValue(b, b.Load(slot), v.Type()), true
+					}
+				}
+				return b.Param(idx), true
+			}
+		}
+	}
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil || !p.hiddenValueSlots[v] || !p.hiddenValueUsesUintptrSlot(v.Type()) {
+		return llssa.Expr{}, false
+	}
+	if _, compiled := p.bvals[v]; !compiled {
+		iv, ok := v.(instrOrValue)
+		if !ok {
+			return llssa.Expr{}, false
+		}
+		p.compileInstrOrValue(b, iv, false)
+	}
+	return b.Load(slot), true
+}
+
+func (p *context) hiddenSliceArgKeyLen(b llssa.Builder, arg ssa.Value) (llssa.Expr, llssa.Expr, bool) {
+	if _, ok := types.Unalias(arg.Type()).Underlying().(*types.Slice); !ok {
+		return llssa.Expr{}, llssa.Expr{}, false
+	}
+	slot, ok := p.valueSlots[arg]
+	if !ok || slot.Type == nil || !p.hiddenValueSlots[arg] {
+		return llssa.Expr{}, llssa.Expr{}, false
+	}
+	if iv, ok := arg.(instrOrValue); ok {
+		if _, compiled := p.bvals[arg]; !compiled {
+			p.compileInstrOrValue(b, iv, false)
+		}
+	} else if _, ok := p.bvals[arg]; !ok {
+		return llssa.Expr{}, llssa.Expr{}, false
+	}
+	if p.hiddenValueUsesOpaqueSlot(arg.Type()) {
+		val := b.Load(slot)
+		return b.Field(val, 0), b.Field(val, 1), true
+	}
+	val := b.Load(slot)
+	return b.Convert(b.Prog.Uintptr(), b.SliceData(val)), b.SliceLen(val), true
+}
+
+func isSingleExtractTupleUse(tuple ssa.Value, extract *ssa.Extract) bool {
+	if tuple == nil || extract == nil {
+		return false
+	}
+	refs := tuple.Referrers()
+	if refs == nil {
+		return false
+	}
+	count := 0
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Extract:
+			if !extractHasNonDebugUses(ref) {
+				continue
+			}
+			if ref != extract {
+				return false
+			}
+			count++
+		default:
+			return false
+		}
+	}
+	return count == 1
+}
+
+func singleExtractTupleUseIndex(tuple ssa.Value) (int, bool) {
+	if tuple == nil {
+		return 0, false
+	}
+	refs := tuple.Referrers()
+	if refs == nil {
+		return 0, false
+	}
+	count := 0
+	idx := 0
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Extract:
+			if !extractHasNonDebugUses(ref) {
+				continue
+			}
+			count++
+			idx = ref.Index
+		default:
+			return 0, false
+		}
+	}
+	return idx, count == 1
+}
+
+func singleExtractTupleUse(tuple ssa.Value) (*ssa.Extract, bool) {
+	if tuple == nil {
+		return nil, false
+	}
+	refs := tuple.Referrers()
+	if refs == nil {
+		return nil, false
+	}
+	count := 0
+	var ret *ssa.Extract
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Extract:
+			if !extractHasNonDebugUses(ref) {
+				continue
+			}
+			count++
+			ret = ref
+		default:
+			return nil, false
+		}
+	}
+	return ret, count == 1 && ret != nil
+}
+
+func extractHasNonDebugUses(extract *ssa.Extract) bool {
+	if extract == nil {
+		return false
+	}
+	refs := extract.Referrers()
+	if refs == nil {
+		return false
+	}
+	for _, ref := range *refs {
+		if _, ok := ref.(*ssa.DebugRef); ok {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func (p *context) singleExtractCallOverrideFor(call *ssa.Call) (*staticCallOverride, int, bool) {
+	if call == nil {
+		return nil, 0, false
+	}
+	calleeFn, ok := call.Call.Value.(*ssa.Function)
+	if !ok {
+		return nil, 0, false
+	}
+	aFn, _, ftype := p.compileFunction(calleeFn)
+	if ftype != goFunc {
+		return nil, 0, false
+	}
+	idx, ok := singleExtractTupleUseIndex(call)
+	if !ok {
+		return nil, 0, false
+	}
+	plan := p.singleExtractCallShimPlanFor(aFn.Name(), calleeFn, idx)
+	if plan == nil {
+		return nil, 0, false
+	}
+	shimFn := aFn.Pkg.FuncOf(plan.shimName)
+	if shimFn == nil {
+		return nil, 0, false
+	}
+	return &staticCallOverride{
+		callee:           shimFn.Expr,
+		hiddenParamIdx:   plan.hiddenParamIdx,
+		hiddenResult:     plan.resultHidden,
+		hiddenResultType: plan.resultRawType,
+	}, idx, true
+}
+
+func (p *context) singleExtractOutCallOverrideFor(call *ssa.Call, extract *ssa.Extract) (*staticCallOverride, bool) {
+	if call == nil || extract == nil || !p.hiddenValueSlots[extract] || !p.hiddenValueUsesOpaqueSlot(extract.Type()) {
+		return nil, false
+	}
+	slot, ok := p.valueSlots[extract]
+	if !ok || slot.Type == nil {
+		return nil, false
+	}
+	root, ok := p.valueRootSlots[extract]
+	if !ok || root.Type == nil {
+		return nil, false
+	}
+	calleeFn, ok := call.Call.Value.(*ssa.Function)
+	if !ok {
+		return nil, false
+	}
+	aFn, _, ftype := p.compileFunction(calleeFn)
+	if ftype != goFunc {
+		return nil, false
+	}
+	idx, ok := singleExtractTupleUseIndex(call)
+	if !ok || idx != extract.Index {
+		return nil, false
+	}
+	plan := p.singleExtractCallShimPlanFor(aFn.Name(), calleeFn, idx)
+	if plan == nil || plan.outSig == nil {
+		return nil, false
+	}
+	outFn := aFn.Pkg.FuncOf(plan.outName)
+	if outFn == nil {
+		return nil, false
+	}
+	return &staticCallOverride{
+		callee:           outFn.Expr,
+		hiddenParamIdx:   plan.hiddenParamIdx,
+		hiddenParamByRef: plan.hiddenParamByRef,
+		outHiddenSlot:    slot,
+		outRawSlot:       root,
+	}, true
+}
+
+func (p *context) compileHiddenPointerDeref(b llssa.Builder, key llssa.Expr, t types.Type) llssa.Expr {
+	if basic, ok := types.Unalias(t).Underlying().(*types.Basic); ok && basic.Kind() == types.Uint8 {
+		params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uint8]))
+		helper := b.Pkg.NewFunc("runtime.LoadHiddenUint8",
+			types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+		return b.Call(helper.Expr, key)
+	}
+	dstType := p.type_(t, llssa.InGo)
+	dst := b.AllocaT(dstType)
+	params := types.NewTuple(
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+	)
+	helper := b.Pkg.NewFunc("runtime.LoadHiddenPointee",
+		types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+	voidPtr := b.Prog.VoidPtr()
+	uintPtr := b.Prog.Uintptr()
+	b.Call(helper.Expr,
+		b.ChangeType(voidPtr, dst),
+		key,
+		p.prog.IntVal(uint64(p.prog.SizeOf(dstType)), uintPtr),
+	)
+	ret := b.Load(dst)
+	b.ClearLoadSource(ret)
+	return ret
+}
+
+func (p *context) compileHiddenPointerDerefKey(b llssa.Builder, key llssa.Expr) llssa.Expr {
+	params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+	results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+	helper := b.Pkg.NewFunc("runtime.LoadHiddenPointerKey",
+		types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+	return b.Call(helper.Expr, key)
+}
+
+func (p *context) compileHiddenSliceIndexAddrKey(b llssa.Builder, key llssa.Expr, length llssa.Expr, idx llssa.Expr, idxType types.Type, elemSize uint64) llssa.Expr {
+	checked := idx
+	useUnsigned := false
+	if basic, ok := types.Unalias(idxType).Underlying().(*types.Basic); ok {
+		switch basic.Kind() {
+		case types.Uint, types.Uint8, types.Uint16, types.Uint32, types.Uint64, types.Uintptr:
+			useUnsigned = true
+		}
+	}
+	checkIdxFn := func(name string) llssa.Function {
+		params := types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", idxType),
+			types.NewParam(token.NoPos, nil, "", types.Typ[types.Int]),
+		)
+		results := types.NewTuple(types.NewParam(token.NoPos, nil, "", idxType))
+		return b.Pkg.NewFunc(llssa.PkgRuntime+"."+name,
+			types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+	}
+	if useUnsigned {
+		checked = b.InlineCall(checkIdxFn("CheckIndexUint").Expr, idx, length)
+	} else {
+		checked = b.InlineCall(checkIdxFn("CheckIndexInt").Expr, idx, length)
+	}
+	if p.prog.SizeOf(checked.Type) != p.prog.SizeOf(b.Prog.Uintptr()) {
+		checked = b.Convert(b.Prog.Uintptr(), checked)
+	}
+	offset := checked
+	if elemSize != 1 {
+		offset = b.BinOp(token.MUL, checked, b.Prog.IntVal(elemSize, b.Prog.Uintptr()))
+	}
+	params := types.NewTuple(
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+	)
+	helper := b.Pkg.NewFunc("runtime.AdvanceHiddenPointer",
+		types.NewSignatureType(nil, nil, nil, params, types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr])), false), llssa.InGo)
+	return b.Call(helper.Expr, key, offset)
+}
+
+func (p *context) canHidePointerValue(v ssa.Value) bool {
+	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
+		return false
+	}
+	if hasOnlyReturnUsers(v) {
+		return false
+	}
+	switch types.Unalias(v.Type()).Underlying().(type) {
+	case *types.Pointer, *types.Slice:
+	case *types.Basic:
+		if types.Unalias(v.Type()).Underlying().(*types.Basic).Kind() != types.String {
+			return false
+		}
+	default:
+		return false
+	}
+	switch v.(type) {
+	case *ssa.Alloc:
+		if alloc, ok := v.(*ssa.Alloc); ok {
+			return !p.shouldTrackStackClear(alloc)
+		}
+		return false
+	case *ssa.Parameter:
+		return false
+	}
+	return true
+}
+
+func (p *context) collectHiddenPointerValueSlots(fn *ssa.Function) map[ssa.Value]bool {
+	ret := make(map[ssa.Value]bool)
+	for _, vals := range p.valuePreClears {
+		for _, v := range vals {
+			if p.canHidePointerValue(v) {
+				ret[v] = true
+			}
+		}
+	}
+	for _, vals := range p.valuePostClears {
+		for _, v := range vals {
+			if p.canHidePointerValue(v) {
+				ret[v] = true
+			}
+		}
+	}
+	if fn != nil {
+		for _, blk := range fn.Blocks {
+			for _, instr := range blk.Instrs {
+				alloc, ok := instr.(*ssa.Alloc)
+				if !ok || !alloc.Heap || p.canPromoteHeapAllocToStack(alloc) {
+					continue
+				}
+				if p.canHidePointerValue(alloc) {
+					ret[alloc] = true
+				}
+			}
+		}
+	}
+	return ret
+}
+
+func (p *context) initParamSlots(b llssa.Builder, fn *ssa.Function) {
+	if fn == nil {
+		return
+	}
+	needsHiddenByRefSlots := false
+	for idx := range fn.Params {
+		if p.hiddenParamByRefs[idx] {
+			needsHiddenByRefSlots = true
+			break
+		}
+	}
+	if len(p.paramValueClears) == 0 && !needsHiddenByRefSlots {
+		return
+	}
+	slotIdxs := make(map[int]bool)
+	if needsHiddenByRefSlots {
+		for idx := range fn.Params {
+			if isNameValistParam(fn, idx) {
+				continue
+			}
+			if p.hiddenParamByRefs[idx] {
+				slotIdxs[idx] = true
+			}
+		}
+	}
+	for _, idxs := range p.paramValueClears {
+		for _, idx := range idxs {
+			if idx < 0 || idx >= len(fn.Params) || isNameValistParam(fn, idx) {
+				continue
+			}
+			if p.hiddenParamKeys[idx] || p.paramShadow[idx].Type == nil {
+				slotIdxs[idx] = true
+			}
+		}
+	}
+	if len(slotIdxs) == 0 {
+		return
+	}
+	indices := make([]int, 0, len(slotIdxs))
+	for idx := range slotIdxs {
+		indices = append(indices, idx)
+	}
+	sort.Ints(indices)
+	clobber := false
+	for _, idx := range indices {
+		var slot llssa.Expr
+		if p.hiddenParamKeys[idx] {
+			if p.hiddenParamByRefs[idx] {
+				if _, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer); ok {
+					typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+					slot = b.AllocaT(typ)
+					b.Store(slot, b.Load(b.Param(idx)))
+					p.touchConservativeSlot(b, slot, false)
+					keySlot := b.AllocaT(b.Prog.Uintptr())
+					b.Store(keySlot, p.hiddenPointerKeyCall(b, b.Load(slot)))
+					p.hiddenParamSlots[idx] = keySlot
+					b.Store(b.Param(idx), p.prog.Zero(b.Prog.Elem(b.Param(idx).Type)))
+					p.touchConservativeSlot(b, b.Param(idx), false)
+				} else {
+					hiddenSlotType := b.Prog.Elem(b.Param(idx).Type)
+					keySlot := b.AllocaT(hiddenSlotType)
+					key := b.Load(b.Param(idx))
+					b.Store(keySlot, key)
+					p.hiddenParamSlots[idx] = keySlot
+					typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+					slot = b.AllocaT(typ)
+					p.storeHiddenPointerRoot(b, slot, key)
+					b.Store(b.Param(idx), p.prog.Zero(b.Prog.Elem(b.Param(idx).Type)))
+					p.touchConservativeSlot(b, b.Param(idx), true)
+				}
+			} else if _, ok := types.Unalias(fn.Params[idx].Type()).Underlying().(*types.Pointer); ok {
+				typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+				slot = b.AllocaT(typ)
+				b.Store(slot, p.hiddenPointerDecode(b, b.Param(idx), fn.Params[idx].Type()))
+			} else if p.hiddenValueUsesOpaqueSlot(fn.Params[idx].Type()) {
+				slot = b.AllocaT(p.hiddenSlotType(fn.Params[idx].Type()))
+				b.Store(slot, b.Param(idx))
+			} else {
+				typ := p.type_(fn.Params[idx].Type(), llssa.InGo)
+				slot = b.AllocaT(typ)
+				b.Store(slot, p.prog.Zero(typ))
+				params := types.NewTuple(
+					types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+					types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+					types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+				)
+				helper := b.Pkg.NewFunc("runtime.LoadHiddenPointee",
+					types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+				b.Call(helper.Expr,
+					b.ChangeType(b.Prog.VoidPtr(), slot),
+					b.Param(idx),
+					p.prog.IntVal(uint64(p.prog.SizeOf(typ)), b.Prog.Uintptr()),
+				)
+			}
+		} else {
+			param := fn.Params[idx]
+			slot = b.AllocaT(p.type_(param.Type(), llssa.InGo))
+			b.Store(slot, b.Param(idx))
+		}
+		p.paramSlots[idx] = slot
+		if hasConservativeGCPointers(fn.Params[idx].Type(), map[types.Type]bool{}) {
+			clobber = true
+		}
+	}
+	if clobber {
+		p.clobberPointerRegs(b)
+	}
+}
+
+func isNameValistParam(fn *ssa.Function, idx int) bool {
+	if fn == nil || idx < 0 || idx >= len(fn.Params) || !llssa.HasNameValist(fn.Signature) {
+		return false
+	}
+	return fn.Params[idx].Name() == llssa.NameValist
+}
+
+func (p *context) initKeepAliveParamShadows(b llssa.Builder, fn *ssa.Function) {
+	if fn == nil || len(p.paramClears) == 0 {
+		return
+	}
+	shadowable := make(map[int]bool)
+	for _, idxs := range p.paramClears {
+		for _, idx := range idxs {
+			if idx >= 0 && idx < len(fn.Params) && isKeepAliveOnlyPointerParam(fn.Params[idx]) {
+				shadowable[idx] = true
+			}
+		}
+	}
+	if len(shadowable) == 0 {
+		return
+	}
+	indices := make([]int, 0, len(shadowable))
+	for idx := range shadowable {
+		indices = append(indices, idx)
+	}
+	sort.Ints(indices)
+	voidPtr := b.Prog.VoidPtr()
+	uintPtr := b.Prog.Uintptr()
+	params := types.NewTuple(
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+		types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+	)
+	helper := b.Pkg.NewFunc("runtime.ShadowCopyPointee",
+		types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+	for _, idx := range indices {
+		param := fn.Params[idx]
+		pt, ok := param.Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		elem := p.type_(pt.Elem(), llssa.InGo)
+		size := p.prog.SizeOf(elem)
+		if size <= 0 || size > 256 {
+			continue
+		}
+		shadow := b.AllocaT(elem)
+		b.Store(shadow, p.prog.Zero(elem))
+		dst := b.ChangeType(voidPtr, shadow)
+		srcPtr := b.Param(idx)
+		if p.hiddenParamKeys[idx] {
+			if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+				srcPtr = p.hiddenPointerDecode(b, b.Load(slot), param.Type())
+			} else {
+				srcPtr = p.hiddenPointerDecode(b, srcPtr, param.Type())
+			}
+		}
+		src := b.ChangeType(voidPtr, srcPtr)
+		b.Call(helper.Expr, dst, src, p.prog.IntVal(uint64(size), uintPtr))
+		p.paramShadow[idx] = shadow
+		p.bvals[param] = shadow
+	}
+}
+
+func (p *context) clearDeadParams(b llssa.Builder, instr ssa.Instruction) {
+	fn := instr.Parent()
+	if fn == nil {
+		return
+	}
+	for _, idx := range p.paramClears[instr] {
+		if idx < 0 || idx >= len(fn.Params) {
+			continue
+		}
+		pt, ok := fn.Params[idx].Type().Underlying().(*types.Pointer)
+		if !ok || pt == nil {
+			continue
+		}
+		elem := p.type_(pt.Elem(), llssa.InGo)
+		if p.prog.SizeOf(elem) > 256 {
+			continue
+		}
+		if shadow, ok := p.paramShadow[idx]; ok {
+			b.Store(shadow, p.prog.Zero(elem))
+			continue
+		}
+		if p.hiddenParamKeys[idx] {
+			continue
+		}
+		b.Store(b.Param(idx), p.prog.Zero(elem))
+	}
+}
+
+func (p *context) clearDeadParamValues(b llssa.Builder, instr ssa.Instruction) {
+	fn := instr.Parent()
+	if fn == nil {
+		return
+	}
+	cleared := false
+	for _, idx := range p.paramValueClears[instr] {
+		if idx < 0 || idx >= len(fn.Params) {
+			continue
+		}
+		slot, ok := p.paramSlots[idx]
+		if !ok || slot.Type == nil {
+			continue
+		}
+		if p.hiddenParamKeys[idx] {
+			if keySlot, ok := p.hiddenParamSlots[idx]; ok && keySlot.Type != nil {
+				b.Store(keySlot, p.prog.Zero(b.Prog.Elem(keySlot.Type)))
+				p.touchConservativeSlot(b, keySlot, true)
+			}
+			b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+			p.touchConservativeSlot(b, slot, true)
+			cleared = true
+			continue
+		}
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+		p.touchConservativeSlot(b, slot, false)
+		cleared = true
+	}
+	if cleared {
+		p.clobberPointerRegs(b)
+	}
+}
+
+func (p *context) clobberPointerRegs(b llssa.Builder) {
+	helper := b.Pkg.NewFunc("runtime.ClobberPointerRegs",
+		types.NewSignatureType(nil, nil, nil, nil, nil, false), llssa.InGo)
+	b.Call(helper.Expr)
+	if !p.strongPtrClobber {
+		return
+	}
+	target := p.prog.Target()
+	if target == nil || target.GOARCH != "arm64" {
+		return
+	}
+	asm := strings.Join([]string{
+		"mov x20, xzr",
+		"mov x21, xzr",
+		"mov x22, xzr",
+		"mov x23, xzr",
+		"mov x24, xzr",
+		"mov x25, xzr",
+		"mov x26, xzr",
+		"mov x27, xzr",
+		"mov x28, xzr",
+	}, "\n\t")
+	constraints := strings.Join([]string{
+		"~{x20}", "~{x21}", "~{x22}", "~{x23}",
+		"~{x24}", "~{x25}", "~{x26}", "~{x27}", "~{x28}", "~{memory}",
+	}, ",")
+	b.InlineAsmFull(asm, constraints, b.Prog.Void(), nil)
+}
+
+func (p *context) functionNeedsStrongPointerClobber(fn *ssa.Function) bool {
+	seen := make(map[*ssa.Function]bool)
+	var visit func(*ssa.Function) bool
+	visit = func(cur *ssa.Function) bool {
+		if cur == nil || seen[cur] {
+			return false
+		}
+		seen[cur] = true
+		for _, blk := range cur.Blocks {
+			for _, instr := range blk.Instrs {
+				call, ok := instr.(*ssa.Call)
+				if !ok {
+					continue
+				}
+				callee, ok := call.Call.Value.(*ssa.Function)
+				if !ok || callee == nil {
+					continue
+				}
+				if callee.Pkg != nil && callee.Pkg.Pkg != nil && isRuntimePackagePath(callee.Pkg.Pkg.Path()) {
+					switch callee.Name() {
+					case "GC",
+						"SetFinalizer", "SetFinalizerType", "SetFinalizerTypeHidden", "SetFinalizerTypeHiddenSlot", "SetFinalizerTypeHiddenSlotKeepalive",
+						"setFinalizer", "AddCleanupPtr", "AddCleanupValuePtr",
+						"KeepAlive", "KeepAlivePointer":
+						return true
+					}
+				}
+				if visit(callee) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return visit(fn)
+}
+
+func (p *context) storeHiddenPointerRoot(b llssa.Builder, root, key llssa.Expr) {
+	helper := b.Pkg.NewFunc("runtime.StoreHiddenPointerRoot",
+		types.NewSignatureType(nil, nil, nil,
+			types.NewTuple(
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+			),
+			nil, false),
+		llssa.InGo)
+	b.Call(helper.Expr, b.ChangeType(b.Prog.VoidPtr(), root), key)
+}
+
+func (p *context) touchConservativeSlot(b llssa.Builder, slot llssa.Expr, force bool) {
+	if slot.Type == nil {
+		return
+	}
+	elem := b.Prog.Elem(slot.Type)
+	if !force && (elem.RawType() == nil || !hasConservativeGCPointers(elem.RawType(), map[types.Type]bool{})) {
+		return
+	}
+	helper := b.Pkg.NewFunc("runtime.TouchConservativeSlot",
+		types.NewSignatureType(nil, nil, nil,
+			types.NewTuple(
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+			),
+			nil, false),
+		llssa.InGo)
+	b.Call(helper.Expr,
+		b.ChangeType(b.Prog.VoidPtr(), slot),
+		p.prog.IntVal(uint64(p.prog.SizeOf(elem)), b.Prog.Uintptr()),
+	)
+}
+
+func (p *context) clearDeadPointerValues(b llssa.Builder, instr ssa.Instruction) {
+	skip := make(map[ssa.Value]bool)
+	if ret, ok := instr.(*ssa.Return); ok {
+		for _, r := range ret.Results {
+			load, ok := r.(*ssa.UnOp)
+			if !ok || load.Op != token.MUL {
+				continue
+			}
+			if alloc, ok := load.X.(*ssa.Alloc); ok {
+				// clearReturnValueRoots already clears the pointee for return values
+				// loaded directly from allocs. Do not nil the tracked pointer slot
+				// before that happens.
+				skip[alloc] = true
+			}
+		}
+	}
+	if load, ok := instr.(*ssa.UnOp); ok && load.Op == token.MUL {
+		if alloc, ok := load.X.(*ssa.Alloc); ok && returnedDirectly(load) {
+			skip[alloc] = true
+		}
+		if _, ok := singleNonDebugMakeInterfaceUse(load); ok {
+			skip[load.X] = true
+		}
+	}
+	cleared := false
+	for _, v := range p.valuePostClears[instr] {
+		if skip[v] {
+			continue
+		}
+		slot, ok := p.valueSlots[v]
+		if !ok || slot.Type == nil {
+			continue
+		}
+		if p.hiddenValueSlots[v] {
+			b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+			p.touchConservativeSlot(b, slot, true)
+			if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+				b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+				p.touchConservativeSlot(b, root, false)
+			}
+			cleared = true
+			continue
+		}
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+		p.touchConservativeSlot(b, slot, false)
+		cleared = true
+	}
+	if cleared {
+		p.clobberPointerRegs(b)
+	}
+}
+
+func returnedDirectly(v ssa.Value) bool {
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	foundReturn := false
+	for _, ref := range *refs {
+		switch ref := ref.(type) {
+		case *ssa.DebugRef:
+			continue
+		case *ssa.Return:
+			if operandUsesValue(ref, v) {
+				foundReturn = true
+				continue
+			}
+			return false
+		default:
+			return false
+		}
+	}
+	return foundReturn
+}
+
+func (p *context) mapUpdateKeyPtr(b llssa.Builder, key ssa.Value) (llssa.Expr, bool) {
+	if key == nil {
+		return llssa.Expr{}, false
+	}
+	if iv, ok := key.(instrOrValue); ok {
+		if _, compiled := p.bvals[key]; !compiled {
+			p.compileInstrOrValue(b, iv, false)
+		}
+	} else if _, ok := p.bvals[key]; !ok {
+		return llssa.Expr{}, false
+	}
+	if p.hiddenValueSlots[key] {
+		if !p.hiddenValueUsesOpaqueSlot(key.Type()) {
+			return llssa.Expr{}, false
+		}
+		root, ok := p.valueRootSlots[key]
+		if !ok || root.Type == nil {
+			return llssa.Expr{}, false
+		}
+		return root, true
+	}
+	slot, ok := p.valueSlots[key]
+	if !ok || slot.Type == nil {
+		return llssa.Expr{}, false
+	}
+	return slot, true
+}
+
+func isNilConstValue(v ssa.Value) bool {
+	c, ok := v.(*ssa.Const)
+	return ok && c.Value == nil
+}
+
+func storeClearsConservativePointerRoot(v *ssa.Store) bool {
+	if v == nil || !isNilConstValue(v.Val) {
+		return false
+	}
+	ptr, ok := types.Unalias(v.Addr.Type()).(*types.Pointer)
+	if !ok || ptr == nil {
+		return false
+	}
+	return hasConservativeGCPointers(ptr.Elem(), map[types.Type]bool{})
+}
+
+func isSendInstr(instr ssa.Instruction) bool {
+	_, ok := instr.(*ssa.Send)
+	return ok
+}
+
+func (p *context) hiddenPointerWordInfo() (seed, mul, invMul, mask, tag, rot uint64) {
+	if p.prog.SizeOf(p.prog.Uintptr()) == 4 {
+		return 0x85ebca6b, 0x9e3779b9, 0x144cbc89, 0, 0, 11
+	}
+	return 0x005a3c9d12e7b14f, 0, 0, 0x00ffffffffffffff, 0xa500000000000000, 17
+}
+
+func (p *context) rotateHiddenPointerLeft(b llssa.Builder, x llssa.Expr, rot uint64) llssa.Expr {
+	bits := p.prog.SizeOf(b.Prog.Uintptr()) * 8
+	if rot == 0 || rot == bits {
+		return x
+	}
+	lhs := b.BinOp(token.SHL, x, b.Prog.IntVal(rot, b.Prog.Uintptr()))
+	rhs := b.BinOp(token.SHR, x, b.Prog.IntVal(bits-rot, b.Prog.Uintptr()))
+	return b.BinOp(token.OR, lhs, rhs)
+}
+
+func (p *context) rotateHiddenPointerRight(b llssa.Builder, x llssa.Expr, rot uint64) llssa.Expr {
+	bits := p.prog.SizeOf(b.Prog.Uintptr()) * 8
+	if rot == 0 || rot == bits {
+		return x
+	}
+	lhs := b.BinOp(token.SHR, x, b.Prog.IntVal(rot, b.Prog.Uintptr()))
+	rhs := b.BinOp(token.SHL, x, b.Prog.IntVal(bits-rot, b.Prog.Uintptr()))
+	return b.BinOp(token.OR, lhs, rhs)
+}
+
+func (p *context) rotateHiddenPointerMaskedLeft(b llssa.Builder, x llssa.Expr, mask, bits, rot uint64) llssa.Expr {
+	if rot == 0 || rot == bits {
+		return b.BinOp(token.AND, x, b.Prog.IntVal(mask, b.Prog.Uintptr()))
+	}
+	lhs := b.BinOp(token.SHL, x, b.Prog.IntVal(rot, b.Prog.Uintptr()))
+	rhs := b.BinOp(token.SHR, x, b.Prog.IntVal(bits-rot, b.Prog.Uintptr()))
+	ret := b.BinOp(token.OR, lhs, rhs)
+	return b.BinOp(token.AND, ret, b.Prog.IntVal(mask, b.Prog.Uintptr()))
+}
+
+func (p *context) rotateHiddenPointerMaskedRight(b llssa.Builder, x llssa.Expr, mask, bits, rot uint64) llssa.Expr {
+	if rot == 0 || rot == bits {
+		return b.BinOp(token.AND, x, b.Prog.IntVal(mask, b.Prog.Uintptr()))
+	}
+	lhs := b.BinOp(token.SHR, x, b.Prog.IntVal(rot, b.Prog.Uintptr()))
+	rhs := b.BinOp(token.SHL, x, b.Prog.IntVal(bits-rot, b.Prog.Uintptr()))
+	ret := b.BinOp(token.OR, lhs, rhs)
+	return b.BinOp(token.AND, ret, b.Prog.IntVal(mask, b.Prog.Uintptr()))
+}
+
+func (p *context) hiddenPointerKey(b llssa.Builder, ptr llssa.Expr) llssa.Expr {
+	key := b.Convert(b.Prog.Uintptr(), ptr)
+	seed, mul, _, mask, tag, rot := p.hiddenPointerWordInfo()
+	if mask != 0 {
+		key = b.BinOp(token.AND, key, b.Prog.IntVal(mask, b.Prog.Uintptr()))
+		key = b.BinOp(token.XOR, key, b.Prog.IntVal(seed, b.Prog.Uintptr()))
+		key = p.rotateHiddenPointerMaskedLeft(b, key, mask, 56, rot)
+		return b.BinOp(token.OR, key, b.Prog.IntVal(tag, b.Prog.Uintptr()))
+	}
+	key = b.BinOp(token.XOR, key, b.Prog.IntVal(seed, b.Prog.Uintptr()))
+	key = b.BinOp(token.MUL, key, b.Prog.IntVal(mul, b.Prog.Uintptr()))
+	return p.rotateHiddenPointerLeft(b, key, rot)
+}
+
+func (p *context) hiddenPointerKeyCall(b llssa.Builder, ptr llssa.Expr) llssa.Expr {
+	params := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]))
+	results := types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]))
+	helper := b.Pkg.NewFunc("runtime.HiddenPointerKey",
+		types.NewSignatureType(nil, nil, nil, params, results, false), llssa.InGo)
+	return b.Call(helper.Expr, b.ChangeType(b.Prog.VoidPtr(), ptr))
+}
+
+func (p *context) hiddenPointerDecode(b llssa.Builder, key llssa.Expr, t types.Type) llssa.Expr {
+	seed, _, invMul, mask, _, rot := p.hiddenPointerWordInfo()
+	if mask != 0 {
+		raw := b.BinOp(token.AND, key, b.Prog.IntVal(mask, b.Prog.Uintptr()))
+		raw = p.rotateHiddenPointerMaskedRight(b, raw, mask, 56, rot)
+		raw = b.BinOp(token.XOR, raw, b.Prog.IntVal(seed, b.Prog.Uintptr()))
+		return b.Convert(p.type_(t, llssa.InGo), raw)
+	}
+	raw := p.rotateHiddenPointerRight(b, key, rot)
+	raw = b.BinOp(token.MUL, raw, b.Prog.IntVal(invMul, b.Prog.Uintptr()))
+	raw = b.BinOp(token.XOR, raw, b.Prog.IntVal(seed, b.Prog.Uintptr()))
+	return b.Convert(p.type_(t, llssa.InGo), raw)
+}
+
+func (p *context) compileHiddenMakeSliceValue(b llssa.Builder, slot, root llssa.Expr, t llssa.Type, out types.Type, nLen, nCap llssa.Expr, asValue bool) llssa.Expr {
+	voidPtr := types.Typ[types.UnsafePointer]
+	intTyp := types.Typ[types.Int]
+	makeSliceToFn := b.Pkg.NewFunc(llssa.PkgRuntime+".MakeSliceTo",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), nil, false), llssa.InGo)
+	tmp := b.AllocaT(t)
+	b.Call(makeSliceToFn.Expr,
+		b.ChangeType(b.Prog.VoidPtr(), tmp),
+		nLen,
+		nCap,
+		p.prog.IntVal(uint64(p.prog.SizeOf(p.prog.Index(t))), p.prog.Int()),
+	)
+	raw := b.Load(tmp)
+	if root.Type != nil {
+		b.Store(root, raw)
+	}
+	if p.hiddenValueUsesOpaqueSlot(out) {
+		b.Store(slot, p.encodeHiddenOpaqueSlotValue(b, raw, out))
+	} else {
+		b.Store(slot, p.encodeHiddenStoredValue(b, raw, out))
+	}
+	b.Store(tmp, p.prog.Zero(t))
+	p.touchConservativeSlot(b, tmp, false)
+	p.clobberPointerRegs(b)
+	if !asValue {
+		return p.prog.Zero(t)
+	}
+	return p.decodeHiddenValueSlot(b, slot, out)
+}
+
+func (p *context) compileSingleUseMakeSliceSend(b llssa.Builder, ch llssa.Expr, v ssa.Value) bool {
+	ref, ok := singleRef(v)
+	if !ok {
+		return false
+	}
+	if !isSendInstr(ref) {
+		return false
+	}
+	voidPtr := types.Typ[types.UnsafePointer]
+	intTyp := types.Typ[types.Int]
+	makeSliceToFn := b.Pkg.NewFunc(llssa.PkgRuntime+".MakeSliceTo",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), nil, false), llssa.InGo)
+	chanSendFn := b.Pkg.NewFunc(llssa.PkgRuntime+".ChanSend",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Bool])), false), llssa.InGo)
+	var t llssa.Type
+	var nLen, nCap llssa.Expr
+	switch v := v.(type) {
+	case *ssa.MakeSlice:
+		t = p.type_(v.Type(), llssa.InGo)
+		nLen = p.compileValue(b, v.Len)
+		nCap = p.compileValue(b, v.Cap)
+	case *ssa.Slice:
+		capLen, ok := makeSliceAllocCap(v.X)
+		if !ok || v.Low != nil || v.Max != nil {
+			return false
+		}
+		t = p.type_(v.Type(), llssa.InGo)
+		nLen = p.prog.IntVal(uint64(capLen), p.prog.Int())
+		if v.High != nil {
+			nLen = p.compileValue(b, v.High)
+		}
+		nCap = p.prog.IntVal(uint64(capLen), p.prog.Int())
+	default:
+		return false
+	}
+	slot := b.Alloc(t, false)
+	telem := p.prog.Index(t)
+	teSize := p.prog.IntVal(p.prog.SizeOf(telem), p.prog.Int())
+	slotPtr := b.ChangeType(p.prog.VoidPtr(), slot)
+	b.InlineCall(makeSliceToFn.Expr, slotPtr, nLen, nCap, teSize)
+	eltSize := p.prog.IntVal(p.prog.SizeOf(p.prog.Elem(ch.Type)), p.prog.Int())
+	chPtr := b.ChangeType(p.prog.VoidPtr(), ch)
+	b.InlineCall(chanSendFn.Expr, chPtr, slotPtr, eltSize)
+	b.Store(slot, p.prog.Zero(t))
+	return true
+}
+
 func isPhi(i ssa.Instruction) bool {
 	_, ok := i.(*ssa.Phi)
 	return ok
@@ -749,37 +4612,331 @@ func (p *context) compilePhi(b llssa.Builder, v *ssa.Phi) (ret llssa.Expr) {
 	ret = phi.Expr
 	p.phis = append(p.phis, func() {
 		preds := v.Block().Preds
-		bblks := make([]llssa.BasicBlock, len(preds))
-		for i, pred := range preds {
-			bblks[i] = p.fn.Block(pred.Index)
-		}
-		edges := v.Edges
-		phi.AddIncoming(b, bblks, func(i int, blk llssa.BasicBlock) llssa.Expr {
+		phi.AddIncomingEx(b, makePhiPredBlocks(p, preds), func(i int, blk llssa.BasicBlock) (llssa.Expr, llssa.BasicBlock) {
+			edge := v.Edges[i]
 			b.SetBlockEx(blk, llssa.BeforeLast, false)
-			return p.compileValue(b, edges[i])
+			val := p.compileValue(b, edge)
+			if tail, ok := p.btails[preds[i]]; ok && tail != nil {
+				return val, tail
+			}
+			if usesSplitPhiIncoming(edge) {
+				if edgeBlk, ok := p.vblks[edge]; ok && edgeBlk != nil {
+					return val, edgeBlk
+				}
+			}
+			return val, blk
 		})
 	})
 	return
 }
 
-func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
+func makePhiPredBlocks(p *context, preds []*ssa.BasicBlock) []llssa.BasicBlock {
+	ret := make([]llssa.BasicBlock, len(preds))
+	for i, pred := range preds {
+		ret[i] = p.fn.Block(pred.Index)
+	}
+	return ret
+}
+
+func usesSplitPhiIncoming(edge ssa.Value) bool {
+	switch v := edge.(type) {
+	case *ssa.TypeAssert:
+		return true
+	case *ssa.Call:
+		return v.Call.IsInvoke()
+	default:
+		return false
+	}
+}
+
+func (p *context) materializeValueSlot(b llssa.Builder, iv instrOrValue, ret llssa.Expr, asValue bool) (llssa.Expr, bool) {
+	slot, ok := p.valueSlots[iv]
+	if !ok || slot.Type == nil || ret.Type == nil {
+		return ret, false
+	}
+	if p.hiddenValueSlots[iv] {
+		if p.hiddenValueUsesUintptrSlot(iv.Type()) {
+			if slotElem := b.Prog.Elem(slot.Type); slotElem != nil && slotElem.RawType() != nil &&
+				types.Identical(ret.Type.RawType(), slotElem.RawType()) {
+				b.Store(slot, ret)
+				if root, ok := p.valueRootSlots[iv]; ok && root.Type != nil {
+					p.storeHiddenPointerRoot(b, root, ret)
+				}
+				if !asValue {
+					ret = p.prog.Zero(p.type_(iv.Type(), llssa.InGo))
+				}
+				return ret, true
+			}
+		} else if p.hiddenValueUsesOpaqueSlot(iv.Type()) {
+			if slotElem := b.Prog.Elem(slot.Type); slotElem != nil && slotElem.RawType() != nil &&
+				types.Identical(ret.Type.RawType(), slotElem.RawType()) {
+				b.Store(slot, ret)
+				if root, ok := p.valueRootSlots[iv]; ok && root.Type != nil {
+					b.Store(root, p.decodeHiddenOpaqueSlotValue(b, ret, iv.Type()))
+				}
+				if !asValue {
+					ret = p.prog.Zero(p.type_(iv.Type(), llssa.InGo))
+				} else {
+					ret = p.loadValueSlot(b, iv)
+				}
+				return ret, true
+			}
+		}
+		clobberHiddenSource := false
+		if p.hiddenValueUsesUintptrSlot(iv.Type()) {
+			key := ret
+			if !types.Identical(ret.Type.RawType(), types.Typ[types.Uintptr]) {
+				key = p.encodeHiddenStoredValue(b, ret, iv.Type())
+				clobberHiddenSource = true
+			}
+			b.Store(slot, key)
+			if root, ok := p.valueRootSlots[iv]; ok && root.Type != nil {
+				p.storeHiddenPointerRoot(b, root, key)
+			}
+		} else if p.hiddenValueUsesOpaqueSlot(iv.Type()) {
+			root := llssa.Expr{}
+			if r, ok := p.valueRootSlots[iv]; ok && r.Type != nil {
+				root = r
+			}
+			p.storeHiddenAggregateSlotValue(b, slot, root, ret, iv.Type())
+		} else if p.canClearHiddenAggregateSource(iv.Type()) {
+			root := llssa.Expr{}
+			if r, ok := p.valueRootSlots[iv]; ok && r.Type != nil {
+				root = r
+			}
+			p.storeHiddenAggregateSlotValue(b, slot, root, ret, iv.Type())
+		} else {
+			b.Store(slot, p.encodeHiddenStoredValue(b, ret, iv.Type()))
+		}
+		if clobberHiddenSource {
+			p.clobberPointerRegs(b)
+		}
+		if !asValue {
+			ret = p.prog.Zero(p.type_(iv.Type(), llssa.InGo))
+		} else {
+			ret = p.loadValueSlot(b, iv)
+		}
+		return ret, true
+	}
+	b.Store(slot, ret)
 	if asValue {
+		ret = p.loadValueSlot(b, iv)
+	}
+	return ret, true
+}
+
+func (p *context) copyEquivalentValueSlot(b llssa.Builder, dst, src ssa.Value, asValue bool) (llssa.Expr, bool) {
+	dstSlot, ok := p.valueSlots[dst]
+	if !ok || dstSlot.Type == nil {
+		return llssa.Expr{}, false
+	}
+	srcSlot, ok := p.valueSlots[src]
+	if !ok || srcSlot.Type == nil {
+		return llssa.Expr{}, false
+	}
+	if p.hiddenValueSlots[dst] != p.hiddenValueSlots[src] {
+		return llssa.Expr{}, false
+	}
+	if iv, ok := src.(instrOrValue); ok {
+		if _, compiled := p.bvals[src]; !compiled {
+			p.compileInstrOrValue(b, iv, false)
+		}
+	} else if _, ok := p.bvals[src]; !ok {
+		return llssa.Expr{}, false
+	}
+	b.Store(dstSlot, b.Load(srcSlot))
+	if p.hiddenValueSlots[dst] {
+		if root, ok := p.valueRootSlots[dst]; ok && root.Type != nil {
+			srcRoot, ok := p.valueRootSlots[src]
+			if !ok || srcRoot.Type == nil {
+				return llssa.Expr{}, false
+			}
+			b.Store(root, b.Load(srcRoot))
+		}
+		if !asValue {
+			return p.prog.Zero(p.type_(dst.Type(), llssa.InGo)), true
+		}
+		return p.loadValueSlot(b, dst), true
+	}
+	if !asValue {
+		return p.prog.Zero(p.type_(dst.Type(), llssa.InGo)), true
+	}
+	return p.loadValueSlot(b, dst), true
+}
+
+func (p *context) compileExtractValueDirect(b llssa.Builder, v *ssa.Extract) llssa.Expr {
+	if v == nil {
+		return llssa.Expr{}
+	}
+	if recv, ok := p.recvTuples[v.Tuple]; ok {
+		if v.Index == 0 {
+			return b.RecvFromTemp(recv.ptr)
+		}
+		return recv.ok
+	}
+	if tupleCall, ok := v.Tuple.(*ssa.Call); ok {
+		if cached, ok := p.singleExtractCallResults[tupleCall]; ok {
+			return cached
+		}
+		if override, idx, ok := p.singleExtractCallOverrideFor(tupleCall); ok && idx == v.Index {
+			return p.call(b, llssa.Call, tupleCall, &tupleCall.Call, true, override)
+		}
+	}
+	return b.Extract(p.compileValue(b, v.Tuple), v.Index)
+}
+
+func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
+	var storedValueSlot bool
+	var clearTupleSource ssa.Value
+	if asValue {
+		if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
+			if _, compiled := p.bvals[iv]; compiled {
+				return p.loadValueSlot(b, iv)
+			}
+		}
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
-		log.Panicln("unreachable:", iv)
+		if canDeferValueInstr(iv) {
+			if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
+				p.compileInstrOrValue(b, iv, false)
+				return p.loadValueSlot(b, iv)
+			}
+		}
+		if ex, ok := iv.(*ssa.Extract); ok {
+			return p.compileExtractValueDirect(b, ex)
+		}
+		if _, ok := iv.(*ssa.MakeInterface); !ok {
+			fn := "<nil>"
+			if p.goFn != nil {
+				fn = p.goFn.String()
+			}
+			log.Panicf("unreachable: %T %v in %s", iv, iv, fn)
+		}
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
-		ret = p.call(b, llssa.Call, &v.Call)
+		if !asValue {
+			if extract, ok := singleExtractTupleUse(v); ok {
+				if override, ok := p.singleExtractOutCallOverrideFor(v, extract); ok {
+					p.call(b, llssa.Call, v, &v.Call, false, override)
+					p.bvals[extract] = p.prog.Zero(p.type_(extract.Type(), llssa.InGo))
+					ret = p.prog.Zero(p.type_(v.Type(), llssa.InGo))
+					break
+				}
+			}
+			if override, _, ok := p.singleExtractCallOverrideFor(v); ok {
+				callRet := p.call(b, llssa.Call, v, &v.Call, true, override)
+				if extract, ok := singleExtractTupleUse(v); ok {
+					if storedRet, stored := p.materializeValueSlot(b, extract, callRet, false); stored {
+						p.bvals[extract] = storedRet
+						ret = p.prog.Zero(p.type_(v.Type(), llssa.InGo))
+						break
+					}
+				}
+				if p.singleExtractCallResults == nil {
+					p.singleExtractCallResults = make(map[*ssa.Call]llssa.Expr)
+				}
+				p.singleExtractCallResults[v] = callRet
+				ret = p.prog.Zero(p.type_(v.Type(), llssa.InGo))
+				break
+			}
+		}
+		ret = p.call(b, llssa.Call, v, &v.Call, asValue, nil)
 	case *ssa.BinOp:
+		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
+			if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
+				switch v.Op {
+				case token.EQL:
+					ret = p.prog.BoolVal(true)
+					break
+				case token.NEQ:
+					ret = p.prog.BoolVal(false)
+					break
+				}
+				if ret.Type != nil {
+					break
+				}
+			}
+		}
+		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
+			x := p.compileConst(b, xConst, v.Y.Type())
+			y := p.compileValue(b, v.Y)
+			ret = b.BinOp(v.Op, x, y)
+			break
+		}
+		if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
+			x := p.compileValue(b, v.X)
+			y := p.compileConst(b, yConst, v.X.Type())
+			ret = b.BinOp(v.Op, x, y)
+			break
+		}
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
+		if v.Op == token.MUL {
+			if key, ok := p.hiddenPointerKeyForValue(b, v.X); ok {
+				if slot, ok := p.valueSlots[v]; ok && slot.Type != nil && p.hiddenValueSlots[v] &&
+					p.hiddenValueUsesUintptrSlot(v.Type()) {
+					retKey := p.compileHiddenPointerDerefKey(b, key)
+					b.Store(slot, retKey)
+					if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+						p.storeHiddenPointerRoot(b, root, retKey)
+					}
+					storedValueSlot = true
+					if asValue {
+						ret = p.hiddenPointerDecode(b, retKey, v.Type())
+					} else {
+						ret = p.prog.Zero(p.type_(v.Type(), llssa.InGo))
+					}
+					break
+				}
+				ret = p.compileHiddenPointerDeref(b, key, v.Type())
+				break
+			}
+			if alloc, ok := v.X.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
+				if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+					ret = b.Load(root)
+					break
+				}
+				slot := p.compileValue(b, v.X)
+				ret = p.decodeHiddenStoredValue(b, b.Load(slot), v.Type())
+				break
+			}
+			if _, ok := v.X.(*ssa.UnOp); ok {
+				if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if _, ok := t.RawType().Underlying().(*types.Pointer); !ok && p.prog.SizeOf(t) > 1<<20 {
+							x := p.compileValue(b, v.X)
+							b.AssertNilDeref(x)
+							return
+						}
+					}
+				}
+			}
+			if refs := v.Referrers(); refs != nil {
+				if len(*refs) == 1 {
+					if mi, ok := (*refs)[0].(*ssa.MakeInterface); ok && p.canSkipMakeInterfaceLoad(mi) {
+						return
+					}
+				}
+			}
+		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
-			ret = b.Recv(x, v.CommaOk)
+			if canLowerLazyRecvTuple(v) {
+				ptr, ok := b.RecvToTemp(x)
+				p.recvTuples[v] = &recvTupleState{
+					ptr:       ptr,
+					ok:        ok,
+					recvBlock: v.Block(),
+					useBlock:  recvValueUseBlock(v),
+				}
+				ret = p.prog.Zero(p.type_(v.Type(), llssa.InGo))
+			} else {
+				ret = b.Recv(x, v.CommaOk)
+			}
 		} else {
 			ret = b.UnOp(v.Op, x)
 		}
@@ -799,12 +4956,79 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if p.checkVArgs(v, t) { // varargs: this maybe a varargs allocation
 			return
 		}
+		if skipMakeSliceAlloc(v) {
+			return
+		}
 		elem := p.type_(t.Elem(), llssa.InGo)
-		ret = b.Alloc(elem, v.Heap)
+		if p.hiddenPtrAllocs[v] {
+			if p.hiddenValueUsesUintptrSlot(t.Elem()) {
+				ret = b.AllocaT(p.type_(types.Typ[types.Uintptr], llssa.InGo))
+				if p.hiddenAllocRoots[v] {
+					root := b.AllocaT(elem)
+					b.Store(root, p.prog.Nil(elem))
+					p.hiddenAllocSlots[v] = root
+				}
+			} else {
+				ret = b.AllocaT(elem)
+			}
+			break
+		}
+		if !asValue && v.Heap && !p.canPromoteHeapAllocToStack(v) {
+			if slot, ok := p.valueSlots[v]; ok && slot.Type != nil && p.hiddenValueSlots[v] && p.hiddenValueUsesUintptrSlot(v.Type()) {
+				helper := b.Pkg.NewFunc("runtime.AllocZHidden",
+					types.NewSignatureType(nil, nil, nil,
+						types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr])),
+						types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr])),
+						false),
+					llssa.InGo)
+				ret = b.Call(helper.Expr, p.prog.IntVal(uint64(p.prog.SizeOf(elem)), b.Prog.Uintptr()))
+				break
+			}
+		}
+		ret = b.Alloc(elem, v.Heap && !p.canPromoteHeapAllocToStack(v))
 	case *ssa.IndexAddr:
 		vx := v.X
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs index
 			return
+		}
+		if slot, ok := p.valueSlots[v]; ok && slot.Type != nil && p.hiddenValueSlots[v] && p.hiddenValueUsesUintptrSlot(v.Type()) {
+			if key, length, ok := p.hiddenSliceArgKeyLen(b, vx); ok {
+				idx := p.compileValue(b, v.Index)
+				elemSize := p.prog.SizeOf(p.prog.Elem(p.type_(vx.Type(), llssa.InGo)))
+				resKey := p.compileHiddenSliceIndexAddrKey(b, key, length, idx, v.Index.Type(), elemSize)
+				b.Store(slot, resKey)
+				if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+					p.storeHiddenPointerRoot(b, root, resKey)
+				}
+				if asValue {
+					ret = p.hiddenPointerDecode(b, resKey, v.Type())
+				} else {
+					ret = p.prog.Nil(p.type_(v.Type(), llssa.InGo))
+				}
+				storedValueSlot = true
+				break
+			}
+			if key, ok := p.hiddenPointerKeyForValue(b, vx); ok {
+				if ptr, ok := types.Unalias(vx.Type()).Underlying().(*types.Pointer); ok && ptr != nil {
+					if arr, ok := types.Unalias(ptr.Elem()).Underlying().(*types.Array); ok && arr != nil {
+						idx := p.compileValue(b, v.Index)
+						length := p.prog.IntVal(uint64(arr.Len()), p.prog.Int())
+						elemSize := p.prog.SizeOf(p.type_(arr.Elem(), llssa.InGo))
+						resKey := p.compileHiddenSliceIndexAddrKey(b, key, length, idx, v.Index.Type(), elemSize)
+						b.Store(slot, resKey)
+						if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+							p.storeHiddenPointerRoot(b, root, resKey)
+						}
+						if asValue {
+							ret = p.hiddenPointerDecode(b, resKey, v.Type())
+						} else {
+							ret = p.prog.Nil(p.type_(v.Type(), llssa.InGo))
+						}
+						storedValueSlot = true
+						break
+					}
+				}
+			}
 		}
 		x := p.compileValue(b, vx)
 		idx := p.compileValue(b, v.Index)
@@ -830,6 +5054,29 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
 			return
 		}
+		if ref, ok := singleRef(v); ok && isSendInstr(ref) {
+			return
+		}
+		if capLen, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
+			t := p.type_(v.Type(), llssa.InGo)
+			nLen := p.prog.IntVal(uint64(capLen), p.prog.Int())
+			if v.High != nil {
+				nLen = p.compileValue(b, v.High)
+			}
+			nCap := p.prog.IntVal(uint64(capLen), p.prog.Int())
+			if slot, ok := p.valueSlots[v]; ok && slot.Type != nil && p.hiddenValueSlots[v] && p.canClearHiddenAggregateSource(v.Type()) {
+				root := llssa.Expr{}
+				if r, ok := p.valueRootSlots[v]; ok && r.Type != nil {
+					root = r
+				}
+				ret = p.compileHiddenMakeSliceValue(b, slot, root, t, v.Type(), nLen, nCap, asValue)
+				storedValueSlot = true
+				break
+			}
+			ret = b.MakeSlice(t, nLen, nCap)
+			ret.Type = t
+			break
+		}
 		var low, high, max llssa.Expr
 		x := p.compileValue(b, vx)
 		if v.Low != nil {
@@ -844,6 +5091,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.Slice(x, low, high, max)
 		ret.Type = b.Prog.Type(v.Type(), llssa.InGo)
 	case *ssa.MakeInterface:
+		if canSkipKeepAliveMakeInterface(v) || canSkipSetFinalizerObjectMakeInterface(v) {
+			return
+		}
+		if sameTypeAssertOnlyMakeInterface(v) {
+			return
+		}
 		if refs := *v.Referrers(); len(refs) == 1 {
 			switch ref := refs[0].(type) {
 			case *ssa.Store:
@@ -861,12 +5114,37 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
+		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
+			if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
+				ret = b.MakeInterfaceFromPtr(t, ptr)
+				if p.shouldDelayLoadAddrClearToMakeInterface(unop, v) {
+					if p.clearTrackedValueSlot(b, unop.X) {
+						p.clobberPointerRegs(b)
+					}
+				}
+				break
+			}
+		}
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
+		if ref, ok := singleRef(v); ok {
+			if isSendInstr(ref) {
+				return
+			}
+		}
 		t := p.type_(v.Type(), llssa.InGo)
 		nLen := p.compileValue(b, v.Len)
 		nCap := p.compileValue(b, v.Cap)
+		if slot, ok := p.valueSlots[v]; ok && slot.Type != nil && p.hiddenValueSlots[v] && p.canClearHiddenAggregateSource(v.Type()) {
+			root := llssa.Expr{}
+			if r, ok := p.valueRootSlots[v]; ok && r.Type != nil {
+				root = r
+			}
+			ret = p.compileHiddenMakeSliceValue(b, slot, root, t, v.Type(), nLen, nCap, asValue)
+			storedValueSlot = true
+			break
+		}
 		ret = b.MakeSlice(t, nLen, nCap)
 	case *ssa.MakeMap:
 		var nReserve llssa.Expr
@@ -880,22 +5158,75 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		bindings := p.compileValues(b, v.Bindings, 0)
 		ret = b.MakeClosure(fn, bindings)
 	case *ssa.TypeAssert:
+		if !asValue && !v.CommaOk {
+			if mi, ok := v.X.(*ssa.MakeInterface); ok && types.Identical(mi.X.Type(), v.AssertedType) {
+				if copied, ok := p.copyEquivalentValueSlot(b, v, mi.X, false); ok {
+					ret = copied
+					storedValueSlot = true
+					break
+				}
+			}
+		}
+		if !v.CommaOk {
+			if mi, ok := v.X.(*ssa.MakeInterface); ok && types.Identical(mi.X.Type(), v.AssertedType) {
+				ret = p.compileValue(b, mi.X)
+				break
+			}
+		}
 		x := p.compileValue(b, v.X)
 		t := p.type_(v.AssertedType, llssa.InGo)
 		ret = b.TypeAssert(x, t, v.CommaOk)
 	case *ssa.Extract:
+		if !asValue {
+			if cached, ok := p.bvals[v]; ok {
+				ret = cached
+				break
+			}
+		}
+		if recv, ok := p.recvTuples[v.Tuple]; ok {
+			if v.Index == 0 {
+				ret = b.RecvFromTemp(recv.ptr)
+			} else {
+				ret = recv.ok
+			}
+			break
+		}
+		if tupleCall, ok := v.Tuple.(*ssa.Call); ok {
+			if cached, ok := p.singleExtractCallResults[tupleCall]; ok {
+				ret = cached
+				break
+			}
+			if override, idx, ok := p.singleExtractCallOverrideFor(tupleCall); ok && idx == v.Index {
+				ret = p.call(b, llssa.Call, tupleCall, &tupleCall.Call, true, override)
+				break
+			}
+		}
 		x := p.compileValue(b, v.Tuple)
 		ret = b.Extract(x, v.Index)
+		if isSingleExtractTupleUse(v.Tuple, v) {
+			clearTupleSource = v.Tuple
+		}
 	case *ssa.Range:
 		x := p.compileValue(b, v.X)
 		ret = b.Range(x)
 	case *ssa.Next:
-		var typ llssa.Type
+		var srcTyp llssa.Type
+		var keyTyp, valTyp llssa.Type
 		if !v.IsString {
-			typ = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+			srcTyp = p.type_(v.Iter.(*ssa.Range).X.Type(), llssa.InGo)
+			styp := v.Iter.(*ssa.Range).X.Type().Underlying().(*types.Map)
+			keyTyp = p.prog.Type(styp.Key(), llssa.InGo)
+			valTyp = p.prog.Type(styp.Elem(), llssa.InGo)
+			ttyp := v.Type().(*types.Tuple)
+			if _, ok := ttyp.At(1).Type().Underlying().(*types.Interface); ok {
+				keyTyp = p.prog.Type(ttyp.At(1).Type().Underlying(), llssa.InGo)
+			}
+			if _, ok := ttyp.At(2).Type().Underlying().(*types.Interface); ok {
+				valTyp = p.prog.Type(ttyp.At(2).Type().Underlying(), llssa.InGo)
+			}
 		}
 		iter := p.compileValue(b, v.Iter)
-		ret = b.Next(typ, iter, v.IsString)
+		ret = b.Next(srcTyp, keyTyp, valTyp, iter, v.IsString)
 	case *ssa.ChangeInterface:
 		t := v.Type()
 		x := p.compileValue(b, v.X)
@@ -926,7 +5257,17 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	default:
 		panic(fmt.Sprintf("compileInstrAndValue: unknown instr - %T\n", iv))
 	}
+	if !storedValueSlot {
+		ret, storedValueSlot = p.materializeValueSlot(b, iv, ret, asValue)
+	}
+	if clearTupleSource != nil {
+		p.clearReturnValueRoots(b, clearTupleSource)
+		p.clobberPointerRegs(b)
+	}
 	p.bvals[iv] = ret
+	if usesSplitPhiIncoming(iv) {
+		p.vblks[iv] = b.Block()
+	}
 	return ret
 }
 
@@ -963,6 +5304,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	switch v := instr.(type) {
 	case *ssa.Store:
 		va := v.Addr
+		if isBlankFieldStore(va) {
+			return
+		}
 		if va, ok := va.(*ssa.IndexAddr); ok {
 			if args, ok := p.isVArgs(va.X); ok { // varargs: this is a varargs store
 				idx := intVal(va.Index)
@@ -981,44 +5325,131 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				}
 			}
 		}
-		ptr := p.compileValue(b, va)
+		if alloc, ok := va.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
+			slot := p.compileValue(b, va)
+			val := p.compileValue(b, v.Val)
+			elem := alloc.Type().(*types.Pointer).Elem()
+			key := p.encodeHiddenStoredValue(b, val, elem)
+			b.Store(slot, key)
+			if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+				p.storeHiddenPointerRoot(b, root, key)
+			}
+			return
+		}
+		if key, ok := p.hiddenPointerArgKey(b, va); ok {
+			val := p.compileValue(b, v.Val)
+			typ := p.type_(v.Val.Type(), llssa.InGo)
+			tmp := b.AllocaT(typ)
+			b.Store(tmp, val)
+			params := types.NewTuple(
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer]),
+				types.NewParam(token.NoPos, nil, "", types.Typ[types.Uintptr]),
+			)
+			helper := b.Pkg.NewFunc("runtime.StoreHiddenPointee",
+				types.NewSignatureType(nil, nil, nil, params, nil, false), llssa.InGo)
+			b.Call(helper.Expr,
+				key,
+				b.ChangeType(b.Prog.VoidPtr(), tmp),
+				p.prog.IntVal(uint64(p.prog.SizeOf(typ)), b.Prog.Uintptr()),
+			)
+			b.Store(tmp, p.prog.Zero(typ))
+			p.touchConservativeSlot(b, tmp, false)
+			return
+		}
+		if key, ok := p.hiddenPointerKeyForValue(b, v.Val); ok {
+			if ptr, ok := types.Unalias(v.Addr.Type()).(*types.Pointer); ok && ptr != nil &&
+				types.Identical(ptr.Elem(), v.Val.Type()) && p.hiddenValueUsesUintptrSlot(v.Val.Type()) {
+				root := p.compileValue(b, va)
+				p.storeHiddenPointerRoot(b, root, key)
+				return
+			}
+		}
 		val := p.compileValue(b, v.Val)
+		ptr := p.compileValue(b, va)
 		b.Store(ptr, val)
+		if storeClearsConservativePointerRoot(v) {
+			p.clobberPointerRegs(b)
+		}
 	case *ssa.Jump:
 		jmpb := p.jumpTo(v)
 		b.Jump(jmpb)
 	case *ssa.Return:
+		if p.needImplicitRunDefers(v) {
+			b.RunDefers()
+		}
 		var results []llssa.Expr
 		if n := len(v.Results); n > 0 {
 			results = make([]llssa.Expr, n)
 			for i, r := range v.Results {
-				results[i] = p.compileValue(b, r)
+				results[i] = p.compileReturnValue(b, r)
+			}
+			if p.hiddenResultType != nil && len(results) == 1 && results[0].Type != nil {
+				results[0] = p.encodeHiddenCallValue(b, results[0], p.hiddenResultType)
+			}
+			for _, r := range v.Results {
+				p.clearReturnValueRoots(b, r)
 			}
 		}
+		if p.paramSpillClobbers[v] {
+			p.clobberPointerRegs(b)
+		}
+		p.clearDeadStackAllocs(b, v)
+		p.clearDeadParams(b, v)
+		p.clearDeadParamValues(b, v)
+		p.clearDeadPointerValues(b, v)
 		b.Return(results...)
 	case *ssa.If:
 		fn := p.fn
 		cond := p.compileValue(b, v.Cond)
+		if p.paramSpillClobbers[v] {
+			p.clobberPointerRegs(b)
+		}
+		p.clearDeadStackAllocs(b, v)
+		p.clearDeadParams(b, v)
+		p.clearDeadParamValues(b, v)
+		p.clearDeadPointerValues(b, v)
 		succs := v.Block().Succs
 		thenb := fn.Block(succs[0].Index)
 		elseb := fn.Block(succs[1].Index)
 		b.If(cond, thenb, elseb)
 	case *ssa.MapUpdate:
 		m := p.compileValue(b, v.Map)
-		key := p.compileValue(b, v.Key)
 		val := p.compileValue(b, v.Value)
-		b.MapUpdate(m, key, val)
+		if keyPtr, ok := p.mapUpdateKeyPtr(b, v.Key); ok {
+			b.MapUpdatePtr(m, keyPtr, val)
+		} else {
+			key := p.compileValue(b, v.Key)
+			b.MapUpdate(m, key, val)
+		}
+		p.clearDeadStackAllocs(b, v)
+		p.clearDeadParams(b, v)
+		p.clearDeadParamValues(b, v)
+		p.clearDeadPointerValues(b, v)
 	case *ssa.Defer:
-		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
+		if p.compileSharedDeferFunc0(b, v) {
+			return
+		}
+		p.call(b, p.blkInfos[v.Block().Index].Kind, v, &v.Call, false, nil)
 	case *ssa.Go:
-		p.call(b, llssa.Go, &v.Call)
+		p.call(b, llssa.Go, v, &v.Call, false, nil)
 	case *ssa.RunDefers:
 		b.RunDefers()
 	case *ssa.Panic:
 		arg := p.compileValue(b, v.X)
+		if p.paramSpillClobbers[v] {
+			p.clobberPointerRegs(b)
+		}
+		p.clearDeadStackAllocs(b, v)
+		p.clearDeadParams(b, v)
+		p.clearDeadParamValues(b, v)
+		p.clearDeadPointerValues(b, v)
 		b.Panic(arg)
 	case *ssa.Send:
 		ch := p.compileValue(b, v.Chan)
+		if p.compileSingleUseMakeSliceSend(b, ch, v.X) {
+			return
+		}
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
@@ -1028,6 +5459,55 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 	default:
 		panic(fmt.Sprintf("compileInstr: unknown instr - %T\n", instr))
 	}
+}
+
+func (p *context) needImplicitRunDefers(ret *ssa.Return) bool {
+	fn := ret.Parent()
+	if fn == nil || fn.Synthetic != "range-over-func yield" || !functionHasDefer(fn) {
+		return false
+	}
+	for _, instr := range ret.Block().Instrs {
+		if instr == ret {
+			break
+		}
+		if _, ok := instr.(*ssa.RunDefers); ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *context) compileSharedDeferFunc0(b llssa.Builder, v *ssa.Defer) bool {
+	if !isSharedDeferFunc0Site(v) {
+		return false
+	}
+	stack, ok := foreignDeferStackValue(v)
+	if !ok {
+		return false
+	}
+	cur := v.Parent()
+	if cur == nil || cur.Parent() == nil {
+		return false
+	}
+	outer, _, kind := p.compileFunction(cur.Parent())
+	if kind != goFunc || outer == nil || !outer.SharedDeferFunc0() {
+		return false
+	}
+	fn := p.compileValue(b, v.Call.Value)
+	target := p.compileValue(b, stack)
+	b.PushSharedDeferFunc0(target, fn)
+	return true
+}
+
+func functionHasDefer(fn *ssa.Function) bool {
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			if _, ok := instr.(*ssa.Defer); ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p *context) getLocalVariable(b llssa.Builder, fn *ssa.Function, v *types.Var) llssa.DIVar {
@@ -1054,7 +5534,35 @@ func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn ll
 	return p.funcOf(v)
 }
 
+func isUntypedNil(t types.Type) bool {
+	basic, ok := types.Unalias(t).(*types.Basic)
+	return ok && basic.Kind() == types.UntypedNil
+}
+
+func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) llssa.Expr {
+	bg := llssa.InGo
+	if p.inCFunc {
+		bg = llssa.InC
+	}
+	if v.Value == nil {
+		t := v.Type()
+		if isUntypedNil(t) {
+			t = hint
+		}
+		return p.prog.Nil(p.type_(t, bg))
+	}
+	return b.Const(v.Value, p.type_(types.Default(v.Type()), bg))
+}
+
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+	if slot, ok := p.valueSlots[v]; ok && slot.Type != nil {
+		if _, compiled := p.bvals[v]; compiled {
+			return p.loadValueSlot(b, v)
+		}
+	}
+	if val, ok := p.bvals[v]; ok {
+		return val
+	}
 	if iv, ok := v.(instrOrValue); ok {
 		return p.compileInstrOrValue(b, iv, true)
 	}
@@ -1063,6 +5571,33 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		fn := v.Parent()
 		for idx, param := range fn.Params {
 			if param == v {
+				if p.hiddenParamKeys[idx] {
+					if p.hiddenParamByRefs[idx] {
+						if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+							if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
+								return b.Load(slot)
+							}
+						}
+					}
+					if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+						if types.Identical(b.Prog.Elem(slot.Type).RawType(), v.Type()) {
+							return b.Load(slot)
+						}
+						return p.decodeHiddenCallValue(b, b.Load(slot), v.Type())
+					}
+					if p.hiddenParamByRefs[idx] {
+						if slot, ok := p.hiddenParamSlots[idx]; ok && slot.Type != nil {
+							return p.decodeHiddenCallValue(b, b.Load(slot), v.Type())
+						}
+					}
+					return p.decodeHiddenCallValue(b, b.Param(idx), v.Type())
+				}
+				if shadow, ok := p.paramShadow[idx]; ok && shadow.Type != nil {
+					return shadow
+				}
+				if slot, ok := p.paramSlots[idx]; ok && slot.Type != nil {
+					return b.Load(slot)
+				}
 				return b.Param(idx)
 			}
 		}
@@ -1084,12 +5619,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return val
 	case *ssa.Const:
-		t := types.Default(v.Type())
-		bg := llssa.InGo
-		if p.inCFunc {
-			bg = llssa.InC
-		}
-		return b.Const(v.Value, p.type_(t, bg))
+		return p.compileConst(b, v, nil)
 	case *ssa.FreeVar:
 		fn := v.Parent()
 		for idx, freeVar := range fn.FreeVars {
@@ -1130,6 +5660,160 @@ func (p *context) compileValues(b llssa.Builder, vals []ssa.Value, hasVArg int) 
 		ret = p.compileVArg(ret, b, vals[n])
 	}
 	return ret
+}
+
+func (p *context) clearPreCallValues(b llssa.Builder, owner ssa.Instruction) {
+	if owner == nil {
+		return
+	}
+	cleared := make(map[ssa.Value]bool)
+	didClear := false
+	for _, v := range p.valuePreClears[owner] {
+		if cleared[v] {
+			continue
+		}
+		slot, ok := p.valueSlots[v]
+		if !ok || slot.Type == nil {
+			continue
+		}
+		if p.hiddenValueSlots[v] {
+			b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+			p.touchConservativeSlot(b, slot, true)
+			if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+				b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+				p.touchConservativeSlot(b, root, false)
+			}
+			cleared[v] = true
+			didClear = true
+			continue
+		}
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+		p.touchConservativeSlot(b, slot, false)
+		cleared[v] = true
+		didClear = true
+	}
+	if didClear {
+		p.clobberPointerRegs(b)
+	}
+}
+
+func (p *context) compileValuesForInstr(b llssa.Builder, owner ssa.Instruction, vals []ssa.Value, hasVArg int) []llssa.Expr {
+	ret := p.compileValues(b, vals, hasVArg)
+	p.clearPreCallValues(b, owner)
+	return ret
+}
+
+func (p *context) shouldPostCallClobber(owner ssa.Instruction) bool {
+	if owner == nil {
+		return false
+	}
+	return len(p.valuePreClears[owner]) != 0 ||
+		len(p.paramClears[owner]) != 0 ||
+		len(p.paramValueClears[owner]) != 0
+}
+
+func (p *context) clearReturnValueRoots(b llssa.Builder, v ssa.Value) {
+	if v == nil {
+		return
+	}
+	if load, ok := v.(*ssa.UnOp); ok && load.Op == token.MUL {
+		if alloc, ok := load.X.(*ssa.Alloc); ok {
+			p.clearReturnAllocRoot(b, alloc)
+			return
+		}
+	}
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil {
+		return
+	}
+	if p.hiddenValueSlots[v] {
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+		p.touchConservativeSlot(b, slot, true)
+		if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+			b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+			p.touchConservativeSlot(b, root, false)
+		}
+		return
+	}
+	b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+	p.touchConservativeSlot(b, slot, false)
+}
+
+func (p *context) compileReturnValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+	if v == nil {
+		return llssa.Expr{}
+	}
+	if load, ok := v.(*ssa.UnOp); ok && load.Op == token.MUL {
+		if alloc, ok := load.X.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
+			if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+				return b.Load(root)
+			}
+		}
+	}
+	if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+		if elem := b.Prog.Elem(root.Type); elem != nil && elem.RawType() != nil &&
+			types.Identical(elem.RawType(), v.Type()) {
+			return b.Load(root)
+		}
+	}
+	return p.compileValue(b, v)
+}
+
+func (p *context) clearTrackedValueSlot(b llssa.Builder, v ssa.Value) bool {
+	slot, ok := p.valueSlots[v]
+	if !ok || slot.Type == nil {
+		return false
+	}
+	if p.hiddenValueSlots[v] {
+		b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+		p.touchConservativeSlot(b, slot, true)
+		if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+			b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+			p.touchConservativeSlot(b, root, false)
+		}
+		return true
+	}
+	b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+	p.touchConservativeSlot(b, slot, false)
+	return true
+}
+
+func (p *context) shouldDelayLoadAddrClearToMakeInterface(load *ssa.UnOp, mi *ssa.MakeInterface) bool {
+	if load == nil || mi == nil {
+		return false
+	}
+	use, ok := singleNonDebugMakeInterfaceUse(load)
+	if !ok || use != mi {
+		return false
+	}
+	for _, v := range p.valuePostClears[load] {
+		if v == load.X {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *context) clearReturnAllocRoot(b llssa.Builder, alloc *ssa.Alloc) {
+	if alloc == nil {
+		return
+	}
+	slot := p.compileValue(b, alloc)
+	if slot.Type == nil {
+		return
+	}
+	if p.hiddenPtrAllocs[alloc] {
+		elem := alloc.Type().(*types.Pointer).Elem()
+		b.Store(slot, p.hiddenZeroStoredValue(b, elem))
+		p.touchConservativeSlot(b, slot, true)
+		if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+			b.Store(root, p.prog.Nil(b.Prog.Elem(root.Type)))
+			p.touchConservativeSlot(b, root, false)
+		}
+		return
+	}
+	b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
+	p.touchConservativeSlot(b, slot, false)
 }
 
 // -----------------------------------------------------------------------------

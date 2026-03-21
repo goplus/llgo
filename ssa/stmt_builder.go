@@ -89,6 +89,11 @@ func (b Builder) SetBlock(blk BasicBlock) Builder {
 	return b
 }
 
+// Block returns the current LLVM basic block wrapper used by the builder.
+func (b Builder) Block() BasicBlock {
+	return b.blk
+}
+
 func (b Builder) setBlockMoveLast(blk BasicBlock) (next BasicBlock) {
 	blkLast := blk.last
 	last := blkLast.LastInstruction()
@@ -346,6 +351,25 @@ func (p Phi) AddIncoming(b Builder, preds []BasicBlock, f func(i int, blk BasicB
 	for iblk, blk := range preds {
 		val := f(iblk, blk)
 		vals[iblk] = checkExpr(val, raw, b).impl
+	}
+	p.impl.AddIncoming(vals, bs)
+}
+
+// AddIncomingEx adds incoming values to a phi node and lets the caller specify
+// the actual LLVM predecessor block for each edge. This is needed when lowering
+// one Go SSA predecessor into multiple LLVM blocks and the value is produced in
+// the split tail block rather than the original block.
+func (p Phi) AddIncomingEx(b Builder, preds []BasicBlock, f func(i int, blk BasicBlock) (Expr, BasicBlock)) {
+	raw := p.raw.Type
+	bs := make([]llvm.BasicBlock, len(preds))
+	vals := make([]llvm.Value, len(preds))
+	for iblk, blk := range preds {
+		val, inblk := f(iblk, blk)
+		vals[iblk] = checkExpr(val, raw, b).impl
+		if inblk == nil {
+			inblk = blk
+		}
+		bs[iblk] = inblk.last
 	}
 	p.impl.AddIncoming(vals, bs)
 }

@@ -33,11 +33,13 @@ _llgo_0:
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
   %1 = getelementptr inbounds { i64 }, ptr %0, i32 0, i32 0
   store i64 1, ptr %1, align 4
-  %2 = load { i64 }, ptr %0, align 4
-  %3 = extractvalue { i64 } %2, 0
-  %4 = inttoptr i64 %3 to ptr
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_struct$K-dZ9QotZfVPz2a0YdRa9vmZUuDXPTqZOlMShKEDJtk", ptr undef }, ptr %4, 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { i64 }, ptr %0, align 4
+  %4 = extractvalue { i64 } %3, 0
+  %5 = inttoptr i64 %4 to ptr
+  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_struct$K-dZ9QotZfVPz2a0YdRa9vmZUuDXPTqZOlMShKEDJtk", ptr undef }, ptr %5, 1
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.F"() {
@@ -46,11 +48,13 @@ _llgo_0:
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
   %1 = getelementptr inbounds { i64 }, ptr %0, i32 0, i32 0
   store i64 1, ptr %1, align 4
-  %2 = load { i64 }, ptr %0, align 4
-  %3 = extractvalue { i64 } %2, 0
-  %4 = inttoptr i64 %3 to ptr
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"github.com/goplus/llgo/cl/_testdata/foo.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88", ptr undef }, ptr %4, 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.eface" %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load { i64 }, ptr %0, align 4
+  %4 = extractvalue { i64 } %3, 0
+  %5 = inttoptr i64 %4 to ptr
+  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"github.com/goplus/llgo/cl/_testdata/foo.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88", ptr undef }, ptr %5, 1
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.eface" %6
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %0) {
@@ -59,15 +63,19 @@ _llgo_0:
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
   store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" %0, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %1, i32 0, i32 0
-  %3 = load ptr, ptr %2, align 8
-  ret ptr %3
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load ptr, ptr %2, align 8
+  ret ptr %4
 }
 
 define ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb"(ptr %0) {
 _llgo_0:
-  %1 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, align 8
-  %2 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %1)
-  ret ptr %2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, align 8
+  %3 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %2)
+  ret ptr %3
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %0) {
@@ -84,6 +92,7 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testdata/foo.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/foo.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -97,6 +106,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
 

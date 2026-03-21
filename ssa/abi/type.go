@@ -52,6 +52,9 @@ func (b *Builder) Str(t types.Type) string {
 	case *types.Interface:
 		return b.interfaceStr(t)
 	case *types.Struct:
+		if IsClosure(t) {
+			return b.funcStr(t.Field(0).Type().(*types.Signature))
+		}
 		return b.structStr(t)
 	case *types.Map:
 		return "map[" + b.Str(t.Key()) + "]" + b.realStr(t.Elem())
@@ -63,6 +66,9 @@ func (b *Builder) Str(t types.Type) string {
 	case *types.Named:
 		obj := t.Obj()
 		name := NamedName(t)
+		if targs := t.TypeArgs(); targs != nil && targs.Len() != 0 {
+			name = b.namedDisplayName(t)
+		}
 		if pkg := obj.Pkg(); pkg != nil {
 			return pkg.Name() + "." + name
 		}

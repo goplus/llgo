@@ -38,24 +38,168 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/errors"
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/errors.New"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/errors.errorString", ptr %1, i32 0, i32 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, ptr %2, align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString")
-  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %3, 0
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, ptr %1, 1
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
+  %1 = alloca i64, align 8
+  %2 = alloca ptr, align 8
+  store ptr null, ptr %2, align 8
+  %3 = alloca i64, align 8
+  %4 = alloca ptr, align 8
+  store ptr null, ptr %4, align 8
+  %5 = call i64 @runtime.AllocZHidden(i64 16)
+  store i64 %5, ptr %1, align 4
+  call void @runtime.StoreHiddenPointerRoot(ptr %2, i64 %5)
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load i64, ptr %1, align 4
+  %8 = and i64 %7, 72057594037927935
+  %9 = lshr i64 %8, 17
+  %10 = select i1 false, i64 0, i64 %9
+  %11 = shl i64 %8, 39
+  %12 = select i1 false, i64 0, i64 %11
+  %13 = or i64 %10, %12
+  %14 = and i64 %13, 72057594037927935
+  %15 = xor i64 %14, 25399393228665167
+  %16 = inttoptr i64 %15 to ptr
+  %17 = icmp eq ptr %16, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %17)
+  %18 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/errors.errorString", ptr %16, i32 0, i32 0
+  %19 = ptrtoint ptr %18 to i64
+  %20 = and i64 %19, 72057594037927935
+  %21 = xor i64 %20, 25399393228665167
+  %22 = shl i64 %21, 17
+  %23 = select i1 false, i64 0, i64 %22
+  %24 = lshr i64 %21, 39
+  %25 = select i1 false, i64 0, i64 %24
+  %26 = or i64 %23, %25
+  %27 = and i64 %26, 72057594037927935
+  %28 = or i64 %27, -6557241057451442176
+  store i64 %28, ptr %3, align 4
+  call void @runtime.StoreHiddenPointerRoot(ptr %4, i64 %28)
+  call void @runtime.ClobberPointerRegs()
+  %29 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %29)
+  %30 = load i64, ptr %3, align 4
+  %31 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, ptr %31, align 8
+  call void @runtime.StoreHiddenPointee(i64 %30, ptr %31, i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %31, align 8
+  call void @runtime.TouchConservativeSlot(ptr %31, i64 16)
+  store i64 0, ptr %3, align 4
+  call void @runtime.TouchConservativeSlot(ptr %3, i64 8)
+  store ptr null, ptr %4, align 8
+  call void @runtime.TouchConservativeSlot(ptr %4, i64 8)
+  call void @runtime.ClobberPointerRegs()
+  %32 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %32)
+  %33 = load i64, ptr %1, align 4
+  %34 = and i64 %33, 72057594037927935
+  %35 = lshr i64 %34, 17
+  %36 = select i1 false, i64 0, i64 %35
+  %37 = shl i64 %34, 39
+  %38 = select i1 false, i64 0, i64 %37
+  %39 = or i64 %36, %38
+  %40 = and i64 %39, 72057594037927935
+  %41 = xor i64 %40, 25399393228665167
+  %42 = inttoptr i64 %41 to ptr
+  %43 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$Fh8eUJ-Gw4e6TYuajcFIOSCuqSPKAt5nS4ow7xeGXEU", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString")
+  %44 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %43, 0
+  %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %44, ptr %42, 1
+  store i64 0, ptr %1, align 4
+  call void @runtime.TouchConservativeSlot(ptr %1, i64 8)
+  store ptr null, ptr %2, align 8
+  call void @runtime.TouchConservativeSlot(ptr %2, i64 8)
+  call void @runtime.ClobberPointerRegs()
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %45
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/errors.(*errorString).Error"(ptr %0) {
 _llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/errors.errorString", ptr %0, i32 0, i32 0
-  %2 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %1, align 8
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %2
+  %1 = alloca i64, align 8
+  %2 = alloca ptr, align 8
+  store ptr null, ptr %2, align 8
+  %3 = alloca { i64, i64 }, align 8
+  %4 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %4, align 8
+  %5 = alloca ptr, align 8
+  store ptr %0, ptr %5, align 8
+  call void @runtime.ClobberPointerRegs()
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load ptr, ptr %5, align 8
+  %8 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/errors.errorString", ptr %7, i32 0, i32 0
+  %10 = ptrtoint ptr %9 to i64
+  %11 = and i64 %10, 72057594037927935
+  %12 = xor i64 %11, 25399393228665167
+  %13 = shl i64 %12, 17
+  %14 = select i1 false, i64 0, i64 %13
+  %15 = lshr i64 %12, 39
+  %16 = select i1 false, i64 0, i64 %15
+  %17 = or i64 %14, %16
+  %18 = and i64 %17, 72057594037927935
+  %19 = or i64 %18, -6557241057451442176
+  store i64 %19, ptr %1, align 4
+  call void @runtime.StoreHiddenPointerRoot(ptr %2, i64 %19)
+  call void @runtime.ClobberPointerRegs()
+  %20 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %20)
+  %21 = load i64, ptr %1, align 4
+  %22 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  call void @runtime.LoadHiddenPointee(ptr %22, i64 %21, i64 16)
+  %23 = icmp eq ptr %22, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %23)
+  %24 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %22, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %22, align 8
+  %25 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %24, ptr %25, align 8
+  %26 = icmp eq ptr %25, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %26)
+  %27 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %25, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %27, ptr %4, align 8
+  %28 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %27, 0
+  %29 = ptrtoint ptr %28 to i64
+  %30 = and i64 %29, 72057594037927935
+  %31 = xor i64 %30, 25399393228665167
+  %32 = shl i64 %31, 17
+  %33 = select i1 false, i64 0, i64 %32
+  %34 = lshr i64 %31, 39
+  %35 = select i1 false, i64 0, i64 %34
+  %36 = or i64 %33, %35
+  %37 = and i64 %36, 72057594037927935
+  %38 = or i64 %37, -6557241057451442176
+  %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %27, 1
+  %40 = insertvalue { i64, i64 } undef, i64 %38, 0
+  %41 = insertvalue { i64, i64 } %40, i64 %39, 1
+  store { i64, i64 } %41, ptr %3, align 4
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %25, align 8
+  call void @runtime.TouchConservativeSlot(ptr %25, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  store ptr null, ptr %5, align 8
+  call void @runtime.TouchConservativeSlot(ptr %5, i64 8)
+  call void @runtime.ClobberPointerRegs()
+  store i64 0, ptr %1, align 4
+  call void @runtime.TouchConservativeSlot(ptr %1, i64 8)
+  store ptr null, ptr %2, align 8
+  call void @runtime.TouchConservativeSlot(ptr %2, i64 8)
+  call void @runtime.ClobberPointerRegs()
+  %42 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %42)
+  %43 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %4, align 8
+  store { i64, i64 } zeroinitializer, ptr %3, align 4
+  call void @runtime.TouchConservativeSlot(ptr %3, i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %4, align 8
+  call void @runtime.TouchConservativeSlot(ptr %4, i64 16)
+  store { i64, i64 } zeroinitializer, ptr %3, align 4
+  call void @runtime.TouchConservativeSlot(ptr %3, i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %4, align 8
+  call void @runtime.TouchConservativeSlot(ptr %4, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %43
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/errors.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/errors.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -69,32 +213,102 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/errors.main"() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/errors.New"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 8 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
+  %0 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.iface", align 8
+  %1 = alloca { i64, i64 }, align 8
+  %2 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %2, align 8
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %4 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/errors.New"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 8 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4, ptr %0, align 8
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %6 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %0, align 8
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %7)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
-  %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
-  %3 = getelementptr ptr, ptr %2, i64 3
-  %4 = load ptr, ptr %3, align 8
-  %5 = insertvalue { ptr, ptr } undef, ptr %4, 0
-  %6 = insertvalue { ptr, ptr } %5, ptr %1, 1
-  %7 = extractvalue { ptr, ptr } %6, 1
-  %8 = extractvalue { ptr, ptr } %6, 0
-  %9 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %8(ptr %7)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %5)
+  %8 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %0, align 8
+  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %9)
+  %11 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, 0
+  %12 = getelementptr ptr, ptr %11, i64 3
+  %13 = load ptr, ptr %12, align 8
+  %14 = insertvalue { ptr, ptr } undef, ptr %13, 0
+  %15 = insertvalue { ptr, ptr } %14, ptr %10, 1
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer, ptr %0, align 8
+  call void @runtime.TouchConservativeSlot(ptr %0, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  %17 = extractvalue { ptr, ptr } %15, 1
+  %18 = extractvalue { ptr, ptr } %15, 0
+  %19 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %18(ptr %17)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %16)
+  %20 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %19, ptr %20, align 8
+  %21 = icmp eq ptr %20, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %21)
+  %22 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %20, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %22, ptr %2, align 8
+  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %22, 0
+  %24 = ptrtoint ptr %23 to i64
+  %25 = and i64 %24, 72057594037927935
+  %26 = xor i64 %25, 25399393228665167
+  %27 = shl i64 %26, 17
+  %28 = select i1 false, i64 0, i64 %27
+  %29 = lshr i64 %26, 39
+  %30 = select i1 false, i64 0, i64 %29
+  %31 = or i64 %28, %30
+  %32 = and i64 %31, 72057594037927935
+  %33 = or i64 %32, -6557241057451442176
+  %34 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %22, 1
+  %35 = insertvalue { i64, i64 } undef, i64 %33, 0
+  %36 = insertvalue { i64, i64 } %35, i64 %34, 1
+  store { i64, i64 } %36, ptr %1, align 4
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %20, align 8
+  call void @runtime.TouchConservativeSlot(ptr %20, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  %37 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %38 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %38)
+  %39 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %2, align 8
+  store { i64, i64 } zeroinitializer, ptr %1, align 4
+  call void @runtime.TouchConservativeSlot(ptr %1, i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %2, align 8
+  call void @runtime.TouchConservativeSlot(ptr %2, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %39)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %37)
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+declare i64 @runtime.AllocZHidden(i64)
+
+declare void @runtime.StoreHiddenPointerRoot(ptr, i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
+declare void @runtime.ClobberPointerRegs()
+
+declare void @runtime.StoreHiddenPointee(i64, ptr, i64)
+
+declare void @runtime.TouchConservativeSlot(ptr, i64)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
 
@@ -102,19 +316,27 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.strequal")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %1, ptr %2)
-  ret i1 %3
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr @"github.com/goplus/llgo/runtime/internal/runtime.interequal")
+  %4 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %1, ptr %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %3)
+  ret i1 %4
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
+
+declare void @runtime.LoadHiddenPointee(ptr, i64, i64)
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 

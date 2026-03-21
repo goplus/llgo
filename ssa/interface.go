@@ -17,14 +17,30 @@
 package ssa
 
 import (
-	"go/constant"
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
+
+func typeAssertString(t types.Type) string {
+	s := types.TypeString(t, abi.UserPathOf)
+	if strings.HasPrefix(s, "interface{") && strings.HasSuffix(s, "}") {
+		return "interface { " + strings.TrimSuffix(strings.TrimPrefix(s, "interface{"), "}") + " }"
+	}
+	return s
+}
+
+func missingMethodName(t types.Type) string {
+	rawIntf, ok := t.Underlying().(*types.Interface)
+	if !ok || rawIntf.NumMethods() == 0 {
+		return ""
+	}
+	return rawIntf.Method(0).Name()
+}
 
 // -----------------------------------------------------------------------------
 
@@ -86,7 +102,7 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
-	fn := b.Load(pfn)
+	fn := Expr{llvm.CreateLoad(b.impl, prog.VoidPtr().ll, pfn.impl), prog.VoidPtr()}
 	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
 	return ret
 }
@@ -119,6 +135,11 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	prog := b.Prog
 	typ := x.Type
 	tabi := b.abiType(typ.raw.Type)
+	if !directIfaceType(typ.raw.Type) {
+		vptr := b.AllocU(typ)
+		b.Store(vptr, x)
+		return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
+	}
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
@@ -151,8 +172,32 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
 
+func (b Builder) MakeInterfaceFromPtr(tinter Type, ptr Expr) (ret Expr) {
+	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
+	b.AssertNilDeref(ptr)
+	prog := b.Prog
+	typ := prog.Elem(ptr.Type)
+	tabi := b.abiType(typ.raw.Type)
+	if directIfaceType(typ.raw.Type) {
+		return b.MakeInterface(tinter, b.Load(ptr))
+	}
+
+	vptr := b.AllocU(typ)
+	dst := b.Convert(prog.VoidPtr(), vptr)
+	src := b.Convert(prog.VoidPtr(), ptr)
+	b.Call(b.Pkg.rtFunc("Typedmemmove"), tabi, dst, src)
+	return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
+}
+
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog
+	if !directIfaceType(typ.raw.Type) {
+		impl := b.impl
+		tll := typ.ll
+		tptr := llvm.PointerType(tll, 0)
+		ptr := llvm.CreatePointerCast(impl, data, tptr)
+		return Expr{llvm.CreateLoad(impl, tll, ptr), typ}
+	}
 	kind, real, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {
 	case abi.Indirect:
@@ -203,7 +248,7 @@ func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
 	case *types.Array:
 		telem := b.Prog.rawType(t.Elem())
 		elem := b.buildVal(telem, val, lvl-1)
-		return Expr{llvm.ConstArray(typ.ll, []llvm.Value{elem.impl}), typ}
+		return Expr{aggregateValue(b.impl, typ.ll, elem.impl), typ}
 	}
 	panic("todo")
 }
@@ -256,7 +301,10 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	var eq Expr
 	var val func() Expr
 	if x.RawType() == assertedTyp.RawType() {
-		eq = b.Const(constant.MakeBool(!b.faceData(x.impl).IsNull()), b.Prog.Bool())
+		eq = Expr{
+			llvm.CreateICmp(b.impl, llvm.IntNE, tx.impl, llvm.ConstNull(tx.impl.Type())),
+			b.Prog.Bool(),
+		}
 		val = func() Expr { return x }
 	} else {
 		if rawIntf, ok := assertedTyp.raw.Type.Underlying().(*types.Interface); ok {
@@ -298,7 +346,12 @@ func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
 	blks := b.Func.MakeBlocks(2)
 	b.If(eq, blks[0], blks[1])
 	b.SetBlockEx(blks[1], AtEnd, false)
-	b.Panic(b.MakeInterface(b.Prog.Any(), b.Str("type assertion "+x.RawType().String()+" -> "+assertedTyp.RawType().String()+" failed")))
+	errv := b.Call(b.Pkg.rtFunc("MakeTypeAssertionError"),
+		b.Str(typeAssertString(x.RawType())),
+		tx,
+		b.Str(typeAssertString(assertedTyp.RawType())),
+		b.Str(missingMethodName(assertedTyp.RawType())))
+	b.Panic(errv)
 	b.SetBlockEx(blks[0], AtEnd, false)
 	b.blk.last = blks[0].last
 	return val()
@@ -331,6 +384,14 @@ func (b Builder) InterfaceData(x Expr) Expr {
 		log.Printf("InterfaceData %v\n", x.impl)
 	}
 	return Expr{b.faceData(x.impl), b.Prog.VoidPtr()}
+}
+
+// SetInterfaceData yields x with its data word replaced by data.
+func (b Builder) SetInterfaceData(x, data Expr) Expr {
+	if debugInstr {
+		log.Printf("SetInterfaceData %v, %v\n", x.impl, data.impl)
+	}
+	return b.aggregateValue(x.Type, b.faceItab(x.impl), data.impl)
 }
 
 func (b Builder) faceData(x llvm.Value) llvm.Value {

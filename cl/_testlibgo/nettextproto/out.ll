@@ -8,6 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/nettextproto"
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/nettextproto.init"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/nettextproto.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
 
@@ -22,15 +23,64 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testlibgo/nettextproto.main"() {
 _llgo_0:
-  %0 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 })
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
+  %0 = alloca { i64, i64 }, align 8
+  %1 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %1, align 8
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %3 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %2)
+  %4 = alloca %"github.com/goplus/llgo/runtime/internal/runtime.String", align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %3, ptr %4, align 8
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %4, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %6, ptr %1, align 8
+  %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %6, 0
+  %8 = ptrtoint ptr %7 to i64
+  %9 = and i64 %8, 72057594037927935
+  %10 = xor i64 %9, 25399393228665167
+  %11 = shl i64 %10, 17
+  %12 = select i1 false, i64 0, i64 %11
+  %13 = lshr i64 %10, 39
+  %14 = select i1 false, i64 0, i64 %13
+  %15 = or i64 %12, %14
+  %16 = and i64 %15, 72057594037927935
+  %17 = or i64 %16, -6557241057451442176
+  %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %6, 1
+  %19 = insertvalue { i64, i64 } undef, i64 %17, 0
+  %20 = insertvalue { i64, i64 } %19, i64 %18, 1
+  store { i64, i64 } %20, ptr %0, align 4
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %4, align 8
+  call void @runtime.TouchConservativeSlot(ptr %4, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr null)
+  %22 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %22)
+  %23 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %1, align 8
+  store { i64, i64 } zeroinitializer, ptr %0, align 4
+  call void @runtime.TouchConservativeSlot(ptr %0, i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, ptr %1, align 8
+  call void @runtime.TouchConservativeSlot(ptr %1, i64 16)
+  call void @runtime.ClobberPointerRegs()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %23)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %21)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @"net/textproto.init"()
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"net/textproto.CanonicalMIMEHeaderKey"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.SwapRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
+
+declare void @runtime.TouchConservativeSlot(ptr, i64)
+
+declare void @runtime.ClobberPointerRegs()
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 

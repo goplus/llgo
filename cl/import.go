@@ -342,8 +342,9 @@ func (p *context) initLink(line string, prefix int, export bool, f func(inPkgNam
 			if export {
 				panic(fmt.Sprintf("export comment has wrong name %q", inPkgName))
 			}
-			fmt.Fprintln(os.Stderr, "==>", line)
-			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
+			// Some upstream packages keep compatibility-only linkname stubs that
+			// are safe to ignore when llgo doesn't resolve them during import
+			// scanning. Required linknames still fail later during linking or use.
 		}
 	}
 }
@@ -634,6 +635,10 @@ const (
 
 func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtype int, define bool) {
 	name := llssa.FullName(pkg, v.Name())
+	define = true
+	if pkg != nil && p.goTyps != nil && llssa.PathOf(pkg) != llssa.PathOf(p.goTyps) {
+		define = false
+	}
 	// TODO(lijie): need a bettery way to process linkname (maybe alias)
 	if !isCgoCfpvar(v.Name()) && !isCgoVar(v.Name()) {
 		if v, ok := p.prog.Linkname(name); ok {
@@ -642,6 +647,9 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 					return v, goVar, true
 				}
 				return v, goVar, false
+			}
+			if pkg != nil && pkg.Name() == "main" && strings.HasSuffix(v, "..inittask") {
+				return replaceGoName(v, strings.IndexByte(v, '.')), goVar, true
 			}
 			if pos := strings.IndexByte(v, '.'); pos >= 0 {
 				if pos == 2 && v[0] == 'p' && v[1] == 'y' {
@@ -652,13 +660,13 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 			return v, cVar, false
 		}
 	}
-	return name, goVar, true
+	return name, goVar, define
 }
 
 func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	pkgTypes := p.ensureLoaded(v.Pkg.Pkg)
 	pkg := p.pkg
-	name, vtype, _ := p.varName(pkgTypes, v)
+	name, vtype, define := p.varName(pkgTypes, v)
 	if vtype == pyVar {
 		if kind, mod := pkgKindByScope(pkgTypes.Scope()); kind == PkgPyModule {
 			return b.PyNewVar(pysymPrefix+mod, name).Expr
@@ -667,7 +675,11 @@ func (p *context) varOf(b llssa.Builder, v *ssa.Global) llssa.Expr {
 	}
 	ret := pkg.VarOf(name)
 	if ret == nil {
-		ret = pkg.NewVar(name, p.patchType(v.Type()), llssa.Background(vtype))
+		if define {
+			ret = pkg.NewVar(name, p.patchType(v.Type()), llssa.Background(vtype))
+		} else {
+			ret = pkg.DeclareVar(name, p.patchType(v.Type()), llssa.Background(vtype))
+		}
 	}
 	return ret.Expr
 }

@@ -345,6 +345,28 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 	return Expr{ret, prog.Struct(t, prog.Bool())}
 }
 
+func (b Builder) AssertNilDeref(ptr Expr) {
+	if isKnownNonNilPtr(ptr.impl) {
+		return
+	}
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+}
+
+func isKnownNonNilPtr(v llvm.Value) bool {
+	if !v.IsAAllocaInst().IsNil() || !v.IsAGlobalVariable().IsNil() {
+		return true
+	}
+	if gep := v.IsAGetElementPtrInst(); !gep.IsNil() {
+		return isKnownNonNilPtr(gep.Operand(0))
+	}
+	if cast := v.IsABitCastInst(); !cast.IsNil() {
+		return isKnownNonNilPtr(cast.Operand(0))
+	}
+	return false
+}
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
@@ -353,6 +375,7 @@ func (b Builder) Load(ptr Expr) Expr {
 	if ptr.kind == vkPyVarRef {
 		return b.pyLoad(ptr)
 	}
+	b.AssertNilDeref(ptr)
 	telem := b.Prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
 }
@@ -365,6 +388,27 @@ func (b Builder) Store(ptr, val Expr) Expr {
 	}
 	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
 	return Expr{b.impl.CreateStore(val.impl, ptr.impl), b.Prog.Void()}
+}
+
+// ClearLoadSource zeroes the temporary alloca backing an aggregate value.
+// The value might be represented either as a direct alloca-backed temporary
+// or as a load from one. This is useful when the aggregate has been
+// re-encoded into a hidden slot and the original raw temp would otherwise
+// remain a conservative GC root.
+func (b Builder) ClearLoadSource(val Expr) bool {
+	src := val.impl.IsAAllocaInst()
+	if src.IsNil() {
+		load := val.impl.IsALoadInst()
+		if load.IsNil() {
+			return false
+		}
+		src = load.Operand(0).IsAAllocaInst()
+		if src.IsNil() {
+			return false
+		}
+	}
+	b.Store(Expr{src, b.Prog.Pointer(val.Type)}, b.Prog.Zero(val.Type))
+	return true
 }
 
 // Advance returns the pointer ptr advanced by offset.

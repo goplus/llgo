@@ -142,6 +142,75 @@ func _C2func_sum(a int32, b int32) (int32, error) {
 	}
 }
 
+func TestTypeAssertFromMakeInterfaceSameTypeAvoidsBoxing(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+func f(x []int) int {
+	var h interface{} = x
+	return h.([]int)[0]
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo.f")
+	ir := fn.String()
+	if strings.Contains(ir, "runtime.AllocU") {
+		t.Fatalf("unexpected interface boxing alloc in typeassert fast-path:\n%s", ir)
+	}
+	if strings.Contains(ir, "MakeTypeAssertionError") {
+		t.Fatalf("unexpected runtime type assertion check in typeassert fast-path:\n%s", ir)
+	}
+}
+
+func TestMapUpdateClearsKeyTemp(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+func f(m map[string]int, k string) {
+	m[k] = 1
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo.f")
+	ir := fn.String()
+	idxAssign := strings.Index(ir, "runtime.MapAssign")
+	if idxAssign < 0 {
+		t.Fatalf("missing MapAssign in IR:\n%s", ir)
+	}
+	afterAssign := ir[idxAssign:]
+	if !strings.Contains(afterAssign, "@llvm.memset(") || !strings.Contains(afterAssign, "i64 16") {
+		t.Fatalf("expected key temp zeroing after MapAssign, got:\n%s", ir)
+	}
+	if !strings.Contains(afterAssign, "@runtime.TouchConservativeSlot(") {
+		t.Fatalf("expected anchored key temp clear after MapAssign, got:\n%s", ir)
+	}
+}
+
+func TestMapUpdateUsesExistingKeySlot(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+//go:noinline
+func g(x string) string { return x }
+
+func f(m map[string]int, s string) {
+	m[g(s)] = 1
+}
+`)
+
+	fn := mustNamedFunction(t, m, "foo.f")
+	ir := fn.String()
+	if !strings.Contains(ir, "runtime.MapAssign") {
+		t.Fatalf("missing MapAssign in IR:\n%s", ir)
+	}
+	if strings.Contains(ir, "runtime.AllocU") {
+		t.Fatalf("unexpected extra map key temp alloc when key already has a tracked slot:\n%s", ir)
+	}
+	if !strings.Contains(ir, `store %"github.com/goplus/llgo/runtime/internal/runtime.String" %`) {
+		t.Fatalf("missing raw string root slot materialization for hidden key result:\n%s", ir)
+	}
+}
+
 func TestCgoInstr_Cmacro(t *testing.T) {
 	_, m := mustCompileLLPkgFromSrc(t, `
 package foo

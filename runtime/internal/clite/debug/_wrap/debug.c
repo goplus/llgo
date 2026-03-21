@@ -39,3 +39,23 @@ void llgo_stacktrace(int skip, void *ctx, int (*fn)(void *ctx, void *pc, void *o
         }
     }
 }
+
+int llgo_stacktrace_pcs(int skip, void **pcs, int n) {
+    unw_cursor_t cursor;
+    unw_context_t context;
+    unw_word_t pc;
+    int depth = 0;
+    int count = 0;
+    unw_getcontext(&context);
+    unw_init_local(&cursor, &context);
+    while (count < n && unw_step(&cursor) > 0) {
+        if (depth < skip) {
+            depth++;
+            continue;
+        }
+        if (unw_get_reg(&cursor, UNW_REG_IP, &pc) == 0) {
+            pcs[count++] = (void *)pc;
+        }
+    }
+    return count;
+}

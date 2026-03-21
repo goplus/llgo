@@ -60,7 +60,7 @@ func (b Builder) Go(fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args .
 	pkg := b.Pkg
 
 	var offset int
-	if fn != Nil && fn.kind != vkBuiltin {
+	if !fn.IsNil() && fn.kind != vkBuiltin {
 		offset = 1
 	}
 	typs := make([]Type, len(args)+offset)
@@ -75,7 +75,7 @@ func (b Builder) Go(fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args .
 	}
 	t := prog.Struct(typs...)
 	voidPtr := prog.VoidPtr()
-	data := Expr{b.aggregateMalloc(t, flds...), voidPtr}
+	data := Expr{b.aggregateAllocU(t, flds...), voidPtr}
 	size := prog.SizeOf(voidPtr)
 	pthd := b.Alloca(prog.IntVal(uint64(size), prog.Uintptr()))
 	b.pthreadCreate(pthd, prog.Nil(voidPtr), pkg.routine(t, fn, buildCall, len(args)), data)
@@ -94,7 +94,7 @@ func (p Package) routine(t Type, fn Expr, buildCall func(Builder, Expr, ...Expr)
 	data := Expr{llvm.CreateLoad(b.impl, t.ll, param.impl), t}
 	args := make([]Expr, n)
 	var offset int
-	if fn != Nil && fn.kind != vkBuiltin {
+	if !fn.IsNil() && fn.kind != vkBuiltin {
 		fn = b.getField(data, 0)
 		offset = 1
 	}
@@ -102,7 +102,7 @@ func (p Package) routine(t Type, fn Expr, buildCall func(Builder, Expr, ...Expr)
 		args[i] = b.getField(data, i+offset)
 	}
 	buildCall(b, fn, args...)
-	b.free(param)
+	b.Call(b.Pkg.rtFunc("FreeAllocU"), param)
 	b.Return(prog.Nil(prog.VoidPtr()))
 	return routine.Expr
 }
