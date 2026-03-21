@@ -80,9 +80,14 @@ func (p Package) closureWrapDecl(fn Expr, sig *types.Signature) Function {
 	wrap.impl.SetLinkage(llvm.LinkOnceAnyLinkage)
 	b := wrap.MakeBody(1)
 	args := closureWrapArgs(wrap)
-	prev := b.InlineCall(b.Pkg.rtFunc("ForwardRecoverToken"), recoverTokenExpr(b, fn))
-	ret := b.Call(fn, args...)
-	b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
+	var ret Expr
+	if b.Pkg.Prog.runtime() != nil {
+		prev := b.InlineCall(b.Pkg.rtFunc("ForwardRecoverToken"), recoverTokenExpr(b, fn))
+		ret = b.Call(fn, args...)
+		b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
+	} else {
+		ret = b.Call(fn, args...)
+	}
 	closureWrapReturn(b, sig, ret)
 	return wrap
 }
@@ -107,9 +112,14 @@ func (p Package) closureWrapPtr(sig *types.Signature) Function {
 	fnPtr := b.Convert(fnPtrType, ctxArg)
 	fnVal := Expr{llvm.CreateLoad(b.impl, fnType.ll, fnPtr.impl), fnType}
 	args := closureWrapArgs(wrap)
-	prev := b.InlineCall(b.Pkg.rtFunc("ForwardRecoverToken"), recoverTokenExpr(b, fnVal))
-	ret := b.Call(fnVal, args...)
-	b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
+	var ret Expr
+	if b.Pkg.Prog.runtime() != nil {
+		prev := b.InlineCall(b.Pkg.rtFunc("ForwardRecoverToken"), recoverTokenExpr(b, fnVal))
+		ret = b.Call(fnVal, args...)
+		b.InlineCall(b.Pkg.rtFunc("RestoreRecoverToken"), prev)
+	} else {
+		ret = b.Call(fnVal, args...)
+	}
 	closureWrapReturn(b, sig, ret)
 	return wrap
 }

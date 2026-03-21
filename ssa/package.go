@@ -324,7 +324,7 @@ func (p Program) Linkname(name string) (link string, ok bool) {
 }
 
 func (p Program) runtime() *types.Package {
-	if p.rt == nil {
+	if p.rt == nil && p.rtget != nil {
 		p.rt = p.rtget()
 	}
 	return p.rt

@@ -268,9 +268,15 @@ _llgo_0:
 define linkonce i64 @%s(ptr %%0, i64 %%1) {
 _llgo_0:
   %%2 = load ptr, ptr %%0, align 8
-  %%3 = tail call i64 %%2(i64 %%1)
-  ret i64 %%3
+  %%3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr %%2)
+  %%4 = tail call i64 %%2(i64 %%1)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr %%3)
+  ret i64 %%4
 }
+
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.ForwardRecoverToken"(ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.RestoreRecoverToken"(ptr)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 `, wrapRef, wrapRef)
