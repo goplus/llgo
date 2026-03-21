@@ -62,6 +62,18 @@ func TestHasAltPkgForTarget_MathOnlyOnWasm(t *testing.T) {
 	}
 }
 
+func TestPlan9AsmEnabledByDefault_MathOnNonWasm(t *testing.T) {
+	amd64 := &Config{Goos: "darwin", Goarch: "amd64", AbiMode: cabi.ModeAllFunc}
+	if !plan9asmEnabledByDefault(amd64, "math") {
+		t.Fatal("math should use plan9asm on non-wasm targets")
+	}
+
+	wasm := &Config{Goos: "wasip1", Goarch: "wasm", AbiMode: cabi.ModeAllFunc}
+	if plan9asmEnabledByDefault(wasm, "math") {
+		t.Fatal("math should not use plan9asm on wasm targets")
+	}
+}
+
 func TestShouldSkipPlan9AsmFile(t *testing.T) {
 	if !shouldSkipPlan9AsmFile("syscall", "darwin", "/goroot/src/syscall/zsyscall_darwin_arm64.s") {
 		t.Fatal("darwin syscall zsyscall trampolines should be skipped")

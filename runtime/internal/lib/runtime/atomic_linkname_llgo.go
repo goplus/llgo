@@ -37,7 +37,17 @@ func internal_runtime_atomic_LoadAcquintptr(ptr *uintptr) uintptr {
 	return latomic.Load(ptr)
 }
 
+//go:linkname runtime_internal_atomic_LoadAcquintptr runtime/internal/atomic.LoadAcquintptr
+func runtime_internal_atomic_LoadAcquintptr(ptr *uintptr) uintptr {
+	return latomic.Load(ptr)
+}
+
 //go:linkname internal_runtime_atomic_StoreReluintptr internal/runtime/atomic.StoreReluintptr
 func internal_runtime_atomic_StoreReluintptr(ptr *uintptr, val uintptr) {
+	latomic.Store(ptr, val)
+}
+
+//go:linkname runtime_internal_atomic_StoreReluintptr runtime/internal/atomic.StoreReluintptr
+func runtime_internal_atomic_StoreReluintptr(ptr *uintptr, val uintptr) {
 	latomic.Store(ptr, val)
 }

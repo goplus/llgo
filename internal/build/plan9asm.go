@@ -442,6 +442,9 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	if !archSupportsPlan9AsmDefaults(conf.Goarch) {
 		return false
 	}
+	if pkgPath == "math" && !hasAltPkgForTarget(conf, pkgPath) {
+		return true
+	}
 	return !llruntime.HasAltPkg(pkgPath) || llruntime.HasAdditiveAltPkg(pkgPath)
 }
 

@@ -82,6 +82,17 @@ func syscall_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintpt
 	return normalizeSyscallErr(r1, r2, err)
 }
 
+//go:linkname internal_runtime_syscall_Syscall6 internal/runtime/syscall.Syscall6
+func internal_runtime_syscall_Syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr) {
+	r1, r2, err = llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6)
+	return normalizeSyscallErr(r1, r2, err)
+}
+
+//go:linkname runtime_internal_syscall_Syscall6 runtime/internal/syscall.Syscall6
+func runtime_internal_syscall_Syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr) {
+	return internal_runtime_syscall_Syscall6(fn, a1, a2, a3, a4, a5, a6)
+}
+
 func normalizeSyscallErr(r1, r2, err uintptr) (uintptr, uintptr, uintptr) {
 	if r1 != ^uintptr(0) {
 		return r1, r2, 0
