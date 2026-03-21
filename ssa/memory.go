@@ -346,9 +346,25 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 }
 
 func (b Builder) AssertNilDeref(ptr Expr) {
+	if isKnownNonNilPtr(ptr.impl) {
+		return
+	}
 	nilPtr := llvm.ConstNull(ptr.impl.Type())
 	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
 	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+}
+
+func isKnownNonNilPtr(v llvm.Value) bool {
+	if !v.IsAAllocaInst().IsNil() || !v.IsAGlobalVariable().IsNil() {
+		return true
+	}
+	if gep := v.IsAGetElementPtrInst(); !gep.IsNil() {
+		return isKnownNonNilPtr(gep.Operand(0))
+	}
+	if cast := v.IsABitCastInst(); !cast.IsNil() {
+		return isKnownNonNilPtr(cast.Operand(0))
+	}
+	return false
 }
 
 // Load returns the value at the pointer ptr.

@@ -38,8 +38,6 @@ func TestGenMainModuleExecutable(t *testing.T) {
 		"define i32 @main(",
 		"call void @Py_Initialize()",
 		"call void @\"example.com/foo.init\"()",
-		"define ptr @__llgo_main_routine(",
-		"call void @runtime.runMain(",
 		"define weak void @_start()",
 	}
 	for _, want := range checks {
@@ -47,13 +45,11 @@ func TestGenMainModuleExecutable(t *testing.T) {
 			t.Fatalf("main module IR missing %q:\n%s", want, ir)
 		}
 	}
-	entryStart := strings.Index(ir, "define i32 @main(")
-	entryEnd := strings.Index(ir[entryStart:], "}\n")
-	if entryStart >= 0 && entryEnd > 0 {
-		entryBody := ir[entryStart : entryStart+entryEnd]
-		if strings.Contains(entryBody, "call void @Py_Initialize()") {
-			t.Fatalf("entry function should not call Py_Initialize directly:\n%s", entryBody)
-		}
+	if strings.Contains(ir, "define ptr @__llgo_main_routine(") {
+		t.Fatalf("main module should not emit __llgo_main_routine:\n%s", ir)
+	}
+	if strings.Contains(ir, "call void @runtime.runMain(") {
+		t.Fatalf("main module should not call runtime.runMain:\n%s", ir)
 	}
 }
 

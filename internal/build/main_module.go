@@ -86,10 +86,8 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 
 	mainInit := declareNoArgFunc(mainPkg, pkg.PkgPath+".init")
 	mainMain := declareNoArgFunc(mainPkg, pkg.PkgPath+".main")
-	mainRoutine := defineMainRoutine(mainPkg, pyInit, mainInit, mainMain)
-	runMain := declareRunMainFunc(mainPkg, prog.VoidPtr().RawType())
 
-	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, runMain, mainRoutine, pyInit, rtInit, abiInit)
+	entryFn := defineEntryFunction(ctx, mainPkg, argcVar, argvVar, argvValueType, runtimeStub, mainInit, mainMain, pyInit, rtInit, abiInit)
 
 	if needStart(ctx) {
 		defineStart(mainPkg, entryFn, argvValueType)
@@ -105,7 +103,7 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, needRu
 // The entry stores argc/argv, optionally disables stdio buffering, runs
 // initialization hooks (Python, runtime, package init), and finally calls
 // main.main before returning 0.
-func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, runMain, mainRoutine llssa.Function, pyInit, rtInit, abiInit llssa.Function) llssa.Function {
+func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa.Global, argvType llssa.Type, runtimeStub, mainInit, mainMain llssa.Function, pyInit, rtInit, abiInit llssa.Function) llssa.Function {
 	prog := pkg.Prog
 	entryName := "main"
 	if !needStart(ctx) && isWasmTarget(ctx.buildConf.Goos) {
@@ -124,6 +122,9 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 	if IsStdioNobuf() {
 		emitStdioNobuf(b, pkg, ctx.buildConf.Goos)
 	}
+	if pyInit != nil {
+		b.Call(pyInit.Expr)
+	}
 	if rtInit != nil {
 		b.Call(rtInit.Expr)
 	}
@@ -131,7 +132,8 @@ func defineEntryFunction(ctx *context, pkg llssa.Package, argcVar, argvVar llssa
 		b.Call(abiInit.Expr)
 	}
 	b.Call(runtimeStub.Expr)
-	b.Call(runMain.Expr, mainRoutine.Expr, prog.Nil(prog.VoidPtr()))
+	b.Call(mainInit.Expr)
+	b.Call(mainMain.Expr)
 	b.Return(prog.IntVal(0, prog.Int32()))
 	return fn
 }
@@ -147,30 +149,6 @@ func defineStart(pkg llssa.Package, entry llssa.Function, argvType llssa.Type) {
 
 func declareNoArgFunc(pkg llssa.Package, name string) llssa.Function {
 	return pkg.NewFunc(name, llssa.NoArgsNoRet, llssa.InC)
-}
-
-func declareRunMainFunc(pkg llssa.Package, ptrType types.Type) llssa.Function {
-	sig := newSignature(
-		[]types.Type{newRoutineSignature(ptrType), ptrType},
-		nil,
-	)
-	return pkg.NewFunc("runtime.runMain", sig, llssa.InC)
-}
-
-func defineMainRoutine(pkg llssa.Package, pyInit, mainInit, mainMain llssa.Function) llssa.Function {
-	routine := pkg.NewFunc("__llgo_main_routine", newRoutineSignature(pkg.Prog.VoidPtr().RawType()), llssa.InC)
-	b := routine.MakeBody(1)
-	if pyInit != nil {
-		b.Call(pyInit.Expr)
-	}
-	b.Call(mainInit.Expr)
-	b.Call(mainMain.Expr)
-	b.Return(pkg.Prog.Nil(pkg.Prog.VoidPtr()))
-	return routine
-}
-
-func newRoutineSignature(ptrType types.Type) *types.Signature {
-	return newSignature([]types.Type{ptrType}, []types.Type{ptrType})
 }
 
 func defineWeakNoArgStub(pkg llssa.Package, name string) llssa.Function {

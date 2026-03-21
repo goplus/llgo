@@ -112,12 +112,16 @@ uintptr_t llgo_load_hidden_pointer_key(uintptr_t key)
     return out;
 }
 
-void llgo_clobber_pointer_regs(uintptr_t a0, uintptr_t a1, uintptr_t a2, uintptr_t a3,
-    uintptr_t a4, uintptr_t a5, uintptr_t a6, uintptr_t a7)
-{
-    volatile uintptr_t sink = a0 | a1 | a2 | a3 | a4 | a5 | a6 | a7;
-    (void)sink;
+#if defined(__APPLE__)
+void llgo_runtime_ClobberPointerRegs(void) __asm__("_runtime.ClobberPointerRegs");
+#elif defined(__GNUC__)
+void llgo_runtime_ClobberPointerRegs(void) __asm__("runtime.ClobberPointerRegs");
+#endif
+
 #if defined(__aarch64__)
+__attribute__((naked))
+void llgo_runtime_ClobberPointerRegs(void)
+{
     __asm__ volatile(
         "mov x0, xzr\n\t"
         "mov x1, xzr\n\t"
@@ -137,10 +141,10 @@ void llgo_clobber_pointer_regs(uintptr_t a0, uintptr_t a1, uintptr_t a2, uintptr
         "mov x15, xzr\n\t"
         "mov x16, xzr\n\t"
         "mov x17, xzr\n\t"
-        :
-        :
-        : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
-          "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15",
-          "x16", "x17");
-#endif
+        "ret\n\t");
 }
+#else
+void llgo_runtime_ClobberPointerRegs(void)
+{
+}
+#endif

@@ -542,6 +542,207 @@ func main() {
 	}
 }
 
+func TestModeBuildMultiResultPointerFieldFirstResult(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multiptr-field-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multiptrfield\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type T struct{ n int }
+type holder struct{ p *T }
+
+//go:noinline
+func pair() (*T, error) {
+	var h holder
+	h.p = &T{n: 7}
+	return h.p, nil
+}
+
+func main() {
+	x, err := pair()
+	if err != nil {
+		panic(err)
+	}
+	if x == nil {
+		panic("nil")
+	}
+	fmt.Println(x.n)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "multiptrfield")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "7\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildMultiResultPointerWrapperReturn(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-multiptr-wrap-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/multiptrwrap\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type T struct{ n int }
+
+//go:noinline
+func parse(s string) (*T, error) {
+	if len(s) == 0 {
+		return nil, nil
+	}
+	return &T{n: len(s)}, nil
+}
+
+//go:noinline
+func Parse(s string) (*T, error) { return parse(s) }
+
+//go:noinline
+func ParseLocal(s string) (*T, error) {
+	x, err := parse(s)
+	return x, err
+}
+
+func main() {
+	x, err := Parse("abc")
+	if err != nil {
+		panic(err)
+	}
+	if x == nil {
+		panic("nil Parse")
+	}
+	y, err := ParseLocal("abcd")
+	if err != nil {
+		panic(err)
+	}
+	if y == nil {
+		panic("nil ParseLocal")
+	}
+	fmt.Println(x.n, y.n)
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "multiptrwrap")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "3 4\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
+func TestModeBuildInterfaceMethodOnPointerFieldValueReceiver(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	td, err := os.MkdirTemp(repoRoot, ".tmp-iface-pfield-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := os.WriteFile(filepath.Join(td, "go.mod"), []byte("module example.com/ifacepfield\n\ngo 1.24\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	src := `package main
+
+import "fmt"
+
+type I interface{ Len() int }
+type S struct{ p *[]int }
+
+func (s S) Len() int { return len(*s.p) }
+
+func main() {
+	xs := []int{1, 2, 3}
+	var i I = S{p: &xs}
+	fmt.Println(i.Len())
+}
+`
+	if err := os.WriteFile(filepath.Join(td, "main.go"), []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	binPath := filepath.Join(td, "ifacepfield")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if chdirErr := os.Chdir(wd); chdirErr != nil {
+			t.Fatalf("restore cwd: %v", chdirErr)
+		}
+	}()
+	cfg := &Config{Mode: ModeBuild, OutFile: binPath}
+	if _, err := Do([]string{"."}, cfg); err != nil {
+		t.Fatalf("ModeBuild failed: %v", err)
+	}
+	if got := runBinary(t, binPath); got != "3\n" {
+		t.Fatalf("unexpected binary output: %q", got)
+	}
+}
+
 func TestModeGenSetFinalizerUsesTypedHelper(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {

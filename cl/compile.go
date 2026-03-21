@@ -1947,8 +1947,12 @@ func singleRef(v ssa.Value) (ssa.Instruction, bool) {
 func canDeferValueInstr(iv instrOrValue) bool {
 	switch v := iv.(type) {
 	case *ssa.Extract:
-		_, ok := singleRef(v)
-		return ok
+		ref, ok := singleRef(v)
+		if !ok {
+			return false
+		}
+		_, isReturn := ref.(*ssa.Return)
+		return !isReturn
 	default:
 		return false
 	}
@@ -1980,6 +1984,24 @@ func canLowerLazyRecvTuple(v *ssa.UnOp) bool {
 		return false
 	}
 	return true
+}
+
+func hasOnlyReturnUsers(v ssa.Value) bool {
+	refs := v.Referrers()
+	if refs == nil {
+		return false
+	}
+	seen := false
+	for _, ref := range *refs {
+		if _, ok := ref.(*ssa.DebugRef); ok {
+			continue
+		}
+		seen = true
+		if _, ok := ref.(*ssa.Return); !ok {
+			return false
+		}
+	}
+	return seen
 }
 
 func isPointerKeepAliveCall(fn *ssa.Function, arg ssa.Value) bool {
@@ -3866,6 +3888,9 @@ func (p *context) canHidePointerValue(v ssa.Value) bool {
 	if v == nil || containsInstantiatedNamedType(v.Type(), map[types.Type]bool{}) {
 		return false
 	}
+	if hasOnlyReturnUsers(v) {
+		return false
+	}
 	switch types.Unalias(v.Type()).Underlying().(type) {
 	case *types.Pointer, *types.Slice:
 	case *types.Basic:
@@ -4739,6 +4764,27 @@ func (p *context) copyEquivalentValueSlot(b llssa.Builder, dst, src ssa.Value, a
 	return p.loadValueSlot(b, dst), true
 }
 
+func (p *context) compileExtractValueDirect(b llssa.Builder, v *ssa.Extract) llssa.Expr {
+	if v == nil {
+		return llssa.Expr{}
+	}
+	if recv, ok := p.recvTuples[v.Tuple]; ok {
+		if v.Index == 0 {
+			return b.RecvFromTemp(recv.ptr)
+		}
+		return recv.ok
+	}
+	if tupleCall, ok := v.Tuple.(*ssa.Call); ok {
+		if cached, ok := p.singleExtractCallResults[tupleCall]; ok {
+			return cached
+		}
+		if override, idx, ok := p.singleExtractCallOverrideFor(tupleCall); ok && idx == v.Index {
+			return p.call(b, llssa.Call, tupleCall, &tupleCall.Call, true, override)
+		}
+	}
+	return b.Extract(p.compileValue(b, v.Tuple), v.Index)
+}
+
 func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue bool) (ret llssa.Expr) {
 	var storedValueSlot bool
 	var clearTupleSource ssa.Value
@@ -4752,11 +4798,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return v
 		}
 		if canDeferValueInstr(iv) {
-			p.compileInstrOrValue(b, iv, false)
 			if slot, ok := p.valueSlots[iv]; ok && slot.Type != nil {
+				p.compileInstrOrValue(b, iv, false)
 				return p.loadValueSlot(b, iv)
 			}
-			return p.bvals[iv]
+		}
+		if ex, ok := iv.(*ssa.Extract); ok {
+			return p.compileExtractValueDirect(b, ex)
 		}
 		fn := "<nil>"
 		if p.goFn != nil {
@@ -5332,7 +5380,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		if n := len(v.Results); n > 0 {
 			results = make([]llssa.Expr, n)
 			for i, r := range v.Results {
-				results[i] = p.compileValue(b, r)
+				results[i] = p.compileReturnValue(b, r)
 			}
 			if p.hiddenResultType != nil && len(results) == 1 && results[0].Type != nil {
 				results[0] = p.encodeHiddenCallValue(b, results[0], p.hiddenResultType)
@@ -5687,6 +5735,26 @@ func (p *context) clearReturnValueRoots(b llssa.Builder, v ssa.Value) {
 	}
 	b.Store(slot, p.prog.Zero(b.Prog.Elem(slot.Type)))
 	p.touchConservativeSlot(b, slot, false)
+}
+
+func (p *context) compileReturnValue(b llssa.Builder, v ssa.Value) llssa.Expr {
+	if v == nil {
+		return llssa.Expr{}
+	}
+	if load, ok := v.(*ssa.UnOp); ok && load.Op == token.MUL {
+		if alloc, ok := load.X.(*ssa.Alloc); ok && p.hiddenPtrAllocs[alloc] {
+			if root, ok := p.hiddenAllocSlots[alloc]; ok && root.Type != nil {
+				return b.Load(root)
+			}
+		}
+	}
+	if root, ok := p.valueRootSlots[v]; ok && root.Type != nil {
+		if elem := b.Prog.Elem(root.Type); elem != nil && elem.RawType() != nil &&
+			types.Identical(elem.RawType(), v.Type()) {
+			return b.Load(root)
+		}
+	}
+	return p.compileValue(b, v)
 }
 
 func (p *context) clearTrackedValueSlot(b llssa.Builder, v ssa.Value) bool {

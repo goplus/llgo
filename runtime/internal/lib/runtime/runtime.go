@@ -98,16 +98,8 @@ func AllocZHidden(size uintptr) uintptr {
 	return key
 }
 
-//go:linkname c_clobber_pointer_regs C.llgo_clobber_pointer_regs
-func c_clobber_pointer_regs(a0, a1, a2, a3, a4, a5, a6, a7 uintptr)
-
-//go:noinline
-func ClobberPointerRegs() {
-	// Force the ABI argument registers to be reloaded with non-pointer zeros.
-	// This reduces the chance that conservative stack/register scanning keeps
-	// transient raw pointer values alive after hidden-pointer lowering.
-	c_clobber_pointer_regs(0, 0, 0, 0, 0, 0, 0, 0)
-}
+//go:linkname ClobberPointerRegs runtime.ClobberPointerRegs
+func ClobberPointerRegs()
 
 //go:noinline
 func TouchConservativeSlot(p unsafe.Pointer, size uintptr) {
