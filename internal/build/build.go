@@ -990,7 +990,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	// Use a stable synthetic name to avoid confusing it with the real main package in traces/logs.
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, needRuntime, needPyInit, needAbiInit, abiSymbols)
 	if ctx.buildConf.BuildMode == BuildModeExe {
-		if err := applyDCEOverrides(ctx, linkedOrder, entryPkg); err != nil {
+		if err := applyDCEOverrides(ctx, linkedOrder, entryPkg, verbose); err != nil {
 			return err
 		}
 	}
@@ -1069,18 +1069,20 @@ func dceSourceModules(pkgs []Package) []gllvm.Module {
 	return mods
 }
 
-func applyDCEOverrides(ctx *context, pkgs []Package, entryPkg Package) error {
+func applyDCEOverrides(ctx *context, pkgs []Package, entryPkg Package, verbose bool) error {
 	srcMods := dceSourceModules(pkgs)
 	mods := append(append([]gllvm.Module{}, srcMods...), entryPkg.LPkg.Module())
 	result, err := dce.Analyze(mods, dceEntryRoots())
 	if err != nil {
 		return fmt.Errorf("analyze link-time method reachability: %w", err)
 	}
-	report := dce.FormatResult(result)
-	if report == "" {
-		fmt.Fprintln(os.Stderr, "[dce] live methods: none")
-	} else {
-		fmt.Fprintf(os.Stderr, "[dce] live methods:\n%s", report)
+	if verbose {
+		report := dce.FormatResult(result)
+		if report == "" {
+			fmt.Fprintln(os.Stderr, "[dce] live methods: none")
+		} else {
+			fmt.Fprintf(os.Stderr, "[dce] live methods:\n%s", report)
+		}
 	}
 	if err := dce.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, result); err != nil {
 		return fmt.Errorf("emit dce type overrides: %w", err)
