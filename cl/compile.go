@@ -4806,11 +4806,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if ex, ok := iv.(*ssa.Extract); ok {
 			return p.compileExtractValueDirect(b, ex)
 		}
-		fn := "<nil>"
-		if p.goFn != nil {
-			fn = p.goFn.String()
+		if _, ok := iv.(*ssa.MakeInterface); !ok {
+			fn := "<nil>"
+			if p.goFn != nil {
+				fn = p.goFn.String()
+			}
+			log.Panicf("unreachable: %T %v in %s", iv, iv, fn)
 		}
-		log.Panicf("unreachable: %T %v in %s", iv, iv, fn)
 	}
 	switch v := iv.(type) {
 	case *ssa.Call:
