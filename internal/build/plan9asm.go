@@ -548,10 +548,16 @@ func pkgSFilesLookupPath(pkgPath string) string {
 }
 
 func shouldIgnorePkgSFilesListFailure(pkgPath, stderr string) bool {
-	if pkgPath != "runtime/internal/atomic" {
+	switch pkgPath {
+	case "runtime/internal/atomic":
+		return strings.Contains(stderr, "package runtime/internal/atomic is not in std") ||
+			strings.Contains(stderr, "package internal/runtime/atomic is not in std")
+	case "runtime/internal/syscall":
+		return strings.Contains(stderr, "package runtime/internal/syscall is not in std") ||
+			strings.Contains(stderr, "package internal/runtime/syscall is not in std")
+	default:
 		return false
 	}
-	return strings.Contains(stderr, "package runtime/internal/atomic is not in std")
 }
 
 func isPkgTestSFile(name string) bool {
