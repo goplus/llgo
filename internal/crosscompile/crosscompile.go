@@ -349,7 +349,6 @@ func use(goos, goarch string, wasiThreads, forceEspClang bool) (export Export, e
 			"-Wl,--export-memory",
 			"-Wl,--initial-memory=67108864", // 64MB
 			"-mbulk-memory",
-			"-mmultimemory",
 			"-z", "stack-size=10485760", // 10MB
 			"-Wl,--export=malloc", "-Wl,--export=free",
 			"-lc",
