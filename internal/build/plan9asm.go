@@ -403,7 +403,7 @@ func hasAltPkgForTarget(conf *Config, pkgPath string) bool {
 			return false
 		}
 	}
-	if pkgPath == "internal/runtime/syscall" {
+	if pkgPath == "internal/runtime/syscall" || pkgPath == "runtime/internal/syscall" {
 		if conf == nil || (conf.Target == "" && !hasTag(conf.Tags, "baremetal")) {
 			return false
 		}

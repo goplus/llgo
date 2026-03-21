@@ -56,6 +56,8 @@ var altPkgs = map[string]altPkgMode{
 	"math":                                altPkgReplace,
 	"reflect":                             altPkgReplace,
 	"runtime":                             altPkgReplace,
+	"runtime/internal/atomic":             altPkgReplace,
+	"runtime/internal/syscall":            altPkgReplace,
 	"sync/atomic":                         altPkgReplace,
 	"syscall/js":                          altPkgReplace,
 	"unique":                              altPkgReplace,

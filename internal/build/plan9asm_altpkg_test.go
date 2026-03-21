@@ -50,6 +50,17 @@ func TestHasAltPkgForTarget_InternalRuntimeSyscallOnlyOnBaremetal(t *testing.T) 
 	}
 }
 
+func TestHasAltPkgForTarget_LegacyRuntimeInternalSyscallOnlyOnBaremetal(t *testing.T) {
+	baremetal := &Config{Goarch: "arm", AbiMode: cabi.ModeAllFunc, Target: "esp32"}
+	if !hasAltPkgForTarget(baremetal, "runtime/internal/syscall") {
+		t.Fatal("legacy runtime/internal/syscall should use alt package on baremetal targets")
+	}
+	normal := &Config{Goarch: "arm", AbiMode: cabi.ModeAllFunc}
+	if hasAltPkgForTarget(normal, "runtime/internal/syscall") {
+		t.Fatal("legacy runtime/internal/syscall should not use alt package without baremetal")
+	}
+}
+
 func TestHasAltPkgForTarget_MathOnlyOnWasm(t *testing.T) {
 	wasm := &Config{Goos: "wasip1", Goarch: "wasm", AbiMode: cabi.ModeAllFunc}
 	if !hasAltPkgForTarget(wasm, "math") {
@@ -59,6 +70,13 @@ func TestHasAltPkgForTarget_MathOnlyOnWasm(t *testing.T) {
 	amd64 := &Config{Goos: "linux", Goarch: "amd64", AbiMode: cabi.ModeAllFunc}
 	if hasAltPkgForTarget(amd64, "math") {
 		t.Fatal("math should not use alt package on amd64")
+	}
+}
+
+func TestHasAltPkgForTarget_LegacyRuntimeInternalAtomic(t *testing.T) {
+	conf := &Config{Goos: "linux", Goarch: "amd64", AbiMode: cabi.ModeAllFunc}
+	if !hasAltPkgForTarget(conf, "runtime/internal/atomic") {
+		t.Fatal("legacy runtime/internal/atomic path should use alt package")
 	}
 }
 
