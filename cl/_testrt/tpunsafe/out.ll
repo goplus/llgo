@@ -208,3 +208,8 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[bool]).check", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[int64]).check", !"_llgo_string"}

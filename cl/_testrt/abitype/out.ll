@@ -115,3 +115,9 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %1, ptr %2)
   ret i1 %3
 }
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_int32"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/abitype.main", !"_llgo_uint8"}

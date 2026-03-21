@@ -121,3 +121,8 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testdata/foo.Bar", !"_llgo_struct$K-dZ9QotZfVPz2a0YdRa9vmZUuDXPTqZOlMShKEDJtk"}
+!1 = !{!"github.com/goplus/llgo/cl/_testdata/foo.F", !"github.com/goplus/llgo/cl/_testdata/foo.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88"}
