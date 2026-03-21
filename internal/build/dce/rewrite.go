@@ -41,6 +41,9 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, result Resu
 
 	emitter := newOverrideEmitter(dst)
 	for _, typeName := range typeNames {
+		if shouldSkipOverride(typeName) {
+			continue
+		}
 		srcType := srcTypes[typeName]
 		if srcType.IsNil() {
 			return fmt.Errorf("missing source type global %q", typeName)
@@ -57,6 +60,19 @@ func EmitStrongTypeOverrides(dst llvm.Module, srcMods []llvm.Module, result Resu
 		}
 	}
 	return nil
+}
+
+func shouldSkipOverride(typeName string) bool {
+	// reflect.Type values use *rtype identity as part of interface/map-key
+	// behavior. Overriding these concrete type symbols in the entry module can
+	// split identity across weak/original and strong/override copies, which
+	// breaks lookups such as map[reflect.Type]bool in testing/fuzz support.
+	switch typeName {
+	case "_llgo_reflect.rtype", "*_llgo_reflect.rtype",
+		"_llgo_internal/reflectlite.rtype", "*_llgo_internal/reflectlite.rtype":
+		return true
+	}
+	return false
 }
 
 type overrideEmitter struct {
