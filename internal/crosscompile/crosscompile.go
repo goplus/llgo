@@ -229,7 +229,7 @@ func use(goos, goarch string, wasiThreads, forceEspClang, enableLTO bool) (expor
 		}
 		if enableLTO {
 			// Enable ThinLTO, using default lto kind(thinlto).
-			export.LDFLAGS = append(export.LDFLAGS, "-Wl,--lto-O0")
+			export.LDFLAGS = append(export.LDFLAGS, "-Wl,--lto-O1", "-v")
 		}
 		if clangRoot != "" {
 			clangLib := filepath.Join(clangRoot, "lib")
@@ -254,7 +254,7 @@ func use(goos, goarch string, wasiThreads, forceEspClang, enableLTO bool) (expor
 			"-Wno-unused-command-line-argument",
 		}
 		if enableLTO {
-			export.CCFLAGS = append(export.CCFLAGS, "-flto=thin")
+			export.CCFLAGS = append(export.CCFLAGS, "-flto=full")
 		}
 
 		// Add sysroot for macOS only
@@ -507,9 +507,9 @@ func UseTarget(targetName string, enableLTO bool) (export Export, err error) {
 
 	if config.Linker == "ld.lld" && enableLTO {
 		// Enable ThinLTO, Using default lto kind(thinlto).
-		ldflags = append(ldflags, "--lto-O0")
-		cflags = append(cflags, "-flto=thin")
-		ccflags = append(ccflags, "-flto=thin")
+		ldflags = append(ldflags, "--lto-O1")
+		cflags = append(cflags, "-flto=full")
+		ccflags = append(ccflags, "-flto=full")
 	}
 
 	// The following parameters are inspired by tinygo/builder/library.go

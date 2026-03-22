@@ -72,6 +72,7 @@ type Builder = *aBuilder
 
 // EndBuild ends the build process of a function.
 func (b Builder) EndBuild() {
+	b.Func.emitFakeUsesInlineAsm(b)
 	b.Func.endDefer(b)
 }
 

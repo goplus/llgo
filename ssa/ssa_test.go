@@ -136,6 +136,102 @@ func TestNewFuncExLLVMUsed(t *testing.T) {
 	}
 }
 
+func TestAddTypeMetadata(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.EnableGoGlobalDCE(true)
+	pkg := prog.NewPackage("main", "main")
+	g := pkg.NewVarEx("g", prog.Pointer(prog.Int()))
+	prog.addTypeMetadata(g.impl, 8, "go.method.F:func()")
+	prog.addTypeMetadata(g.impl, 16, "go.method.G:func()")
+	prog.setVCallVisibilityMetadata(g.impl, vcallVisibilityLinkageUnit)
+	ir := pkg.String()
+	if !strings.Contains(ir, `!type !`) {
+		t.Fatalf("missing !type metadata:\n%s", ir)
+	}
+	if !strings.Contains(ir, `!"go.method.F:func()"`) {
+		t.Fatalf("missing F type metadata:\n%s", ir)
+	}
+	if !strings.Contains(ir, `!"go.method.G:func()"`) {
+		t.Fatalf("missing G type metadata:\n%s", ir)
+	}
+	if !strings.Contains(ir, `!vcall_visibility !`) {
+		t.Fatalf("missing !vcall_visibility metadata:\n%s", ir)
+	}
+	if !strings.Contains(ir, `!"Virtual Function Elim"`) {
+		t.Fatalf("missing Virtual Function Elim module flag:\n%s", ir)
+	}
+	if !strings.Contains(ir, `i32 8, !"Virtual Function Elim", i32 1`) {
+		t.Fatalf("missing min-behavior Virtual Function Elim module flag:\n%s", ir)
+	}
+}
+
+func TestReflectPackageDisablesVirtualFunctionElim(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.EnableGoGlobalDCE(true)
+	pkg := prog.NewPackage("reflect", "reflect")
+
+	ir := pkg.String()
+	if !strings.Contains(ir, `i32 8, !"Virtual Function Elim", i32 0`) {
+		t.Fatalf("missing disabled Virtual Function Elim module flag for reflect:\n%s", ir)
+	}
+}
+
+func TestMarkLLVMUsedDedup(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("main", "main")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("Foo", sig, InGo)
+	pkg.markLLVMUsed(fn.impl)
+	pkg.markLLVMUsed(fn.impl)
+	pkg.MaterializePreserveSyms()
+
+	ir := pkg.String()
+	if !strings.Contains(ir, `@llvm.compiler.used = appending global [1 x ptr] [ptr @Foo], section "llvm.metadata"`) {
+		t.Fatalf("unexpected llvm.compiler.used entry:\n%s", ir)
+	}
+}
+
+func TestFakeUseValueInlineAsm(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("main", "main")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	target := pkg.NewFunc("Target", sig, InGo)
+	fn := pkg.NewFunc("Use", sig, InGo)
+	b := fn.MakeBody(1)
+	prog.fakeUseValueInlineAsm(b.impl, target.impl)
+	b.Return()
+
+	ir := pkg.String()
+	if !strings.Contains(ir, "asm sideeffect") {
+		t.Fatalf("missing inline asm fake-use:\n%s", ir)
+	}
+	if !strings.Contains(ir, "ptr @Target") {
+		t.Fatalf("missing inline asm operand:\n%s", ir)
+	}
+}
+
+func TestEmitFakeUsesAtEntry(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.EnableGoGlobalDCE(true)
+	pkg := prog.NewPackage("main", "main")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	targetA := pkg.NewFunc("TargetA", sig, InGo)
+	targetB := pkg.NewFunc("TargetB", sig, InGo)
+	fn := pkg.NewFunc("Use", sig, InGo)
+	b := fn.MakeBody(1)
+	fn.recordFakeUse(targetA.impl)
+	fn.recordFakeUse(targetB.impl)
+	fn.recordFakeUse(targetA.impl)
+	b.Return()
+	b.EndBuild()
+
+	ir := pkg.String()
+	if !strings.Contains(ir, "call void (...) @llvm.fake.use(ptr @TargetA, ptr @TargetB)") &&
+		!strings.Contains(ir, "call void @llvm.fake.use(ptr @TargetA, ptr @TargetB)") {
+		t.Fatalf("missing aggregated llvm.fake.use call:\n%s", ir)
+	}
+}
+
 func TestSetBlock(t *testing.T) {
 	defer func() {
 		if r := recover(); r == nil {

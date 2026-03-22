@@ -20,20 +20,53 @@
 package cl_test
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"go/types"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/ssa/ssatest"
+	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
 	cltest.TestCompileEx(t, src, "foo.go", expected, false)
+}
+
+func compileIRWithGoGlobalDCE(t *testing.T, src string) string {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "foo.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatal("ParseFile failed:", err)
+	}
+	files := []*ast.File{f}
+	pkg := types.NewPackage(f.Name.Name, f.Name.Name)
+	imp := packages.NewImporter(fset)
+	foo, _, err := ssautil.BuildPackage(
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
+	if err != nil {
+		t.Fatal("BuildPackage failed:", err)
+	}
+	prog := ssatest.NewProgramEx(t, nil, imp)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	prog.EnableGoGlobalDCE(true)
+	ret, err := cl.NewPackage(prog, foo, files)
+	if err != nil {
+		t.Fatal("cl.NewPackage failed:", err)
+	}
+	return ret.String()
 }
 
 func requireEmbedTest(t *testing.T) {
@@ -318,6 +351,30 @@ func TestCgofullGeneratesC2func(t *testing.T) {
 	}
 	if !strings.Contains(ir, "cliteErrno") {
 		t.Fatal("missing cliteErrno call in cgofull IR")
+	}
+}
+
+func TestGoGlobalDCEPhase1IR(t *testing.T) {
+	ir := compileIRWithGoGlobalDCE(t, `package foo
+
+type I interface {
+	F(int) int
+}
+
+type T struct{}
+
+func (T) F(x int) int { return x + 1 }
+func (T) G() {}
+
+func use(i I) int {
+	return i.F(1)
+}
+`)
+	if !strings.Contains(ir, "llvm.type.checked.load") {
+		t.Fatalf("missing llvm.type.checked.load in IR:\n%s", ir)
+	}
+	if !strings.Contains(ir, "go.method.F:") {
+		t.Fatalf("missing method capability metadata for F:\n%s", ir)
 	}
 }
 

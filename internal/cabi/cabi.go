@@ -359,6 +359,9 @@ func (p *Transformer) transformFuncType(ctx llvm.Context, info *FuncInfo) (llvm.
 
 func (p *Transformer) transformFunc(m llvm.Module, fn llvm.Value) bool {
 	ctx := m.Context()
+	if fn.IntrinsicID() != 0 {
+		return false
+	}
 	info := p.GetFuncInfo(ctx, fn.GlobalValueType())
 	if !info.HasWrap() {
 		return false
@@ -526,6 +529,9 @@ func (p *Transformer) transformFuncBody(m llvm.Module, ctx llvm.Context, info *F
 
 func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call llvm.Value, fn llvm.Value) bool {
 	nfn := call.CalledValue()
+	if nfn.IntrinsicID() != 0 {
+		return false
+	}
 	info := p.GetFuncInfo(ctx, call.CalledFunctionType())
 	if !info.HasWrap() {
 		return false

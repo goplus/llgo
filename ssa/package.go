@@ -217,6 +217,8 @@ type aProgram struct {
 	abi abi.Builder
 
 	is32Bits bool
+
+	enableGoGlobalDCE bool
 }
 
 // A Program presents a program.
@@ -298,6 +300,10 @@ func (p Program) patch(typ types.Type) types.Type {
 
 func (p Program) SetCompileMethods(check func(Package, types.Type)) {
 	p.compileMethods = check
+}
+
+func (p Program) EnableGoGlobalDCE(enable bool) {
+	p.enableGoGlobalDCE = enable
 }
 
 // SetRuntime sets the runtime.
@@ -441,6 +447,10 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		export:         make(map[string]string),
 		preserveSyms:   make(map[string]struct{}),
 		llvmUsedValues: make([]llvm.Value, 0, 4),
+		llvmUsedSet:    make(map[string]struct{}),
+	}
+	if p.enableGoGlobalDCE {
+		p.addVirtualFunctionElimModuleFlag(mod, pkgPath != "reflect")
 	}
 	return ret
 }
@@ -707,6 +717,7 @@ type aPackage struct {
 	export         map[string]string   // pkgPath.nameInPkg => exportname
 	preserveSyms   map[string]struct{} // set of exported symbol names
 	llvmUsedValues []llvm.Value
+	llvmUsedSet    map[string]struct{}
 }
 
 type Package = *aPackage
@@ -730,6 +741,12 @@ func (p Package) isPreservedName(name string) bool {
 }
 
 func (p Package) markLLVMUsed(v llvm.Value) {
+	if name := v.Name(); name != "" {
+		if _, ok := p.llvmUsedSet[name]; ok {
+			return
+		}
+		p.llvmUsedSet[name] = struct{}{}
+	}
 	elemTyp := p.Prog.VoidPtr().ll
 	p.llvmUsedValues = append(p.llvmUsedValues, llvm.ConstBitCast(v, elemTyp))
 }
