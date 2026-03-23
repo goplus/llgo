@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/goplus/llgo/internal/crosscompile"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/shellparse"
 )
@@ -147,6 +148,9 @@ func runEmuCmd(envMap map[string]string, emulatorTemplate string, runArgs []stri
 	}
 	if len(cmdParts) == 0 {
 		return fmt.Errorf("empty emulator command")
+	}
+	if cmdParts[0], err = crosscompile.ResolveESPQEMUExecutable(cmdParts); err != nil {
+		return err
 	}
 
 	// Add run arguments to the end

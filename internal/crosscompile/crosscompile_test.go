@@ -5,6 +5,7 @@ package crosscompile
 
 import (
 	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"testing"
@@ -331,5 +332,41 @@ func TestUseWithTarget(t *testing.T) {
 	// Should use native configuration (only check for macOS since that's where tests run)
 	if runtime.GOOS == "darwin" && len(export.LDFLAGS) == 0 {
 		t.Error("Expected LDFLAGS to be set for native build")
+	}
+}
+
+func TestResolveESPQEMUExecutable(t *testing.T) {
+	tempCacheRoot := t.TempDir()
+	originalCacheRoot := cacheRoot
+	cacheRoot = func() string { return tempCacheRoot }
+	defer func() { cacheRoot = originalCacheRoot }()
+
+	qemuRoot := filepath.Join(tempCacheRoot, "crosscompile", "esp-qemu-"+espQEMUVersion, "bin")
+	if err := os.MkdirAll(qemuRoot, 0755); err != nil {
+		t.Fatalf("Failed to create cached ESP QEMU dir: %v", err)
+	}
+	riscvExe := filepath.Join(qemuRoot, "qemu-system-riscv32")
+	if err := os.WriteFile(riscvExe, []byte("fake qemu"), 0755); err != nil {
+		t.Fatalf("Failed to create cached ESP QEMU executable: %v", err)
+	}
+	xtensaExe := filepath.Join(qemuRoot, "qemu-system-xtensa")
+	if err := os.WriteFile(xtensaExe, []byte("fake qemu"), 0755); err != nil {
+		t.Fatalf("Failed to create cached ESP QEMU executable: %v", err)
+	}
+
+	got, err := ResolveESPQEMUExecutable([]string{"qemu-system-riscv32", "-machine", "esp32c3", "-nographic"})
+	if err != nil {
+		t.Fatalf("ResolveESPQEMUExecutable returned error: %v", err)
+	}
+	if got != riscvExe {
+		t.Fatalf("ResolveESPQEMUExecutable = %q, want %q", got, riscvExe)
+	}
+
+	got, err = ResolveESPQEMUExecutable([]string{"qemu-system-riscv32", "-machine", "virt"})
+	if err != nil {
+		t.Fatalf("ResolveESPQEMUExecutable returned error for generic riscv qemu: %v", err)
+	}
+	if got != "qemu-system-riscv32" {
+		t.Fatalf("ResolveESPQEMUExecutable should leave generic riscv qemu untouched, got %q", got)
 	}
 }

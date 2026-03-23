@@ -524,6 +524,33 @@ func TestESPClangExtractionLogic(t *testing.T) {
 	}
 }
 
+func TestESPQEMUExtractionLogic(t *testing.T) {
+	tempDir := t.TempDir()
+	espQEMUDir := filepath.Join(tempDir, "esp-qemu")
+
+	for _, exeName := range []string{"qemu-system-riscv32", "qemu-system-xtensa"} {
+		exePath := filepath.Join(espQEMUDir, "bin", exeName)
+		if err := os.MkdirAll(filepath.Dir(exePath), 0755); err != nil {
+			t.Fatalf("Failed to create fake ESP QEMU structure: %v", err)
+		}
+		if err := os.WriteFile(exePath, []byte("fake "+exeName), 0755); err != nil {
+			t.Fatalf("Failed to create fake ESP QEMU binary %s: %v", exeName, err)
+		}
+	}
+
+	err := checkDownloadAndExtractESPQEMU("x86_64-linux-gnu", espQEMUDir)
+	if err != nil {
+		t.Fatalf("checkDownloadAndExtractESPQEMU failed: %v", err)
+	}
+
+	for _, exeName := range []string{"qemu-system-riscv32", "qemu-system-xtensa"} {
+		exePath := filepath.Join(espQEMUDir, "bin", exeName)
+		if _, err := os.Stat(exePath); os.IsNotExist(err) {
+			t.Errorf("ESP QEMU binary should exist: %s", exeName)
+		}
+	}
+}
+
 // Test WASI SDK download and extraction when directory doesn't exist
 func TestWasiSDKDownloadWhenNotExists(t *testing.T) {
 	// Create fake WASI SDK archive with proper structure
@@ -646,6 +673,60 @@ func TestESPClangDownloadWhenNotExists(t *testing.T) {
 		}
 		if string(content) != expectedContent {
 			t.Errorf("File %s: expected content %q, got %q", relativePath, expectedContent, string(content))
+		}
+	}
+}
+
+func TestESPQEMUDownloadWhenNotExists(t *testing.T) {
+	riscvFiles := map[string]string{
+		"qemu-riscv32/bin/qemu-system-riscv32": "fake riscv qemu binary",
+	}
+	xtensaFiles := map[string]string{
+		"qemu-xtensa/bin/qemu-system-xtensa": "fake xtensa qemu binary",
+	}
+
+	riscvArchivePath := createTestTarGz(t, riscvFiles)
+	defer os.Remove(riscvArchivePath)
+	riscvArchiveContent, err := os.ReadFile(riscvArchivePath)
+	if err != nil {
+		t.Fatalf("Failed to read test RISCV QEMU archive: %v", err)
+	}
+
+	xtensaArchivePath := createTestTarGz(t, xtensaFiles)
+	defer os.Remove(xtensaArchivePath)
+	xtensaArchiveContent, err := os.ReadFile(xtensaArchivePath)
+	if err != nil {
+		t.Fatalf("Failed to read test Xtensa QEMU archive: %v", err)
+	}
+
+	server := createTestServer(t, map[string]string{
+		fmt.Sprintf("qemu-riscv32-softmmu-%s-x86_64-linux-gnu.tar.xz", espQEMUVersion): string(riscvArchiveContent),
+		fmt.Sprintf("qemu-xtensa-softmmu-%s-x86_64-linux-gnu.tar.xz", espQEMUVersion):  string(xtensaArchiveContent),
+	})
+	defer server.Close()
+
+	originalESPQEMUBaseURL := espQEMUBaseUrl
+	espQEMUBaseUrl = server.URL
+	defer func() { espQEMUBaseUrl = originalESPQEMUBaseURL }()
+
+	tempDir := t.TempDir()
+	espQEMUDir := filepath.Join(tempDir, "esp-qemu")
+	if err := checkDownloadAndExtractESPQEMU("x86_64-linux-gnu", espQEMUDir); err != nil {
+		t.Fatalf("checkDownloadAndExtractESPQEMU failed: %v", err)
+	}
+
+	for relPath, expectedContent := range map[string]string{
+		"bin/qemu-system-riscv32": "fake riscv qemu binary",
+		"bin/qemu-system-xtensa":  "fake xtensa qemu binary",
+	} {
+		filePath := filepath.Join(espQEMUDir, relPath)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Errorf("Failed to read extracted file %s: %v", relPath, err)
+			continue
+		}
+		if string(content) != expectedContent {
+			t.Errorf("File %s: expected content %q, got %q", relPath, expectedContent, string(content))
 		}
 	}
 }
