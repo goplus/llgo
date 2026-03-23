@@ -65,52 +65,33 @@ var embedTargetConfigs = []embedTargetConfig{
 		target: "esp32c3-basic",
 		ignoreByDir: map[string][]string{
 			"./_testgo": {
-				"./_testgo/abimethod",   // llgo panic: unsatisfied import internal/runtime/sys
-				"./_testgo/cgobasic",    // fast fail: build constraints exclude all Go files (cgo)
-				"./_testgo/cgocfiles",   // fast fail: build constraints exclude all Go files (cgo)
-				"./_testgo/cgodefer",    // fast fail: build constraints exclude all Go files (cgo)
-				"./_testgo/cgofull",     // fast fail: build constraints exclude all Go files (cgo)
-				"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
-				"./_testgo/cgopython",   // fast fail: build constraints exclude all Go files (cgo)
-				"./_testgo/chan",        // timeout: emulator did not auto-exit
-				"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
-				"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
-				"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
-				"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
-				"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
-				"./_testgo/reflectconv", // llgo panic: unsatisfied import internal/sync
-				"./_testgo/reflectfn",   // llgo panic: unsatisfied import internal/runtime/sys
-				"./_testgo/reflectmkfn", // llgo panic: unsatisfied import internal/runtime/sys
-				"./_testgo/rewrite",     // llgo panic: unsatisfied import internal/sync
-				"./_testgo/select",      // timeout: emulator did not auto-exit
-				"./_testgo/selects",     // timeout: emulator did not auto-exit
-				"./_testgo/sigsegv",     // unexpected output: got "0/main", expected recover nil-pointer message
-				"./_testgo/syncmap",     // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/abimethod", // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/cgodefer",  // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgopython", // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/defer4",    // unexpected output: got "fatal error", expected "recover: panic message"
+				"./_testgo/indexerr",  // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
+				"./_testgo/makeslice", // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
+				"./_testgo/select",    // timeout: emulator did not auto-exit
+				"./_testgo/sigsegv",   // unexpected output: got "0/main", expected recover nil-pointer message
 			},
 			"./_testlibc": {
-				"./_testlibc/argv",     // timeout: emulator panic (Load access fault), no auto-exit
 				"./_testlibc/atomic",   // link error: ld.lld: error: undefined symbol: __atomic_store
-				"./_testlibc/complex",  // link error: ld.lld: error: undefined symbol: cabsf
 				"./_testlibc/demangle", // link error: ld.lld: error: unknown argument '-Wl,-search_paths_first'
 				"./_testlibc/once",     // fast fail: build constraints exclude all Go files (pthread/sync)
 				"./_testlibc/setjmp",   // link error: ld.lld: error: undefined symbol: stderr
 				"./_testlibc/sqlite",   // link error: ld.lld: error: unable to find library -lsqlite3
 			},
 			"./_testrt": {
-				"./_testrt/asmfull",     // compile/asm error: unrecognized instruction mnemonic
-				"./_testrt/fprintf",     // link error: ld.lld: error: undefined symbol: __stderrp
-				"./_testrt/hello",       // fast fail: build constraints exclude all Go files
-				"./_testrt/linkname",    // unexpected output: line order mismatch ("hello" appears first)
-				"./_testrt/makemap",     // link error: ld.lld: error: undefined symbol: __atomic_fetch_or_4
-				"./_testrt/strlen",      // fast fail: build constraints exclude all Go files
-				"./_testrt/struct",      // fast fail: build constraints exclude all Go files
-				"./_testrt/tpfunc",      // unexpected output: type size mismatch (got 8 4 4, expected 16 8 8)
-				"./_testrt/typalias",    // fast fail: build constraints exclude all Go files
-				"./_testrt/unreachable", // timeout: emulator panic (Instruction access fault), no auto-exit
+				"./_testrt/asmfull",  // compile/asm error: unrecognized instruction mnemonic
+				"./_testrt/fprintf",  // link error: ld.lld: error: undefined symbol: __stderrp
+				"./_testrt/hello",    // fast fail: build constraints exclude all Go files
+				"./_testrt/linkname", // unexpected output: line order mismatch ("hello" appears first)
+				"./_testrt/strlen",   // fast fail: build constraints exclude all Go files
+				"./_testrt/struct",   // fast fail: build constraints exclude all Go files
+				"./_testrt/tpfunc",   // unexpected output: type size mismatch (got 8 4 4, expected 16 8 8)
+				"./_testrt/typalias", // fast fail: build constraints exclude all Go files
 			},
-			"./_testdata": {
-				"./_testdata/debug", // llgo panic: unsatisfied import internal/runtime/sys
-			},
+			"./_testdata": {},
 		},
 	},
 	{
