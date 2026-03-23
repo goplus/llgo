@@ -362,13 +362,13 @@ func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, pkg string) {
 
 // StructName returns the ABI type name for the specified struct type.
 func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
-	hash, private := b.structHash(t)
+	hash, pkg := b.structHash(t)
 	hashStr := base64.RawURLEncoding.EncodeToString(hash)
 	if IsClosure(t) {
 		return "_llgo_closure$" + hashStr, true
 	}
-	if private {
-		return b.Pkg + ".struct$" + hashStr, false
+	if pkg != "" {
+		return pkg + ".struct$" + hashStr, false
 	}
 	return "_llgo_struct$" + hashStr, false
 }
@@ -394,24 +394,21 @@ func IsClosureFields(fields []*types.Var) bool {
 	return false
 }
 
-func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
+func (b *Builder) structHash(t *types.Struct) (ret []byte, pkg string) {
 	h := sha256.New()
 	n := t.NumFields()
 	fmt.Fprintln(h, "struct", n)
 	for i := 0; i < n; i++ {
 		f := t.Field(i)
-		if !f.Exported() {
-			private = true
+		if pkg == "" && !f.Exported() && f.Pkg() != nil {
+			pkg = f.Pkg().Path()
 		}
 		name := f.Name()
 		if f.Embedded() {
 			name = "-"
 		}
-		ft, pub := b.TypeName(f.Type())
+		ft, _ := b.TypeName(f.Type())
 		fmt.Fprintln(h, name, ft)
-		if !pub {
-			private = true
-		}
 	}
 	ret = h.Sum(b.buf[:0])
 	return

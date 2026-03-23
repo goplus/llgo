@@ -172,8 +172,8 @@ func TestTypeNameAndHashingCoverage(t *testing.T) {
 	localStruct := types.NewStruct([]*types.Var{
 		types.NewField(token.NoPos, pkg, "x", types.Typ[types.Int], false),
 	}, nil)
-	if got, pub := b.TypeName(localStruct); !strings.HasPrefix(got, b.Pkg+".struct$") || pub {
-		t.Fatalf("TypeName(local struct)=(%q,%v), want %q*,false", got, pub, b.Pkg+".struct$")
+	if got, pub := b.TypeName(localStruct); !strings.HasPrefix(got, pkg.Path()+".struct$") || pub {
+		t.Fatalf("TypeName(local struct)=(%q,%v), want %q*,false", got, pub, pkg.Path()+".struct$")
 	}
 
 	obj := types.NewTypeName(token.NoPos, pkg, "T", nil)
@@ -249,8 +249,8 @@ func TestStructInterfaceClosureAndPathCoverage(t *testing.T) {
 	privStruct := types.NewStruct([]*types.Var{
 		types.NewField(token.NoPos, pkg, "x", types.Typ[types.Int], false),
 	}, nil)
-	if got, pub := b.StructName(privStruct); !strings.HasPrefix(got, b.Pkg+".struct$") || pub {
-		t.Fatalf("StructName(private struct)=(%q,%v), want %q*,false", got, pub, b.Pkg+".struct$")
+	if got, pub := b.StructName(privStruct); !strings.HasPrefix(got, pkg.Path()+".struct$") || pub {
+		t.Fatalf("StructName(private struct)=(%q,%v), want %q*,false", got, pub, pkg.Path()+".struct$")
 	}
 
 	embedded := types.NewStruct([]*types.Var{
@@ -266,8 +266,8 @@ func TestStructInterfaceClosureAndPathCoverage(t *testing.T) {
 	structWithPrivateType := types.NewStruct([]*types.Var{
 		types.NewField(token.NoPos, pkg, "X", localNamed, false),
 	}, nil)
-	if got, pub := b.StructName(structWithPrivateType); !strings.HasPrefix(got, b.Pkg+".struct$") || pub {
-		t.Fatalf("StructName(private type field)=(%q,%v), want %q*,false", got, pub, b.Pkg+".struct$")
+	if got, pub := b.StructName(structWithPrivateType); !strings.HasPrefix(got, "_llgo_struct$") || pub {
+		t.Fatalf("StructName(private type field)=(%q,%v), want %q*,false", got, pub, "llgo_struct$")
 	}
 
 	privIface := types.NewInterfaceType([]*types.Func{
