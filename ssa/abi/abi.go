@@ -336,22 +336,22 @@ func (b *Builder) tuple(h hash.Hash, t *types.Tuple) {
 
 // InterfaceName returns the ABI type name for the specified interface type.
 func (b *Builder) InterfaceName(t *types.Interface) (ret string, pub bool) {
-	hash, private := b.interfaceHash(t)
+	hash, pkg := b.interfaceHash(t)
 	hashStr := base64.RawURLEncoding.EncodeToString(hash)
-	if private {
-		return b.Pkg + ".iface$" + hashStr, false
+	if pkg != "" {
+		return pkg + ".iface$" + hashStr, false
 	}
 	return "_llgo_iface$" + hashStr, true
 }
 
-func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, private bool) {
+func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, pkg string) {
 	h := sha256.New()
 	n := t.NumMethods()
 	fmt.Fprintln(h, "interface", n)
 	for i := 0; i < n; i++ {
 		m := t.Method(i)
-		if !m.Exported() {
-			private = true
+		if !m.Exported() && pkg == "" {
+			pkg = m.Pkg().Path()
 		}
 		ft := b.FuncName(m.Type().(*types.Signature))
 		fmt.Fprintln(h, m.Name(), ft)

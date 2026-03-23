@@ -274,8 +274,8 @@ func TestStructInterfaceClosureAndPathCoverage(t *testing.T) {
 		types.NewFunc(token.NoPos, pkg, "m", sig),
 	}, nil)
 	privIface.Complete()
-	if got, pub := b.InterfaceName(privIface); !strings.HasPrefix(got, b.Pkg+".iface$") || pub {
-		t.Fatalf("InterfaceName(private iface)=(%q,%v), want %q*,false", got, pub, b.Pkg+".iface$")
+	if got, pub := b.InterfaceName(privIface); !strings.HasPrefix(got, pkg.Path()+".iface$") || pub {
+		t.Fatalf("InterfaceName(private iface)=(%q,%v), want %q*,false", got, pub, pkg.Path()+".iface$")
 	}
 
 	if got := PathOf(nil); got != "" {
