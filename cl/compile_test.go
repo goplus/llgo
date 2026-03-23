@@ -76,7 +76,6 @@ var embedTargetConfigs = []embedTargetConfig{
 				"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
 				"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
 				"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
-				"./_testgo/invoke",      // timeout: emulator did not auto-exit
 				"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
 				"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
 				"./_testgo/reflectconv", // llgo panic: unsatisfied import internal/sync
