@@ -59,6 +59,22 @@ classify_asm() {
     fi
 }
 
+run_and_capture() {
+    local __outvar="$1"
+    shift
+
+    printf '+ ' >&2
+    printf '%q ' "$@" >&2
+    printf '\n' >&2
+
+    local __out
+    if ! __out="$("$@" 2>&1)"; then
+        printf -v "${__outvar}" '%s' "${__out}"
+        return 1
+    fi
+    printf -v "${__outvar}" '%s' "${__out}"
+}
+
 python3 - "$REPO_ROOT" "$@" > "${TARGETS_TSV}" <<'PY'
 import glob
 import json
@@ -169,14 +185,14 @@ while IFS=$'\t' read -r name llvm_target cpu features; do
             ;;
     esac
 
-    asm_out="$("${compiler}" "${asm_flags[@]}" 2>&1)" || {
+    run_and_capture asm_out "${compiler}" "${asm_flags[@]}" || {
         printf "%-28s %-28s %-16s %-10s %-12s %-10s %s\n" \
             "${name}" "${llvm_target}" "${cpu:-"-"}" "$(basename "${compiler}")" "-" "-" "FAIL asm-compile"
         fail_count=$((fail_count + 1))
         continue
     }
 
-    ir_out="$("${compiler}" "${ir_flags[@]}" 2>&1)" || {
+    run_and_capture ir_out "${compiler}" "${ir_flags[@]}" || {
         printf "%-28s %-28s %-16s %-10s %-12s %-10s %s\n" \
             "${name}" "${llvm_target}" "${cpu:-"-"}" "$(basename "${compiler}")" "-" "-" "FAIL ir-compile"
         fail_count=$((fail_count + 1))

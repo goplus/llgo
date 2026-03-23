@@ -16,6 +16,7 @@ jobs:
 
       - name: Install host clang
         run: |
+          set -euxo pipefail
           sudo apt-get update
           sudo apt-get install -y clang python3 xz-utils
 
@@ -23,7 +24,7 @@ jobs:
         env:
           ESP_CLANG_URL: https://github.com/goplus/espressif-llvm-project-prebuilt/releases/download/19.1.2_20250905-3/clang-esp-19.1.2_20250905-3-x86_64-linux-gnu.tar.xz
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           mkdir -p "$RUNNER_TEMP/esp-clang-root"
           curl -L "$ESP_CLANG_URL" -o "$RUNNER_TEMP/esp-clang.tar.xz"
           tar -xf "$RUNNER_TEMP/esp-clang.tar.xz" -C "$RUNNER_TEMP/esp-clang-root"
@@ -36,8 +37,11 @@ jobs:
 
       - name: Show compiler versions
         run: |
+          set -euxo pipefail
           clang --version
           "$ESP_CLANG" --version
 
       - name: Verify __builtin_debugtrap across all targets
-        run: bash _demo/embed/targetsbuild/verify_builtin_debugtrap.sh
+        run: |
+          set -euxo pipefail
+          bash _demo/embed/targetsbuild/verify_builtin_debugtrap.sh
