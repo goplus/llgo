@@ -15,7 +15,7 @@ import (
 )
 
 func newCoverageBuilder() *Builder {
-	return New("coverage.pkg", unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
+	return New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
 }
 
 func TestUnderlyingKindAndChanDirCoverage(t *testing.T) {

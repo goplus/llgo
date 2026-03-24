@@ -133,20 +133,18 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 // Builder is a helper for constructing ABI types.
 type Builder struct {
 	buf     []byte
-	Pkg     string
 	PtrSize uintptr
 	Sizes   types.Sizes
 }
 
 // New creates a new ABI type Builder.
-func New(pkg string, ptrSize uintptr, sizes types.Sizes) *Builder {
+func New(ptrSize uintptr, sizes types.Sizes) *Builder {
 	ret := new(Builder)
-	ret.Init(pkg, ptrSize, sizes)
+	ret.Init(ptrSize, sizes)
 	return ret
 }
 
-func (b *Builder) Init(pkg string, ptrSize uintptr, sizes types.Sizes) {
-	b.Pkg = pkg
+func (b *Builder) Init(ptrSize uintptr, sizes types.Sizes) {
 	b.buf = make([]byte, sha256.Size)
 	b.PtrSize = ptrSize
 	b.Sizes = sizes
