@@ -73,6 +73,7 @@ var embedTargetConfigs = []embedTargetConfig{
 				"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
 				"./_testgo/cgopython",   // fast fail: build constraints exclude all Go files (cgo)
 				"./_testgo/chan",        // timeout: emulator did not auto-exit
+				"./_testgo/cursor",      // run failed: internal/bytealg: selected .s files require plan9asm translation; add support or whitelist via runtime/build.go hasAltPkg
 				"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
 				"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
 				"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
