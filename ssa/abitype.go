@@ -64,8 +64,7 @@ var (
 
 func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
-	pkg := b.Pkg
-	ab := pkg.abi
+	ab := prog.abi
 	// Size uintptr
 	fields = append(fields, prog.IntVal(uint64(ab.Size(t)), prog.Uintptr()).impl)
 	// PtrBytes uintptr
@@ -276,8 +275,8 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 			prog.IntVal(uint64(t.Len()), prog.Uintptr()).impl,
 		}
 	case *types.Map:
-		bucket := pkg.abi.MapBucket(t)
-		flags := pkg.abi.MapFlags(t)
+		bucket := prog.abi.MapBucket(t)
+		flags := prog.abi.MapFlags(t)
 		hash := b.Pkg.rtFunc("typehash")
 		env := b.abiType(t.Key())
 		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
@@ -286,19 +285,19 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 			b.abiType(t.Elem()).impl,
 			b.abiType(bucket).impl,
 			hasher.impl,
-			prog.IntVal(uint64(pkg.abi.Size(t.Key())), prog.Byte()).impl,
-			prog.IntVal(uint64(pkg.abi.Size(t.Elem())), prog.Byte()).impl,
-			prog.IntVal(uint64(pkg.abi.Size(bucket)), prog.Uint16()).impl,
+			prog.IntVal(uint64(prog.abi.Size(t.Key())), prog.Byte()).impl,
+			prog.IntVal(uint64(prog.abi.Size(t.Elem())), prog.Byte()).impl,
+			prog.IntVal(uint64(prog.abi.Size(bucket)), prog.Uint16()).impl,
 			prog.IntVal(uint64(flags), prog.Uint32()).impl,
 		}
 	case *types.Signature:
-		name, _ := b.Pkg.abi.TypeName(t)
+		name, _ := prog.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.abiTuples(t.Params(), name+"$in"),
 			b.abiTuples(t.Results(), name+"$out"),
 		}
 	case *types.Struct:
-		name, _ = b.Pkg.abi.TypeName(t)
+		name, _ = prog.abi.TypeName(t)
 		var pkgPath string
 		n := t.NumFields()
 		for i := 0; i < n; i++ {
@@ -314,7 +313,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 			b.abiStructFields(t, name+"$fields"),
 		}
 	case *types.Interface:
-		name, _ = b.Pkg.abi.TypeName(t)
+		name, _ = prog.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.Str(pkg.Path()).impl,
 			b.abiInterfaceImethods(t, name+"$imethods"),
@@ -471,16 +470,16 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 	}
 */
 func (b Builder) abiType(t types.Type) Expr {
-	name, _ := b.Pkg.abi.TypeName(t)
-	g := b.Pkg.VarOf(name)
 	prog := b.Prog
 	pkg := b.Pkg
+	name, _ := prog.abi.TypeName(t)
+	g := pkg.VarOf(name)
 	if g == nil {
 		if prog.patchType != nil {
 			t = prog.patchType(t)
 		}
 		mset, hasUncommon := b.abiUncommonMethodSet(t)
-		rt := prog.rtNamed(pkg.abi.RuntimeName(t))
+		rt := prog.rtNamed(prog.abi.RuntimeName(t))
 		var typ types.Type = rt
 		if hasUncommon {
 			ut := prog.rtNamed("uncommonType")
