@@ -133,20 +133,18 @@ func DataKindOf(raw types.Type, lvl int, is32Bits bool) (DataKind, types.Type, i
 // Builder is a helper for constructing ABI types.
 type Builder struct {
 	buf     []byte
-	Pkg     string
 	PtrSize uintptr
 	Sizes   types.Sizes
 }
 
 // New creates a new ABI type Builder.
-func New(pkg string, ptrSize uintptr, sizes types.Sizes) *Builder {
+func New(ptrSize uintptr, sizes types.Sizes) *Builder {
 	ret := new(Builder)
-	ret.Init(pkg, ptrSize, sizes)
+	ret.Init(ptrSize, sizes)
 	return ret
 }
 
-func (b *Builder) Init(pkg string, ptrSize uintptr, sizes types.Sizes) {
-	b.Pkg = pkg
+func (b *Builder) Init(ptrSize uintptr, sizes types.Sizes) {
 	b.buf = make([]byte, sha256.Size)
 	b.PtrSize = ptrSize
 	b.Sizes = sizes
@@ -336,22 +334,22 @@ func (b *Builder) tuple(h hash.Hash, t *types.Tuple) {
 
 // InterfaceName returns the ABI type name for the specified interface type.
 func (b *Builder) InterfaceName(t *types.Interface) (ret string, pub bool) {
-	hash, private := b.interfaceHash(t)
+	hash, pkg := b.interfaceHash(t)
 	hashStr := base64.RawURLEncoding.EncodeToString(hash)
-	if private {
-		return b.Pkg + ".iface$" + hashStr, false
+	if pkg != "" {
+		return pkg + ".iface$" + hashStr, false
 	}
 	return "_llgo_iface$" + hashStr, true
 }
 
-func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, private bool) {
+func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, pkg string) {
 	h := sha256.New()
 	n := t.NumMethods()
 	fmt.Fprintln(h, "interface", n)
 	for i := 0; i < n; i++ {
 		m := t.Method(i)
-		if !m.Exported() {
-			private = true
+		if !m.Exported() && pkg == "" {
+			pkg = m.Pkg().Path()
 		}
 		ft := b.FuncName(m.Type().(*types.Signature))
 		fmt.Fprintln(h, m.Name(), ft)
@@ -362,13 +360,13 @@ func (b *Builder) interfaceHash(t *types.Interface) (ret []byte, private bool) {
 
 // StructName returns the ABI type name for the specified struct type.
 func (b *Builder) StructName(t *types.Struct) (ret string, pub bool) {
-	hash, private := b.structHash(t)
+	hash, pkg := b.structHash(t)
 	hashStr := base64.RawURLEncoding.EncodeToString(hash)
 	if IsClosure(t) {
 		return "_llgo_closure$" + hashStr, true
 	}
-	if private {
-		return b.Pkg + ".struct$" + hashStr, false
+	if pkg != "" {
+		return pkg + ".struct$" + hashStr, false
 	}
 	return "_llgo_struct$" + hashStr, false
 }
@@ -394,24 +392,21 @@ func IsClosureFields(fields []*types.Var) bool {
 	return false
 }
 
-func (b *Builder) structHash(t *types.Struct) (ret []byte, private bool) {
+func (b *Builder) structHash(t *types.Struct) (ret []byte, pkg string) {
 	h := sha256.New()
 	n := t.NumFields()
 	fmt.Fprintln(h, "struct", n)
 	for i := 0; i < n; i++ {
 		f := t.Field(i)
-		if !f.Exported() {
-			private = true
+		if pkg == "" && !f.Exported() && f.Pkg() != nil {
+			pkg = f.Pkg().Path()
 		}
 		name := f.Name()
 		if f.Embedded() {
 			name = "-"
 		}
-		ft, pub := b.TypeName(f.Type())
+		ft, _ := b.TypeName(f.Type())
 		fmt.Fprintln(h, name, ft)
-		if !pub {
-			private = true
-		}
 	}
 	ret = h.Sum(b.buf[:0])
 	return

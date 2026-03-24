@@ -216,6 +216,8 @@ type aProgram struct {
 
 	ptrSize int
 
+	abi abi.Builder
+
 	is32Bits bool
 }
 
@@ -259,12 +261,14 @@ func NewProgram(target *Target) Program {
 		ctx.Finalize()
 	*/
 	is32Bits := (td.PointerSize() == 4 || is32Bits(target.GOARCH))
-	return &aProgram{
+	prog := &aProgram{
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
 	}
+	prog.abi.Init(uintptr(prog.ptrSize), (*goProgram)(unsafe.Pointer(prog)))
+	return prog
 }
 
 func (p Program) Target() *Target {
@@ -433,7 +437,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
-		mod: mod, Prog: p, vars: gbls, fns: fns,
+		mod: mod, path: pkgPath, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
 		semMetaEmitter: newSemMetaEmitter(),
 		di:             nil,
@@ -443,7 +447,6 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 		preserveSyms:   make(map[string]struct{}),
 		llvmUsedValues: make([]llvm.Value, 0, 4),
 	}
-	ret.abi.Init(pkgPath, uintptr(p.ptrSize), (*goProgram)(unsafe.Pointer(p)))
 	return ret
 }
 
@@ -683,8 +686,8 @@ func (p Program) Uint64() Type {
 // initializer) and "init#%d", the nth declared init function,
 // and unspecified other things too.
 type aPackage struct {
-	mod llvm.Module
-	abi abi.Builder
+	mod  llvm.Module
+	path string
 
 	Prog           Program
 	semMetaEmitter *semMetaEmitter
@@ -789,7 +792,7 @@ func (p Package) closureStub(b Builder, fn Expr, sig *types.Signature, origKind 
 
 // Path returns the package path.
 func (p Package) Path() string {
-	return p.abi.Pkg
+	return p.path
 }
 
 // String returns a string representation of the package.

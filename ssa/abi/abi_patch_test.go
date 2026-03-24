@@ -79,7 +79,7 @@ func TestNamedName_UsesTypeArgString(t *testing.T) {
 }
 
 func TestTypeName_NamedWithoutPackage(t *testing.T) {
-	b := New("main", unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
+	b := New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
 	obj := types.NewTypeName(token.NoPos, nil, "Anon", nil)
 	named := types.NewNamed(obj, types.Typ[types.Int], nil)
 	got, pub := b.TypeName(named)

@@ -265,7 +265,11 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	n := len(vars)
 	flds := make([]*types.Var, n)
 	for i, v := range vars {
-		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), v.Type(), false)
+		name := v.Name()
+		if name == "" {
+			name = "_"
+		}
+		flds[i] = types.NewField(token.NoPos, pkg, name, v.Type(), false)
 	}
 	t := types.NewPointer(types.NewStruct(flds, nil))
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)

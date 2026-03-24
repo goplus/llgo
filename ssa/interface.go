@@ -83,8 +83,8 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
 	ownerName := b.Func.impl.Name()
-	intfTypeName, _ := b.Pkg.abi.TypeName(intf.raw.Type)
-	mtypName, _ := b.Pkg.abi.TypeName(funcType(prog, method.Type()))
+	intfTypeName, _ := prog.abi.TypeName(intf.raw.Type)
+	mtypName, _ := prog.abi.TypeName(funcType(prog, method.Type()))
 	b.Pkg.emitUseIfaceMethod(
 		ownerName,
 		intfTypeName,
@@ -132,7 +132,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	// concrete type to deadcode analysis.
 	if _, ok := typ.raw.Type.Underlying().(*types.Interface); !ok {
 		ownerName := b.Func.impl.Name()
-		typeName, _ := b.Pkg.abi.TypeName(typ.raw.Type)
+		typeName, _ := prog.abi.TypeName(typ.raw.Type)
 		b.Pkg.emitUseIface(ownerName, typeName)
 	}
 	tabi := b.abiType(typ.raw.Type)
