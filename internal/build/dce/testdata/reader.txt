@@ -1,0 +1,2 @@
+*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString: []
+*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader: [1]

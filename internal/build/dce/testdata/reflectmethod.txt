@@ -1,0 +1,2 @@
+*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmethod.T: [0]
+_llgo_github.com/goplus/llgo/cl/_testgo/reflectmethod.T: [0]

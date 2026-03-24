@@ -525,3 +525,14 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr, i64)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/equal.assert", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#3", !"_llgo_int"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#3", !"_llgo_string"}
+!3 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_int"}
+!4 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw"}
+!5 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_github.com/goplus/llgo/cl/_testgo/equal.T"}
+!6 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_string"}
+!7 = !{!"github.com/goplus/llgo/cl/_testgo/equal.init#5", !"_llgo_github.com/goplus/llgo/cl/_testgo/equal.N"}

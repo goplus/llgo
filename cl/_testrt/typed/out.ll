@@ -172,3 +172,9 @@ _llgo_0:
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/typed.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/typed.T"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/typed.main", !"_llgo_string"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/typed.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A"}
