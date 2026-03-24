@@ -476,7 +476,7 @@ func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string
 		[N]Method
 	}
 */
-func (b Builder) abiTypeGlobal(t types.Type) Global {
+func (b Builder) abiType(t types.Type) Expr {
 	name, _ := b.Pkg.abi.TypeName(t)
 	g := b.Pkg.VarOf(name)
 	prog := b.Prog
@@ -517,12 +517,6 @@ func (b Builder) abiTypeGlobal(t types.Type) Global {
 		g.impl.SetLinkage(llvm.WeakODRLinkage)
 		prog.abiSymbol[name] = g.Type
 	}
-	return g
-}
-
-func (b Builder) abiType(t types.Type) Expr {
-	g := b.abiTypeGlobal(t)
-	prog := b.Prog
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 		llvm.ConstInt(prog.Int32().ll, 0, false),
 		llvm.ConstInt(prog.Int32().ll, 0, false),
