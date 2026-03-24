@@ -242,7 +242,7 @@ func TestClosureFuncPtrValue(t *testing.T) {
 	hb.Store(ptr, fnPtr)
 	hb.Return()
 
-	wrapName := "__llgo_stub." + pkg.abi.FuncName(sig)
+	wrapName := "__llgo_stub." + prog.abi.FuncName(sig)
 	wrapRef := wrapName
 	if strings.Contains(wrapName, "$") {
 		wrapRef = fmt.Sprintf("\"%s\"", wrapName)
