@@ -5,6 +5,7 @@ func NumCPU() int {
 }
 
 func Breakpoint() {
+	c_debugtrap()
 }
 
 func Gosched() {
