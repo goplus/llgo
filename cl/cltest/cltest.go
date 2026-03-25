@@ -79,8 +79,9 @@ func FromDir(t *testing.T, sel, relDir string) {
 }
 
 type runOptions struct {
-	conf   *build.Config
-	filter func(string) string
+	conf             *build.Config
+	filter           func(string) string
+	expectedRunError map[string]struct{}
 }
 
 // RunOption customizes RunFromDir behavior.
@@ -97,6 +98,24 @@ func WithRunConfig(conf *build.Config) RunOption {
 func WithOutputFilter(filter func(string) string) RunOption {
 	return func(opts *runOptions) {
 		opts.filter = filter
+	}
+}
+
+// WithExpectedRunErrors marks relPkg paths that are expected to fail at run/build time.
+// Marked cases are still executed:
+//   - if run/build fails: treated as pass
+//   - if run/build succeeds: treated as failure ("unexpected pass")
+func WithExpectedRunErrors(relPkgs []string) RunOption {
+	return func(opts *runOptions) {
+		if len(relPkgs) == 0 {
+			return
+		}
+		if opts.expectedRunError == nil {
+			opts.expectedRunError = make(map[string]struct{}, len(relPkgs))
+		}
+		for _, relPkg := range relPkgs {
+			opts.expectedRunError[relPkg] = struct{}{}
+		}
 	}
 }
 
@@ -150,7 +169,7 @@ func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOp
 		relPkg = "./" + filepath.ToSlash(relPkg)
 		if _, ok := ignoreSet[relPkg]; ok {
 			t.Run(name, func(t *testing.T) {
-				t.Skip("skip platform-specific output mismatch")
+				t.Skip("ignored by test configuration")
 			})
 			continue
 		}
@@ -223,9 +242,7 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 		}
 		t.Fatal("ReadFile failed:", err)
 	}
-	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
-		return
-	}
+	skipDiff := bytes.Equal(expected, []byte{';'}) // expected == ";" means run-only (skip output diff)
 
 	var output []byte
 	if opts.conf != nil {
@@ -234,8 +251,17 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 		output, err = RunAndCapture(relPkg, pkgDir)
 	}
 	if err != nil {
+		if _, ok := opts.expectedRunError[relPkg]; ok {
+			return
+		}
 		t.Logf("raw output:\n%s", string(output))
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	if _, ok := opts.expectedRunError[relPkg]; ok {
+		t.Fatalf("unexpected pass: %s is marked as expected run error", relPkg)
+	}
+	if skipDiff {
+		return
 	}
 	if opts.filter != nil {
 		output = []byte(opts.filter(string(output)))
