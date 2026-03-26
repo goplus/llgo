@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -195,5 +196,33 @@ func TestShardCases(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("shardCases()=%v, want %v", got, want)
+	}
+}
+
+func TestDiscoverCasesSkipsMissingDir(t *testing.T) {
+	testRoot := t.TempDir()
+	existingDir := filepath.Join(testRoot, "fixedbugs")
+	if err := os.MkdirAll(existingDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(existingDir, "case.go")
+	if err := os.WriteFile(file, []byte("// run\n\npackage main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := discoverCases(t, testRoot, toolchainEnv{
+		GOOS:       runtime.GOOS,
+		GOARCH:     runtime.GOARCH,
+		CGOEnabled: "1",
+	}, []string{"fixedbugs", "internal/runtime/sys"}, nil, 0)
+	want := []testCase{{
+		RelPath:      "fixedbugs/case.go",
+		Dir:          existingDir,
+		FileName:     "case.go",
+		Directive:    "run",
+		DirectiveArg: []string{},
+	}}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("discoverCases()=%v, want %v", got, want)
 	}
 }

@@ -269,6 +269,10 @@ func discoverCases(t *testing.T, testRoot string, envInfo toolchainEnv, dirs []s
 		absDir := filepath.Join(testRoot, filepath.FromSlash(relDir))
 		entries, err := os.ReadDir(absDir)
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				t.Logf("skipping missing GOROOT/test dir %s", absDir)
+				continue
+			}
 			t.Fatalf("read %s: %v", absDir, err)
 		}
 		for _, entry := range entries {
