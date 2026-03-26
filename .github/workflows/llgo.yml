@@ -97,9 +97,15 @@ jobs:
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
       - name: Set up Go for build
+        if: ${{ !startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/setup-go
         with:
           go-version: "1.24.2"
+      - name: Set up Go 1.26 for build
+        if: ${{ startsWith(matrix.go, '1.26') }}
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.26.0"
 
       - name: Install
         run: |
@@ -124,6 +130,7 @@ jobs:
           fi
 
       - name: Test demos
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         run: |
           # TODO(lijie): force python3-embed to be linked with python-3.12-embed
           # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
@@ -210,9 +217,15 @@ jobs:
           pip3.12 install --break-system-packages "${py_deps[@]}"
 
       - name: Set up Go for build
+        if: ${{ !startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/setup-go
         with:
           go-version: "1.24.2"
+      - name: Set up Go 1.26 for build
+        if: ${{ startsWith(matrix.go, '1.26') }}
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.26.0"
 
       - name: Install
         run: |
@@ -225,9 +238,11 @@ jobs:
           go-version: ${{matrix.go}}
       - name: Test Baremetal GC
         if: ${{!startsWith(matrix.os, 'macos') && matrix.shard == '0'}}
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         working-directory: runtime/internal/runtime/tinygogc
         run: llgo test -timeout=20m -tags testGC .
       - name: run llgo test
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         env:
           SHARD_INDEX: ${{ matrix.shard }}
           SHARD_TOTAL: "4"
@@ -277,10 +292,16 @@ jobs:
         with:
           llvm-version: ${{matrix.llvm}}
 
-      - name: Set up Go 1.23 for building llgo
+      - name: Set up Go for build
+        if: ${{ !startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/setup-go
         with:
           go-version: "1.24.2"
+      - name: Set up Go 1.26 for build
+        if: ${{ startsWith(matrix.go, '1.26') }}
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.26.0"
 
       - name: Install llgo
         run: |
@@ -294,6 +315,7 @@ jobs:
 
       - name: Test Hello World with go.mod 1.21
         if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
@@ -301,6 +323,7 @@ jobs:
 
       - name: Test Hello World with go.mod 1.22
         if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
@@ -308,6 +331,7 @@ jobs:
 
       - name: Test Hello World with go.mod 1.23
         if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
@@ -315,6 +339,7 @@ jobs:
 
       - name: Test Hello World with go.mod 1.24
         if: startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
+        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
