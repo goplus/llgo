@@ -15,15 +15,153 @@ concurrency:
 
 jobs:
   goroot:
+    name: GOROOT (${{ matrix.os }}, Go ${{ matrix.go-version }}, shard ${{ matrix.shard-label }})
+    continue-on-error: ${{ matrix.required != 'true' }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-        llvm: [19]
-        shard: ["0", "1"]
+        include:
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.21.13"
+            shard-index: "0"
+            shard-total: "1"
+            shard-label: "all"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.21.13"
+            shard-index: "0"
+            shard-total: "1"
+            shard-label: "all"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.22.12"
+            shard-index: "0"
+            shard-total: "1"
+            shard-label: "all"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.22.12"
+            shard-index: "0"
+            shard-total: "1"
+            shard-label: "all"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.23.12"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.23.12"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.23.12"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.23.12"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "true"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "true"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "true"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "true"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -36,15 +174,15 @@ jobs:
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
-          go-version: "1.25.0"
+          go-version: ${{ matrix.go-version }}
 
       - name: Show toolchain versions
         run: |
           go version
           clang --version
 
-      - name: Run GOROOT runner shard
+      - name: Run GOROOT runner
         run: |
           bash dev/test_goroot.sh -- \
-            -shard-index "${{ matrix.shard }}" \
-            -shard-total 2
+            -shard-index "${{ matrix.shard-index }}" \
+            -shard-total "${{ matrix.shard-total }}"
