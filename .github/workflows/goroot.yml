@@ -24,34 +24,6 @@ jobs:
         include:
           - os: macos-latest
             llvm: 19
-            go-version: "1.23.12"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "false"
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.23.12"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "false"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.23.12"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "false"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.23.12"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "false"
-          - os: macos-latest
-            llvm: 19
             go-version: "1.24.11"
             shard-index: "0"
             shard-total: "2"
