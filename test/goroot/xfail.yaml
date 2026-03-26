@@ -1467,3 +1467,4684 @@ xfails:
     directive: run
     case: zerosize.go
     reason: go1.25 goroot run failure on linux/amd64
+
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.24 goroot run failure on darwin/arm64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: blank.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: deferfin.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: deferprint.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: divmod.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: finprofiled.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: heapsampling.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: init1.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: nil.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: nilptr2.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: print.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: range.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: recover.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: recover2.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod2.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod6.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: switch.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: zerosize.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: ken/chan.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: ken/cplx0.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: interface/fake.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug273.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug347.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue10332.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14646.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15039.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15175.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15277.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue17381.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19040.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22083.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22662.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22881.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24491b.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29504.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30116.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue31546.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue32187.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue32477.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue35576.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue37975.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43835.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43942.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4585.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue46725.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52788.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue54343.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5704.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue57823.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue58300.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5856.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue59411.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5963.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue65417.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue71675.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8048.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/chans.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48645a.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue51521.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/nested.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/orderedmap.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/typeswitch5.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/mdempsky/16.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: append.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: chancap.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: closedchan.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: convert4.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: divide.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: goprint.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: inline_literal.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: mallocfin.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: method.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: method5.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: nilptr.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: noinit.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: peano.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: recover1.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: recover3.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod1.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod3.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod5.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: slicecap.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: stackobj.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: stackobj3.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: tinyfin.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: unsafebuiltins.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: zerodivide.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: chan/select3.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: interface/noeq.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug336.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug348.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug409.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue12133.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue13169.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15002.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15281.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16037_run.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16130.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue18149.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19246.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21879.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue23017.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue23837.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue25897a.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue26094.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue26335.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27201.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27518b.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue28748.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29190.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29735.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30116u.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue33724.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue38496.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4316.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue44830.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue45045.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4562.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue48898.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52788a.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue53137.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue53635.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5493.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue58300b.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue60601.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue63657.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue6899.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7550.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7690.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8132.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8606b.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue49547.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/typeswitch6.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: typeparam/mdempsky/17.go
+    reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: armimm.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: const.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: convert.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: copy.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: divide.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: env.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: linkmain_run.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: linkx_run.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: literal2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: mapclear.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: reflectmethod4.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: rename.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: sigchld.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: stackobj2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: strcopy.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: stringrange.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeswitch1.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: unsafe_slice_data.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: unsafe_string_data.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: winbatch.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: ken/cplx4.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: ken/divconst.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: ken/modconst.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: chan/fifo.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: chan/nonblock.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: chan/powser2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: interface/embed.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: interface/struct.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug027.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug059.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug141.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug147.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug154.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug184.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug187.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug207.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug260.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug271.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug369.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug402.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug461.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug483.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/gcc65755.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue11256.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue11771.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue11987.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue13160.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue13268.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue14553.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue14636.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue14651.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15329.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15528.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15992.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16331.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue17640.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue18661.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19182.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19359.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19911.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue21317.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue21963.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22660.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22662b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22781.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue23812.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue24817.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25322.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue26411.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27695b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30041.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30566b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30606b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30956.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue33275_run.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue36437.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue40629.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue41239.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue43619.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue43908.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue45851.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue4620.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue4667.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue48357.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue48476.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue49665.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue51733.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue54542.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue56990.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue57184.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue59680.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue62360.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue70156.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7044.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7050.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue72063.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73748a.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73916.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73917.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7419.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue74379b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue74935.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue76008.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7863.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7995.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue9110.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue9355.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue9862_run.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/convT64_criteria.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/double_nested_struct.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/fibish.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/leaf.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/many_int_input.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/named_return_stuff.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/return_stuff.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/spills3.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/struct_lower_1.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/uglyfib.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/absdiff2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/adder.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/boundmethod.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/combine.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/dictionaryCapture.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/double.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/genembed.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/graph.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/index.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue45817.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue47272.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue47713.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue47740b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48013.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48253.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48318.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50002.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50642.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50690b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue51303.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue54456.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/list.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/maps.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/min.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/ordered.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/pair.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/settable.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/slices.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/stringable.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/struct.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/sum.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/typeswitch2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/value.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: char_lit.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: cmp.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: const3.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: const7.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: defer.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: devirtualization_nil_panics.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: float_lit2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: gc2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: gcstring.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: initialize.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: int_lit.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: linkobj.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: map.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: maplinear.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: newexpr.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: nosplit.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: range4.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: reflectmethod7.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: reorder.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: shift3.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: string_lit.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeswitch.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: uintptrescapes3.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: ken/cplx3.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: ken/rob2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: chan/powser1.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug006.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug060.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug070.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug120.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug130.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug159.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug177.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug206.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug237.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug257.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug259.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug265.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug295.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug321.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug346.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug364.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug444.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/bug470.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue10925.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue11945.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue12226.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue13162.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue13171.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue14591.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue14725.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15303.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue15439.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16016.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16095.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16870.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue18636.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue18725.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19113.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19201.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19275.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19658.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue19799.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue21576.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue21808.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22605.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue22683.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue24547.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue24799.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27695c.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue27829.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue28390.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue28797.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue29264.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue29312.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30243.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30566a.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue30606.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue31987.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue33555.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue34123.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue37716.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue42076.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue43570.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue44823.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue45242.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue4618.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue48289.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue48473.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue49110.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue52127.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue5373.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue54467.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue5809.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue62203.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue66066.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue68227.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue6902.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue70189.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7083.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue72844.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73748b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73916b.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73920.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue74379.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue74379c.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue75327.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue76709.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue7740.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue8004.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue8139.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue8158.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue8606.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue9321.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/convF_criteria.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/double_nested_addressed_struct.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/f_ret_z_not.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/fibish_closure.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/idata.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/leaf2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/many_intstar_input.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/named_results.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/s_sif_sif.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/spills4.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/struct_3_string_input.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: abi/too_big_to_ssa.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/absdiff3.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/cons.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/fact.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/genembed2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/ifaceconv.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/index2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue45722.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue47258.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue47716.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue47740.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48016.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48042.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48225.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48276a.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue48317.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50109.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50193.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50419.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50690a.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue50690c.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/issue53087.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/list2.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/map.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/metrics.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/sets.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/smallest.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/stringer.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/subdict.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: typeparam/mdempsky/18.go
+    reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: armimm.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: blank.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chanlinear.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: closure.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: const.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: convert.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: copy.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: deferfin.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: deferprint.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: divide.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: env.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: gcgort.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: goprint.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: inline_literal.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: linkmain_run.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: linkx_run.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: literal2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: mallocfin.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: mapclear.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: method.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: method5.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: nil.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: nilptr2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: nosplit.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: print.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: range.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: range4.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: recover1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: recover3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod5.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod7.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reorder.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: shift3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: slicecap.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: stackobj.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: stackobj3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: string_lit.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: tinyfin.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeswitch.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: uintptrescapes3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: unsafebuiltins.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: zerodivide.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/chan1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/cplx3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/rob2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/doubleselect.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/powser1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/select3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: interface/noeq.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug006.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug060.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug070.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug120.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug130.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug159.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug177.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug206.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug237.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug243.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug257.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug259.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug265.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug295.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug303.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug321.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug331.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug336.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug346.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug348.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug364.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug370.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug409.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug444.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug470.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug474.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug484.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug514.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue10607.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue11256.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue11771.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue11987.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue12133.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue13160.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue13169.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue13268.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14553.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14636.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14651.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15002.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15281.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15329.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15528.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15992.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16037_run.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16130.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16331.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue17640.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue18149.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue18661.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19182.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19246.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19359.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19911.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21317.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21879.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21963.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22660.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22662b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22781.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue23017.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue23812.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue23837.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24491a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24817.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue25322.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue25897a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue26094.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue26335.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue26411.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27201.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27518b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27695b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue28748.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29190.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29304.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29735.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30041.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30116u.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30476.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30566b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30606b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30956.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue33275_run.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue33724.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue36437.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue38496.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue39541.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue40629.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4085b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue41239.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue42032.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4316.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43619.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43908.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue44830.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue45045.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4562.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue45851.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4620.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4667.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue46903.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue48357.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue48476.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue48898.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue49665.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue51733.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52788a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue53137.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue53635.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue54220.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue54542.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5493.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue56990.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue57184.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue58300b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue59680.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue60601.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue62360.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue63657.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue6899.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue69434.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue70156.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7044.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7050.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue71675.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue72063.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73748a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73916.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73917.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7419.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue74379b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue74935.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7550.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue76008.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7690.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7863.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7995.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8132.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8155.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8606b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue9110.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue9355.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue9862_run.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/convT64_criteria.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/double_nested_struct.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/fibish.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/leaf.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/many_int_input.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/map.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/named_return_stuff.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/part_live.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/return_stuff.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/spills3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/struct_lower_1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/absdiff2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/adder.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/boundmethod.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/combine.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/dictionaryCapture.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/double.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/genembed.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/graph.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/index.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue45817.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue47272.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue47713.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue47740b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48013.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48253.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48318.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue49547.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50002.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50642.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50690b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue51303.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue54456.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/list.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/lockable.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/maps.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/min.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/ordered.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/pair.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/settable.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/slices.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/stringable.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/struct.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/sum.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/typeswitch2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/typeswitch6.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/value.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/mdempsky/17.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: append.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chancap.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: char_lit.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: closedchan.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: cmp.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: const3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: const7.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: convert4.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: defer.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: devirtualization_nil_panics.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: divmod.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: finprofiled.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: float_lit2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: gc.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: gc2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: gcstring.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: heapsampling.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: init1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: initialize.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: int_lit.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: linkobj.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: makeslice.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: map.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: maplinear.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: newexpr.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: nilptr.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: noinit.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: peano.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: recover.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: recover2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: recover4.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod4.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: reflectmethod6.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: rename.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: sigchld.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: stackobj2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: strcopy.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: stringrange.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: switch.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeswitch1.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: unsafe_slice_data.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: unsafe_string_data.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: winbatch.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: zerosize.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/chan.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/cplx0.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/cplx4.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/divconst.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: ken/modconst.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/fifo.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/nonblock.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/powser2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/select2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/select7.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/sieve2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: interface/embed.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: interface/fake.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: interface/struct.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug027.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug059.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug141.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug147.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug154.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug184.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug187.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug207.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug260.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug262.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug271.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug273.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug347.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug369.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug402.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug461.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug483.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug500.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/bug512.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/gcc65755.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue10332.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue10486.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue10925.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue11286.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue11945.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue12226.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue13162.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue13171.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14591.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14646.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue14725.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15039.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15175.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15277.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15303.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue15439.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16016.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16095.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16249.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16515.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16870.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue17381.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue18636.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue18725.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19040.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19113.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19201.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19275.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19658.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue19799.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue20029.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21576.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21808.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue21887.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22083.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22605.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22662.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22683.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue22881.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24419.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24488.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24491b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24547.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue24799.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue25897b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27518a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27695.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27695c.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue27829.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue28390.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue28797.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29264.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29312.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue29504.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30116.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30243.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30566a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30606.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue30977.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue31546.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue31987.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue32187.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue32477.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue33555.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue34123.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue35576.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue37716.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue37975.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue40954.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue42076.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43570.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43835.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue43942.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue44823.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue45242.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4585.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue4618.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue46725.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue48289.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue48473.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue49110.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue51401.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52127.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52788.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5373.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue54343.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue54467.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5704.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue57823.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5809.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue58300.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5856.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue59411.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue5963.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue6055.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue62203.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue65417.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue66066.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue68227.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue6902.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue70189.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7083.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue71932.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue72844.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73748b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73916b.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73920.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue74379.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue74379c.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue75327.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue76709.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7740.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue7944.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8004.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8036.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8048.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8139.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8158.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue8606.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue9321.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/convF_criteria.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/double_nested_addressed_struct.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/f_ret_z_not.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/fibish_closure.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/idata.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/leaf2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/many_intstar_input.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/named_results.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/part_live_2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/s_sif_sif.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/spills4.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/struct_3_string_input.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/too_big_to_ssa.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/absdiff3.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/chans.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/cons.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/fact.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/genembed2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/ifaceconv.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/index2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue45722.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue47258.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue47716.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue47740.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48016.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48042.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48225.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48276a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48317.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue48645a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue49295.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50109.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50193.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50419.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50690a.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue50690c.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue51521.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue53087.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/issue58513.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/list2.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/map.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/metrics.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/nested.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/orderedmap.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/sets.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/smallest.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/stringer.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/subdict.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/typeswitch5.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/mdempsky/16.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/mdempsky/18.go
+    reason: go1.26 goroot run failure on linux/amd64
