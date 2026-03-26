@@ -47,7 +47,7 @@ jobs:
           - macos-15-intel
           - ubuntu-latest
         llvm: [19]
-        go: ["1.21.13", "1.24.2"]
+        go: ["1.21.13", "1.24.2", "1.26.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
@@ -192,7 +192,7 @@ jobs:
           - macos-latest
           - ubuntu-latest
         llvm: [19]
-        go: ["1.24.2"]
+        go: ["1.24.2", "1.26.0"]
         shard: ["0", "1", "2", "3"]
     runs-on: ${{matrix.os}}
     steps:
@@ -268,7 +268,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         llvm: [19]
-        go: ["1.21.13", "1.24.2"]
+        go: ["1.21.13", "1.24.2", "1.26.0"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
@@ -293,28 +293,28 @@ jobs:
           go-version: ${{matrix.go}}
 
       - name: Test Hello World with go.mod 1.21
-        if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
+        if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
           mod-version: "1.21"
 
       - name: Test Hello World with go.mod 1.22
-        if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
+        if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
           mod-version: "1.22"
 
       - name: Test Hello World with go.mod 1.23
-        if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
+        if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
           mod-version: "1.23"
 
       - name: Test Hello World with go.mod 1.24
-        if: startsWith(matrix.go, '1.24')
+        if: startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
