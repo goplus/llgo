@@ -3285,6 +3285,9 @@ func mapclear(t *abi.Type, m unsafe.Pointer)
 //go:linkname typehash github.com/goplus/llgo/runtime/internal/runtime.typehash
 func typehash(t *abi.Type, p unsafe.Pointer, h uintptr) uintptr
 
+//go:linkname makechan github.com/goplus/llgo/runtime/internal/runtime.NewChan
+func makechan(eltSize, cap int) unsafe.Pointer
+
 // MakeSlice creates a new zero-initialized slice value
 // for the specified slice type, length, and capacity.
 func MakeSlice(typ Type, len, cap int) Value {
@@ -3303,6 +3306,22 @@ func MakeSlice(typ Type, len, cap int) Value {
 
 	s := unsafeheaderSlice{Data: unsafe_NewArray(&(typ.Elem().(*rtype).t), cap), Len: len, Cap: cap}
 	return Value{&typ.(*rtype).t, unsafe.Pointer(&s), flagIndir | flag(Slice)}
+}
+
+// MakeChan creates a new channel with the specified type and buffer size.
+func MakeChan(typ Type, buffer int) Value {
+	if typ.Kind() != Chan {
+		panic("reflect.MakeChan of non-chan type")
+	}
+	if buffer < 0 {
+		panic("reflect.MakeChan: negative buffer size")
+	}
+	if typ.ChanDir() != BothDir {
+		panic("reflect.MakeChan: unidirectional channel type")
+	}
+	t := typ.common()
+	ch := makechan(int(t.Elem().Size()), buffer)
+	return Value{t, ch, flag(Chan)}
 }
 
 // MakeMap creates a new map with the specified type.
