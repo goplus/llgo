@@ -111,8 +111,12 @@ func TestGoRootRunCases(t *testing.T) {
 
 	envInfo := loadToolchainEnv(t, goCmd)
 	testRoot := filepath.Join(goroot, "test")
-	if info, err := os.Stat(testRoot); err != nil || !info.IsDir() {
-		t.Fatalf("invalid GOROOT/test root %q: %v", testRoot, err)
+	info, err := os.Stat(testRoot)
+	if err != nil {
+		t.Fatalf("stat GOROOT/test root %q: %v", testRoot, err)
+	}
+	if !info.IsDir() {
+		t.Fatalf("GOROOT/test root %q is not a directory", testRoot)
 	}
 
 	llgoBin := *flagLLGO
@@ -173,15 +177,16 @@ func loadToolchainEnv(t *testing.T, goCmd string) toolchainEnv {
 	t.Helper()
 	cmd := exec.Command(goCmd, "env", "-json", "GOOS", "GOARCH", "GOVERSION", "CGO_ENABLED")
 	cmd.Env = append(os.Environ(), "GOENV=off", "GOFLAGS=")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &out
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("%s env failed: %v\n%s", goCmd, err, out.Bytes())
+		t.Fatalf("%s env failed: %v\nstdout:\n%s\nstderr:\n%s", goCmd, err, stdout.Bytes(), stderr.Bytes())
 	}
 	var info toolchainEnv
-	if err := json.Unmarshal(out.Bytes(), &info); err != nil {
-		t.Fatalf("decode %s env output: %v", goCmd, err)
+	if err := json.Unmarshal(stdout.Bytes(), &info); err != nil {
+		t.Fatalf("decode %s env output: %v\nstdout:\n%s\nstderr:\n%s", goCmd, err, stdout.Bytes(), stderr.Bytes())
 	}
 	info.ReleaseTags = releaseTagsFor(info.GOVERSION)
 	return info
@@ -647,7 +652,7 @@ func (entry timeoutEntry) matches(goVersion, platform string, tc testCase) bool 
 }
 
 func matchEntry(version, platform, directive, casePattern, goVersion, goPlatform string, tc testCase) bool {
-	if version != "" && !strings.HasPrefix(goVersion, version) {
+	if version != "" && !matchGoVersion(version, goVersion) {
 		return false
 	}
 	if platform != "" && platform != goPlatform {
@@ -661,4 +666,15 @@ func matchEntry(version, platform, directive, casePattern, goVersion, goPlatform
 	}
 	ok, err := path.Match(casePattern, tc.RelPath)
 	return err == nil && ok
+}
+
+func matchGoVersion(version, goVersion string) bool {
+	if goVersion == version {
+		return true
+	}
+	suffix, ok := strings.CutPrefix(goVersion, version)
+	if !ok {
+		return false
+	}
+	return strings.HasPrefix(suffix, ".") || strings.HasPrefix(suffix, "rc") || strings.HasPrefix(suffix, "beta")
 }

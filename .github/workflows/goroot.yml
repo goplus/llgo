@@ -23,7 +23,7 @@ jobs:
           - macos-latest
           - ubuntu-latest
         llvm: [19]
-        shard: ["0", "1", "2", "3"]
+        shard: ["0", "1"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -47,4 +47,4 @@ jobs:
         run: |
           bash dev/test_goroot.sh -- \
             -shard-index "${{ matrix.shard }}" \
-            -shard-total 4
+            -shard-total 2

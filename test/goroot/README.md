@@ -33,5 +33,8 @@ Useful flags:
 - `-dirs`: comma-separated `GOROOT/test` subdirectories to scan
 - `-case`: regexp filter on the relative case path
 - `-limit`: stop after N matching cases
+- `-shard-index`: 0-based shard index used to partition matching cases
+- `-shard-total`: total number of shards used to partition matching cases
 - `-keepwork`: keep the temporary symlink work tree for debugging
+- `-run-timeout`: timeout for each child `go`/`llgo` process; `0` disables the timeout
 - `-xfail`: xfail YAML file, relative to repo root by default

@@ -77,6 +77,26 @@ func TestXFailMatch(t *testing.T) {
 	}
 }
 
+func TestMatchGoVersion(t *testing.T) {
+	tests := []struct {
+		version   string
+		goVersion string
+		want      bool
+	}{
+		{version: "go1.24", goVersion: "go1.24", want: true},
+		{version: "go1.24", goVersion: "go1.24.11", want: true},
+		{version: "go1.24", goVersion: "go1.24rc1", want: true},
+		{version: "go1.24", goVersion: "go1.24beta1", want: true},
+		{version: "go1.2", goVersion: "go1.24.11", want: false},
+		{version: "go1.25", goVersion: "go1.24.11", want: false},
+	}
+	for _, tt := range tests {
+		if got := matchGoVersion(tt.version, tt.goVersion); got != tt.want {
+			t.Fatalf("matchGoVersion(%q, %q)=%v, want %v", tt.version, tt.goVersion, got, tt.want)
+		}
+	}
+}
+
 func TestHostSkipMatch(t *testing.T) {
 	cfg := xfailConfig{
 		HostSkips: []xfailEntry{{
