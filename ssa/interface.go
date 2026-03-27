@@ -81,12 +81,21 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 		}
 	}
 	tclosure := prog.Type(sig, InGo)
-	i := iMethodOf(rawIntf, method.Name())
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
+	var fn Expr
+	i := iMethodOf(rawIntf, method.Name())
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
 	pfn := b.Advance(itab, prog.IntVal(uint64(i+3), prog.Int()))
-	fn := b.Load(pfn)
+	if prog.enableGoGlobalDCE {
+		fnType := prog.Elem(pfn.Type)
+		fn = Expr{
+			prog.methodCheckedLoad(b.impl, b.Pkg.Module(), pfn.impl, methodCapabilityKey(method)),
+			fnType,
+		}
+	} else {
+		fn = b.Load(pfn)
+	}
 	ret := b.aggregateValue(tclosure, fn.impl, data.impl)
 	return ret
 }

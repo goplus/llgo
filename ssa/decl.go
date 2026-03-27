@@ -187,6 +187,9 @@ type aFunction struct {
 	base     int // base = 1 if hasFreeVars; base = 0 otherwise
 	hasVArg  bool
 
+	fakeUses   []llvm.Value
+	fakeUseSet map[llvm.Value]struct{}
+
 	diFunc DIFunction
 }
 
@@ -231,13 +234,26 @@ func newFunction(fn llvm.Value, t Type, pkg Package, prog Program, hasFreeVars b
 		base = 1
 	}
 	return &aFunction{
-		Expr:    Expr{fn, t},
-		Pkg:     pkg,
-		Prog:    prog,
-		params:  params,
-		base:    base,
-		hasVArg: hasVArg,
+		Expr:       Expr{fn, t},
+		Pkg:        pkg,
+		Prog:       prog,
+		params:     params,
+		base:       base,
+		hasVArg:    hasVArg,
+		fakeUses:   make([]llvm.Value, 0, 4),
+		fakeUseSet: make(map[llvm.Value]struct{}),
 	}
+}
+
+func (p Function) recordFakeUse(v llvm.Value) {
+	if v.IsNil() {
+		return
+	}
+	if _, ok := p.fakeUseSet[v]; ok {
+		return
+	}
+	p.fakeUseSet[v] = struct{}{}
+	p.fakeUses = append(p.fakeUses, v)
 }
 
 func newParams(fn Type, prog Program) (params []Type, hasVArg bool) {

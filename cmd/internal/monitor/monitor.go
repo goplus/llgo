@@ -34,6 +34,7 @@ var Cmd = &base.Command{
 
 func init() {
 	flags.AddCommonFlags(&Cmd.Flag)
+	flags.AddLTOFlag(&Cmd.Flag)
 	flags.AddEmbeddedFlags(&Cmd.Flag)
 	Cmd.Run = runMonitor
 }
@@ -54,7 +55,7 @@ func runMonitor(cmd *base.Command, args []string) {
 
 	var serialPort []string
 	if flags.Target != "" {
-		conf, err := crosscompile.UseTarget(flags.Target)
+		conf, err := crosscompile.UseTarget(flags.Target, flags.ResolveLTO(true))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "llgo monitor: %v\n", err)
 			os.Exit(1)

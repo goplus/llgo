@@ -342,3 +342,30 @@ func Sigsetjmp()
 		t.Fatalf("pre-collected runtime linkname = (%q,%v), want (%q,%v)", got, ok, "C.sigsetjmp", true)
 	}
 }
+
+func TestLTOEnabledDefault(t *testing.T) {
+	host := &Config{Target: ""}
+	if host.ltoEnabled() {
+		t.Fatal("expected LTO disabled by default for non-target builds")
+	}
+
+	target := &Config{Target: "rp2040"}
+	if !target.ltoEnabled() {
+		t.Fatal("expected LTO enabled by default for target builds")
+	}
+}
+
+func TestLTOEnabledExplicitOverride(t *testing.T) {
+	on := true
+	off := false
+
+	hostOn := &Config{Target: "", LTO: &on}
+	if !hostOn.ltoEnabled() {
+		t.Fatal("expected explicit LTO=true to enable LTO for non-target build")
+	}
+
+	targetOff := &Config{Target: "rp2040", LTO: &off}
+	if targetOff.ltoEnabled() {
+		t.Fatal("expected explicit LTO=false to disable LTO for target build")
+	}
+}
