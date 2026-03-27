@@ -24,6 +24,7 @@ func HasAdditiveAltPkg(path string) bool {
 }
 
 var altPkgs = map[string]altPkgMode{
+	"crypto/internal/constanttime": altPkgReplace,
 	"internal/abi":          altPkgReplace,
 	"internal/reflectlite":  altPkgReplace,
 	"internal/runtime/maps": altPkgReplace,
