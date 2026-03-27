@@ -279,20 +279,55 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		Target: conf.Target,
 	}
 
-	prog := llssa.NewProgram(target)
-	sizes := func(sizes types.Sizes, compiler, arch string) types.Sizes {
-		if arch == "wasm" {
-			sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
+	newLoadState := func(overlay map[string][]byte) (*packages.Config, llssa.Program, func(types.Sizes, string, string) types.Sizes, packages.Deduper) {
+		cfg2 := *cfg
+		cfg2.Fset = token.NewFileSet()
+		cfg2.Overlay = overlay
+		prog2 := llssa.NewProgram(target)
+		sizes2 := func(sizes types.Sizes, compiler, arch string) types.Sizes {
+			if arch == "wasm" {
+				sizes = &types.StdSizes{WordSize: 4, MaxAlign: 4}
+			}
+			return prog2.TypeSizes(sizes)
 		}
-		return prog.TypeSizes(sizes)
+		dedup2 := packages.NewDeduper()
+		dedup2.SetPreload(func(pkg *types.Package, files []*ast.File) {
+			if llruntime.SkipToBuild(pkg.Path()) {
+				return
+			}
+			cl.ParsePkgSyntax(prog2, pkg, files)
+		})
+		return &cfg2, prog2, sizes2, dedup2
 	}
-	dedup := packages.NewDeduper()
-	dedup.SetPreload(func(pkg *types.Package, files []*ast.File) {
-		if llruntime.SkipToBuild(pkg.Path()) {
-			return
+
+	normalizeInitial := func(initial []*packages.Package) ([]*packages.Package, error) {
+		mode := conf.Mode
+		if mode == ModeTest {
+			initial, err = filterTestPackages(initial, conf.OutFile)
+			if err != nil {
+				return nil, err
+			}
+			if len(initial) == 0 {
+				return nil, nil
+			}
+		} else if len(initial) > 1 {
+			switch mode {
+			case ModeBuild:
+				if conf.OutFile != "" {
+					return nil, fmt.Errorf("cannot build multiple packages with -o")
+				}
+			case ModeInstall:
+				if conf.Target != "" {
+					return nil, fmt.Errorf("cannot install multiple packages to embedded target")
+				}
+			case ModeRun:
+				return nil, fmt.Errorf("cannot run multiple packages")
+			}
 		}
-		cl.ParsePkgSyntax(prog, pkg, files)
-	})
+		return initial, nil
+	}
+
+	cfg, prog, sizes, dedup := newLoadState(cfg.Overlay)
 
 	if patterns == nil {
 		patterns = []string{"."}
@@ -301,31 +336,48 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err != nil {
 		return nil, err
 	}
+	initial, err = normalizeInitial(initial)
+	if err != nil {
+		return nil, err
+	}
+	if len(initial) == 0 {
+		return nil, nil
+	}
 	mode := conf.Mode
-	if mode == ModeTest {
-		initial, err = filterTestPackages(initial, conf.OutFile)
+
+	var sourceAltPkgs map[string]bool
+	cfg.Overlay, sourceAltPkgs, err = buildStdlibAltSourceOverlay(cfg.Overlay, env.LLGoRuntimeDir(), initial, conf)
+	if err != nil {
+		return nil, err
+	}
+	if len(sourceAltPkgs) != 0 {
+		cfg, prog, sizes, dedup = newLoadState(cfg.Overlay)
+		initial, err = packages.LoadEx(dedup, sizes, cfg, patterns...)
+		if err != nil {
+			return nil, err
+		}
+		initial, err = normalizeInitial(initial)
 		if err != nil {
 			return nil, err
 		}
 		if len(initial) == 0 {
 			return nil, nil
 		}
-	} else if len(initial) > 1 {
-		switch mode {
-		case ModeBuild:
-			if conf.OutFile != "" {
-				return nil, fmt.Errorf("cannot build multiple packages with -o")
-			}
-		case ModeInstall:
-			if conf.Target != "" {
-				return nil, fmt.Errorf("cannot install multiple packages to embedded target")
-			}
-		case ModeRun:
-			return nil, fmt.Errorf("cannot run multiple packages")
-		}
+	} else {
+		sourceAltPkgs = nil
 	}
 
 	altPkgPaths := altPkgs(initial, conf, llssa.PkgRuntime)
+	if len(sourceAltPkgs) != 0 {
+		keep := altPkgPaths[:0]
+		for _, path := range altPkgPaths {
+			if sourceAltPkgs[strings.TrimPrefix(path, altPkgPathPrefix)] {
+				continue
+			}
+			keep = append(keep, path)
+		}
+		altPkgPaths = keep
+	}
 	cfg.Dir = env.LLGoRuntimeDir()
 	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	if err != nil {
@@ -366,6 +418,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		fingerprinting: make(map[string]bool),
 		pkgs:           map[*packages.Package]Package{},
 		pkgByID:        map[string]Package{},
+		sourceAltPkgs:  sourceAltPkgs,
 		output:         output,
 		passOpt:        passOpt,
 		buildConf:      conf,
@@ -547,6 +600,7 @@ type context struct {
 	nLibdir        int32
 	output         bool
 	passOpt        bool
+	sourceAltPkgs  map[string]bool
 
 	buildConf    *Config
 	crossCompile crosscompile.Export
@@ -600,6 +654,9 @@ func (c *context) shouldPrintCommands(verbose bool) bool {
 }
 
 func (c *context) hasAltPkg(pkgPath string) bool {
+	if c.sourceAltPkgs[pkgPath] {
+		return false
+	}
 	return hasAltPkgForTarget(c.buildConf, pkgPath)
 }
 

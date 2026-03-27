@@ -27,6 +27,7 @@ var altPkgs = map[string]altPkgMode{
 	"internal/abi":          altPkgReplace,
 	"internal/reflectlite":  altPkgReplace,
 	"internal/runtime/maps": altPkgReplace,
+	"internal/sync":         altPkgReplace,
 	"internal/runtime/sys":  altPkgAdditive,
 	"iter":                  altPkgReplace,
 	"reflect":               altPkgReplace,
