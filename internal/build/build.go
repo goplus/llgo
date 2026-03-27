@@ -264,6 +264,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		Tests:      conf.Mode == ModeTest,
 		Env:        append(slices.Clone(os.Environ()), "GOOS="+conf.Goos, "GOARCH="+conf.Goarch),
 	}
+	baseDir := cfg.Dir
 	if conf.Mode == ModeTest {
 		cfg.Mode |= packages.NeedForTest
 	}
@@ -283,6 +284,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		cfg2 := *cfg
 		cfg2.Fset = token.NewFileSet()
 		cfg2.Overlay = overlay
+		cfg2.Dir = baseDir
 		prog2 := llssa.NewProgram(target)
 		sizes2 := func(sizes types.Sizes, compiler, arch string) types.Sizes {
 			if arch == "wasm" {
@@ -378,8 +380,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		}
 		altPkgPaths = keep
 	}
-	cfg.Dir = env.LLGoRuntimeDir()
-	altPkgList, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+	altCfg := *cfg
+	altCfg.Dir = env.LLGoRuntimeDir()
+	altPkgList, err := packages.LoadEx(dedup, sizes, &altCfg, altPkgPaths...)
 	if err != nil {
 		return nil, err
 	}
@@ -412,8 +415,9 @@ func Do(args []string, conf *Config) ([]Package, error) {
 				keep = append(keep, path)
 			}
 			altPkgPaths = keep
-			cfg.Dir = env.LLGoRuntimeDir()
-			altPkgList, err = packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+			altCfg := *cfg
+			altCfg.Dir = env.LLGoRuntimeDir()
+			altPkgList, err = packages.LoadEx(dedup, sizes, &altCfg, altPkgPaths...)
 			if err != nil {
 				return nil, err
 			}
