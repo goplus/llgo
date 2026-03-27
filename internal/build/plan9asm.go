@@ -370,7 +370,7 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	args = append(args, pkg.PkgPath)
 
 	cmd := exec.Command("go", args...)
-	cmd.Dir = ctx.conf.Dir
+	cmd.Dir = pkg.Dir
 	cmd.Env = append(os.Environ(),
 		"GOOS="+ctx.buildConf.Goos,
 		"GOARCH="+ctx.buildConf.Goarch,
