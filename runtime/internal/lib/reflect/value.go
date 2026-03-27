@@ -2572,8 +2572,16 @@ func truncate(addr unsafe.Pointer, bits uintptr) unsafe.Pointer {
 func storeRcvr(v Value, p unsafe.Pointer) {
 	t := v.typ()
 	if t.Kind() == abi.Interface {
+		// the interface data word becomes the receiver word
 		iface := (*nonEmptyInterface)(v.ptr)
 		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
+	} else if v.flag&flagIndir == 0 && t.IsDirectIface() && t.Kind() != abi.Pointer {
+		// llgo method wrappers expect non-pointer value receivers through an
+		// addressable cell. Direct-iface one-word values only carry raw bits in
+		// v.ptr, so materialize a temporary receiver cell first.
+		cell := unsafe_New(t)
+		typedmemmove(t, cell, unsafe.Pointer(&v.ptr))
+		*(*unsafe.Pointer)(p) = cell
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
 	} else {
