@@ -35,7 +35,6 @@ jobs:
 
   llgo:
     needs: download-model
-    continue-on-error: true
     # macOS Intel is much slower than macOS ARM in the "Test demos" step.
     # Observed: macOS ARM about 2m49s vs macOS Intel about 10m26s.
     # Keep a larger budget to avoid timeout-related cancellations.
@@ -130,7 +129,6 @@ jobs:
           fi
 
       - name: Test demos
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         run: |
           # TODO(lijie): force python3-embed to be linked with python-3.12-embed
           # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
@@ -177,7 +175,6 @@ jobs:
           ./test_esp32c3_startup.sh
 
       - name: _xtool build tests
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         run: |
           cd _xtool
           llgo build -v ./...
@@ -192,7 +189,6 @@ jobs:
           bash _lldb/runtest.sh -v
 
   test:
-    continue-on-error: true
     timeout-minutes: 30
     strategy:
       matrix:
@@ -239,11 +235,9 @@ jobs:
           go-version: ${{matrix.go}}
       - name: Test Baremetal GC
         if: ${{!startsWith(matrix.os, 'macos') && matrix.shard == '0'}}
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         working-directory: runtime/internal/runtime/tinygogc
         run: llgo test -timeout=20m -tags testGC .
       - name: run llgo test
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         env:
           SHARD_INDEX: ${{ matrix.shard }}
           SHARD_TOTAL: "4"
@@ -278,7 +272,6 @@ jobs:
           done
 
   hello:
-    continue-on-error: true
     timeout-minutes: 30
     strategy:
       matrix:
@@ -316,7 +309,6 @@ jobs:
 
       - name: Test Hello World with go.mod 1.21
         if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
@@ -324,7 +316,6 @@ jobs:
 
       - name: Test Hello World with go.mod 1.22
         if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
@@ -332,7 +323,6 @@ jobs:
 
       - name: Test Hello World with go.mod 1.23
         if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
@@ -340,7 +330,6 @@ jobs:
 
       - name: Test Hello World with go.mod 1.24
         if: startsWith(matrix.go, '1.24') || startsWith(matrix.go, '1.25') || startsWith(matrix.go, '1.26')
-        continue-on-error: ${{ startsWith(matrix.go, '1.26') }}
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
