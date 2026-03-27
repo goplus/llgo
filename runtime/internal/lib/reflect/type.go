@@ -466,7 +466,7 @@ func (t *rtype) In(i int) Type {
 		panic("reflect: In of non-func type " + t.String())
 	}
 	tt := (*abi.FuncType)(unsafe.Pointer(t))
-	return toType(tt.In[i])
+	return toType(normalizeFuncABIType(tt.In[i]))
 }
 
 func (t *rtype) NumIn() int {
@@ -490,7 +490,7 @@ func (t *rtype) Out(i int) Type {
 		panic("reflect: Out of non-func type " + t.String())
 	}
 	tt := (*abi.FuncType)(unsafe.Pointer(t))
-	return toType(tt.Out[i])
+	return toType(normalizeFuncABIType(tt.Out[i]))
 }
 
 func (t *rtype) IsVariadic() bool {
@@ -1309,6 +1309,13 @@ func FuncOf(in, out []Type, variadic bool) Type {
 
 func stringFor(t *abi.Type) string {
 	return toRType(t).String()
+}
+
+func normalizeFuncABIType(t *abi.Type) *abi.Type {
+	if t != nil && t.IsClosure() {
+		return &t.StructType().Fields[0].Typ.FuncType().Type
+	}
+	return t
 }
 
 // funcStr builds a string representation of a funcType.

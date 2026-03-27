@@ -332,11 +332,16 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
-	if err != nil {
-		return nil, err
+	reloadInitial := func() ([]*packages.Package, error) {
+		cfg, prog, sizes, dedup = newLoadState(cfg.Overlay)
+		pkgs, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
+		if err != nil {
+			return nil, err
+		}
+		return normalizeInitial(pkgs)
 	}
-	initial, err = normalizeInitial(initial)
+
+	initial, err := reloadInitial()
 	if err != nil {
 		return nil, err
 	}
@@ -351,12 +356,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		return nil, err
 	}
 	if len(sourceAltPkgs) != 0 {
-		cfg, prog, sizes, dedup = newLoadState(cfg.Overlay)
-		initial, err = packages.LoadEx(dedup, sizes, cfg, patterns...)
-		if err != nil {
-			return nil, err
-		}
-		initial, err = normalizeInitial(initial)
+		initial, err = reloadInitial()
 		if err != nil {
 			return nil, err
 		}
@@ -379,18 +379,54 @@ func Do(args []string, conf *Config) ([]Package, error) {
 		altPkgPaths = keep
 	}
 	cfg.Dir = env.LLGoRuntimeDir()
-	altPkgs, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+	altPkgList, err := packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
 	if err != nil {
 		return nil, err
 	}
+	if len(altPkgList) != 0 {
+		var newlyFound map[string]bool
+		cfg.Overlay, newlyFound, err = buildStdlibAltSourceOverlay(cfg.Overlay, env.LLGoRuntimeDir(), altPkgList, conf)
+		if err != nil {
+			return nil, err
+		}
+		if len(newlyFound) != 0 {
+			if sourceAltPkgs == nil {
+				sourceAltPkgs = make(map[string]bool, len(newlyFound))
+			}
+			for pkgPath := range newlyFound {
+				sourceAltPkgs[pkgPath] = true
+			}
+			initial, err = reloadInitial()
+			if err != nil {
+				return nil, err
+			}
+			if len(initial) == 0 {
+				return nil, nil
+			}
+			altPkgPaths = altPkgs(initial, conf, llssa.PkgRuntime)
+			keep := altPkgPaths[:0]
+			for _, path := range altPkgPaths {
+				if sourceAltPkgs[strings.TrimPrefix(path, altPkgPathPrefix)] {
+					continue
+				}
+				keep = append(keep, path)
+			}
+			altPkgPaths = keep
+			cfg.Dir = env.LLGoRuntimeDir()
+			altPkgList, err = packages.LoadEx(dedup, sizes, cfg, altPkgPaths...)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	prog.SetRuntime(func() *types.Package {
-		return altPkgs[0].Types
+		return altPkgList[0].Types
 	})
 	prog.SetPython(func() *types.Package {
 		return dedup.Check(llssa.PkgPython).Types
 	})
-	preCollectRuntimeLinknames(prog, altPkgs)
+	preCollectRuntimeLinknames(prog, altPkgList)
 
 	buildMode := ssaBuildMode
 	cabiOptimize := true
@@ -407,7 +443,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	}
 	progSSA := ssa.NewProgram(initial[0].Fset, buildMode)
 	patches := make(cl.Patches, len(altPkgPaths))
-	altSSAPkgs(progSSA, patches, altPkgs[1:], conf, verbose)
+	altSSAPkgs(progSSA, patches, altPkgList[1:], conf, verbose)
 
 	env := llvm.New("")
 	os.Setenv("PATH", env.BinDir()+":"+os.Getenv("PATH")) // TODO(xsw): check windows
@@ -433,7 +469,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	depPkgs, err := buildSSAPkgs(ctx, altPkgs, verbose)
+	depPkgs, err := buildSSAPkgs(ctx, altPkgList, verbose)
 	if err != nil {
 		return nil, err
 	}

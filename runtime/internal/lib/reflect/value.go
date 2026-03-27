@@ -2263,6 +2263,12 @@ type closure struct {
 }
 
 func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
+	if typ.IsClosure() {
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
+		return unsafe.Pointer(&v.ptr)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2283,6 +2289,9 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 	case abi.Chan:
 		return unsafe.Pointer(&v.ptr)
 	case abi.Func:
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
 		return unsafe.Pointer(&v.ptr)
 	case abi.Interface:
 		i := v.Interface()
@@ -2311,6 +2320,9 @@ var (
 )
 
 func toFFIType(typ *abi.Type) *ffi.Type {
+	if typ.IsClosure() {
+		return ffi.ArrayOf(ffi.TypePointer, 2)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2449,7 +2461,8 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		}
 	}
 	for i := 0; i < n; i++ {
-		if xt, targ := in[i].Type(), ft.In[i]; !xt.AssignableTo(toRType(targ)) {
+		targ := normalizeFuncABIType(ft.In[i])
+		if xt := in[i].Type(); !xt.AssignableTo(toRType(targ)) {
 			panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
 		}
 	}
@@ -2457,7 +2470,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		// prepare slice for remaining values
 		m := len(in) - n
 		slice := MakeSlice(toRType(ft.In[n]), m, m)
-		elem := toRType(ft.In[n].Elem()) // FIXME cast to slice type and Elem()
+		elem := toRType(normalizeFuncABIType(ft.In[n].Elem())) // FIXME cast to slice type and Elem()
 		for i := 0; i < m; i++ {
 			x := in[n+i]
 			if xt := x.Type(); !xt.AssignableTo(elem) {
@@ -2559,23 +2572,29 @@ func truncate(addr unsafe.Pointer, bits uintptr) unsafe.Pointer {
 func storeRcvr(v Value, p unsafe.Pointer) {
 	t := v.typ()
 	if t.Kind() == abi.Interface {
-		// the interface data word becomes the receiver word
 		iface := (*nonEmptyInterface)(v.ptr)
 		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
-	} else if v.flag&flagIndir == 0 && runtime.DirectIfaceData(t) {
-		*(*unsafe.Pointer)(p) = unsafe.Pointer(&v.ptr)
 	} else {
 		*(*unsafe.Pointer)(p) = v.ptr
 	}
 }
 
 func ifacePtrData(i *nonEmptyInterface) unsafe.Pointer {
-	if runtime.DirectIfaceData(i.itab.typ) {
+	typ := i.itab.typ
+	if directIfaceData(typ) {
+		switch typ.Kind() {
+		case abi.Pointer, abi.UnsafePointer, abi.Map, abi.Chan, abi.Func:
+			return i.word
+		}
 		return unsafe.Pointer(&i.word)
 	}
 	return i.word
+}
+
+func directIfaceData(typ *abi.Type) bool {
+	return typ != nil && typ.IsDirectIface()
 }
 
 var stringType = rtypeOf("")
