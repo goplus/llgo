@@ -4,15 +4,6 @@ package runtime
 
 import _ "unsafe"
 
-//go:linkname llgo_syscall llgo.syscall
-func llgo_syscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
-
-//go:linkname llgo_syscall6 llgo.syscall
-func llgo_syscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
-
-//go:linkname llgo_syscall9 llgo.syscall
-func llgo_syscall9(fn, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2, err uintptr)
-
 //go:linkname llgo_syscall5f64 llgo.syscall
 func llgo_syscall5f64(fn, a1, a2, a3, a4, a5 uintptr, f1 float64) (r1, r2, err uintptr)
 
@@ -21,6 +12,13 @@ func llgo_rawSyscall(fn, a1, a2, a3 uintptr) (r1, r2, err uintptr)
 
 //go:linkname llgo_rawSyscall6 llgo.syscall
 func llgo_rawSyscall6(fn, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2, err uintptr)
+
+//go:linkname llgo_rawSyscall9 llgo.syscall
+func llgo_rawSyscall9(fn, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2, err uintptr)
+
+// Go 1.26 moves errno normalization into syscall/syscall_darwin.go wrappers
+// such as syscall9/rawSyscall9/syscallPtr, so runtime mirrors the raw runtime
+// entry points and returns the libc errno unchanged here.
 
 //go:linkname syscall_syscalln syscall.syscalln
 func syscall_syscalln(fn uintptr, args ...uintptr) (r1, r2, err uintptr) {
@@ -48,11 +46,11 @@ func syscall_rawsyscalln(fn uintptr, args ...uintptr) (r1, r2, err uintptr) {
 	case 6:
 		return llgo_rawSyscall6(fn, args[0], args[1], args[2], args[3], args[4], args[5])
 	case 7:
-		return llgo_syscall9(fn, args[0], args[1], args[2], args[3], args[4], args[5], args[6], 0, 0)
+		return llgo_rawSyscall9(fn, args[0], args[1], args[2], args[3], args[4], args[5], args[6], 0, 0)
 	case 8:
-		return llgo_syscall9(fn, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], 0)
+		return llgo_rawSyscall9(fn, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], 0)
 	case 9:
-		return llgo_syscall9(fn, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8])
+		return llgo_rawSyscall9(fn, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8])
 	default:
 		panic("runtime: unsupported darwin syscall arg count")
 	}
