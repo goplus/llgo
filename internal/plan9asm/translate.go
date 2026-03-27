@@ -1,7 +1,6 @@
 package plan9asm
 
 import (
-	"bytes"
 	"fmt"
 	"go/types"
 	"os"
@@ -77,8 +76,6 @@ func TranslateSourceModuleForPkgWithOptions(pkg *packages.Package, sfile string,
 	if pkg.Types == nil || pkg.Types.Scope() == nil {
 		return nil, fmt.Errorf("%s: missing types (needed for asm signatures)", pkg.PkgPath)
 	}
-	src = preprocessSourceForTarget(pkg.PkgPath, sfile, goarch, src)
-
 	resolve := resolveSymFuncForTarget(pkg.PkgPath, goos, goarch)
 	keep := func(textSym, resolved string) bool {
 		return shouldKeepResolvedFunc(pkg.PkgPath, goos, goarch, resolved)
@@ -122,22 +119,6 @@ func TranslateSourceModuleForPkgWithOptions(pkg *packages.Package, sfile string,
 		funcs = append(funcs, FunctionInfo{TextSymbol: fn.TextSymbol, ResolvedSymbol: fn.ResolvedSymbol})
 	}
 	return &ModuleTranslation{Module: tr.Module, Signatures: tr.Signatures, Functions: funcs}, nil
-}
-
-func preprocessSourceForTarget(pkgPath, sfile, goarch string, src []byte) []byte {
-	if pkgPath == "internal/bytealg" && goarch == "arm64" && strings.HasSuffix(sfile, "count_arm64.s") && bytes.Contains(src, []byte("R2.UXTB")) {
-		// Go 1.26's count_arm64.s uses R2.UXTB to explicitly discard ABIInternal
-		// junk in the upper bits of the byte argument. The current upstream
-		// plan9asm translator treats that operand form as a symbol. Normalize the
-		// register once at function entry, then drop the per-CMP extension suffix.
-		src = bytes.Replace(src,
-			[]byte("TEXT ·CountString<ABIInternal>(SB),NOSPLIT,$0-32\n"),
-			[]byte("TEXT ·CountString<ABIInternal>(SB),NOSPLIT,$0-32\n\tAND\t$0xff, R2, R2\n"),
-			1,
-		)
-		src = bytes.ReplaceAll(src, []byte("R2.UXTB"), []byte("R2"))
-	}
-	return src
 }
 
 func shouldKeepResolvedFunc(pkgPath, goos, goarch, resolved string) bool {
