@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/format"
 	"go/parser"
 	"go/token"
 	"os"
@@ -105,7 +104,7 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		if directives.noPatch {
 			continue
 		}
-		patchSrcs[name] = stripSourcePatchDirectiveLines(src)
+		patchSrcs[name] = sanitizeSourcePatchDirectiveLines(src)
 		if directives.skipAll {
 			skipAll = true
 		}
@@ -265,20 +264,28 @@ func parseSourcePatchDirective(line string) (noPatch, skipAll bool, names []stri
 	}
 }
 
-func stripSourcePatchDirectiveLines(src []byte) []byte {
-	lines := bytes.SplitAfter(src, []byte{'\n'})
-	out := make([][]byte, 0, len(lines))
+func sanitizeSourcePatchDirectiveLines(src []byte) []byte {
+	out := slices.Clone(src)
+	lines := bytes.SplitAfter(out, []byte{'\n'})
+	changed := false
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(string(line))
-		if _, _, _, ok := parseSourcePatchDirective(trimmed); ok {
+		if _, _, _, ok := parseSourcePatchDirective(trimmed); !ok {
 			continue
 		}
-		out = append(out, line)
+		switch {
+		case bytes.Contains(line, []byte("//llgo:")):
+			copy(line, bytes.Replace(line, []byte("//llgo:"), []byte("//llgo_"), 1))
+			changed = true
+		case bytes.Contains(line, []byte("// llgo:")):
+			copy(line, bytes.Replace(line, []byte("// llgo:"), []byte("// llgo_"), 1))
+			changed = true
+		}
 	}
-	if len(out) == len(lines) {
-		return slices.Clone(src)
+	if !changed {
+		return out
 	}
-	return bytes.Join(out, nil)
+	return out
 }
 
 func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool, error) {
@@ -287,20 +294,22 @@ func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool,
 	if err != nil {
 		return nil, false, err
 	}
+	tokFile := fset.File(file.Pos())
+	if tokFile == nil {
+		return nil, false, fmt.Errorf("missing file positions")
+	}
 	changed := false
-	removedComments := make(map[*ast.CommentGroup]struct{})
+	var spans []sourcePatchSpan
 	decls := file.Decls[:0]
 	for _, decl := range file.Decls {
-		filteredDecl, removed, rmComments, err := filterSourcePatchDecl(decl, skips)
+		filteredDecl, removed, rmSpans, err := filterSourcePatchDecl(tokFile, decl, skips)
 		if err != nil {
 			return nil, false, err
 		}
 		if removed {
 			changed = true
 		}
-		for _, group := range rmComments {
-			removedComments[group] = struct{}{}
-		}
+		spans = append(spans, rmSpans...)
 		if filteredDecl != nil {
 			decls = append(decls, filteredDecl)
 		}
@@ -309,37 +318,23 @@ func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool,
 		return src, false, nil
 	}
 	file.Decls = decls
-	if len(removedComments) != 0 {
-		comments := file.Comments[:0]
-		for _, group := range file.Comments {
-			if _, drop := removedComments[group]; drop {
-				continue
-			}
-			comments = append(comments, group)
-		}
-		file.Comments = comments
+	spans = append(spans, collectUnusedImportSpans(tokFile, file)...)
+	if len(spans) == 0 {
+		return src, false, nil
 	}
-	for _, imp := range slices.Clone(file.Imports) {
-		if imp.Name != nil && imp.Name.Name == "_" {
-			continue
-		}
-		if astutil.UsesImport(file, strings.Trim(imp.Path.Value, `"`)) {
-			continue
-		}
-		astutil.DeleteImport(fset, file, strings.Trim(imp.Path.Value, `"`))
-	}
-	var buf bytes.Buffer
-	if err := format.Node(&buf, fset, file); err != nil {
-		return nil, false, err
-	}
-	return buf.Bytes(), true, nil
+	return blankSourcePatchSpans(src, spans), true, nil
 }
 
-func filterSourcePatchDecl(decl ast.Decl, skips map[string]struct{}) (ast.Decl, bool, []*ast.CommentGroup, error) {
+type sourcePatchSpan struct {
+	start int
+	end   int
+}
+
+func filterSourcePatchDecl(tokFile *token.File, decl ast.Decl, skips map[string]struct{}) (ast.Decl, bool, []sourcePatchSpan, error) {
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		if _, ok := skips[declPatchKeyFunc(decl)]; ok {
-			return nil, true, collectDeclComments(decl), nil
+			return nil, true, append(nodeAndCommentsSpans(tokFile, decl), commentGroupsToSpans(tokFile, compactCommentGroups(decl.Doc))...), nil
 		}
 		return decl, false, nil, nil
 	case *ast.GenDecl:
@@ -350,37 +345,36 @@ func filterSourcePatchDecl(decl ast.Decl, skips map[string]struct{}) (ast.Decl, 
 		}
 		specs := decl.Specs[:0]
 		removedAny := false
-		var removedComments []*ast.CommentGroup
+		var removedSpans []sourcePatchSpan
 		for _, spec := range decl.Specs {
-			filteredSpec, removed, comments := filterSourcePatchSpec(spec, skips)
+			filteredSpec, removed, spans := filterSourcePatchSpec(tokFile, spec, skips)
 			if removed {
 				removedAny = true
 			}
-			removedComments = append(removedComments, comments...)
+			removedSpans = append(removedSpans, spans...)
 			if filteredSpec != nil {
 				specs = append(specs, filteredSpec)
 			}
 		}
 		if len(specs) == 0 {
-			removedComments = append(removedComments, decl.Doc)
-			return nil, removedAny, removedComments, nil
+			return nil, removedAny, nodeAndCommentsSpans(tokFile, decl), nil
 		}
 		if !removedAny {
 			return decl, false, nil, nil
 		}
 		out := *decl
 		out.Specs = specs
-		return &out, true, removedComments, nil
+		return &out, true, removedSpans, nil
 	default:
 		return decl, false, nil, nil
 	}
 }
 
-func filterSourcePatchSpec(spec ast.Spec, skips map[string]struct{}) (ast.Spec, bool, []*ast.CommentGroup) {
+func filterSourcePatchSpec(tokFile *token.File, spec ast.Spec, skips map[string]struct{}) (ast.Spec, bool, []sourcePatchSpan) {
 	switch spec := spec.(type) {
 	case *ast.TypeSpec:
 		if _, ok := skips[spec.Name.Name]; ok {
-			return nil, true, collectSpecComments(spec)
+			return nil, true, nodeAndCommentsSpans(tokFile, spec)
 		}
 		return spec, false, nil
 	case *ast.ValueSpec:
@@ -397,12 +391,12 @@ func filterSourcePatchSpec(spec ast.Spec, skips map[string]struct{}) (ast.Spec, 
 			return spec, false, nil
 		}
 		if len(keep) == 0 {
-			return nil, true, collectSpecComments(spec)
+			return nil, true, nodeAndCommentsSpans(tokFile, spec)
 		}
 		if len(keep) != len(spec.Names) {
 			// Keep the transformation simple and deterministic. Mixed multi-name specs
 			// can be split later if we need them in real patches.
-			return nil, true, collectSpecComments(spec)
+			return nil, true, nodeAndCommentsSpans(tokFile, spec)
 		}
 		out := *spec
 		out.Names = keep
@@ -410,6 +404,129 @@ func filterSourcePatchSpec(spec ast.Spec, skips map[string]struct{}) (ast.Spec, 
 	default:
 		return spec, false, nil
 	}
+}
+
+func collectUnusedImportSpans(tokFile *token.File, file *ast.File) []sourcePatchSpan {
+	var spans []sourcePatchSpan
+	for _, decl := range file.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.IMPORT {
+			continue
+		}
+		removable := make([]*ast.ImportSpec, 0, len(gen.Specs))
+		keptCount := 0
+		for _, spec := range gen.Specs {
+			imp := spec.(*ast.ImportSpec)
+			if imp.Name != nil && imp.Name.Name == "_" {
+				keptCount++
+				continue
+			}
+			if astutil.UsesImport(file, strings.Trim(imp.Path.Value, `"`)) {
+				keptCount++
+				continue
+			}
+			removable = append(removable, imp)
+		}
+		if len(removable) == 0 {
+			continue
+		}
+		if keptCount == 0 || !gen.Lparen.IsValid() || len(gen.Specs) == 1 {
+			spans = append(spans, nodeAndCommentsSpans(tokFile, gen)...)
+			continue
+		}
+		for _, imp := range removable {
+			spans = append(spans, nodeAndCommentsSpans(tokFile, imp)...)
+		}
+	}
+	return spans
+}
+
+func nodeAndCommentsSpans(tokFile *token.File, node ast.Node) []sourcePatchSpan {
+	spans := []sourcePatchSpan{nodeSpan(tokFile, node)}
+	switch node := node.(type) {
+	case *ast.FuncDecl:
+		spans = append(spans, commentGroupsToSpans(tokFile, compactCommentGroups(node.Doc))...)
+	case *ast.GenDecl:
+		spans = append(spans, commentGroupsToSpans(tokFile, compactCommentGroups(node.Doc))...)
+		for _, spec := range node.Specs {
+			spans = append(spans, commentGroupsToSpans(tokFile, collectSpecComments(spec))...)
+		}
+	case *ast.ImportSpec:
+		spans = append(spans, commentGroupsToSpans(tokFile, compactCommentGroups(node.Doc, node.Comment))...)
+	default:
+		if spec, ok := node.(ast.Spec); ok {
+			spans = append(spans, commentGroupsToSpans(tokFile, collectSpecComments(spec))...)
+		}
+	}
+	return spans
+}
+
+func commentGroupsToSpans(tokFile *token.File, groups []*ast.CommentGroup) []sourcePatchSpan {
+	out := make([]sourcePatchSpan, 0, len(groups))
+	for _, group := range groups {
+		if group == nil {
+			continue
+		}
+		out = append(out, nodeSpan(tokFile, group))
+	}
+	return out
+}
+
+func nodeSpan(tokFile *token.File, node ast.Node) sourcePatchSpan {
+	return sourcePatchSpan{
+		start: tokFile.Offset(node.Pos()),
+		end:   tokFile.Offset(node.End()),
+	}
+}
+
+func blankSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
+	out := slices.Clone(src)
+	if len(spans) == 0 {
+		return out
+	}
+	slices.SortFunc(spans, func(a, b sourcePatchSpan) int {
+		switch {
+		case a.start < b.start:
+			return -1
+		case a.start > b.start:
+			return 1
+		case a.end < b.end:
+			return -1
+		case a.end > b.end:
+			return 1
+		default:
+			return 0
+		}
+	})
+	merged := spans[:0]
+	for _, span := range spans {
+		if span.start < 0 {
+			span.start = 0
+		}
+		if span.end > len(out) {
+			span.end = len(out)
+		}
+		if span.start >= span.end {
+			continue
+		}
+		if len(merged) == 0 || span.start > merged[len(merged)-1].end {
+			merged = append(merged, span)
+			continue
+		}
+		if span.end > merged[len(merged)-1].end {
+			merged[len(merged)-1].end = span.end
+		}
+	}
+	for _, span := range merged {
+		for i := span.start; i < span.end; i++ {
+			switch out[i] {
+			case '\n', '\r':
+			default:
+				out[i] = ' '
+			}
+		}
+	}
+	return out
 }
 
 func collectDeclComments(decl ast.Decl) []*ast.CommentGroup {
