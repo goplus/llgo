@@ -304,7 +304,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	cfg.Overlay, err = buildSourcePatchOverlay(cfg.Overlay, env.LLGoRuntimeDir())
+	sourcePatchGOROOT, err := env.GOROOTWithEnv(cfg.Env)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Overlay, err = buildSourcePatchOverlayForGOROOT(cfg.Overlay, env.LLGoRuntimeDir(), sourcePatchGOROOT)
 	if err != nil {
 		return nil, err
 	}

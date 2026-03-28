@@ -2,6 +2,7 @@ package build
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"syscall"
 
 	llruntime "github.com/goplus/llgo/runtime"
 	"golang.org/x/tools/go/ast/astutil"
@@ -63,6 +65,9 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 	srcEntries, err := os.ReadDir(srcDir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			return false, current, nil
+		}
+		if errors.Is(err, syscall.EACCES) || errors.Is(err, syscall.EPERM) {
 			return false, current, nil
 		}
 		return false, nil, fmt.Errorf("read stdlib dir %s: %w", pkgPath, err)
