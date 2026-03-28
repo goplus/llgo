@@ -50,6 +50,46 @@ func TestIterUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
+func TestBuildSourcePatchOverlayForSyncAtomic(t *testing.T) {
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	atomicDir := filepath.Join(runtime.GOROOT(), "src", "sync", "atomic")
+	stdFile := filepath.Join(atomicDir, "value.go")
+	stdSrc, ok := overlay[stdFile]
+	if !ok {
+		t.Fatalf("missing filtered stdlib file %s", stdFile)
+	}
+	got := string(stdSrc)
+	for _, forbidden := range []string{"func (v *Value) Store", "func (v *Value) Swap", "func (v *Value) CompareAndSwap", "func runtime_procPin()", "func runtime_procUnpin()"} {
+		if strings.Contains(got, forbidden) {
+			t.Fatalf("expected source patch filtering to remove %q from %s, got:\n%s", forbidden, stdFile, got)
+		}
+	}
+
+	patchFile := filepath.Join(atomicDir, "z_llgo_patch_value.go")
+	patchSrc, ok := overlay[patchFile]
+	if !ok {
+		t.Fatalf("missing source patch file %s", patchFile)
+	}
+	for _, want := range []string{"func (v *Value) Store", "func (v *Value) Swap", "func (v *Value) CompareAndSwap"} {
+		if !strings.Contains(string(patchSrc), want) {
+			t.Fatalf("expected source patch file %s to contain %q", patchFile, want)
+		}
+	}
+}
+
+func TestSyncAtomicUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
+	if !llruntime.HasSourcePatchPkg("sync/atomic") {
+		t.Fatal("sync/atomic should be registered as a source patch package")
+	}
+	if llruntime.HasAltPkg("sync/atomic") {
+		t.Fatal("sync/atomic should not remain an alt package")
+	}
+}
+
 func TestApplySourcePatchForPkg_Directives(t *testing.T) {
 	t.Run("skip-and-override", func(t *testing.T) {
 		goroot := t.TempDir()
@@ -114,6 +154,51 @@ func (T) M() string { return "new method" }
 		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
 		patchSrc := string(overlay[patchFile])
 		for _, want := range []string{"var Added", "func Old", "func (T) M"} {
+			if !strings.Contains(patchSrc, want) {
+				t.Fatalf("expected injected patch declaration %q, got:\n%s", want, patchSrc)
+			}
+		}
+	})
+
+	t.Run("patch-only-override", func(t *testing.T) {
+		goroot := t.TempDir()
+		runtimeDir := t.TempDir()
+		pkgPath := "demo"
+		srcDir := filepath.Join(goroot, "src", pkgPath)
+		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+		mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
+
+func Old() string { return "old" }
+func Keep() string { return "keep" }
+`)
+		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `package demo
+
+//llgo:patch
+
+func Old() string { return "new" }
+func Added() string { return "added" }
+`)
+
+		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !changed {
+			t.Fatal("expected source patch overlay to change package")
+		}
+
+		stdFile := filepath.Join(srcDir, "demo.go")
+		got := string(overlay[stdFile])
+		if strings.Contains(got, "func Old") {
+			t.Fatalf("expected patch declaration to override Old, got:\n%s", got)
+		}
+		if !strings.Contains(got, "func Keep") {
+			t.Fatalf("expected Keep to remain, got:\n%s", got)
+		}
+
+		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
+		patchSrc := string(overlay[patchFile])
+		for _, want := range []string{"func Old", "func Added"} {
 			if !strings.Contains(patchSrc, want) {
 				t.Fatalf("expected injected patch declaration %q, got:\n%s", want, patchSrc)
 			}

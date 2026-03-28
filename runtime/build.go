@@ -46,11 +46,11 @@ var altPkgs = map[string]altPkgMode{
 	"internal/runtime/sys":  altPkgAdditive,
 	"reflect":               altPkgReplace,
 	"runtime":               altPkgReplace,
-	"unique":                altPkgReplace,
 	"syscall/js":            altPkgReplace,
-	"sync/atomic":           altPkgReplace,
+	"unique":                altPkgReplace,
 }
 
 var sourcePatchPkgs = map[string]struct{}{
-	"iter": {},
+	"iter":        {},
+	"sync/atomic": {},
 }
