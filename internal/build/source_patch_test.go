@@ -50,43 +50,12 @@ func TestIterUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
-func TestBuildSourcePatchOverlayForSyncAtomic(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
-	if err != nil {
-		t.Fatal(err)
+func TestSyncAtomicRemainsAltPkg(t *testing.T) {
+	if llruntime.HasSourcePatchPkg("sync/atomic") {
+		t.Fatal("sync/atomic should not be registered as a source patch package")
 	}
-
-	atomicDir := filepath.Join(runtime.GOROOT(), "src", "sync", "atomic")
-	stdFile := filepath.Join(atomicDir, "value.go")
-	stdSrc, ok := overlay[stdFile]
-	if !ok {
-		t.Fatalf("missing filtered stdlib file %s", stdFile)
-	}
-	got := string(stdSrc)
-	for _, forbidden := range []string{"func (v *Value) Store", "func (v *Value) Swap", "func (v *Value) CompareAndSwap", "func runtime_procPin()", "func runtime_procUnpin()"} {
-		if strings.Contains(got, forbidden) {
-			t.Fatalf("expected source patch filtering to remove %q from %s, got:\n%s", forbidden, stdFile, got)
-		}
-	}
-
-	patchFile := filepath.Join(atomicDir, "z_llgo_patch_value.go")
-	patchSrc, ok := overlay[patchFile]
-	if !ok {
-		t.Fatalf("missing source patch file %s", patchFile)
-	}
-	for _, want := range []string{"func (v *Value) Store", "func (v *Value) Swap", "func (v *Value) CompareAndSwap"} {
-		if !strings.Contains(string(patchSrc), want) {
-			t.Fatalf("expected source patch file %s to contain %q", patchFile, want)
-		}
-	}
-}
-
-func TestSyncAtomicUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
-	if !llruntime.HasSourcePatchPkg("sync/atomic") {
-		t.Fatal("sync/atomic should be registered as a source patch package")
-	}
-	if llruntime.HasAltPkg("sync/atomic") {
-		t.Fatal("sync/atomic should not remain an alt package")
+	if !llruntime.HasAltPkg("sync/atomic") {
+		t.Fatal("sync/atomic should remain an alt package")
 	}
 }
 
