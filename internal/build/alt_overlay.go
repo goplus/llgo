@@ -22,10 +22,6 @@ func cloneOverlay(src map[string][]byte) map[string][]byte {
 	return dup
 }
 
-var stdlibSourceAltPkgs = map[string]bool{
-	"internal/sync": true,
-}
-
 func buildStdlibAltSourceOverlay(base map[string][]byte, runtimeDir string, initial []*ipackages.Package, conf *Config) (map[string][]byte, map[string]bool, error) {
 	var out map[string][]byte
 	var loadErr error
@@ -34,7 +30,7 @@ func buildStdlibAltSourceOverlay(base map[string][]byte, runtimeDir string, init
 		if loadErr != nil {
 			return
 		}
-		if p == nil || p.PkgPath == "" || !stdlibSourceAltPkgs[p.PkgPath] {
+		if p == nil || p.PkgPath == "" || !llruntime.HasStdlibSourceAltPkg(p.PkgPath) {
 			return
 		}
 		if !hasAltPkgForTarget(conf, p.PkgPath) || llruntime.HasAdditiveAltPkg(p.PkgPath) {

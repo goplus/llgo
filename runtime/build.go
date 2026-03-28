@@ -23,6 +23,11 @@ func HasAdditiveAltPkg(path string) bool {
 	return altPkgs[path] == altPkgAdditive
 }
 
+func HasStdlibSourceAltPkg(path string) (b bool) {
+	_, b = stdlibSourceAltPkgs[path]
+	return
+}
+
 var altPkgs = map[string]altPkgMode{
 	"crypto/internal/fips140deps/godebug": altPkgReplace,
 	"crypto/internal/constanttime":        altPkgReplace,
@@ -40,4 +45,8 @@ var altPkgs = map[string]altPkgMode{
 	"unique":                              altPkgReplace,
 	"syscall/js":                          altPkgReplace,
 	"sync/atomic":                         altPkgReplace,
+}
+
+var stdlibSourceAltPkgs = map[string]struct{}{
+	"internal/sync": {},
 }
