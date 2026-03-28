@@ -209,14 +209,22 @@ type aProgram struct {
 	printfTy *types.Signature
 
 	paramObjPtr_ *types.Var
-	linkname     map[string]string // pkgPath.nameInPkg => linkname
-	abiSymbol    map[string]Type   // abi symbol name => Type
+	linkname     map[string]string     // pkgPath.nameInPkg => linkname
+	abiSymbol    map[string]*AbiSymbol // abi symbol name => AbiSymbol
 
 	ptrSize int
 
 	abi abi.Builder
 
 	is32Bits bool
+}
+
+type AbiSymbol struct {
+	Name    string
+	PkgPath string
+	Raw     types.Type
+	Typ     Type
+	MSet    *types.MethodSet
 }
 
 // A Program presents a program.
@@ -263,7 +271,7 @@ func NewProgram(target *Target) Program {
 		ctx: ctx, gocvt: newGoTypes(),
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
-		linkname: make(map[string]string), abiSymbol: make(map[string]Type),
+		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
 	}
 	prog.abi.Init(uintptr(prog.ptrSize), (*goProgram)(unsafe.Pointer(prog)))
 	return prog
@@ -700,14 +708,18 @@ type aPackage struct {
 
 	iRoutine int
 
-	NeedRuntime bool
-	NeedPyInit  bool
-	NeedAbiInit bool // need load all abi types for reflect make type
+	NeedRuntime   bool
+	NeedPyInit    bool
+	NeedAbiInit   int // bitmask of Reflect* flags indicating which reflect type-construction operations are used
+	MethodByIndex map[int]none
+	MethodByName  map[string]none
 
 	export         map[string]string   // pkgPath.nameInPkg => exportname
 	preserveSyms   map[string]struct{} // set of exported symbol names
 	llvmUsedValues []llvm.Value
 }
+
+type none struct{}
 
 type Package = *aPackage
 
