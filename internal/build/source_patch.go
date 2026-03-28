@@ -102,7 +102,7 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		if err != nil {
 			return false, nil, fmt.Errorf("parse source patch directives %s: %w", filename, err)
 		}
-		if !directives.active {
+		if directives.noPatch {
 			continue
 		}
 		patchSrcs[name] = slices.Clone(src)
@@ -197,7 +197,7 @@ func packageStubSource(src []byte) ([]byte, error) {
 }
 
 type sourcePatchDirectives struct {
-	active  bool
+	noPatch bool
 	skipAll bool
 	skips   map[string]struct{}
 }
@@ -212,11 +212,11 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 	for _, group := range file.Comments {
 		for _, comment := range group.List {
 			line := strings.TrimSpace(comment.Text)
-			active, skipAll, names, ok := parseSourcePatchDirective(line)
+			noPatch, skipAll, names, ok := parseSourcePatchDirective(line)
 			if !ok {
 				continue
 			}
-			d.active = d.active || active
+			d.noPatch = d.noPatch || noPatch
 			if skipAll {
 				d.skipAll = true
 			}
@@ -225,7 +225,7 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 			}
 		}
 	}
-	if d.active {
+	if !d.noPatch {
 		for _, decl := range file.Decls {
 			for _, name := range declPatchKeys(decl) {
 				d.skips[name] = struct{}{}
@@ -235,7 +235,7 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 	return d, nil
 }
 
-func parseSourcePatchDirective(line string) (active, skipAll bool, names []string, ok bool) {
+func parseSourcePatchDirective(line string) (noPatch, skipAll bool, names []string, ok bool) {
 	const (
 		llgo1 = "//llgo:"
 		llgo2 = "// llgo:"
@@ -254,12 +254,12 @@ func parseSourcePatchDirective(line string) (active, skipAll bool, names []strin
 		return false, false, nil, false
 	}
 	switch {
-	case tail == "patch":
+	case tail == "nopatch":
 		return true, false, nil, true
 	case tail == "skipall":
-		return true, true, nil, true
+		return false, true, nil, true
 	case strings.HasPrefix(tail, "skip "):
-		return true, false, strings.Fields(tail[len("skip "):]), true
+		return false, false, strings.Fields(tail[len("skip "):]), true
 	default:
 		return false, false, nil, false
 	}

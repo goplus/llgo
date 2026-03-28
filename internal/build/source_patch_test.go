@@ -160,7 +160,7 @@ func (T) M() string { return "new method" }
 		}
 	})
 
-	t.Run("patch-only-override", func(t *testing.T) {
+	t.Run("default-override", func(t *testing.T) {
 		goroot := t.TempDir()
 		runtimeDir := t.TempDir()
 		pkgPath := "demo"
@@ -172,8 +172,6 @@ func Old() string { return "old" }
 func Keep() string { return "keep" }
 `)
 		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `package demo
-
-//llgo:patch
 
 func Old() string { return "new" }
 func Added() string { return "added" }
