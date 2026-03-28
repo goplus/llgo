@@ -1,9 +1,10 @@
 package maps
 
 import (
+	"internal/abi"
 	"unsafe"
 
-	"github.com/goplus/llgo/runtime/abi"
+	llabi "github.com/goplus/llgo/runtime/abi"
 )
 
 //go:linkname runtime_fastrand64 github.com/goplus/llgo/runtime/internal/runtime.fastrand64
@@ -32,22 +33,7 @@ func fatal(s string) {
 	runtime_fatal(s)
 }
 
-type Type = abi.Type
-
-type SwissMapType struct {
-	Type
-	Key   *Type
-	Elem  *Type
-	Group *Type // internal type representing a slot group
-	// function for hashing keys (ptr to key, seed) -> hash
-	Hasher    func(unsafe.Pointer, uintptr) uintptr
-	GroupSize uintptr // == Group.Size_
-	SlotSize  uintptr // size of key/elem slot
-	ElemOff   uintptr // offset of elem in key/elem slot
-	Flags     uint32
-}
-
-func mapKeyError(typ *SwissMapType, p unsafe.Pointer) error {
+func mapKeyError(typ *abi.SwissMapType, p unsafe.Pointer) error {
 	return nil
 }
 
@@ -71,5 +57,5 @@ func typeString(typ *abi.Type) string {
 	if typ == nil {
 		return "<nil>"
 	}
-	return typ.String()
+	return (*llabi.Type)(unsafe.Pointer(typ)).String()
 }
