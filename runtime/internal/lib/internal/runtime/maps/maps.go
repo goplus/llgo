@@ -3,8 +3,6 @@ package maps
 import (
 	"internal/abi"
 	"unsafe"
-
-	llabi "github.com/goplus/llgo/runtime/abi"
 )
 
 //go:linkname runtime_fastrand64 github.com/goplus/llgo/runtime/internal/runtime.fastrand64
@@ -57,5 +55,5 @@ func typeString(typ *abi.Type) string {
 	if typ == nil {
 		return "<nil>"
 	}
-	return (*llabi.Type)(unsafe.Pointer(typ)).String()
+	return "<type>"
 }
