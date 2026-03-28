@@ -234,6 +234,15 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 	return d, nil
 }
 
+// parseSourcePatchDirective recognizes build-time source-patch directives.
+//
+// Supported directives:
+//   - //llgo:nopatch: ignore this file during source-patch injection
+//   - //llgo:skipall: blank every stdlib .go file in the patched package
+//   - //llgo:skip A B: blank the named declarations from the stdlib package view
+//
+// Unlike cl/import.go directives, these are consumed only while constructing the
+// load-time overlay and are rewritten to plain comments before type checking.
 func parseSourcePatchDirective(line string) (noPatch, skipAll bool, names []string, ok bool) {
 	const (
 		llgo1 = "//llgo:"
@@ -283,7 +292,7 @@ func sanitizeSourcePatchDirectiveLines(src []byte) []byte {
 		}
 	}
 	if !changed {
-		return out
+		return src
 	}
 	return out
 }
@@ -334,7 +343,7 @@ func filterSourcePatchDecl(tokFile *token.File, decl ast.Decl, skips map[string]
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		if _, ok := skips[declPatchKeyFunc(decl)]; ok {
-			return nil, true, append(nodeAndCommentsSpans(tokFile, decl), commentGroupsToSpans(tokFile, compactCommentGroups(decl.Doc))...), nil
+			return nil, true, nodeAndCommentsSpans(tokFile, decl), nil
 		}
 		return decl, false, nil, nil
 	case *ast.GenDecl:
@@ -529,21 +538,6 @@ func blankSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
 	return out
 }
 
-func collectDeclComments(decl ast.Decl) []*ast.CommentGroup {
-	switch decl := decl.(type) {
-	case *ast.FuncDecl:
-		return compactCommentGroups(decl.Doc)
-	case *ast.GenDecl:
-		out := compactCommentGroups(decl.Doc)
-		for _, spec := range decl.Specs {
-			out = append(out, collectSpecComments(spec)...)
-		}
-		return out
-	default:
-		return nil
-	}
-}
-
 func collectSpecComments(spec ast.Spec) []*ast.CommentGroup {
 	switch spec := spec.(type) {
 	case *ast.TypeSpec:
@@ -609,6 +603,6 @@ func recvPatchKey(expr ast.Expr) string {
 	case *ast.SelectorExpr:
 		return expr.Sel.Name
 	default:
-		return ""
+		panic(fmt.Sprintf("unhandled expression type in recvPatchKey: %T", expr))
 	}
 }
