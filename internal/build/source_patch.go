@@ -98,11 +98,14 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		if err != nil {
 			return false, nil, fmt.Errorf("read source patch file %s: %w", filename, err)
 		}
-		patchSrcs[name] = slices.Clone(src)
 		directives, err := collectSourcePatchDirectives(src)
 		if err != nil {
 			return false, nil, fmt.Errorf("parse source patch directives %s: %w", filename, err)
 		}
+		if !directives.active {
+			continue
+		}
+		patchSrcs[name] = slices.Clone(src)
 		if directives.skipAll {
 			skipAll = true
 		}
@@ -194,6 +197,7 @@ func packageStubSource(src []byte) ([]byte, error) {
 }
 
 type sourcePatchDirectives struct {
+	active  bool
 	skipAll bool
 	skips   map[string]struct{}
 }
@@ -208,10 +212,11 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 	for _, group := range file.Comments {
 		for _, comment := range group.List {
 			line := strings.TrimSpace(comment.Text)
-			skipAll, names, ok := parseSourcePatchDirective(line)
+			active, skipAll, names, ok := parseSourcePatchDirective(line)
 			if !ok {
 				continue
 			}
+			d.active = d.active || active
 			if skipAll {
 				d.skipAll = true
 			}
@@ -220,22 +225,24 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 			}
 		}
 	}
-	for _, decl := range file.Decls {
-		for _, name := range declPatchKeys(decl) {
-			d.skips[name] = struct{}{}
+	if d.active {
+		for _, decl := range file.Decls {
+			for _, name := range declPatchKeys(decl) {
+				d.skips[name] = struct{}{}
+			}
 		}
 	}
 	return d, nil
 }
 
-func parseSourcePatchDirective(line string) (skipAll bool, names []string, ok bool) {
+func parseSourcePatchDirective(line string) (active, skipAll bool, names []string, ok bool) {
 	const (
 		llgo1 = "//llgo:"
 		llgo2 = "// llgo:"
 		go1   = "//go:"
 	)
 	if strings.HasPrefix(line, go1) {
-		return false, nil, false
+		return false, false, nil, false
 	}
 	var tail string
 	switch {
@@ -244,15 +251,17 @@ func parseSourcePatchDirective(line string) (skipAll bool, names []string, ok bo
 	case strings.HasPrefix(line, llgo2):
 		tail = line[len(llgo2):]
 	default:
-		return false, nil, false
+		return false, false, nil, false
 	}
 	switch {
+	case tail == "patch":
+		return true, false, nil, true
 	case tail == "skipall":
-		return true, nil, true
+		return true, true, nil, true
 	case strings.HasPrefix(tail, "skip "):
-		return false, strings.Fields(tail[len("skip "):]), true
+		return true, false, strings.Fields(tail[len("skip "):]), true
 	default:
-		return false, nil, false
+		return false, false, nil, false
 	}
 }
 
@@ -263,14 +272,18 @@ func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool,
 		return nil, false, err
 	}
 	changed := false
+	removedComments := make(map[*ast.CommentGroup]struct{})
 	decls := file.Decls[:0]
 	for _, decl := range file.Decls {
-		filteredDecl, removed, err := filterSourcePatchDecl(decl, skips)
+		filteredDecl, removed, rmComments, err := filterSourcePatchDecl(decl, skips)
 		if err != nil {
 			return nil, false, err
 		}
 		if removed {
 			changed = true
+		}
+		for _, group := range rmComments {
+			removedComments[group] = struct{}{}
 		}
 		if filteredDecl != nil {
 			decls = append(decls, filteredDecl)
@@ -280,6 +293,16 @@ func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool,
 		return src, false, nil
 	}
 	file.Decls = decls
+	if len(removedComments) != 0 {
+		comments := file.Comments[:0]
+		for _, group := range file.Comments {
+			if _, drop := removedComments[group]; drop {
+				continue
+			}
+			comments = append(comments, group)
+		}
+		file.Comments = comments
+	}
 	for _, imp := range slices.Clone(file.Imports) {
 		if imp.Name != nil && imp.Name.Name == "_" {
 			continue
@@ -296,51 +319,54 @@ func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool,
 	return buf.Bytes(), true, nil
 }
 
-func filterSourcePatchDecl(decl ast.Decl, skips map[string]struct{}) (ast.Decl, bool, error) {
+func filterSourcePatchDecl(decl ast.Decl, skips map[string]struct{}) (ast.Decl, bool, []*ast.CommentGroup, error) {
 	switch decl := decl.(type) {
 	case *ast.FuncDecl:
 		if _, ok := skips[declPatchKeyFunc(decl)]; ok {
-			return nil, true, nil
+			return nil, true, collectDeclComments(decl), nil
 		}
-		return decl, false, nil
+		return decl, false, nil, nil
 	case *ast.GenDecl:
 		switch decl.Tok {
 		case token.TYPE, token.VAR, token.CONST:
 		default:
-			return decl, false, nil
+			return decl, false, nil, nil
 		}
 		specs := decl.Specs[:0]
 		removedAny := false
+		var removedComments []*ast.CommentGroup
 		for _, spec := range decl.Specs {
-			filteredSpec, removed := filterSourcePatchSpec(spec, skips)
+			filteredSpec, removed, comments := filterSourcePatchSpec(spec, skips)
 			if removed {
 				removedAny = true
 			}
+			removedComments = append(removedComments, comments...)
 			if filteredSpec != nil {
 				specs = append(specs, filteredSpec)
 			}
 		}
 		if len(specs) == 0 {
-			return nil, removedAny, nil
+			removedComments = append(removedComments, decl.Doc)
+			return nil, removedAny, removedComments, nil
 		}
 		if !removedAny {
-			return decl, false, nil
+			return decl, false, nil, nil
 		}
 		out := *decl
 		out.Specs = specs
-		return &out, true, nil
+		return &out, true, removedComments, nil
 	default:
-		return decl, false, nil
+		return decl, false, nil, nil
 	}
 }
 
-func filterSourcePatchSpec(spec ast.Spec, skips map[string]struct{}) (ast.Spec, bool) {
+func filterSourcePatchSpec(spec ast.Spec, skips map[string]struct{}) (ast.Spec, bool, []*ast.CommentGroup) {
 	switch spec := spec.(type) {
 	case *ast.TypeSpec:
 		if _, ok := skips[spec.Name.Name]; ok {
-			return nil, true
+			return nil, true, collectSpecComments(spec)
 		}
-		return spec, false
+		return spec, false, nil
 	case *ast.ValueSpec:
 		keep := make([]*ast.Ident, 0, len(spec.Names))
 		removed := false
@@ -352,22 +378,58 @@ func filterSourcePatchSpec(spec ast.Spec, skips map[string]struct{}) (ast.Spec, 
 			keep = append(keep, name)
 		}
 		if !removed {
-			return spec, false
+			return spec, false, nil
 		}
 		if len(keep) == 0 {
-			return nil, true
+			return nil, true, collectSpecComments(spec)
 		}
 		if len(keep) != len(spec.Names) {
 			// Keep the transformation simple and deterministic. Mixed multi-name specs
 			// can be split later if we need them in real patches.
-			return nil, true
+			return nil, true, collectSpecComments(spec)
 		}
 		out := *spec
 		out.Names = keep
-		return &out, true
+		return &out, true, nil
 	default:
-		return spec, false
+		return spec, false, nil
 	}
+}
+
+func collectDeclComments(decl ast.Decl) []*ast.CommentGroup {
+	switch decl := decl.(type) {
+	case *ast.FuncDecl:
+		return compactCommentGroups(decl.Doc)
+	case *ast.GenDecl:
+		out := compactCommentGroups(decl.Doc)
+		for _, spec := range decl.Specs {
+			out = append(out, collectSpecComments(spec)...)
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func collectSpecComments(spec ast.Spec) []*ast.CommentGroup {
+	switch spec := spec.(type) {
+	case *ast.TypeSpec:
+		return compactCommentGroups(spec.Doc, spec.Comment)
+	case *ast.ValueSpec:
+		return compactCommentGroups(spec.Doc, spec.Comment)
+	default:
+		return nil
+	}
+}
+
+func compactCommentGroups(groups ...*ast.CommentGroup) []*ast.CommentGroup {
+	var out []*ast.CommentGroup
+	for _, group := range groups {
+		if group != nil {
+			out = append(out, group)
+		}
+	}
+	return out
 }
 
 func declPatchKeys(decl ast.Decl) []string {
