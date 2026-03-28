@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -29,14 +31,21 @@ func cloneOverlay(src map[string][]byte) map[string][]byte {
 	return dup
 }
 
-func buildSourcePatchOverlay(base map[string][]byte, runtimeDir string) (map[string][]byte, error) {
-	return buildSourcePatchOverlayForGOROOT(base, runtimeDir, runtime.GOROOT())
+type sourcePatchBuildContext struct {
+	goos       string
+	goarch     string
+	goversion  string
+	buildFlags []string
 }
 
-func buildSourcePatchOverlayForGOROOT(base map[string][]byte, runtimeDir, goroot string) (map[string][]byte, error) {
+func buildSourcePatchOverlay(base map[string][]byte, runtimeDir string) (map[string][]byte, error) {
+	return buildSourcePatchOverlayForGOROOT(base, runtimeDir, runtime.GOROOT(), sourcePatchBuildContext{})
+}
+
+func buildSourcePatchOverlayForGOROOT(base map[string][]byte, runtimeDir, goroot string, ctx sourcePatchBuildContext) (map[string][]byte, error) {
 	var out map[string][]byte
 	for _, pkgPath := range llruntime.SourcePatchPkgPaths() {
-		changed, next, err := applySourcePatchForPkg(base, out, runtimeDir, goroot, pkgPath)
+		changed, next, err := applySourcePatchForPkg(base, out, runtimeDir, goroot, pkgPath, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +60,7 @@ func buildSourcePatchOverlayForGOROOT(base map[string][]byte, runtimeDir, goroot
 	return out, nil
 }
 
-func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot, pkgPath string) (bool, map[string][]byte, error) {
+func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot, pkgPath string, ctx sourcePatchBuildContext) (bool, map[string][]byte, error) {
 	patchDir := filepath.Join(runtimeDir, "internal", "lib", filepath.FromSlash(pkgPath))
 	entries, err := os.ReadDir(patchDir)
 	if err != nil {
@@ -91,6 +100,10 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		}
 		return os.ReadFile(filename)
 	}
+	buildCtx, err := newSourcePatchMatchContext(goroot, ctx)
+	if err != nil {
+		return false, nil, err
+	}
 
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -98,6 +111,13 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		}
 		name := entry.Name()
 		if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		match, err := buildCtx.MatchFile(patchDir, name)
+		if err != nil {
+			return false, nil, fmt.Errorf("match source patch file %s: %w", filepath.Join(patchDir, name), err)
+		}
+		if !match {
 			continue
 		}
 		filename := filepath.Join(patchDir, name)
@@ -189,6 +209,74 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		changed = true
 	}
 	return changed, out, nil
+}
+
+func newSourcePatchMatchContext(goroot string, ctx sourcePatchBuildContext) (build.Context, error) {
+	buildCtx := build.Default
+	if goroot != "" {
+		buildCtx.GOROOT = goroot
+	}
+	if ctx.goos != "" {
+		buildCtx.GOOS = ctx.goos
+	}
+	if ctx.goarch != "" {
+		buildCtx.GOARCH = ctx.goarch
+	}
+	buildCtx.BuildTags = parseSourcePatchBuildTags(ctx.buildFlags)
+	if ctx.goversion != "" {
+		releaseTags, err := releaseTagsForGoVersion(ctx.goversion)
+		if err != nil {
+			return build.Context{}, err
+		}
+		buildCtx.ReleaseTags = releaseTags
+	}
+	return buildCtx, nil
+}
+
+func parseSourcePatchBuildTags(buildFlags []string) []string {
+	var tags []string
+	for i := 0; i < len(buildFlags); i++ {
+		flag := buildFlags[i]
+		if flag == "-tags" && i+1 < len(buildFlags) {
+			tags = append(tags, splitSourcePatchBuildTags(buildFlags[i+1])...)
+			i++
+			continue
+		}
+		if strings.HasPrefix(flag, "-tags=") {
+			tags = append(tags, splitSourcePatchBuildTags(strings.TrimPrefix(flag, "-tags="))...)
+		}
+	}
+	return slices.Compact(tags)
+}
+
+func splitSourcePatchBuildTags(s string) []string {
+	return strings.FieldsFunc(s, func(r rune) bool {
+		return r == ',' || r == ' '
+	})
+}
+
+func releaseTagsForGoVersion(goVersion string) ([]string, error) {
+	goVersion = strings.TrimPrefix(goVersion, "go")
+	parts := strings.Split(goVersion, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("unsupported Go version %q", goVersion)
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("parse Go major version %q: %w", goVersion, err)
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("parse Go minor version %q: %w", goVersion, err)
+	}
+	if major != 1 || minor < 1 {
+		return nil, fmt.Errorf("unsupported Go version %q", goVersion)
+	}
+	tags := make([]string, 0, minor)
+	for v := 1; v <= minor; v++ {
+		tags = append(tags, fmt.Sprintf("go1.%d", v))
+	}
+	return tags, nil
 }
 
 func packageStubSource(src []byte) ([]byte, error) {
@@ -285,17 +373,23 @@ func sanitizeSourcePatchDirectiveLines(src []byte) []byte {
 	out := slices.Clone(src)
 	lines := bytes.SplitAfter(out, []byte{'\n'})
 	changed := false
+	markDirective := func(line []byte, prefix []byte) bool {
+		idx := bytes.Index(line, prefix)
+		if idx < 0 {
+			return false
+		}
+		line[idx+len(prefix)-1] = '_'
+		return true
+	}
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(string(line))
 		if _, _, _, ok := parseSourcePatchDirective(trimmed); !ok {
 			continue
 		}
 		switch {
-		case bytes.Contains(line, []byte("//llgo:")):
-			copy(line, bytes.Replace(line, []byte("//llgo:"), []byte("//llgo_"), 1))
+		case markDirective(line, []byte("//llgo:")):
 			changed = true
-		case bytes.Contains(line, []byte("// llgo:")):
-			copy(line, bytes.Replace(line, []byte("// llgo:"), []byte("// llgo_"), 1))
+		case markDirective(line, []byte("// llgo:")):
 			changed = true
 		}
 	}
