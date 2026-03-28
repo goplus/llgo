@@ -296,6 +296,41 @@ func Pull[V any](seq func(func(V) bool)) {}
 	}
 }
 
+func TestApplySourcePatchForPkg_UnreadableStdlibPkg(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod-based permission test is Unix-only")
+	}
+	goroot := t.TempDir()
+	runtimeDir := t.TempDir()
+	pkgPath := "iter"
+	srcDir := filepath.Join(goroot, "src", pkgPath)
+	patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(srcDir, 0); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(srcDir, 0755)
+	mustWriteFile(t, filepath.Join(patchDir, "iter.go"), `package iter
+
+//llgo:skipall
+
+func Pull[V any](seq func(func(V) bool)) {}
+`)
+
+	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed {
+		t.Fatal("expected unreadable stdlib package to skip source patching")
+	}
+	if overlay != nil {
+		t.Fatalf("expected no overlay for unreadable stdlib package, got %v entries", len(overlay))
+	}
+}
+
 func mustWriteFile(t *testing.T, filename, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
