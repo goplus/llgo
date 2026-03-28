@@ -301,7 +301,16 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.Overlay, err = buildSourcePatchOverlayForGOROOT(cfg.Overlay, env.LLGoRuntimeDir(), sourcePatchGOROOT)
+	sourcePatchGoVersion, err := env.GOVERSIONWithEnv(cfg.Env)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Overlay, err = buildSourcePatchOverlayForGOROOT(cfg.Overlay, env.LLGoRuntimeDir(), sourcePatchGOROOT, sourcePatchBuildContext{
+		goos:       conf.Goos,
+		goarch:     conf.Goarch,
+		goversion:  sourcePatchGoVersion,
+		buildFlags: cfg.BuildFlags,
+	})
 	if err != nil {
 		return nil, err
 	}

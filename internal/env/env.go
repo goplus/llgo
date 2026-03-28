@@ -37,6 +37,22 @@ func GOROOTWithEnv(env []string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
+func GOVERSIONWithEnv(env []string) (string, error) {
+	cmd := exec.Command("go", "env", "GOVERSION")
+	if len(env) != 0 {
+		cmd.Env = env
+	}
+	var out bytes.Buffer
+	var buf bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &buf
+	err := cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("%s, %w", buf.String(), err)
+	}
+	return strings.TrimSpace(out.String()), nil
+}
+
 func LLGoCacheDir() string {
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {

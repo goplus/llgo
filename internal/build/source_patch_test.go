@@ -15,7 +15,7 @@ import (
 )
 
 func TestBuildSourcePatchOverlayForIter(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT(), sourcePatchBuildContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func Old() string { return "new" }
 func (T) M() string { return "new method" }
 `)
 
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -183,7 +183,7 @@ func Old() string { return "new" }
 func Added() string { return "added" }
 `)
 
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -228,7 +228,7 @@ package demo
 const Only = "patched"
 `)
 
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -266,7 +266,7 @@ package demo
 func Old() string { return "new" }
 `)
 
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -291,7 +291,7 @@ func TestApplySourcePatchForPkg_MissingStdlibPkg(t *testing.T) {
 func Pull[V any](seq func(func(V) bool)) {}
 `)
 
-	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -300,6 +300,48 @@ func Pull[V any](seq func(func(V) bool)) {}
 	}
 	if overlay != nil {
 		t.Fatalf("expected no overlay for missing stdlib package, got %v entries", len(overlay))
+	}
+}
+
+func TestApplySourcePatchForPkg_BuildTaggedPatch(t *testing.T) {
+	goroot := t.TempDir()
+	runtimeDir := t.TempDir()
+	pkgPath := "demo"
+	srcDir := filepath.Join(goroot, "src", pkgPath)
+	patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+	mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
+
+func Old() string { return "old" }
+`)
+	mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `//go:build go1.26
+//llgo:skipall
+package demo
+
+const Only = "patched"
+`)
+
+	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{
+		goos:      runtime.GOOS,
+		goarch:    runtime.GOARCH,
+		goversion: "go1.24.11",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed {
+		t.Fatalf("expected go1.26-tagged patch to be ignored on go1.24, got overlay: %#v", overlay)
+	}
+
+	changed, overlay, err = applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{
+		goos:      runtime.GOOS,
+		goarch:    runtime.GOARCH,
+		goversion: "go1.26.0",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !changed {
+		t.Fatal("expected go1.26-tagged patch to apply on go1.26")
 	}
 }
 
@@ -326,7 +368,7 @@ func TestApplySourcePatchForPkg_UnreadableStdlibPkg(t *testing.T) {
 func Pull[V any](seq func(func(V) bool)) {}
 `)
 
-	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
