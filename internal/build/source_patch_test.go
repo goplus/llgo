@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/goplus/llgo/internal/env"
+	llruntime "github.com/goplus/llgo/runtime"
 )
 
 func TestBuildSourcePatchOverlayForIter(t *testing.T) {
@@ -36,5 +37,14 @@ func TestBuildSourcePatchOverlayForIter(t *testing.T) {
 	}
 	if strings.Contains(got, "func Pull") {
 		t.Fatalf("stub overlay for %s still contains original declarations", stdFile)
+	}
+}
+
+func TestIterUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
+	if !llruntime.HasSourcePatchPkg("iter") {
+		t.Fatal("iter should be registered as a source patch package")
+	}
+	if llruntime.HasAltPkg("iter") {
+		t.Fatal("iter should not remain an alt package")
 	}
 }
