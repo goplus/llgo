@@ -129,9 +129,6 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		if err != nil {
 			return false, nil, fmt.Errorf("parse source patch directives %s: %w", filename, err)
 		}
-		if directives.noPatch {
-			continue
-		}
 		patchSrcs[name] = buildInjectedSourcePatchFile(filename, src)
 		if directives.skipAll {
 			skipAll = true
@@ -292,7 +289,6 @@ func packageStubSource(src []byte) ([]byte, error) {
 }
 
 type sourcePatchDirectives struct {
-	noPatch bool
 	skipAll bool
 	skips   map[string]struct{}
 }
@@ -307,11 +303,10 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 	for _, group := range file.Comments {
 		for _, comment := range group.List {
 			line := strings.TrimSpace(comment.Text)
-			noPatch, skipAll, names, ok := parseSourcePatchDirective(line)
+			skipAll, names, ok := parseSourcePatchDirective(line)
 			if !ok {
 				continue
 			}
-			d.noPatch = d.noPatch || noPatch
 			if skipAll {
 				d.skipAll = true
 			}
@@ -320,11 +315,9 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 			}
 		}
 	}
-	if !d.noPatch {
-		for _, decl := range file.Decls {
-			for _, name := range declPatchKeys(decl) {
-				d.skips[name] = struct{}{}
-			}
+	for _, decl := range file.Decls {
+		for _, name := range declPatchKeys(decl) {
+			d.skips[name] = struct{}{}
 		}
 	}
 	return d, nil
@@ -333,20 +326,19 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 // parseSourcePatchDirective recognizes build-time source-patch directives.
 //
 // Supported directives:
-//   - //llgo:nopatch: ignore this file during source-patch injection
 //   - //llgo:skipall: blank every stdlib .go file in the patched package
 //   - //llgo:skip A B: blank the named declarations from the stdlib package view
 //
 // Unlike cl/import.go directives, these are consumed only while constructing the
 // load-time overlay and are rewritten to plain comments before type checking.
-func parseSourcePatchDirective(line string) (noPatch, skipAll bool, names []string, ok bool) {
+func parseSourcePatchDirective(line string) (skipAll bool, names []string, ok bool) {
 	const (
 		llgo1 = "//llgo:"
 		llgo2 = "// llgo:"
 		go1   = "//go:"
 	)
 	if strings.HasPrefix(line, go1) {
-		return false, false, nil, false
+		return false, nil, false
 	}
 	var tail string
 	switch {
@@ -355,17 +347,15 @@ func parseSourcePatchDirective(line string) (noPatch, skipAll bool, names []stri
 	case strings.HasPrefix(line, llgo2):
 		tail = line[len(llgo2):]
 	default:
-		return false, false, nil, false
+		return false, nil, false
 	}
 	switch {
-	case tail == "nopatch":
-		return true, false, nil, true
 	case tail == "skipall":
-		return false, true, nil, true
+		return true, nil, true
 	case strings.HasPrefix(tail, "skip "):
-		return false, false, strings.Fields(tail[len("skip "):]), true
+		return false, strings.Fields(tail[len("skip "):]), true
 	default:
-		return false, false, nil, false
+		return false, nil, false
 	}
 }
 
@@ -383,7 +373,7 @@ func sanitizeSourcePatchDirectiveLines(src []byte) []byte {
 	}
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(string(line))
-		if _, _, _, ok := parseSourcePatchDirective(trimmed); !ok {
+		if _, _, ok := parseSourcePatchDirective(trimmed); !ok {
 			continue
 		}
 		switch {
