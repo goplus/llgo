@@ -1,5 +1,3 @@
-// llgo:nopatch
-
 package atomic
 
 // An Int64 is an atomic int64. The zero value is zero.

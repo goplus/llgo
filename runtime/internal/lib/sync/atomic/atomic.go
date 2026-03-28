@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// llgo:nopatch
-
 package atomic
 
 import (
