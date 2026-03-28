@@ -25,9 +25,9 @@ func HasAdditiveAltPkg(path string) bool {
 	return altPkgs[path] == altPkgAdditive
 }
 
-func HasSourcePatchPkg(path string) (b bool) {
-	_, b = sourcePatchPkgs[path]
-	return
+func HasSourcePatchPkg(path string) bool {
+	_, ok := sourcePatchPkgs[path]
+	return ok
 }
 
 func SourcePatchPkgPaths() []string {
