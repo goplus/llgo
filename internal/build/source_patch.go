@@ -105,7 +105,7 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		if directives.noPatch {
 			continue
 		}
-		patchSrcs[name] = slices.Clone(src)
+		patchSrcs[name] = stripSourcePatchDirectiveLines(src)
 		if directives.skipAll {
 			skipAll = true
 		}
@@ -263,6 +263,22 @@ func parseSourcePatchDirective(line string) (noPatch, skipAll bool, names []stri
 	default:
 		return false, false, nil, false
 	}
+}
+
+func stripSourcePatchDirectiveLines(src []byte) []byte {
+	lines := bytes.SplitAfter(src, []byte{'\n'})
+	out := make([][]byte, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(string(line))
+		if _, _, _, ok := parseSourcePatchDirective(trimmed); ok {
+			continue
+		}
+		out = append(out, line)
+	}
+	if len(out) == len(lines) {
+		return slices.Clone(src)
+	}
+	return bytes.Join(out, nil)
 }
 
 func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool, error) {

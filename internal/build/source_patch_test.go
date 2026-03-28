@@ -90,6 +90,45 @@ func TestSyncAtomicUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
+func TestBuildSourcePatchOverlayForReflectlite(t *testing.T) {
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgDir := filepath.Join(runtime.GOROOT(), "src", "internal", "reflectlite")
+	stdFile := filepath.Join(pkgDir, "value.go")
+	stdSrc, ok := overlay[stdFile]
+	if !ok {
+		t.Fatalf("missing stub overlay for %s", stdFile)
+	}
+	got := string(stdSrc)
+	if !strings.Contains(got, "package reflectlite") {
+		t.Fatalf("stub overlay for %s lost package clause", stdFile)
+	}
+	if strings.Contains(got, "type Value struct") {
+		t.Fatalf("stub overlay for %s still contains original declarations", stdFile)
+	}
+
+	patchFile := filepath.Join(pkgDir, "z_llgo_patch_value.go")
+	patchSrc, ok := overlay[patchFile]
+	if !ok {
+		t.Fatalf("missing source patch file %s", patchFile)
+	}
+	if !strings.Contains(string(patchSrc), "type Value struct") {
+		t.Fatalf("source patch file %s does not contain reflectlite replacement", patchFile)
+	}
+}
+
+func TestReflectliteUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
+	if !llruntime.HasSourcePatchPkg("internal/reflectlite") {
+		t.Fatal("internal/reflectlite should be registered as a source patch package")
+	}
+	if llruntime.HasAltPkg("internal/reflectlite") {
+		t.Fatal("internal/reflectlite should not remain an alt package")
+	}
+}
+
 func TestUniqueUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	if !llruntime.HasSourcePatchPkg("unique") {
 		t.Fatal("unique should be registered as a source patch package")
@@ -162,6 +201,9 @@ func (T) M() string { return "new method" }
 
 		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
 		patchSrc := string(overlay[patchFile])
+		if strings.Contains(patchSrc, "llgo:skip") {
+			t.Fatalf("expected source patch directives to be stripped, got:\n%s", patchSrc)
+		}
 		for _, want := range []string{"var Added", "func Old", "func (T) M"} {
 			if !strings.Contains(patchSrc, want) {
 				t.Fatalf("expected injected patch declaration %q, got:\n%s", want, patchSrc)
@@ -205,6 +247,9 @@ func Added() string { return "added" }
 
 		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
 		patchSrc := string(overlay[patchFile])
+		if strings.Contains(patchSrc, "llgo:skipall") {
+			t.Fatalf("expected source patch directives to be stripped, got:\n%s", patchSrc)
+		}
 		for _, want := range []string{"func Old", "func Added"} {
 			if !strings.Contains(patchSrc, want) {
 				t.Fatalf("expected injected patch declaration %q, got:\n%s", want, patchSrc)
@@ -246,7 +291,9 @@ const Only = "patched"
 		}
 
 		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		if patchSrc := string(overlay[patchFile]); !strings.Contains(patchSrc, `const Only = "patched"`) {
+		if patchSrc := string(overlay[patchFile]); strings.Contains(patchSrc, "llgo:skipall") {
+			t.Fatalf("expected source patch directives to be stripped, got:\n%s", patchSrc)
+		} else if !strings.Contains(patchSrc, `const Only = "patched"`) {
 			t.Fatalf("expected skipall patch file to be injected, got:\n%s", patchSrc)
 		}
 	})
