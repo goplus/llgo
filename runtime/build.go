@@ -40,17 +40,17 @@ func SourcePatchPkgPaths() []string {
 }
 
 var altPkgs = map[string]altPkgMode{
-	"internal/abi":         altPkgReplace,
-	"internal/reflectlite": altPkgReplace,
-	"reflect":              altPkgReplace,
-	"runtime":              altPkgReplace,
-	"syscall/js":           altPkgReplace,
-	"unique":               altPkgReplace,
+	"internal/abi":          altPkgReplace,
+	"internal/reflectlite":  altPkgReplace,
+	"internal/runtime/maps": altPkgReplace,
+	"internal/runtime/sys":  altPkgAdditive,
+	"reflect":               altPkgReplace,
+	"runtime":               altPkgReplace,
+	"syscall/js":            altPkgReplace,
+	"unique":                altPkgReplace,
 }
 
 var sourcePatchPkgs = map[string]struct{}{
-	"internal/runtime/maps": {},
-	"internal/runtime/sys":  {},
-	"iter":                  {},
-	"sync/atomic":           {},
+	"iter":        {},
+	"sync/atomic": {},
 }

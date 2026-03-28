@@ -90,83 +90,24 @@ func TestSyncAtomicUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
-func TestBuildSourcePatchOverlayForInternalRuntimeMaps(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
-	if err != nil {
-		t.Fatal(err)
+func TestInternalRuntimeMapsRemainsAltPkg(t *testing.T) {
+	if llruntime.HasSourcePatchPkg("internal/runtime/maps") {
+		t.Fatal("internal/runtime/maps should not be registered as a source patch package")
 	}
-
-	pkgDir := filepath.Join(runtime.GOROOT(), "src", "internal", "runtime", "maps")
-	stdFile := filepath.Join(pkgDir, "runtime.go")
-	stdSrc, ok := overlay[stdFile]
-	if !ok {
-		t.Fatalf("missing filtered stdlib file %s", stdFile)
-	}
-	got := string(stdSrc)
-	for _, forbidden := range []string{"func fatal(", "func rand()", "func typedmemmove(", "func typedmemclr(", "func newarray(", "func newobject("} {
-		if strings.Contains(got, forbidden) {
-			t.Fatalf("expected source patch filtering to remove %q from %s, got:\n%s", forbidden, stdFile, got)
-		}
-	}
-
-	patchFile := filepath.Join(pkgDir, "z_llgo_patch_maps.go")
-	patchSrc, ok := overlay[patchFile]
-	if !ok {
-		t.Fatalf("missing source patch file %s", patchFile)
-	}
-	for _, want := range []string{"func fatal(", "func rand()", "func mapKeyError(", "func typeString("} {
-		if !strings.Contains(string(patchSrc), want) {
-			t.Fatalf("expected source patch file %s to contain %q", patchFile, want)
-		}
+	if !llruntime.HasAltPkg("internal/runtime/maps") {
+		t.Fatal("internal/runtime/maps should remain an alt package")
 	}
 }
 
-func TestBuildSourcePatchOverlayForInternalRuntimeSys(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
-	if err != nil {
-		t.Fatal(err)
+func TestInternalRuntimeSysRemainsAltPkg(t *testing.T) {
+	if llruntime.HasSourcePatchPkg("internal/runtime/sys") {
+		t.Fatal("internal/runtime/sys should not be registered as a source patch package")
 	}
-
-	pkgDir := filepath.Join(runtime.GOROOT(), "src", "internal", "runtime", "sys")
-	stdFile := filepath.Join(pkgDir, "intrinsics.go")
-	stdSrc, ok := overlay[stdFile]
-	if !ok {
-		t.Fatalf("missing filtered stdlib file %s", stdFile)
+	if !llruntime.HasAltPkg("internal/runtime/sys") {
+		t.Fatal("internal/runtime/sys should remain an alt package")
 	}
-	got := string(stdSrc)
-	for _, forbidden := range []string{"func GetCallerPC()", "func GetCallerSP()"} {
-		if strings.Contains(got, forbidden) {
-			t.Fatalf("expected source patch filtering to remove %q from %s, got:\n%s", forbidden, stdFile, got)
-		}
-	}
-
-	patchFile := filepath.Join(pkgDir, "z_llgo_patch_intrinsics.go")
-	patchSrc, ok := overlay[patchFile]
-	if !ok {
-		t.Fatalf("missing source patch file %s", patchFile)
-	}
-	for _, want := range []string{"func GetCallerPC() uintptr", "func GetCallerSP() uintptr"} {
-		if !strings.Contains(string(patchSrc), want) {
-			t.Fatalf("expected source patch file %s to contain %q", patchFile, want)
-		}
-	}
-}
-
-func TestInternalRuntimeMapsUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
-	if !llruntime.HasSourcePatchPkg("internal/runtime/maps") {
-		t.Fatal("internal/runtime/maps should be registered as a source patch package")
-	}
-	if llruntime.HasAltPkg("internal/runtime/maps") {
-		t.Fatal("internal/runtime/maps should not remain an alt package")
-	}
-}
-
-func TestInternalRuntimeSysUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
-	if !llruntime.HasSourcePatchPkg("internal/runtime/sys") {
-		t.Fatal("internal/runtime/sys should be registered as a source patch package")
-	}
-	if llruntime.HasAltPkg("internal/runtime/sys") {
-		t.Fatal("internal/runtime/sys should not remain an alt package")
+	if !llruntime.HasAdditiveAltPkg("internal/runtime/sys") {
+		t.Fatal("internal/runtime/sys should remain an additive alt package")
 	}
 }
 
