@@ -18,7 +18,14 @@ const (
 )
 
 func GOROOT() (string, error) {
+	return GOROOTWithEnv(nil)
+}
+
+func GOROOTWithEnv(env []string) (string, error) {
 	cmd := exec.Command("go", "env", "GOROOT")
+	if len(env) != 0 {
+		cmd.Env = env
+	}
 	var out bytes.Buffer
 	var buf bytes.Buffer
 	cmd.Stdout = &out
