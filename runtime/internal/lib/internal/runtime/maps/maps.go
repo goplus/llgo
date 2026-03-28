@@ -36,14 +36,14 @@ type Type = abi.Type
 
 type SwissMapType struct {
 	Type
-	Key    *Type
-	Elem   *Type
-	Group  *Type
-	Hasher func(unsafe.Pointer, uintptr) uintptr
-
-	GroupSize uintptr
-	SlotSize  uintptr
-	ElemOff   uintptr
+	Key   *Type
+	Elem  *Type
+	Group *Type // internal type representing a slot group
+	// function for hashing keys (ptr to key, seed) -> hash
+	Hasher    func(unsafe.Pointer, uintptr) uintptr
+	GroupSize uintptr // == Group.Size_
+	SlotSize  uintptr // size of key/elem slot
+	ElemOff   uintptr // offset of elem in key/elem slot
 	Flags     uint32
 }
 
