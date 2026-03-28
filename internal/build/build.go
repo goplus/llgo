@@ -304,6 +304,10 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
+	cfg.Overlay, err = buildSourcePatchOverlay(cfg.Overlay, env.LLGoRuntimeDir())
+	if err != nil {
+		return nil, err
+	}
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	if err != nil {
 		return nil, err
