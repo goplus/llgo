@@ -90,6 +90,15 @@ func TestSyncAtomicUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
+func TestUniqueUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
+	if !llruntime.HasSourcePatchPkg("unique") {
+		t.Fatal("unique should be registered as a source patch package")
+	}
+	if llruntime.HasAltPkg("unique") {
+		t.Fatal("unique should not remain an alt package")
+	}
+}
+
 func TestApplySourcePatchForPkg_Directives(t *testing.T) {
 	t.Run("skip-and-override", func(t *testing.T) {
 		goroot := t.TempDir()
