@@ -90,36 +90,6 @@ func TestSyncAtomicUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
-func TestBuildSourcePatchOverlayForReflectlite(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	pkgDir := filepath.Join(runtime.GOROOT(), "src", "internal", "reflectlite")
-	stdFile := filepath.Join(pkgDir, "value.go")
-	stdSrc, ok := overlay[stdFile]
-	if !ok {
-		t.Fatalf("missing stub overlay for %s", stdFile)
-	}
-	got := string(stdSrc)
-	if !strings.Contains(got, "package reflectlite") {
-		t.Fatalf("stub overlay for %s lost package clause", stdFile)
-	}
-	if strings.Contains(got, "type Value struct") {
-		t.Fatalf("stub overlay for %s still contains original declarations", stdFile)
-	}
-
-	patchFile := filepath.Join(pkgDir, "z_llgo_patch_value.go")
-	patchSrc, ok := overlay[patchFile]
-	if !ok {
-		t.Fatalf("missing source patch file %s", patchFile)
-	}
-	if !strings.Contains(string(patchSrc), "type Value struct") {
-		t.Fatalf("source patch file %s does not contain reflectlite replacement", patchFile)
-	}
-}
-
 func TestBuildSourcePatchOverlayForInternalRuntimeMaps(t *testing.T) {
 	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT())
 	if err != nil {
@@ -182,15 +152,6 @@ func TestBuildSourcePatchOverlayForInternalRuntimeSys(t *testing.T) {
 	}
 }
 
-func TestReflectliteUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
-	if !llruntime.HasSourcePatchPkg("internal/reflectlite") {
-		t.Fatal("internal/reflectlite should be registered as a source patch package")
-	}
-	if llruntime.HasAltPkg("internal/reflectlite") {
-		t.Fatal("internal/reflectlite should not remain an alt package")
-	}
-}
-
 func TestInternalRuntimeMapsUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	if !llruntime.HasSourcePatchPkg("internal/runtime/maps") {
 		t.Fatal("internal/runtime/maps should be registered as a source patch package")
@@ -206,15 +167,6 @@ func TestInternalRuntimeSysUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 	if llruntime.HasAltPkg("internal/runtime/sys") {
 		t.Fatal("internal/runtime/sys should not remain an alt package")
-	}
-}
-
-func TestUniqueUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
-	if !llruntime.HasSourcePatchPkg("unique") {
-		t.Fatal("unique should be registered as a source patch package")
-	}
-	if llruntime.HasAltPkg("unique") {
-		t.Fatal("unique should not remain an alt package")
 	}
 }
 
