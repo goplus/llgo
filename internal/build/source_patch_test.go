@@ -1,6 +1,9 @@
 package build
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -25,6 +28,9 @@ func TestBuildSourcePatchOverlayForIter(t *testing.T) {
 	}
 	if !strings.Contains(string(patchSrc), "func Pull[V any]") {
 		t.Fatalf("source patch file %s does not contain iter replacement", patchFile)
+	}
+	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "internal", "lib", "iter", "iter.go"))) {
+		t.Fatalf("source patch file %s is missing line directive, got:\n%s", patchFile, patchSrc)
 	}
 
 	stdFile := filepath.Join(iterDir, "iter.go")
@@ -87,7 +93,9 @@ func TestApplySourcePatchForPkg_Directives(t *testing.T) {
 		pkgPath := "demo"
 		srcDir := filepath.Join(goroot, "src", pkgPath)
 		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
+		stdFile := filepath.Join(srcDir, "demo.go")
+		patchFile := filepath.Join(patchDir, "patch.go")
+		mustWriteFile(t, stdFile, `package demo
 
 import "fmt"
 
@@ -101,7 +109,7 @@ func Old() string { return fmt.Sprint("old") }
 func KeepFn() string { return Keep }
 func (T) M() string { return fmt.Sprint("old method") }
 `)
-		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `package demo
+		mustWriteFile(t, patchFile, `package demo
 
 //llgo:skip Drop
 
@@ -121,36 +129,39 @@ func (T) M() string { return "new method" }
 			t.Fatal("expected source patch overlay to change package")
 		}
 
-		stdFile := filepath.Join(srcDir, "demo.go")
-		got := string(overlay[stdFile])
-		if strings.Contains(got, "fmt") {
-			t.Fatalf("expected unused fmt import to be removed, got:\n%s", got)
-		}
-		if strings.Contains(got, "var Drop") {
-			t.Fatalf("expected explicit skip to remove Drop, got:\n%s", got)
-		}
-		if strings.Contains(got, "func Old") {
-			t.Fatalf("expected patch declaration to override Old, got:\n%s", got)
-		}
-		if strings.Contains(got, "func (T) M") {
-			t.Fatalf("expected patch declaration to override T.M, got:\n%s", got)
-		}
-		for _, want := range []string{"const Keep", "type T struct{}", "func KeepFn"} {
-			if !strings.Contains(got, want) {
-				t.Fatalf("expected original declaration %q to remain, got:\n%s", want, got)
-			}
-		}
+		assertExactString(t, "filtered stdlib source", string(overlay[stdFile]), ""+
+			"package demo\n"+
+			"\n"+
+			blankNonNewline(`import "fmt"`)+"\n"+
+			"\n"+
+			`const Keep = "keep"`+"\n"+
+			"\n"+
+			blankNonNewline(`var Drop = fmt.Sprint("drop")`)+"\n"+
+			"\n"+
+			`type T struct{}`+"\n"+
+			"\n"+
+			blankNonNewline(`func Old() string { return fmt.Sprint("old") }`)+"\n"+
+			`func KeepFn() string { return Keep }`+"\n"+
+			blankNonNewline(`func (T) M() string { return fmt.Sprint("old method") }`)+"\n")
 
-		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		patchSrc := string(overlay[patchFile])
-		if strings.Contains(patchSrc, "llgo:skip") {
-			t.Fatalf("expected source patch directives to be stripped, got:\n%s", patchSrc)
-		}
-		for _, want := range []string{"var Added", "func Old", "func (T) M"} {
-			if !strings.Contains(patchSrc, want) {
-				t.Fatalf("expected injected patch declaration %q, got:\n%s", want, patchSrc)
-			}
-		}
+		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
+		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
+			sourcePatchLineDirective(patchFile)+`package demo
+
+//llgo_skip Drop
+
+import "strings"
+
+var Added = strings.ToUpper("added")
+
+func Old() string { return "new" }
+func (T) M() string { return "new method" }
+`)
+
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "package", 1)
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "var:Added", 7)
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "func:Old", 9)
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "method:T.M", 10)
 	})
 
 	t.Run("default-override", func(t *testing.T) {
@@ -159,12 +170,14 @@ func (T) M() string { return "new method" }
 		pkgPath := "demo"
 		srcDir := filepath.Join(goroot, "src", pkgPath)
 		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
+		stdFile := filepath.Join(srcDir, "demo.go")
+		patchFile := filepath.Join(patchDir, "patch.go")
+		mustWriteFile(t, stdFile, `package demo
 
 func Old() string { return "old" }
 func Keep() string { return "keep" }
 `)
-		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `package demo
+		mustWriteFile(t, patchFile, `package demo
 
 func Old() string { return "new" }
 func Added() string { return "added" }
@@ -178,25 +191,23 @@ func Added() string { return "added" }
 			t.Fatal("expected source patch overlay to change package")
 		}
 
-		stdFile := filepath.Join(srcDir, "demo.go")
-		got := string(overlay[stdFile])
-		if strings.Contains(got, "func Old") {
-			t.Fatalf("expected patch declaration to override Old, got:\n%s", got)
-		}
-		if !strings.Contains(got, "func Keep") {
-			t.Fatalf("expected Keep to remain, got:\n%s", got)
-		}
+		assertExactString(t, "filtered stdlib source", string(overlay[stdFile]), ""+
+			"package demo\n"+
+			"\n"+
+			blankNonNewline(`func Old() string { return "old" }`)+"\n"+
+			`func Keep() string { return "keep" }`+"\n")
 
-		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		patchSrc := string(overlay[patchFile])
-		if strings.Contains(patchSrc, "llgo:skipall") {
-			t.Fatalf("expected source patch directives to be stripped, got:\n%s", patchSrc)
-		}
-		for _, want := range []string{"func Old", "func Added"} {
-			if !strings.Contains(patchSrc, want) {
-				t.Fatalf("expected injected patch declaration %q, got:\n%s", want, patchSrc)
-			}
-		}
+		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
+		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
+			sourcePatchLineDirective(patchFile)+`package demo
+
+func Old() string { return "new" }
+func Added() string { return "added" }
+`)
+
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "package", 1)
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "func:Old", 3)
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "func:Added", 4)
 	})
 
 	t.Run("skipall", func(t *testing.T) {
@@ -205,11 +216,13 @@ func Added() string { return "added" }
 		pkgPath := "demo"
 		srcDir := filepath.Join(goroot, "src", pkgPath)
 		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
+		stdFile := filepath.Join(srcDir, "demo.go")
+		patchFile := filepath.Join(patchDir, "patch.go")
+		mustWriteFile(t, stdFile, `package demo
 
 func Old() string { return "old" }
 `)
-		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `// llgo:skipall
+		mustWriteFile(t, patchFile, `// llgo:skipall
 package demo
 
 const Only = "patched"
@@ -223,20 +236,45 @@ const Only = "patched"
 			t.Fatal("expected source patch overlay to change package")
 		}
 
-		stdFile := filepath.Join(srcDir, "demo.go")
-		got := string(overlay[stdFile])
-		if strings.Contains(got, "func Old") {
-			t.Fatalf("expected skipall to stub original file, got:\n%s", got)
-		}
-		if !strings.Contains(got, "package demo") {
-			t.Fatalf("expected package clause to remain, got:\n%s", got)
-		}
+		assertExactString(t, "stubbed stdlib source", string(overlay[stdFile]), "package demo\n")
 
-		patchFile := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		if patchSrc := string(overlay[patchFile]); strings.Contains(patchSrc, "llgo:skipall") {
-			t.Fatalf("expected source patch directives to be stripped, got:\n%s", patchSrc)
-		} else if !strings.Contains(patchSrc, `const Only = "patched"`) {
-			t.Fatalf("expected skipall patch file to be injected, got:\n%s", patchSrc)
+		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
+		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
+			sourcePatchLineDirective(patchFile)+`// llgo_skipall
+package demo
+
+const Only = "patched"
+`)
+
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "package", 2)
+		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "const:Only", 4)
+	})
+
+	t.Run("nopatch", func(t *testing.T) {
+		goroot := t.TempDir()
+		runtimeDir := t.TempDir()
+		pkgPath := "demo"
+		srcDir := filepath.Join(goroot, "src", pkgPath)
+		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+		mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
+
+func Old() string { return "old" }
+`)
+		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `//llgo:nopatch
+package demo
+
+func Old() string { return "new" }
+`)
+
+		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if changed {
+			t.Fatal("expected nopatch file to skip source patching")
+		}
+		if overlay != nil {
+			t.Fatalf("expected no overlay for nopatch file, got %v entries", len(overlay))
 		}
 	})
 }
@@ -308,4 +346,81 @@ func mustWriteFile(t *testing.T, filename, content string) {
 	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func blankNonNewline(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		switch r {
+		case '\n', '\r':
+			b.WriteRune(r)
+		default:
+			b.WriteByte(' ')
+		}
+	}
+	return b.String()
+}
+
+func sourcePatchLineDirective(filename string) string {
+	return "//line " + filepath.ToSlash(filename) + ":1\n"
+}
+
+func assertExactString(t *testing.T, label, got, want string) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("%s mismatch\nwant:\n%q\n\ngot:\n%q", label, want, got)
+	}
+}
+
+func assertPatchedPosition(t *testing.T, src, generatedFilename, wantFilename, target string, wantLine int) {
+	t.Helper()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, generatedFilename, src, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pos, ok := findPatchedPosition(file, target)
+	if !ok {
+		t.Fatalf("target %q not found", target)
+	}
+	got := fset.Position(pos)
+	if filepath.ToSlash(got.Filename) != filepath.ToSlash(wantFilename) || got.Line != wantLine {
+		t.Fatalf("target %q position mismatch: want %s:%d, got %s:%d", target, filepath.ToSlash(wantFilename), wantLine, filepath.ToSlash(got.Filename), got.Line)
+	}
+}
+
+func findPatchedPosition(file *ast.File, target string) (token.Pos, bool) {
+	if target == "package" {
+		return file.Package, true
+	}
+	for _, decl := range file.Decls {
+		switch decl := decl.(type) {
+		case *ast.FuncDecl:
+			key := "func:" + decl.Name.Name
+			if decl.Recv != nil && len(decl.Recv.List) != 0 {
+				key = "method:" + recvPatchKey(decl.Recv.List[0].Type) + "." + decl.Name.Name
+			}
+			if key == target {
+				return decl.Name.Pos(), true
+			}
+		case *ast.GenDecl:
+			for _, spec := range decl.Specs {
+				switch spec := spec.(type) {
+				case *ast.TypeSpec:
+					if "type:"+spec.Name.Name == target {
+						return spec.Name.Pos(), true
+					}
+				case *ast.ValueSpec:
+					kind := strings.ToLower(decl.Tok.String())
+					for _, name := range spec.Names {
+						if kind+":"+name.Name == target {
+							return name.Pos(), true
+						}
+					}
+				}
+			}
+		}
+	}
+	return token.NoPos, false
 }

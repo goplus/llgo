@@ -112,7 +112,7 @@ func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot,
 		if directives.noPatch {
 			continue
 		}
-		patchSrcs[name] = sanitizeSourcePatchDirectiveLines(src)
+		patchSrcs[name] = buildInjectedSourcePatchFile(filename, src)
 		if directives.skipAll {
 			skipAll = true
 		}
@@ -303,6 +303,16 @@ func sanitizeSourcePatchDirectiveLines(src []byte) []byte {
 		return src
 	}
 	return out
+}
+
+func buildInjectedSourcePatchFile(filename string, src []byte) []byte {
+	sanitized := sanitizeSourcePatchDirectiveLines(src)
+	var out bytes.Buffer
+	out.WriteString("//line ")
+	out.WriteString(filepath.ToSlash(filename))
+	out.WriteString(":1\n")
+	out.Write(sanitized)
+	return out.Bytes()
 }
 
 func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool, error) {
