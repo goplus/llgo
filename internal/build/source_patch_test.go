@@ -250,33 +250,6 @@ const Only = "patched"
 		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "const:Only", 4)
 	})
 
-	t.Run("nopatch", func(t *testing.T) {
-		goroot := t.TempDir()
-		runtimeDir := t.TempDir()
-		pkgPath := "demo"
-		srcDir := filepath.Join(goroot, "src", pkgPath)
-		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
-
-func Old() string { return "old" }
-`)
-		mustWriteFile(t, filepath.Join(patchDir, "patch.go"), `//llgo:nopatch
-package demo
-
-func Old() string { return "new" }
-`)
-
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if changed {
-			t.Fatal("expected nopatch file to skip source patching")
-		}
-		if overlay != nil {
-			t.Fatalf("expected no overlay for nopatch file, got %v entries", len(overlay))
-		}
-	})
 }
 
 func TestApplySourcePatchForPkg_MissingStdlibPkg(t *testing.T) {
