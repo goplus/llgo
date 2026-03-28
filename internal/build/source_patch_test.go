@@ -272,6 +272,30 @@ const Only = "patched"
 	})
 }
 
+func TestApplySourcePatchForPkg_MissingStdlibPkg(t *testing.T) {
+	goroot := t.TempDir()
+	runtimeDir := t.TempDir()
+	pkgPath := "iter"
+	patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+	mustWriteFile(t, filepath.Join(patchDir, "iter.go"), `package iter
+
+//llgo:skipall
+
+func Pull[V any](seq func(func(V) bool)) {}
+`)
+
+	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed {
+		t.Fatal("expected missing stdlib package to skip source patching")
+	}
+	if overlay != nil {
+		t.Fatalf("expected no overlay for missing stdlib package, got %v entries", len(overlay))
+	}
+}
+
 func mustWriteFile(t *testing.T, filename, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
