@@ -8,6 +8,6 @@ var Drop = fmt.Sprint("drop")
 
 type T struct{}
 
-func Old() string { return fmt.Sprint("old") }
+func Old() string    { return fmt.Sprint("old") }
 func KeepFn() string { return Keep }
-func (T) M() string { return fmt.Sprint("old method") }
+func (T) M() string  { return fmt.Sprint("old method") }
