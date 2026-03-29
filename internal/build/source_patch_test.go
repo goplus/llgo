@@ -4,9 +4,11 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -29,7 +31,7 @@ func TestBuildSourcePatchOverlayForIter(t *testing.T) {
 	if !strings.Contains(string(patchSrc), "func Pull[V any]") {
 		t.Fatalf("source patch file %s does not contain iter replacement", patchFile)
 	}
-	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "internal", "lib", "iter", "iter.go"))) {
+	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "_patch", "iter", "iter.go"))) {
 		t.Fatalf("source patch file %s is missing line directive, got:\n%s", patchFile, patchSrc)
 	}
 
@@ -86,177 +88,25 @@ func TestInternalRuntimeSysRemainsAltPkg(t *testing.T) {
 	}
 }
 
-func TestApplySourcePatchForPkg_Directives(t *testing.T) {
-	t.Run("skip-and-override", func(t *testing.T) {
-		goroot := t.TempDir()
-		runtimeDir := t.TempDir()
-		pkgPath := "demo"
-		srcDir := filepath.Join(goroot, "src", pkgPath)
-		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		stdFile := filepath.Join(srcDir, "demo.go")
-		patchFile := filepath.Join(patchDir, "patch.go")
-		mustWriteFile(t, stdFile, `package demo
-
-import "fmt"
-
-const Keep = "keep"
-
-var Drop = fmt.Sprint("drop")
-
-type T struct{}
-
-func Old() string { return fmt.Sprint("old") }
-func KeepFn() string { return Keep }
-func (T) M() string { return fmt.Sprint("old method") }
-`)
-		mustWriteFile(t, patchFile, `package demo
-
-//llgo:skip Drop
-
-import "strings"
-
-var Added = strings.ToUpper("added")
-
-func Old() string { return "new" }
-func (T) M() string { return "new method" }
-`)
-
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !changed {
-			t.Fatal("expected source patch overlay to change package")
-		}
-
-		assertExactString(t, "filtered stdlib source", string(overlay[stdFile]), ""+
-			"package demo\n"+
-			"\n"+
-			`// import "fmt"`+"\n"+
-			"\n"+
-			`const Keep = "keep"`+"\n"+
-			"\n"+
-			`// var Drop = fmt.Sprint("drop")`+"\n"+
-			"\n"+
-			`type T struct{}`+"\n"+
-			"\n"+
-			`// func Old() string { return fmt.Sprint("old") }`+"\n"+
-			`func KeepFn() string { return Keep }`+"\n"+
-			`// func (T) M() string { return fmt.Sprint("old method") }`+"\n")
-
-		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
-			sourcePatchLineDirective(patchFile)+`package demo
-
-//llgo_skip Drop
-
-import "strings"
-
-var Added = strings.ToUpper("added")
-
-func Old() string { return "new" }
-func (T) M() string { return "new method" }
-`)
-
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "package", 1)
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "var:Added", 7)
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "func:Old", 9)
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "method:T.M", 10)
-	})
-
-	t.Run("default-override", func(t *testing.T) {
-		goroot := t.TempDir()
-		runtimeDir := t.TempDir()
-		pkgPath := "demo"
-		srcDir := filepath.Join(goroot, "src", pkgPath)
-		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		stdFile := filepath.Join(srcDir, "demo.go")
-		patchFile := filepath.Join(patchDir, "patch.go")
-		mustWriteFile(t, stdFile, `package demo
-
-func Old() string { return "old" }
-func Keep() string { return "keep" }
-`)
-		mustWriteFile(t, patchFile, `package demo
-
-func Old() string { return "new" }
-func Added() string { return "added" }
-`)
-
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !changed {
-			t.Fatal("expected source patch overlay to change package")
-		}
-
-		assertExactString(t, "filtered stdlib source", string(overlay[stdFile]), ""+
-			"package demo\n"+
-			"\n"+
-			`// func Old() string { return "old" }`+"\n"+
-			`func Keep() string { return "keep" }`+"\n")
-
-		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
-			sourcePatchLineDirective(patchFile)+`package demo
-
-func Old() string { return "new" }
-func Added() string { return "added" }
-`)
-
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "package", 1)
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "func:Old", 3)
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "func:Added", 4)
-	})
-
-	t.Run("skipall", func(t *testing.T) {
-		goroot := t.TempDir()
-		runtimeDir := t.TempDir()
-		pkgPath := "demo"
-		srcDir := filepath.Join(goroot, "src", pkgPath)
-		patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
-		stdFile := filepath.Join(srcDir, "demo.go")
-		patchFile := filepath.Join(patchDir, "patch.go")
-		mustWriteFile(t, stdFile, `package demo
-
-func Old() string { return "old" }
-`)
-		mustWriteFile(t, patchFile, `// llgo:skipall
-package demo
-
-const Only = "patched"
-`)
-
-		changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !changed {
-			t.Fatal("expected source patch overlay to change package")
-		}
-
-		assertExactString(t, "stubbed stdlib source", string(overlay[stdFile]), "package demo\n")
-
-		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
-		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
-			sourcePatchLineDirective(patchFile)+`// llgo_skipall
-package demo
-
-const Only = "patched"
-`)
-
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "package", 2)
-		assertPatchedPosition(t, string(overlay[injectedPatch]), injectedPatch, patchFile, "const:Only", 4)
-	})
-
+func TestApplySourcePatchForPkg_Cases(t *testing.T) {
+	for _, caseName := range []string{
+		"default-override",
+		"multi-file-skipall",
+		"multi-file-with-asm",
+		"skip-and-override",
+		"skipall",
+	} {
+		t.Run(caseName, func(t *testing.T) {
+			runSourcePatchCase(t, caseName)
+		})
+	}
 }
 
 func TestApplySourcePatchForPkg_MissingStdlibPkg(t *testing.T) {
 	goroot := t.TempDir()
 	runtimeDir := t.TempDir()
 	pkgPath := "iter"
-	patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+	patchDir := filepath.Join(runtimeDir, "_patch", pkgPath)
 	mustWriteFile(t, filepath.Join(patchDir, "iter.go"), `package iter
 
 //llgo:skipall
@@ -281,7 +131,7 @@ func TestApplySourcePatchForPkg_BuildTaggedPatch(t *testing.T) {
 	runtimeDir := t.TempDir()
 	pkgPath := "demo"
 	srcDir := filepath.Join(goroot, "src", pkgPath)
-	patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+	patchDir := filepath.Join(runtimeDir, "_patch", pkgPath)
 	mustWriteFile(t, filepath.Join(srcDir, "demo.go"), `package demo
 
 func Old() string { return "old" }
@@ -326,7 +176,7 @@ func TestApplySourcePatchForPkg_UnreadableStdlibPkg(t *testing.T) {
 	runtimeDir := t.TempDir()
 	pkgPath := "iter"
 	srcDir := filepath.Join(goroot, "src", pkgPath)
-	patchDir := filepath.Join(runtimeDir, "internal", "lib", pkgPath)
+	patchDir := filepath.Join(runtimeDir, "_patch", pkgPath)
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -351,6 +201,198 @@ func Pull[V any](seq func(func(V) bool)) {}
 	if overlay != nil {
 		t.Fatalf("expected no overlay for unreadable stdlib package, got %v entries", len(overlay))
 	}
+}
+
+func runSourcePatchCase(t *testing.T, caseName string) {
+	t.Helper()
+
+	assetRoot := filepath.Join(env.LLGoRuntimeDir(), "_patch", "_test", caseName)
+	goroot := t.TempDir()
+	runtimeDir := t.TempDir()
+
+	copyTree(t, filepath.Join(assetRoot, "pkg"), filepath.Join(goroot, "src"))
+	copyTree(t, filepath.Join(assetRoot, "patch"), filepath.Join(runtimeDir, "_patch"))
+
+	pkgPath := singlePackagePath(t, filepath.Join(assetRoot, "patch"))
+	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !changed {
+		t.Fatal("expected source patch overlay to change package")
+	}
+
+	srcRoot := filepath.Join(goroot, "src")
+	assertOverlayMatchesOutput(t, overlay, srcRoot, filepath.Join(assetRoot, "output"), runtimeDir)
+	assertGeneratedPatchPackagePositions(t, overlay, srcRoot, filepath.Join(runtimeDir, "_patch"))
+}
+
+func copyTree(t *testing.T, srcRoot, dstRoot string) {
+	t.Helper()
+	err := filepath.WalkDir(srcRoot, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(srcRoot, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dstRoot, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0644)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func singlePackagePath(t *testing.T, root string) string {
+	t.Helper()
+	var pkgPath string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		rel, err := filepath.Rel(root, filepath.Dir(path))
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			rel = ""
+		}
+		rel = filepath.ToSlash(rel)
+		if pkgPath == "" {
+			pkgPath = rel
+			return nil
+		}
+		if pkgPath != rel {
+			return &pathMismatchError{want: pkgPath, got: rel}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pkgPath == "" {
+		t.Fatal("no patch package found")
+	}
+	return pkgPath
+}
+
+type pathMismatchError struct {
+	want string
+	got  string
+}
+
+func (e *pathMismatchError) Error() string {
+	return "multiple patch packages found: " + e.want + " and " + e.got
+}
+
+func assertOverlayMatchesOutput(t *testing.T, overlay map[string][]byte, srcRoot, outputRoot, runtimeDir string) {
+	t.Helper()
+
+	got := overlayFilesUnderRoot(t, overlay, srcRoot)
+	want := readTextFiles(t, outputRoot, runtimeDir)
+
+	gotNames := sortedMapKeys(got)
+	wantNames := sortedMapKeys(want)
+	assertExactString(t, "overlay file list", strings.Join(gotNames, "\n"), strings.Join(wantNames, "\n"))
+
+	for _, name := range wantNames {
+		assertExactString(t, "overlay file "+name, got[name], want[name])
+	}
+}
+
+func overlayFilesUnderRoot(t *testing.T, overlay map[string][]byte, root string) map[string]string {
+	t.Helper()
+	out := make(map[string]string)
+	for filename, src := range overlay {
+		rel, err := filepath.Rel(root, filename)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if rel == "." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
+			continue
+		}
+		out[filepath.ToSlash(rel)] = string(src)
+	}
+	return out
+}
+
+func readTextFiles(t *testing.T, root, runtimeDir string) map[string]string {
+	t.Helper()
+	out := make(map[string]string)
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		out[filepath.ToSlash(rel)] = expandSourcePatchOutputTemplate(string(data), runtimeDir)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func expandSourcePatchOutputTemplate(src, runtimeDir string) string {
+	patchRoot := filepath.ToSlash(filepath.Join(runtimeDir, "_patch"))
+	return strings.ReplaceAll(src, "{{PATCH_ROOT}}", patchRoot)
+}
+
+func sortedMapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func assertGeneratedPatchPackagePositions(t *testing.T, overlay map[string][]byte, srcRoot, patchRoot string) {
+	t.Helper()
+	for rel, src := range overlayFilesUnderRoot(t, overlay, srcRoot) {
+		base := filepath.Base(rel)
+		if !strings.HasPrefix(base, "z_llgo_patch_") {
+			continue
+		}
+		original := strings.TrimPrefix(base, "z_llgo_patch_")
+		patchFile := filepath.Join(patchRoot, filepath.Dir(rel), original)
+		assertPatchedPosition(t, src, filepath.Join(srcRoot, filepath.FromSlash(rel)), patchFile, "package", packageLineOfFile(t, patchFile))
+	}
+}
+
+func packageLineOfFile(t *testing.T, filename string) int {
+	t.Helper()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fset.Position(file.Package).Line
 }
 
 func mustWriteFile(t *testing.T, filename, content string) {
