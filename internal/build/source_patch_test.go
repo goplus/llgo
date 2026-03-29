@@ -132,17 +132,17 @@ func (T) M() string { return "new method" }
 		assertExactString(t, "filtered stdlib source", string(overlay[stdFile]), ""+
 			"package demo\n"+
 			"\n"+
-			blankNonNewline(`import "fmt"`)+"\n"+
+			`// import "fmt"`+"\n"+
 			"\n"+
 			`const Keep = "keep"`+"\n"+
 			"\n"+
-			blankNonNewline(`var Drop = fmt.Sprint("drop")`)+"\n"+
+			`// var Drop = fmt.Sprint("drop")`+"\n"+
 			"\n"+
 			`type T struct{}`+"\n"+
 			"\n"+
-			blankNonNewline(`func Old() string { return fmt.Sprint("old") }`)+"\n"+
+			`// func Old() string { return fmt.Sprint("old") }`+"\n"+
 			`func KeepFn() string { return Keep }`+"\n"+
-			blankNonNewline(`func (T) M() string { return fmt.Sprint("old method") }`)+"\n")
+			`// func (T) M() string { return fmt.Sprint("old method") }`+"\n")
 
 		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
 		assertExactString(t, "injected patch source", string(overlay[injectedPatch]),
@@ -194,7 +194,7 @@ func Added() string { return "added" }
 		assertExactString(t, "filtered stdlib source", string(overlay[stdFile]), ""+
 			"package demo\n"+
 			"\n"+
-			blankNonNewline(`func Old() string { return "old" }`)+"\n"+
+			`// func Old() string { return "old" }`+"\n"+
 			`func Keep() string { return "keep" }`+"\n")
 
 		injectedPatch := filepath.Join(srcDir, "z_llgo_patch_patch.go")
@@ -361,20 +361,6 @@ func mustWriteFile(t *testing.T, filename, content string) {
 	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
-}
-
-func blankNonNewline(s string) string {
-	var b strings.Builder
-	b.Grow(len(s))
-	for _, r := range s {
-		switch r {
-		case '\n', '\r':
-			b.WriteRune(r)
-		default:
-			b.WriteByte(' ')
-		}
-	}
-	return b.String()
 }
 
 func sourcePatchLineDirective(filename string) string {
