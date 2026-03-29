@@ -32,6 +32,9 @@ func TestBuildSourcePatchOverlayForInternalSync(t *testing.T) {
 	if !strings.Contains(string(patchSrc), "type HashTrieMap") {
 		t.Fatalf("source patch file %s does not contain HashTrieMap replacement", patchFile)
 	}
+	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "_patch", "internal", "sync", "hashtriemap.go"))) {
+		t.Fatalf("source patch file %s is missing line directive, got:\n%s", patchFile, patchSrc)
+	}
 
 	stdFile := filepath.Join(syncDir, "hashtriemap.go")
 	stdSrc, ok := overlay[stdFile]
