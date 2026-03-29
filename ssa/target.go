@@ -25,10 +25,16 @@ import (
 // -----------------------------------------------------------------------------
 
 type Target struct {
-	GOOS   string
-	GOARCH string
-	GOARM  string // "5", "6", "7" (default)
-	Target string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	GOOS            string
+	GOARCH          string
+	GOARM           string // "5", "6", "7" (default)
+	Target          string // target name from -target flag (e.g., "esp32", "arm7tdmi", "wasi")
+	Triple          string
+	CPU             string
+	Features        string
+	CodeGenLevel    llvm.CodeGenOptLevel
+	RelocationModel string
+	CodeModel       string
 }
 
 func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
@@ -40,8 +46,16 @@ func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
 	if err != nil {
 		panic(err)
 	}
-	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
+	optLevel := p.CodeGenLevel
+	if optLevel == 0 {
+		optLevel = llvm.CodeGenLevelDefault
+	}
+	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, optLevel, p.relocMode(), p.codeModel())
 	return machine.CreateTargetData(), machine
+}
+
+func (p *Target) CreateTargetMachine() (llvm.TargetData, llvm.TargetMachine) {
+	return p.targetInfo()
 }
 
 type TargetSpec struct {
@@ -51,6 +65,12 @@ type TargetSpec struct {
 }
 
 func (p *Target) Spec() (spec TargetSpec) {
+	if p.Triple != "" {
+		spec.Triple = p.Triple
+		spec.CPU = p.CPU
+		spec.Features = p.Features
+		return
+	}
 	// Configure based on GOOS/GOARCH environment variables (falling back to
 	// runtime.GOOS/runtime.GOARCH), and generate a LLVM target based on it.
 	var llvmarch string
@@ -137,7 +157,39 @@ func (p *Target) Spec() (spec TargetSpec) {
 		spec.CPU = "generic"
 		spec.Features = "+bulk-memory,+mutable-globals,+nontrapping-fptoint,+sign-ext"
 	}
+	if p.CPU != "" {
+		spec.CPU = p.CPU
+	}
+	if p.Features != "" {
+		spec.Features = p.Features
+	}
 	return
+}
+
+func (p *Target) relocMode() llvm.RelocMode {
+	switch p.RelocationModel {
+	case "pic":
+		return llvm.RelocPIC
+	case "static":
+		return llvm.RelocStatic
+	default:
+		return llvm.RelocDefault
+	}
+}
+
+func (p *Target) codeModel() llvm.CodeModel {
+	switch p.CodeModel {
+	case "small":
+		return llvm.CodeModelSmall
+	case "kernel":
+		return llvm.CodeModelKernel
+	case "medium":
+		return llvm.CodeModelMedium
+	case "large":
+		return llvm.CodeModelLarge
+	default:
+		return llvm.CodeModelDefault
+	}
 }
 
 // -----------------------------------------------------------------------------

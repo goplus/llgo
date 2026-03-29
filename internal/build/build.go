@@ -273,9 +273,14 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	llssa.Initialize(llssa.InitAll)
 
 	target := &llssa.Target{
-		GOOS:   conf.Goos,
-		GOARCH: conf.Goarch,
-		Target: conf.Target,
+		GOOS:            conf.Goos,
+		GOARCH:          conf.Goarch,
+		Target:          conf.Target,
+		Triple:          export.LLVMTarget,
+		CPU:             export.CPU,
+		Features:        export.Features,
+		CodeModel:       export.CodeModel,
+		RelocationModel: export.RelocationModel,
 	}
 
 	prog := llssa.NewProgram(target)
@@ -999,7 +1004,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		methodByName:  methodByName,
 		abiSymbols:    linkedModuleGlobals(linkedOrder),
 	})
-	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, entryPkg.LPkg.Module())
 	if err != nil {
 		return err
 	}
@@ -1088,11 +1093,10 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 		for _, objFile := range objFiles {
 			if strings.HasSuffix(objFile, ".ll") {
 				oFile := strings.TrimSuffix(objFile, ".ll") + ".o"
-				args := []string{"-o", oFile, "-c", objFile, "-Wno-override-module"}
 				if printCmds {
-					fmt.Fprintln(os.Stderr, "clang", args)
+					fmt.Fprintf(os.Stderr, "# compiling %s from IR %s\n", oFile, objFile)
 				}
-				if err := ctx.compiler().Compile(args...); err != nil {
+				if err := ctx.emitIRFileObject("link", objFile, oFile); err != nil {
 					return fmt.Errorf("failed to compile %s: %v", objFile, err)
 				}
 				compiledObjFiles = append(compiledObjFiles, oFile)
@@ -1292,7 +1296,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
 	}
 	if pkg.ExportFile != "" {
-		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
+		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, ret.Module())
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
@@ -1304,49 +1308,26 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	return nil
 }
 
-func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
+func exportObject(ctx *context, pkgPath string, exportFile string, mod gllvm.Module) (string, error) {
 	base := filepath.Base(exportFile)
-	f, err := os.CreateTemp("", base+"-*.ll")
-	if err != nil {
-		return "", err
-	}
-	if _, err := f.Write(data); err != nil {
-		f.Close()
-		return "", err
-	}
-	err = f.Close()
-	if err != nil {
-		return exportFile, err
-	}
-	if ctx.buildConf.CheckLLFiles {
-		if msg, err := llcCheck(ctx.env, f.Name()); err != nil {
-			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
-		}
-	}
-	// If GenLL is enabled, keep a copy of the .ll file for debugging
-	if ctx.buildConf.GenLL {
-		llFile := exportFile + ".ll"
-		if err := os.Chmod(f.Name(), 0644); err != nil {
-			return "", err
-		}
-		// Copy instead of rename so we can still compile to .o
-		if err := copyFileAtomic(f.Name(), llFile); err != nil {
+	if ctx.buildConf.GenLL || ctx.buildConf.CheckLLFiles {
+		if err := ctx.writeModuleIR(base, exportFile, mod); err != nil {
 			return "", err
 		}
 	}
-	// Always compile .ll to .o for linking
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err
 	}
 	objFile.Close()
-	args := []string{"-o", objFile.Name(), "-c", f.Name(), "-Wno-override-module"}
 	if ctx.shouldPrintCommands(false) {
-		fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", f.Name(), pkgPath)
-		fmt.Fprintln(os.Stderr, "clang", args)
+		fmt.Fprintf(os.Stderr, "# emitting %s for pkg: %s via LLVM\n", objFile.Name(), pkgPath)
 	}
-	cmd := ctx.compiler()
-	return objFile.Name(), cmd.Compile(args...)
+	if err := ctx.emitModuleObject(pkgPath, mod, objFile.Name()); err != nil {
+		os.Remove(objFile.Name())
+		return "", err
+	}
+	return objFile.Name(), nil
 }
 
 func llcCheck(env *llvm.Env, exportFile string) (msg string, err error) {
