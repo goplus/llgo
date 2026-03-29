@@ -1,4 +1,4 @@
 package demo
 
 func KeepB() string { return "keep-b" }
-// func OldB() string { return "old-b" }
+func OldB() string  { return "old-b" }

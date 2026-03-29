@@ -209,11 +209,13 @@ func runSourcePatchCase(t *testing.T, caseName string) {
 	assetRoot := filepath.Join(env.LLGoRuntimeDir(), "_patch", "_test", caseName)
 	goroot := t.TempDir()
 	runtimeDir := t.TempDir()
+	const pkgPath = "demo"
+	srcDir := filepath.Join(goroot, "src", pkgPath)
+	patchDir := filepath.Join(runtimeDir, "_patch", pkgPath)
 
-	copyTree(t, filepath.Join(assetRoot, "pkg"), filepath.Join(goroot, "src"))
-	copyTree(t, filepath.Join(assetRoot, "patch"), filepath.Join(runtimeDir, "_patch"))
+	copyTree(t, filepath.Join(assetRoot, "pkg"), srcDir)
+	copyTree(t, filepath.Join(assetRoot, "patch"), patchDir)
 
-	pkgPath := singlePackagePath(t, filepath.Join(assetRoot, "patch"))
 	changed, overlay, err := applySourcePatchForPkg(nil, nil, runtimeDir, goroot, pkgPath, sourcePatchBuildContext{})
 	if err != nil {
 		t.Fatal(err)
@@ -222,9 +224,8 @@ func runSourcePatchCase(t *testing.T, caseName string) {
 		t.Fatal("expected source patch overlay to change package")
 	}
 
-	srcRoot := filepath.Join(goroot, "src")
-	assertOverlayMatchesOutput(t, overlay, srcRoot, filepath.Join(assetRoot, "output"), runtimeDir)
-	assertGeneratedPatchPackagePositions(t, overlay, srcRoot, filepath.Join(runtimeDir, "_patch"))
+	assertOverlayMatchesOutput(t, overlay, srcDir, filepath.Join(assetRoot, "output"), runtimeDir)
+	assertGeneratedPatchPackagePositions(t, overlay, srcDir, patchDir)
 }
 
 func copyTree(t *testing.T, srcRoot, dstRoot string) {
@@ -250,54 +251,6 @@ func copyTree(t *testing.T, srcRoot, dstRoot string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-}
-
-func singlePackagePath(t *testing.T, root string) string {
-	t.Helper()
-	var pkgPath string
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
-			return nil
-		}
-		rel, err := filepath.Rel(root, filepath.Dir(path))
-		if err != nil {
-			return err
-		}
-		if rel == "." {
-			rel = ""
-		}
-		rel = filepath.ToSlash(rel)
-		if pkgPath == "" {
-			pkgPath = rel
-			return nil
-		}
-		if pkgPath != rel {
-			return &pathMismatchError{want: pkgPath, got: rel}
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if pkgPath == "" {
-		t.Fatal("no patch package found")
-	}
-	return pkgPath
-}
-
-type pathMismatchError struct {
-	want string
-	got  string
-}
-
-func (e *pathMismatchError) Error() string {
-	return "multiple patch packages found: " + e.want + " and " + e.got
 }
 
 func assertOverlayMatchesOutput(t *testing.T, overlay map[string][]byte, srcRoot, outputRoot, runtimeDir string) {
@@ -349,7 +302,11 @@ func readTextFiles(t *testing.T, root, runtimeDir string) map[string]string {
 		if err != nil {
 			return err
 		}
-		out[filepath.ToSlash(rel)] = expandSourcePatchOutputTemplate(string(data), runtimeDir)
+		key := filepath.ToSlash(rel)
+		if strings.HasSuffix(key, ".txt") {
+			key = strings.TrimSuffix(key, ".txt")
+		}
+		out[key] = expandSourcePatchOutputTemplate(string(data), runtimeDir)
 		return nil
 	})
 	if err != nil {
