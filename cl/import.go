@@ -552,6 +552,7 @@ const (
 	llgoSyscall            = llgoInstrBase + 0x44
 	llgoAtomicCmpXchgOK    = llgoInstrBase + 0x45
 	llgoAtomicAddReturnNew = llgoInstrBase + 0x46
+	llgoBoolToUint8        = llgoInstrBase + 0x47
 
 	llgoAtomicOpLast = llgoAtomicOpBase + int(llssa.OpUMin)
 )
