@@ -61,7 +61,7 @@ func buildSourcePatchOverlayForGOROOT(base map[string][]byte, runtimeDir, goroot
 }
 
 func applySourcePatchForPkg(base, current map[string][]byte, runtimeDir, goroot, pkgPath string, ctx sourcePatchBuildContext) (bool, map[string][]byte, error) {
-	patchDir := filepath.Join(runtimeDir, "internal", "lib", filepath.FromSlash(pkgPath))
+	patchDir := filepath.Join(runtimeDir, "_patch", filepath.FromSlash(pkgPath))
 	entries, err := os.ReadDir(patchDir)
 	if err != nil {
 		if os.IsNotExist(err) {
