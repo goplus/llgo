@@ -326,8 +326,8 @@ func collectSourcePatchDirectives(src []byte) (sourcePatchDirectives, error) {
 // parseSourcePatchDirective recognizes build-time source-patch directives.
 //
 // Supported directives:
-//   - //llgo:skipall: blank every stdlib .go file in the patched package
-//   - //llgo:skip A B: blank the named declarations from the stdlib package view
+//   - //llgo:skipall: clear every stdlib .go file in the patched package to a package stub
+//   - //llgo:skip A B: comment the named declarations from the stdlib package view
 //
 // Unlike cl/import.go directives, these are consumed only while constructing the
 // load-time overlay and are rewritten to plain comments before type checking.
@@ -433,7 +433,7 @@ func filterSourcePatchFile(src []byte, skips map[string]struct{}) ([]byte, bool,
 	if len(spans) == 0 {
 		return src, false, nil
 	}
-	return blankSourcePatchSpans(src, spans), true, nil
+	return commentSourcePatchSpans(src, spans), true, nil
 }
 
 type sourcePatchSpan struct {
@@ -590,11 +590,11 @@ func nodeSpan(tokFile *token.File, node ast.Node) sourcePatchSpan {
 	}
 }
 
-func blankSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
-	out := slices.Clone(src)
+func commentSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
 	if len(spans) == 0 {
-		return out
+		return slices.Clone(src)
 	}
+	out := make([]byte, 0, len(src)+len(spans)*4)
 	slices.SortFunc(spans, func(a, b sourcePatchSpan) int {
 		switch {
 		case a.start < b.start:
@@ -614,8 +614,8 @@ func blankSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
 		if span.start < 0 {
 			span.start = 0
 		}
-		if span.end > len(out) {
-			span.end = len(out)
+		if span.end > len(src) {
+			span.end = len(src)
 		}
 		if span.start >= span.end {
 			continue
@@ -628,16 +628,47 @@ func blankSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
 			merged[len(merged)-1].end = span.end
 		}
 	}
+	cursor := 0
 	for _, span := range merged {
-		for i := span.start; i < span.end; i++ {
-			switch out[i] {
-			case '\n', '\r':
-			default:
-				out[i] = ' '
-			}
+		if span.start > cursor {
+			out = append(out, src[cursor:span.start]...)
 		}
+		out = appendCommentedSourcePatchSpan(out, src[span.start:span.end])
+		cursor = span.end
 	}
+	out = append(out, src[cursor:]...)
 	return out
+}
+
+func appendCommentedSourcePatchSpan(dst, src []byte) []byte {
+	lines := bytes.SplitAfter(src, []byte{'\n'})
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+		newline := len(line)
+		if line[newline-1] == '\n' {
+			newline--
+		}
+		body := line[:newline]
+		suffix := line[newline:]
+		if len(bytes.TrimSpace(body)) == 0 {
+			dst = append(dst, line...)
+			continue
+		}
+		indent := 0
+		for indent < len(body) && (body[indent] == ' ' || body[indent] == '\t') {
+			indent++
+		}
+		dst = append(dst, body[:indent]...)
+		dst = append(dst, '/', '/')
+		if indent < len(body) {
+			dst = append(dst, ' ')
+			dst = append(dst, body[indent:]...)
+		}
+		dst = append(dst, suffix...)
+	}
+	return dst
 }
 
 func collectSpecComments(spec ast.Spec) []*ast.CommentGroup {
