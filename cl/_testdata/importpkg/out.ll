@@ -4,7 +4,8 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/importpkg"
 @"github.com/goplus/llgo/cl/_testdata/importpkg.hello" = global [7 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/importpkg.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testdata/importpkg.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/importpkg.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -25,15 +26,20 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/importpkg.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/importpkg.main"() #0 {
 _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64 2, i64 100)
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello")
   ret void
 }
 
-declare void @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.init"() #0
 
-declare i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64, i64) #0
 
 declare void @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

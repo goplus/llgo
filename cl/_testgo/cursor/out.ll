@@ -525,7 +525,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/cursor"
 @230 = private unnamed_addr constant [6 x i8] c"Values", align 1
 @"_llgo_struct$sOcAC_ZOq0zUTjfUC4WQUDA-kMpBFrGHc6qNh-82d-Q$fields" = weak_odr constant [5 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @109, i64 3 }, ptr @"*_llgo_go/ast.CommentGroup", i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @110, i64 5 }, ptr @"[]*_llgo_go/ast.Ident", i64 8, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @22, i64 4 }, ptr @"_llgo_go/ast.Expr", i64 32, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @230, i64 6 }, ptr @"[]_llgo_go/ast.Expr", i64 48, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @113, i64 7 }, ptr @"*_llgo_go/ast.CommentGroup", i64 72, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 
-define { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -716,7 +717,8 @@ _llgo_17:                                         ; preds = %_llgo_15
   br label %_llgo_13
 }
 
-define i1 @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1"(ptr %0, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %1) {
+; Function Attrs: null_pointer_is_valid
+define i1 @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1"(ptr %0, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %1) #0 {
 _llgo_0:
   %2 = load { ptr, ptr, ptr, ptr }, ptr %0, align 8
   %3 = extractvalue { ptr, ptr, ptr, ptr } %2, 0
@@ -763,7 +765,8 @@ _llgo_4:                                          ; preds = %_llgo_1
   ret i1 true
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Node"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Node"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -796,7 +799,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %19
 }
 
-define %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+; Function Attrs: null_pointer_is_valid
+define %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) #0 {
 _llgo_0:
   %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %2, align 8
@@ -815,7 +819,8 @@ _llgo_0:
   ret %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %10
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder$1"(ptr %0, { ptr, ptr } %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder$1"(ptr %0, { ptr, ptr } %1) #0 {
 _llgo_0:
   %2 = load { ptr, ptr }, ptr %0, align 8
   %3 = extractvalue { ptr, ptr } %2, 0
@@ -909,7 +914,8 @@ _llgo_8:                                          ; preds = %_llgo_6
   br label %_llgo_1
 }
 
-define { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0) {
+; Function Attrs: null_pointer_is_valid
+define { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -954,7 +960,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret { i32, i32 } %31
 }
 
-define { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).FindNode"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).FindNode"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %0, align 8
   %3 = call { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %2, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
@@ -965,21 +972,24 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %7
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).Node"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).Node"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %0, align 8
   %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Node"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %1)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %2
 }
 
-define %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).Preorder"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+; Function Attrs: null_pointer_is_valid
+define %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).Preorder"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) #0 {
 _llgo_0:
   %2 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %0, align 8
   %3 = call %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %2, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
   ret %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %3
 }
 
-define { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).indices"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.(*Cursor).indices"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %0, align 8
   %2 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %1)
@@ -990,7 +1000,8 @@ _llgo_0:
   ret { i32, i32 } %6
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/cursor.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/cursor.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/cursor.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -1006,7 +1017,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/cursor.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/cursor.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %0, i32 0, i32 0
@@ -1015,7 +1027,8 @@ _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   %2 = icmp eq i64 %1, 0
@@ -1052,7 +1065,8 @@ _llgo_5:                                          ; preds = %_llgo_3
   ret i64 %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/cursor.typeOf"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/cursor.typeOf"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
   %2 = icmp eq ptr %1, @"*_llgo_go/ast.Ident"
@@ -2369,13 +2383,16 @@ _llgo_285:                                        ; preds = %_llgo_284, %_llgo_2
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -2383,7 +2400,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -2391,23 +2409,32 @@ _llgo_0:
   ret i1 %3
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare void @"go/ast.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.init"() #0
 
-declare void @iter.init()
+; Function Attrs: null_pointer_is_valid
+declare void @iter.init() #0
 
-declare void @math.init()
+; Function Attrs: null_pointer_is_valid
+declare void @math.init() #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -2415,9 +2442,11 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"go/token.(*Pos).IsValid"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.(*Pos).IsValid"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -2425,13 +2454,17 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"go/token.Pos.IsValid"(i64)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.Pos.IsValid"(i64) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*ObjKind).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*ObjKind).String"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.ObjKind.String"(i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.ObjKind.String"(i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -2439,19 +2472,26 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i64 @"go/ast.(*Object).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Object).Pos"(ptr) #0
 
-declare i64 @"go/ast.(*Ident).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Ident).End"(ptr) #0
 
-declare i1 @"go/ast.(*Ident).IsExported"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/ast.(*Ident).IsExported"(ptr) #0
 
-declare i64 @"go/ast.(*Ident).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Ident).Pos"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*Ident).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*Ident).String"(ptr) #0
 
-declare void @"go/ast.(*Ident).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*Ident).exprNode"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -2459,356 +2499,533 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i64 @"go/ast.(*ArrayType).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ArrayType).End"(ptr) #0
 
-declare i64 @"go/ast.(*ArrayType).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ArrayType).Pos"(ptr) #0
 
-declare void @"go/ast.(*ArrayType).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ArrayType).exprNode"(ptr) #0
 
-declare i1 @"go/token.(*Token).IsKeyword"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.(*Token).IsKeyword"(ptr) #0
 
-declare i1 @"go/token.(*Token).IsLiteral"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.(*Token).IsLiteral"(ptr) #0
 
-declare i1 @"go/token.(*Token).IsOperator"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.(*Token).IsOperator"(ptr) #0
 
-declare i64 @"go/token.(*Token).Precedence"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/token.(*Token).Precedence"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/token.(*Token).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/token.(*Token).String"(ptr) #0
 
-declare i1 @"go/token.Token.IsKeyword"(i64)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.Token.IsKeyword"(i64) #0
 
-declare i1 @"go/token.Token.IsLiteral"(i64)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.Token.IsLiteral"(i64) #0
 
-declare i1 @"go/token.Token.IsOperator"(i64)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"go/token.Token.IsOperator"(i64) #0
 
-declare i64 @"go/token.Token.Precedence"(i64)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/token.Token.Precedence"(i64) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/token.Token.String"(i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/token.Token.String"(i64) #0
 
-declare i64 @"go/ast.(*AssignStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*AssignStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*AssignStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*AssignStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*AssignStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*AssignStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*BadDecl).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BadDecl).End"(ptr) #0
 
-declare i64 @"go/ast.(*BadDecl).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BadDecl).Pos"(ptr) #0
 
-declare void @"go/ast.(*BadDecl).declNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BadDecl).declNode"(ptr) #0
 
-declare i64 @"go/ast.(*BadExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BadExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*BadExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BadExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*BadExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BadExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*BadStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BadStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*BadStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BadStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*BadStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BadStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*BasicLit).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BasicLit).End"(ptr) #0
 
-declare i64 @"go/ast.(*BasicLit).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BasicLit).Pos"(ptr) #0
 
-declare void @"go/ast.(*BasicLit).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BasicLit).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*BinaryExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BinaryExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*BinaryExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BinaryExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*BinaryExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BinaryExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*BlockStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BlockStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*BlockStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BlockStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*BlockStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BlockStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*BranchStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BranchStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*BranchStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*BranchStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*BranchStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*BranchStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*CallExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CallExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*CallExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CallExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*CallExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*CallExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*CaseClause).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CaseClause).End"(ptr) #0
 
-declare i64 @"go/ast.(*CaseClause).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CaseClause).Pos"(ptr) #0
 
-declare void @"go/ast.(*CaseClause).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*CaseClause).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*ChanType).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ChanType).End"(ptr) #0
 
-declare i64 @"go/ast.(*ChanType).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ChanType).Pos"(ptr) #0
 
-declare void @"go/ast.(*ChanType).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ChanType).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*CommClause).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CommClause).End"(ptr) #0
 
-declare i64 @"go/ast.(*CommClause).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CommClause).Pos"(ptr) #0
 
-declare void @"go/ast.(*CommClause).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*CommClause).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*Comment).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Comment).End"(ptr) #0
 
-declare i64 @"go/ast.(*Comment).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Comment).Pos"(ptr) #0
 
-declare i64 @"go/ast.(*CommentGroup).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CommentGroup).End"(ptr) #0
 
-declare i64 @"go/ast.(*CommentGroup).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CommentGroup).Pos"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*CommentGroup).Text"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*CommentGroup).Text"(ptr) #0
 
-declare i64 @"go/ast.(*CompositeLit).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CompositeLit).End"(ptr) #0
 
-declare i64 @"go/ast.(*CompositeLit).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*CompositeLit).Pos"(ptr) #0
 
-declare void @"go/ast.(*CompositeLit).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*CompositeLit).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*DeclStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*DeclStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*DeclStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*DeclStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*DeclStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*DeclStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*DeferStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*DeferStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*DeferStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*DeferStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*DeferStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*DeferStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*Ellipsis).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Ellipsis).End"(ptr) #0
 
-declare i64 @"go/ast.(*Ellipsis).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Ellipsis).Pos"(ptr) #0
 
-declare void @"go/ast.(*Ellipsis).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*Ellipsis).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*EmptyStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*EmptyStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*EmptyStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*EmptyStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*EmptyStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*EmptyStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*ExprStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ExprStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*ExprStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ExprStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*ExprStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ExprStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*Field).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Field).End"(ptr) #0
 
-declare i64 @"go/ast.(*Field).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Field).Pos"(ptr) #0
 
-declare i64 @"go/ast.(*FieldList).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FieldList).End"(ptr) #0
 
-declare i64 @"go/ast.(*FieldList).NumFields"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FieldList).NumFields"(ptr) #0
 
-declare i64 @"go/ast.(*FieldList).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FieldList).Pos"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.typehash"(ptr, ptr, i64)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.typehash"(ptr, ptr, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr) #0
 
-declare ptr @"go/ast.(*Scope).Insert"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"go/ast.(*Scope).Insert"(ptr, ptr) #0
 
-declare ptr @"go/ast.(*Scope).Lookup"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"go/ast.(*Scope).Lookup"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*Scope).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"go/ast.(*Scope).String"(ptr) #0
 
-declare i64 @"go/ast.(*ImportSpec).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ImportSpec).End"(ptr) #0
 
-declare i64 @"go/ast.(*ImportSpec).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ImportSpec).Pos"(ptr) #0
 
-declare void @"go/ast.(*ImportSpec).specNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ImportSpec).specNode"(ptr) #0
 
-declare i64 @"go/ast.(*File).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*File).End"(ptr) #0
 
-declare i64 @"go/ast.(*File).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*File).Pos"(ptr) #0
 
-declare i64 @"go/ast.(*ForStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ForStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*ForStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ForStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*ForStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ForStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*FuncType).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FuncType).End"(ptr) #0
 
-declare i64 @"go/ast.(*FuncType).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FuncType).Pos"(ptr) #0
 
-declare void @"go/ast.(*FuncType).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*FuncType).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*FuncDecl).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FuncDecl).End"(ptr) #0
 
-declare i64 @"go/ast.(*FuncDecl).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FuncDecl).Pos"(ptr) #0
 
-declare void @"go/ast.(*FuncDecl).declNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*FuncDecl).declNode"(ptr) #0
 
-declare i64 @"go/ast.(*FuncLit).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FuncLit).End"(ptr) #0
 
-declare i64 @"go/ast.(*FuncLit).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*FuncLit).Pos"(ptr) #0
 
-declare void @"go/ast.(*FuncLit).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*FuncLit).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*GenDecl).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*GenDecl).End"(ptr) #0
 
-declare i64 @"go/ast.(*GenDecl).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*GenDecl).Pos"(ptr) #0
 
-declare void @"go/ast.(*GenDecl).declNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*GenDecl).declNode"(ptr) #0
 
-declare i64 @"go/ast.(*GoStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*GoStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*GoStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*GoStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*GoStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*GoStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*IfStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IfStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*IfStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IfStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*IfStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*IfStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*IncDecStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IncDecStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*IncDecStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IncDecStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*IncDecStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*IncDecStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*IndexExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IndexExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*IndexExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IndexExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*IndexExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*IndexExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*IndexListExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IndexListExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*IndexListExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*IndexListExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*IndexListExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*IndexListExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*InterfaceType).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*InterfaceType).End"(ptr) #0
 
-declare i64 @"go/ast.(*InterfaceType).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*InterfaceType).Pos"(ptr) #0
 
-declare void @"go/ast.(*InterfaceType).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*InterfaceType).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*KeyValueExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*KeyValueExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*KeyValueExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*KeyValueExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*KeyValueExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*KeyValueExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*LabeledStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*LabeledStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*LabeledStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*LabeledStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*LabeledStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*LabeledStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*MapType).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*MapType).End"(ptr) #0
 
-declare i64 @"go/ast.(*MapType).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*MapType).Pos"(ptr) #0
 
-declare void @"go/ast.(*MapType).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*MapType).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*Package).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Package).End"(ptr) #0
 
-declare i64 @"go/ast.(*Package).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*Package).Pos"(ptr) #0
 
-declare i64 @"go/ast.(*ParenExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ParenExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*ParenExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ParenExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*ParenExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ParenExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*RangeStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*RangeStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*RangeStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*RangeStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*RangeStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*RangeStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*ReturnStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ReturnStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*ReturnStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ReturnStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*ReturnStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ReturnStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*SelectStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SelectStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*SelectStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SelectStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*SelectStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*SelectStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*SelectorExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SelectorExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*SelectorExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SelectorExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*SelectorExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*SelectorExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*SendStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SendStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*SendStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SendStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*SendStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*SendStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*SliceExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SliceExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*SliceExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SliceExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*SliceExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*SliceExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*StarExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*StarExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*StarExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*StarExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*StarExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*StarExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*StructType).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*StructType).End"(ptr) #0
 
-declare i64 @"go/ast.(*StructType).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*StructType).Pos"(ptr) #0
 
-declare void @"go/ast.(*StructType).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*StructType).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*SwitchStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SwitchStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*SwitchStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*SwitchStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*SwitchStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*SwitchStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*TypeAssertExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*TypeAssertExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*TypeAssertExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*TypeAssertExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*TypeAssertExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*TypeAssertExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*TypeSpec).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*TypeSpec).End"(ptr) #0
 
-declare i64 @"go/ast.(*TypeSpec).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*TypeSpec).Pos"(ptr) #0
 
-declare void @"go/ast.(*TypeSpec).specNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*TypeSpec).specNode"(ptr) #0
 
-declare i64 @"go/ast.(*TypeSwitchStmt).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*TypeSwitchStmt).End"(ptr) #0
 
-declare i64 @"go/ast.(*TypeSwitchStmt).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*TypeSwitchStmt).Pos"(ptr) #0
 
-declare void @"go/ast.(*TypeSwitchStmt).stmtNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*TypeSwitchStmt).stmtNode"(ptr) #0
 
-declare i64 @"go/ast.(*UnaryExpr).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*UnaryExpr).End"(ptr) #0
 
-declare i64 @"go/ast.(*UnaryExpr).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*UnaryExpr).Pos"(ptr) #0
 
-declare void @"go/ast.(*UnaryExpr).exprNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*UnaryExpr).exprNode"(ptr) #0
 
-declare i64 @"go/ast.(*ValueSpec).End"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ValueSpec).End"(ptr) #0
 
-declare i64 @"go/ast.(*ValueSpec).Pos"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"go/ast.(*ValueSpec).Pos"(ptr) #0
 
-declare void @"go/ast.(*ValueSpec).specNode"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"go/ast.(*ValueSpec).specNode"(ptr) #0
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { null_pointer_is_valid }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }

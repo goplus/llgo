@@ -7,16 +7,20 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/strlen"
 @"github.com/goplus/llgo/cl/_testrt/strlen.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testrt/strlen.init$guard" = global i1 false, align 1
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/strlen._Cgo_ptr"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define ptr @"github.com/goplus/llgo/cl/_testrt/strlen._Cgo_ptr"(ptr %0) #0 {
 _llgo_0:
   ret ptr %0
 }
 
-declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @runtime.cgoUse(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @runtime.cgoCheckResult(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-define void @"github.com/goplus/llgo/cl/_testrt/strlen.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/strlen.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/strlen.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -40,15 +44,19 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/strlen.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/strlen.main"() #0 {
 _llgo_0:
   %0 = call i32 @strlen(ptr @"github.com/goplus/llgo/cl/_testrt/strlen.format")
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/strlen.format", i32 %0)
   ret void
 }
 
-declare void @syscall.init()
+; Function Attrs: null_pointer_is_valid
+declare void @syscall.init() #0
 
 declare i32 @strlen(ptr)
 
 declare void @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

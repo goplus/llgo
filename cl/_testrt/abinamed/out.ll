@@ -275,7 +275,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/abinamed"
 @129 = private unnamed_addr constant [13 x i8] c"error field 2", align 1
 @130 = private unnamed_addr constant [13 x i8] c"error field 3", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/abinamed.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/abinamed.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -289,7 +290,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/abinamed.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/abinamed.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 48)
   store %"github.com/goplus/llgo/cl/_testrt/abinamed.T" zeroinitializer, ptr %0, align 8
@@ -485,16 +487,19 @@ _llgo_12:                                         ; preds = %_llgo_10
   ret void
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.toEface"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) {
+; Function Attrs: null_pointer_is_valid
+define ptr @"github.com/goplus/llgo/cl/_testrt/abinamed.toEface"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %0, ptr %1, align 8
   ret ptr %1
 }
 
-declare void @"github.com/goplus/llgo/runtime/abi.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/abi.init"() #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -502,7 +507,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -510,7 +516,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -518,7 +525,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -526,7 +534,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -534,99 +543,146 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Align"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Align"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).ArrayType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).ArrayType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Align"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Align"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).ArrayType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).ArrayType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).ChanDir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).ChanDir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Common"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Common"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*ArrayType).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*ArrayType).ExportedMethods"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Method).Exported"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Method).Exported"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Method).Name"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Method).Name"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Method).PkgPath"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Method).PkgPath"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Align"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Align"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).ArrayType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).ArrayType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).ChanDir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).ChanDir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Common"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Common"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Elem"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Elem"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*FuncType).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*FuncType).ExportedMethods"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).FieldAlign"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).FieldAlign"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).FuncType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).FuncType"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*FuncType).GcSlice"(ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*FuncType).GcSlice"(ptr, i64, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).HasName"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).HasName"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).IfaceIndir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).IfaceIndir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).InterfaceType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).InterfaceType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Imethod).Exported"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Imethod).Exported"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Imethod).Name"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Imethod).Name"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Imethod).PkgPath"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Imethod).PkgPath"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Align"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Align"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).ArrayType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).ArrayType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).ChanDir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).ChanDir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Common"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Common"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Elem"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Elem"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).ExportedMethods"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).FieldAlign"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).FieldAlign"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).FuncType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).FuncType"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).GcSlice"(ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).GcSlice"(ptr, i64, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).HasName"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).HasName"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).IfaceIndir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).IfaceIndir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).InterfaceType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).InterfaceType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsClosure"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsClosure"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsDirectIface"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsDirectIface"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Key"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Key"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Kind"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Kind"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Kind).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Kind).String"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.Kind.String"(i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.Kind.String"(i64) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Len"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Len"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).MapType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).MapType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal16"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal16"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal16"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -634,245 +690,365 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Align"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Align"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).ArrayType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).ArrayType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).ChanDir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).ChanDir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).Common"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).Common"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*MapType).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*MapType).ExportedMethods"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).FieldAlign"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).FieldAlign"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).FuncType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).FuncType"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*MapType).GcSlice"(ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*MapType).GcSlice"(ptr, i64, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).HasName"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).HasName"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).HashMightPanic"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).HashMightPanic"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IfaceIndir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IfaceIndir"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IndirectElem"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IndirectElem"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IndirectKey"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IndirectKey"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).InterfaceType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).InterfaceType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IsClosure"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IsClosure"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IsDirectIface"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).IsDirectIface"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Kind"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Kind"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Len"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Len"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).MapType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).MapType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).NeedKeyUpdate"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).NeedKeyUpdate"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).NumMethod"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).NumMethod"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).Pointers"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).Pointers"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).ReflexiveKey"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*MapType).ReflexiveKey"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Size"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*MapType).Size"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*MapType).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*MapType).String"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).StructType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).StructType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructField).Embedded"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructField).Embedded"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructField).Exported"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructField).Exported"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Align"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Align"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).ArrayType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).ArrayType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).ChanDir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).ChanDir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Common"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Common"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Elem"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Elem"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*StructType).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*StructType).ExportedMethods"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).FieldAlign"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).FieldAlign"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).FuncType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).FuncType"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*StructType).GcSlice"(ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*StructType).GcSlice"(ptr, i64, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).HasName"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).HasName"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).IfaceIndir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).IfaceIndir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).InterfaceType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).InterfaceType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).IsClosure"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).IsClosure"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).IsDirectIface"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).IsDirectIface"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Key"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Key"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Kind"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Kind"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Len"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Len"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).MapType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).MapType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).NumMethod"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).NumMethod"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).Pointers"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*StructType).Pointers"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Size"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*StructType).Size"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*StructType).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*StructType).String"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).StructType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).StructType"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Uncommon"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*StructType).Uncommon"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*UncommonType).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*UncommonType).ExportedMethods"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*UncommonType).Methods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*UncommonType).Methods"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).Uncommon"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*MapType).Uncommon"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).NumMethod"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).NumMethod"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Pointers"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Pointers"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Size"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Size"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).String"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).StructType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).StructType"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Uncommon"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*InterfaceType).Uncommon"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).IsClosure"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).IsClosure"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).IsDirectIface"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).IsDirectIface"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Key"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Key"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Kind"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Kind"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Len"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Len"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).MapType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).MapType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).NumMethod"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).NumMethod"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Pointers"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Pointers"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Size"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Size"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*FuncType).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*FuncType).String"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).StructType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).StructType"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Uncommon"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*FuncType).Uncommon"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Variadic"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*FuncType).Variadic"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).FieldAlign"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).FieldAlign"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).FuncType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).FuncType"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*ArrayType).GcSlice"(ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*ArrayType).GcSlice"(ptr, i64, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).HasName"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).HasName"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).IfaceIndir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).IfaceIndir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).InterfaceType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).InterfaceType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).IsClosure"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).IsClosure"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).IsDirectIface"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).IsDirectIface"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Key"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Key"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Kind"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Kind"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).MapType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).MapType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).NumMethod"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).NumMethod"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Pointers"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Pointers"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Size"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Size"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*ArrayType).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*ArrayType).String"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).StructType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).StructType"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Uncommon"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*ArrayType).Uncommon"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).ChanDir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).ChanDir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Common"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Common"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Elem"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Elem"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*Type).ExportedMethods"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*Type).ExportedMethods"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).FieldAlign"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).FieldAlign"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).FuncType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).FuncType"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*Type).GcSlice"(ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/abi.(*Type).GcSlice"(ptr, i64, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).HasName"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).HasName"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).IfaceIndir"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).IfaceIndir"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).InterfaceType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).InterfaceType"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).IsClosure"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).IsClosure"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).IsDirectIface"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).IsDirectIface"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Key"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Key"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Kind"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Kind"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Len"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Len"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).MapType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).MapType"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).NumMethod"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).NumMethod"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).Pointers"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/abi.(*Type).Pointers"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Size"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/abi.(*Type).Size"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Type).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/abi.(*Type).String"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).StructType"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).StructType"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Uncommon"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/abi.(*Type).Uncommon"(ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { null_pointer_is_valid }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }

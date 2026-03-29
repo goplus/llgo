@@ -4,7 +4,8 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/untyped"
 @"github.com/goplus/llgo/cl/_testdata/untyped.a" = global double 0.000000e+00, align 8
 @"github.com/goplus/llgo/cl/_testdata/untyped.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testdata/untyped.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/untyped.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/untyped.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -18,7 +19,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/untyped.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/untyped.main"() #0 {
 _llgo_0:
   br i1 false, label %_llgo_1, label %_llgo_2
 
@@ -29,3 +31,5 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
+
+attributes #0 = { null_pointer_is_valid }

@@ -335,7 +335,8 @@ source_filename = "foo"
 @foo.a = global i64 0, align 8
 @"foo.init$guard" = global i1 false, align 1
 
-define void @foo.init() {
+; Function Attrs: null_pointer_is_valid
+define void @foo.init() #0 {
 _llgo_0:
   %0 = load i1, ptr @"foo.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -347,6 +348,8 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
+
+attributes #0 = { null_pointer_is_valid }
 `)
 }
 
@@ -361,12 +364,14 @@ source_filename = "foo"
 
 @"foo.init$guard" = global i1 false, align 1
 
-define i64 @foo.fn(i64 %0, double %1) {
+; Function Attrs: null_pointer_is_valid
+define i64 @foo.fn(i64 %0, double %1) #0 {
 _llgo_0:
   ret i64 1
 }
 
-define void @foo.init() {
+; Function Attrs: null_pointer_is_valid
+define void @foo.init() #0 {
 _llgo_0:
   %0 = load i1, ptr @"foo.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -378,5 +383,7 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
+
+attributes #0 = { null_pointer_is_valid }
 `)
 }

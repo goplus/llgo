@@ -5,7 +5,8 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/math"
 @__llgo_py.math = linkonce global ptr null, align 8
 @0 = private unnamed_addr constant [5 x i8] c"math\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/math.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/math.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/math.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -26,3 +27,5 @@ _llgo_3:                                          ; preds = %_llgo_1
 }
 
 declare ptr @PyImport_ImportModule(ptr)
+
+attributes #0 = { null_pointer_is_valid }

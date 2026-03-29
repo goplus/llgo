@@ -10,7 +10,8 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/max"
 @1 = private unnamed_addr constant [4 x i8] c"max\00", align 1
 @2 = private unnamed_addr constant [6 x i8] c"print\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/max.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/max.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/max.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -26,7 +27,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/max.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/max.main"() #0 {
 _llgo_0:
   %0 = call ptr @PyFloat_FromDouble(double 3.000000e+00)
   %1 = call ptr @PyFloat_FromDouble(double 9.000000e+00)
@@ -67,7 +69,8 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/lib/py/std.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/std.init"() #0
 
 declare ptr @PyFloat_FromDouble(double)
 
@@ -84,3 +87,5 @@ declare ptr @PyTuple_New(i64)
 declare i32 @PyTuple_SetItem(ptr, i64, ptr)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

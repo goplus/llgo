@@ -6,13 +6,15 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/allocinloop"
 @"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/allocinloop.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.String" %0, 1
   ret i64 %1
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"() #0 {
 _llgo_0:
   br label %_llgo_1
 
@@ -34,7 +36,8 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/allocinloop.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -47,12 +50,17 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/allocinloop.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testgo/allocinloop.Test"()
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
+
+attributes #0 = { null_pointer_is_valid }

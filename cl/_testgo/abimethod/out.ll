@@ -279,7 +279,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/abimethod"
 @111 = private unnamed_addr constant [16 x i8] c"testNamed2 error", align 1
 @112 = private unnamed_addr constant [16 x i8] c"testNamed4 error", align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/abimethod.T", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -289,28 +290,32 @@ _llgo_0:
   ret i64 %3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo1"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo1"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, align 4
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.T.Demo1"(%"github.com/goplus/llgo/cl/_testgo/abimethod.T" %1)
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
   %2 = load i64, ptr %1, align 4
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
   %2 = load i64, ptr %1, align 4
   ret i64 %2
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -326,7 +331,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric"()
   call void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed1"()
@@ -344,7 +350,8 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous1"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous1"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 0
@@ -380,7 +387,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous2"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous2"() #0 {
 _llgo_0:
   %0 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
@@ -420,7 +428,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous3"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous3"() #0 {
 _llgo_0:
   %0 = alloca { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
@@ -458,7 +467,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous4"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous4"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
@@ -492,7 +502,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous5"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous5"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
@@ -526,7 +537,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous6"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous6"() #0 {
 _llgo_0:
   %0 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
@@ -566,7 +578,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous7"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous7"() #0 {
 _llgo_0:
   %0 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
@@ -626,7 +639,8 @@ _llgo_4:                                          ; preds = %_llgo_2
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous8"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymous8"() #0 {
 _llgo_0:
   %0 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
@@ -706,7 +720,8 @@ _llgo_6:                                          ; preds = %_llgo_4
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymousBuffer"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testAnonymousBuffer"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 0
@@ -741,7 +756,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$uinGjIxPTfzB5e5h5gH-0VIvLl5rQdJ_yx2UsrxQqds", ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.Pointer[any]")
@@ -795,14 +811,16 @@ _llgo_4:                                          ; preds = %_llgo_0
   unreachable
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric$1"() {
+; Function Attrs: null_pointer_is_valid
+define ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.testGeneric$1"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr inttoptr (i64 100 to ptr) }, ptr %0, align 8
   ret ptr %0
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed1"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed1"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
@@ -833,7 +851,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed2"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed2"() #0 {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/cl/_testgo/abimethod.T", align 8
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -868,7 +887,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed3"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.testNamed3"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %0, i32 0, i32 0
@@ -900,17 +920,22 @@ _llgo_2:                                          ; preds = %_llgo_0
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare void @bytes.init()
+; Function Attrs: null_pointer_is_valid
+declare void @bytes.init() #0
 
-declare void @fmt.init()
+; Function Attrs: null_pointer_is_valid
+declare void @fmt.init() #0
 
-declare void @"sync/atomic.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"sync/atomic.init"() #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -919,7 +944,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -927,7 +953,8 @@ _llgo_0:
   ret i64 %3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -935,7 +962,8 @@ _llgo_0:
   ret i64 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -943,7 +971,8 @@ _llgo_0:
   ret i1 %3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -955,7 +984,8 @@ _llgo_0:
   ret i64 %5
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -966,7 +996,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -977,9 +1008,11 @@ _llgo_0:
   ret i64 %4
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -987,7 +1020,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -995,11 +1029,14 @@ _llgo_0:
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -1007,11 +1044,14 @@ _llgo_0:
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"({ i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"({ i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1022,7 +1062,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo1"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
   %2 = load %"github.com/goplus/llgo/cl/_testgo/abimethod.T", ptr %1, align 4
@@ -1030,23 +1071,27 @@ _llgo_0:
   ret i64 %3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.Demo2"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).Demo2"(ptr %1)
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; github.com/goplus/llgo/cl/_testgo/abimethod.T}.demo3"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, %"github.com/goplus/llgo/cl/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.(*T).demo3"(ptr %1)
   ret i64 %2
 }
 
-declare ptr @bytes.NewBufferString(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare ptr @bytes.NewBufferString(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Available"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Available"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1054,7 +1099,8 @@ _llgo_0:
   ret i64 %3
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.AvailableBuffer"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.AvailableBuffer"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1062,7 +1108,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Bytes"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Bytes"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1070,7 +1117,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Cap"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Cap"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1078,7 +1126,8 @@ _llgo_0:
   ret i64 %3
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Grow"(ptr %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Grow"(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1086,7 +1135,8 @@ _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Len"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Len"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1094,7 +1144,8 @@ _llgo_0:
   ret i64 %3
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Next"(ptr %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Next"(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1102,7 +1153,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Read"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Read"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1114,7 +1166,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadByte"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadByte"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1126,7 +1179,8 @@ _llgo_0:
   ret { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %7
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadBytes"(ptr %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadBytes"(ptr %0, i8 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1138,7 +1192,8 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadFrom"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadFrom"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1150,7 +1205,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadRune"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadRune"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1164,7 +1220,8 @@ _llgo_0:
   ret { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadString"(ptr %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.ReadString"(ptr %0, i8 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1176,7 +1233,8 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Reset"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Reset"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1184,7 +1242,8 @@ _llgo_0:
   ret void
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.String"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.String"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1192,7 +1251,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %3
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Truncate"(ptr %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Truncate"(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1200,7 +1260,8 @@ _llgo_0:
   ret void
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadByte"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadByte"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1208,7 +1269,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadRune"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.UnreadRune"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1216,7 +1278,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %3
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Write"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.Write"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1228,7 +1291,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteByte"(ptr %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteByte"(ptr %0, i8 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1236,7 +1300,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteRune"(ptr %0, i32 %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteRune"(ptr %0, i32 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1248,7 +1313,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteString"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteString"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1260,7 +1326,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteTo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.WriteTo"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1272,7 +1339,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.empty"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.empty"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %2 = load ptr, ptr %1, align 8
@@ -1280,7 +1348,8 @@ _llgo_0:
   ret i1 %3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.grow"(ptr %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.grow"(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1288,7 +1357,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.readSlice"(ptr %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.readSlice"(ptr %0, i8 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1300,7 +1370,8 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.tryGrowByReslice"(ptr %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.*struct{m int; *bytes.Buffer}.tryGrowByReslice"(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
   %3 = load ptr, ptr %2, align 8
@@ -1312,7 +1383,8 @@ _llgo_0:
   ret { i64, i1 } %8
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Available"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Available"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1323,7 +1395,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.AvailableBuffer"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.AvailableBuffer"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1334,7 +1407,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Bytes"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Bytes"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1345,7 +1419,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Cap"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Cap"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1356,7 +1431,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Grow"({ i64, ptr } %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Grow"({ i64, ptr } %0, i64 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1367,7 +1443,8 @@ _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Len"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Len"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1378,7 +1455,8 @@ _llgo_0:
   ret i64 %4
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Next"({ i64, ptr } %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Next"({ i64, ptr } %0, i64 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1389,7 +1467,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Read"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Read"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1404,7 +1483,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadByte"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadByte"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1419,7 +1499,8 @@ _llgo_0:
   ret { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %8
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadBytes"({ i64, ptr } %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadBytes"({ i64, ptr } %0, i8 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1434,7 +1515,8 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadFrom"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadFrom"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1449,7 +1531,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadRune"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadRune"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1466,7 +1549,8 @@ _llgo_0:
   ret { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %10
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadString"({ i64, ptr } %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.ReadString"({ i64, ptr } %0, i8 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1481,7 +1565,8 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Reset"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Reset"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1492,7 +1577,8 @@ _llgo_0:
   ret void
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.String"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.String"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1503,7 +1589,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Truncate"({ i64, ptr } %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Truncate"({ i64, ptr } %0, i64 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1514,7 +1601,8 @@ _llgo_0:
   ret void
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.UnreadByte"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.UnreadByte"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1525,7 +1613,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.UnreadRune"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.UnreadRune"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1536,7 +1625,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %4
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Write"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.Write"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1551,7 +1641,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteByte"({ i64, ptr } %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteByte"({ i64, ptr } %0, i8 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1562,7 +1653,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" %5
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteRune"({ i64, ptr } %0, i32 %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteRune"({ i64, ptr } %0, i32 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1577,7 +1669,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteString"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteString"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1592,7 +1685,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteTo"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.WriteTo"({ i64, ptr } %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1607,7 +1701,8 @@ _llgo_0:
   ret { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.empty"({ i64, ptr } %0) {
+; Function Attrs: null_pointer_is_valid
+define i1 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.empty"({ i64, ptr } %0) #0 {
 _llgo_0:
   %1 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -1618,7 +1713,8 @@ _llgo_0:
   ret i1 %4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.grow"({ i64, ptr } %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.grow"({ i64, ptr } %0, i64 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1629,7 +1725,8 @@ _llgo_0:
   ret i64 %5
 }
 
-define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.readSlice"({ i64, ptr } %0, i8 %1) {
+; Function Attrs: null_pointer_is_valid
+define { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.readSlice"({ i64, ptr } %0, i8 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1644,7 +1741,8 @@ _llgo_0:
   ret { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } %9
 }
 
-define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.tryGrowByReslice"({ i64, ptr } %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define { i64, i1 } @"github.com/goplus/llgo/cl/_testgo/abimethod.struct{m int; *bytes.Buffer}.tryGrowByReslice"({ i64, ptr } %0, i64 %1) #0 {
 _llgo_0:
   %2 = alloca { i64, ptr }, align 8
   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -1659,7 +1757,8 @@ _llgo_0:
   ret { i64, i1 } %9
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -1667,31 +1766,44 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i64 @"bytes.(*Buffer).Available"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"bytes.(*Buffer).Available"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).AvailableBuffer"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).AvailableBuffer"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Bytes"(ptr) #0
 
-declare i64 @"bytes.(*Buffer).Cap"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"bytes.(*Buffer).Cap"(ptr) #0
 
-declare void @"bytes.(*Buffer).Grow"(ptr, i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"bytes.(*Buffer).Grow"(ptr, i64) #0
 
-declare i64 @"bytes.(*Buffer).Len"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"bytes.(*Buffer).Len"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Next"(ptr, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"bytes.(*Buffer).Next"(ptr, i64) #0
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Read"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+; Function Attrs: null_pointer_is_valid
+declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Read"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice") #0
 
-declare { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadByte"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare { i8, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadByte"(ptr) #0
 
-declare { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadBytes"(ptr, i8)
+; Function Attrs: null_pointer_is_valid
+declare { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadBytes"(ptr, i8) #0
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadFrom"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadFrom"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadRune"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare { i32, i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadRune"(ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal32"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -1699,55 +1811,75 @@ _llgo_0:
   ret i1 %3
 }
 
-declare { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadString"(ptr, i8)
+; Function Attrs: null_pointer_is_valid
+declare { %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).ReadString"(ptr, i8) #0
 
-declare void @"bytes.(*Buffer).Reset"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"bytes.(*Buffer).Reset"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"bytes.(*Buffer).String"(ptr) #0
 
-declare void @"bytes.(*Buffer).Truncate"(ptr, i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"bytes.(*Buffer).Truncate"(ptr, i64) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadByte"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadByte"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadRune"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).UnreadRune"(ptr) #0
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+; Function Attrs: null_pointer_is_valid
+declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).Write"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.Slice") #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).WriteByte"(ptr, i8)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"bytes.(*Buffer).WriteByte"(ptr, i8) #0
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteRune"(ptr, i32)
+; Function Attrs: null_pointer_is_valid
+declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteRune"(ptr, i32) #0
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteString"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteTo"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare { i64, %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).WriteTo"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare i1 @"bytes.(*Buffer).empty"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"bytes.(*Buffer).empty"(ptr) #0
 
-declare i64 @"bytes.(*Buffer).grow"(ptr, i64)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"bytes.(*Buffer).grow"(ptr, i64) #0
 
-declare { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).readSlice"(ptr, i8)
+; Function Attrs: null_pointer_is_valid
+declare { %"github.com/goplus/llgo/runtime/internal/runtime.Slice", %"github.com/goplus/llgo/runtime/internal/runtime.iface" } @"bytes.(*Buffer).readSlice"(ptr, i8) #0
 
-declare { i64, i1 } @"bytes.(*Buffer).tryGrowByReslice"(ptr, i64)
+; Function Attrs: null_pointer_is_valid
+declare { i64, i1 } @"bytes.(*Buffer).tryGrowByReslice"(ptr, i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-define linkonce ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.(*Pointer[any]).Load"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define linkonce ptr @"github.com/goplus/llgo/cl/_testgo/abimethod.(*Pointer[any]).Load"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.Pointer[any]", ptr %0, i32 0, i32 1
   %2 = load atomic ptr, ptr %1 seq_cst, align 8
   ret ptr %2
 }
 
-define linkonce void @"github.com/goplus/llgo/cl/_testgo/abimethod.(*Pointer[any]).Store"(ptr %0, ptr %1) {
+; Function Attrs: null_pointer_is_valid
+define linkonce void @"github.com/goplus/llgo/cl/_testgo/abimethod.(*Pointer[any]).Store"(ptr %0, ptr %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/abimethod.Pointer[any]", ptr %0, i32 0, i32 1
   store atomic ptr %1, ptr %2 seq_cst, align 8
   ret void
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -1755,4 +1887,5 @@ _llgo_0:
   ret i1 %3
 }
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { null_pointer_is_valid }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }

@@ -3,7 +3,8 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/cpkgimp"
 
 @"github.com/goplus/llgo/cl/_testdata/cpkgimp.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testdata/cpkgimp.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/cpkgimp.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/cpkgimp.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -17,7 +18,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/cpkgimp.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/cpkgimp.main"() #0 {
 _llgo_0:
   %0 = call i64 @add(i64 1, i64 2)
   %1 = call double @Double(double 3.140000e+00)
@@ -28,14 +30,22 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/cl/_testdata/cpkg.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/cl/_testdata/cpkg.init"() #0
 
-declare i64 @add(i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare i64 @add(i64, i64) #0
 
-declare double @Double(double)
+; Function Attrs: null_pointer_is_valid
+declare double @Double(double) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
+
+attributes #0 = { null_pointer_is_valid }

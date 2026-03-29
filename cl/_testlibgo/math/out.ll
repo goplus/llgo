@@ -3,7 +3,8 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/math"
 
 @"github.com/goplus/llgo/cl/_testlibgo/math.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/math.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibgo/math.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/math.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -17,7 +18,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/math.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibgo/math.main"() #0 {
 _llgo_0:
   %0 = call double @math.Sqrt(double 2.000000e+00)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %0)
@@ -31,14 +33,22 @@ _llgo_0:
   ret void
 }
 
-declare void @math.init()
+; Function Attrs: null_pointer_is_valid
+declare void @math.init() #0
 
-declare double @math.Sqrt(double)
+; Function Attrs: null_pointer_is_valid
+declare double @math.Sqrt(double) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare double @math.Abs(double)
+; Function Attrs: null_pointer_is_valid
+declare double @math.Abs(double) #0
 
-declare double @math.Ldexp(double, i64)
+; Function Attrs: null_pointer_is_valid
+declare double @math.Ldexp(double, i64) #0
+
+attributes #0 = { null_pointer_is_valid }
