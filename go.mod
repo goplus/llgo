@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
-	github.com/goplus/cobra v1.9.12 //gop:class
+	github.com/goplus/cobra v1.9.15 //gop:class
 	github.com/goplus/gogen v1.21.2
 	github.com/goplus/lib v0.3.1
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
