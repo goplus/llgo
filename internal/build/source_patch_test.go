@@ -91,10 +91,13 @@ func TestInternalRuntimeSysRemainsAltPkg(t *testing.T) {
 func TestApplySourcePatchForPkg_Cases(t *testing.T) {
 	for _, caseName := range []string{
 		"default-override",
+		"generic-constraints-and-interface",
+		"generic-type-and-method",
 		"multi-file-skipall",
 		"multi-file-with-asm",
 		"skip-and-override",
 		"skipall",
+		"type-alias-and-grouped-values",
 	} {
 		t.Run(caseName, func(t *testing.T) {
 			runSourcePatchCase(t, caseName)
@@ -225,7 +228,7 @@ func runSourcePatchCase(t *testing.T, caseName string) {
 	}
 
 	assertOverlayMatchesOutput(t, overlay, srcDir, filepath.Join(assetRoot, "output"), runtimeDir)
-	assertGeneratedPatchPackagePositions(t, overlay, srcDir, patchDir)
+	assertGeneratedPatchPositions(t, overlay, srcDir, patchDir)
 }
 
 func copyTree(t *testing.T, srcRoot, dstRoot string) {
@@ -329,7 +332,7 @@ func sortedMapKeys(m map[string]string) []string {
 	return keys
 }
 
-func assertGeneratedPatchPackagePositions(t *testing.T, overlay map[string][]byte, srcRoot, patchRoot string) {
+func assertGeneratedPatchPositions(t *testing.T, overlay map[string][]byte, srcRoot, patchRoot string) {
 	t.Helper()
 	for rel, src := range overlayFilesUnderRoot(t, overlay, srcRoot) {
 		base := filepath.Base(rel)
@@ -338,18 +341,60 @@ func assertGeneratedPatchPackagePositions(t *testing.T, overlay map[string][]byt
 		}
 		original := strings.TrimPrefix(base, "z_llgo_patch_")
 		patchFile := filepath.Join(patchRoot, filepath.Dir(rel), original)
-		assertPatchedPosition(t, src, filepath.Join(srcRoot, filepath.FromSlash(rel)), patchFile, "package", packageLineOfFile(t, patchFile))
+		for _, target := range patchedTargetsOfFile(t, patchFile) {
+			assertPatchedPosition(t, src, filepath.Join(srcRoot, filepath.FromSlash(rel)), patchFile, target.key, target.line)
+		}
 	}
 }
 
-func packageLineOfFile(t *testing.T, filename string) int {
+type patchedTarget struct {
+	key  string
+	line int
+}
+
+func patchedTargetsOfFile(t *testing.T, filename string) []patchedTarget {
 	t.Helper()
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return fset.Position(file.Package).Line
+	targets := []patchedTarget{{
+		key:  "package",
+		line: fset.Position(file.Package).Line,
+	}}
+	for _, decl := range file.Decls {
+		switch decl := decl.(type) {
+		case *ast.FuncDecl:
+			key := "func:" + decl.Name.Name
+			if decl.Recv != nil && len(decl.Recv.List) != 0 {
+				key = "method:" + recvPatchKey(decl.Recv.List[0].Type) + "." + decl.Name.Name
+			}
+			targets = append(targets, patchedTarget{
+				key:  key,
+				line: fset.Position(decl.Name.Pos()).Line,
+			})
+		case *ast.GenDecl:
+			kind := strings.ToLower(decl.Tok.String())
+			for _, spec := range decl.Specs {
+				switch spec := spec.(type) {
+				case *ast.TypeSpec:
+					targets = append(targets, patchedTarget{
+						key:  "type:" + spec.Name.Name,
+						line: fset.Position(spec.Name.Pos()).Line,
+					})
+				case *ast.ValueSpec:
+					for _, name := range spec.Names {
+						targets = append(targets, patchedTarget{
+							key:  kind + ":" + name.Name,
+							line: fset.Position(name.Pos()).Line,
+						})
+					}
+				}
+			}
+		}
+	}
+	return targets
 }
 
 func mustWriteFile(t *testing.T, filename, content string) {
