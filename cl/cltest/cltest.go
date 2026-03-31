@@ -239,10 +239,8 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		return
 	}
 
-	var (
-		expectedIR []byte
-		checkIR    bool
-	)
+	var expectedIR []byte
+	checkIR := false
 	if opts.checkIR {
 		expectedIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
 		if err != nil {
@@ -251,7 +249,7 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 	}
 	conf := opts.conf
 	var modules map[string]string
-	if opts.checkIR && checkIR {
+	if checkIR {
 		conf, modules = withModuleCapture(opts.conf)
 	}
 
@@ -264,7 +262,7 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 	if checkOutput {
 		assertExpectedOutput(t, pkgDir, expectedOutput, output, opts)
 	}
-	if !(opts.checkIR && checkIR) {
+	if !checkIR {
 		return
 	}
 
