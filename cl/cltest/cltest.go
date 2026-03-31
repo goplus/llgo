@@ -40,6 +40,7 @@ import (
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/ssa/ssatest"
+	gllvm "github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -81,6 +82,12 @@ func FromDir(t *testing.T, sel, relDir string) {
 type runOptions struct {
 	conf   *build.Config
 	filter func(string) string
+}
+
+type runResult struct {
+	output  []byte
+	pkgs    []build.Package
+	modules map[string]string
 }
 
 // RunOption customizes RunFromDir behavior.
@@ -156,6 +163,50 @@ func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOp
 		}
 		t.Run(name, func(t *testing.T) {
 			testRunFrom(t, pkgDir, relPkg, sel, options)
+		})
+	}
+}
+
+// RunAndTestFromDir executes tests under relDir and validates both runtime
+// output and the pre-transform package IR snapshot when the corresponding
+// golden files exist.
+func RunAndTestFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOption) {
+	rootDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal("Getwd failed:", err)
+	}
+	dir := filepath.Join(rootDir, relDir)
+	ignoreSet := make(map[string]struct{}, len(ignore))
+	for _, item := range ignore {
+		ignoreSet[item] = struct{}{}
+	}
+	options := runOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+	fis, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal("ReadDir failed:", err)
+	}
+	for _, fi := range fis {
+		name := fi.Name()
+		if !fi.IsDir() || strings.HasPrefix(name, "_") {
+			continue
+		}
+		pkgDir := filepath.Join(dir, name)
+		relPkg, err := filepath.Rel(rootDir, pkgDir)
+		if err != nil {
+			t.Fatal("Rel failed:", err)
+		}
+		relPkg = "./" + filepath.ToSlash(relPkg)
+		if _, ok := ignoreSet[relPkg]; ok {
+			t.Run(name, func(t *testing.T) {
+				t.Skip("skip platform-specific output mismatch")
+			})
+			continue
+		}
+		t.Run(name, func(t *testing.T) {
+			testRunAndTestFrom(t, pkgDir, relPkg, sel, options)
 		})
 	}
 }
@@ -245,6 +296,71 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 	}
 }
 
+func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
+	if sel != "" && !strings.Contains(pkgDir, sel) {
+		return
+	}
+
+	expectedOutput, checkOutput, err := readGoldenFile(filepath.Join(pkgDir, "expect.txt"))
+	if err != nil {
+		t.Fatal("ReadFile failed:", err)
+	}
+	expectedIR, checkIR, err := readGoldenFile(filepath.Join(pkgDir, "out.ll"))
+	if err != nil {
+		t.Fatal("ReadFile failed:", err)
+	}
+	if !checkOutput && !checkIR {
+		return
+	}
+
+	var result *runResult
+	if opts.conf != nil {
+		result, err = runWithConf(relPkg, pkgDir, opts.conf, true)
+	} else {
+		conf := build.NewDefaultConf(build.ModeRun)
+		result, err = runWithConf(relPkg, pkgDir, conf, true)
+	}
+	if err != nil && checkOutput {
+		raw := ""
+		if result != nil {
+			raw = string(result.output)
+		}
+		t.Logf("raw output:\n%s", raw)
+		t.Fatalf("run failed: %v\noutput: %s", err, raw)
+	}
+	if result == nil {
+		t.Fatal("missing run result")
+	}
+
+	if checkOutput {
+		output := result.output
+		if opts.filter != nil {
+			output = []byte(opts.filter(string(output)))
+		}
+		if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expectedOutput) {
+			t.Fatal("unexpected output")
+		}
+	}
+
+	if checkIR {
+		moduleID := moduleIDFromIR(expectedIR)
+		if moduleID == "" {
+			mainPkg := findPrimaryPackage(result.pkgs, pkgDir)
+			if mainPkg == nil {
+				t.Fatalf("failed to locate primary package for %s", pkgDir)
+			}
+			moduleID = mainPkg.PkgPath
+		}
+		ir, ok := result.modules[moduleID]
+		if !ok {
+			t.Fatalf("module snapshot missing for package %s", moduleID)
+		}
+		if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(ir), expectedIR) {
+			t.Fatal("unexpected IR output")
+		}
+	}
+}
+
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 	conf := build.NewDefaultConf(build.ModeRun)
 	return RunAndCaptureWithConf(relPkg, pkgDir, conf)
@@ -252,6 +368,17 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 // RunAndCaptureWithConf runs llgo with a custom build config and captures output.
 func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
+	result, err := runWithConf(relPkg, pkgDir, conf, false)
+	if err != nil {
+		if result == nil {
+			return nil, err
+		}
+		return result.output, err
+	}
+	return result.output, nil
+}
+
+func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern bool) (*runResult, error) {
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -273,6 +400,16 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 		return nil, fmt.Errorf("build config is nil")
 	}
 	localConf := *conf
+	modules := make(map[string]string)
+	prevHook := localConf.ModuleHook
+	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
+		if prevHook != nil {
+			prevHook(pkgPath, mod)
+		}
+		if _, ok := modules[pkgPath]; !ok {
+			modules[pkgPath] = mod.String()
+		}
+	}
 
 	originalStdout := os.Stdout
 	originalStderr := os.Stderr
@@ -307,16 +444,19 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 		}
 		defer os.Chdir(origDir)
 		relPkg = "."
-		if _, err := os.Stat(filepath.Join(pkgDir, "in.go")); err == nil {
-			relPkg = "in.go"
-		} else if _, err := os.Stat(filepath.Join(pkgDir, "main.go")); err == nil {
-			relPkg = "main.go"
+		if !usePackagePattern {
+			if _, err := os.Stat(filepath.Join(pkgDir, "in.go")); err == nil {
+				relPkg = "in.go"
+			} else if _, err := os.Stat(filepath.Join(pkgDir, "main.go")); err == nil {
+				relPkg = "main.go"
+			}
 		}
 	}
 
 	mockable.EnableMock()
 	defer mockable.DisableMock()
 
+	var pkgs []build.Package
 	var runErr error
 	func() {
 		defer func() {
@@ -327,16 +467,67 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 				panic(r)
 			}
 		}()
-		_, runErr = build.Do([]string{relPkg}, &localConf)
+		pkgs, runErr = build.Do([]string{relPkg}, &localConf)
 	}()
 
 	_ = w.Close()
 	output := <-outputCh
 	output = filterRunOutput(output)
+	result := &runResult{output: output, pkgs: pkgs, modules: modules}
 	if runErr != nil {
-		return output, fmt.Errorf("run failed: %w", runErr)
+		return result, fmt.Errorf("run failed: %w", runErr)
 	}
-	return output, nil
+	return result, nil
+}
+
+func readGoldenFile(file string) ([]byte, bool, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	if bytes.Equal(data, []byte{';'}) {
+		return nil, false, nil
+	}
+	return data, true, nil
+}
+
+func findPrimaryPackage(pkgs []build.Package, pkgDir string) build.Package {
+	cleanDir := filepath.Clean(pkgDir)
+	for _, pkg := range pkgs {
+		if filepath.Clean(pkg.Dir) == cleanDir && pkg.Name == "main" {
+			return pkg
+		}
+	}
+	for _, pkg := range pkgs {
+		if pkg.Name == "main" {
+			return pkg
+		}
+	}
+	for _, pkg := range pkgs {
+		if filepath.Clean(pkg.Dir) == cleanDir {
+			return pkg
+		}
+	}
+	if len(pkgs) == 1 {
+		return pkgs[0]
+	}
+	return nil
+}
+
+func moduleIDFromIR(data []byte) string {
+	lines := strings.Split(string(data), "\n")
+	if len(lines) == 0 {
+		return ""
+	}
+	const prefix = "; ModuleID = '"
+	line := strings.TrimSpace(lines[0])
+	if !strings.HasPrefix(line, prefix) || !strings.HasSuffix(line, "'") {
+		return ""
+	}
+	return strings.TrimSuffix(strings.TrimPrefix(line, prefix), "'")
 }
 
 func filterRunOutput(in []byte) []byte {

@@ -168,12 +168,8 @@ func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
 	)
 }
 
-func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testgo")
-}
-
-func TestRunFromTestgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testgo", nil)
+func TestRunAndTestFromTestgo(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testgo", nil)
 }
 
 func TestFilterEmulatorOutput(t *testing.T) {
@@ -254,41 +250,25 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 	}
 }
 
-func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "", "./_testpy")
+func TestRunAndTestFromTestpy(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testpy", nil)
 }
 
-func TestRunFromTestpy(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testpy", nil)
+func TestRunAndTestFromTestlibgo(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testlibgo", nil)
 }
 
-func TestFromTestlibgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibgo")
-}
-
-func TestRunFromTestlibgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibgo", nil)
-}
-
-func TestFromTestlibc(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibc")
-}
-
-func TestRunFromTestlibc(t *testing.T) {
+func TestRunAndTestFromTestlibc(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		ignore = []string{
 			"./_testlibc/demangle", // Linux demangle symbol differs (itaniumDemangle linkage mismatch).
 		}
 	}
-	cltest.RunFromDir(t, "", "./_testlibc", ignore)
+	cltest.RunAndTestFromDir(t, "", "./_testlibc", ignore)
 }
 
-func TestFromTestrt(t *testing.T) {
-	cltest.FromDir(t, "", "./_testrt")
-}
-
-func TestRunFromTestrt(t *testing.T) {
+func TestRunAndTestFromTestrt(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		ignore = []string{
@@ -296,15 +276,11 @@ func TestRunFromTestrt(t *testing.T) {
 			"./_testrt/fprintf", // Linux uses different stderr symbol (no __stderrp).
 		}
 	}
-	cltest.RunFromDir(t, "", "./_testrt", ignore)
+	cltest.RunAndTestFromDir(t, "", "./_testrt", ignore)
 }
 
-func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata")
-}
-
-func TestRunFromTestdata(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testdata", nil)
+func TestRunAndTestFromTestdata(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testdata", nil)
 }
 
 func TestCgofullGeneratesC2func(t *testing.T) {

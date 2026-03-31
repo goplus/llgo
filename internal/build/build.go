@@ -113,6 +113,13 @@ type OutFmtDetails struct {
 	Zip string // ZIP/DFU output file path (.zip)
 }
 
+// ModuleHook observes a package module immediately after it is generated and
+// before TransformModule mutates it. The callback runs synchronously and
+// receives the live llvm.Module, so callers that need a stable snapshot should
+// consume it immediately (for example, by calling mod.String() inside the
+// hook).
+type ModuleHook func(pkgPath string, mod gllvm.Module)
+
 type Config struct {
 	Goos          string
 	Goarch        string
@@ -148,6 +155,7 @@ type Config struct {
 	// string-typed globals are supported and "main" applies to all root main
 	// packages in the current build.
 	GlobalRewrites map[string]Rewrites
+	ModuleHook     ModuleHook
 }
 
 type Rewrites map[string]string
@@ -596,6 +604,13 @@ func (c *context) linker() *clang.Cmd {
 // shouldPrintCommands reports whether command tracing should be enabled.
 func (c *context) shouldPrintCommands(verbose bool) bool {
 	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
+}
+
+func (c *context) emitModuleHook(pkgPath string, mod gllvm.Module) {
+	if c == nil || c.buildConf == nil || c.buildConf.ModuleHook == nil || mod.IsNil() {
+		return
+	}
+	c.buildConf.ModuleHook(pkgPath, mod)
 }
 
 func (c *context) hasAltPkg(pkgPath string) bool {
@@ -1230,6 +1245,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	check(err)
 
 	aPkg.LPkg = ret
+	ctx.emitModuleHook(pkgPath, ret.Module())
 
 	// If cache hit, we only needed to register types - skip compilation
 	if aPkg.CacheHit {
