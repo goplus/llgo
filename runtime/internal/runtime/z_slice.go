@@ -50,11 +50,11 @@ func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
 // SliceAppend append elem data and returns a slice.
 func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 	if etSize == 0 {
-		return src
+		return GrowSlice(src, num, etSize)
 	}
 	oldLen := src.len
 	src = GrowSlice(src, num, etSize)
-	c.Memcpy(c.Advance(src.data, oldLen*etSize), data, uintptr(num*etSize))
+	c.Memmove(c.Advance(src.data, oldLen*etSize), data, uintptr(num*etSize))
 	return src
 }
 
@@ -62,9 +62,26 @@ func SliceAppend(src Slice, data unsafe.Pointer, num, etSize int) Slice {
 func GrowSlice(src Slice, num, etSize int) Slice {
 	oldLen := src.len
 	newLen := oldLen + num
+	if num < 0 || newLen < 0 {
+		panic(errorString("growslice: len out of range"))
+	}
+	if etSize == 0 {
+		if newLen > 0 && src.data == nil {
+			src.data = zeroAlloc()
+		}
+		if newLen > src.cap {
+			src.cap = nextslicecap(newLen, src.cap)
+		}
+		src.len = newLen
+		return src
+	}
 	if newLen > src.cap {
 		newCap := nextslicecap(newLen, src.cap)
-		p := AllocZ(uintptr(newCap * etSize))
+		mem, overflow := math.MulUintptr(uintptr(newCap), uintptr(etSize))
+		if overflow || mem > maxAlloc {
+			panic(errorString("growslice: len out of range"))
+		}
+		p := AllocZ(mem)
 		if oldLen != 0 {
 			c.Memcpy(p, src.data, uintptr(oldLen*etSize))
 		}
@@ -134,6 +151,13 @@ func MakeSlice(len, cap int, etSize int) Slice {
 	return Slice{AllocZ(mem), len, cap}
 }
 
+func MakeSliceTo(dst *Slice, len, cap int, etSize int) {
+	if dst == nil {
+		return
+	}
+	*dst = MakeSlice(len, cap, etSize)
+}
+
 func panicmakeslicelen() {
 	panic(errorString("makeslice: len out of range"))
 }
@@ -144,6 +168,13 @@ func panicmakeslicecap() {
 
 func SliceClear(t *abi.SliceType, s Slice) {
 	c.Memset(s.data, 0, uintptr(s.len)*t.Elem.Size())
+}
+
+func SliceToArrayPtr(src Slice, max int) unsafe.Pointer {
+	if src.len < max {
+		PanicSliceConvert(max, src.len)
+	}
+	return src.data
 }
 
 // -----------------------------------------------------------------------------

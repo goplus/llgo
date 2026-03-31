@@ -864,7 +864,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 			case *types.Slice:
 				if etyp, ok := xtyp.Elem().Underlying().(*types.Basic); ok {
 					switch etyp.Kind() {
-					case types.Byte:
+					case types.Byte, types.Int8:
 						ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromBytes"), x).impl
 						return
 					case types.Rune:
@@ -950,7 +950,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	if types.Identical(dst.Underlying(), x.RawType().Underlying()) {
 		return b.ChangeType(t, x)
 	}
-	panic("todo")
+	panic(fmt.Sprintf("Convert todo: %v <- %v", dst, x.RawType()))
 }
 
 func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
@@ -1215,11 +1215,7 @@ func (b Builder) SelectValue(cond Expr, a Expr, bExpr Expr) Expr {
 func (b Builder) SliceToArrayPointer(x Expr, typ Type) (ret Expr) {
 	ret.Type = typ
 	max := b.Prog.IntVal(uint64(typ.RawType().Underlying().(*types.Pointer).Elem().Underlying().(*types.Array).Len()), b.Prog.Int())
-	failed := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, b.SliceLen(x).impl, max.impl), b.Prog.Bool()}
-	b.IfThen(failed, func() {
-		b.InlineCall(b.Pkg.rtFunc("PanicSliceConvert"), b.SliceLen(x), max)
-	})
-	ret.impl = b.SliceData(x).impl
+	ret = b.PtrCast(typ, b.InlineCall(b.Pkg.rtFunc("SliceToArrayPtr"), x, max))
 	return
 }
 
@@ -1316,10 +1312,13 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "imag":
 		return b.getField(args[0], 1)
 	case "String": // unsafe.String
-		return b.unsafeString(args[0].impl, args[1].impl)
+		size := b.fitIntSize(args[1])
+		return b.ChangeType(b.Prog.String(), b.InlineCall(b.Pkg.rtFunc("UnsafeString"), args[0], size))
 	case "Slice": // unsafe.Slice
 		size := b.fitIntSize(args[1])
-		return b.unsafeSlice(args[0], size.impl, size.impl)
+		eltSize := b.Prog.IntVal(b.Prog.SizeOf(b.Prog.Elem(args[0].Type)), b.Prog.Int())
+		tslice := b.Prog.Slice(b.Prog.Elem(args[0].Type))
+		return b.ChangeType(tslice, b.InlineCall(b.Pkg.rtFunc("UnsafeSlice"), args[0], size, eltSize))
 	case "StringData":
 		return b.StringData(args[0]) // TODO(xsw): check return type
 	case "SliceData":
