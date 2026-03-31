@@ -132,6 +132,185 @@ Additional `go1.26` darwin-only tail:
 
 Within `P1`, start with the non-`fixedbugs` root cases first, because they are usually easier to group by runtime/compiler subsystem and often explain multiple `fixedbugs` cases.
 
+## Repair Themes
+
+The following grouping is intended to drive fix order by subsystem, not by file name.
+
+### First wave: language/runtime semantics
+
+These are the best first targets because they are either cross-platform on newer Go versions, or they represent core runtime semantics that usually unblock multiple tests.
+
+#### 1. Range/new/devirtualization semantics
+
+Scope:
+
+- new Go 1.26 language/runtime behavior
+- range lowering
+- devirtualization correctness
+- nil panic behavior and line attribution
+
+Cases:
+
+- `devirtualization_nil_panics.go`
+- `newexpr.go`
+- `range4.go`
+- `fixedbugs/issue72844.go`
+- `fixedbugs/issue75327.go`
+
+#### 2. Panic/recover/defer/wrapper semantics
+
+Scope:
+
+- `panic` / `recover`
+- deferred calls
+- method wrappers
+- wrapper function pointers
+
+Cases:
+
+- `fixedbugs/issue73916.go`
+- `fixedbugs/issue73916b.go`
+- `fixedbugs/issue73917.go`
+- `fixedbugs/issue73920.go`
+- `recover.go`
+- `recover1.go`
+- `recover2.go`
+- `recover3.go`
+
+#### 3. Map and interface equality semantics
+
+Scope:
+
+- map iteration during mutation
+- `clear`
+- NaN keys
+- equality on non-comparable dynamic values
+
+Cases:
+
+- `fixedbugs/issue70189.go`
+- `fixedbugs/issue76008.go`
+- `interface/fake.go`
+- `interface/noeq.go`
+
+#### 4. Method sets, wrappers, and reflection
+
+Scope:
+
+- value/pointer receiver dispatch
+- method values
+- wrapper generation
+- reflection method lookup / retention
+
+Cases:
+
+- `method.go`
+- `method5.go`
+- `reflectmethod1.go`
+- `reflectmethod2.go`
+- `reflectmethod3.go`
+- `reflectmethod5.go`
+- `reflectmethod6.go`
+- `fixedbugs/issue16037_run.go`
+
+#### 5. Core builtins, conversions, slices, and unsafe
+
+Scope:
+
+- `append`
+- conversions
+- slice/array layout
+- `unsafe` builtins
+- division and zero-sized values
+
+Cases:
+
+- `append.go`
+- `convert4.go`
+- `slicecap.go`
+- `unsafebuiltins.go`
+- `zerodivide.go`
+- `zerosize.go`
+- `divide.go`
+- `divmod.go`
+
+#### 6. Channels, select, nil behavior, and control flow
+
+Scope:
+
+- channel operations
+- `select`
+- nil semantics
+- switch/range control flow
+
+Cases:
+
+- `chan/select3.go`
+- `chan/goroutines.go`
+- `chancap.go`
+- `closedchan.go`
+- `range.go`
+- `nil.go`
+- `nilptr.go`
+- `nilptr2.go`
+- `switch.go`
+
+#### 7. Generics / type parameters
+
+Scope:
+
+- generic channels
+- generic ordered maps
+- nested type parameters
+- type switches on type parameters
+
+Cases:
+
+- `typeparam/chans.go`
+- `typeparam/issue48645a.go`
+- `typeparam/issue49547.go`
+- `typeparam/issue51521.go`
+- `typeparam/mdempsky/16.go`
+- `typeparam/mdempsky/17.go`
+- `typeparam/nested.go`
+- `typeparam/orderedmap.go`
+- `typeparam/typeswitch5.go`
+- `typeparam/typeswitch6.go`
+
+### Later wave: debug, trace, profiling, finalizer
+
+These should be intentionally deferred because they are less useful for broad xfail reduction early on, and several of them depend on debug info, profiling hooks, or GC/finalizer timing.
+
+#### 8. Debug info / PC-line / tracing style behavior
+
+Cases:
+
+- `inline_literal.go`
+- `stackobj.go`
+- `stackobj3.go`
+
+#### 9. Finalizer / heap profile / runtime instrumentation
+
+Cases:
+
+- `deferfin.go`
+- `finprofiled.go`
+- `heapsampling.go`
+- `mallocfin.go`
+- `tinyfin.go`
+
+### Suggested practical order
+
+1. `Range/new/devirtualization`
+2. `Panic/recover/defer/wrapper`
+3. `Map and interface equality`
+4. `Method sets and reflection`
+5. `Builtins/conversions/slices/unsafe`
+6. `Channels and nil/control flow`
+7. `Generics`
+8. `Debug/trace`
+9. `Finalizer/profile`
+
 ## Notes
 
 - `fixedbugs/issue72844.go` is already the clearest cross-version and cross-platform signal.
