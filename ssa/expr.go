@@ -289,9 +289,7 @@ func (b Builder) CBytes(v Expr) Expr {
 
 // InlineAsm generates inline assembly instruction
 func (b Builder) InlineAsm(instruction string) {
-	if debugInstr {
-		log.Printf("InlineAsm %s\n", instruction)
-	}
+	dbgInstrf("InlineAsm %s\n", instruction)
 
 	typ := llvm.FunctionType(b.Prog.tyVoid(), nil, false)
 	asm := llvm.InlineAsm(typ, instruction, "", true, false, llvm.InlineAsmDialectATT, false)
@@ -458,9 +456,7 @@ func isPredOp(op token.Token) bool {
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= > >=
 func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
-	if debugInstr {
-		log.Printf("BinOp %d, %v, %v\n", op, x.impl, y.impl)
-	}
+	dbgInstrf("BinOp %d, %v, %v\n", op, x.impl, y.impl)
 	switch {
 	case isMathOp(op): // op: + - * / %
 		kind := x.kind
@@ -707,9 +703,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 // SUB is negation.
 // NOT is logical negation.
 func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("UnOp %v, %v\n", op, x.impl)
-	}
+	dbgInstrf("UnOp %v, %v\n", op, x.impl)
 	switch op {
 	case token.MUL:
 		return b.Load(x)
@@ -769,9 +763,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 //
 //	t1 = changetype *int <- IntPtr (t0)
 func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
-	}
+	dbgInstrf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	if t.kind == vkClosure {
 		switch x.kind {
 		case vkFuncDecl:
@@ -845,9 +837,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 //
 //	t1 = convert []byte <- string (t0)
 func (b Builder) Convert(t Type, x Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("Convert %v <- %v\n", t.RawType(), x.RawType())
-	}
+	dbgInstrf("Convert %v <- %v\n", t.RawType(), x.RawType())
 	dst := t.raw.Type
 	ret.Type = b.Prog.rawType(dst)
 	switch typ := dst.Underlying().(type) {
@@ -1039,9 +1029,7 @@ func (b Builder) PtrCast(t Type, x Expr) Expr {
 //	t0 = make closure anon@1.2 [x y z]
 //	t1 = make closure bound$(main.I).add [i]
 func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
-	if debugInstr {
-		log.Printf("MakeClosure %v, %v\n", fn, bindings)
-	}
+	dbgInstrf("MakeClosure %v, %v\n", fn, bindings)
 	prog := b.Prog
 	tfn := fn.Type
 	sig := tfn.raw.Type.(*types.Signature)
@@ -1072,9 +1060,7 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t2 = println(t0, t1)
 //	t4 = t3()
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
-	if debugInstr {
-		logCall("Call", fn, args)
-	}
+	dbgInstrCall("Call", fn, args)
 	var kind = fn.kind
 	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
@@ -1204,6 +1190,12 @@ func logCall(da string, fn Expr, args []Expr) {
 		sep = ", "
 	}
 	log.Println(b.String())
+}
+
+func dbgInstrCall(da string, fn Expr, args []Expr) {
+	if debugInstr {
+		logCall(da, fn, args)
+	}
 }
 
 type DoAction int

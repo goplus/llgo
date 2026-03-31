@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"log"
 	"runtime"
 	"strconv"
 	"unsafe"
@@ -52,6 +53,18 @@ var (
 // SetDebug sets debug flags.
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
+}
+
+func dbgInstrf(format string, args ...any) {
+	if debugInstr {
+		log.Printf(format, args...)
+	}
+}
+
+func dbgInstrln(args ...any) {
+	if debugInstr {
+		log.Println(args...)
+	}
 }
 
 // -----------------------------------------------------------------------------

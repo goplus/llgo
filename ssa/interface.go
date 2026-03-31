@@ -20,7 +20,6 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
-	"log"
 
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
@@ -109,9 +108,7 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 //	t2 = make Stringer <- t0
 func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
-	if debugInstr {
-		log.Printf("MakeInterface %v, %v\n", rawIntf, x.impl)
-	}
+	dbgInstrf("MakeInterface %v, %v\n", rawIntf, x.impl)
 	if x.kind == vkFuncDecl {
 		typ := b.Prog.Type(x.raw.Type, InGo)
 		x = checkExpr(x, typ.raw.Type, b)
@@ -248,9 +245,7 @@ func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
 //	t1 = typeassert t0.(int)
 //	t3 = typeassert,ok t2.(T)
 func (b Builder) TypeAssert(x Expr, assertedTyp Type, commaOk bool) Expr {
-	if debugInstr {
-		log.Printf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
-	}
+	dbgInstrf("TypeAssert %v, %v, %v\n", x.impl, assertedTyp.raw.Type, commaOk)
 	tx := b.faceAbiType(x)
 	tabi := b.abiType(assertedTyp.raw.Type)
 	var eq Expr
@@ -327,9 +322,7 @@ func (b Builder) ChangeInterface(typ Type, x Expr) (ret Expr) {
 
 // InterfaceData returns the data pointer of an interface.
 func (b Builder) InterfaceData(x Expr) Expr {
-	if debugInstr {
-		log.Printf("InterfaceData %v\n", x.impl)
-	}
+	dbgInstrf("InterfaceData %v\n", x.impl)
 	return Expr{b.faceData(x.impl), b.Prog.VoidPtr()}
 }
 
