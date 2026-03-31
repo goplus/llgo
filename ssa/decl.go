@@ -205,6 +205,9 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 	t := p.Prog.FuncDecl(sig, bg)
 	dbgInstrln("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
+	if bg == InGo {
+		fn.AddFunctionAttr(p.nullPointerIsValidAttr)
+	}
 	if instantiated {
 		fn.SetLinkage(llvm.LinkOnceAnyLinkage)
 	}

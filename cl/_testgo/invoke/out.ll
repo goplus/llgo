@@ -98,7 +98,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/invoke"
 @34 = private unnamed_addr constant [32 x i8] c"type assertion any -> any failed", align 1
 @35 = private unnamed_addr constant [52 x i8] c"type assertion any -> interface{Invoke() int} failed", align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/invoke.T", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -112,19 +113,22 @@ _llgo_0:
   ret i64 0
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testgo/invoke.T", ptr %0, align 8
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T" %1)
   ret i64 %2
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/invoke.(*T).Method"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/invoke.(*T).Method"(ptr %0) #0 {
 _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T1.Invoke"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T1.Invoke"(i64 %0) #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -133,14 +137,16 @@ _llgo_0:
   ret i64 1
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T1).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T1).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load i64, ptr %0, align 4
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T1.Invoke"(i64 %1)
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T2.Invoke"(double %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T2.Invoke"(double %0) #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -149,14 +155,16 @@ _llgo_0:
   ret i64 2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T2).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T2).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load double, ptr %0, align 8
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T2.Invoke"(double %1)
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T3).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T3).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load i8, ptr %0, align 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 7 })
@@ -167,7 +175,8 @@ _llgo_0:
   ret i64 3
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke"([1 x i64] %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke"([1 x i64] %0) #0 {
 _llgo_0:
   %1 = alloca [1 x i64], align 8
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -181,14 +190,16 @@ _llgo_0:
   ret i64 4
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T4).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T4).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load [1 x i64], ptr %0, align 4
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke"([1 x i64] %1)
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/invoke.T5", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -202,14 +213,16 @@ _llgo_0:
   ret i64 5
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T5).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T5).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testgo/invoke.T5", ptr %0, align 4
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T5" %1)
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/invoke.T6" %0, 0
@@ -221,14 +234,16 @@ _llgo_0:
   ret i64 6
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T6).Invoke"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.(*T6).Invoke"(ptr %0) #0 {
 _llgo_0:
   %1 = load %"github.com/goplus/llgo/cl/_testgo/invoke.T6", ptr %0, align 8
   %2 = call i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T6" %1)
   ret i64 %2
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/invoke.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/invoke.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/invoke.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -241,7 +256,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/invoke.invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/invoke.invoke"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0)
   %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %0, 0
@@ -257,7 +273,8 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/invoke.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/invoke.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/invoke.T", ptr %0, i32 0, i32 0
@@ -419,25 +436,32 @@ _llgo_6:                                          ; preds = %_llgo_3
   unreachable
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.main$1"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.main$1"() #0 {
 _llgo_0:
   ret i64 400
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
 define linkonce i64 @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/invoke.main$1"(ptr %0) {
 _llgo_0:
@@ -445,9 +469,11 @@ _llgo_0:
   ret i64 %1
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -455,7 +481,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -463,7 +490,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -471,9 +499,11 @@ _llgo_0:
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -481,9 +511,11 @@ _llgo_0:
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.f64equal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -491,7 +523,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -499,17 +532,23 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal"(ptr, ptr, ptr) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintIface"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, ptr) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.nilinterequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -517,4 +556,5 @@ _llgo_0:
   ret i1 %3
 }
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { null_pointer_is_valid }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }

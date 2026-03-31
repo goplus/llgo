@@ -4,7 +4,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/hello"
 @"github.com/goplus/llgo/cl/_testrt/hello.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testrt/hello.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/hello.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/hello.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/hello.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -27,7 +28,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/hello.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/hello.main"() #0 {
 _llgo_0:
   %0 = call i32 @strlen(ptr @"github.com/goplus/llgo/cl/_testrt/hello.format")
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/hello.format", i32 %0)
@@ -37,3 +39,5 @@ _llgo_0:
 declare i32 @strlen(ptr)
 
 declare void @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

@@ -10,22 +10,26 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tpnamed"
 
 @"github.com/goplus/llgo/cl/_testgo/tpnamed.init$guard" = global i1 false, align 1
 
-define %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %0) #0 {
 _llgo_0:
   ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[error]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1", ptr null }
 }
 
-define %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"() {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1"() #0 {
 _llgo_0:
   ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[error]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1", ptr null }
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"() {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.iface" @"github.com/goplus/llgo/cl/_testgo/tpnamed.WriteFile$1$1"() #0 {
 _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/tpnamed.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/tpnamed.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/tpnamed.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -38,18 +42,21 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/tpnamed.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/tpnamed.main"() #0 {
 _llgo_0:
   %0 = call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[[0]byte]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[[0]byte]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1", ptr null })
   ret void
 }
 
-define %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"() {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1"() #0 {
 _llgo_0:
   ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1", ptr null }
 }
 
-define [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"() {
+; Function Attrs: null_pointer_is_valid
+define [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"() #0 {
 _llgo_0:
   ret [0 x i8] zeroinitializer
 }
@@ -72,7 +79,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/cl/_testgo/tpnamed.Future[[0]byte]" %1
 }
 
-define linkonce [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[[0]byte]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[[0]byte]" %0) {
+; Function Attrs: null_pointer_is_valid
+define linkonce [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.RunIO[[0]byte]"(%"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[[0]byte]" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[[0]byte]" %0, 1
   %2 = extractvalue %"github.com/goplus/llgo/cl/_testgo/tpnamed.IO[[0]byte]" %0, 0
@@ -88,3 +96,5 @@ _llgo_0:
   %1 = tail call [0 x i8] @"github.com/goplus/llgo/cl/_testgo/tpnamed.main$1$1"()
   ret [0 x i8] %1
 }
+
+attributes #0 = { null_pointer_is_valid }

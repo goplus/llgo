@@ -22,7 +22,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/builtin"
 @6 = private unnamed_addr constant [3 x i8] c"abd", align 1
 @7 = private unnamed_addr constant [2 x i8] c"fn", align 1
 
-define double @"github.com/goplus/llgo/cl/_testrt/builtin.Float64frombits"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define double @"github.com/goplus/llgo/cl/_testrt/builtin.Float64frombits"(i64 %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 %0, ptr %1, align 4
@@ -30,7 +31,8 @@ _llgo_0:
   ret double %2
 }
 
-define double @"github.com/goplus/llgo/cl/_testrt/builtin.Inf"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define double @"github.com/goplus/llgo/cl/_testrt/builtin.Inf"(i64 %0) #0 {
 _llgo_0:
   %1 = icmp sge i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -47,24 +49,28 @@ _llgo_3:                                          ; preds = %_llgo_0
   br label %_llgo_2
 }
 
-define i1 @"github.com/goplus/llgo/cl/_testrt/builtin.IsNaN"(double %0) {
+; Function Attrs: null_pointer_is_valid
+define i1 @"github.com/goplus/llgo/cl/_testrt/builtin.IsNaN"(double %0) #0 {
 _llgo_0:
   %1 = fcmp une double %0, %0
   ret i1 %1
 }
 
-define double @"github.com/goplus/llgo/cl/_testrt/builtin.NaN"() {
+; Function Attrs: null_pointer_is_valid
+define double @"github.com/goplus/llgo/cl/_testrt/builtin.NaN"() #0 {
 _llgo_0:
   %0 = call double @"github.com/goplus/llgo/cl/_testrt/builtin.Float64frombits"(i64 9221120237041090561)
   ret double %0
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.demo"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.demo"() #0 {
 _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/builtin.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -80,7 +86,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -445,19 +452,22 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$1"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$1"() #0 {
 _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$2"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$2"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 2 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$3"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/builtin.main$3"(ptr %0) #0 {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
@@ -467,21 +477,29 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.NewSlice3"(ptr, i64, i64, i64, i64, i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.String", i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.String", i64, i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.SliceAppend"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64) #0
 
 define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/builtin.main$1"(ptr %0) {
 _llgo_0:
@@ -489,7 +507,8 @@ _llgo_0:
   ret void
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -497,7 +516,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -505,36 +525,55 @@ _llgo_0:
   ret i1 %3
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintEface"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintEface"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr) #0
 
-declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare i64 @"github.com/goplus/llgo/runtime/internal/runtime.SliceCopy"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr, i64, i64) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewStringIter"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare { i1, i64, i32 } @"github.com/goplus/llgo/runtime/internal/runtime.StringIterNext"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare { i1, i64, i32 } @"github.com/goplus/llgo/runtime/internal/runtime.StringIterNext"(ptr) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice") #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice")
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringLess"(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
+
+attributes #0 = { null_pointer_is_valid }

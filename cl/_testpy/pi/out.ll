@@ -6,7 +6,8 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/pi"
 @__llgo_py.math = external global ptr, align 8
 @1 = private unnamed_addr constant [3 x i8] c"pi\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/pi.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/pi.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/pi.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -20,7 +21,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/pi.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/pi.main"() #0 {
 _llgo_0:
   %0 = load ptr, ptr @__llgo_py.math, align 8
   %1 = call ptr @PyObject_GetAttrString(ptr %0, ptr @1)
@@ -29,10 +31,13 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/lib/py/math.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/math.init"() #0
 
 declare ptr @PyObject_GetAttrString(ptr, ptr)
 
 declare double @PyFloat_AsDouble(ptr)
 
 declare i32 @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

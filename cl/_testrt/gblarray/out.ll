@@ -9,7 +9,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/gblarray"
 @"github.com/goplus/llgo/cl/_testrt/gblarray.sizeBasicTypes" = global [25 x i64] zeroinitializer, align 8
 @0 = private unnamed_addr constant [20 x i8] c"Kind: %d, Size: %d\0A\00", align 1
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.Basic"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.Basic"(i64 %0) #0 {
 _llgo_0:
   %1 = icmp sge i64 %0, 25
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %1)
@@ -18,7 +19,8 @@ _llgo_0:
   ret ptr %3
 }
 
-define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.basicType"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.basicType"(i64 %0) #0 {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 72)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 0
@@ -36,7 +38,8 @@ _llgo_0:
   ret ptr %1
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/gblarray.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/gblarray.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -53,7 +56,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/gblarray.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/gblarray.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.Basic"(i64 24)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %0, i32 0, i32 6
@@ -65,10 +69,15 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/abi.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/abi.init"() #0
 
 declare i32 @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

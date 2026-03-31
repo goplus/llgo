@@ -7,7 +7,8 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/utf8"
 @"github.com/goplus/llgo/cl/_testdata/utf8.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [7 x i8] c"\E4\B8\ADabcd", align 1
 
-define i8 @"github.com/goplus/llgo/cl/_testdata/utf8.index"(i8 %0) {
+; Function Attrs: null_pointer_is_valid
+define i8 @"github.com/goplus/llgo/cl/_testdata/utf8.index"(i8 %0) #0 {
 _llgo_0:
   %1 = sext i8 %0 to i64
   %2 = icmp slt i64 %1, 0
@@ -19,7 +20,8 @@ _llgo_0:
   ret i8 %6
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/utf8.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/utf8.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -41,7 +43,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/utf8.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/utf8.main"() #0 {
 _llgo_0:
   br label %_llgo_1
 
@@ -69,16 +72,25 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
 
-declare void @"unicode/utf8.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"unicode/utf8.init"() #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.String", i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.String", i64, i64) #0
 
-declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1) #0
+
+attributes #0 = { null_pointer_is_valid }

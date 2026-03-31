@@ -6,7 +6,8 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/argv"
 @0 = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
 @__llgo_argv = external global ptr, align 8
 
-define void @"github.com/goplus/llgo/cl/_testlibc/argv.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibc/argv.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibc/argv.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -19,7 +20,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibc/argv.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibc/argv.main"() #0 {
 _llgo_0:
   br label %_llgo_1
 
@@ -42,3 +44,5 @@ _llgo_3:                                          ; preds = %_llgo_1
 }
 
 declare i32 @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

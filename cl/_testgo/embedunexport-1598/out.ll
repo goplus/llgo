@@ -48,7 +48,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/embedunexport-1598"
 @"*github.com/goplus/llgo/cl/_testdata/embedunexport.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1886130721, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 58 }, ptr null }, ptr @"github.com/goplus/llgo/cl/_testdata/embedunexport.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E" }, align 8
 @"github.com/goplus/llgo/cl/_testdata/embedunexport.iface$gGW7PSocDeRlTvk5kuSew8C-TZ8OXQrGkMlj2EUlZ9E$imethods" = weak_odr constant [2 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 4 }, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" }, %"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @10, i64 57 }, ptr @"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA" }], align 8
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped.Name"(%"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped.Name"(%"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0) #0 {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -59,7 +60,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped.setName"(%"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped.setName"(%"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped" %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) #0 {
 _llgo_0:
   %2 = alloca %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", align 8
   call void @llvm.memset(ptr %2, i8 0, i64 8, i1 false)
@@ -70,7 +72,8 @@ _llgo_0:
   ret void
 }
 
-define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name"(ptr %0) #0 {
 _llgo_0:
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", ptr %0, i32 0, i32 0
   %2 = load ptr, ptr %1, align 8
@@ -78,7 +81,8 @@ _llgo_0:
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %3
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).setName"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).setName"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", ptr %0, i32 0, i32 0
   %3 = load ptr, ptr %2, align 8
@@ -86,7 +90,8 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -100,7 +105,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/cl/_testdata/embedunexport.NewBase"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 4 })
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
@@ -125,19 +131,25 @@ _llgo_0:
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name"(ptr) #0
 
-declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName"(ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.init"() #0
 
-declare ptr @"github.com/goplus/llgo/cl/_testdata/embedunexport.NewBase"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/cl/_testdata/embedunexport.NewBase"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -145,9 +157,11 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr) #0
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -155,7 +169,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -163,14 +178,20 @@ _llgo_0:
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr) #0
 
-declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/cl/_testdata/embedunexport.Use"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { null_pointer_is_valid }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }

@@ -48,6 +48,7 @@ import (
 	"github.com/goplus/llgo/internal/header"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/monitor"
+	"github.com/goplus/llgo/internal/optlevel"
 	"github.com/goplus/llgo/internal/packages"
 	"github.com/goplus/llgo/internal/typepatch"
 	"github.com/goplus/llgo/ssa/abi"
@@ -117,6 +118,7 @@ type Config struct {
 	Goos          string
 	Goarch        string
 	Target        string // target name (e.g., "rp2040", "wasi") - takes precedence over Goos/Goarch
+	OptLevel      optlevel.Level
 	BinPath       string
 	AppExt        string  // ".exe" on Windows, empty on Unix
 	OutFile       string  // only valid for ModeBuild when len(pkgs) == 1
@@ -224,9 +226,11 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if err := ensureSizeReporting(conf); err != nil {
 		return nil, err
 	}
+	conf.OptLevel = effectiveOptLevel(conf)
+
 	// Handle crosscompile configuration first to set correct GOOS/GOARCH
 	forceEspClang := conf.ForceEspClang || conf.Target != ""
-	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang)
+	export, err := crosscompile.Use(conf.Goos, conf.Goarch, conf.Target, IsWasiThreadsEnabled(), forceEspClang, conf.OptLevel)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup crosscompile: %w", err)
 	}
@@ -1689,6 +1693,16 @@ func Plan9ASMPkgs() string {
 
 func WasmRuntime() string {
 	return defaultEnv(llgoWasmRuntime, defaultWasmRuntime)
+}
+
+func effectiveOptLevel(conf *Config) optlevel.Level {
+	if conf != nil && conf.OptLevel.IsValid() {
+		return conf.OptLevel
+	}
+	if conf != nil && conf.Target != "" {
+		return optlevel.Oz
+	}
+	return optlevel.O2
 }
 
 func concatPkgLinkFiles(ctx *context, pkg *packages.Package, verbose bool) (parts []string) {

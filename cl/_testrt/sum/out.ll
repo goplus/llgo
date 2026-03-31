@@ -6,7 +6,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/sum"
 @"github.com/goplus/llgo/cl/_testrt/sum.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [10 x i8] c"Hello %d\0A\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/sum.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/sum.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/sum.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -19,7 +20,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/sum.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/sum.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -38,7 +40,8 @@ _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testrt/sum.sum"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testrt/sum.sum"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0) #0 {
 _llgo_0:
   %1 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   br label %_llgo_1
@@ -66,8 +69,12 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret i64 %2
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
 declare i32 @printf(ptr, ...)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
+
+attributes #0 = { null_pointer_is_valid }

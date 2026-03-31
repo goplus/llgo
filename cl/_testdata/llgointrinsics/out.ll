@@ -3,22 +3,26 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/llgointrinsics"
 
 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.init$guard" = global i1 false, align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseBare"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseBare"() #0 {
 _llgo_0:
   ret i64 ptrtoint (ptr @bar to i64)
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseC"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseC"() #0 {
 _llgo_0:
   ret i64 ptrtoint (ptr @write to i64)
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseCTrampoline"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseCTrampoline"() #0 {
 _llgo_0:
   ret i64 ptrtoint (ptr @write to i64)
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
@@ -28,7 +32,8 @@ _llgo_0:
   ret i64 ptrtoint (ptr @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure$1" to i64)
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure$1"(ptr %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure$1"(ptr %0) #0 {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
@@ -39,22 +44,26 @@ _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseFunc"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseFunc"() #0 {
 _llgo_0:
   ret i64 ptrtoint (ptr @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseFunc$1" to i64)
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseFunc$1"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseFunc$1"() #0 {
 _llgo_0:
   ret void
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseLibc"() {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseLibc"() #0 {
 _llgo_0:
   ret i64 ptrtoint (ptr @foo to i64)
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseSkip"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseSkip"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 0)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64 0)
@@ -62,7 +71,8 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -79,10 +89,15 @@ declare i64 @bar(...)
 
 declare i64 @write(i64, ptr, i64)
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
 declare i64 @foo(...)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintUint"(i64) #0
+
+attributes #0 = { null_pointer_is_valid }

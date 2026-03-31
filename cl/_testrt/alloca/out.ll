@@ -5,7 +5,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/alloca"
 @0 = private unnamed_addr constant [4 x i8] c"Hi\0A\00", align 1
 @1 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testrt/alloca.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/alloca.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testrt/alloca.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -18,7 +19,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testrt/alloca.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testrt/alloca.main"() #0 {
 _llgo_0:
   %0 = alloca i8, i64 4, align 1
   %1 = call ptr @memcpy(ptr %0, ptr @0, i64 4)
@@ -29,3 +31,5 @@ _llgo_0:
 declare ptr @memcpy(ptr, ptr, i64)
 
 declare i32 @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

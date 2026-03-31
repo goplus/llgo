@@ -15,7 +15,8 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/list"
 @3 = private unnamed_addr constant [4 x i8] c"abs\00", align 1
 @4 = private unnamed_addr constant [6 x i8] c"print\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/list.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/list.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/list.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -32,7 +33,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/list.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/list.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store i64 100, ptr %0, align 4
@@ -96,16 +98,20 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/lib/py/math.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/math.init"() #0
 
-declare void @"github.com/goplus/lib/py/std.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/std.init"() #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.StringToBytes"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
 declare ptr @PyList_New(i64)
 
@@ -133,4 +139,5 @@ declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #0 = { null_pointer_is_valid }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }

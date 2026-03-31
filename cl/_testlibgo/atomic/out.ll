@@ -9,7 +9,8 @@ source_filename = "github.com/goplus/llgo/cl/_testlibgo/atomic"
 @2 = private unnamed_addr constant [2 x i8] c"v:", align 1
 @3 = private unnamed_addr constant [4 x i8] c"swp:", align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/atomic.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibgo/atomic.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibgo/atomic.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -23,7 +24,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibgo/atomic.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibgo/atomic.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
   store atomic i64 100, ptr %0 seq_cst, align 4
@@ -79,14 +81,22 @@ _llgo_0:
   ret void
 }
 
-declare void @"sync/atomic.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"sync/atomic.init"() #0
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String") #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1) #0
+
+attributes #0 = { null_pointer_is_valid }

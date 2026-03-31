@@ -5,7 +5,8 @@ source_filename = "github.com/goplus/llgo/cl/_testlibc/sqlite"
 @0 = private unnamed_addr constant [20 x i8] c"==> Error: (%d) %s\0A\00", align 1
 @1 = private unnamed_addr constant [9 x i8] c":memory:\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.check"(i32 %0) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.check"(i32 %0) #0 {
 _llgo_0:
   %1 = icmp ne i32 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_2
@@ -20,7 +21,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testlibc/sqlite.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -33,7 +35,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testlibc/sqlite.main"() #0 {
 _llgo_0:
   %0 = call { ptr, i32 } @"github.com/goplus/lib/c/sqlite.OpenV2"(ptr @1, i32 130, ptr null)
   %1 = extractvalue { ptr, i32 } %0, 0
@@ -49,6 +52,9 @@ declare i32 @printf(ptr, ...)
 
 declare void @exit(i32)
 
-declare { ptr, i32 } @"github.com/goplus/lib/c/sqlite.OpenV2"(ptr, i32, ptr)
+; Function Attrs: null_pointer_is_valid
+declare { ptr, i32 } @"github.com/goplus/lib/c/sqlite.OpenV2"(ptr, i32, ptr) #0
 
 declare i32 @sqlite3_close(ptr)
+
+attributes #0 = { null_pointer_is_valid }

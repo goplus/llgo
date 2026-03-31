@@ -13,7 +13,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tprecur"
 @1 = private unnamed_addr constant [6 x i8] c"string", align 1
 @"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 
-define void @"github.com/goplus/llgo/cl/_testgo/tprecur.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/tprecur.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/tprecur.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -26,13 +27,15 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/tprecur.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/tprecur.main"() #0 {
 _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testgo/tprecur.recursive"()
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/tprecur.recursive"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/tprecur.recursive"() #0 {
 _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 5)
   %1 = icmp ne i64 %0, 110
@@ -49,7 +52,8 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
-define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur1[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %0) #0 {
 _llgo_0:
   %1 = icmp eq i64 %0, 0
   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -68,7 +72,8 @@ _llgo_3:                                          ; preds = %_llgo_0
   br i1 %5, label %_llgo_1, label %_llgo_2
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -76,7 +81,8 @@ _llgo_0:
   ret i1 %3
 }
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr)
+; Function Attrs: null_pointer_is_valid
+declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr, ptr) #0
 
 define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr"(ptr %0, ptr %1, ptr %2) {
 _llgo_0:
@@ -84,11 +90,14 @@ _llgo_0:
   ret i1 %3
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface") #0
 
-define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %0) {
+; Function Attrs: null_pointer_is_valid
+define linkonce i64 @"github.com/goplus/llgo/cl/_testgo/tprecur.recur2[github.com/goplus/llgo/cl/_testgo/tprecur.T.1.0]"(i64 %0) #0 {
 _llgo_0:
   %1 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 8)
   %2 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1, 1
@@ -142,6 +151,10 @@ _llgo_6:                                          ; preds = %_llgo_4
   ret i64 %28
 }
 
-declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64, i64, i64)
+; Function Attrs: null_pointer_is_valid
+declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64, i64, i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1) #0
+
+attributes #0 = { null_pointer_is_valid }

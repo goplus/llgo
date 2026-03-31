@@ -14,7 +14,8 @@ source_filename = "github.com/goplus/llgo/cl/_testpy/callpy"
 @__llgo_py.os = external global ptr, align 8
 @4 = private unnamed_addr constant [7 x i8] c"getcwd\00", align 1
 
-define void @"github.com/goplus/llgo/cl/_testpy/callpy.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/callpy.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testpy/callpy.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -36,7 +37,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testpy/callpy.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testpy/callpy.main"() #0 {
 _llgo_0:
   %0 = call ptr @PyFloat_FromDouble(double 2.000000e+00)
   %1 = load ptr, ptr @__llgo_py.math.sqrt, align 8
@@ -51,11 +53,14 @@ _llgo_0:
   ret void
 }
 
-declare void @"github.com/goplus/lib/py/math.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/math.init"() #0
 
-declare void @"github.com/goplus/lib/py/os.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/os.init"() #0
 
-declare void @"github.com/goplus/lib/py/std.init"()
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/lib/py/std.init"() #0
 
 declare ptr @PyFloat_FromDouble(double)
 
@@ -72,3 +77,5 @@ declare ptr @PyUnicode_FromString(ptr)
 declare ptr @PyObject_CallFunctionObjArgs(ptr, ...)
 
 declare void @llgoLoadPyModSyms(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }

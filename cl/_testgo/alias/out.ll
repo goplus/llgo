@@ -5,7 +5,8 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/alias"
 
 @"github.com/goplus/llgo/cl/_testgo/alias.init$guard" = global i1 false, align 1
 
-define void @"github.com/goplus/llgo/cl/_testgo/alias.(*Point).Move"(ptr %0, double %1, double %2) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/alias.(*Point).Move"(ptr %0, double %1, double %2) #0 {
 _llgo_0:
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/alias.Point", ptr %0, i32 0, i32 0
   %4 = load double, ptr %3, align 8
@@ -20,7 +21,8 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/alias.(*Point).Scale"(ptr %0, double %1) {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/alias.(*Point).Scale"(ptr %0, double %1) #0 {
 _llgo_0:
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/alias.Point", ptr %0, i32 0, i32 0
   %3 = load double, ptr %2, align 8
@@ -35,7 +37,8 @@ _llgo_0:
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/alias.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/alias.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testgo/alias.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -48,7 +51,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testgo/alias.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testgo/alias.main"() #0 {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/alias.Point", ptr %0, i32 0, i32 0
@@ -68,8 +72,13 @@ _llgo_0:
   ret void
 }
 
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+; Function Attrs: null_pointer_is_valid
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double) #0
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
+; Function Attrs: null_pointer_is_valid
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8) #0
+
+attributes #0 = { null_pointer_is_valid }

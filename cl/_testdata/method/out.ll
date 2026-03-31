@@ -4,20 +4,23 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/method"
 @"github.com/goplus/llgo/cl/_testdata/method.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/method.init$guard" = global i1 false, align 1
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 %0, i64 %1) #0 {
 _llgo_0:
   %2 = add i64 %0, %1
   ret i64 %2
 }
 
-define i64 @"github.com/goplus/llgo/cl/_testdata/method.(*T).Add"(ptr %0, i64 %1) {
+; Function Attrs: null_pointer_is_valid
+define i64 @"github.com/goplus/llgo/cl/_testdata/method.(*T).Add"(ptr %0, i64 %1) #0 {
 _llgo_0:
   %2 = load i64, ptr %0, align 4
   %3 = call i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 %2, i64 %1)
   ret i64 %3
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/method.init"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/method.init"() #0 {
 _llgo_0:
   %0 = load i1, ptr @"github.com/goplus/llgo/cl/_testdata/method.init$guard", align 1
   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -40,7 +43,8 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
 }
 
-define void @"github.com/goplus/llgo/cl/_testdata/method.main"() {
+; Function Attrs: null_pointer_is_valid
+define void @"github.com/goplus/llgo/cl/_testdata/method.main"() #0 {
 _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 1, i64 2)
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/method.format", i64 %0)
@@ -48,3 +52,5 @@ _llgo_0:
 }
 
 declare void @printf(ptr, ...)
+
+attributes #0 = { null_pointer_is_valid }
