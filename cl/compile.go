@@ -917,6 +917,28 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
+		if v.Op == token.MUL {
+			if _, ok := v.X.(*ssa.UnOp); ok {
+				if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if _, ok := t.RawType().Underlying().(*types.Pointer); !ok && p.prog.SizeOf(t) > 1<<20 {
+							x := p.compileValue(b, v.X)
+							b.AssertNilDeref(x)
+							return
+						}
+					}
+				}
+			}
+			if refs := v.Referrers(); refs != nil && len(*refs) == 1 {
+				if _, ok := (*refs)[0].(*ssa.MakeInterface); ok {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if _, ok := t.RawType().Underlying().(*types.Pointer); !ok && p.prog.SizeOf(t) > 1<<20 {
+							return
+						}
+					}
+				}
+			}
+		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
 			ret = b.Recv(x, v.CommaOk)
@@ -1018,6 +1040,12 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
+		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
+			if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
+				ret = b.MakeInterfaceFromPtr(t, ptr)
+				break
+			}
+		}
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:

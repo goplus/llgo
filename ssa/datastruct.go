@@ -44,6 +44,9 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 		log.Printf("FieldAddr %v, %d\n", x.impl, idx)
 	}
 	prog := b.Prog
+	nilPtr := llvm.ConstNull(x.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 	tstruc := prog.Elem(x.Type)
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)
@@ -176,6 +179,9 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	case *types.Pointer:
+		nilPtr := llvm.ConstNull(x.impl.Type())
+		isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 		ar := t.Elem().Underlying().(*types.Array)
 		max := prog.IntVal(uint64(ar.Len()), prog.Int())
 		idx = b.checkIndex(idx, max)
@@ -298,6 +304,17 @@ func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr
 		telem = prog.Index(x.Type)
 		ptr, zero = takeAddr()
 		max = prog.IntVal(uint64(t.Len()), prog.Int())
+	case *types.Pointer:
+		ar, ok := t.Elem().Underlying().(*types.Array)
+		if !ok {
+			panic(fmt.Errorf("invalid operation: cannot index %v", t))
+		}
+		telem = prog.Index(x.Type)
+		nilPtr := llvm.ConstNull(x.impl.Type())
+		isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+		ptr = x
+		max = prog.IntVal(uint64(ar.Len()), prog.Int())
 	}
 	idx = b.checkIndex(idx, max)
 	if zero {
