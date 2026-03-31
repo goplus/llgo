@@ -2,6 +2,7 @@ package asn1_test
 
 import (
 	"encoding/asn1"
+	"encoding/hex"
 	"reflect"
 	"testing"
 )
@@ -216,6 +217,30 @@ func TestRawContent(t *testing.T) {
 
 	if result.A != ts.A {
 		t.Errorf("A: got %d, want %d", result.A, ts.A)
+	}
+}
+
+func TestMarshalOptionalBoolTrue(t *testing.T) {
+	type basicConstraints struct {
+		IsCA       bool `asn1:"optional"`
+		MaxPathLen int  `asn1:"optional,default:-1"`
+	}
+
+	in := basicConstraints{IsCA: true, MaxPathLen: -1}
+	data, err := asn1.Marshal(in)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	if got, want := hex.EncodeToString(data), "30030101ff"; got != want {
+		t.Fatalf("Marshal optional bool: got %s, want %s", got, want)
+	}
+
+	var out basicConstraints
+	if _, err := asn1.Unmarshal(data, &out); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if !reflect.DeepEqual(out, in) {
+		t.Fatalf("Round trip failed: got %+v, want %+v", out, in)
 	}
 }
 
