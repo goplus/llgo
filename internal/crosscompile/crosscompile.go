@@ -647,6 +647,30 @@ func UseTarget(targetName string) (export Export, err error) {
 		ldflags = append(ldflags, rtLibLDFlags...)
 	}
 
+	if config.JSLib != "" {
+		var outputDir string
+		var jslibLDFlags []string
+		var compileConfig compile.CompileConfig
+		baseDir := filepath.Join(cacheRoot(), "crosscompile")
+
+		outputDir, compileConfig, err = getJSLibCompileConfigByName(baseDir, config.JSLib, config.LLVMTarget)
+		if err != nil {
+			return
+		}
+		jslibLDFlags, err = compileWithConfig(compileConfig, outputDir, compile.CompileOptions{
+			CC:      export.CC,
+			Linker:  export.Linker,
+			CCFLAGS: ccflags,
+			LDFLAGS: ldflags,
+			CFLAGS:  libcIncludeDir,
+		})
+		if err != nil {
+			return
+		}
+		cflags = append(cflags, compileConfig.ExportCFlags...)
+		ldflags = append(ldflags, jslibLDFlags...)
+	}
+
 	// Combine with config flags and expand template variables
 	export.CFLAGS = cflags
 	export.CCFLAGS = ccflags
