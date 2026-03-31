@@ -1,3 +1,4 @@
+// llgo:skipall
 package iter
 
 // Seq is an iterator over sequences of individual values.
