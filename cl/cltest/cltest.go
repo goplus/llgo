@@ -247,7 +247,6 @@ func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 	conf := build.NewDefaultConf(build.ModeRun)
-	conf.ForceRebuild = true
 	return RunAndCaptureWithConf(relPkg, pkgDir, conf)
 }
 
