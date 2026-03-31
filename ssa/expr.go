@@ -533,6 +533,28 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 						b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), check)
 					}
 				}
+				// On x86/x86_64, signed div/rem of minInt by -1 traps even
+				// though Go defines it to produce quotient=minInt and
+				// remainder=0. Lower through safe operands and select the
+				// Go-defined result for that overflow case.
+				if (op == token.QUO || op == token.REM) && kind == vkSigned {
+					bits := b.Prog.SizeOf(x.Type) * 8
+					minInt := llvm.ConstInt(x.ll, uint64(1)<<(bits-1), false)
+					negOne := llvm.ConstAllOnes(y.ll)
+					isMinInt := llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, minInt)
+					isNegOne := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, negOne)
+					overflow := llvm.CreateAnd(b.impl, isMinInt, isNegOne)
+
+					safeX := llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), x.impl)
+					safeY := llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(y.ll, 1, false), y.impl)
+					v := llvm.CreateBinOp(b.impl, llop, safeX, safeY)
+					if op == token.QUO {
+						v = llvm.CreateSelect(b.impl, overflow, x.impl, v)
+					} else {
+						v = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), v)
+					}
+					return Expr{v, x.Type}
+				}
 				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 			}
 		}
