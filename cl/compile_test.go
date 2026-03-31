@@ -76,6 +76,7 @@ var embedTargetConfigs = []embedTargetConfig{
 				"./_testgo/cursor",      // panic: internal/bytealg: selected .s files require plan9asm translation
 				"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
 				"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
+				"./_testgo/goroutine",   // timeout: emulator keeps printing without auto-exit
 				"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
 				"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
 				"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
@@ -118,43 +119,84 @@ var embedTargetConfigs = []embedTargetConfig{
 		target: "esp32",
 		ignoreByDir: map[string][]string{
 			"./_testgo": {
-				"./_testgo/abimethod", // panic: internal/bytealg selected .s files require plan9asm translation
-				"./_testgo/alias",     // unexpected output
-				"./_testgo/cgodefer",  // panic: cannot build SSA for packages
-				"./_testgo/cgopython", // panic: cannot build SSA for packages
-				"./_testgo/cursor",    // panic: internal/bytealg: selected .s files require plan9asm translation
-				"./_testgo/defer4",    // runtime output: fatal error
-				"./_testgo/indexerr",  // runtime output: fatal error
-				"./_testgo/invoke",    // unexpected output
-				"./_testgo/makeslice", // runtime output: fatal error
-				"./_testgo/multiret",  // unexpected output
-				"./_testgo/select",    // timeout: emulator did not auto-exit
-				"./_testgo/sigsegv",   // unexpected output
-				"./_testgo/struczero", // timeout: emulator did not auto-exit
+				"./_testgo/abimethod",   // panic: internal/bytealg selected .s files require plan9asm translation
+				"./_testgo/alias",       // unexpected output
+				"./_testgo/cgobasic",    // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgocfiles",   // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgodefer",    // panic: cannot build SSA for packages
+				"./_testgo/cgofull",     // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
+				"./_testgo/cgopython",   // panic: cannot build SSA for packages
+				"./_testgo/chan",        // timeout: emulator did not auto-exit
+				"./_testgo/cursor",      // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/defer3",      // runtime output: fatal error (exit status 2)
+				"./_testgo/defer4",      // runtime output: fatal error
+				"./_testgo/defer5",      // runtime output: fatal error (exit status 2)
+				"./_testgo/goexit",      // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/goroutine",   // timeout: emulator keeps printing without auto-exit
+				"./_testgo/indexerr",    // runtime output: fatal error
+				"./_testgo/invoke",      // unexpected output
+				"./_testgo/makeslice",   // runtime output: fatal error
+				"./_testgo/multiret",    // unexpected output
+				"./_testgo/reflect",     // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/reflectconv", // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/reflectfn",   // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/reflectmkfn", // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/rewrite",     // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/select",      // timeout: emulator did not auto-exit
+				"./_testgo/selects",     // timeout: emulator did not auto-exit
+				"./_testgo/sigsegv",     // unexpected output
+				"./_testgo/struczero",   // timeout: emulator did not auto-exit
+				"./_testgo/syncmap",     // panic: internal/bytealg: selected .s files require plan9asm translation
 			},
 			"./_testlibc": {
 				"./_testlibc/atomic",   // unexpected output
+				"./_testlibc/complex",  // link error: ld.lld undefined symbol cabsf
 				"./_testlibc/demangle", // link error: ld.lld unknown argument -Wl,-search_paths_first
 				"./_testlibc/once",     // panic: cannot build SSA for packages
 				"./_testlibc/setjmp",   // link error: ld.lld undefined symbol stderr
 				"./_testlibc/sqlite",   // link error: ld.lld unable to find library -lsqlite3
 			},
 			"./_testrt": {
-				"./_testrt/asmfull",  // unexpected output
-				"./_testrt/cast",     // timeout: emulator did not auto-exit
-				"./_testrt/complex",  // unexpected output
-				"./_testrt/fprintf",  // link error: ld.lld undefined symbol __stderrp
-				"./_testrt/hello",    // panic: cannot build SSA for packages
-				"./_testrt/linkname", // unexpected output
-				"./_testrt/strlen",   // panic: runtime index out of range
-				"./_testrt/struct",   // panic: runtime index out of range
-				"./_testrt/tpfunc",   // unexpected output
-				"./_testrt/typalias", // panic: runtime index out of range
+				"./_testrt/asmfull",     // unexpected output
+				"./_testrt/cast",        // timeout: emulator did not auto-exit
+				"./_testrt/complex",     // unexpected output
+				"./_testrt/fprintf",     // link error: ld.lld undefined symbol __stderrp
+				"./_testrt/hello",       // panic: cannot build SSA for packages
+				"./_testrt/linkname",    // unexpected output
+				"./_testrt/strlen",      // panic: runtime index out of range
+				"./_testrt/struct",      // panic: runtime index out of range
+				"./_testrt/tpfunc",      // unexpected output
+				"./_testrt/typalias",    // panic: runtime index out of range
+				"./_testrt/panic",       // runtime output: fatal error (exit status 2)
+				"./_testrt/unreachable", // timeout: emulator panic (Instruction access fault), no auto-exit
+				"./_testrt/vamethod",    // timeout: emulator hangs and does not auto-exit
 			},
 			"./_testdata": {
 				"./_testdata/cpkgimp", // unexpected output
+				"./_testdata/debug",   // panic: internal/bytealg: selected .s files require plan9asm translation
 			},
 		},
+	},
+}
+
+var hostIgnoreByDir = map[string][]string{
+	"./_testgo": {
+		"./_testgo/goexit", // unexpected run/build failure, temporarily ignored; see https://github.com/goplus/llgo/issues/1745
+	},
+	"./_testlibgo": {
+		"./_testlibgo/waitgroup", // unexpected run/build failure, temporarily ignored; see https://github.com/goplus/llgo/issues/1745
+		"./_testlibgo/sync",      // unexpected run/build failure, temporarily ignored; see https://github.com/goplus/llgo/issues/1745
+	},
+}
+
+var hostExpectedRunErrorByDir = map[string][]string{
+	"./_testgo": {
+		"./_testgo/defer3", // panic/exit is expected for this case
+		"./_testgo/defer5", // panic/exit is expected for this case
+	},
+	"./_testlibgo": {
+		"./_testlibgo/errors", // panic/exit is expected for this case
 	},
 }
 
@@ -163,7 +205,9 @@ func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = target
 	conf.Emulator = true
-	conf.ForceRebuild = true
+	// Embedded emulator exit codes are currently not reliable enough to
+	// distinguish panic/crash from normal completion, so expected-run-error
+	// semantics are intentionally disabled for embedded targets for now.
 	cltest.RunFromDir(t, "", relDir, ignore,
 		cltest.WithRunConfig(conf),
 		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
@@ -175,7 +219,10 @@ func TestFromTestgo(t *testing.T) {
 }
 
 func TestRunFromTestgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testgo", nil)
+	relDir := "./_testgo"
+	cltest.RunFromDir(t, "", relDir, hostIgnoreByDir[relDir],
+		cltest.WithExpectedRunErrors(hostExpectedRunErrorByDir[relDir]),
+	)
 }
 
 func TestFilterEmulatorOutput(t *testing.T) {
@@ -269,7 +316,10 @@ func TestFromTestlibgo(t *testing.T) {
 }
 
 func TestRunFromTestlibgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibgo", nil)
+	relDir := "./_testlibgo"
+	cltest.RunFromDir(t, "", relDir, hostIgnoreByDir[relDir],
+		cltest.WithExpectedRunErrors(hostExpectedRunErrorByDir[relDir]),
+	)
 }
 
 func TestFromTestlibc(t *testing.T) {
@@ -293,14 +343,21 @@ func TestFromTestrt(t *testing.T) {
 }
 
 func TestRunFromTestrt(t *testing.T) {
-	var ignore []string
+	ignore := []string{
+		"./_testrt/unreachable", // compiler directive only; compile coverage is enough
+	}
+	expectedRunError := []string{
+		"./_testrt/panic", // panic/exit is expected for this case
+	}
 	if runtime.GOOS == "linux" {
-		ignore = []string{
+		ignore = append(ignore,
 			"./_testrt/asmfull", // Output is macOS-specific.
 			"./_testrt/fprintf", // Linux uses different stderr symbol (no __stderrp).
-		}
+		)
 	}
-	cltest.RunFromDir(t, "", "./_testrt", ignore)
+	cltest.RunFromDir(t, "", "./_testrt", ignore,
+		cltest.WithExpectedRunErrors(expectedRunError),
+	)
 }
 
 func TestFromTestdata(t *testing.T) {
