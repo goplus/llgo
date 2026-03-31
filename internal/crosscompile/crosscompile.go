@@ -55,6 +55,11 @@ var (
 	espClangVersion = "19.1.2_20250905-3"
 )
 
+var (
+	espQEMUBaseUrl = "https://github.com/espressif/qemu/releases/download/esp-develop-9.2.2-20250817"
+	espQEMUVersion = "esp_develop_9.2.2_20250817"
+)
+
 // cacheRoot can be overridden for testing
 var cacheRoot = env.LLGoCacheDir
 
@@ -165,6 +170,77 @@ func getESPClangPlatform(goos, goarch string) string {
 		switch goarch {
 		case "amd64":
 			return "x86_64-w64-mingw32"
+		}
+	}
+	return ""
+}
+
+func getESPQEMUPlatform(goos, goarch string) string {
+	switch goos {
+	case "darwin":
+		switch goarch {
+		case "amd64":
+			return "x86_64-apple-darwin"
+		case "arm64":
+			return "aarch64-apple-darwin"
+		}
+	case "linux":
+		switch goarch {
+		case "amd64":
+			return "x86_64-linux-gnu"
+		case "arm64":
+			return "aarch64-linux-gnu"
+		}
+	}
+	return ""
+}
+
+// ResolveESPQEMUExecutable rewrites ESP emulator commands to the cached QEMU binary.
+func ResolveESPQEMUExecutable(cmdParts []string) (string, error) {
+	if len(cmdParts) == 0 {
+		return "", nil
+	}
+
+	exeName, ok := getESPQEMUExecutableName(cmdParts)
+	if !ok {
+		return cmdParts[0], nil
+	}
+
+	platformSuffix := getESPQEMUPlatform(runtime.GOOS, runtime.GOARCH)
+	if platformSuffix == "" {
+		return "", fmt.Errorf("ESP QEMU for %s is not supported on host %s/%s", exeName, runtime.GOOS, runtime.GOARCH)
+	}
+
+	qemuRoot := filepath.Join(cacheDir(), "esp-qemu-"+espQEMUVersion)
+	if err := checkDownloadAndExtractESPQEMU(platformSuffix, qemuRoot); err != nil {
+		return "", err
+	}
+
+	exePath := filepath.Join(qemuRoot, "bin", exeName)
+	if _, err := os.Stat(exePath); err != nil {
+		return "", fmt.Errorf("ESP QEMU executable %s not found in cache: %w", exeName, err)
+	}
+	return exePath, nil
+}
+
+func getESPQEMUExecutableName(cmdParts []string) (string, bool) {
+	exeName := filepath.Base(cmdParts[0])
+	machine := qemuMachine(cmdParts)
+
+	switch exeName {
+	case "qemu-system-xtensa":
+		return exeName, machine == "esp32"
+	case "qemu-system-riscv32":
+		return exeName, machine == "esp32c3"
+	default:
+		return "", false
+	}
+}
+
+func qemuMachine(cmdParts []string) string {
+	for i := 1; i < len(cmdParts)-1; i++ {
+		if cmdParts[i] == "-machine" {
+			return cmdParts[i+1]
 		}
 	}
 	return ""

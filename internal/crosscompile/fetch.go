@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -77,6 +78,52 @@ func checkDownloadAndExtractESPClang(platformSuffix, dir string) error {
 		return fmt.Errorf("failed to rename esp-clang directory: %w", err)
 	}
 
+	return nil
+}
+
+func checkDownloadAndExtractESPQEMU(platformSuffix, dir string) error {
+	requiredBins := []string{
+		filepath.Join(dir, "bin", "qemu-system-riscv32"),
+		filepath.Join(dir, "bin", "qemu-system-xtensa"),
+	}
+	if allFilesExist(requiredBins) {
+		return nil
+	}
+
+	lockPath := dir + ".lock"
+	lockFile, err := acquireLock(lockPath)
+	if err != nil {
+		return fmt.Errorf("failed to acquire lock: %w", err)
+	}
+	defer releaseLock(lockFile)
+
+	if allFilesExist(requiredBins) {
+		return nil
+	}
+
+	fmt.Fprintln(os.Stderr, "ESP QEMU not found in cache, will download.")
+
+	tempExtractDir := dir + ".extract"
+	os.RemoveAll(tempExtractDir)
+	if err := os.MkdirAll(tempExtractDir, 0755); err != nil {
+		return fmt.Errorf("failed to create ESP QEMU extraction dir: %w", err)
+	}
+	defer os.RemoveAll(tempExtractDir)
+
+	packages := []string{
+		fmt.Sprintf("qemu-riscv32-softmmu-%s-%s.tar.xz", espQEMUVersion, platformSuffix),
+		fmt.Sprintf("qemu-xtensa-softmmu-%s-%s.tar.xz", espQEMUVersion, platformSuffix),
+	}
+	for _, pkg := range packages {
+		if err := downloadAndExtractArchiveInto(espQEMUBaseUrl+"/"+pkg, tempExtractDir, "ESP QEMU "+pkg, 1); err != nil {
+			return err
+		}
+	}
+
+	os.RemoveAll(dir)
+	if err := os.Rename(tempExtractDir, dir); err != nil {
+		return fmt.Errorf("failed to rename ESP QEMU directory: %w", err)
+	}
 	return nil
 }
 
@@ -201,6 +248,56 @@ func downloadAndExtractArchive(url, destDir, description string) error {
 	return nil
 }
 
+func downloadAndExtractArchiveInto(url, destDir, description string, stripComponents int) error {
+	fmt.Fprintf(os.Stderr, "Downloading %s...\n", description)
+
+	downloadDir, err := os.MkdirTemp("", "llgo-download-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary download directory: %w", err)
+	}
+	defer os.RemoveAll(downloadDir)
+
+	urlPath := strings.Split(url, "/")
+	filename := urlPath[len(urlPath)-1]
+	localFile := filepath.Join(downloadDir, filename)
+	if err := downloadFile(url, localFile); err != nil {
+		return fmt.Errorf("failed to download %s from %s: %w", description, url, err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Extracting %s...\n", description)
+	switch {
+	case strings.HasSuffix(filename, ".tar.xz"):
+		err = extractTarXzStripComponents(localFile, destDir, stripComponents)
+	case strings.HasSuffix(filename, ".tar.gz"), strings.HasSuffix(filename, ".tgz"):
+		if stripComponents != 0 {
+			return fmt.Errorf("strip-components is only supported for tar.xz archives: %s", filename)
+		}
+		err = extractTarGz(localFile, destDir)
+	case strings.HasSuffix(filename, ".zip"):
+		if stripComponents != 0 {
+			return fmt.Errorf("strip-components is only supported for tar.xz archives: %s", filename)
+		}
+		err = extractZip(localFile, destDir)
+	default:
+		return fmt.Errorf("unsupported archive format: %s", filename)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to extract %s archive: %w", description, err)
+	}
+
+	fmt.Fprintf(os.Stderr, "%s downloaded and extracted successfully.\n", description)
+	return nil
+}
+
+func allFilesExist(paths []string) bool {
+	for _, path := range paths {
+		if _, err := os.Stat(path); err != nil {
+			return false
+		}
+	}
+	return true
+}
+
 func downloadFile(url, filepath string) error {
 	out, err := os.Create(filepath)
 	if err != nil {
@@ -269,6 +366,15 @@ func extractTarGz(tarGzFile, dest string) error {
 func extractTarXz(tarXzFile, dest string) error {
 	// Use external tar command to extract .tar.xz files
 	cmd := exec.Command("tar", "-xf", tarXzFile, "-C", dest)
+	return cmd.Run()
+}
+
+func extractTarXzStripComponents(tarXzFile, dest string, stripComponents int) error {
+	args := []string{"-xf", tarXzFile, "-C", dest}
+	if stripComponents > 0 {
+		args = append(args, "--strip-components", strconv.Itoa(stripComponents))
+	}
+	cmd := exec.Command("tar", args...)
 	return cmd.Run()
 }
 
