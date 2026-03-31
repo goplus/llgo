@@ -312,13 +312,21 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 	if !checkOutput && !checkIR {
 		return
 	}
+	if checkIR && !checkOutput {
+		testFrom(t, pkgDir, sel)
+		return
+	}
+	if checkOutput && !checkIR {
+		testRunFrom(t, pkgDir, relPkg, sel, opts)
+		return
+	}
 
 	var result *runResult
 	if opts.conf != nil {
-		result, err = runWithConf(relPkg, pkgDir, opts.conf, true)
+		result, err = runWithConf(relPkg, pkgDir, opts.conf, true, true)
 	} else {
 		conf := build.NewDefaultConf(build.ModeRun)
-		result, err = runWithConf(relPkg, pkgDir, conf, true)
+		result, err = runWithConf(relPkg, pkgDir, conf, true, true)
 	}
 	if err != nil && checkOutput {
 		raw := ""
@@ -368,7 +376,7 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 // RunAndCaptureWithConf runs llgo with a custom build config and captures output.
 func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
-	result, err := runWithConf(relPkg, pkgDir, conf, false)
+	result, err := runWithConf(relPkg, pkgDir, conf, false, false)
 	if err != nil {
 		if result == nil {
 			return nil, err
@@ -378,7 +386,7 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 	return result.output, nil
 }
 
-func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern bool) (*runResult, error) {
+func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern, captureModules bool) (*runResult, error) {
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -400,14 +408,17 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern bo
 		return nil, fmt.Errorf("build config is nil")
 	}
 	localConf := *conf
-	modules := make(map[string]string)
-	prevHook := localConf.ModuleHook
-	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
-		if prevHook != nil {
-			prevHook(pkgPath, mod)
-		}
-		if _, ok := modules[pkgPath]; !ok {
-			modules[pkgPath] = mod.String()
+	var modules map[string]string
+	if captureModules {
+		modules = make(map[string]string)
+		prevHook := localConf.ModuleHook
+		localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
+			if prevHook != nil {
+				prevHook(pkgPath, mod)
+			}
+			if _, ok := modules[pkgPath]; !ok {
+				modules[pkgPath] = mod.String()
+			}
 		}
 	}
 
