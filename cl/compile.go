@@ -996,7 +996,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return
 		}
 		if ref, ok := singleRef(v); ok && isSendInstr(ref) {
-			return
+			if _, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
+				return
+			}
 		}
 		if capLen, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
 			t := p.type_(v.Type(), llssa.InGo)
