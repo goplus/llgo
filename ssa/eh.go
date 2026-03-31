@@ -19,7 +19,6 @@ package ssa
 import (
 	"go/token"
 	"go/types"
-	"log"
 	"unsafe"
 
 	"github.com/goplus/llvm"
@@ -243,9 +242,7 @@ func (b Builder) DeferData() Expr {
 
 // Defer emits a defer instruction.
 func (b Builder) Defer(kind DoAction, fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args ...Expr) {
-	if debugInstr {
-		logCall("Defer", fn, args)
-	}
+	dbgInstrCall("Defer", fn, args)
 	var prog Program
 	var nextbit Expr
 	var self = b.getDefer(kind)
@@ -499,9 +496,7 @@ func (b Builder) Unreachable() {
 
 // Recover emits a recover instruction.
 func (b Builder) Recover() Expr {
-	if debugInstr {
-		log.Println("Recover")
-	}
+	dbgInstrln("Recover")
 	// TODO(xsw): recover can't be a function call in Go
 	return b.Call(b.Pkg.rtFunc("Recover"))
 }

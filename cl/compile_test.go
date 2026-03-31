@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
@@ -287,9 +286,7 @@ func TestRunFromTestlibc(t *testing.T) {
 }
 
 func TestFromTestrt(t *testing.T) {
-	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt")
-	cl.SetDebug(0)
 }
 
 func TestRunFromTestrt(t *testing.T) {

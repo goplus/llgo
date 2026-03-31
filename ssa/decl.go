@@ -18,7 +18,6 @@ package ssa
 
 import (
 	"go/types"
-	"log"
 	"strconv"
 
 	"github.com/goplus/llvm"
@@ -204,9 +203,7 @@ func (p Package) NewFuncEx(name string, sig *types.Signature, bg Background, has
 		return v
 	}
 	t := p.Prog.FuncDecl(sig, bg)
-	if debugInstr {
-		log.Println("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
-	}
+	dbgInstrln("NewFunc", name, t.raw.Type, "hasFreeVars:", hasFreeVars)
 	fn := llvm.AddFunction(p.mod, name, t.ll)
 	if instantiated {
 		fn.SetLinkage(llvm.LinkOnceAnyLinkage)
