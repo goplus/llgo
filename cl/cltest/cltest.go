@@ -85,12 +85,6 @@ type runOptions struct {
 	checkIR bool
 }
 
-type runResult struct {
-	output  []byte
-	pkgs    []build.Package
-	modules map[string]string
-}
-
 // RunOption customizes directory-based test behavior.
 type RunOption func(*runOptions)
 
@@ -227,126 +221,63 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	}
 }
 
-func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
-	if sel != "" && !strings.Contains(pkgDir, sel) {
-		return
-	}
-	expectedPath := filepath.Join(pkgDir, "expect.txt")
-	expected, err := os.ReadFile(expectedPath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return
-		}
-		t.Fatal("ReadFile failed:", err)
-	}
-	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
-		return
-	}
-
-	var output []byte
-	if opts.conf != nil {
-		output, err = RunAndCaptureWithConf(relPkg, pkgDir, opts.conf)
-	} else {
-		output, err = RunAndCapture(relPkg, pkgDir)
-	}
-	if err != nil {
-		t.Logf("raw output:\n%s", string(output))
-		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
-	}
-	if opts.filter != nil {
-		output = []byte(opts.filter(string(output)))
-	}
-	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
-		t.Fatal("unexpected output")
-	}
-}
-
 func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
 
-	outPath := filepath.Join(pkgDir, "out.ll")
-	expectedOutput, checkOutput, _, err := readGoldenFile(filepath.Join(pkgDir, "expect.txt"))
+	expectedOutput, checkOutput, err := readGolden(filepath.Join(pkgDir, "expect.txt"))
 	if err != nil {
 		t.Fatal("ReadFile failed:", err)
 	}
+	if !checkOutput {
+		// IR-only mode: when expect.txt is not checked, use llgen.GenFrom via
+		// testFrom to compare this package's generated IR against out.ll.
+		if opts.checkIR {
+			testFrom(t, pkgDir, sel)
+		}
+		return
+	}
+
 	var (
-		expectedIR  []byte
-		checkIR     bool
-		skipIRMatch bool
+		expectedIR []byte
+		checkIR    bool
 	)
 	if opts.checkIR {
-		expectedIR, checkIR, skipIRMatch, err = readGoldenFile(outPath)
+		expectedIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
 		if err != nil {
 			t.Fatal("ReadFile failed:", err)
 		}
-		if skipIRMatch {
-			// Keep legacy FromDir behavior: still exercise llgen.GenFrom even when
-			// out.ll uses ";" to skip golden matching. Some pre-pass IR differs
-			// across platforms, so these cases only smoke-test IR generation.
-			testFrom(t, pkgDir, sel)
-		}
 	}
-	if !checkOutput && !checkIR {
-		return
-	}
-	if checkIR && !checkOutput {
-		if !skipIRMatch {
-			testFrom(t, pkgDir, sel)
-		}
-		return
-	}
-	if checkOutput && !checkIR {
-		testRunFrom(t, pkgDir, relPkg, sel, opts)
-		return
+	conf := opts.conf
+	var modules map[string]string
+	if opts.checkIR && checkIR {
+		conf, modules = withModuleCapture(opts.conf)
 	}
 
-	var result *runResult
-	if opts.conf != nil {
-		result, err = runWithConf(relPkg, pkgDir, opts.conf, true, true)
-	} else {
-		conf := build.NewDefaultConf(build.ModeRun)
-		result, err = runWithConf(relPkg, pkgDir, conf, true, true)
-	}
-	if err != nil && checkOutput {
-		raw := ""
-		if result != nil {
-			raw = string(result.output)
-		}
-		t.Logf("raw output:\n%s", raw)
-		t.Fatalf("run failed: %v\noutput: %s", err, raw)
-	}
-	if result == nil {
-		t.Fatal("missing run result")
+	output, err := runWithConf(relPkg, pkgDir, conf)
+	if err != nil {
+		t.Logf("raw output:\n%s", string(output))
+		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
 
 	if checkOutput {
-		output := result.output
-		if opts.filter != nil {
-			output = []byte(opts.filter(string(output)))
-		}
-		if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expectedOutput) {
-			t.Fatal("unexpected output")
-		}
+		assertExpectedOutput(t, pkgDir, expectedOutput, output, opts)
+	}
+	if !(opts.checkIR && checkIR) {
+		return
 	}
 
-	if checkIR {
-		moduleID := moduleIDFromIR(expectedIR)
-		if moduleID == "" {
-			mainPkg := findPrimaryPackage(result.pkgs, pkgDir)
-			if mainPkg == nil {
-				t.Fatalf("failed to locate primary package for %s", pkgDir)
-			}
-			moduleID = mainPkg.PkgPath
-		}
-		ir, ok := result.modules[moduleID]
-		if !ok {
-			t.Fatalf("module snapshot missing for package %s", moduleID)
-		}
-		if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(ir), expectedIR) {
-			t.Fatal("unexpected IR output")
-		}
+	moduleID := moduleIDFromIR(expectedIR)
+	if moduleID == "" {
+		t.Fatalf("missing ModuleID in golden IR for %s", pkgDir)
+	}
+	ir, ok := modules[moduleID]
+	if !ok {
+		t.Fatalf("module snapshot missing for package %s", moduleID)
+	}
+	if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(ir), expectedIR) {
+		t.Fatal("unexpected IR output")
 	}
 }
 
@@ -357,17 +288,31 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 // RunAndCaptureWithConf runs llgo with a custom build config and captures output.
 func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
-	result, err := runWithConf(relPkg, pkgDir, conf, false, false)
-	if err != nil {
-		if result == nil {
-			return nil, err
-		}
-		return result.output, err
-	}
-	return result.output, nil
+	return runWithConf(relPkg, pkgDir, conf)
 }
 
-func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern, captureModules bool) (*runResult, error) {
+func withModuleCapture(conf *build.Config) (*build.Config, map[string]string) {
+	if conf == nil {
+		conf = build.NewDefaultConf(build.ModeRun)
+	}
+	localConf := *conf
+	modules := make(map[string]string)
+	prevHook := localConf.ModuleHook
+	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
+		if prevHook != nil {
+			prevHook(pkgPath, mod)
+		}
+		if _, ok := modules[pkgPath]; !ok {
+			modules[pkgPath] = mod.String()
+		}
+	}
+	return &localConf, modules
+}
+
+func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
+	if conf == nil {
+		conf = build.NewDefaultConf(build.ModeRun)
+	}
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -385,23 +330,7 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern, c
 		}
 	}()
 
-	if conf == nil {
-		return nil, fmt.Errorf("build config is nil")
-	}
 	localConf := *conf
-	var modules map[string]string
-	if captureModules {
-		modules = make(map[string]string)
-		prevHook := localConf.ModuleHook
-		localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
-			if prevHook != nil {
-				prevHook(pkgPath, mod)
-			}
-			if _, ok := modules[pkgPath]; !ok {
-				modules[pkgPath] = mod.String()
-			}
-		}
-	}
 
 	originalStdout := os.Stdout
 	originalStderr := os.Stderr
@@ -436,19 +365,11 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern, c
 		}
 		defer os.Chdir(origDir)
 		relPkg = "."
-		if !usePackagePattern {
-			if _, err := os.Stat(filepath.Join(pkgDir, "in.go")); err == nil {
-				relPkg = "in.go"
-			} else if _, err := os.Stat(filepath.Join(pkgDir, "main.go")); err == nil {
-				relPkg = "main.go"
-			}
-		}
 	}
 
 	mockable.EnableMock()
 	defer mockable.DisableMock()
 
-	var pkgs []build.Package
 	var runErr error
 	func() {
 		defer func() {
@@ -459,54 +380,40 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern, c
 				panic(r)
 			}
 		}()
-		pkgs, runErr = build.Do([]string{relPkg}, &localConf)
+		_, runErr = build.Do([]string{relPkg}, &localConf)
 	}()
 
 	_ = w.Close()
 	output := <-outputCh
 	output = filterRunOutput(output)
-	result := &runResult{output: output, pkgs: pkgs, modules: modules}
 	if runErr != nil {
-		return result, fmt.Errorf("run failed: %w", runErr)
+		return output, fmt.Errorf("run failed: %w", runErr)
 	}
-	return result, nil
+	return output, nil
 }
 
-func readGoldenFile(file string) ([]byte, bool, bool, error) {
+func assertExpectedOutput(t *testing.T, pkgDir string, expectedOutput, output []byte, opts runOptions) {
+	t.Helper()
+	if opts.filter != nil {
+		output = []byte(opts.filter(string(output)))
+	}
+	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expectedOutput) {
+		t.Fatal("unexpected output")
+	}
+}
+
+func readGolden(file string) ([]byte, bool, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, false, false, nil
+			return nil, false, nil
 		}
-		return nil, false, false, err
+		return nil, false, err
 	}
 	if bytes.Equal(data, []byte{';'}) {
-		return nil, false, true, nil
+		return data, false, nil
 	}
-	return data, true, false, nil
-}
-
-func findPrimaryPackage(pkgs []build.Package, pkgDir string) build.Package {
-	cleanDir := filepath.Clean(pkgDir)
-	for _, pkg := range pkgs {
-		if filepath.Clean(pkg.Dir) == cleanDir && pkg.Name == "main" {
-			return pkg
-		}
-	}
-	for _, pkg := range pkgs {
-		if pkg.Name == "main" {
-			return pkg
-		}
-	}
-	for _, pkg := range pkgs {
-		if filepath.Clean(pkg.Dir) == cleanDir {
-			return pkg
-		}
-	}
-	if len(pkgs) == 1 {
-		return pkgs[0]
-	}
-	return nil
+	return data, true, nil
 }
 
 func moduleIDFromIR(data []byte) string {
