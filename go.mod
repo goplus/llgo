@@ -1,6 +1,6 @@
 module github.com/goplus/llgo
 
-go 1.23.0
+go 1.24
 
 toolchain go1.24.1
 
@@ -10,7 +10,7 @@ require (
 	github.com/goplus/lib v0.3.1
 	github.com/goplus/llgo/runtime v0.0.0-00010101000000-000000000000
 	github.com/goplus/llvm v0.8.7
-	github.com/goplus/mod v0.19.5
+	github.com/goplus/mod v0.20.0
 	github.com/qiniu/x v1.17.0
 	golang.org/x/tools v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
