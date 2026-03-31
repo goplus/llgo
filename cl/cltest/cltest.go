@@ -239,18 +239,25 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		return
 	}
 
-	var expectedIR []byte
+	var goldenIR []byte
 	checkIR := false
+	moduleID := ""
 	if opts.checkIR {
-		expectedIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
+		goldenIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
 		if err != nil {
 			t.Fatal("ReadFile failed:", err)
 		}
+		if checkIR {
+			moduleID = moduleIDFromIR(goldenIR)
+			if moduleID == "" {
+				t.Fatalf("missing ModuleID in golden IR for %s", pkgDir)
+			}
+		}
 	}
 	conf := opts.conf
-	var modules map[string]string
+	var capturedIR *string
 	if checkIR {
-		conf, modules = withModuleCapture(opts.conf)
+		conf, capturedIR = withModuleCapture(opts.conf, moduleID)
 	}
 
 	output, err := runWithConf(relPkg, pkgDir, conf)
@@ -265,16 +272,10 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 	if !checkIR {
 		return
 	}
-
-	moduleID := moduleIDFromIR(expectedIR)
-	if moduleID == "" {
-		t.Fatalf("missing ModuleID in golden IR for %s", pkgDir)
-	}
-	ir, ok := modules[moduleID]
-	if !ok {
+	if capturedIR == nil || *capturedIR == "" {
 		t.Fatalf("module snapshot missing for package %s", moduleID)
 	}
-	if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(ir), expectedIR) {
+	if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(*capturedIR), goldenIR) {
 		t.Fatal("unexpected IR output")
 	}
 }
@@ -289,22 +290,22 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 	return runWithConf(relPkg, pkgDir, conf)
 }
 
-func withModuleCapture(conf *build.Config) (*build.Config, map[string]string) {
+func withModuleCapture(conf *build.Config, targetPkgPath string) (*build.Config, *string) {
 	if conf == nil {
 		conf = build.NewDefaultConf(build.ModeRun)
 	}
 	localConf := *conf
-	modules := make(map[string]string)
+	var module string
 	prevHook := localConf.ModuleHook
 	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
 		if prevHook != nil {
 			prevHook(pkgPath, mod)
 		}
-		if _, ok := modules[pkgPath]; !ok {
-			modules[pkgPath] = mod.String()
+		if pkgPath == targetPkgPath && module == "" {
+			module = mod.String()
 		}
 	}
-	return &localConf, modules
+	return &localConf, &module
 }
 
 func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
