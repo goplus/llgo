@@ -80,8 +80,9 @@ func FromDir(t *testing.T, sel, relDir string) {
 }
 
 type runOptions struct {
-	conf   *build.Config
-	filter func(string) string
+	conf    *build.Config
+	filter  func(string) string
+	checkIR bool
 }
 
 type runResult struct {
@@ -90,7 +91,7 @@ type runResult struct {
 	modules map[string]string
 }
 
-// RunOption customizes RunFromDir behavior.
+// RunOption customizes directory-based test behavior.
 type RunOption func(*runOptions)
 
 // WithRunConfig uses the provided build config for test runs.
@@ -104,6 +105,13 @@ func WithRunConfig(conf *build.Config) RunOption {
 func WithOutputFilter(filter func(string) string) RunOption {
 	return func(opts *runOptions) {
 		opts.filter = filter
+	}
+}
+
+// WithIRCheck enables or disables IR golden checks in RunAndTestFromDir.
+func WithIRCheck(enabled bool) RunOption {
+	return func(opts *runOptions) {
+		opts.checkIR = enabled
 	}
 }
 
@@ -124,49 +132,6 @@ func FilterEmulatorOutput(output string) string {
 	return output
 }
 
-// RunFromDir executes tests under relDir, skipping any relPkg entries in ignore.
-// ignore entries should be relative package paths (e.g., "./_testgo/invoke").
-func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOption) {
-	rootDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Getwd failed:", err)
-	}
-	dir := filepath.Join(rootDir, relDir)
-	ignoreSet := make(map[string]struct{}, len(ignore))
-	for _, item := range ignore {
-		ignoreSet[item] = struct{}{}
-	}
-	options := runOptions{}
-	for _, opt := range opts {
-		opt(&options)
-	}
-	fis, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal("ReadDir failed:", err)
-	}
-	for _, fi := range fis {
-		name := fi.Name()
-		if !fi.IsDir() || strings.HasPrefix(name, "_") {
-			continue
-		}
-		pkgDir := filepath.Join(dir, name)
-		relPkg, err := filepath.Rel(rootDir, pkgDir)
-		if err != nil {
-			t.Fatal("Rel failed:", err)
-		}
-		relPkg = "./" + filepath.ToSlash(relPkg)
-		if _, ok := ignoreSet[relPkg]; ok {
-			t.Run(name, func(t *testing.T) {
-				t.Skip("skip platform-specific output mismatch")
-			})
-			continue
-		}
-		t.Run(name, func(t *testing.T) {
-			testRunFrom(t, pkgDir, relPkg, sel, options)
-		})
-	}
-}
-
 // RunAndTestFromDir executes tests under relDir and validates both runtime
 // output and the pre-transform package IR snapshot when the corresponding
 // golden files exist.
@@ -180,7 +145,7 @@ func RunAndTestFromDir(t *testing.T, sel, relDir string, ignore []string, opts .
 	for _, item := range ignore {
 		ignoreSet[item] = struct{}{}
 	}
-	options := runOptions{}
+	options := runOptions{checkIR: true}
 	for _, opt := range opts {
 		opt(&options)
 	}
@@ -301,19 +266,35 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		return
 	}
 
-	expectedOutput, checkOutput, err := readGoldenFile(filepath.Join(pkgDir, "expect.txt"))
+	outPath := filepath.Join(pkgDir, "out.ll")
+	expectedOutput, checkOutput, _, err := readGoldenFile(filepath.Join(pkgDir, "expect.txt"))
 	if err != nil {
 		t.Fatal("ReadFile failed:", err)
 	}
-	expectedIR, checkIR, err := readGoldenFile(filepath.Join(pkgDir, "out.ll"))
-	if err != nil {
-		t.Fatal("ReadFile failed:", err)
+	var (
+		expectedIR  []byte
+		checkIR     bool
+		skipIRMatch bool
+	)
+	if opts.checkIR {
+		expectedIR, checkIR, skipIRMatch, err = readGoldenFile(outPath)
+		if err != nil {
+			t.Fatal("ReadFile failed:", err)
+		}
+		if skipIRMatch {
+			// Keep legacy FromDir behavior: still exercise llgen.GenFrom even when
+			// out.ll uses ";" to skip golden matching. Some pre-pass IR differs
+			// across platforms, so these cases only smoke-test IR generation.
+			testFrom(t, pkgDir, sel)
+		}
 	}
 	if !checkOutput && !checkIR {
 		return
 	}
 	if checkIR && !checkOutput {
-		testFrom(t, pkgDir, sel)
+		if !skipIRMatch {
+			testFrom(t, pkgDir, sel)
+		}
 		return
 	}
 	if checkOutput && !checkIR {
@@ -491,18 +472,18 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config, usePackagePattern, c
 	return result, nil
 }
 
-func readGoldenFile(file string) ([]byte, bool, error) {
+func readGoldenFile(file string) ([]byte, bool, bool, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, false, nil
+			return nil, false, false, nil
 		}
-		return nil, false, err
+		return nil, false, false, err
 	}
 	if bytes.Equal(data, []byte{';'}) {
-		return nil, false, nil
+		return nil, false, true, nil
 	}
-	return data, true, nil
+	return data, true, false, nil
 }
 
 func findPrimaryPackage(pkgs []build.Package, pkgDir string) build.Package {

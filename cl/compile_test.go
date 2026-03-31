@@ -162,9 +162,10 @@ func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = target
 	conf.Emulator = true
-	cltest.RunFromDir(t, "", relDir, ignore,
+	cltest.RunAndTestFromDir(t, "", relDir, ignore,
 		cltest.WithRunConfig(conf),
 		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
+		cltest.WithIRCheck(false),
 	)
 }
 

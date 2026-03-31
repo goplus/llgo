@@ -606,13 +606,6 @@ func (c *context) shouldPrintCommands(verbose bool) bool {
 	return c.buildConf.PrintCommands || c.buildConf.Verbose || verbose
 }
 
-func (c *context) emitModuleHook(pkgPath string, mod gllvm.Module) {
-	if c == nil || c.buildConf == nil || c.buildConf.ModuleHook == nil || mod.IsNil() {
-		return
-	}
-	c.buildConf.ModuleHook(pkgPath, mod)
-}
-
 func (c *context) hasAltPkg(pkgPath string) bool {
 	return hasAltPkgForTarget(c.buildConf, pkgPath)
 }
@@ -1245,7 +1238,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	check(err)
 
 	aPkg.LPkg = ret
-	ctx.emitModuleHook(pkgPath, ret.Module())
+	if hook := ctx.buildConf.ModuleHook; hook != nil {
+		hook(pkgPath, ret.Module())
+	}
 
 	// If cache hit, we only needed to register types - skip compilation
 	if aPkg.CacheHit {
