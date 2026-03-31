@@ -17,6 +17,8 @@
 package ssa
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"go/types"
 	"log"
 	"strconv"
@@ -76,6 +78,25 @@ type aGlobal struct {
 // variable.
 type Global = *aGlobal
 
+const moduleZeroName = "__llgo.moduleZeroSizedAlloc$"
+
+func (p Package) moduleZeroSizedAlloc(elem Type) Expr {
+	key := elem.ll.String()
+	if raw := elem.RawType(); raw != nil {
+		key = raw.String()
+	}
+	sum := sha256.Sum256([]byte(key))
+	name := moduleZeroName + hex.EncodeToString(sum[:8])
+	zerobase := p.mod.NamedGlobal(name)
+	if zerobase.IsNil() {
+		zerobase = llvm.AddGlobal(p.mod, elem.ll, name)
+		zerobase.SetInitializer(llvm.ConstNull(elem.ll))
+		zerobase.SetLinkage(llvm.PrivateLinkage)
+		zerobase.SetUnnamedAddr(true)
+	}
+	return Expr{zerobase, p.Prog.Pointer(elem)}
+}
+
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 	if v, ok := p.vars[name]; ok {
@@ -95,6 +116,16 @@ func (p Package) NewVarEx(name string, t Type) Global {
 
 func (p Package) doNewVar(name string, t Type) Global {
 	typ := p.Prog.Elem(t).ll
+	if p.Prog.td.TypeAllocSize(typ) == 0 {
+		if rt := p.Prog.runtime(); rt != nil {
+			zeroName := FullName(rt, "zeroSizedAlloc")
+			if name != zeroName {
+				ret := &aGlobal{p.moduleZeroSizedAlloc(p.Prog.Elem(t))}
+				p.vars[name] = ret
+				return ret
+			}
+		}
+	}
 	gbl := llvm.AddGlobal(p.mod, typ, name)
 	alignment := p.Prog.td.ABITypeAlignment(typ)
 	gbl.SetAlignment(alignment)

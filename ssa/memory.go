@@ -118,6 +118,9 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	pkg := b.Pkg
 	size := SizeOf(prog, elem)
 	if heap {
+		if prog.SizeOf(elem) == 0 {
+			return pkg.moduleZeroSizedAlloc(elem)
+		}
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
 		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
