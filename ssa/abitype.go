@@ -64,6 +64,8 @@ var (
 
 func directIfaceType(t types.Type) bool {
 	switch t := types.Unalias(t).(type) {
+	case *types.Named:
+		return directIfaceType(t.Underlying())
 	case *types.Pointer:
 		return true
 	case *types.Chan, *types.Map, *types.Signature:
