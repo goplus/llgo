@@ -1,9 +1,11 @@
-//go:build go1.23 && !go1.26
-// +build go1.23,!go1.26
+//go:build go1.26
+// +build go1.26
 
 package reflect
 
 import (
+	"iter"
+
 	"github.com/goplus/llgo/runtime/abi"
 )
 
@@ -41,6 +43,9 @@ type Type interface {
 	//
 	// Methods are sorted in lexicographic order.
 	Method(int) Method
+
+	// Methods returns an iterator over each method in the type's method set.
+	Methods() iter.Seq[Method]
 
 	// MethodByName returns the method with that name in the type's
 	// method set and a boolean indicating if the method was found.
@@ -146,6 +151,9 @@ type Type interface {
 	// It panics if i is not in the range [0, NumField()).
 	Field(i int) StructField
 
+	// Fields returns an iterator over each struct field for struct type t.
+	Fields() iter.Seq[StructField]
+
 	// FieldByIndex returns the nested field corresponding
 	// to the index sequence. It is equivalent to calling Field
 	// successively for each index i.
@@ -182,6 +190,9 @@ type Type interface {
 	// It panics if i is not in the range [0, NumIn()).
 	In(i int) Type
 
+	// Ins returns an iterator over each input parameter of function type t.
+	Ins() iter.Seq[Type]
+
 	// Key returns a map type's key type.
 	// It panics if the type's Kind is not Map.
 	Key() Type
@@ -206,6 +217,9 @@ type Type interface {
 	// It panics if the type's Kind is not Func.
 	// It panics if i is not in the range [0, NumOut()).
 	Out(i int) Type
+
+	// Outs returns an iterator over each output parameter of function type t.
+	Outs() iter.Seq[Type]
 
 	// OverflowComplex reports whether the complex128 x cannot be represented by type t.
 	// It panics if t's Kind is not Complex64 or Complex128.
@@ -275,6 +289,55 @@ func (t *rtype) OverflowUint(x uint64) bool {
 		return x != trunc
 	}
 	panic("reflect: OverflowUint of non-uint type " + t.String())
+}
+
+func (t *rtype) Methods() iter.Seq[Method] {
+	return func(yield func(Method) bool) {
+		for i := 0; i < t.NumMethod(); i++ {
+			if !yield(t.Method(i)) {
+				return
+			}
+		}
+	}
+}
+
+func (t *rtype) Fields() iter.Seq[StructField] {
+	if t.Kind() != Struct {
+		panic("reflect: Fields of non-struct type " + t.String())
+	}
+	return func(yield func(StructField) bool) {
+		for i := 0; i < t.NumField(); i++ {
+			if !yield(t.Field(i)) {
+				return
+			}
+		}
+	}
+}
+
+func (t *rtype) Ins() iter.Seq[Type] {
+	if t.Kind() != Func {
+		panic("reflect: Ins of non-func type " + t.String())
+	}
+	return func(yield func(Type) bool) {
+		for i := 0; i < t.NumIn(); i++ {
+			if !yield(t.In(i)) {
+				return
+			}
+		}
+	}
+}
+
+func (t *rtype) Outs() iter.Seq[Type] {
+	if t.Kind() != Func {
+		panic("reflect: Outs of non-func type " + t.String())
+	}
+	return func(yield func(Type) bool) {
+		for i := 0; i < t.NumOut(); i++ {
+			if !yield(t.Out(i)) {
+				return
+			}
+		}
+	}
 }
 
 func (t *rtype) CanSeq() bool {

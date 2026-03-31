@@ -246,3 +246,34 @@ func TestSigsForStdlibInternalBytealgArm64_CoversAllTextSymbols(t *testing.T) {
 		}
 	}
 }
+
+func TestTranslateStdlibInternalBytealgCountArm64_NormalizesUXTBOperand(t *testing.T) {
+	if runtime.GOARCH != "arm64" {
+		t.Skip("host is not arm64")
+	}
+	goroot := runtime.GOROOT()
+	if goroot == "" {
+		t.Skip("GOROOT not available")
+	}
+
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesSizes | packages.NeedTypesInfo | packages.NeedImports,
+		Env:  os.Environ(),
+	}
+	pkgs, err := packages.LoadEx(nil, nil, cfg, "internal/bytealg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 || pkgs[0].Types == nil {
+		t.Fatalf("load internal/bytealg: got %d pkgs, types=%v", len(pkgs), pkgs[0].Types)
+	}
+
+	path := filepath.Join(goroot, "src", "internal", "bytealg", "count_arm64.s")
+	tr, err := TranslateFileForPkg(pkgs[0], path, runtime.GOOS, "arm64", nil)
+	if err != nil {
+		t.Fatalf("translate %s: %v", path, err)
+	}
+	if strings.Contains(tr.LLVMIR, "R2.UXTB") {
+		t.Fatalf("translated IR still references raw extension operand: %s", path)
+	}
+}

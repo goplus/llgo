@@ -140,36 +140,36 @@ func packEface(v Value) any {
 	t := v.typ()
 	var i any
 	e := (*emptyInterface)(unsafe.Pointer(&i))
-	// First, fill in the data portion of the interface.
-	switch {
-	case t.IfaceIndir():
-		if v.flag&flagIndir == 0 {
-			panic("bad indir")
-		}
-		// Value is indirect, and so is the interface we're making.
-		ptr := v.ptr
-		if v.flag&flagAddr != 0 {
-			// TODO: pass safe boolean from valueInterface so
-			// we don't need to copy if safe==true?
-			c := unsafe_New(t)
-			typedmemmove(t, c, ptr)
-			ptr = c
-		}
-		e.word = ptr
-	case v.flag&flagIndir != 0:
-		// Value is indirect, but interface is direct. We need
-		// to load the data at v.ptr into the interface data word.
-		e.word = *(*unsafe.Pointer)(v.ptr)
-	default:
-		// Value is direct, and so is the interface.
-		e.word = v.ptr
-	}
+	e.word = packEfaceData(v)
 	// Now, fill in the type portion. We're very careful here not
 	// to have any operation between the e.word and e.typ assignments
 	// that would let the garbage collector observe the partially-built
 	// interface value.
 	e.typ = t
 	return i
+}
+
+// packEfaceData is a helper that packs the data word as if v were stored in
+// an empty interface. Go 1.26's reflect.TypeAssert refers to it directly.
+func packEfaceData(v Value) unsafe.Pointer {
+	t := v.typ()
+	switch {
+	case t.IfaceIndir():
+		if v.flag&flagIndir == 0 {
+			panic("bad indir")
+		}
+		ptr := v.ptr
+		if v.flag&flagAddr != 0 {
+			c := unsafe_New(t)
+			typedmemmove(t, c, ptr)
+			ptr = c
+		}
+		return ptr
+	case v.flag&flagIndir != 0:
+		return *(*unsafe.Pointer)(v.ptr)
+	default:
+		return v.ptr
+	}
 }
 
 // unpackEface converts the empty interface i to a Value.
@@ -856,19 +856,24 @@ func valueInterface(v Value, safe bool) any {
 	}
 
 	if v.kind() == Interface {
-		// Special case: return the element inside the interface.
-		// Empty interface has one layout, all interfaces with
-		// methods have a second layout.
-		if v.NumMethod() == 0 {
-			return *(*any)(v.ptr)
-		}
-		return *(*interface {
-			M()
-		})(v.ptr)
+		return packIfaceValueIntoEmptyIface(v)
 	}
 
 	// TODO: pass safe to packEface so we don't need to copy if safe==true?
 	return packEface(v)
+}
+
+// packIfaceValueIntoEmptyIface converts an interface Value into an empty
+// interface. Go 1.26's reflect.TypeAssert refers to it directly.
+//
+// Precondition: v.kind() == Interface.
+func packIfaceValueIntoEmptyIface(v Value) any {
+	if v.NumMethod() == 0 {
+		return *(*any)(v.ptr)
+	}
+	return *(*interface {
+		M()
+	})(v.ptr)
 }
 
 // InterfaceData returns a pair of unspecified uintptr values.
@@ -2258,6 +2263,12 @@ type closure struct {
 }
 
 func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
+	if typ.IsClosure() {
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
+		return unsafe.Pointer(&v.ptr)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2278,6 +2289,9 @@ func toFFIArg(v Value, typ *abi.Type) unsafe.Pointer {
 	case abi.Chan:
 		return unsafe.Pointer(&v.ptr)
 	case abi.Func:
+		if v.flag&flagIndir != 0 {
+			return v.ptr
+		}
 		return unsafe.Pointer(&v.ptr)
 	case abi.Interface:
 		i := v.Interface()
@@ -2306,6 +2320,9 @@ var (
 )
 
 func toFFIType(typ *abi.Type) *ffi.Type {
+	if typ.IsClosure() {
+		return ffi.ArrayOf(ffi.TypePointer, 2)
+	}
 	kind := typ.Kind()
 	switch kind {
 	case abi.Bool, abi.Int, abi.Int8, abi.Int16, abi.Int32, abi.Int64,
@@ -2444,7 +2461,8 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		}
 	}
 	for i := 0; i < n; i++ {
-		if xt, targ := in[i].Type(), ft.In[i]; !xt.AssignableTo(toRType(targ)) {
+		targ := normalizeFuncABIType(ft.In[i])
+		if xt := in[i].Type(); !xt.AssignableTo(toRType(targ)) {
 			panic("reflect: " + op + " using " + xt.String() + " as type " + stringFor(targ))
 		}
 	}
@@ -2452,7 +2470,7 @@ func (v Value) call(op string, in []Value) (out []Value) {
 		// prepare slice for remaining values
 		m := len(in) - n
 		slice := MakeSlice(toRType(ft.In[n]), m, m)
-		elem := toRType(ft.In[n].Elem()) // FIXME cast to slice type and Elem()
+		elem := toRType(normalizeFuncABIType(ft.In[n].Elem())) // FIXME cast to slice type and Elem()
 		for i := 0; i < m; i++ {
 			x := in[n+i]
 			if xt := x.Type(); !xt.AssignableTo(elem) {
@@ -2557,20 +2575,34 @@ func storeRcvr(v Value, p unsafe.Pointer) {
 		// the interface data word becomes the receiver word
 		iface := (*nonEmptyInterface)(v.ptr)
 		*(*unsafe.Pointer)(p) = ifacePtrData(iface)
+	} else if v.flag&flagIndir == 0 && t.IsDirectIface() && t.Kind() != abi.Pointer {
+		// llgo method wrappers expect non-pointer value receivers through an
+		// addressable cell. Direct-iface one-word values only carry raw bits in
+		// v.ptr, so materialize a temporary receiver cell first.
+		cell := unsafe_New(t)
+		typedmemmove(t, cell, unsafe.Pointer(&v.ptr))
+		*(*unsafe.Pointer)(p) = cell
 	} else if v.flag&flagIndir != 0 && !ifaceIndir(t) {
 		*(*unsafe.Pointer)(p) = *(*unsafe.Pointer)(v.ptr)
-	} else if v.flag&flagIndir == 0 && runtime.DirectIfaceData(t) {
-		*(*unsafe.Pointer)(p) = unsafe.Pointer(&v.ptr)
 	} else {
 		*(*unsafe.Pointer)(p) = v.ptr
 	}
 }
 
 func ifacePtrData(i *nonEmptyInterface) unsafe.Pointer {
-	if runtime.DirectIfaceData(i.itab.typ) {
+	typ := i.itab.typ
+	if directIfaceData(typ) {
+		switch typ.Kind() {
+		case abi.Pointer, abi.UnsafePointer, abi.Map, abi.Chan, abi.Func:
+			return i.word
+		}
 		return unsafe.Pointer(&i.word)
 	}
 	return i.word
+}
+
+func directIfaceData(typ *abi.Type) bool {
+	return typ != nil && typ.IsDirectIface()
 }
 
 var stringType = rtypeOf("")

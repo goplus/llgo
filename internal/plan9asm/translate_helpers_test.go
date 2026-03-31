@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -218,4 +219,102 @@ func TestExtraAsmSigsAndDeclMap(t *testing.T) {
 			t.Fatalf("missing amd64 manual sig %s", name)
 		}
 	}
+
+	gcscan := extraAsmSigsAndDeclMap("internal/runtime/gc/scan", "amd64")
+	for _, name := range []string{
+		"internal/runtime/gc/scan.expandAVX512_1",
+		"internal/runtime/gc/scan.expandAVX512_32",
+		"internal/runtime/gc/scan.expandAVX512_64",
+	} {
+		got, ok := gcscan[name]
+		if !ok {
+			t.Fatalf("missing amd64 manual sig %s", name)
+		}
+		if got.Ret != extplan9asm.Void {
+			t.Fatalf("%s ret = %s, want void", name, got.Ret)
+		}
+		if len(got.Args) != 1 || got.Args[0] != extplan9asm.Ptr {
+			t.Fatalf("%s args = %#v, want [ptr]", name, got.Args)
+		}
+		if len(got.ArgRegs) != 1 || got.ArgRegs[0] != extplan9asm.AX {
+			t.Fatalf("%s argregs = %#v, want [AX]", name, got.ArgRegs)
+		}
+	}
+}
+
+func TestTranslateSourceModuleForPkg_InternalRuntimeGCScanLocalExpanders(t *testing.T) {
+	pkg := mustTestPackage(t, "internal/runtime/gc/scan", `package scan
+func ExpandAVX512(sizeClass int, packed *byte, unpacked *byte)
+var gcExpandersAVX512 [2]uintptr
+`)
+	asmPath := filepath.Join(t.TempDir(), "expand_amd64.s")
+	asm := []byte(`GLOBL ·gcExpandersAVX512(SB), RODATA, $0x10
+DATA  ·gcExpandersAVX512+0x00(SB)/8, $0
+DATA  ·gcExpandersAVX512+0x08(SB)/8, $expandAVX512_1<>(SB)
+
+TEXT expandAVX512_1<>(SB), NOSPLIT, $0-0
+	MOVQ (AX), BX
+	RET
+`)
+
+	tr, err := TranslateSourceModuleForPkg(pkg, asmPath, asm, "linux", "amd64")
+	if err != nil {
+		t.Fatalf("TranslateSourceModuleForPkg: %v", err)
+	}
+	defer tr.Module.Dispose()
+
+	if _, ok := tr.Signatures["internal/runtime/gc/scan.expandAVX512_1"]; !ok {
+		t.Fatal("missing manual signature for internal/runtime/gc/scan.expandAVX512_1")
+	}
+}
+
+func TestTranslateFileForPkg_Go126InternalRuntimeGCScanAMD64(t *testing.T) {
+	cmd := exec.Command("go", "env", "GOROOT")
+	cmd.Env = append(os.Environ(), "GOTOOLCHAIN=go1.26.0")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Skipf("go1.26.0 toolchain not available: %v", err)
+	}
+	goroot := string(bytesTrimSpace(out))
+	if goroot == "" {
+		t.Skip("empty go1.26.0 GOROOT")
+	}
+
+	cfg := &llpackages.Config{
+		Mode: llpackages.NeedName | llpackages.NeedFiles | llpackages.NeedSyntax | llpackages.NeedTypes | llpackages.NeedTypesSizes | llpackages.NeedTypesInfo | llpackages.NeedImports,
+		Env: append(os.Environ(),
+			"GOROOT="+goroot,
+			"GOOS=linux",
+			"GOARCH=amd64",
+			"CGO_ENABLED=0",
+		),
+	}
+	pkgs, err := llpackages.LoadEx(nil, nil, cfg, "internal/runtime/gc/scan")
+	if err != nil {
+		t.Fatalf("load internal/runtime/gc/scan: %v", err)
+	}
+	if len(pkgs) != 1 || pkgs[0].Types == nil {
+		t.Fatalf("load internal/runtime/gc/scan: got %d pkgs, types=%v", len(pkgs), pkgs[0].Types)
+	}
+
+	path := filepath.Join(goroot, "src", "internal", "runtime", "gc", "scan", "expand_amd64.s")
+	tr, err := TranslateFileForPkg(pkgs[0], path, "linux", "amd64", nil)
+	if err != nil {
+		t.Fatalf("TranslateFileForPkg(%s): %v", path, err)
+	}
+	if _, ok := tr.Signatures["internal/runtime/gc/scan.expandAVX512_1"]; !ok {
+		t.Fatal("missing manual signature for internal/runtime/gc/scan.expandAVX512_1")
+	}
+}
+
+func bytesTrimSpace(b []byte) []byte {
+	start := 0
+	for start < len(b) && (b[start] == ' ' || b[start] == '\n' || b[start] == '\r' || b[start] == '\t') {
+		start++
+	}
+	end := len(b)
+	for end > start && (b[end-1] == ' ' || b[end-1] == '\n' || b[end-1] == '\r' || b[end-1] == '\t') {
+		end--
+	}
+	return b[start:end]
 }
