@@ -274,3 +274,14 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+!llgo.methodoff = !{!2, !3, !4}
+!llgo.useifacemethod = !{!5}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/closureall.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/closureall.main", !"_llgo_string"}
+!2 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 0, !"Inc", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
+!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 0, !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
+!4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 1, !"Inc", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
+!5 = !{!"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int}.Add$bound", !"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}

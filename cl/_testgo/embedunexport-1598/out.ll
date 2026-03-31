@@ -174,3 +174,16 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0}
+!llgo.methodoff = !{!1, !2, !3, !4, !5, !6}
+!llgo.useifacemethod = !{!7}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped"}
+!1 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Base", i32 0, !"Name", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Base", i32 1, !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}
+!3 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", i32 0, !"Name", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!4 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", i32 1, !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}
+!5 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", i32 0, !"Name", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!6 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped", i32 1, !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}
+!7 = !{!"github.com/goplus/llgo/cl/_testgo/embedunexport-1598.main", !"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"Name", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}

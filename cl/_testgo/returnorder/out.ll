@@ -140,3 +140,8 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/returnorder.main", !"_llgo_int"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/returnorder.main", !"_llgo_string"}

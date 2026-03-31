@@ -153,3 +153,12 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+
+!llgo.useiface = !{!0}
+!llgo.methodoff = !{!1, !2, !3, !4}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/interface1370.main", !"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle"}
+!1 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", i32 0, !"Area", !"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8"}
+!2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", i32 1, !"GetID", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", i32 2, !"github.com/goplus/llgo/cl/_testdata/geometry1370.setID", !"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA"}
+!4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle", i32 3, !"github.com/goplus/llgo/cl/_testdata/geometry1370.validate", !"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk"}
