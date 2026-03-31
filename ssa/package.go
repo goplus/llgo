@@ -22,6 +22,7 @@ import (
 	"go/types"
 	"runtime"
 	"strconv"
+	"strings"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
@@ -208,9 +209,13 @@ type aProgram struct {
 
 	printfTy *types.Signature
 
-	paramObjPtr_ *types.Var
-	linkname     map[string]string     // pkgPath.nameInPkg => linkname
-	abiSymbol    map[string]*AbiSymbol // abi symbol name => AbiSymbol
+	paramObjPtr_   *types.Var
+	linkname       map[string]string     // pkgPath.nameInPkg => linkname
+	abiSymbol      map[string]*AbiSymbol // abi symbol name => AbiSymbol
+	abiTypePruning bool
+	methodIsInvoke func(index int, method *types.Selection) bool
+
+	invokeMethods map[string]map[types.Type]none
 
 	ptrSize int
 
@@ -225,6 +230,18 @@ type AbiSymbol struct {
 	Raw     types.Type
 	Typ     Type
 	MSet    *types.MethodSet
+}
+
+type none struct{}
+
+func (p Program) AddInvoke(fn *types.Func) {
+	name := fn.Name()
+	m, ok := p.invokeMethods[name]
+	if !ok {
+		m = make(map[types.Type]none)
+		p.invokeMethods[name] = m
+	}
+	m[p.Patch(fn.Type())] = none{}
 }
 
 // A Program presents a program.
@@ -272,6 +289,7 @@ func NewProgram(target *Target) Program {
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
+		invokeMethods: make(map[string]map[types.Type]none),
 	}
 	prog.abi.Init(uintptr(prog.ptrSize), (*goProgram)(unsafe.Pointer(prog)))
 	return prog
@@ -297,7 +315,7 @@ func (p Program) SetPatch(patchType func(types.Type) types.Type) {
 	p.patchType = patchType
 }
 
-func (p Program) patch(typ types.Type) types.Type {
+func (p Program) Patch(typ types.Type) types.Type {
 	if p.patchType != nil {
 		return p.patchType(typ)
 	}
@@ -330,6 +348,17 @@ func (p Program) SetLinkname(name, link string) {
 func (p Program) Linkname(name string) (link string, ok bool) {
 	link, ok = p.linkname[name]
 	return
+}
+
+func (p Program) ResolveLinkname(name string) string {
+	if link, ok := p.linkname[name]; ok {
+		prefix, ltarget, _ := strings.Cut(link, ".")
+		if prefix != "C" {
+			panic("resolveLinkname: invalid link: " + link)
+		}
+		return ltarget
+	}
+	return name
 }
 
 func (p Program) runtime() *types.Package {
@@ -718,8 +747,6 @@ type aPackage struct {
 	preserveSyms   map[string]struct{} // set of exported symbol names
 	llvmUsedValues []llvm.Value
 }
-
-type none struct{}
 
 type Package = *aPackage
 
