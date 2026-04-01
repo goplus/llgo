@@ -700,19 +700,12 @@ func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	etyp := prog.Elem(ch.Type)
 	ptr := b.Alloc(etyp, false)
 	ok := b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
-	zeroRecvTmp := func() {
-		// Clear the compiler-generated receive temporary after the value has
-		// been loaded so stack scanning does not retain stale pointers.
-		b.zeroinit(b.ChangeType(prog.VoidPtr(), ptr), eltSize)
-	}
 	if commaOk {
 		val := b.materializeRecvValue(ptr)
-		zeroRecvTmp()
 		t := prog.Struct(etyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok.impl)
 	} else {
 		val := b.materializeRecvValue(ptr)
-		zeroRecvTmp()
 		return val
 	}
 }
