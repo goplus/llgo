@@ -19,6 +19,11 @@ host_skips:
     directive: run
     case: fixedbugs/issue39541.go
     reason: host-unsafe concurrency case can destabilize the host
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.24 goroot run is host-sensitive on darwin/arm64
 xfails:
   - platform: darwin/arm64
     directive: run
@@ -394,6 +399,11 @@ xfails:
     case: fixedbugs/issue72844.go
     reason: go1.25 goroot run failure on darwin/arm64
   - version: go1.25
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue73476.go
+    reason: go1.25 goroot run failure on darwin/arm64
+  - version: go1.25
     platform: linux/amd64
     directive: run
     case: blank.go
@@ -401,17 +411,7 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: chan/goroutines.go
-    reason: go1.25 goroot run timeout on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: deferfin.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: deferprint.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
     platform: linux/amd64
@@ -432,11 +432,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/bug348.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/bug409.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
     platform: linux/amd64
@@ -606,11 +601,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: fixedbugs/issue35576.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/issue4316.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -711,11 +701,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: fixedbugs/issue6899.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/issue71675.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -726,17 +711,22 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
+    case: abi/uglyfib.go
+    reason: go1.25 goroot run timeout on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73476.go
+    reason: go1.25 goroot run failure on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
     case: fixedbugs/issue7690.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue8606b.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: goprint.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
     platform: linux/amd64
@@ -766,11 +756,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: ken/cplx0.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: mallocfin.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -787,11 +772,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: peano.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: print.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
     platform: linux/amd64
@@ -897,11 +877,6 @@ xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
-    case: chan/goroutines.go
-    reason: go1.24 goroot run timeout on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
     case: deferfin.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
@@ -1108,11 +1083,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: typeparam/mdempsky/16.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: goprint.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
@@ -1332,11 +1302,6 @@ xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
-    case: fixedbugs/issue6899.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/issue7690.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
@@ -1434,6 +1399,11 @@ xfails:
     directive: run
     case: typeparam/typeswitch5.go
     reason: go1.26 goroot run failure on darwin/arm64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    reason: go1.24 goroot run timeout on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
@@ -1449,11 +1419,6 @@ xfails:
     directive: run
     case: deferprint.go
     reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: chan/goroutines.go
-    reason: go1.26 goroot run timeout on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
@@ -1698,6 +1663,21 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue76008.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    reason: go1.26 goroot run timeout on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue73476.go
+    reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: typeparam/typeswitch5.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
