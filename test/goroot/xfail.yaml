@@ -703,16 +703,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: abi/uglyfib.go
-    reason: go1.25 goroot run timeout on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue73476.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/issue7690.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -1661,11 +1651,6 @@ xfails:
     directive: run
     case: abi/uglyfib.go
     reason: go1.26 goroot run timeout on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue73476.go
-    reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
