@@ -32,6 +32,10 @@ else
   done
 fi
 
+ignore_host=(
+  "./_demo/c/llama2-c" # fast fail: github.com/goplus/lib/c/llama2 module layout breaks cgo file matching in CI
+)
+
 embedded_targets=()
 emulator=0
 if [ "$mode" = "embedded" ]; then
@@ -224,6 +228,17 @@ if [ "$mode" = "embedded" ]; then
   done
 else
   for d in "${cases[@]}"; do
+    skip=0
+    for ignore in "${ignore_host[@]}"; do
+      if [ "$d" = "$ignore" ]; then
+        echo "SKIP $d"
+        skip=1
+        break
+      fi
+    done
+    if [ "$skip" -eq 1 ]; then
+      continue
+    fi
     run_dirs+=("$d")
     run_targets+=("")
     run_labels+=("$d")
