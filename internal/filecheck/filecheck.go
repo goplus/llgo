@@ -51,14 +51,18 @@ type match struct {
 	end   pos
 }
 
-func HasDirectives(text string) bool {
+func HasDirectives(text string) (bool, error) {
 	lines := splitLines(text)
 	for _, line := range lines {
-		if _, _, ok, _ := parseDirectiveLine(line); ok {
-			return true
+		_, hasDirective, ok, err := parseDirectiveLine(line)
+		if err != nil {
+			return false, err
+		}
+		if hasDirective && ok {
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 func Match(filename, checks, input string) error {
@@ -175,7 +179,7 @@ func parseDirectiveLine(line string) (directive, bool, bool, error) {
 	}
 	rest = strings.TrimLeft(rest[2:], " \t")
 	if strings.HasPrefix(rest, "CHECK:") {
-		pattern := strings.TrimSpace(strings.TrimPrefix(rest, "CHECK:"))
+		pattern := trimDirectivePattern(strings.TrimPrefix(rest, "CHECK:"))
 		re, err := compilePattern(pattern)
 		if err != nil {
 			return directive{}, true, false, err
@@ -191,10 +195,10 @@ func parseDirectiveLine(line string) (directive, bool, bool, error) {
 		return directive{}, true, false, fmt.Errorf("missing ':' in directive")
 	}
 	suffix := suffixRest[:colon]
-	pattern := strings.TrimSpace(suffixRest[colon+1:])
+	pattern := trimDirectivePattern(suffixRest[colon+1:])
 	k, ok := parseKind(suffix)
 	if !ok {
-		return directive{}, false, false, nil
+		return directive{}, true, false, fmt.Errorf("unknown directive CHECK-%s", suffix)
 	}
 	if k == kindEmpty {
 		if pattern != "" {
@@ -354,4 +358,14 @@ func splitLines(text string) []string {
 		lines[i] = strings.TrimSuffix(line, "\r")
 	}
 	return lines
+}
+
+func trimDirectivePattern(pattern string) string {
+	if pattern == "" {
+		return ""
+	}
+	if pattern[0] == ' ' || pattern[0] == '\t' {
+		return pattern[1:]
+	}
+	return pattern
 }

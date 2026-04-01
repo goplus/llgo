@@ -217,7 +217,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 		return
 	}
 	if test.Diff(t, pkgDir+"/result.txt", []byte(v), []byte(spec.Text)) {
-		t.Fatal("llgen.GenFrom: unexpect result")
+		t.Fatal("llgen.GenFrom: unexpected result")
 	}
 }
 

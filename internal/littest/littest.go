@@ -113,7 +113,11 @@ func loadSourceSpec(pkgDir string) (Spec, bool, error) {
 		return Spec{}, false, err
 	}
 	text := string(data)
-	if !filecheck.HasDirectives(text) {
+	ok, err := filecheck.HasDirectives(text)
+	if err != nil {
+		return Spec{}, false, err
+	}
+	if !ok {
 		return Spec{}, false, fmt.Errorf("%s: %s is marked %s but has no FileCheck directives", pkgDir, filepath.Base(marked), marker)
 	}
 	return Spec{
