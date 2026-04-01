@@ -362,7 +362,6 @@ func (b Builder) Load(ptr Expr) Expr {
 	if ptr.kind == vkPyVarRef {
 		return b.pyLoad(ptr)
 	}
-	b.AssertNilDeref(ptr)
 	telem := b.Prog.Elem(ptr.Type)
 	return Expr{llvm.CreateLoad(b.impl, telem.ll, ptr.impl), telem}
 }
