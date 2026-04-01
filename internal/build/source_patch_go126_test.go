@@ -14,7 +14,8 @@ import (
 )
 
 func TestBuildSourcePatchOverlayForInternalSync(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT(), sourcePatchBuildContext{
+	runtimeDir := mustRuntimeDirForTests(t)
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, runtimeDir, runtime.GOROOT(), sourcePatchBuildContext{
 		goos:      runtime.GOOS,
 		goarch:    runtime.GOARCH,
 		goversion: "go1.26.0",
@@ -32,7 +33,7 @@ func TestBuildSourcePatchOverlayForInternalSync(t *testing.T) {
 	if !strings.Contains(string(patchSrc), "type HashTrieMap") {
 		t.Fatalf("source patch file %s does not contain HashTrieMap replacement", patchFile)
 	}
-	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "_patch", "internal", "sync", "hashtriemap.go"))) {
+	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(runtimeDir, "_patch", "internal", "sync", "hashtriemap.go"))) {
 		t.Fatalf("source patch file %s is missing line directive, got:\n%s", patchFile, patchSrc)
 	}
 
@@ -60,7 +61,8 @@ func TestInternalSyncUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 }
 
 func TestBuildSourcePatchOverlayForCryptoInternalConstanttime(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT(), sourcePatchBuildContext{
+	runtimeDir := mustRuntimeDirForTests(t)
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, runtimeDir, runtime.GOROOT(), sourcePatchBuildContext{
 		goos:      runtime.GOOS,
 		goarch:    runtime.GOARCH,
 		goversion: "go1.26.0",
@@ -78,7 +80,7 @@ func TestBuildSourcePatchOverlayForCryptoInternalConstanttime(t *testing.T) {
 	if !strings.Contains(string(patchSrc), "//go:linkname boolToUint8 llgo.boolToUint8") {
 		t.Fatalf("source patch file %s does not contain boolToUint8 linkname", patchFile)
 	}
-	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "_patch", "crypto", "internal", "constanttime", "constant_time.go"))) {
+	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(runtimeDir, "_patch", "crypto", "internal", "constanttime", "constant_time.go"))) {
 		t.Fatalf("source patch file %s is missing line directive, got:\n%s", patchFile, patchSrc)
 	}
 }

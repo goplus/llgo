@@ -32,10 +32,12 @@ define void @"github.com/goplus/llgo/cl/_testdata/llgointrinsics.UseClosure$1"(p
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
-  %3 = load i64, ptr %2, align 4
-  %4 = add i64 %3, 1
-  %5 = extractvalue { ptr } %1, 0
-  store i64 %4, ptr %5, align 4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load i64, ptr %2, align 4
+  %5 = add i64 %4, 1
+  %6 = extractvalue { ptr } %1, 0
+  store i64 %5, ptr %6, align 4
   ret void
 }
 
@@ -82,6 +84,8 @@ declare i64 @write(i64, ptr, i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i64 @foo(...)
 

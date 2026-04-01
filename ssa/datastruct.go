@@ -21,6 +21,7 @@ import (
 	"go/types"
 	"log"
 
+	ssaabi "github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
 
@@ -688,7 +689,12 @@ func (b Builder) toPtr(x Expr) Expr {
 }
 
 func (b Builder) materializeRecvValue(ptr Expr) Expr {
-	return b.Load(ptr)
+	val := b.Load(ptr)
+	elem := b.Prog.Elem(ptr.Type)
+	if ssaabi.HasPtrData(elem.raw.Type) {
+		b.zeroinit(ptr, SizeOf(b.Prog, elem))
+	}
+	return val
 }
 
 func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {

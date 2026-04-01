@@ -720,6 +720,10 @@ func (p Package) SetExport(name, export string) {
 	p.preserveSyms[export] = struct{}{}
 }
 
+func (p Package) Preserve(name string) {
+	p.preserveSyms[name] = struct{}{}
+}
+
 func (p Package) ExportFuncs() map[string]string {
 	return p.export
 }

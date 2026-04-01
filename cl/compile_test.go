@@ -319,9 +319,7 @@ func TestRunFromTestlibc(t *testing.T) {
 }
 
 func TestFromTestrt(t *testing.T) {
-	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt")
-	cl.SetDebug(0)
 }
 
 func TestRunFromTestrt(t *testing.T) {

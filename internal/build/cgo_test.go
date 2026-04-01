@@ -4,9 +4,17 @@
 package build
 
 import (
+	"go/ast"
+	"go/build"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/goplus/llgo/internal/packages"
 )
 
 func TestParseCgoDeclFlags(t *testing.T) {
@@ -36,9 +44,13 @@ func TestParseCgoDeclFlags(t *testing.T) {
 			},
 		},
 		{
-			name:        "unsupported flag returns error",
-			line:        "#cgo CXXFLAGS: -O2",
-			wantErrText: "unsupported cgo flag type",
+			name: "CXXFLAGS without tag",
+			line: "#cgo CXXFLAGS: -O2 -stdlib=libc++",
+			want: []cgoDecl{
+				{
+					cxxflags: []string{"-O2", "-stdlib=libc++"},
+				},
+			},
 		},
 	}
 
@@ -61,5 +73,54 @@ func TestParseCgoDeclFlags(t *testing.T) {
 				t.Fatalf("parseCgoDecl = %#v, want %#v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestParseCgoCollectsCXXFiles(t *testing.T) {
+	dir := t.TempDir()
+	src := `package demo
+
+/*
+#cgo CFLAGS: -I/c
+#cgo CXXFLAGS: -I/cxx
+*/
+import "unsafe"
+`
+	goFile := filepath.Join(dir, "demo.go")
+	if err := os.WriteFile(goFile, []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"foo.c", "bar.cpp", "skip_test.cpp"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(""), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, goFile, src, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := &aPackage{Package: &packages.Package{Fset: fset}}
+	buildCtx := build.Default
+	srcFiles, _, decls, err := parseCgo_(&buildCtx, pkg, []*ast.File{file})
+	if err != nil {
+		t.Fatalf("parseCgo_ returned error: %v", err)
+	}
+	gotFiles := map[string]bool{}
+	for _, src := range srcFiles {
+		gotFiles[filepath.Base(src.path)] = src.isCXX
+	}
+	wantFiles := map[string]bool{
+		"foo.c":   false,
+		"bar.cpp": true,
+	}
+	if !reflect.DeepEqual(gotFiles, wantFiles) {
+		t.Fatalf("parseCgo_ files = %#v, want %#v", gotFiles, wantFiles)
+	}
+	if !reflect.DeepEqual(decls, []cgoDecl{
+		{cflags: []string{"-I/c"}},
+		{cxxflags: []string{"-I/cxx"}},
+	}) {
+		t.Fatalf("parseCgo_ decls = %#v", decls)
 	}
 }

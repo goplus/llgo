@@ -100,6 +100,7 @@ func (c *Cmd) Compile(args ...string) error {
 	allArgs := make([]string, 0, len(flags)+len(args))
 	allArgs = append(allArgs, flags...)
 	allArgs = append(allArgs, args...)
+	allArgs = normalizeExecArgs(allArgs)
 	return c.exec(allArgs...)
 }
 
@@ -109,6 +110,7 @@ func (c *Cmd) Link(args ...string) error {
 	allArgs := make([]string, 0, len(flags)+len(args))
 	allArgs = append(allArgs, flags...)
 	allArgs = append(allArgs, args...)
+	allArgs = normalizeExecArgs(allArgs)
 	return c.exec(allArgs...)
 }
 
@@ -168,6 +170,18 @@ func (c *Cmd) exec(args ...string) error {
 		cmd.Env = c.Env
 	}
 	return cmd.Run()
+}
+
+func normalizeExecArgs(args []string) []string {
+	out := make([]string, 0, len(args))
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "-") && strings.IndexAny(arg, " \t\r\n") >= 0 {
+			out = append(out, safesplit.SplitPkgConfigFlags(arg)...)
+			continue
+		}
+		out = append(out, arg)
+	}
+	return out
 }
 
 // CheckLinkArgs validates linking arguments by attempting a test compile.

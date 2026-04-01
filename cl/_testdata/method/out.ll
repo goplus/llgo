@@ -3,6 +3,7 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/method"
 
 @"github.com/goplus/llgo/cl/_testdata/method.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testdata/method.init$guard" = global i1 false, align 1
+@llvm.compiler.used = appending global [2 x ptr] [ptr @"github.com/goplus/llgo/cl/_testdata/method.T.Add", ptr @"github.com/goplus/llgo/cl/_testdata/method.(*T).Add"], section "llvm.metadata"
 
 define i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 %0, i64 %1) {
 _llgo_0:
@@ -12,9 +13,11 @@ _llgo_0:
 
 define i64 @"github.com/goplus/llgo/cl/_testdata/method.(*T).Add"(ptr %0, i64 %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 %2, i64 %1)
-  ret i64 %3
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 %3, i64 %1)
+  ret i64 %4
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/method.init"() {
@@ -24,6 +27,16 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/method.init$guard", align 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   store i8 72, ptr @"github.com/goplus/llgo/cl/_testdata/method.format", align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testdata/method.format", i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testdata/method.format", i64 2), align 1
@@ -42,9 +55,12 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testdata/method.main"() {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %0 = call i64 @"github.com/goplus/llgo/cl/_testdata/method.T.Add"(i64 1, i64 2)
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/method.format", i64 %0)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @printf(ptr, ...)

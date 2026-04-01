@@ -349,6 +349,12 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 }
 
 func (b Builder) AssertNilDeref(ptr Expr) {
+	if b.Pkg.Prog.runtime() == nil {
+		return
+	}
+	if ptr.impl.IsNil() {
+		return
+	}
 	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
 		return
 	}

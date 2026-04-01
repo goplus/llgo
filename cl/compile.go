@@ -320,17 +320,43 @@ const (
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
-	if tn.IsAlias() { // don't need to compile alias type
-		return
-	}
 	tnName := tn.Name()
 	typ := tn.Type()
 	name := llssa.FullName(tn.Pkg(), tnName)
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
+	p.compileTypeMethods(pkg, tn, typ)
+}
+
+func (p *context) compileTypeMethods(pkg llssa.Package, obj *types.TypeName, typ types.Type) {
+	if obj.IsAlias() {
+		raw := types.Unalias(typ)
+		if !isLocalMethodType(obj.Pkg(), raw) {
+			return
+		}
+		p.compileMethods(pkg, raw)
+		if ptr, ok := raw.(*types.Pointer); ok {
+			p.compileMethods(pkg, ptr.Elem())
+		}
+		return
+	}
 	p.compileMethods(pkg, typ)
 	p.compileMethods(pkg, types.NewPointer(typ))
+}
+
+func isLocalMethodType(pkg *types.Package, typ types.Type) bool {
+	for {
+		switch t := typ.(type) {
+		case *types.Pointer:
+			typ = t.Elem()
+		case *types.Named:
+			obj := t.Obj()
+			return obj != nil && obj.Pkg() == pkg
+		default:
+			return false
+		}
+	}
 }
 
 func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
@@ -339,6 +365,10 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
+			_, name, ftype := p.funcName(ssaMthd)
+			if ftype == goFunc {
+				pkg.Preserve(name)
+			}
 			p.compileFuncDecl(pkg, ssaMthd)
 		}
 	}

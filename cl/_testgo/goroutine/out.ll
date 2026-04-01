@@ -51,8 +51,10 @@ _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %13 = load i1, ptr %0, align 1
-  br i1 %13, label %_llgo_2, label %_llgo_1
+  %13 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load i1, ptr %0, align 1
+  br i1 %14, label %_llgo_2, label %_llgo_1
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
@@ -100,3 +102,5 @@ _llgo_0:
   call void @free(ptr %0)
   ret ptr null
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

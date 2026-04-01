@@ -295,6 +295,14 @@ func TestLink(t *testing.T) {
 	}
 }
 
+func TestNormalizeExecArgs(t *testing.T) {
+	got := normalizeExecArgs([]string{"-framework CoreFoundation", "-framework IOKit", "plain arg", "/tmp/with space"})
+	want := []string{"-framework", "CoreFoundation", "-framework", "IOKit", "plain arg", "/tmp/with space"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("normalizeExecArgs = %v, want %v", got, want)
+	}
+}
+
 func TestVerboseMode(t *testing.T) {
 	config := Config{}
 	cmd := New("echo", config)
