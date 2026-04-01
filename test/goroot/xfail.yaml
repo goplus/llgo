@@ -413,6 +413,11 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
+    case: chan/goroutines.go
+    reason: go1.25 goroot run timeout on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
     case: deferfin.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -901,6 +906,11 @@ xfails:
     directive: run
     case: blank.go
     reason: go1.24 goroot run failure on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.24 goroot run timeout on linux/amd64
   - version: go1.24
     platform: linux/amd64
     directive: run
@@ -1436,6 +1446,11 @@ xfails:
     directive: run
     case: deferprint.go
     reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.26 goroot run timeout on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
