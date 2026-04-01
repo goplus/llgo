@@ -24,6 +24,16 @@ host_skips:
     directive: run
     case: chan/goroutines.go
     reason: go1.24 goroot run is host-sensitive on darwin/arm64
+  - version: go1.25
+    platform: darwin/arm64
+    directive: run
+    case: chan/goroutines.go
+    reason: go1.25 goroot run is host-sensitive on darwin/arm64
+  - version: go1.25
+    platform: darwin/arm64
+    directive: run
+    case: chanlinear.go
+    reason: go1.25 goroot run is host-sensitive on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
@@ -1427,6 +1437,11 @@ xfails:
     directive: run
     case: abi/uglyfib.go
     reason: go1.24 goroot run timeout on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    reason: go1.25 goroot run timeout on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
