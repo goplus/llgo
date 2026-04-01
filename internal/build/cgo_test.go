@@ -124,3 +124,38 @@ import "unsafe"
 		t.Fatalf("parseCgo_ decls = %#v", decls)
 	}
 }
+
+func TestParseCgoIgnoresDirectoryNamedLikeCFile(t *testing.T) {
+	dir := t.TempDir()
+	src := `package demo
+
+/*
+#cgo CFLAGS: -I/c
+*/
+import "unsafe"
+`
+	goFile := filepath.Join(dir, "demo.go")
+	if err := os.WriteFile(goFile, []byte(src), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(dir, "foo.c"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "bar.c"), []byte(""), 0644); err != nil {
+		t.Fatal(err)
+	}
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, goFile, src, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := &aPackage{Package: &packages.Package{Fset: fset}}
+	buildCtx := build.Default
+	srcFiles, _, _, err := parseCgo_(&buildCtx, pkg, []*ast.File{file})
+	if err != nil {
+		t.Fatalf("parseCgo_ returned error: %v", err)
+	}
+	if len(srcFiles) != 1 || filepath.Base(srcFiles[0].path) != "bar.c" {
+		t.Fatalf("parseCgo_ files = %#v, want only bar.c", srcFiles)
+	}
+}

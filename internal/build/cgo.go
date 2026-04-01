@@ -310,12 +310,19 @@ func parseCgo_(buildCtx *build.Context, pkg *aPackage, files []*ast.File) (srcFi
 		dir, _ := filepath.Split(pos.Filename)
 		dirs[dir] = none{}
 	}
-	addFile := func(dir, match string, isCXX bool) error {
-		name := filepath.Base(match)
-		switch {
-		case strings.HasSuffix(name, "_test.c"),
-			strings.HasSuffix(name, "_test.cc"),
-			strings.HasSuffix(name, "_test.cpp"),
+		addFile := func(dir, match string, isCXX bool) error {
+			if fi, err := os.Stat(match); err == nil {
+				if fi.IsDir() {
+					return nil
+				}
+			} else if !os.IsNotExist(err) {
+				return err
+			}
+			name := filepath.Base(match)
+			switch {
+			case strings.HasSuffix(name, "_test.c"),
+				strings.HasSuffix(name, "_test.cc"),
+				strings.HasSuffix(name, "_test.cpp"),
 			strings.HasSuffix(name, "_test.cxx"):
 			return nil
 		}
@@ -328,11 +335,9 @@ func parseCgo_(buildCtx *build.Context, pkg *aPackage, files []*ast.File) (srcFi
 				return nil
 			}
 		}
-		if fi, err := os.Stat(match); err == nil && !fi.IsDir() {
 			srcFiles = append(srcFiles, cgoSrcFile{path: match, isCXX: isCXX})
+			return nil
 		}
-		return nil
-	}
 	for dir := range dirs {
 		for _, pattern := range []struct {
 			glob  string
