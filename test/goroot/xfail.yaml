@@ -34,10 +34,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: deferprint.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: finprofiled.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -162,10 +158,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: fixedbugs/bug409.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue10332.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -283,10 +275,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue33724.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue35576.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -921,11 +909,6 @@ xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
-    case: deferprint.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
     case: finprofiled.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
@@ -1052,11 +1035,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue32477.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue35576.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
@@ -1227,11 +1205,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/bug348.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/bug409.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
