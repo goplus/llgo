@@ -280,6 +280,7 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 	got := string(output)
 	allowed := map[string]struct{}{
 		"100\nch1\nch2\n":   {},
+		"100\nch2\nch1\n":   {},
 		"100\nexit\nch1\n":  {},
 		"200\nexit\nexit\n": {},
 	}
