@@ -542,11 +542,6 @@ xfails:
     case: fixedbugs/issue24491b.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue25897a.go
-    reason: go1.25 goroot run failure on darwin/arm64
-  - version: go1.25
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue25897a.go
