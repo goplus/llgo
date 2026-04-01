@@ -349,6 +349,9 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 }
 
 func (b Builder) AssertNilDeref(ptr Expr) {
+	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
+		return
+	}
 	nilPtr := llvm.ConstNull(ptr.impl.Type())
 	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
 	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)

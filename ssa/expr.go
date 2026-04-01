@@ -746,6 +746,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 	}
 	switch op {
 	case token.MUL:
+		b.AssertNilDeref(x)
 		return b.Load(x)
 	case token.SUB:
 		switch t := x.raw.Type.Underlying().(type) {
