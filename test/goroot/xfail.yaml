@@ -26,10 +26,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: chanlinear.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: deferfin.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -63,10 +59,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: peano.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: print.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -127,10 +119,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: ken/chan.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: ken/cplx0.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -934,11 +922,6 @@ xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
-    case: print.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
     case: recover.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
@@ -960,11 +943,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: ken/chan.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: ken/cplx0.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
