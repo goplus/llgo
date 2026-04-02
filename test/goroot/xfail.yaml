@@ -34,13 +34,21 @@ host_skips:
     directive: run
     case: chan/goroutines.go
     reason: go1.26 goroot run is host-sensitive on darwin/arm64
-timeouts:
+  - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: chanlinear.go
+    reason: go1.24 goroot run is host-sensitive on darwin/arm64
+  - version: go1.25
+    platform: darwin/arm64
+    directive: run
+    case: chanlinear.go
+    reason: go1.25 goroot run is host-sensitive on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
     case: chanlinear.go
-    timeout: 60s
-    reason: go1.26 goroot run needs a longer timeout on darwin/arm64
+    reason: go1.26 goroot run is host-sensitive on darwin/arm64
 xfails:
   - platform: darwin/arm64
     directive: run
@@ -543,6 +551,11 @@ xfails:
     directive: run
     case: fixedbugs/issue24491b.go
     reason: go1.25 goroot run failure on linux/amd64
+  - version: go1.25
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25897a.go
+    reason: go1.25 goroot run failure on darwin/arm64
   - version: go1.25
     platform: linux/amd64
     directive: run
@@ -1215,6 +1228,11 @@ xfails:
     case: fixedbugs/issue23837.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25897a.go
+    reason: go1.24 goroot run failure on darwin/arm64
+  - version: go1.24
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue25897a.go
@@ -1589,6 +1607,11 @@ xfails:
     directive: run
     case: fixedbugs/issue23837.go
     reason: go1.26 goroot run failure on linux/amd64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue25897a.go
+    reason: go1.26 goroot run failure on darwin/arm64
   - version: go1.26
     platform: linux/amd64
     directive: run

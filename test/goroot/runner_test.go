@@ -35,6 +35,8 @@ var (
 	flagXFail   = flag.String("xfail", filepath.Join("test", "goroot", "xfail.yaml"), "xfail configuration path relative to repo root")
 	flagBuildTO = flag.Duration("build-timeout", 3*time.Minute, "timeout for each go/llgo build step; 0 disables the timeout")
 	flagRunTO   = flag.Duration("run-timeout", 20*time.Second, "timeout for the compiled program run step; 0 disables the timeout")
+	flagSlowBld = flag.Duration("slow-build", 10*time.Second, "log build steps that exceed this duration; 0 disables slow-build logging")
+	flagSlowRun = flag.Duration("slow-run", 5*time.Second, "log run steps that exceed this duration; 0 disables slow-run logging")
 )
 
 var defaultGoRootTestDirs = []string{
@@ -375,28 +377,30 @@ func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase,
 	goBin := filepath.Join(rootDir, "go.out")
 	llgoBinPath := filepath.Join(rootDir, "llgo.out")
 
-	goBuildStdout, goBuildStderr, goBuildExit, err := runProgram(workRoot, goCmd, env, *flagBuildTO, "build", "-o", goBin, tc.FileName)
+	goBuildStdout, goBuildStderr, goBuildExit, goBuildDur, err := runProgram(workRoot, goCmd, env, *flagBuildTO, "build", "-o", goBin, tc.FileName)
 	if err != nil {
-		return commandFailure("baseline go build", err, goBuildStdout, goBuildStderr, goBuildExit)
+		return commandFailure("baseline go build", goBuildDur, err, goBuildStdout, goBuildStderr, goBuildExit)
 	}
-	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, err := runProgram(workRoot, llgoBin, env, *flagBuildTO, "build", "-o", llgoBinPath, tc.FileName)
+	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, llgoBuildDur, err := runProgram(workRoot, llgoBin, env, *flagBuildTO, "build", "-o", llgoBinPath, tc.FileName)
 	if err != nil {
-		return commandFailure("llgo build", err, llgoBuildStdout, llgoBuildStderr, llgoBuildExit)
+		return commandFailure("llgo build", llgoBuildDur, err, llgoBuildStdout, llgoBuildStderr, llgoBuildExit)
 	}
 
-	goStdout, goStderr, goExit, err := runProgram(workRoot, goBin, env, runTimeout)
+	goStdout, goStderr, goExit, goRunDur, err := runProgram(workRoot, goBin, env, runTimeout)
 	if err != nil {
-		return commandFailure("baseline go run", err, goStdout, goStderr, goExit)
+		return commandFailure("baseline go run", goRunDur, err, goStdout, goStderr, goExit)
 	}
-	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBinPath, env, runTimeout)
+	llgoStdout, llgoStderr, llgoExit, llgoRunDur, err := runProgram(workRoot, llgoBinPath, env, runTimeout)
 	if err != nil {
-		return commandFailure("llgo run", err, llgoStdout, llgoStderr, llgoExit)
+		return commandFailure("llgo run", llgoRunDur, err, llgoStdout, llgoStderr, llgoExit)
 	}
 
 	goStdout = normalizeOutput(goStdout)
 	goStderr = normalizeOutput(goStderr)
 	llgoStdout = normalizeOutput(filterNoise(llgoStdout))
 	llgoStderr = normalizeOutput(filterNoise(llgoStderr))
+
+	logSlowCase(t, tc.RelPath, goBuildDur, llgoBuildDur, goRunDur, llgoRunDur)
 
 	if !bytes.Equal(llgoStdout, goStdout) {
 		return fmt.Errorf("stdout mismatch\nllgo:\n%s\n\ngo:\n%s", llgoStdout, goStdout)
@@ -463,7 +467,8 @@ func appendIfMissing(env []string, kv string) []string {
 	return append(env, kv)
 }
 
-func runProgram(dir, app string, env []string, timeout time.Duration, args ...string) ([]byte, []byte, int, error) {
+func runProgram(dir, app string, env []string, timeout time.Duration, args ...string) ([]byte, []byte, int, time.Duration, error) {
+	start := time.Now()
 	cmd := exec.Command(app, args...)
 	configureProcessGroup(cmd)
 	cmd.Dir = dir
@@ -473,7 +478,7 @@ func runProgram(dir, app string, env []string, timeout time.Duration, args ...st
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		return nil, nil, 0, err
+		return nil, nil, 0, time.Since(start), err
 	}
 
 	waitCh := make(chan error, 1)
@@ -501,18 +506,20 @@ func runProgram(dir, app string, env []string, timeout time.Duration, args ...st
 		case errors.As(err, &exitErr):
 			exitCode = exitErr.ExitCode()
 		default:
-			return nil, nil, 0, err
+			return nil, nil, 0, time.Since(start), err
 		}
 	}
+	elapsed := time.Since(start)
 	if timedOut {
-		return stdout.Bytes(), stderr.Bytes(), exitCode, fmt.Errorf("timed out after %s", timeout)
+		return stdout.Bytes(), stderr.Bytes(), exitCode, elapsed, fmt.Errorf("timed out after %s", timeout)
 	}
-	return stdout.Bytes(), stderr.Bytes(), exitCode, nil
+	return stdout.Bytes(), stderr.Bytes(), exitCode, elapsed, nil
 }
 
-func commandFailure(prefix string, err error, stdout, stderr []byte, exitCode int) error {
+func commandFailure(prefix string, elapsed time.Duration, err error, stdout, stderr []byte, exitCode int) error {
 	var msg strings.Builder
 	fmt.Fprintf(&msg, "%s failed: %v", prefix, err)
+	fmt.Fprintf(&msg, "\nduration: %s", elapsed.Round(time.Millisecond))
 	if exitCode != 0 {
 		fmt.Fprintf(&msg, "\nexit code: %d", exitCode)
 	}
@@ -523,6 +530,23 @@ func commandFailure(prefix string, err error, stdout, stderr []byte, exitCode in
 		fmt.Fprintf(&msg, "\nstderr:\n%s", normalizeOutput(stderr))
 	}
 	return errors.New(msg.String())
+}
+
+func logSlowCase(t *testing.T, casePath string, goBuildDur, llgoBuildDur, goRunDur, llgoRunDur time.Duration) {
+	t.Helper()
+	slowBuild := *flagSlowBld > 0 && (goBuildDur >= *flagSlowBld || llgoBuildDur >= *flagSlowBld)
+	slowRun := *flagSlowRun > 0 && (goRunDur >= *flagSlowRun || llgoRunDur >= *flagSlowRun)
+	if !slowBuild && !slowRun {
+		return
+	}
+	t.Logf(
+		"slow case %s: go build=%s llgo build=%s go run=%s llgo run=%s",
+		casePath,
+		goBuildDur.Round(time.Millisecond),
+		llgoBuildDur.Round(time.Millisecond),
+		goRunDur.Round(time.Millisecond),
+		llgoRunDur.Round(time.Millisecond),
+	)
 }
 
 func normalizeOutput(in []byte) []byte {

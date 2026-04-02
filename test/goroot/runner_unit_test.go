@@ -148,7 +148,7 @@ func TestRunProgramTimeout(t *testing.T) {
 		return
 	}
 
-	stdout, stderr, exitCode, err := runProgram(
+	stdout, stderr, exitCode, elapsed, err := runProgram(
 		t.TempDir(),
 		os.Args[0],
 		append(os.Environ(), "LLGO_GOROOT_HELPER=sleep"),
@@ -169,6 +169,9 @@ func TestRunProgramTimeout(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "timed out after") {
 		t.Fatalf("err=%v, want timeout", err)
+	}
+	if elapsed < 50*time.Millisecond {
+		t.Fatalf("elapsed=%s, want >= 50ms", elapsed)
 	}
 }
 
