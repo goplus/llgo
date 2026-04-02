@@ -84,6 +84,13 @@ host_skips:
     directive: run
     case: chanlinear.go
     reason: go1.26 goroot run is host-sensitive on darwin/arm64
+timeouts:
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: chanlinear.go
+    timeout: 1m
+    reason: go1.26 chanlinear needs extra runtime slack on loaded linux/amd64 runners
 xfails:
   - platform: darwin/arm64
     directive: run
