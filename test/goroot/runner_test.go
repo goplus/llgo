@@ -23,17 +23,18 @@ import (
 )
 
 var (
-	flagGOROOT = flag.String("goroot", os.Getenv("LLGO_GOROOT"), "Go toolchain root whose GOROOT/test sources should be used")
-	flagGoCmd  = flag.String("go", os.Getenv("LLGO_GO"), "go binary used as baseline (default: <goroot>/bin/go)")
-	flagLLGO   = flag.String("llgo", os.Getenv("LLGO_TEST_LLGO"), "llgo binary used for comparisons (default: build from current checkout)")
-	flagDirs   = flag.String("dirs", strings.Join(defaultGoRootTestDirs, ","), "comma-separated GOROOT/test subdirectories to scan")
-	flagCase   = flag.String("case", os.Getenv("LLGO_GOROOT_CASE"), "regexp selecting cases by relative path")
-	flagLimit  = flag.Int("limit", 0, "maximum number of matching cases to run")
-	flagShardI = flag.Int("shard-index", 0, "0-based shard index used to partition matching cases")
-	flagShardN = flag.Int("shard-total", 1, "number of shards used to partition matching cases")
-	flagKeep   = flag.Bool("keepwork", false, "keep temporary work directories for debugging")
-	flagXFail  = flag.String("xfail", filepath.Join("test", "goroot", "xfail.yaml"), "xfail configuration path relative to repo root")
-	flagRunTO  = flag.Duration("run-timeout", 20*time.Second, "timeout for each go/llgo child process; 0 disables the timeout")
+	flagGOROOT  = flag.String("goroot", os.Getenv("LLGO_GOROOT"), "Go toolchain root whose GOROOT/test sources should be used")
+	flagGoCmd   = flag.String("go", os.Getenv("LLGO_GO"), "go binary used as baseline (default: <goroot>/bin/go)")
+	flagLLGO    = flag.String("llgo", os.Getenv("LLGO_TEST_LLGO"), "llgo binary used for comparisons (default: build from current checkout)")
+	flagDirs    = flag.String("dirs", strings.Join(defaultGoRootTestDirs, ","), "comma-separated GOROOT/test subdirectories to scan")
+	flagCase    = flag.String("case", os.Getenv("LLGO_GOROOT_CASE"), "regexp selecting cases by relative path")
+	flagLimit   = flag.Int("limit", 0, "maximum number of matching cases to run")
+	flagShardI  = flag.Int("shard-index", 0, "0-based shard index used to partition matching cases")
+	flagShardN  = flag.Int("shard-total", 1, "number of shards used to partition matching cases")
+	flagKeep    = flag.Bool("keepwork", false, "keep temporary work directories for debugging")
+	flagXFail   = flag.String("xfail", filepath.Join("test", "goroot", "xfail.yaml"), "xfail configuration path relative to repo root")
+	flagBuildTO = flag.Duration("build-timeout", 3*time.Minute, "timeout for each go/llgo build step; 0 disables the timeout")
+	flagRunTO   = flag.Duration("run-timeout", 20*time.Second, "timeout for the compiled program run step; 0 disables the timeout")
 )
 
 var defaultGoRootTestDirs = []string{
@@ -369,11 +370,25 @@ func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase,
 		defer cleanup()
 	}
 
-	goStdout, goStderr, goExit, err := runProgram(workRoot, goCmd, runnerEnv(repoRoot, goroot), runTimeout, "run", tc.FileName)
+	rootDir := filepath.Dir(workRoot)
+	env := runnerEnv(repoRoot, goroot)
+	goBin := filepath.Join(rootDir, "go.out")
+	llgoBinPath := filepath.Join(rootDir, "llgo.out")
+
+	goBuildStdout, goBuildStderr, goBuildExit, err := runProgram(workRoot, goCmd, env, *flagBuildTO, "build", "-o", goBin, tc.FileName)
+	if err != nil {
+		return commandFailure("baseline go build", err, goBuildStdout, goBuildStderr, goBuildExit)
+	}
+	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, err := runProgram(workRoot, llgoBin, env, *flagBuildTO, "build", "-o", llgoBinPath, tc.FileName)
+	if err != nil {
+		return commandFailure("llgo build", err, llgoBuildStdout, llgoBuildStderr, llgoBuildExit)
+	}
+
+	goStdout, goStderr, goExit, err := runProgram(workRoot, goBin, env, runTimeout)
 	if err != nil {
 		return commandFailure("baseline go run", err, goStdout, goStderr, goExit)
 	}
-	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBin, runnerEnv(repoRoot, goroot), runTimeout, "run", tc.FileName)
+	llgoStdout, llgoStderr, llgoExit, err := runProgram(workRoot, llgoBinPath, env, runTimeout)
 	if err != nil {
 		return commandFailure("llgo run", err, llgoStdout, llgoStderr, llgoExit)
 	}

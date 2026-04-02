@@ -29,31 +29,18 @@ host_skips:
     directive: run
     case: chan/goroutines.go
     reason: go1.25 goroot run is host-sensitive on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chanlinear.go
-    reason: go1.24 goroot run is host-sensitive on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: chanlinear.go
-    reason: go1.25 goroot run is host-sensitive on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: armimm.go
-    reason: go1.25 goroot run is host-sensitive on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: goprint.go
-    reason: go1.25 goroot run is host-sensitive on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
     case: chan/goroutines.go
     reason: go1.26 goroot run is host-sensitive on darwin/arm64
+timeouts:
+  - version: go1.26
+    platform: darwin/arm64
+    directive: run
+    case: chanlinear.go
+    timeout: 60s
+    reason: go1.26 goroot run needs a longer timeout on darwin/arm64
 xfails:
   - platform: darwin/arm64
     directive: run
