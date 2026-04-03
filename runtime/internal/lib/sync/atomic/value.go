@@ -51,12 +51,15 @@ func (v *Value) Store(val any) {
 			// Attempt to start first store.
 			// Disable preemption so that other goroutines can use
 			// active spin wait to wait for completion.
+			runtime_procPin()
 			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
+				runtime_procUnpin()
 				continue
 			}
 			// Complete first store.
 			StorePointer(&vp.data, vlp.data)
 			StorePointer(&vp.typ, vlp.typ)
+			runtime_procUnpin()
 			return
 		}
 		if typ == unsafe.Pointer(&firstStoreInProgress) {
@@ -92,12 +95,15 @@ func (v *Value) Swap(new any) (old any) {
 			// Disable preemption so that other goroutines can use
 			// active spin wait to wait for completion; and so that
 			// GC does not see the fake type accidentally.
+			runtime_procPin()
 			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
+				runtime_procUnpin()
 				continue
 			}
 			// Complete first store.
 			StorePointer(&vp.data, np.data)
 			StorePointer(&vp.typ, np.typ)
+			runtime_procUnpin()
 			return nil
 		}
 		if typ == unsafe.Pointer(&firstStoreInProgress) {
@@ -141,12 +147,15 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 			// Disable preemption so that other goroutines can use
 			// active spin wait to wait for completion; and so that
 			// GC does not see the fake type accidentally.
+			runtime_procPin()
 			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
+				runtime_procUnpin()
 				continue
 			}
 			// Complete first store.
 			StorePointer(&vp.data, np.data)
 			StorePointer(&vp.typ, np.typ)
+			runtime_procUnpin()
 			return true
 		}
 		if typ == unsafe.Pointer(&firstStoreInProgress) {
@@ -174,3 +183,7 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 		return CompareAndSwapPointer(&vp.data, data, np.data)
 	}
 }
+
+// Disable/enable preemption, implemented in runtime.
+func runtime_procPin() int
+func runtime_procUnpin()
