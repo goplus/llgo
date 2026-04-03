@@ -53,7 +53,7 @@ _llgo_0:
   %10 = getelementptr inbounds { ptr, ptr, ptr }, ptr %7, i32 0, i32 2
   store ptr %4, ptr %10, align 8
   %11 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/selects.main$1", ptr undef }, ptr %7, 1
-  %12 = call ptr @malloc(i64 16)
+  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   %13 = getelementptr inbounds { { ptr, ptr } }, ptr %12, i32 0, i32 0
   store { ptr, ptr } %11, ptr %13, align 8
   %14 = alloca i8, i64 8, align 1
@@ -215,8 +215,6 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewChan"(i64, i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
-declare ptr @malloc(i64)
-
 define ptr @"github.com/goplus/llgo/cl/_testgo/selects._llgo_routine$1"(ptr %0) {
 _llgo_0:
   %1 = load { { ptr, ptr } }, ptr %0, align 8
@@ -224,11 +222,8 @@ _llgo_0:
   %3 = extractvalue { ptr, ptr } %2, 1
   %4 = extractvalue { ptr, ptr } %2, 0
   call void %4(ptr %3)
-  call void @free(ptr %0)
   ret ptr null
 }
-
-declare void @free(ptr)
 
 declare i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr, ptr, ptr, ptr)
 
