@@ -230,7 +230,7 @@ fi
 echo ""
 echo "=== Test 4: ESP32-C3 float output regressions (temporary) ==="
 pushd "$SCRIPT_DIR" > /dev/null
-run_case_and_compare "./esp32c3/float-1664" $'+5.000000e+00 +8.000000e+00\n1 +2.000000e+00\n0x0 +0.000000e+00 notOk: true\n0x0 +0.000000e+00 true\n3 +6.280000e+00'
+run_case_and_compare "./esp32c3/float-1664" $'+5.000000e+000 +8.000000e+000\n1 +2.000000e+000\n0x0 +0.000000e+000 notOk: true\n0x0 +0.000000e+000 true\n3 +6.280000e+000'
 # Mixed Go println + C printf(%f) regression tracking for issue #1723.
 run_case_and_compare "./esp32c3/print-float-1723" $'go 0\nf=1.100000'
 popd > /dev/null
