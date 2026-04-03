@@ -12,14 +12,14 @@ func getsp() uintptr {
 	return currentStack
 }
 
-var _heapStart [0]byte
+var _heapStart byte
 
-var _heapEnd [0]byte
+var _heapEnd byte
 
-var _stackStart [0]byte
+var _stackStart byte
 
-var _stackEnd [0]byte
+var _stackEnd byte
 
-var _globals_start [0]byte
+var _globals_start byte
 
-var _globals_end [0]byte
+var _globals_end byte

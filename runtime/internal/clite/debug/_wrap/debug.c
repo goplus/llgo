@@ -1,3 +1,11 @@
+#if defined(__has_include)
+#if __has_include(<dlfcn.h>) && __has_include(<libunwind.h>)
+#define LLGO_HAVE_HOST_DEBUG 1
+#endif
+#endif
+
+#if defined(LLGO_HAVE_HOST_DEBUG)
+
 #if defined(__linux__)
 #define UNW_LOCAL_ONLY
 #ifndef _GNU_SOURCE
@@ -39,3 +47,35 @@ void llgo_stacktrace(int skip, void *ctx, int (*fn)(void *ctx, void *pc, void *o
         }
     }
 }
+
+#else
+
+typedef struct {
+    const char *dli_fname;
+    void *dli_fbase;
+    const char *dli_sname;
+    void *dli_saddr;
+} Dl_info;
+
+void *llgo_address() {
+    return 0;
+}
+
+int llgo_addrinfo(void *addr, Dl_info *info) {
+    (void)addr;
+    if (info) {
+        info->dli_fname = 0;
+        info->dli_fbase = 0;
+        info->dli_sname = 0;
+        info->dli_saddr = 0;
+    }
+    return 0;
+}
+
+void llgo_stacktrace(int skip, void *ctx, int (*fn)(void *ctx, void *pc, void *offset, void *sp, char *name)) {
+    (void)skip;
+    (void)ctx;
+    (void)fn;
+}
+
+#endif

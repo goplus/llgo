@@ -36,19 +36,19 @@ func __wrap_realloc(ptr unsafe.Pointer, size uintptr) unsafe.Pointer {
 func getsp() unsafe.Pointer
 
 //go:linkname _heapStart _heapStart
-var _heapStart [0]byte
+var _heapStart byte
 
 //go:linkname _heapEnd _heapEnd
-var _heapEnd [0]byte
+var _heapEnd byte
 
 //go:linkname _stackStart _stack_top
-var _stackStart [0]byte
+var _stackStart byte
 
 //go:linkname _stackEnd _stack_end
-var _stackEnd [0]byte
+var _stackEnd byte
 
 //go:linkname _globals_start _globals_start
-var _globals_start [0]byte
+var _globals_start byte
 
 //go:linkname _globals_end _globals_end
-var _globals_end [0]byte
+var _globals_end byte
