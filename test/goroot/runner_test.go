@@ -124,7 +124,7 @@ func TestGoRootRunCases(t *testing.T) {
 
 	llgoBin := *flagLLGO
 	if llgoBin == "" {
-		llgoBin = buildLLGOBinary(t, repoRoot)
+		llgoBin = buildLLGOBinary(t, repoRoot, goCmd)
 	}
 	xfails := loadXFailConfig(t, repoRoot, *flagXFail)
 	caseFilter := compileCaseFilter(t, *flagCase)
@@ -195,14 +195,14 @@ func loadToolchainEnv(t *testing.T, goCmd string) toolchainEnv {
 	return info
 }
 
-func buildLLGOBinary(t *testing.T, repoRoot string) string {
+func buildLLGOBinary(t *testing.T, repoRoot, goCmd string) string {
 	t.Helper()
 	outDir := t.TempDir()
 	outPath := filepath.Join(outDir, "llgo")
 	if runtime.GOOS == "windows" {
 		outPath += ".exe"
 	}
-	cmd := exec.Command("go", "build", "-tags=dev", "-o", outPath, "./cmd/llgo")
+	cmd := exec.Command(goCmd, "build", "-tags=dev", "-o", outPath, "./cmd/llgo")
 	cmd.Dir = repoRoot
 	var out bytes.Buffer
 	cmd.Stdout = &out

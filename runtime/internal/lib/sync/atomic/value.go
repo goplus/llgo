@@ -6,7 +6,6 @@ package atomic
 
 import (
 	"unsafe"
-	_ "unsafe" // for go:linkname
 )
 
 type Value struct {
@@ -185,8 +184,7 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 	}
 }
 
-//go:linkname runtime_procPin sync/atomic.runtime_procPin
-func runtime_procPin() int
-
-//go:linkname runtime_procUnpin sync/atomic.runtime_procUnpin
-func runtime_procUnpin()
+// llgo does not implement runtime preemption pinning for sync/atomic.Value.
+// Keep the first-store protocol but make the hooks package-local no-ops.
+func runtime_procPin() int { return 0 }
+func runtime_procUnpin()   {}
