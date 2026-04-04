@@ -5,8 +5,8 @@
 package atomic
 
 import (
-	_ "unsafe" // for go:linkname
 	"unsafe"
+	_ "unsafe" // for go:linkname
 )
 
 type Value struct {
