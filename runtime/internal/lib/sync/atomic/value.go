@@ -5,6 +5,7 @@
 package atomic
 
 import (
+	_ "unsafe" // for go:linkname
 	"unsafe"
 )
 
@@ -184,7 +185,8 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 	}
 }
 
-// llgo does not preempt goroutines the same way as gc does here, so
-// sync/atomic.Value can use the same no-op pin contract as sync.
-func runtime_procPin() int { return 0 }
-func runtime_procUnpin()   {}
+//go:linkname runtime_procPin sync/atomic.runtime_procPin
+func runtime_procPin() int
+
+//go:linkname runtime_procUnpin sync/atomic.runtime_procUnpin
+func runtime_procUnpin()
