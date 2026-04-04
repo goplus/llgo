@@ -184,6 +184,7 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 	}
 }
 
-// Disable/enable preemption, implemented in runtime.
-func runtime_procPin() int
-func runtime_procUnpin()
+// llgo does not preempt goroutines the same way as gc does here, so
+// sync/atomic.Value can use the same no-op pin contract as sync.
+func runtime_procPin() int { return 0 }
+func runtime_procUnpin()   {}
