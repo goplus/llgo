@@ -1777,11 +1777,6 @@ xfails:
   - version: go1.26
     platform: linux/amd64
     directive: run
-    case: abi/uglyfib.go
-    reason: go1.26 goroot run timeout on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
     case: typeparam/typeswitch5.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
