@@ -85,6 +85,24 @@ host_skips:
     case: chanlinear.go
     reason: go1.26 goroot run is host-sensitive on darwin/arm64
 timeouts:
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    timeout: 1m
+    reason: uglyfib runs close to the default timeout on loaded linux/amd64 runners
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    timeout: 1m
+    reason: uglyfib runs close to the default timeout on loaded linux/amd64 runners
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: abi/uglyfib.go
+    timeout: 1m
+    reason: uglyfib runs close to the default timeout on loaded linux/amd64 runners
   - version: go1.26
     platform: linux/amd64
     directive: run
@@ -1494,16 +1512,6 @@ xfails:
     directive: run
     case: bigalg.go
     reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: abi/uglyfib.go
-    reason: go1.24 goroot run timeout on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: abi/uglyfib.go
-    reason: go1.25 goroot run timeout on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
