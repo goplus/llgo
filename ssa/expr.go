@@ -39,6 +39,18 @@ const (
 	OrderingSeqConsistent  = llvm.AtomicOrderingSequentiallyConsistent
 )
 
+var (
+	// int32 __eqsf2(float32, float32) and friends in compiler-rt.
+	softFloat32CmpSig = types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.Float32]),
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.Float32]),
+		),
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])),
+		false,
+	)
+)
+
 // -----------------------------------------------------------------------------
 
 type Expr struct {
@@ -615,6 +627,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
+			if prog.Target() != nil && prog.Target().Target == "esp32" && x.ll == prog.Float32().ll {
+				return b.esp32Float32Pred(op, x, y, tret)
+			}
 			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkBool:
 			pred := boolPredOpToLLVM[op-predOpBase]
@@ -1222,6 +1237,36 @@ func (b Builder) compareSelect(op token.Token, x Expr, y ...Expr) Expr {
 		ret = Expr{sel, ret.Type}
 	}
 	return ret
+}
+
+func (b Builder) esp32Float32Pred(op token.Token, x, y Expr, tret Type) Expr {
+	var name string
+	var pred llvm.IntPredicate
+	switch op {
+	case token.EQL:
+		name = "__eqsf2"
+		pred = llvm.IntEQ
+	case token.NEQ:
+		name = "__nesf2"
+		pred = llvm.IntNE
+	case token.LSS:
+		name = "__ltsf2"
+		pred = llvm.IntSLT
+	case token.LEQ:
+		name = "__lesf2"
+		pred = llvm.IntSLE
+	case token.GTR:
+		name = "__gtsf2"
+		pred = llvm.IntSGT
+	case token.GEQ:
+		name = "__gesf2"
+		pred = llvm.IntSGE
+	default:
+		panic("unreachable")
+	}
+	ret := b.Call(b.Pkg.cFunc(name, softFloat32CmpSig), x, y)
+	zero := Expr{llvm.ConstInt(b.Prog.Int32().ll, 0, false), b.Prog.Int32()}
+	return Expr{llvm.CreateICmp(b.impl, pred, ret.impl, zero.impl), tret}
 }
 
 // SelectValue chooses between two values based on the condition.

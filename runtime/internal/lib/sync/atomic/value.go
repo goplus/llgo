@@ -23,7 +23,7 @@ type efaceWords struct {
 func (v *Value) Load() (val any) {
 	vp := (*efaceWords)(unsafe.Pointer(v))
 	typ := LoadPointer(&vp.typ)
-	if typ == nil || typ == unsafe.Pointer(&firstStoreInProgress) {
+	if typ == nil {
 		// First store not yet completed.
 		return nil
 	}
@@ -34,7 +34,20 @@ func (v *Value) Load() (val any) {
 	return
 }
 
-var firstStoreInProgress byte
+// llgo does not have the runtime preemption pinning that upstream sync/atomic
+// uses to hide the first-store marker from GC. Serialize the first store
+// explicitly so GC only ever observes either a nil interface or a fully
+// initialized one.
+var valueFirstStoreLock uint32
+
+func lockValueFirstStore() {
+	for !CompareAndSwapUint32(&valueFirstStoreLock, 0, 1) {
+	}
+}
+
+func unlockValueFirstStore() {
+	StoreUint32(&valueFirstStoreLock, 0)
+}
 
 // Store sets the value of the Value v to val.
 // All calls to Store for a given Value must use values of the same concrete type.
@@ -48,25 +61,16 @@ func (v *Value) Store(val any) {
 	for {
 		typ := LoadPointer(&vp.typ)
 		if typ == nil {
-			// Attempt to start first store.
-			// Disable preemption so that other goroutines can use
-			// active spin wait to wait for completion.
-			runtime_procPin()
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
-				runtime_procUnpin()
+			lockValueFirstStore()
+			typ = LoadPointer(&vp.typ)
+			if typ != nil {
+				unlockValueFirstStore()
 				continue
 			}
-			// Complete first store.
 			StorePointer(&vp.data, vlp.data)
 			StorePointer(&vp.typ, vlp.typ)
-			runtime_procUnpin()
+			unlockValueFirstStore()
 			return
-		}
-		if typ == unsafe.Pointer(&firstStoreInProgress) {
-			// First store in progress. Wait.
-			// Since we disable preemption around the first store,
-			// we can wait with active spinning.
-			continue
 		}
 		// First store completed. Check type and overwrite data.
 		if typ != vlp.typ {
@@ -91,26 +95,16 @@ func (v *Value) Swap(new any) (old any) {
 	for {
 		typ := LoadPointer(&vp.typ)
 		if typ == nil {
-			// Attempt to start first store.
-			// Disable preemption so that other goroutines can use
-			// active spin wait to wait for completion; and so that
-			// GC does not see the fake type accidentally.
-			runtime_procPin()
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
-				runtime_procUnpin()
+			lockValueFirstStore()
+			typ = LoadPointer(&vp.typ)
+			if typ != nil {
+				unlockValueFirstStore()
 				continue
 			}
-			// Complete first store.
 			StorePointer(&vp.data, np.data)
 			StorePointer(&vp.typ, np.typ)
-			runtime_procUnpin()
+			unlockValueFirstStore()
 			return nil
-		}
-		if typ == unsafe.Pointer(&firstStoreInProgress) {
-			// First store in progress. Wait.
-			// Since we disable preemption around the first store,
-			// we can wait with active spinning.
-			continue
 		}
 		// First store completed. Check type and overwrite data.
 		if typ != np.typ {
@@ -143,26 +137,16 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 			if old != nil {
 				return false
 			}
-			// Attempt to start first store.
-			// Disable preemption so that other goroutines can use
-			// active spin wait to wait for completion; and so that
-			// GC does not see the fake type accidentally.
-			runtime_procPin()
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
-				runtime_procUnpin()
+			lockValueFirstStore()
+			typ = LoadPointer(&vp.typ)
+			if typ != nil {
+				unlockValueFirstStore()
 				continue
 			}
-			// Complete first store.
 			StorePointer(&vp.data, np.data)
 			StorePointer(&vp.typ, np.typ)
-			runtime_procUnpin()
+			unlockValueFirstStore()
 			return true
-		}
-		if typ == unsafe.Pointer(&firstStoreInProgress) {
-			// First store in progress. Wait.
-			// Since we disable preemption around the first store,
-			// we can wait with active spinning.
-			continue
 		}
 		// First store completed. Check type and overwrite data.
 		if typ != np.typ {
@@ -183,8 +167,3 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 		return CompareAndSwapPointer(&vp.data, data, np.data)
 	}
 }
-
-// llgo does not implement runtime preemption pinning for sync/atomic.Value.
-// Keep the first-store protocol but make the hooks package-local no-ops.
-func runtime_procPin() int { return 0 }
-func runtime_procUnpin()   {}
