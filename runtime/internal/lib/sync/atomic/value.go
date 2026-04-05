@@ -4,14 +4,11 @@
 
 package atomic
 
-import (
-	"unsafe"
-)
+import "unsafe"
 
 type Value struct {
-	// Publish immutable cells atomically so readers and GC never observe a
-	// partially initialized interface header.
-	pad [2]unsafe.Pointer
+	lock uint32
+	val  any
 }
 
 // efaceWords is interface{} internal representation.
@@ -20,22 +17,26 @@ type efaceWords struct {
 	data unsafe.Pointer
 }
 
-type valueCell struct {
-	val any
+func typeOfValue(val any) unsafe.Pointer {
+	return (*efaceWords)(unsafe.Pointer(&val)).typ
 }
 
-func valueCellType(cell *valueCell) unsafe.Pointer {
-	return (*efaceWords)(unsafe.Pointer(&cell.val)).typ
+func (v *Value) lockValue() {
+	for !CompareAndSwapUint32(&v.lock, 0, 1) {
+	}
+}
+
+func (v *Value) unlockValue() {
+	StoreUint32(&v.lock, 0)
 }
 
 // Load returns the value set by the most recent Store.
 // It returns nil if there has been no call to Store for this Value.
 func (v *Value) Load() (val any) {
-	cell := (*valueCell)(LoadPointer(&v.pad[0]))
-	if cell == nil {
-		return nil
-	}
-	return cell.val
+	v.lockValue()
+	val = v.val
+	v.unlockValue()
+	return val
 }
 
 // Store sets the value of the Value v to val.
@@ -45,39 +46,13 @@ func (v *Value) Store(val any) {
 	if val == nil {
 		panic("sync/atomic: store of nil value into Value")
 	}
-	newCell := &valueCell{val: val}
-	newType := valueCellType(newCell)
-	for {
-		oldPtr := LoadPointer(&v.pad[0])
-		if oldPtr == nil {
-			if CompareAndSwapPointer(&v.pad[0], nil, unsafe.Pointer(newCell)) {
-				return
-			}
-			continue
-		}
-		oldCell := (*valueCell)(oldPtr)
-		if valueCellType(oldCell) != newType {
-			panic("sync/atomic: store of inconsistently typed value into Value")
-		}
-		StorePointer(&v.pad[0], unsafe.Pointer(newCell))
-		return
+	newType := typeOfValue(val)
+	v.lockValue()
+	defer v.unlockValue()
+	if oldType := typeOfValue(v.val); oldType != nil && oldType != newType {
+		panic("sync/atomic: store of inconsistently typed value into Value")
 	}
-}
-
-func typeOfValue(val any) unsafe.Pointer {
-	return (*efaceWords)(unsafe.Pointer(&val)).typ
-}
-
-func valuePointer(v *Value) *unsafe.Pointer {
-	return &v.pad[0]
-}
-
-func loadValuePointer(v *Value) unsafe.Pointer {
-	return LoadPointer(valuePointer(v))
-}
-
-func compareAndSwapValuePointer(v *Value, old, new unsafe.Pointer) bool {
-	return CompareAndSwapPointer(valuePointer(v), old, new)
+	v.val = val
 }
 
 // Swap stores new into Value and returns the previous value. It returns nil if
@@ -89,25 +64,15 @@ func (v *Value) Swap(new any) (old any) {
 	if new == nil {
 		panic("sync/atomic: swap of nil value into Value")
 	}
-	newCell := &valueCell{val: new}
-	newType := valueCellType(newCell)
-	for {
-		oldPtr := loadValuePointer(v)
-		if oldPtr == nil {
-			if compareAndSwapValuePointer(v, nil, unsafe.Pointer(newCell)) {
-				return nil
-			}
-			continue
-		}
-		oldCell := (*valueCell)(oldPtr)
-		old = oldCell.val
-		if valueCellType(oldCell) != newType {
-			panic("sync/atomic: swap of inconsistently typed value into Value")
-		}
-		if compareAndSwapValuePointer(v, oldPtr, unsafe.Pointer(newCell)) {
-			return
-		}
+	newType := typeOfValue(new)
+	v.lockValue()
+	defer v.unlockValue()
+	old = v.val
+	if oldType := typeOfValue(old); oldType != nil && oldType != newType {
+		panic("sync/atomic: swap of inconsistently typed value into Value")
 	}
+	v.val = new
+	return old
 }
 
 // CompareAndSwap executes the compare-and-swap operation for the Value.
@@ -119,33 +84,27 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 	if new == nil {
 		panic("sync/atomic: compare and swap of nil value into Value")
 	}
-	newCell := &valueCell{val: new}
-	newType := valueCellType(newCell)
+	newType := typeOfValue(new)
 	oldType := typeOfValue(old)
 	if oldType != nil && oldType != newType {
 		panic("sync/atomic: compare and swap of inconsistently typed values")
 	}
-	for {
-		curPtr := loadValuePointer(v)
-		if curPtr == nil {
-			if old != nil {
-				return false
-			}
-			if compareAndSwapValuePointer(v, nil, unsafe.Pointer(newCell)) {
-				return true
-			}
-			continue
-		}
-		curCell := (*valueCell)(curPtr)
-		curVal := curCell.val
-		if valueCellType(curCell) != newType {
-			panic("sync/atomic: compare and swap of inconsistently typed value into Value")
-		}
-		if curVal != old {
+	v.lockValue()
+	defer v.unlockValue()
+	cur := v.val
+	if curType := typeOfValue(cur); curType == nil {
+		if old != nil {
 			return false
 		}
-		if compareAndSwapValuePointer(v, curPtr, unsafe.Pointer(newCell)) {
-			return true
-		}
+		v.val = new
+		return true
 	}
+	if typeOfValue(cur) != newType {
+		panic("sync/atomic: compare and swap of inconsistently typed value into Value")
+	}
+	if cur != old {
+		return false
+	}
+	v.val = new
+	return true
 }

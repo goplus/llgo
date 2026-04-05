@@ -43,29 +43,30 @@ func TestValueFirstSwapConcurrentLoad(t *testing.T) {
 		data unsafe.Pointer
 	}
 
-	run := func(done chan<- error) {
+	run := func() error {
 		var v atomic.Value
+		swapDone := make(chan struct{})
 		go func() {
 			v.Swap(one)
+			close(swapDone)
 		}()
 		for i := 0; i < 10000; i++ {
 			got := v.Load()
 			p := (*eface)(unsafe.Pointer(&got)).typ
 			if uintptr(p) == ^uintptr(0) {
-				done <- errStaleFirstStoreMarker
-				return
+				<-swapDone
+				return errStaleFirstStoreMarker
 			}
 			if i%128 == 0 {
 				runtime.Gosched()
 			}
 		}
-		done <- nil
+		<-swapDone
+		return nil
 	}
 
 	for attempt := 0; attempt < 16; attempt++ {
-		done := make(chan error, 1)
-		go run(done)
-		if err := <-done; err != nil {
+		if err := run(); err != nil {
 			t.Fatal(err)
 		}
 	}
