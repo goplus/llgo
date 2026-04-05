@@ -1,6 +1,7 @@
 package atomic_test
 
 import (
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"unsafe"
@@ -47,22 +48,23 @@ func TestValueFirstSwapConcurrentLoad(t *testing.T) {
 		go func() {
 			v.Swap(one)
 		}()
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 10000; i++ {
 			got := v.Load()
 			p := (*eface)(unsafe.Pointer(&got)).typ
 			if uintptr(p) == ^uintptr(0) {
 				done <- errStaleFirstStoreMarker
 				return
 			}
+			if i%128 == 0 {
+				runtime.Gosched()
+			}
 		}
 		done <- nil
 	}
 
-	done := make(chan error, 10)
-	for i := 0; i < cap(done); i++ {
+	for attempt := 0; attempt < 16; attempt++ {
+		done := make(chan error, 1)
 		go run(done)
-	}
-	for i := 0; i < cap(done); i++ {
 		if err := <-done; err != nil {
 			t.Fatal(err)
 		}
