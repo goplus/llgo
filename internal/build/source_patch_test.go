@@ -17,7 +17,8 @@ import (
 )
 
 func TestBuildSourcePatchOverlayForIter(t *testing.T) {
-	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), runtime.GOROOT(), sourcePatchBuildContext{})
+	runtimeDir := mustRuntimeDirForTests(t)
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, runtimeDir, runtime.GOROOT(), sourcePatchBuildContext{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +32,7 @@ func TestBuildSourcePatchOverlayForIter(t *testing.T) {
 	if !strings.Contains(string(patchSrc), "func Pull[V any]") {
 		t.Fatalf("source patch file %s does not contain iter replacement", patchFile)
 	}
-	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(env.LLGoRuntimeDir(), "_patch", "iter", "iter.go"))) {
+	if !strings.HasPrefix(string(patchSrc), sourcePatchLineDirective(filepath.Join(runtimeDir, "_patch", "iter", "iter.go"))) {
 		t.Fatalf("source patch file %s is missing line directive, got:\n%s", patchFile, patchSrc)
 	}
 
@@ -209,7 +210,7 @@ func Pull[V any](seq func(func(V) bool)) {}
 func runSourcePatchCase(t *testing.T, caseName string) {
 	t.Helper()
 
-	assetRoot := filepath.Join(env.LLGoRuntimeDir(), "_patch", "_test", caseName)
+	assetRoot := filepath.Join(mustRuntimeDirForTests(t), "_patch", "_test", caseName)
 	goroot := t.TempDir()
 	runtimeDir := t.TempDir()
 	const pkgPath = "demo"
@@ -229,6 +230,28 @@ func runSourcePatchCase(t *testing.T, caseName string) {
 
 	assertOverlayMatchesOutput(t, overlay, srcDir, filepath.Join(assetRoot, "output"), runtimeDir)
 	assertGeneratedPatchPositions(t, overlay, srcDir, patchDir)
+}
+
+func mustRuntimeDirForTests(t *testing.T) string {
+	t.Helper()
+	if dir := env.LLGoRuntimeDir(); dir != "" {
+		return dir
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for dir := wd; ; dir = filepath.Dir(dir) {
+		runtimeDir := filepath.Join(dir, "runtime")
+		data, err := os.ReadFile(filepath.Join(runtimeDir, "go.mod"))
+		if err == nil && strings.Contains(string(data), "module github.com/goplus/llgo/runtime\n") {
+			return runtimeDir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatalf("failed to locate llgo runtime dir from cwd %s", wd)
+		}
+	}
 }
 
 func copyTree(t *testing.T, srcRoot, dstRoot string) {

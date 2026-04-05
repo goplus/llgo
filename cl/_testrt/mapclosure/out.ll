@@ -59,7 +59,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/mapclosure"
 @"[8]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.ArrayType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 307038632, i8 8, i8 1, i8 1, i8 17, { ptr, ptr } { ptr @"github.com/goplus/llgo/runtime/internal/runtime.arrayequal", ptr @"[8]_llgo_uint8" }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 8 }, ptr @"*[8]_llgo_uint8" }, ptr @_llgo_uint8, ptr @"[]_llgo_uint8", i64 8 }, align 8
 @13 = private unnamed_addr constant [8 x i8] c"[8]uint8", align 1
 @"*[8]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -566230779, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 8 }, ptr null }, ptr @"[8]_llgo_uint8" }, align 8
-@_llgo_uint8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 269156761, i8 12, i8 1, i8 1, i8 40, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 5 }, ptr @"*_llgo_uint8" }, align 8
+@_llgo_uint8 = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 1, i64 0, i32 269156761, i8 12, i8 1, i8 1, i8 8, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 5 }, ptr @"*_llgo_uint8" }, align 8
 @14 = private unnamed_addr constant [5 x i8] c"uint8", align 1
 @"*_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 1277858201, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @14, i64 5 }, ptr null }, ptr @_llgo_uint8 }, align 8
 @"[]_llgo_uint8" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.SliceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 24, i64 8, i32 370346748, i8 0, i8 8, i8 8, i8 23, { ptr, ptr } zeroinitializer, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 7 }, ptr @"*[]_llgo_uint8" }, ptr @_llgo_uint8 }, align 8
@@ -92,6 +92,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/mapclosure"
 @27 = private unnamed_addr constant [29 x i8] c"interface { String() string }", align 1
 @"*_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 876051709, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @27, i64 29 }, ptr null }, ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U" }, align 8
 @28 = private unnamed_addr constant [5 x i8] c"error", align 1
+@llvm.compiler.used = appending global [1 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.(*typ).String"], section "llvm.metadata"
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/mapclosure.demo"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %0) {
 _llgo_0:
@@ -121,12 +122,14 @@ _llgo_1:                                          ; preds = %_llgo_0
   store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/mapclosure.demo", ptr null }, ptr %3, align 8
   store ptr %1, ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.op", align 8
   %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %5 = getelementptr inbounds { ptr, ptr }, ptr %4, i64 0
-  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/mapclosure.demo", ptr null }, ptr %5, align 8
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %4, 0
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, i64 1, 1
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, i64 1, 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8, ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.list", align 8
+  %5 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = getelementptr inbounds { ptr, ptr }, ptr %4, i64 0
+  store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/mapclosure.demo", ptr null }, ptr %6, align 8
+  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %4, 0
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, i64 1, 1
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8, i64 1, 2
+  store %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.list", align 8
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -136,41 +139,45 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/mapclosure.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 5 }, ptr %1, align 8
-  %2 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.op", align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 4 }, ptr %3, align 8
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_string]_llgo_closure$vc5ZLfKV4flbpeFUtiJWFVJOxWgjZ8JlkoV1ZmTbVIQ", ptr %2, ptr %3)
-  %5 = load { ptr, ptr }, ptr %4, align 8
-  %6 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.list", align 8
-  %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, 0
-  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6, 1
-  %9 = icmp sge i64 0, %8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9)
-  %10 = getelementptr inbounds { ptr, ptr }, ptr %7, i64 0
-  %11 = load { ptr, ptr }, ptr %10, align 8
-  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ")
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %12, 0
-  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %13, ptr %0, 1
-  %15 = extractvalue { ptr, ptr } %5, 1
-  %16 = extractvalue { ptr, ptr } %5, 0
-  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %16(ptr %15, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %14)
-  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ")
-  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %18, 0
-  %20 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %19, ptr %0, 1
-  %21 = extractvalue { ptr, ptr } %11, 1
-  %22 = extractvalue { ptr, ptr } %11, 0
-  %23 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %22(ptr %21, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %20)
-  %24 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %17, %"github.com/goplus/llgo/runtime/internal/runtime.String" %23)
-  %25 = xor i1 %24, true
-  br i1 %25, label %_llgo_1, label %_llgo_2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @24, i64 5 }, ptr %2, align 8
+  %3 = load ptr, ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.op", align 8
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @23, i64 4 }, ptr %4, align 8
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_string]_llgo_closure$vc5ZLfKV4flbpeFUtiJWFVJOxWgjZ8JlkoV1ZmTbVIQ", ptr %3, ptr %4)
+  %6 = load { ptr, ptr }, ptr %5, align 8
+  %7 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr @"github.com/goplus/llgo/cl/_testrt/mapclosure.list", align 8
+  %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
+  %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
+  %10 = icmp sge i64 0, %9
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
+  %11 = getelementptr inbounds { ptr, ptr }, ptr %8, i64 0
+  %12 = icmp eq ptr %11, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load { ptr, ptr }, ptr %11, align 8
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ")
+  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %14, 0
+  %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %15, ptr %0, 1
+  %17 = extractvalue { ptr, ptr } %6, 1
+  %18 = extractvalue { ptr, ptr } %6, 0
+  %19 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %18(ptr %17, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %16)
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/mapclosure.typ")
+  %21 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" undef, ptr %20, 0
+  %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %21, ptr %0, 1
+  %23 = extractvalue { ptr, ptr } %13, 1
+  %24 = extractvalue { ptr, ptr } %13, 0
+  %25 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" %24(ptr %23, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %22)
+  %26 = call i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %19, %"github.com/goplus/llgo/runtime/internal/runtime.String" %25)
+  %27 = xor i1 %26, true
+  br i1 %27, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %26 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr %26, align 8
-  %27 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %26, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %27)
+  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @28, i64 5 }, ptr %28, align 8
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %28, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %29)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_0
@@ -179,9 +186,13 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/mapclosure.(*typ).String"(ptr %0) {
 _llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
-  %2 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %1, align 8
-  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %2, align 8
+  ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %4
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
@@ -235,6 +246,8 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr, ptr, ptr)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAccess1"(ptr, ptr, ptr)
 

@@ -53,12 +53,14 @@ define void @"github.com/goplus/llgo/cl/_testgo/closure.main$2"(ptr %0, i64 %1) 
 _llgo_0:
   %2 = load { ptr }, ptr %0, align 8
   %3 = extractvalue { ptr } %2, 0
-  %4 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %3, align 8
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %3, align 8
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 7 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %1)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %5)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -78,3 +80,5 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

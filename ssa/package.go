@@ -325,7 +325,7 @@ func (p Program) Linkname(name string) (link string, ok bool) {
 }
 
 func (p Program) runtime() *types.Package {
-	if p.rt == nil {
+	if p.rt == nil && p.rtget != nil {
 		p.rt = p.rtget()
 	}
 	return p.rt
@@ -718,6 +718,10 @@ func (p Package) Module() llvm.Module {
 func (p Package) SetExport(name, export string) {
 	p.export[name] = export
 	p.preserveSyms[export] = struct{}{}
+}
+
+func (p Package) Preserve(name string) {
+	p.preserveSyms[name] = struct{}{}
 }
 
 func (p Package) ExportFuncs() map[string]string {

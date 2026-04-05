@@ -8,7 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/vargs"
 %"github.com/goplus/llgo/runtime/internal/runtime.Slice" = type { ptr, i64, i64 }
 
 @"github.com/goplus/llgo/cl/_testdata/vargs.init$guard" = global i1 false, align 1
-@_llgo_int = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 -25294021, i8 12, i8 8, i8 8, i8 34, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, ptr @"*_llgo_int" }, align 8
+@_llgo_int = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 -25294021, i8 12, i8 8, i8 8, i8 2, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, ptr @"*_llgo_int" }, align 8
 @0 = private unnamed_addr constant [3 x i8] c"int", align 1
 @"*_llgo_int" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -939606833, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, ptr null }, ptr @_llgo_int }, align 8
 @1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
@@ -33,16 +33,31 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testdata/vargs.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 48)
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr inttoptr (i64 1 to ptr) }, ptr %1, align 8
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 1
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr inttoptr (i64 2 to ptr) }, ptr %2, align 8
-  %3 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 2
-  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr inttoptr (i64 3 to ptr) }, ptr %3, align 8
-  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
-  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %4, i64 3, 1
-  %6 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %5, i64 3, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/vargs.test"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %6)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 0
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store i64 1, ptr %3, align 4
+  %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %3, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %4, ptr %2, align 8
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 1
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store i64 2, ptr %7, align 4
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %7, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %8, ptr %6, align 8
+  %9 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %0, i64 2
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store i64 3, ptr %11, align 4
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %11, 1
+  store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %10, align 8
+  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 3, 1
+  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14, i64 3, 2
+  call void @"github.com/goplus/llgo/cl/_testdata/vargs.test"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %15)
   ret void
 }
 
@@ -65,29 +80,33 @@ _llgo_2:                                          ; preds = %_llgo_1
   %9 = or i1 %8, %7
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9)
   %10 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %5, i64 %3
-  %11 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %10, align 8
-  %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %11, 0
-  %13 = icmp eq ptr %12, @_llgo_int
-  br i1 %13, label %_llgo_4, label %_llgo_5
+  %11 = icmp eq ptr %10, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = load %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %10, align 8
+  %13 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, 0
+  %14 = icmp eq ptr %13, @_llgo_int
+  br i1 %14, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_1
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_2
-  %14 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %11, 1
-  %15 = ptrtoint ptr %14 to i64
-  %16 = call i32 (ptr, ...) @printf(ptr @1, i64 %15)
+  %15 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, 1
+  %16 = load i64, ptr %15, align 4
+  %17 = call i32 (ptr, ...) @printf(ptr @1, i64 %16)
   br label %_llgo_1
 
 _llgo_5:                                          ; preds = %_llgo_2
-  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 32 }, ptr %17, align 8
-  %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %17, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %18)
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 32 }, ptr %18, align 8
+  %19 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %18, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %19)
   unreachable
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.memequal64"(ptr, ptr)
 
@@ -105,6 +124,8 @@ _llgo_0:
   ret i1 %3
 }
 
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
@@ -114,8 +135,6 @@ _llgo_0:
   %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
   ret i1 %3
 }
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 

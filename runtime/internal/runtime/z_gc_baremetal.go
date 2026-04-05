@@ -26,11 +26,17 @@ import (
 
 // AllocU allocates uninitialized memory.
 func AllocU(size uintptr) unsafe.Pointer {
+	if size == 0 {
+		return zeroAlloc()
+	}
 	return tinygogc.Alloc(size)
 }
 
 // AllocZ allocates zero-initialized memory.
 func AllocZ(size uintptr) unsafe.Pointer {
+	if size == 0 {
+		return zeroAlloc()
+	}
 	return tinygogc.Alloc(size)
 }
 

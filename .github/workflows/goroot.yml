@@ -1,0 +1,132 @@
+name: GOROOT
+
+on:
+  push:
+    branches:
+      - "**"
+      - "!dependabot/**"
+      - "!xgopilot/**"
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  goroot:
+    name: GOROOT (${{ matrix.os }}, Go ${{ matrix.go-version }}, shard ${{ matrix.shard-label }})
+    continue-on-error: ${{ matrix.required != 'true' }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.24.11"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "true"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "true"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "true"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.25.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "true"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: macos-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "0"
+            shard-total: "2"
+            shard-label: "0/2"
+            required: "false"
+          - os: ubuntu-latest
+            llvm: 19
+            go-version: "1.26.0"
+            shard-index: "1"
+            shard-total: "2"
+            shard-label: "1/2"
+            required: "false"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{ matrix.llvm }}
+
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Show toolchain versions
+        run: |
+          go version
+          clang --version
+
+      - name: Run GOROOT runner
+        run: |
+          bash dev/test_goroot.sh -- \
+            -shard-index "${{ matrix.shard-index }}" \
+            -shard-total "${{ matrix.shard-total }}"

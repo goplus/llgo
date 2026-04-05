@@ -25,7 +25,7 @@ define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
   store i1 false, ptr %0, align 1
-  %1 = call ptr @malloc(i64 16)
+  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   %2 = getelementptr inbounds { %"github.com/goplus/llgo/runtime/internal/runtime.String" }, ptr %1, i32 0, i32 0
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %2, align 8
   %3 = alloca i8, i64 8, align 1
@@ -34,7 +34,7 @@ _llgo_0:
   %6 = getelementptr inbounds { ptr }, ptr %5, i32 0, i32 0
   store ptr %0, ptr %6, align 8
   %7 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1", ptr undef }, ptr %5, 1
-  %8 = call ptr @malloc(i64 32)
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 32)
   %9 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/runtime/internal/runtime.String" }, ptr %8, i32 0, i32 0
   store { ptr, ptr } %7, ptr %9, align 8
   %10 = getelementptr inbounds { { ptr, ptr }, %"github.com/goplus/llgo/runtime/internal/runtime.String" }, ptr %8, i32 0, i32 1
@@ -51,8 +51,10 @@ _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_1, %_llgo_0
-  %13 = load i1, ptr %0, align 1
-  br i1 %13, label %_llgo_2, label %_llgo_1
+  %13 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load i1, ptr %0, align 1
+  br i1 %14, label %_llgo_2, label %_llgo_1
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/goroutine.main$1"(ptr %0, %"github.com/goplus/llgo/runtime/internal/runtime.String" %1) {
@@ -67,7 +69,7 @@ _llgo_0:
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
-declare ptr @malloc(i64)
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 define ptr @"github.com/goplus/llgo/cl/_testgo/goroutine._llgo_routine$1"(ptr %0) {
 _llgo_0:
@@ -75,7 +77,6 @@ _llgo_0:
   %2 = extractvalue { %"github.com/goplus/llgo/runtime/internal/runtime.String" } %1, 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %2)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @free(ptr %0)
   ret ptr null
 }
 
@@ -83,11 +84,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"gi
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
-declare void @free(ptr)
-
 declare i32 @"github.com/goplus/llgo/runtime/internal/runtime.CreateThread"(ptr, ptr, ptr, ptr)
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 define ptr @"github.com/goplus/llgo/cl/_testgo/goroutine._llgo_routine$2"(ptr %0) {
 _llgo_0:
@@ -97,6 +94,7 @@ _llgo_0:
   %4 = extractvalue { ptr, ptr } %2, 1
   %5 = extractvalue { ptr, ptr } %2, 0
   call void %5(ptr %4, %"github.com/goplus/llgo/runtime/internal/runtime.String" %3)
-  call void @free(ptr %0)
   ret ptr null
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

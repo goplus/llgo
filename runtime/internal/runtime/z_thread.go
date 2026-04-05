@@ -17,12 +17,40 @@
 package runtime
 
 import (
-	_ "unsafe"
+	"unsafe"
 
 	c "github.com/goplus/llgo/runtime/internal/clite"
 	"github.com/goplus/llgo/runtime/internal/clite/pthread"
+	"github.com/goplus/llgo/runtime/internal/clite/sync/atomic"
 )
 
+var liveThreads int64 = 1
+
+type threadStart struct {
+	routine pthread.RoutineFunc
+	arg     c.Pointer
+}
+
+func threadEntry(arg c.Pointer) c.Pointer {
+	startPtr := (*threadStart)(arg)
+	start := *startPtr
+	c.Free(arg)
+	defer atomic.Sub(&liveThreads, int64(1))
+	return start.routine(start.arg)
+}
+
 func CreateThread(th *pthread.Thread, attr *pthread.Attr, routine pthread.RoutineFunc, arg c.Pointer) c.Int {
-	return pthread.Create(th, attr, routine, arg)
+	start := (*threadStart)(c.Malloc(unsafe.Sizeof(threadStart{})))
+	*start = threadStart{routine: routine, arg: arg}
+	atomic.Add(&liveThreads, int64(1))
+	ret := pthread.Create(th, attr, threadEntry, c.Pointer(start))
+	if ret != 0 {
+		c.Free(c.Pointer(start))
+		atomic.Sub(&liveThreads, int64(1))
+	}
+	return ret
+}
+
+func NumThreads() int {
+	return int(atomic.Load(&liveThreads))
 }

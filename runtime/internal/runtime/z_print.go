@@ -50,7 +50,29 @@ func PrintFloat(v float64) {
 		}
 		return
 	}
-	c.Fprintf(c.Stderr, c.Str("%+e"), v)
+	// Go's builtin print/println formats float exponents with at least 3 digits,
+	// while libc "%+e" typically uses 2. Normalize the exponent width so runtime
+	// output matches the standard toolchain in goroot run cases.
+	buf := (*c.Char)(c.Alloca(32))
+	c.Snprintf(buf, 32, c.Str("%+e"), v)
+	n := c.Strlen(buf)
+	if n >= 4 {
+		exp := n - 4
+		ch := c.Index(buf, exp)
+		sign := c.Index(buf, exp+1)
+		d0 := c.Index(buf, exp+2)
+		d1 := c.Index(buf, exp+3)
+		if (ch == 'e' || ch == 'E') &&
+			(sign == '+' || sign == '-') &&
+			d0 >= '0' && d0 <= '9' &&
+			d1 >= '0' && d1 <= '9' {
+			dst := unsafe.Pointer(c.Advance(buf, exp+3))
+			src := unsafe.Pointer(c.Advance(buf, exp+2))
+			c.Memmove(dst, src, 3)
+			*c.Advance(buf, exp+2) = '0'
+		}
+	}
+	c.Fputs(buf, c.Stderr)
 }
 
 func PrintComplex(v complex128) {

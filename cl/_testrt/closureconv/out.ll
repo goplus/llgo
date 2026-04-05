@@ -5,14 +5,19 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/closureconv"
 %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/cl/_testrt/closureconv.init$guard" = global i1 false, align 1
+@llvm.compiler.used = appending global [1 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add"], section "llvm.metadata"
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
   %3 = add i64 %1, %2
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %0, i32 0, i32 1
-  %5 = load i64, ptr %4, align 4
-  %6 = add i64 %3, %5
-  ret i64 %6
+  %4 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %0, i32 0, i32 1
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load i64, ptr %5, align 4
+  %8 = add i64 %3, %7
+  ret i64 %8
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closureconv.add"(i64 %0, i64 %1) {
@@ -24,20 +29,28 @@ _llgo_0:
 define %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo1"(i64 %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 24)
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 1
-  store i64 %0, ptr %2, align 4
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
-  store ptr %1, ptr %4, align 8
-  %5 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound", ptr undef }, ptr %3, 1
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 0
-  %7 = alloca %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", align 8
-  store { ptr, ptr } %5, ptr %7, align 8
-  %8 = load %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", ptr %7, align 8
-  store %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %8, ptr %6, align 8
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 0
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 1
+  store i64 %0, ptr %3, align 4
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %5 = getelementptr inbounds { ptr }, ptr %4, i32 0, i32 0
+  store ptr %1, ptr %5, align 8
+  %6 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/closureconv.(*Call).add$bound", ptr undef }, ptr %4, 1
+  %7 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 0
+  %9 = alloca %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", align 8
+  store { ptr, ptr } %6, ptr %9, align 8
   %10 = load %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", ptr %9, align 8
-  ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %10
+  store %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %10, ptr %8, align 8
+  %11 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 0
+  %13 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load %"github.com/goplus/llgo/cl/_testrt/closureconv.Func", ptr %12, align 8
+  ret %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" %14
 }
 
 define %"github.com/goplus/llgo/cl/_testrt/closureconv.Func" @"github.com/goplus/llgo/cl/_testrt/closureconv.demo2"() {
@@ -88,9 +101,11 @@ _llgo_0:
   %3 = add i64 %1, %2
   %4 = load { ptr }, ptr %0, align 8
   %5 = extractvalue { ptr } %4, 0
-  %6 = load i64, ptr %5, align 4
-  %7 = add i64 %3, %6
-  ret i64 %7
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load i64, ptr %5, align 4
+  %8 = add i64 %3, %7
+  ret i64 %8
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/closureconv.init"() {
@@ -155,6 +170,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

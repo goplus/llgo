@@ -35,23 +35,23 @@ func TestSplitPkgConfigFlags(t *testing.T) {
 
 	t.Run("basic", func(t *testing.T) {
 		ftest("-I/usr/include -L/usr/lib", `["-I/usr/include" "-L/usr/lib"]`)
-		ftest("-I /usr/include -L /usr/lib", `["-I/usr/include" "-L/usr/lib"]`)
+		ftest("-I /usr/include -L /usr/lib", `["-I" "/usr/include" "-L" "/usr/lib"]`)
 		ftest("-L/opt/homebrew/Cellar/bdw-gc/8.2.8/lib -lgc",
 			`["-L/opt/homebrew/Cellar/bdw-gc/8.2.8/lib" "-lgc"]`)
 	})
 
 	t.Run("spaces_in_path", func(t *testing.T) {
-		ftest("-I/usr/local/include directory -L/usr/local/lib path",
+		ftest(`-I"/usr/local/include directory" -L"/usr/local/lib path"`,
 			`["-I/usr/local/include directory" "-L/usr/local/lib path"]`)
 	})
 
 	t.Run("multiple_spaces", func(t *testing.T) {
-		ftest("  -I  /usr/include   -L   /usr/lib  ", `["-I/usr/include" "-L/usr/lib"]`)
+		ftest("  -I  /usr/include   -L   /usr/lib  ", `["-I" "/usr/include" "-L" "/usr/lib"]`)
 	})
 
 	t.Run("consecutive_flags", func(t *testing.T) {
 		ftest("-I -L", `["-I" "-L"]`)
-		ftest("-I -L /usr/lib", `["-I" "-L/usr/lib"]`)
+		ftest("-I -L /usr/lib", `["-I" "-L" "/usr/lib"]`)
 	})
 
 	t.Run("edge_cases", func(t *testing.T) {
@@ -64,24 +64,29 @@ func TestSplitPkgConfigFlags(t *testing.T) {
 
 	t.Run("escaped_spaces", func(t *testing.T) {
 		ftest(`-I/path\ with\ spaces -L/lib`, `["-I/path with spaces" "-L/lib"]`)
-		ftest(`-I /first\ path -L /second\ long path`, `["-I/first path" "-L/second long path"]`)
+		ftest(`-I /first\ path -L /second\ long path`, `["-I" "/first path" "-L" "/second long" "path"]`)
 	})
 
 	t.Run("macro_flags", func(t *testing.T) {
 		ftest("-DMACRO -I/usr/include", `["-DMACRO" "-I/usr/include"]`)
-		ftest("-D MACRO -I/usr/include", `["-DMACRO" "-I/usr/include"]`)
+		ftest("-D MACRO -I/usr/include", `["-D" "MACRO" "-I/usr/include"]`)
 		ftest("-DMACRO=value -I/usr/include", `["-DMACRO=value" "-I/usr/include"]`)
-		ftest("-D MACRO=value -I/usr/include", `["-DMACRO=value" "-I/usr/include"]`)
+		ftest("-D MACRO=value -I/usr/include", `["-D" "MACRO=value" "-I/usr/include"]`)
 		ftest("-D_DEBUG -D_UNICODE -DWIN32", `["-D_DEBUG" "-D_UNICODE" "-DWIN32"]`)
-		ftest("-D _DEBUG -D _UNICODE -D WIN32", `["-D_DEBUG" "-D_UNICODE" "-DWIN32"]`)
+		ftest("-D _DEBUG -D _UNICODE -D WIN32", `["-D" "_DEBUG" "-D" "_UNICODE" "-D" "WIN32"]`)
 		ftest("-DVERSION=2.1 -DDEBUG=1", `["-DVERSION=2.1" "-DDEBUG=1"]`)
-		ftest("-D VERSION=2.1 -D DEBUG=1", `["-DVERSION=2.1" "-DDEBUG=1"]`)
+		ftest("-D VERSION=2.1 -D DEBUG=1", `["-D" "VERSION=2.1" "-D" "DEBUG=1"]`)
 	})
 
 	// case for https://github.com/goplus/llgo/issues/1244
 	t.Run("w_pipe", func(t *testing.T) {
 		ftest("-w -pipe", `["-w" "-pipe"]`)
 		ftest("-Os -w -pipe", `["-Os" "-w" "-pipe"]`)
+	})
+
+	t.Run("framework_flags", func(t *testing.T) {
+		ftest(`-framework CoreFoundation -framework IOKit`, `["-framework" "CoreFoundation" "-framework" "IOKit"]`)
+		ftest(`"-framework" "CoreFoundation"`, `["-framework" "CoreFoundation"]`)
 	})
 }
 

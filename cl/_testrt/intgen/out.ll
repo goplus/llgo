@@ -8,6 +8,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/intgen"
 @0 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @1 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
 @2 = private unnamed_addr constant [4 x i8] c"%d\0A\00", align 1
+@llvm.compiler.used = appending global [1 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next"], section "llvm.metadata"
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 %0, { ptr, ptr } %1) {
 _llgo_0:
@@ -41,14 +42,24 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next"(ptr %0) {
 _llgo_0:
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
-  %2 = load i32, ptr %1, align 4
-  %3 = add i32 %2, 1
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
-  store i32 %3, ptr %4, align 4
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
-  %6 = load i32, ptr %5, align 4
-  ret i32 %6
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load i32, ptr %2, align 4
+  %5 = add i32 %4, 1
+  %6 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
+  store i32 %5, ptr %7, align 4
+  %8 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
+  %10 = icmp eq ptr %9, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = load i32, ptr %9, align 4
+  ret i32 %11
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/intgen.init"() {
@@ -84,67 +95,75 @@ _llgo_2:                                          ; preds = %_llgo_1
   %9 = or i1 %8, %7
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9)
   %10 = getelementptr inbounds i32, ptr %5, i64 %3
-  %11 = load i32, ptr %10, align 4
-  %12 = call i32 (ptr, ...) @printf(ptr @0, i32 %11)
+  %11 = icmp eq ptr %10, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = load i32, ptr %10, align 4
+  %13 = call i32 (ptr, ...) @printf(ptr @0, i32 %12)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
-  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 4)
-  store i32 1, ptr %13, align 4
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %15 = getelementptr inbounds { ptr }, ptr %14, i32 0, i32 0
-  store ptr %13, ptr %15, align 8
-  %16 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.main$1", ptr undef }, ptr %14, 1
-  %17 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %16)
-  %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, 1
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 4)
+  store i32 1, ptr %14, align 4
+  %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %16 = getelementptr inbounds { ptr }, ptr %15, i32 0, i32 0
+  store ptr %14, ptr %16, align 8
+  %17 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.main$1", ptr undef }, ptr %15, 1
+  %18 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %17)
+  %19 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18, 1
   br label %_llgo_4
 
 _llgo_4:                                          ; preds = %_llgo_5, %_llgo_3
-  %19 = phi i64 [ -1, %_llgo_3 ], [ %20, %_llgo_5 ]
-  %20 = add i64 %19, 1
-  %21 = icmp slt i64 %20, %18
-  br i1 %21, label %_llgo_5, label %_llgo_6
+  %20 = phi i64 [ -1, %_llgo_3 ], [ %21, %_llgo_5 ]
+  %21 = add i64 %20, 1
+  %22 = icmp slt i64 %21, %19
+  br i1 %22, label %_llgo_5, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_4
-  %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, 0
-  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, 1
-  %24 = icmp slt i64 %20, 0
-  %25 = icmp sge i64 %20, %23
-  %26 = or i1 %25, %24
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %26)
-  %27 = getelementptr inbounds i32, ptr %22, i64 %20
-  %28 = load i32, ptr %27, align 4
-  %29 = call i32 (ptr, ...) @printf(ptr @1, i32 %28)
+  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18, 0
+  %24 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18, 1
+  %25 = icmp slt i64 %21, 0
+  %26 = icmp sge i64 %21, %24
+  %27 = or i1 %26, %25
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %27)
+  %28 = getelementptr inbounds i32, ptr %23, i64 %21
+  %29 = icmp eq ptr %28, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %29)
+  %30 = load i32, ptr %28, align 4
+  %31 = call i32 (ptr, ...) @printf(ptr @1, i32 %30)
   br label %_llgo_4
 
 _llgo_6:                                          ; preds = %_llgo_4
-  %30 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 4)
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %30, i32 0, i32 0
-  store i32 1, ptr %31, align 4
-  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %33 = getelementptr inbounds { ptr }, ptr %32, i32 0, i32 0
-  store ptr %30, ptr %33, align 8
-  %34 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound", ptr undef }, ptr %32, 1
-  %35 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %34)
-  %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 4)
+  %33 = icmp eq ptr %32, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %33)
+  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/intgen.generator", ptr %32, i32 0, i32 0
+  store i32 1, ptr %34, align 4
+  %35 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %36 = getelementptr inbounds { ptr }, ptr %35, i32 0, i32 0
+  store ptr %32, ptr %36, align 8
+  %37 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testrt/intgen.(*generator).next$bound", ptr undef }, ptr %35, 1
+  %38 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } %37)
+  %39 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %38, 1
   br label %_llgo_7
 
 _llgo_7:                                          ; preds = %_llgo_8, %_llgo_6
-  %37 = phi i64 [ -1, %_llgo_6 ], [ %38, %_llgo_8 ]
-  %38 = add i64 %37, 1
-  %39 = icmp slt i64 %38, %36
-  br i1 %39, label %_llgo_8, label %_llgo_9
+  %40 = phi i64 [ -1, %_llgo_6 ], [ %41, %_llgo_8 ]
+  %41 = add i64 %40, 1
+  %42 = icmp slt i64 %41, %39
+  br i1 %42, label %_llgo_8, label %_llgo_9
 
 _llgo_8:                                          ; preds = %_llgo_7
-  %40 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 0
-  %41 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
-  %42 = icmp slt i64 %38, 0
-  %43 = icmp sge i64 %38, %41
-  %44 = or i1 %43, %42
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %44)
-  %45 = getelementptr inbounds i32, ptr %40, i64 %38
-  %46 = load i32, ptr %45, align 4
-  %47 = call i32 (ptr, ...) @printf(ptr @2, i32 %46)
+  %43 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %38, 0
+  %44 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %38, 1
+  %45 = icmp slt i64 %41, 0
+  %46 = icmp sge i64 %41, %44
+  %47 = or i1 %46, %45
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %47)
+  %48 = getelementptr inbounds i32, ptr %43, i64 %41
+  %49 = icmp eq ptr %48, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %49)
+  %50 = load i32, ptr %48, align 4
+  %51 = call i32 (ptr, ...) @printf(ptr @2, i32 %50)
   br label %_llgo_7
 
 _llgo_9:                                          ; preds = %_llgo_7
@@ -155,18 +174,24 @@ define i32 @"github.com/goplus/llgo/cl/_testrt/intgen.main$1"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
-  %3 = load i32, ptr %2, align 4
-  %4 = mul i32 %3, 2
-  %5 = extractvalue { ptr } %1, 0
-  store i32 %4, ptr %5, align 4
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load i32, ptr %2, align 4
+  %5 = mul i32 %4, 2
   %6 = extractvalue { ptr } %1, 0
-  %7 = load i32, ptr %6, align 4
-  ret i32 %7
+  store i32 %5, ptr %6, align 4
+  %7 = extractvalue { ptr } %1, 0
+  %8 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = load i32, ptr %7, align 4
+  ret i32 %9
 }
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64, i64, i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i32 @rand()
 

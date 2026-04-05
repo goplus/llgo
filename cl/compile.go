@@ -197,6 +197,117 @@ func (p *context) rewriteInitStore(store *ssa.Store, g *ssa.Global) (string, boo
 	return value, true
 }
 
+func isUntypedNil(t types.Type) bool {
+	basic, ok := types.Unalias(t).(*types.Basic)
+	return ok && basic.Kind() == types.UntypedNil
+}
+
+func makeSliceAllocCap(v ssa.Value) (int64, bool) {
+	alloc, ok := v.(*ssa.Alloc)
+	if !ok || alloc.Comment != "makeslice" {
+		return 0, false
+	}
+	ptr, ok := alloc.Type().(*types.Pointer)
+	if !ok {
+		return 0, false
+	}
+	arr, ok := types.Unalias(ptr.Elem()).(*types.Array)
+	if !ok {
+		return 0, false
+	}
+	return arr.Len(), true
+}
+
+func skipMakeSliceAlloc(v *ssa.Alloc) bool {
+	if _, ok := makeSliceAllocCap(v); !ok {
+		return false
+	}
+	refs := *v.Referrers()
+	if len(refs) != 1 {
+		return false
+	}
+	slice, ok := refs[0].(*ssa.Slice)
+	if !ok {
+		return false
+	}
+	return slice.X == v && slice.Low == nil && slice.Max == nil
+}
+
+func singleRef(v ssa.Value) (ssa.Instruction, bool) {
+	refs := v.Referrers()
+	if refs == nil {
+		return nil, false
+	}
+	var ref ssa.Instruction
+	n := 0
+	for _, item := range *refs {
+		if _, ok := item.(*ssa.DebugRef); ok {
+			continue
+		}
+		ref = item
+		n++
+	}
+	return ref, n == 1
+}
+
+func isSendInstr(instr ssa.Instruction) bool {
+	_, ok := instr.(*ssa.Send)
+	return ok
+}
+
+func (p *context) compileSingleUseMakeSliceSend(b llssa.Builder, ch llssa.Expr, v ssa.Value) bool {
+	ref, ok := singleRef(v)
+	if !ok || !isSendInstr(ref) {
+		return false
+	}
+	voidPtr := types.Typ[types.UnsafePointer]
+	intTyp := types.Typ[types.Int]
+	makeSliceToFn := b.Pkg.NewFunc(llssa.PkgRuntime+".MakeSliceTo",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), nil, false), llssa.InGo)
+	chanSendFn := b.Pkg.NewFunc(llssa.PkgRuntime+".ChanSend",
+		types.NewSignatureType(nil, nil, nil, types.NewTuple(
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", voidPtr),
+			types.NewParam(token.NoPos, nil, "", intTyp),
+		), types.NewTuple(types.NewParam(token.NoPos, nil, "", types.Typ[types.Bool])), false), llssa.InGo)
+	var t llssa.Type
+	var nLen, nCap llssa.Expr
+	switch v := v.(type) {
+	case *ssa.MakeSlice:
+		t = p.type_(v.Type(), llssa.InGo)
+		nLen = p.compileValue(b, v.Len)
+		nCap = p.compileValue(b, v.Cap)
+	case *ssa.Slice:
+		capLen, ok := makeSliceAllocCap(v.X)
+		if !ok || v.Low != nil || v.Max != nil {
+			return false
+		}
+		t = p.type_(v.Type(), llssa.InGo)
+		nLen = p.prog.IntVal(uint64(capLen), p.prog.Int())
+		if v.High != nil {
+			nLen = p.compileValue(b, v.High)
+		}
+		nCap = p.prog.IntVal(uint64(capLen), p.prog.Int())
+	default:
+		return false
+	}
+	slot := b.Alloc(t, false)
+	telem := p.prog.Index(t)
+	teSize := p.prog.IntVal(p.prog.SizeOf(telem), p.prog.Int())
+	slotPtr := b.ChangeType(p.prog.VoidPtr(), slot)
+	b.InlineCall(makeSliceToFn.Expr, slotPtr, nLen, nCap, teSize)
+	eltSize := p.prog.IntVal(p.prog.SizeOf(p.prog.Elem(ch.Type)), p.prog.Int())
+	chPtr := b.ChangeType(p.prog.VoidPtr(), ch)
+	b.InlineCall(chanSendFn.Expr, chPtr, slotPtr, eltSize)
+	b.Store(slot, p.prog.Zero(t))
+	return true
+}
+
 type pkgState byte
 
 const (
@@ -209,17 +320,43 @@ const (
 
 func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tn := t.Object().(*types.TypeName)
-	if tn.IsAlias() { // don't need to compile alias type
-		return
-	}
 	tnName := tn.Name()
 	typ := tn.Type()
 	name := llssa.FullName(tn.Pkg(), tnName)
 	if debugInstr {
 		log.Println("==> NewType", name, typ)
 	}
+	p.compileTypeMethods(pkg, tn, typ)
+}
+
+func (p *context) compileTypeMethods(pkg llssa.Package, obj *types.TypeName, typ types.Type) {
+	if obj.IsAlias() {
+		raw := types.Unalias(typ)
+		if !isLocalMethodType(obj.Pkg(), raw) {
+			return
+		}
+		p.compileMethods(pkg, raw)
+		if ptr, ok := raw.(*types.Pointer); ok {
+			p.compileMethods(pkg, ptr.Elem())
+		}
+		return
+	}
 	p.compileMethods(pkg, typ)
 	p.compileMethods(pkg, types.NewPointer(typ))
+}
+
+func isLocalMethodType(pkg *types.Package, typ types.Type) bool {
+	for {
+		switch t := typ.(type) {
+		case *types.Pointer:
+			typ = t.Elem()
+		case *types.Named:
+			obj := t.Obj()
+			return obj != nil && obj.Pkg() == pkg
+		default:
+			return false
+		}
+	}
 }
 
 func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
@@ -228,6 +365,10 @@ func (p *context) compileMethods(pkg llssa.Package, typ types.Type) {
 	for i, n := 0, mthds.Len(); i < n; i++ {
 		mthd := mthds.At(i)
 		if ssaMthd := prog.MethodValue(mthd); ssaMthd != nil {
+			_, name, ftype := p.funcName(ssaMthd)
+			if ftype == goFunc {
+				pkg.Preserve(name)
+			}
 			p.compileFuncDecl(pkg, ssaMthd)
 		}
 	}
@@ -777,10 +918,57 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Call:
 		ret = p.call(b, llssa.Call, &v.Call)
 	case *ssa.BinOp:
+		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
+			if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
+				switch v.Op {
+				case token.EQL:
+					ret = p.prog.BoolVal(true)
+				case token.NEQ:
+					ret = p.prog.BoolVal(false)
+				}
+				if ret.Type != nil {
+					break
+				}
+			}
+		}
+		if xConst, ok := v.X.(*ssa.Const); ok && xConst.Value == nil {
+			x := p.compileConst(b, xConst, v.Y.Type())
+			y := p.compileValue(b, v.Y)
+			ret = b.BinOp(v.Op, x, y)
+			break
+		}
+		if yConst, ok := v.Y.(*ssa.Const); ok && yConst.Value == nil {
+			x := p.compileValue(b, v.X)
+			y := p.compileConst(b, yConst, v.X.Type())
+			ret = b.BinOp(v.Op, x, y)
+			break
+		}
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
+		if v.Op == token.MUL {
+			if _, ok := v.X.(*ssa.UnOp); ok {
+				if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if _, ok := t.RawType().Underlying().(*types.Pointer); !ok && p.prog.SizeOf(t) > 1<<20 {
+							x := p.compileValue(b, v.X)
+							b.AssertNilDeref(x)
+							return
+						}
+					}
+				}
+			}
+			if refs := v.Referrers(); refs != nil && len(*refs) == 1 {
+				if _, ok := (*refs)[0].(*ssa.MakeInterface); ok {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if _, ok := t.RawType().Underlying().(*types.Pointer); !ok && p.prog.SizeOf(t) > 1<<20 {
+							return
+						}
+					}
+				}
+			}
+		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
 			ret = b.Recv(x, v.CommaOk)
@@ -801,6 +989,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	case *ssa.Alloc:
 		t := v.Type().(*types.Pointer)
 		if p.checkVArgs(v, t) { // varargs: this maybe a varargs allocation
+			return
+		}
+		if skipMakeSliceAlloc(v) {
 			return
 		}
 		elem := p.type_(t.Elem(), llssa.InGo)
@@ -834,6 +1025,22 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if _, ok := p.isVArgs(vx); ok { // varargs: this is a varargs slice
 			return
 		}
+		if ref, ok := singleRef(v); ok && isSendInstr(ref) {
+			if _, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
+				return
+			}
+		}
+		if capLen, ok := makeSliceAllocCap(vx); ok && v.Low == nil && v.Max == nil {
+			t := p.type_(v.Type(), llssa.InGo)
+			nLen := p.prog.IntVal(uint64(capLen), p.prog.Int())
+			if v.High != nil {
+				nLen = p.compileValue(b, v.High)
+			}
+			nCap := p.prog.IntVal(uint64(capLen), p.prog.Int())
+			ret = b.MakeSlice(t, nLen, nCap)
+			ret.Type = t
+			break
+		}
 		var low, high, max llssa.Expr
 		x := p.compileValue(b, vx)
 		if v.Low != nil {
@@ -865,9 +1072,18 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
+		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
+			if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
+				ret = b.MakeInterfaceFromPtr(t, ptr)
+				break
+			}
+		}
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
+		if ref, ok := singleRef(v); ok && isSendInstr(ref) {
+			return
+		}
 		t := p.type_(v.Type(), llssa.InGo)
 		nLen := p.compileValue(b, v.Len)
 		nCap := p.compileValue(b, v.Cap)
@@ -1023,6 +1239,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		b.Panic(arg)
 	case *ssa.Send:
 		ch := p.compileValue(b, v.Chan)
+		if p.compileSingleUseMakeSliceSend(b, ch, v.X) {
+			return
+		}
 		x := p.compileValue(b, v.X)
 		b.Send(ch, x)
 	case *ssa.DebugRef:
@@ -1058,6 +1277,21 @@ func (p *context) compileFunction(v *ssa.Function) (goFn llssa.Function, pyFn ll
 	return p.funcOf(v)
 }
 
+func (p *context) compileConst(b llssa.Builder, v *ssa.Const, hint types.Type) llssa.Expr {
+	bg := llssa.InGo
+	if p.inCFunc {
+		bg = llssa.InC
+	}
+	if v.Value == nil {
+		t := v.Type()
+		if isUntypedNil(t) {
+			t = hint
+		}
+		return p.prog.Nil(p.type_(t, bg))
+	}
+	return b.Const(v.Value, p.type_(types.Default(v.Type()), bg))
+}
+
 func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	if iv, ok := v.(instrOrValue); ok {
 		return p.compileInstrOrValue(b, iv, true)
@@ -1088,12 +1322,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 		return val
 	case *ssa.Const:
-		t := types.Default(v.Type())
-		bg := llssa.InGo
-		if p.inCFunc {
-			bg = llssa.InC
-		}
-		return b.Const(v.Value, p.type_(t, bg))
+		return p.compileConst(b, v, nil)
 	case *ssa.FreeVar:
 		fn := v.Parent()
 		for idx, freeVar := range fn.FreeVars {

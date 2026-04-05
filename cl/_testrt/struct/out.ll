@@ -7,20 +7,30 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/struct"
 @"github.com/goplus/llgo/runtime/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
 @"github.com/goplus/llgo/cl/_testrt/struct.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testrt/struct.init$guard" = global i1 false, align 1
+@llvm.compiler.used = appending global [2 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print", ptr @"github.com/goplus/llgo/cl/_testrt/struct.(*Foo).Print"], section "llvm.metadata"
 
 define void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %0) {
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testrt/struct.Foo", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
   store %"github.com/goplus/llgo/cl/_testrt/struct.Foo" %0, ptr %1, align 4
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %1, i32 0, i32 1
-  %3 = load i1, ptr %2, align 1
-  br i1 %3, label %_llgo_1, label %_llgo_2
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %1, i32 0, i32 1
+  %4 = icmp eq ptr %3, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i1, ptr %3, align 1
+  br i1 %5, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %1, i32 0, i32 0
-  %5 = load i32, ptr %4, align 4
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/struct.format", i32 %5)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %1, i32 0, i32 0
+  %8 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = load i32, ptr %7, align 4
+  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/struct.format", i32 %9)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -29,8 +39,10 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testrt/struct.(*Foo).Print"(ptr %0) {
 _llgo_0:
-  %1 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
-  call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %1)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
+  call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %2)
   ret void
 }
 
@@ -51,6 +63,16 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/struct.init$guard", align 1
   call void @syscall.init()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   store i8 72, ptr @"github.com/goplus/llgo/cl/_testrt/struct.format", align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testrt/struct.format", i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testrt/struct.format", i64 2), align 1
@@ -71,17 +93,25 @@ define void @"github.com/goplus/llgo/cl/_testrt/struct.main"() {
 _llgo_0:
   %0 = alloca %"github.com/goplus/llgo/cl/_testrt/struct.Foo", align 8
   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
-  %1 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, i32 0, i32 1
-  store i32 100, ptr %1, align 4
-  store i1 true, ptr %2, align 1
-  %3 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
-  call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %3)
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, i32 0, i32 0
+  %3 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, i32 0, i32 1
+  store i32 100, ptr %2, align 4
+  store i1 true, ptr %4, align 1
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
+  call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %6)
   ret void
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
 declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @printf(ptr, ...)
 

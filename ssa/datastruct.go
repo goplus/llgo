@@ -21,6 +21,7 @@ import (
 	"go/types"
 	"log"
 
+	ssaabi "github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
 
@@ -44,6 +45,9 @@ func (b Builder) FieldAddr(x Expr, idx int) Expr {
 		log.Printf("FieldAddr %v, %d\n", x.impl, idx)
 	}
 	prog := b.Prog
+	nilPtr := llvm.ConstNull(x.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 	tstruc := prog.Elem(x.Type)
 	telem := prog.Field(tstruc, idx)
 	pt := prog.Pointer(telem)
@@ -176,6 +180,9 @@ func (b Builder) IndexAddr(x, idx Expr) Expr {
 		indices := []llvm.Value{idx.impl}
 		return Expr{llvm.CreateInBoundsGEP(b.impl, telem.ll, ptr.impl, indices), pt}
 	case *types.Pointer:
+		nilPtr := llvm.ConstNull(x.impl.Type())
+		isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 		ar := t.Elem().Underlying().(*types.Array)
 		max := prog.IntVal(uint64(ar.Len()), prog.Int())
 		idx = b.checkIndex(idx, max)
@@ -298,6 +305,17 @@ func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr
 		telem = prog.Index(x.Type)
 		ptr, zero = takeAddr()
 		max = prog.IntVal(uint64(t.Len()), prog.Int())
+	case *types.Pointer:
+		ar, ok := t.Elem().Underlying().(*types.Array)
+		if !ok {
+			panic(fmt.Errorf("invalid operation: cannot index %v", t))
+		}
+		telem = prog.Index(x.Type)
+		nilPtr := llvm.ConstNull(x.impl.Type())
+		isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, nilPtr), prog.Bool()}
+		b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+		ptr = x
+		max = prog.IntVal(uint64(ar.Len()), prog.Int())
 	}
 	idx = b.checkIndex(idx, max)
 	if zero {
@@ -670,6 +688,15 @@ func (b Builder) toPtr(x Expr) Expr {
 	return Expr{vptr.impl, vtyp}
 }
 
+func (b Builder) materializeRecvValue(ptr Expr) Expr {
+	val := b.Load(ptr)
+	elem := b.Prog.Elem(ptr.Type)
+	if ssaabi.HasPtrData(elem.raw.Type) {
+		b.zeroinit(ptr, SizeOf(b.Prog, elem))
+	}
+	return val
+}
+
 func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	if debugInstr {
 		log.Printf("Recv %v, %v\n", ch.impl, commaOk)
@@ -680,11 +707,12 @@ func (b Builder) Recv(ch Expr, commaOk bool) (ret Expr) {
 	ptr := b.Alloc(etyp, false)
 	ok := b.InlineCall(b.Pkg.rtFunc("ChanRecv"), ch, ptr, eltSize)
 	if commaOk {
-		val := b.Load(ptr)
+		val := b.materializeRecvValue(ptr)
 		t := prog.Struct(etyp, prog.Bool())
 		return b.aggregateValue(t, val.impl, ok.impl)
 	} else {
-		return b.Load(ptr)
+		val := b.materializeRecvValue(ptr)
+		return val
 	}
 }
 

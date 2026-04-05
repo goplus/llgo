@@ -4,12 +4,11 @@
 
 package atomic
 
-import (
-	"unsafe"
-)
+import "unsafe"
 
 type Value struct {
-	v any
+	lock uint32
+	val  any
 }
 
 // efaceWords is interface{} internal representation.
@@ -18,23 +17,27 @@ type efaceWords struct {
 	data unsafe.Pointer
 }
 
+func typeOfValue(val any) unsafe.Pointer {
+	return (*efaceWords)(unsafe.Pointer(&val)).typ
+}
+
+func (v *Value) lockValue() {
+	for !CompareAndSwapUint32(&v.lock, 0, 1) {
+	}
+}
+
+func (v *Value) unlockValue() {
+	StoreUint32(&v.lock, 0)
+}
+
 // Load returns the value set by the most recent Store.
 // It returns nil if there has been no call to Store for this Value.
 func (v *Value) Load() (val any) {
-	vp := (*efaceWords)(unsafe.Pointer(v))
-	typ := LoadPointer(&vp.typ)
-	if typ == nil || typ == unsafe.Pointer(&firstStoreInProgress) {
-		// First store not yet completed.
-		return nil
-	}
-	data := LoadPointer(&vp.data)
-	vlp := (*efaceWords)(unsafe.Pointer(&val))
-	vlp.typ = typ
-	vlp.data = data
-	return
+	v.lockValue()
+	val = v.val
+	v.unlockValue()
+	return val
 }
-
-var firstStoreInProgress byte
 
 // Store sets the value of the Value v to val.
 // All calls to Store for a given Value must use values of the same concrete type.
@@ -43,35 +46,13 @@ func (v *Value) Store(val any) {
 	if val == nil {
 		panic("sync/atomic: store of nil value into Value")
 	}
-	vp := (*efaceWords)(unsafe.Pointer(v))
-	vlp := (*efaceWords)(unsafe.Pointer(&val))
-	for {
-		typ := LoadPointer(&vp.typ)
-		if typ == nil {
-			// Attempt to start first store.
-			// Disable preemption so that other goroutines can use
-			// active spin wait to wait for completion.
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
-				continue
-			}
-			// Complete first store.
-			StorePointer(&vp.data, vlp.data)
-			StorePointer(&vp.typ, vlp.typ)
-			return
-		}
-		if typ == unsafe.Pointer(&firstStoreInProgress) {
-			// First store in progress. Wait.
-			// Since we disable preemption around the first store,
-			// we can wait with active spinning.
-			continue
-		}
-		// First store completed. Check type and overwrite data.
-		if typ != vlp.typ {
-			panic("sync/atomic: store of inconsistently typed value into Value")
-		}
-		StorePointer(&vp.data, vlp.data)
-		return
+	newType := typeOfValue(val)
+	v.lockValue()
+	defer v.unlockValue()
+	if oldType := typeOfValue(v.val); oldType != nil && oldType != newType {
+		panic("sync/atomic: store of inconsistently typed value into Value")
 	}
+	v.val = val
 }
 
 // Swap stores new into Value and returns the previous value. It returns nil if
@@ -83,37 +64,15 @@ func (v *Value) Swap(new any) (old any) {
 	if new == nil {
 		panic("sync/atomic: swap of nil value into Value")
 	}
-	vp := (*efaceWords)(unsafe.Pointer(v))
-	np := (*efaceWords)(unsafe.Pointer(&new))
-	for {
-		typ := LoadPointer(&vp.typ)
-		if typ == nil {
-			// Attempt to start first store.
-			// Disable preemption so that other goroutines can use
-			// active spin wait to wait for completion; and so that
-			// GC does not see the fake type accidentally.
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
-				continue
-			}
-			// Complete first store.
-			StorePointer(&vp.data, np.data)
-			StorePointer(&vp.typ, np.typ)
-			return nil
-		}
-		if typ == unsafe.Pointer(&firstStoreInProgress) {
-			// First store in progress. Wait.
-			// Since we disable preemption around the first store,
-			// we can wait with active spinning.
-			continue
-		}
-		// First store completed. Check type and overwrite data.
-		if typ != np.typ {
-			panic("sync/atomic: swap of inconsistently typed value into Value")
-		}
-		op := (*efaceWords)(unsafe.Pointer(&old))
-		op.typ, op.data = np.typ, SwapPointer(&vp.data, np.data)
-		return old
+	newType := typeOfValue(new)
+	v.lockValue()
+	defer v.unlockValue()
+	old = v.val
+	if oldType := typeOfValue(old); oldType != nil && oldType != newType {
+		panic("sync/atomic: swap of inconsistently typed value into Value")
 	}
+	v.val = new
+	return old
 }
 
 // CompareAndSwap executes the compare-and-swap operation for the Value.
@@ -125,52 +84,27 @@ func (v *Value) CompareAndSwap(old, new any) (swapped bool) {
 	if new == nil {
 		panic("sync/atomic: compare and swap of nil value into Value")
 	}
-	vp := (*efaceWords)(unsafe.Pointer(v))
-	np := (*efaceWords)(unsafe.Pointer(&new))
-	op := (*efaceWords)(unsafe.Pointer(&old))
-	if op.typ != nil && np.typ != op.typ {
+	newType := typeOfValue(new)
+	oldType := typeOfValue(old)
+	if oldType != nil && oldType != newType {
 		panic("sync/atomic: compare and swap of inconsistently typed values")
 	}
-	for {
-		typ := LoadPointer(&vp.typ)
-		if typ == nil {
-			if old != nil {
-				return false
-			}
-			// Attempt to start first store.
-			// Disable preemption so that other goroutines can use
-			// active spin wait to wait for completion; and so that
-			// GC does not see the fake type accidentally.
-			if !CompareAndSwapPointer(&vp.typ, nil, unsafe.Pointer(&firstStoreInProgress)) {
-				continue
-			}
-			// Complete first store.
-			StorePointer(&vp.data, np.data)
-			StorePointer(&vp.typ, np.typ)
-			return true
-		}
-		if typ == unsafe.Pointer(&firstStoreInProgress) {
-			// First store in progress. Wait.
-			// Since we disable preemption around the first store,
-			// we can wait with active spinning.
-			continue
-		}
-		// First store completed. Check type and overwrite data.
-		if typ != np.typ {
-			panic("sync/atomic: compare and swap of inconsistently typed value into Value")
-		}
-		// Compare old and current via runtime equality check.
-		// This allows value types to be compared, something
-		// not offered by the package functions.
-		// CompareAndSwapPointer below only ensures vp.data
-		// has not changed since LoadPointer.
-		data := LoadPointer(&vp.data)
-		var i any
-		(*efaceWords)(unsafe.Pointer(&i)).typ = typ
-		(*efaceWords)(unsafe.Pointer(&i)).data = data
-		if i != old {
+	v.lockValue()
+	defer v.unlockValue()
+	cur := v.val
+	if curType := typeOfValue(cur); curType == nil {
+		if old != nil {
 			return false
 		}
-		return CompareAndSwapPointer(&vp.data, data, np.data)
+		v.val = new
+		return true
 	}
+	if typeOfValue(cur) != newType {
+		panic("sync/atomic: compare and swap of inconsistently typed value into Value")
+	}
+	if cur != old {
+		return false
+	}
+	v.val = new
+	return true
 }

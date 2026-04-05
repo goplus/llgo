@@ -118,6 +118,9 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	pkg := b.Pkg
 	size := SizeOf(prog, elem)
 	if heap {
+		if prog.SizeOf(elem) == 0 {
+			return pkg.moduleZeroSizedAlloc(elem)
+		}
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
 		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
@@ -343,6 +346,21 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 		ptr.impl, old.impl, new.impl,
 		llvm.AtomicOrderingSequentiallyConsistent, llvm.AtomicOrderingSequentiallyConsistent, false)
 	return Expr{ret, prog.Struct(t, prog.Bool())}
+}
+
+func (b Builder) AssertNilDeref(ptr Expr) {
+	if b.Pkg.Prog.runtime() == nil {
+		return
+	}
+	if ptr.impl.IsNil() {
+		return
+	}
+	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
+		return
+	}
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 }
 
 // Load returns the value at the pointer ptr.

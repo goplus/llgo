@@ -22,13 +22,16 @@ SECTIONS
     PROVIDE (etext = .);
   } > iram_seg
 
-  .rodata ALIGN(4) :
+  /* Some ESP RISC-V testcases materialize float64 constants from .rodata.
+   * Keep the section itself 8-byte aligned so the linker does not place
+   * double constants at 4-byte-only addresses on RV32. */
+  .rodata ALIGN(8) :
   {
     *(.rodata .rodata.* .gnu.linkonce.r.*)
     *(.rodata1)
     *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
     *(.sbss2 .sbss2.* .gnu.linkonce.sb2.*)
-    . = ALIGN(4);
+    . = ALIGN(8);
     __cpu_frequency = .;
     LONG(CPU_FREQUENCY);
     __uart0_clkdiv_reg = .;
@@ -109,6 +112,7 @@ SECTIONS
    */
   .stack (NOLOAD) :
   {
+    _stack_end = .;
     . = ALIGN(16);
     . += 16K;
     __stack = .;

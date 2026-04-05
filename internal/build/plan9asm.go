@@ -59,6 +59,9 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		if err != nil {
 			return nil, fmt.Errorf("%s: read %s: %w", pkg.PkgPath, sfile, err)
 		}
+		if shouldSkipDarwinDynimportTrampolineAsm(ctx, pkg, sfile, src) {
+			continue
+		}
 		tr, err := llplan9asm.TranslateSourceModuleForPkg(pkg, sfile, src, ctx.buildConf.Goos, ctx.buildConf.Goarch)
 		if err != nil {
 			// Some stdlib .s files are comment-only placeholders (e.g. internal/cpu/cpu.s).
@@ -130,6 +133,24 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 	}
 
 	return objFiles, nil
+}
+
+func shouldSkipDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package, sfile string, src []byte) bool {
+	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Goos != "darwin" {
+		return false
+	}
+	if pkg == nil || pkg.PkgPath != "golang.org/x/sys/unix" {
+		return false
+	}
+	if !strings.HasPrefix(filepath.Base(sfile), "zsyscall_darwin_") {
+		return false
+	}
+	_, dynimports := collectGoCgoPragmas(pkg.Syntax)
+	if len(dynimports) == 0 {
+		return false
+	}
+	return bytes.Contains(src, []byte("_trampoline<>(SB)")) &&
+		bytes.Contains(src, []byte("_trampoline_addr(SB)"))
 }
 
 type plan9AsmSigCacheKey struct {

@@ -1,8 +1,10 @@
 package atomic_test
 
 import (
+	"runtime"
 	"sync/atomic"
 	"testing"
+	"unsafe"
 )
 
 func TestConcurrentOperations(t *testing.T) {
@@ -32,6 +34,49 @@ func TestConcurrentOperations(t *testing.T) {
 func TestConcurrentCAS(t *testing.T) {
 	t.Skip("Concurrent CAS test skipped due to potential infinite loop")
 }
+
+func TestValueFirstSwapConcurrentLoad(t *testing.T) {
+	var one any = 1
+
+	type eface struct {
+		typ  unsafe.Pointer
+		data unsafe.Pointer
+	}
+
+	run := func() error {
+		var v atomic.Value
+		swapDone := make(chan struct{})
+		go func() {
+			v.Swap(one)
+			close(swapDone)
+		}()
+		for i := 0; i < 10000; i++ {
+			got := v.Load()
+			p := (*eface)(unsafe.Pointer(&got)).typ
+			if uintptr(p) == ^uintptr(0) {
+				<-swapDone
+				return errStaleFirstStoreMarker
+			}
+			if i%128 == 0 {
+				runtime.Gosched()
+			}
+		}
+		<-swapDone
+		return nil
+	}
+
+	for attempt := 0; attempt < 16; attempt++ {
+		if err := run(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+var errStaleFirstStoreMarker = &staleFirstStoreMarkerError{}
+
+type staleFirstStoreMarkerError struct{}
+
+func (*staleFirstStoreMarkerError) Error() string { return "read stale first-store marker" }
 
 // Benchmark functions
 func BenchmarkAddInt32(b *testing.B) {
