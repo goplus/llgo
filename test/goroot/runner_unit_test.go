@@ -46,6 +46,29 @@ func TestParseDirectiveWithArgs(t *testing.T) {
 	}
 }
 
+func TestParseDirectiveQuotedArgs(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "case.go")
+	src := `// runindir -gomodversion "1.23" -gcflags='all=-N -l'
+
+package ignored
+`
+	if err := os.WriteFile(file, []byte(src), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	directive, args, ok := parseDirective(file)
+	if !ok {
+		t.Fatal("expected directive to be found")
+	}
+	if directive != "runindir" {
+		t.Fatalf("directive=%q, want runindir", directive)
+	}
+	want := []string{"-gomodversion", "1.23", "-gcflags=all=-N -l"}
+	if !reflect.DeepEqual(args, want) {
+		t.Fatalf("args=%v, want %v", args, want)
+	}
+}
+
 func TestReleaseTagsFor(t *testing.T) {
 	got := releaseTagsFor("go1.24.11")
 	want := []string{
@@ -217,7 +240,7 @@ func TestDiscoverCasesSkipsMissingDir(t *testing.T) {
 		GOOS:       runtime.GOOS,
 		GOARCH:     runtime.GOARCH,
 		CGOEnabled: "1",
-	}, []string{"fixedbugs", "internal/runtime/sys"}, nil, 0)
+	}, []string{"fixedbugs", "internal/runtime/sys"}, nil, 0, loadDirectiveMode(t, "legacy"))
 	want := []testCase{{
 		RelPath:      "fixedbugs/case.go",
 		Dir:          existingDir,
@@ -227,5 +250,78 @@ func TestDiscoverCasesSkipsMissingDir(t *testing.T) {
 	}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("discoverCases()=%v, want %v", got, want)
+	}
+}
+
+func TestDiscoverCasesRunLikeModeIncludesDirectiveArgs(t *testing.T) {
+	testRoot := t.TempDir()
+	dir := filepath.Join(testRoot, "fixedbugs")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"run.go":       "// run -gcflags=-d=checkptr\n\npackage main\n",
+		"runoutput.go": "// runoutput ./rotate.go\n\npackage main\n",
+		"rundir.go":    "// rundir\n\npackage ignored\n",
+	}
+	for name, src := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got := discoverCases(t, testRoot, toolchainEnv{
+		GOOS:       runtime.GOOS,
+		GOARCH:     runtime.GOARCH,
+		CGOEnabled: "1",
+	}, []string{"fixedbugs"}, nil, 0, loadDirectiveMode(t, "runlike"))
+	if len(got) != 3 {
+		t.Fatalf("len(discoverCases())=%d, want 3", len(got))
+	}
+	if got[0].Directive != "rundir" && got[1].Directive != "rundir" && got[2].Directive != "rundir" {
+		t.Fatalf("discoverCases()=%v, want rundir to be included", got)
+	}
+}
+
+func TestParseDirectiveOptions(t *testing.T) {
+	opts, err := parseDirectiveOptions("runindir", []string{"-gomodversion", "1.23", "-goexperiment", "fieldtrack", "-ldflags", "-strictdups=2", "-w=0", "arg1"}, 20*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.GoModVersion != "1.23" {
+		t.Fatalf("GoModVersion=%q, want 1.23", opts.GoModVersion)
+	}
+	if !reflect.DeepEqual(opts.ProgramArgs, []string{"arg1"}) {
+		t.Fatalf("ProgramArgs=%v, want [arg1]", opts.ProgramArgs)
+	}
+	if !reflect.DeepEqual(opts.BuildFlags, []string{"-ldflags", "-strictdups=2 -w=0"}) {
+		t.Fatalf("BuildFlags=%v", opts.BuildFlags)
+	}
+	if !reflect.DeepEqual(opts.ExtraEnv, []string{"GOEXPERIMENT=fieldtrack"}) {
+		t.Fatalf("ExtraEnv=%v", opts.ExtraEnv)
+	}
+}
+
+func TestStageRundirLayoutRewritesRelativeImports(t *testing.T) {
+	srcDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(srcDir, "a.go"), []byte("package a\nconst X = 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "b.go"), []byte("package b\nimport \"./a\"\nconst Y = a.X\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package main\nimport \"./b\"\nfunc main(){_ = b.Y}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dstDir := t.TempDir()
+	if err := stageRundirLayout(dstDir, srcDir, false); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(dstDir, "b", "b.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "\"../a\"") {
+		t.Fatalf("rewritten file=%q, want import ../a", got)
 	}
 }
