@@ -349,13 +349,20 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 }
 
 func (b Builder) AssertNilDeref(ptr Expr) {
-	if b.Pkg.Prog.runtime() == nil {
-		return
-	}
 	if ptr.impl.IsNil() {
 		return
 	}
 	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
+		return
+	}
+	if b.Pkg.Prog.useFaultNilChecks() {
+		prog := b.Prog
+		bytePtr := llvm.CreatePointerCast(b.impl, ptr.impl, prog.Pointer(prog.Byte()).ll)
+		probe := llvm.CreateLoad(b.impl, prog.Byte().ll, bytePtr)
+		probe.SetVolatile(true)
+		return
+	}
+	if b.Pkg.Prog.runtime() == nil {
 		return
 	}
 	nilPtr := llvm.ConstNull(ptr.impl.Type())

@@ -217,6 +217,8 @@ type aProgram struct {
 	abi abi.Builder
 
 	is32Bits bool
+
+	faultNilChecks bool
 }
 
 // A Program presents a program.
@@ -298,6 +300,17 @@ func (p Program) patch(typ types.Type) types.Type {
 
 func (p Program) SetCompileMethods(check func(Package, types.Type)) {
 	p.compileMethods = check
+}
+
+func (p Program) SetFaultNilChecks(enabled bool) {
+	p.faultNilChecks = enabled
+}
+
+func (p Program) useFaultNilChecks() bool {
+	if !p.faultNilChecks || p.target == nil {
+		return false
+	}
+	return p.target.Target == "" && p.target.GOARCH != "wasm"
 }
 
 // SetRuntime sets the runtime.
