@@ -128,5 +128,6 @@ jobs:
       - name: Run GOROOT runner
         run: |
           bash dev/test_goroot.sh -- \
+            -directive-mode ci \
             -shard-index "${{ matrix.shard-index }}" \
             -shard-total "${{ matrix.shard-total }}"

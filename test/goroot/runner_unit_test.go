@@ -283,6 +283,45 @@ func TestDiscoverCasesRunLikeModeIncludesDirectiveArgs(t *testing.T) {
 	}
 }
 
+func TestDiscoverCasesCIModeExcludesBuildrundir(t *testing.T) {
+	testRoot := t.TempDir()
+	dir := filepath.Join(testRoot, "fixedbugs")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"run.go":        "// run arg1\n\npackage main\n",
+		"runoutput.go":  "// runoutput\n\npackage main\n",
+		"rundir.go":     "// rundir\n\npackage ignored\n",
+		"runindir.go":   "// runindir\n\npackage ignored\n",
+		"buildrun.go":   "// buildrun\n\npackage main\n",
+		"builddir.go":   "// buildrundir\n\npackage ignored\n",
+		"errorcheck.go": "// errorcheckandrundir -1\n\npackage ignored\n",
+	}
+	for name, src := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(src), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got := discoverCases(t, testRoot, toolchainEnv{
+		GOOS:       runtime.GOOS,
+		GOARCH:     runtime.GOARCH,
+		CGOEnabled: "1",
+	}, []string{"fixedbugs"}, nil, 0, loadDirectiveMode(t, "ci"))
+
+	if len(got) != 5 {
+		t.Fatalf("len(discoverCases())=%d, want 5", len(got))
+	}
+	for _, tc := range got {
+		switch tc.Directive {
+		case "run", "runoutput", "rundir", "runindir", "buildrun":
+		default:
+			t.Fatalf("unexpected directive in ci mode: %q", tc.Directive)
+		}
+	}
+}
+
 func TestParseDirectiveOptions(t *testing.T) {
 	opts, err := parseDirectiveOptions("runindir", []string{"-gomodversion", "1.23", "-goexperiment", "fieldtrack", "-ldflags", "-strictdups=2", "-w=0", "arg1"}, 20*time.Second)
 	if err != nil {

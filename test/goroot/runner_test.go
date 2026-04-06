@@ -39,7 +39,7 @@ var (
 	flagShardI  = flag.Int("shard-index", 0, "0-based shard index used to partition matching cases")
 	flagShardN  = flag.Int("shard-total", 1, "number of shards used to partition matching cases")
 	flagKeep    = flag.Bool("keepwork", false, "keep temporary work directories for debugging")
-	flagDirMode = flag.String("directive-mode", "legacy", "case discovery mode: legacy or runlike")
+	flagDirMode = flag.String("directive-mode", "legacy", "case discovery mode: legacy, ci, or runlike")
 	flagXFail   = flag.String("xfail", filepath.Join("test", "goroot", "xfail.yaml"), "xfail configuration path relative to repo root")
 	flagBuildTO = flag.Duration("build-timeout", 3*time.Minute, "timeout for each go/llgo build step; 0 disables the timeout")
 	flagRunTO   = flag.Duration("run-timeout", 20*time.Second, "timeout for the compiled program run step; 0 disables the timeout")
@@ -306,6 +306,18 @@ func loadDirectiveMode(t *testing.T, name string) directiveMode {
 				"run": true,
 			},
 			AllowRunArgs: false,
+		}
+	case "ci":
+		return directiveMode{
+			Name: "ci",
+			Directives: map[string]bool{
+				"run":       true,
+				"runoutput": true,
+				"rundir":    true,
+				"runindir":  true,
+				"buildrun":  true,
+			},
+			AllowRunArgs: true,
 		}
 	case "runlike":
 		return directiveMode{
