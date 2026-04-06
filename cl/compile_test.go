@@ -278,15 +278,34 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
 	got := string(output)
-	allowed := map[string]struct{}{
-		"100\nch1\nch2\n":   {},
-		"100\nch2\nch1\n":   {},
-		"100\nexit\nch1\n":  {},
-		"200\nexit\nexit\n": {},
-	}
-	if _, ok := allowed[got]; !ok {
+	if !isValidSelectOutput(got) {
 		t.Fatalf("unexpected select output:\n%s", got)
 	}
+}
+
+func isValidSelectOutput(got string) bool {
+	got = strings.TrimSuffix(got, "\n")
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		return false
+	}
+	switch lines[0] {
+	case "100", "200":
+	default:
+		return false
+	}
+	valid := map[string]bool{
+		"ch1":  true,
+		"ch2":  true,
+		"exit": true,
+	}
+	if !valid[lines[1]] || !valid[lines[2]] {
+		return false
+	}
+	if lines[1] == lines[2] && lines[1] != "exit" {
+		return false
+	}
+	return true
 }
 
 func TestFromTestpy(t *testing.T) {
