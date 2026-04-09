@@ -209,5 +209,21 @@ func extraAsmSigsAndDeclMap(pkgPath string, goarch string) map[string]extplan9as
 			manual["internal/bytealg.memeqbody"] = extplan9asm.FuncSig{Args: []extplan9asm.LLVMType{extplan9asm.Ptr, extplan9asm.Ptr, extplan9asm.I64}, Ret: extplan9asm.I1, ArgRegs: []extplan9asm.Reg{extplan9asm.SI, extplan9asm.DI, extplan9asm.BX}}
 		}
 	}
+	if pkgPath == "internal/runtime/gc/scan" && goarch == "amd64" {
+		// Go 1.26 emits local AVX512 scan expanders with no Go declarations.
+		// They still need signatures so the translator can keep the asm entry
+		// points and wire the packed mask argument through AX.
+		for _, n := range []int{
+			1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32,
+			36, 40, 44, 48, 52, 56, 60, 64,
+		} {
+			name := fmt.Sprintf("internal/runtime/gc/scan.expandAVX512_%d", n)
+			manual[name] = extplan9asm.FuncSig{
+				Args:    []extplan9asm.LLVMType{extplan9asm.Ptr},
+				Ret:     extplan9asm.Void,
+				ArgRegs: []extplan9asm.Reg{extplan9asm.AX},
+			}
+		}
+	}
 	return manual
 }
