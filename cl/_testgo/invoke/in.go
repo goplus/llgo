@@ -128,14 +128,6 @@ type I interface {
 // CHECK-NEXT:   call void @"{{.*}}PrintInt"(i64 %9)
 // CHECK-NEXT:   call void @"{{.*}}PrintByte"(i8 10)
 // CHECK-NEXT:   ret void
-func invoke(i I) {
-	println(i.Invoke())
-}
-
-type M interface {
-	Invoke() int
-	Method()
-}
 
 // CHECK-LABEL: define void @"{{.*}}invoke.main"() {
 func main() {
@@ -168,6 +160,10 @@ func main() {
 	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"_llgo_{{.*}}invoke.T2")
 	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
 	invoke(t2)
+
+	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"*_llgo_{{.*}}invoke.T2")
+	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
+	invoke(&t2)
 
 	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"*_llgo_{{.*}}invoke.T3")
 	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
@@ -222,6 +218,15 @@ func main() {
 
 	//panic
 	//invoke(nil)
+}
+
+func invoke(i I) {
+	println(i.Invoke())
+}
+
+type M interface {
+	Invoke() int
+	Method()
 }
 
 // CHECK-LABEL: define i64 @"{{.*}}invoke.main$1"() {
