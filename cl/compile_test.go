@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
@@ -73,10 +72,10 @@ var embedTargetConfigs = []embedTargetConfig{
 				"./_testgo/cgomacro",    // fast fail: build constraints exclude all Go files (cgo)
 				"./_testgo/cgopython",   // fast fail: build constraints exclude all Go files (cgo)
 				"./_testgo/chan",        // timeout: emulator did not auto-exit
+				"./_testgo/cursor",      // panic: internal/bytealg: selected .s files require plan9asm translation
 				"./_testgo/defer4",      // unexpected output: got "fatal error", expected "recover: panic message"
 				"./_testgo/goexit",      // llgo panic: unsatisfied import internal/runtime/sys
 				"./_testgo/indexerr",    // unexpected output: len(dst)=12, len(src)=0 (got "fatal error")
-				"./_testgo/invoke",      // timeout: emulator did not auto-exit
 				"./_testgo/makeslice",   // unexpected output: len(dst)=23, len(src)=0 (got "fatal error\\nmust error")
 				"./_testgo/reflect",     // llgo panic: unsatisfied import internal/runtime/sys
 				"./_testgo/reflectconv", // llgo panic: unsatisfied import internal/sync
@@ -114,6 +113,48 @@ var embedTargetConfigs = []embedTargetConfig{
 			},
 		},
 	},
+	{
+		target: "esp32",
+		ignoreByDir: map[string][]string{
+			"./_testgo": {
+				"./_testgo/abimethod", // panic: internal/bytealg selected .s files require plan9asm translation
+				"./_testgo/alias",     // unexpected output
+				"./_testgo/cgodefer",  // panic: cannot build SSA for packages
+				"./_testgo/cgopython", // panic: cannot build SSA for packages
+				"./_testgo/cursor",    // panic: internal/bytealg: selected .s files require plan9asm translation
+				"./_testgo/defer4",    // runtime output: fatal error
+				"./_testgo/indexerr",  // runtime output: fatal error
+				"./_testgo/invoke",    // unexpected output
+				"./_testgo/makeslice", // runtime output: fatal error
+				"./_testgo/multiret",  // unexpected output
+				"./_testgo/select",    // timeout: emulator did not auto-exit
+				"./_testgo/sigsegv",   // unexpected output
+				"./_testgo/struczero", // timeout: emulator did not auto-exit
+			},
+			"./_testlibc": {
+				"./_testlibc/atomic",   // unexpected output
+				"./_testlibc/demangle", // link error: ld.lld unknown argument -Wl,-search_paths_first
+				"./_testlibc/once",     // panic: cannot build SSA for packages
+				"./_testlibc/setjmp",   // link error: ld.lld undefined symbol stderr
+				"./_testlibc/sqlite",   // link error: ld.lld unable to find library -lsqlite3
+			},
+			"./_testrt": {
+				"./_testrt/asmfull",  // unexpected output
+				"./_testrt/cast",     // timeout: emulator did not auto-exit
+				"./_testrt/complex",  // unexpected output
+				"./_testrt/fprintf",  // link error: ld.lld undefined symbol __stderrp
+				"./_testrt/hello",    // panic: cannot build SSA for packages
+				"./_testrt/linkname", // unexpected output
+				"./_testrt/strlen",   // panic: runtime index out of range
+				"./_testrt/struct",   // panic: runtime index out of range
+				"./_testrt/tpfunc",   // unexpected output
+				"./_testrt/typalias", // panic: runtime index out of range
+			},
+			"./_testdata": {
+				"./_testdata/cpkgimp", // unexpected output
+			},
+		},
+	},
 }
 
 func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
@@ -121,7 +162,6 @@ func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = target
 	conf.Emulator = true
-	conf.ForceRebuild = true
 	cltest.RunFromDir(t, "", relDir, ignore,
 		cltest.WithRunConfig(conf),
 		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
@@ -198,6 +238,22 @@ func TestRunEmbedEmulator(t *testing.T) {
 	}
 }
 
+func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
+	output, err := cltest.RunAndCapture("./_testgo/select", "")
+	if err != nil {
+		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
+	}
+	got := string(output)
+	allowed := map[string]struct{}{
+		"100\nch1\nch2\n":   {},
+		"100\nexit\nch1\n":  {},
+		"200\nexit\nexit\n": {},
+	}
+	if _, ok := allowed[got]; !ok {
+		t.Fatalf("unexpected select output:\n%s", got)
+	}
+}
+
 func TestFromTestpy(t *testing.T) {
 	cltest.FromDir(t, "", "./_testpy")
 }
@@ -229,9 +285,7 @@ func TestRunFromTestlibc(t *testing.T) {
 }
 
 func TestFromTestrt(t *testing.T) {
-	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt")
-	cl.SetDebug(0)
 }
 
 func TestRunFromTestrt(t *testing.T) {

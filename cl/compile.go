@@ -22,6 +22,7 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"io"
 	"log"
 	"os"
 	"sort"
@@ -65,6 +66,32 @@ var (
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
 	debugGoSSA = (dbgFlags & DbgFlagGoSSA) != 0
+}
+
+func dbgInstrf(format string, args ...any) {
+	if debugInstr {
+		log.Printf(format, args...)
+	}
+}
+
+func dbgInstrln(args ...any) {
+	if debugInstr {
+		log.Println(args...)
+	}
+}
+
+func dbgGoSSADump(f interface {
+	WriteTo(io.Writer) (int64, error)
+}) {
+	if debugGoSSA {
+		f.WriteTo(os.Stderr)
+	}
+}
+
+func dbgGoSSAln(args ...any) {
+	if debugGoSSA {
+		log.Println(args...)
+	}
 }
 
 func EnableDebug(b bool) {
@@ -215,9 +242,7 @@ func (p *context) compileType(pkg llssa.Package, t *ssa.Type) {
 	tnName := tn.Name()
 	typ := tn.Type()
 	name := llssa.FullName(tn.Pkg(), tnName)
-	if debugInstr {
-		log.Println("==> NewType", name, typ)
-	}
+	dbgInstrln("==> NewType", name, typ)
 	p.compileMethods(pkg, typ)
 	p.compileMethods(pkg, types.NewPointer(typ))
 }
@@ -240,9 +265,7 @@ func (p *context) compileGlobal(pkg llssa.Package, gbl *ssa.Global) {
 	if vtype == pyVar {
 		return
 	}
-	if debugInstr {
-		log.Println("==> NewVar", name, typ)
-	}
+	dbgInstrln("==> NewVar", name, typ)
 	g := pkg.NewVar(name, typ, llssa.Background(vtype))
 	if p.tryEmbedGlobalInit(pkg, gbl, g, name) {
 		return
@@ -265,7 +288,11 @@ func makeClosureCtx(pkg *types.Package, vars []*ssa.FreeVar) *types.Var {
 	n := len(vars)
 	flds := make([]*types.Var, n)
 	for i, v := range vars {
-		flds[i] = types.NewField(token.NoPos, pkg, v.Name(), v.Type(), false)
+		name := v.Name()
+		if name == "" {
+			name = "_"
+		}
+		flds[i] = types.NewField(token.NoPos, pkg, name, v.Type(), false)
 	}
 	t := types.NewPointer(types.NewStruct(flds, nil))
 	return types.NewParam(token.NoPos, pkg, "__llgo_ctx", t)
@@ -329,15 +356,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 
 	var hasCtx = len(f.FreeVars) > 0
 	if hasCtx {
-		if debugInstr {
-			log.Println("==> NewClosure", name, "type:", sig)
-		}
+		dbgInstrln("==> NewClosure", name, "type:", sig)
 		ctx := makeClosureCtx(pkgTypes, f.FreeVars)
 		sig = llssa.FuncAddCtx(ctx, sig)
 	} else {
-		if debugInstr {
-			log.Println("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
-		}
+		dbgInstrln("==> NewFunc", name, "type:", sig.Recv(), sig, "ftype:", ftype)
 	}
 	if fn == nil {
 		fn = pkg.NewFuncEx(name, sig, llssa.Background(ftype), hasCtx, isInstance(f))
@@ -372,12 +395,8 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			} else {
 				p.paramDIVars = nil
 			}
-			if debugGoSSA {
-				f.WriteTo(os.Stderr)
-			}
-			if debugInstr {
-				log.Println("==> FuncBody", name)
-			}
+			dbgGoSSADump(f)
+			dbgInstrln("==> FuncBody", name)
 			b := fn.NewBuilder()
 			if dbgEnabled {
 				pos := p.goProg.Fset.Position(f.Pos())

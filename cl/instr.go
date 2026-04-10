@@ -203,9 +203,7 @@ func (p *context) asm(b llssa.Builder, args []ssa.Value) (ret llssa.Expr) {
 	})
 
 	constraintStr := strings.Join(constraints, ",")
-	if debugInstr {
-		log.Printf("asm: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
-	}
+	dbgInstrf("asm: %q -> %q, constraints: %q", asmString, finalAsm, constraintStr)
 
 	if !hasOutput {
 		// Make sure we return something valid
@@ -753,9 +751,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		return
 	}
 	args := call.Args
-	if debugGoSSA {
-		log.Println(">>> Do", act, cv, args)
-	}
+	dbgGoSSAln(">>> Do", act, cv, args)
 	switch cv := cv.(type) {
 	case *ssa.Builtin:
 		fn := cv.Name()

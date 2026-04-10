@@ -52,9 +52,7 @@ func (b Builder) pthreadCreate(pp, attr, routine, arg Expr) Expr {
 //	go t3()
 //	go invoke t5.Println(...t6)
 func (b Builder) Go(fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args ...Expr) {
-	if debugInstr {
-		logCall("Go", fn, args)
-	}
+	dbgInstrCall("Go", fn, args)
 
 	prog := b.Prog
 	pkg := b.Pkg

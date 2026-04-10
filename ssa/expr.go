@@ -289,9 +289,7 @@ func (b Builder) CBytes(v Expr) Expr {
 
 // InlineAsm generates inline assembly instruction
 func (b Builder) InlineAsm(instruction string) {
-	if debugInstr {
-		log.Printf("InlineAsm %s\n", instruction)
-	}
+	dbgInstrf("InlineAsm %s\n", instruction)
 
 	typ := llvm.FunctionType(b.Prog.tyVoid(), nil, false)
 	asm := llvm.InlineAsm(typ, instruction, "", true, false, llvm.InlineAsmDialectATT, false)
@@ -458,9 +456,7 @@ func isPredOp(op token.Token) bool {
 // AND OR XOR SHL SHR AND_NOT   & | ^ << >> &^
 // EQL NEQ LSS LEQ GTR GEQ      == != < <= > >=
 func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
-	if debugInstr {
-		log.Printf("BinOp %d, %v, %v\n", op, x.impl, y.impl)
-	}
+	dbgInstrf("BinOp %d, %v, %v\n", op, x.impl, y.impl)
 	switch {
 	case isMathOp(op): // op: + - * / %
 		kind := x.kind
@@ -707,9 +703,7 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 // SUB is negation.
 // NOT is logical negation.
 func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("UnOp %v, %v\n", op, x.impl)
-	}
+	dbgInstrf("UnOp %v, %v\n", op, x.impl)
 	switch op {
 	case token.MUL:
 		return b.Load(x)
@@ -769,9 +763,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 //
 //	t1 = changetype *int <- IntPtr (t0)
 func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("ChangeType %v, %v\n", t.RawType(), x.impl)
-	}
+	dbgInstrf("ChangeType %v, %v\n", t.RawType(), x.impl)
 	if t.kind == vkClosure {
 		switch x.kind {
 		case vkFuncDecl:
@@ -845,9 +837,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 //
 //	t1 = convert []byte <- string (t0)
 func (b Builder) Convert(t Type, x Expr) (ret Expr) {
-	if debugInstr {
-		log.Printf("Convert %v <- %v\n", t.RawType(), x.RawType())
-	}
+	dbgInstrf("Convert %v <- %v\n", t.RawType(), x.RawType())
 	dst := t.raw.Type
 	ret.Type = b.Prog.rawType(dst)
 	switch typ := dst.Underlying().(type) {
@@ -957,6 +947,9 @@ func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 	if x.Type().TypeKind() == llvm.PointerTypeKind {
 		return llvm.CreatePtrToInt(b.impl, x, typ.ll)
 	}
+	if xtyp.kind == vkFloat {
+		return castFloatToInt(b, x, typ)
+	}
 	return castInt(b, x, xtyp, typ)
 }
 
@@ -1036,9 +1029,7 @@ func (b Builder) PtrCast(t Type, x Expr) Expr {
 //	t0 = make closure anon@1.2 [x y z]
 //	t1 = make closure bound$(main.I).add [i]
 func (b Builder) MakeClosure(fn Expr, bindings []Expr) Expr {
-	if debugInstr {
-		log.Printf("MakeClosure %v, %v\n", fn, bindings)
-	}
+	dbgInstrf("MakeClosure %v, %v\n", fn, bindings)
 	prog := b.Prog
 	tfn := fn.Type
 	sig := tfn.raw.Type.(*types.Signature)
@@ -1069,9 +1060,7 @@ func (b Builder) InlineCall(fn Expr, args ...Expr) (ret Expr) {
 //	t2 = println(t0, t1)
 //	t4 = t3()
 func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
-	if debugInstr {
-		logCall("Call", fn, args)
-	}
+	dbgInstrCall("Call", fn, args)
 	var kind = fn.kind
 	if kind == vkPyFuncRef {
 		return b.pyCall(fn, args)
@@ -1103,31 +1092,87 @@ func (b Builder) Call(fn Expr, args ...Expr) (ret Expr) {
 	default:
 		log.Panicf("unreachable: %d(%T), %v\n", kind, raw, fn.RawType())
 	}
-	pkg := b.Pkg
-	if !pkg.NeedAbiInit && pkg.Path() != "reflect" {
-		if _, ok := reflectFunc[fn.Name()]; ok {
-			pkg.NeedAbiInit = true
-		}
+	if b.Pkg.Path() != "reflect" {
+		b.checkReflect(fn, args)
 	}
 	ret.Type = b.Prog.retType(sig)
 	ret.impl = llvm.CreateCall(b.impl, ll, fn.impl, llvmParamsEx(data, args, sig.Params(), b))
 	return
 }
 
-var (
-	reflectFunc = map[string]struct{}{
-		"reflect.ArrayOf":            {},
-		"reflect.ChanOf":             {},
-		"reflect.FuncOf":             {},
-		"reflect.MapOf":              {},
-		"reflect.SliceOf":            {},
-		"reflect.StructOf":           {},
-		"reflect.PointerTo":          {},
-		"reflect.PtrTo":              {},
-		"reflect.Value.Method":       {},
-		"reflect.Value.MethodByName": {},
-	}
+const (
+	ReflectArrayOf = 1 << iota
+	ReflectChanOf
+	ReflectFuncOf
+	ReflectMapOf
+	ReflectPointerTo
+	ReflectSliceOf
+	ReflectStructOf
+	ReflectMethodByIndex
+	ReflectMethodByName
+	ReflectMethodDynamic
+	ReflectMethodMask = ReflectMethodByIndex | ReflectMethodByName | ReflectMethodDynamic
 )
+
+func (b Builder) checkReflect(fn Expr, args []Expr) {
+	pkg := b.Pkg
+	switch fn.Name() {
+	case "reflect.ArrayOf":
+		pkg.NeedAbiInit |= ReflectArrayOf
+	case "reflect.ChanOf":
+		pkg.NeedAbiInit |= ReflectChanOf
+	case "reflect.FuncOf":
+		pkg.NeedAbiInit |= ReflectFuncOf
+	case "reflect.MapOf":
+		pkg.NeedAbiInit |= ReflectMapOf
+	case "reflect.PointerTo", "reflect.PtrTo":
+		pkg.NeedAbiInit |= ReflectPointerTo
+	case "reflect.SliceOf":
+		pkg.NeedAbiInit |= ReflectSliceOf
+	case "reflect.StructOf":
+		pkg.NeedAbiInit |= ReflectStructOf
+	case "reflect.Value.Method":
+		if len(args) == 2 {
+			if v, ok := extractConstInt(args[1].impl); ok {
+				if pkg.MethodByIndex == nil {
+					pkg.MethodByIndex = make(map[int]none)
+				}
+				pkg.MethodByIndex[v] = none{}
+				pkg.NeedAbiInit |= ReflectMethodByIndex
+				return
+			}
+			pkg.NeedAbiInit |= ReflectMethodDynamic
+		}
+	case "reflect.Value.MethodByName":
+		if len(args) == 2 {
+			if v, ok := extractConstString(args[1].impl); ok {
+				if pkg.MethodByName == nil {
+					pkg.MethodByName = make(map[string]none)
+				}
+				pkg.MethodByName[v] = none{}
+				pkg.NeedAbiInit |= ReflectMethodByName
+				return
+			}
+			pkg.NeedAbiInit |= ReflectMethodDynamic
+		}
+	}
+}
+
+func extractConstInt(v llvm.Value) (r int, ok bool) {
+	if rv := v.IsAConstantInt(); !rv.IsNil() {
+		return int(rv.SExtValue()), true
+	}
+	return
+}
+
+func extractConstString(v llvm.Value) (str string, ok bool) {
+	if st := v.IsAConstantStruct(); !st.IsNil() {
+		if init := st.Operand(0).Initializer(); !init.IsNil() {
+			return init.ConstGetAsString(), true
+		}
+	}
+	return
+}
 
 func logCall(da string, fn Expr, args []Expr) {
 	if fn == Nil || fn.kind == vkBuiltin {
@@ -1145,6 +1190,12 @@ func logCall(da string, fn Expr, args []Expr) {
 		sep = ", "
 	}
 	log.Println(b.String())
+}
+
+func dbgInstrCall(da string, fn Expr, args []Expr) {
+	if debugInstr {
+		logCall(da, fn, args)
+	}
 }
 
 type DoAction int

@@ -243,7 +243,7 @@ func TestClosureFuncPtrValue(t *testing.T) {
 	hb.Store(ptr, fnPtr)
 	hb.Return()
 
-	wrapName := "__llgo_stub." + pkg.abi.FuncName(sig)
+	wrapName := "__llgo_stub." + prog.abi.FuncName(sig)
 	wrapRef := wrapName
 	if strings.Contains(wrapName, "$") {
 		wrapRef = fmt.Sprintf("\"%s\"", wrapName)
@@ -1553,7 +1553,12 @@ func TestInitAbiTypesForSubset(t *testing.T) {
 	}
 	sort.Strings(names)
 
-	pkg.getAbiTypesFor("subset", []string{names[0], "missing.symbol"})
+	pkg.getAbiTypesFor("subset", func(sym *AbiSymbol) bool {
+		if sym.Name == names[0] || sym.Name == "missing.symbol" {
+			return true
+		}
+		return false
+	})
 	subsetArray := pkg.Module().NamedGlobal("subset$array")
 	if subsetArray.IsNil() {
 		t.Fatal("missing subset abi array global")
@@ -1579,7 +1584,40 @@ func TestInitAbiTypesForEmptySelection(t *testing.T) {
 	if fn := pkg.InitAbiTypes("empty"); fn != nil {
 		t.Fatalf("InitAbiTypes on empty abi symbol set = %v, want nil", fn)
 	}
-	if fn := pkg.InitAbiTypesFor("subset", []string{}); fn != nil {
+	if fn := pkg.InitAbiTypesFor("subset", nil); fn != nil {
 		t.Fatalf("InitAbiTypesFor with empty selection = %v, want nil", fn)
+	}
+}
+
+func TestRtFuncResolvesLinkname(t *testing.T) {
+	prog := NewProgram(nil)
+	rt := types.NewPackage(PkgRuntime, PkgRuntime)
+	sig := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(
+			types.NewVar(0, nil, "env", types.NewPointer(types.NewStruct(nil, nil))),
+			types.NewVar(0, nil, "savemask", types.Typ[types.Int32]),
+		),
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int32])),
+		false,
+	)
+	if err := rt.Scope().Insert(types.NewFunc(token.NoPos, rt, "Sigsetjmp", sig)); err != nil {
+		t.Fatal(err)
+	}
+	prog.SetRuntime(rt)
+	prog.SetLinkname(PkgRuntime+".Sigsetjmp", "C.sigsetjmp")
+
+	pkg := prog.NewPackage("foo", "foo")
+	pkg.SetResolveLinkname(func(name string) string {
+		if link, ok := prog.Linkname(name); ok {
+			prefix, target, _ := strings.Cut(link, ".")
+			if prefix == "C" {
+				return target
+			}
+		}
+		return name
+	})
+
+	if got := pkg.rtFunc("Sigsetjmp").impl.Name(); got != "sigsetjmp" {
+		t.Fatalf("rtFunc linkname = %q, want %q", got, "sigsetjmp")
 	}
 }

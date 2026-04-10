@@ -209,6 +209,23 @@ _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
 
+define void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double %0, i64 %1) {
+_llgo_0:
+  %2 = fptoui double %0 to i64
+  %3 = icmp ne i64 %2, %1
+  br i1 %3, label %_llgo_1, label %_llgo_2
+
+_llgo_1:                                          ; preds = %_llgo_0
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %4, align 8
+  %5 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %4, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %5)
+  unreachable
+
+_llgo_2:                                          ; preds = %_llgo_0
+  ret void
+}
+
 define void @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr"(i32 %0, i64 %1) {
 _llgo_0:
   %2 = sext i32 %0 to i64
@@ -305,6 +322,9 @@ _llgo_0:
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64"(i32 0, i64 0)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvt32to64"(i32 2147483647, i64 2147483647)
   call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtUinptr"(i32 1024, i64 1024)
+  call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 1.000000e+02, i64 100)
+  call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 0.000000e+00, i64 0)
+  call void @"github.com/goplus/llgo/cl/_testrt/cast.cvtFtoUintptr"(double 1.000000e+05, i64 100000)
   ret void
 }
 
