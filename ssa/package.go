@@ -458,7 +458,10 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	ret := &aPackage{
 		mod: mod, path: pkgPath, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
-		di: nil, cu: nil, glbDbgVars: glbDbgVars,
+		semMetaEmitter: newSemMetaEmitter(),
+		di:             nil,
+		cu:             nil,
+		glbDbgVars:     glbDbgVars,
 		export:         make(map[string]string),
 		preserveSyms:   make(map[string]struct{}),
 		llvmUsedValues: make([]llvm.Value, 0, 4),
@@ -705,7 +708,8 @@ type aPackage struct {
 	mod  llvm.Module
 	path string
 
-	Prog Program
+	Prog           Program
+	semMetaEmitter *semMetaEmitter
 
 	di         diBuilder
 	cu         CompilationUnit

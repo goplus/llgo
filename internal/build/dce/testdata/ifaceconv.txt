@@ -1,0 +1,4 @@
+*_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1: []
+*_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2: []
+_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1: []
+_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2: []

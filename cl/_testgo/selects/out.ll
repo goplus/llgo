@@ -254,3 +254,8 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.ChanRecv"(ptr, ptr, i64)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/selects.main", !"_llgo_string"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/selects.main$1", !"_llgo_string"}

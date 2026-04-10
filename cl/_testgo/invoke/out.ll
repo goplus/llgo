@@ -518,3 +518,37 @@ _llgo_0:
 }
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useifacemethod = !{!0}
+!llgo.useiface = !{!1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14}
+!llgo.methodoff = !{!15, !16, !17, !18, !19, !20, !21, !22, !23, !24, !25, !26, !27, !28}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.invoke", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.I", !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T"}
+!3 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1"}
+!4 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1"}
+!5 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2"}
+!6 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2"}
+!7 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3"}
+!8 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4"}
+!9 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4"}
+!10 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5"}
+!11 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5"}
+!12 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6"}
+!13 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6"}
+!14 = !{!"github.com/goplus/llgo/cl/_testgo/invoke.main", !"_llgo_string"}
+!15 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!16 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T", i32 1, !"Method", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
+!17 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!18 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!19 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!20 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!21 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!22 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!23 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!24 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!25 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!26 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!27 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
+!28 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6", i32 0, !"Invoke", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}

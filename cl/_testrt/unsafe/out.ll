@@ -252,3 +252,7 @@ declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.StringEqual"(%"gith
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+
+!llgo.useiface = !{!0}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/unsafe.main", !"_llgo_string"}

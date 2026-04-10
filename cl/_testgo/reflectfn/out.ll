@@ -172,3 +172,8 @@ declare %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/interna
 declare ptr @reflect.Value.UnsafePointer(%reflect.Value)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+
+!llgo.useiface = !{!0, !1}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/reflectfn.main", !"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/reflectfn.main", !"_llgo_Pointer"}
