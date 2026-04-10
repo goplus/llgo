@@ -33,11 +33,20 @@ import (
 	"testing"
 
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/internal/filecheck"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 
 	llssa "github.com/goplus/llgo/ssa"
 )
+
+const litMarker = "// LITTEST"
+
+type expectedSpec struct {
+	path      string
+	text      string
+	filecheck bool
+}
 
 func TestTestdefer(t *testing.T) {
 	fromDir(t, "", "../_testdefer", func(name string) string {
@@ -89,16 +98,50 @@ func testFrom(t *testing.T, pkgDir, sel, fn string) {
 	}
 	log.Println("Parsing", pkgDir)
 	in := pkgDir + "/in.go"
+	spec, err := loadExpectedSpec(pkgDir, in)
+	if err != nil {
+		t.Fatal("loadExpectedSpec failed:", err)
+	}
+	testBlockInfo(t, nil, in, spec, fn)
+}
+
+func loadExpectedSpec(pkgDir, in string) (expectedSpec, error) {
+	if ok, err := hasLitMarker(in); err != nil {
+		return expectedSpec{}, err
+	} else if ok {
+		data, err := os.ReadFile(in)
+		if err != nil {
+			return expectedSpec{}, err
+		}
+		text := string(data)
+		ok, err := filecheck.HasDirectives(text)
+		if err != nil {
+			return expectedSpec{}, err
+		}
+		if !ok {
+			return expectedSpec{}, fmt.Errorf("%s: marked %s but has no CHECK directives", in, litMarker)
+		}
+		return expectedSpec{path: in, text: text, filecheck: true}, nil
+	}
+
 	out := pkgDir + "/out.txt"
 	b, err := os.ReadFile(out)
 	if err != nil {
-		t.Fatal("ReadFile failed:", err)
+		return expectedSpec{}, err
 	}
-	expected := string(b)
-	testBlockInfo(t, nil, in, expected, fn)
+	return expectedSpec{path: out, text: string(b)}, nil
 }
 
-func testBlockInfo(t *testing.T, src any, fname, expected, fn string) {
+func hasLitMarker(in string) (bool, error) {
+	b, err := os.ReadFile(in)
+	if err != nil {
+		return false, err
+	}
+	line, _, _ := strings.Cut(string(b), "\n")
+	return strings.TrimSpace(line) == litMarker, nil
+}
+
+func testBlockInfo(t *testing.T, src any, fname string, spec expectedSpec, fn string) {
 	t.Helper()
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, fname, src, parser.ParseComments)
@@ -122,8 +165,12 @@ func testBlockInfo(t *testing.T, src any, fname, expected, fn string) {
 			if f.Name() == fn {
 				f.WriteTo(os.Stderr)
 				infos := Infos(f.Blocks)
-				if v := resultOf(infos); v != expected {
-					t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+				if v := resultOf(infos); spec.filecheck {
+					if err := filecheck.Match(spec.path, spec.text, v); err != nil {
+						t.Fatal(err)
+					}
+				} else if v != spec.text {
+					t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, spec.text)
 				}
 				return
 			}

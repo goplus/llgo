@@ -1,3 +1,4 @@
+// LITTEST
 package main
 
 import (
@@ -227,6 +228,60 @@ func (e *NoGoError) Error() string {
 	return "no Go files in " + e.Dir
 }
 
+// CHECK-LINE: {{ *}}0: always
+// CHECK-NEXT: {{ *}}1: cond
+// CHECK-NEXT: {{ *}}2: cond
+// CHECK-NEXT: {{ *}}3: cond
+// CHECK-NEXT: {{ *}}4: cond
+// CHECK-NEXT: {{ *}}6: cond
+// CHECK-NEXT: {{ *}}8: cond
+// CHECK-NEXT: {{ *}}7: cond
+// CHECK-NEXT: {{ *}}9: cond
+// CHECK-NEXT: {{ *}}5: cond
+// CHECK: {{ *}}21: loop
+// CHECK-NEXT: {{ *}}22: loop
+// CHECK-NEXT: {{ *}}24: loop
+// CHECK-NEXT: {{ *}}23: cond
+// CHECK-NEXT: {{ *}}27: cond
+// CHECK-NEXT: {{ *}}25: cond
+// CHECK-NEXT: {{ *}}28: cond
+// CHECK-NEXT: {{ *}}26: cond
+// CHECK-NEXT: {{ *}}29: loop
+// CHECK-NEXT: {{ *}}30: loop
+// CHECK-NEXT: {{ *}}31: cond
+// CHECK-NEXT: {{ *}}32: cond
+// CHECK: {{ *}}64: loop
+// CHECK-NEXT: {{ *}}65: loop
+// CHECK-NEXT: {{ *}}68: loop
+// CHECK-NEXT: {{ *}}73: loop
+// CHECK-NEXT: {{ *}}72: loop
+// CHECK-NEXT: {{ *}}66: cond
+// CHECK-NEXT: {{ *}}70: loop
+// CHECK-NEXT: {{ *}}71: cond
+// CHECK-NEXT: {{ *}}76: cond
+// CHECK-NEXT: {{ *}}69: loop
+// CHECK-NEXT: {{ *}}74: cond
+// CHECK-NEXT: {{ *}}67: loop
+// CHECK-NEXT: {{ *}}77: cond
+// CHECK: {{ *}}121: loop
+// CHECK-NEXT: {{ *}}122: loop
+// CHECK-NEXT: {{ *}}123: cond
+// CHECK-NEXT: {{ *}}124: loop
+// CHECK-NEXT: {{ *}}125: loop
+// CHECK-NEXT: {{ *}}126: loop
+// CHECK-NEXT: {{ *}}129: loop
+// CHECK-NEXT: {{ *}}127: loop
+// CHECK-NEXT: {{ *}}128: loop
+// CHECK-NEXT: {{ *}}130: loop
+// CHECK-NEXT: {{ *}}131: loop
+// CHECK: {{ *}}198: cond
+// CHECK-NEXT: {{ *}}199: cond
+// CHECK-NEXT: {{ *}}201: cond
+// CHECK-NEXT: {{ *}}200: cond
+// CHECK-NEXT: {{ *}}202: cond
+// CHECK-NEXT: {{ *}}203: cond
+// CHECK-NEXT: {{ *}}204: cond
+// CHECK-NEXT: {{ *}}205: cond
 func Import(ctxt *Context, path string, srcDir string, mode ImportMode) (*Package, error) {
 	p := &Package{
 		ImportPath: path,

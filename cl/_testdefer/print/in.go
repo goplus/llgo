@@ -1,9 +1,28 @@
+// LITTEST
 package main
 
 func f() float64 {
 	return 1.0
 }
 
+// CHECK-LINE: {{ *}}0: always
+// CHECK-NEXT: {{ *}}1: cond
+// CHECK-NEXT: {{ *}}3: cond
+// CHECK-NEXT: {{ *}}4: cond
+// CHECK-NEXT: {{ *}}5: cond
+// CHECK-NEXT: {{ *}}7: loop
+// CHECK-NEXT: {{ *}}6: loop
+// CHECK-NEXT: {{ *}}10: loop
+// CHECK-NEXT: {{ *}}8: loop
+// CHECK-NEXT: {{ *}}9: cond
+// CHECK-NEXT: {{ *}}11: loop
+// CHECK-NEXT: {{ *}}12: loop
+// CHECK-NEXT: {{ *}}13: cond
+// CHECK-NEXT: {{ *}}14: cond
+// CHECK-NEXT: {{ *}}2: cond
+// CHECK-NEXT: {{ *}}15: loop
+// CHECK-NEXT: {{ *}}16: loop
+// CHECK-NEXT: {{ *}}17: always
 func main() {
 	var v = f()
 	const n = 7 // digits printed
