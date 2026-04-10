@@ -655,3 +655,31 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @reflect.Value
 declare %reflect.Value @reflect.Value.MethodByName(%reflect.Value, %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6}
+!llgo.methodoff = !{!7, !8, !9}
+!llgo.useifacemethod = !{!10, !11, !12, !13, !14, !15, !16}
+!llgo.reflectmethod = !{!17, !18, !19}
+!llgo.usenamedmethod = !{!20}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.Point.String", !"_llgo_int"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_string"}
+!3 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.method", !"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point"}
+!4 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.method", !"_llgo_string"}
+!5 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.methodByName", !"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point"}
+!6 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.methodByName", !"_llgo_string"}
+!7 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point", i32 0, !"String", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!8 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point", i32 0, !"Set", !"_llgo_func$1H6zMZ_cfMoleeOtJ_eCCBwy0eczea5_BZyjKcZr1wQ"}
+!9 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point", i32 1, !"String", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!10 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"Elem", !"_llgo_func$b6KOG2Oj7wt8ogb9H8QPbhEfXhxMMjdxRZgPLK_UOwI"}
+!11 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"In", !"_llgo_func$dPYu3A0LoGTV2Hd8PW4KPw2ITiUSo9q-4Bg9ZrPITnY"}
+!12 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"Out", !"_llgo_func$dPYu3A0LoGTV2Hd8PW4KPw2ITiUSo9q-4Bg9ZrPITnY"}
+!13 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"Key", !"_llgo_func$b6KOG2Oj7wt8ogb9H8QPbhEfXhxMMjdxRZgPLK_UOwI"}
+!14 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"Field", !"_llgo_func$Q3NYrysaKgu1MtMuLQwb-k5QcKGHihnt-tV_NlNJQFA"}
+!15 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"Method", !"_llgo_func$FmJJGomlX5kINJGxQdQDCAkD89ySoMslAYFrziWInVc"}
+!16 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"_llgo_reflect.Type", !"MethodByName", !"_llgo_func$aM2cVUtLQbPq1YHtnabQiM7XJ5Cg5RyV6BIDWrqey7E"}
+!17 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main"}
+!18 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.method"}
+!19 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.methodByName"}
+!20 = !{!"github.com/goplus/llgo/cl/_testgo/reflectmk.main", !"String"}
