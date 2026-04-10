@@ -543,9 +543,9 @@ func TestNamedMetadataReadback(t *testing.T) {
 	closure := b.Imethod(intf, ifaceMeth)
 	b.Return(b.Call(closure, prog.Val(1)))
 
-	mtypName, _ := pkg.abi.TypeName(funcType(prog, structMeth.Type()))
-	structTypeName, _ := pkg.abi.TypeName(types.NewPointer(namedStruct))
-	ifaceTypeName, _ := pkg.abi.TypeName(namedIface)
+	mtypName, _ := prog.abi.TypeName(funcType(prog, structMeth.Type()))
+	structTypeName, _ := prog.abi.TypeName(types.NewPointer(namedStruct))
+	ifaceTypeName, _ := prog.abi.TypeName(namedIface)
 
 	useIfaceRows := mdtest.GetNamedMetadataOperands(pkg.Module(), llgoUseIfaceMetadata)
 	requireMetadataRows(t, llgoUseIfaceMetadata, useIfaceRows, 1)

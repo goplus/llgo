@@ -413,7 +413,10 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		obj := m.Obj().(*types.Func)
 		rawName := obj.Name()
 		fullName := mthName(obj)
-		name := b.Str(fullName).impl
+		name := b.Str(rawName).impl
+		if fullName != rawName {
+			name = b.Str(fullName).impl
+		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
 		tfn = b.abiMethodFunc(anonymous, pkg, rawName, mSig)
