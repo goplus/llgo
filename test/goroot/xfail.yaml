@@ -1711,6 +1711,21 @@ flakes:
     case: stack.go
     reason: go1.26 goroot run can either pass or fail on linux/amd64
   - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: stack.go
+    reason: go1.24 goroot run can either pass or fail on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: stack.go
+    reason: go1.25 goroot run can either pass or fail on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52612.go
+    reason: go1.26 goroot run can either pass or panic on linux/amd64
+  - version: go1.24
     platform: darwin/arm64
     directive: runoutput
     case: rotate0.go
@@ -1726,16 +1741,6 @@ flakes:
     case: rotate0.go
     reason: rotate0 runoutput can either pass or time out on darwin/arm64
 xfails:
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: stack.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: stack.go
-    reason: go1.25 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
     directive: runoutput
