@@ -1705,6 +1705,11 @@ flakes:
     directive: run
     case: fixedbugs/issue11256.go
     reason: go1.25 goroot ci-mode run can either pass or panic in GC_call_with_stack_base on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
+    case: stack.go
+    reason: go1.26 goroot run can either pass or fail on linux/amd64
 xfails:
   - version: go1.24
     platform: darwin/arm64
@@ -1731,11 +1736,6 @@ xfails:
     directive: run
     case: stack.go
     reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: stack.go
-    reason: go1.26 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
     directive: runoutput
