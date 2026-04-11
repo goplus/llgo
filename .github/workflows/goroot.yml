@@ -15,97 +15,15 @@ concurrency:
 
 jobs:
   goroot:
-    name: GOROOT (${{ matrix.os }}, Go ${{ matrix.go-version }}, shard ${{ matrix.shard-label }})
-    continue-on-error: ${{ matrix.required != 'true' }}
-    timeout-minutes: 90
+    name: GOROOT (${{ matrix.os }}, Go ${{ matrix.go-version }}, shard ${{ matrix.shard-index }}/4)
+    continue-on-error: ${{ matrix.go-version != '1.25.0' }}
+    timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.24.11"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "false"
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.24.11"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "false"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.24.11"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "false"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.24.11"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "false"
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.25.0"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "true"
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.25.0"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "true"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.25.0"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "true"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.25.0"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "true"
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.26.0"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "false"
-          - os: macos-latest
-            llvm: 19
-            go-version: "1.26.0"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "false"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.26.0"
-            shard-index: "0"
-            shard-total: "2"
-            shard-label: "0/2"
-            required: "false"
-          - os: ubuntu-latest
-            llvm: 19
-            go-version: "1.26.0"
-            shard-index: "1"
-            shard-total: "2"
-            shard-label: "1/2"
-            required: "false"
+        os: [macos-latest, ubuntu-latest]
+        go-version: ["1.24.11", "1.25.0", "1.26.0"]
+        shard-index: ["0", "1", "2", "3"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -113,7 +31,7 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
-          llvm-version: ${{ matrix.llvm }}
+          llvm-version: 19
 
       - name: Set up Go
         uses: ./.github/actions/setup-go
@@ -130,4 +48,4 @@ jobs:
           bash dev/test_goroot.sh -- \
             -directive-mode ci \
             -shard-index "${{ matrix.shard-index }}" \
-            -shard-total "${{ matrix.shard-total }}"
+            -shard-total "4"

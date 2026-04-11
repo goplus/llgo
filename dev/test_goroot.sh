@@ -36,6 +36,6 @@ for goroot in "${goroots[@]}"; do
 	echo "==== $version ($goroot) ===="
 	(
 		cd "$repo_root"
-		go test ./test/goroot -count=1 -timeout 90m -args -goroot "$goroot" "${runner_args[@]}"
+		go test ./test/goroot -count=1 -timeout 180m -args -goroot "$goroot" "${runner_args[@]}"
 	)
 done

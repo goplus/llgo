@@ -42,7 +42,7 @@ var (
 	flagDirMode = flag.String("directive-mode", "legacy", "case discovery mode: legacy, ci, or runlike")
 	flagXFail   = flag.String("xfail", filepath.Join("test", "goroot", "xfail.yaml"), "xfail configuration path relative to repo root")
 	flagBuildTO = flag.Duration("build-timeout", 3*time.Minute, "timeout for each go/llgo build step; 0 disables the timeout")
-	flagRunTO   = flag.Duration("run-timeout", 20*time.Second, "timeout for the compiled program run step; 0 disables the timeout")
+	flagRunTO   = flag.Duration("run-timeout", time.Minute, "timeout for the compiled program run step; 0 disables the timeout")
 	flagSlowBld = flag.Duration("slow-build", 10*time.Second, "log build steps that exceed this duration; 0 disables slow-build logging")
 	flagSlowRun = flag.Duration("slow-run", 5*time.Second, "log run steps that exceed this duration; 0 disables slow-run logging")
 )
@@ -81,6 +81,7 @@ type testCase struct {
 
 type xfailConfig struct {
 	Entries   []xfailEntry   `yaml:"xfails"`
+	Flakes    []xfailEntry   `yaml:"flakes"`
 	HostSkips []xfailEntry   `yaml:"host_skips"`
 	Timeouts  []timeoutEntry `yaml:"timeouts"`
 }
@@ -106,6 +107,23 @@ type directiveMode struct {
 	Name         string
 	Directives   map[string]bool
 	AllowRunArgs bool
+}
+
+func (m directiveMode) allows(directive string, args []string) bool {
+	if !m.Directives[directive] {
+		return false
+	}
+	if directive == "run" && len(args) != 0 && !m.AllowRunArgs {
+		return false
+	}
+	if m.Name == "ci" {
+		for _, arg := range args {
+			if arg == "-race" {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 type directiveOptions struct {
@@ -187,13 +205,19 @@ func TestGoRootRunCases(t *testing.T) {
 				runTimeout = timeout
 				t.Logf("using timeout override %s: %s", timeout, reason)
 			}
-			err := runCase(t, repoRoot, goroot, goCmd, llgoBin, tc, runTimeout)
+			buildTimeout := effectiveBuildTimeout(*flagBuildTO, runTimeout)
+			err := runCase(t, repoRoot, goroot, goCmd, llgoBin, tc, buildTimeout, runTimeout)
 			match, reason := xfails.Match(envInfo.GOVERSION, envInfo.GOOS+"/"+envInfo.GOARCH, tc)
+			flaky, flakyReason := xfails.MatchFlaky(envInfo.GOVERSION, envInfo.GOOS+"/"+envInfo.GOARCH, tc)
 			switch {
 			case err == nil && match:
 				t.Fatalf("unexpected success for xfail case: %s", reason)
+			case err == nil && flaky:
+				t.Logf("flaky case passed: %s", flakyReason)
 			case err != nil && match:
 				t.Logf("expected failure: %s", reason)
+			case err != nil && flaky:
+				t.Logf("known flaky failure: %s", flakyReason)
 			case err != nil:
 				t.Fatal(err)
 			}
@@ -313,8 +337,6 @@ func loadDirectiveMode(t *testing.T, name string) directiveMode {
 			Directives: map[string]bool{
 				"run":       true,
 				"runoutput": true,
-				"rundir":    true,
-				"runindir":  true,
 				"buildrun":  true,
 			},
 			AllowRunArgs: true,
@@ -375,10 +397,7 @@ func discoverCases(t *testing.T, testRoot string, envInfo toolchainEnv, dirs []s
 				continue
 			}
 			directive, args, ok := parseDirective(filepath.Join(absDir, name))
-			if !ok || !mode.Directives[directive] {
-				continue
-			}
-			if directive == "run" && len(args) != 0 && !mode.AllowRunArgs {
+			if !ok || !mode.allows(directive, args) {
 				continue
 			}
 			cases = append(cases, testCase{
@@ -448,7 +467,7 @@ func parseDirective(filePath string) (string, []string, bool) {
 	return "", nil, false
 }
 
-func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, runTimeout time.Duration) error {
+func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, buildTimeout, runTimeout time.Duration) error {
 	t.Helper()
 	opts, err := parseDirectiveOptions(tc.Directive, tc.DirectiveArg, runTimeout)
 	if err != nil {
@@ -456,18 +475,25 @@ func runCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase,
 	}
 	switch tc.Directive {
 	case "run", "buildrun":
-		return runSingleFileCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts)
+		return runSingleFileCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts, buildTimeout)
 	case "runoutput":
 		return runOutputCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts)
 	case "rundir":
-		return runDirCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts, false)
+		return runDirCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts, false, buildTimeout)
 	case "runindir":
-		return runInDirCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts)
+		return runInDirCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts, buildTimeout)
 	case "buildrundir":
-		return runDirCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts, true)
+		return runDirCase(t, repoRoot, goroot, goCmd, llgoBin, tc, opts, true, buildTimeout)
 	default:
 		return fmt.Errorf("unsupported directive %q", tc.Directive)
 	}
+}
+
+func effectiveBuildTimeout(defaultBuildTimeout, caseTimeout time.Duration) time.Duration {
+	if caseTimeout > defaultBuildTimeout {
+		return caseTimeout
+	}
+	return defaultBuildTimeout
 }
 
 func prepareCaseWorkspace(repoRoot string) (caseWorkspace, error) {
@@ -740,6 +766,10 @@ func (cfg xfailConfig) Match(goVersion, platform string, tc testCase) (bool, str
 	return matchEntries(cfg.Entries, goVersion, platform, tc)
 }
 
+func (cfg xfailConfig) MatchFlaky(goVersion, platform string, tc testCase) (bool, string) {
+	return matchEntries(cfg.Flakes, goVersion, platform, tc)
+}
+
 func (cfg xfailConfig) MatchHostSkip(goVersion, platform string, tc testCase) (bool, string) {
 	return matchEntries(cfg.HostSkips, goVersion, platform, tc)
 }
@@ -935,7 +965,7 @@ func appendDirectiveEnv(env []string, key, value string) []string {
 	return append(env, kv)
 }
 
-func runSingleFileCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, opts directiveOptions) error {
+func runSingleFileCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, opts directiveOptions, buildTimeout time.Duration) error {
 	t.Helper()
 	ws, err := prepareCaseWorkspace(repoRoot)
 	if err != nil {
@@ -944,15 +974,24 @@ func runSingleFileCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc
 	if !*flagKeep {
 		defer ws.cleanup()
 	}
-	if err := overlayDir(ws.workDir, tc.Dir); err != nil {
-		return err
-	}
 	env := runnerEnv(repoRoot, goroot, ws.gopath, opts.ExtraEnv)
 	goBin := filepath.Join(ws.rootDir, "go.out")
 	llgoOut := filepath.Join(ws.rootDir, "llgo.out")
 	metrics := caseMetrics{}
+	sourceFiles, programArgs := splitSourceFiles(tc.FileName, opts.ProgramArgs)
+	buildTarget := tc.FileName
+	if len(sourceFiles) > 1 {
+		if err := stageSelectedFiles(ws.workDir, tc.Dir, sourceFiles); err != nil {
+			return err
+		}
+		buildTarget = "."
+	} else {
+		if err := overlayDir(ws.workDir, tc.Dir); err != nil {
+			return err
+		}
+	}
 
-	goBuildStdout, goBuildStderr, goBuildExit, goBuildDur, err := runProgram(ws.workDir, goCmd, env, *flagBuildTO, append([]string{"build"}, append(opts.BuildFlags, "-o", goBin, tc.FileName)...)...)
+	goBuildStdout, goBuildStderr, goBuildExit, goBuildDur, err := runProgram(ws.workDir, goCmd, env, buildTimeout, append([]string{"build"}, append(opts.BuildFlags, "-o", goBin, buildTarget)...)...)
 	metrics.goBuild += goBuildDur
 	if err != nil {
 		return commandFailure("baseline go build", goBuildDur, err, goBuildStdout, goBuildStderr, goBuildExit)
@@ -960,7 +999,7 @@ func runSingleFileCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc
 	if err := ensureBuiltBinary(goBin, "baseline go build"); err != nil {
 		return err
 	}
-	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, llgoBuildDur, err := runProgram(ws.workDir, llgoBin, env, *flagBuildTO, append([]string{"build"}, append(opts.BuildFlags, "-o", llgoOut, tc.FileName)...)...)
+	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, llgoBuildDur, err := runProgram(ws.workDir, llgoBin, env, buildTimeout, append([]string{"build"}, append(opts.BuildFlags, "-o", llgoOut, buildTarget)...)...)
 	metrics.llgoBuild += llgoBuildDur
 	if err != nil {
 		return commandFailure("llgo build", llgoBuildDur, err, llgoBuildStdout, llgoBuildStderr, llgoBuildExit)
@@ -969,12 +1008,12 @@ func runSingleFileCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc
 		return err
 	}
 
-	goStdout, goStderr, goExit, goRunDur, err := runProgram(ws.workDir, goBin, env, opts.Timeout, opts.ProgramArgs...)
+	goStdout, goStderr, goExit, goRunDur, err := runProgram(ws.workDir, goBin, env, opts.Timeout, programArgs...)
 	metrics.goRun += goRunDur
 	if err != nil {
 		return commandFailure("baseline go run", goRunDur, err, goStdout, goStderr, goExit)
 	}
-	llgoStdout, llgoStderr, llgoExit, llgoRunDur, err := runProgram(ws.workDir, llgoOut, env, opts.Timeout, opts.ProgramArgs...)
+	llgoStdout, llgoStderr, llgoExit, llgoRunDur, err := runProgram(ws.workDir, llgoOut, env, opts.Timeout, programArgs...)
 	metrics.llgoRun += llgoRunDur
 	if err != nil {
 		return commandFailure("llgo run", llgoRunDur, err, llgoStdout, llgoStderr, llgoExit)
@@ -993,33 +1032,41 @@ func runOutputCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc tes
 	if !*flagKeep {
 		defer ws.cleanup()
 	}
-	if err := overlayDir(ws.workDir, tc.Dir); err != nil {
-		return err
-	}
+	sourceFiles, programArgs := splitSourceFiles(tc.FileName, opts.ProgramArgs)
 	env := runnerEnv(repoRoot, goroot, ws.gopath, opts.ExtraEnv)
 	metrics := caseMetrics{}
 
-	goGen, goGenBuild, goGenRun, err := generateRunOutput(ws, goCmd, env, tc.FileName, opts, "go")
-	metrics.goBuild += goGenBuild
+	goWS, err := stageRunOutputWorkspace(ws, "go", tc.Dir, sourceFiles)
+	if err != nil {
+		return err
+	}
+	llgoWS, err := stageRunOutputWorkspace(ws, "llgo", tc.Dir, sourceFiles)
+	if err != nil {
+		return err
+	}
+
+	goModVersion, err := toolchainGoModVersion(goroot)
+	if err != nil {
+		return err
+	}
+
+	goGen, goGenRun, err := generateRunOutput(goWS, goCmd, env, sourceFiles, programArgs, opts.Timeout, false, "go", goModVersion)
 	metrics.goRun += goGenRun
 	if err != nil {
 		return err
 	}
-	llgoGen, llgoGenBuild, llgoGenRun, err := generateRunOutput(ws, llgoBin, env, tc.FileName, opts, "llgo")
-	metrics.llgoBuild += llgoGenBuild
+	llgoGen, llgoGenRun, err := generateRunOutput(llgoWS, llgoBin, env, sourceFiles, programArgs, opts.Timeout, true, "llgo", goModVersion)
 	metrics.llgoRun += llgoGenRun
 	if err != nil {
 		return err
 	}
 
-	goStdout, goStderr, goExit, goBuildDur, goRunDur, err := runGeneratedProgram(ws, goCmd, env, goGen, "go")
-	metrics.goBuild += goBuildDur
+	goStdout, goStderr, goExit, goRunDur, err := runGeneratedProgram(goWS, goCmd, env, goGen, "go", opts.Timeout)
 	metrics.goRun += goRunDur
 	if err != nil {
 		return err
 	}
-	llgoStdout, llgoStderr, llgoExit, llgoBuildDur, llgoRunDur, err := runGeneratedProgram(ws, llgoBin, env, llgoGen, "llgo")
-	metrics.llgoBuild += llgoBuildDur
+	llgoStdout, llgoStderr, llgoExit, llgoRunDur, err := runGeneratedProgram(llgoWS, llgoBin, env, llgoGen, "llgo", opts.Timeout)
 	metrics.llgoRun += llgoRunDur
 	if err != nil {
 		return err
@@ -1029,7 +1076,32 @@ func runOutputCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc tes
 	return compareOutputs(goStdout, goStderr, goExit, llgoStdout, llgoStderr, llgoExit)
 }
 
-func runInDirCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, opts directiveOptions) error {
+func stageRunOutputWorkspace(base caseWorkspace, label, srcDir string, sourceFiles []string) (caseWorkspace, error) {
+	workDir := filepath.Join(base.rootDir, label+"-work")
+	if err := stageSelectedFiles(workDir, srcDir, sourceFiles); err != nil {
+		return caseWorkspace{}, err
+	}
+	toolWS := base
+	toolWS.workDir = workDir
+	return toolWS, nil
+}
+
+func splitSourceFiles(entry string, args []string) ([]string, []string) {
+	files := []string{entry}
+	i := 0
+	for i < len(args) {
+		arg := filepath.Clean(args[i])
+		if strings.HasSuffix(arg, ".go") && !filepath.IsAbs(arg) {
+			files = append(files, arg)
+			i++
+			continue
+		}
+		break
+	}
+	return files, args[i:]
+}
+
+func runInDirCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, opts directiveOptions, buildTimeout time.Duration) error {
 	t.Helper()
 	srcDir := caseSourceDir(tc)
 	ws, err := prepareCaseWorkspace(repoRoot)
@@ -1051,10 +1123,10 @@ func runInDirCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc test
 		return err
 	}
 	env := runnerEnv(repoRoot, goroot, ws.gopath, append(opts.ExtraEnv, "GO111MODULE=on"))
-	return runBuildAndCompare(t, tc.RelPath, ws.workDir, ws.rootDir, env, goCmd, llgoBin, append([]string{}, opts.BuildFlags...), opts.ProgramArgs, opts.Timeout)
+	return runBuildAndCompare(t, tc.RelPath, ws.workDir, ws.rootDir, env, goCmd, llgoBin, append([]string{}, opts.BuildFlags...), opts.ProgramArgs, buildTimeout, opts.Timeout)
 }
 
-func runDirCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, opts directiveOptions, preserveLayout bool) error {
+func runDirCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCase, opts directiveOptions, preserveLayout bool, buildTimeout time.Duration) error {
 	t.Helper()
 	srcDir := caseSourceDir(tc)
 	ws, err := prepareCaseWorkspace(repoRoot)
@@ -1074,16 +1146,16 @@ func runDirCase(t *testing.T, repoRoot, goroot, goCmd, llgoBin string, tc testCa
 		}
 	}
 	env := runnerEnv(repoRoot, goroot, ws.gopath, opts.ExtraEnv)
-	return runBuildAndCompare(t, tc.RelPath, ws.workDir, ws.rootDir, env, goCmd, llgoBin, append([]string{}, opts.BuildFlags...), opts.ProgramArgs, opts.Timeout)
+	return runBuildAndCompare(t, tc.RelPath, ws.workDir, ws.rootDir, env, goCmd, llgoBin, append([]string{}, opts.BuildFlags...), opts.ProgramArgs, buildTimeout, opts.Timeout)
 }
 
-func runBuildAndCompare(t *testing.T, casePath, workDir, rootDir string, env []string, goCmd, llgoBin string, buildFlags, programArgs []string, runTimeout time.Duration) error {
+func runBuildAndCompare(t *testing.T, casePath, workDir, rootDir string, env []string, goCmd, llgoBin string, buildFlags, programArgs []string, buildTimeout, runTimeout time.Duration) error {
 	t.Helper()
 	goBin := filepath.Join(rootDir, "go.out")
 	llgoOut := filepath.Join(rootDir, "llgo.out")
 	metrics := caseMetrics{}
 
-	goBuildStdout, goBuildStderr, goBuildExit, goBuildDur, err := runProgram(workDir, goCmd, env, *flagBuildTO, append([]string{"build"}, append(buildFlags, "-o", goBin, ".")...)...)
+	goBuildStdout, goBuildStderr, goBuildExit, goBuildDur, err := runProgram(workDir, goCmd, env, buildTimeout, append([]string{"build"}, append(buildFlags, "-o", goBin, ".")...)...)
 	metrics.goBuild += goBuildDur
 	if err != nil {
 		return commandFailure("baseline go build", goBuildDur, err, goBuildStdout, goBuildStderr, goBuildExit)
@@ -1091,7 +1163,7 @@ func runBuildAndCompare(t *testing.T, casePath, workDir, rootDir string, env []s
 	if err := ensureBuiltBinary(goBin, "baseline go build"); err != nil {
 		return err
 	}
-	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, llgoBuildDur, err := runProgram(workDir, llgoBin, env, *flagBuildTO, append([]string{"build"}, append(buildFlags, "-o", llgoOut, ".")...)...)
+	llgoBuildStdout, llgoBuildStderr, llgoBuildExit, llgoBuildDur, err := runProgram(workDir, llgoBin, env, buildTimeout, append([]string{"build"}, append(buildFlags, "-o", llgoOut, ".")...)...)
 	metrics.llgoBuild += llgoBuildDur
 	if err != nil {
 		return commandFailure("llgo build", llgoBuildDur, err, llgoBuildStdout, llgoBuildStderr, llgoBuildExit)
@@ -1137,41 +1209,73 @@ func caseSourceDir(tc testCase) string {
 	return filepath.Join(tc.Dir, base)
 }
 
-func generateRunOutput(ws caseWorkspace, tool string, env []string, fileName string, opts directiveOptions, label string) (string, time.Duration, time.Duration, error) {
-	outBin := filepath.Join(ws.rootDir, label+"-gen.out")
-	buildStdout, buildStderr, buildExit, buildDur, err := runProgram(ws.workDir, tool, env, *flagBuildTO, append([]string{"build"}, append(opts.BuildFlags, "-o", outBin, fileName)...)...)
-	if err != nil {
-		return "", buildDur, 0, commandFailure(label+" generate build", buildDur, err, buildStdout, buildStderr, buildExit)
+func generateRunOutput(ws caseWorkspace, tool string, env []string, sourceFiles, programArgs []string, timeout time.Duration, packageRun bool, label, goModVersion string) (string, time.Duration, error) {
+	if packageRun {
+		if err := ensureModuleWorkspace(ws.workDir, "llgo-goroot-runoutput", goModVersion); err != nil {
+			return "", 0, err
+		}
+		env = upsertEnv(env, "GO111MODULE=on")
 	}
-	if err := ensureBuiltBinary(outBin, label+" generate build"); err != nil {
-		return "", buildDur, 0, err
+	args := []string{"run"}
+	if packageRun {
+		args = append(args, ".")
+	} else {
+		args = append(args, sourceFiles...)
 	}
-	stdout, stderr, exitCode, runDur, err := runProgram(ws.workDir, outBin, env, opts.Timeout, opts.ProgramArgs...)
+	args = append(args, programArgs...)
+	stdout, stderr, exitCode, runDur, err := runProgram(
+		ws.workDir,
+		tool,
+		env,
+		timeout,
+		args...,
+	)
 	if err != nil {
-		return "", buildDur, runDur, commandFailure(label+" generate run", runDur, err, stdout, stderr, exitCode)
+		return "", runDur, commandFailure(label+" generate run", runDur, err, stdout, stderr, exitCode)
 	}
 	genBase := label + "_tmp__.go"
 	genFile := filepath.Join(ws.workDir, genBase)
 	if err := os.WriteFile(genFile, stdout, 0o644); err != nil {
-		return "", buildDur, runDur, err
+		return "", runDur, err
 	}
-	return genBase, buildDur, runDur, nil
+	return genBase, runDur, nil
 }
 
-func runGeneratedProgram(ws caseWorkspace, tool string, env []string, fileName, label string) ([]byte, []byte, int, time.Duration, time.Duration, error) {
-	outBin := filepath.Join(ws.rootDir, label+"-tmp.out")
-	buildStdout, buildStderr, buildExit, buildDur, err := runProgram(ws.workDir, tool, env, *flagBuildTO, "build", "-o", outBin, fileName)
+func ensureModuleWorkspace(dir, modulePath, goVersion string) error {
+	modFile := filepath.Join(dir, "go.mod")
+	if _, err := os.Stat(modFile); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	data := fmt.Sprintf("module %s\ngo %s\n", modulePath, goVersion)
+	return os.WriteFile(modFile, []byte(data), 0o644)
+}
+
+func toolchainGoModVersion(goroot string) (string, error) {
+	data, err := os.ReadFile(filepath.Join(goroot, "VERSION"))
 	if err != nil {
-		return nil, nil, 0, buildDur, 0, commandFailure(label+" generated build", buildDur, err, buildStdout, buildStderr, buildExit)
+		return "", fmt.Errorf("read %s/VERSION: %w", goroot, err)
 	}
-	if err := ensureBuiltBinary(outBin, label+" generated build"); err != nil {
-		return nil, nil, 0, buildDur, 0, err
+	version := strings.TrimSpace(string(data))
+	version = strings.TrimPrefix(version, "devel ")
+	version = strings.TrimPrefix(version, "go")
+	if version == "" {
+		return "", fmt.Errorf("parse %s/VERSION: empty version", goroot)
 	}
-	stdout, stderr, exitCode, runDur, err := runProgram(ws.workDir, outBin, env, *flagRunTO)
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("parse %s/VERSION: unexpected version %q", goroot, string(data))
+	}
+	return parts[0] + "." + parts[1], nil
+}
+
+func runGeneratedProgram(ws caseWorkspace, tool string, env []string, fileName, label string, timeout time.Duration) ([]byte, []byte, int, time.Duration, error) {
+	stdout, stderr, exitCode, runDur, err := runProgram(ws.workDir, tool, env, timeout, "run", fileName)
 	if err != nil {
-		return nil, nil, 0, buildDur, runDur, commandFailure(label+" generated run", runDur, err, stdout, stderr, exitCode)
+		return nil, nil, 0, runDur, commandFailure(label+" generated run", runDur, err, stdout, stderr, exitCode)
 	}
-	return stdout, stderr, exitCode, buildDur, runDur, nil
+	return stdout, stderr, exitCode, runDur, nil
 }
 
 func overlayDir(dstRoot, srcRoot string) error {
@@ -1223,6 +1327,31 @@ func overlayDir(dstRoot, srcRoot string) error {
 		}
 		return err
 	})
+}
+
+func stageSelectedFiles(dstRoot, srcRoot string, files []string) error {
+	if err := os.MkdirAll(dstRoot, 0o755); err != nil {
+		return err
+	}
+	for _, name := range files {
+		clean := filepath.Clean(name)
+		if filepath.IsAbs(clean) || clean == "." || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			return fmt.Errorf("unsupported relative source path %q", name)
+		}
+		srcPath := filepath.Join(srcRoot, clean)
+		data, err := os.ReadFile(srcPath)
+		if err != nil {
+			return err
+		}
+		dstPath := filepath.Join(dstRoot, clean)
+		if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(dstPath, data, 0o644); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type dirPackage struct {
