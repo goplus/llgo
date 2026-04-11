@@ -1,42 +1,13 @@
+// LITTEST
 package main
 
-type Data[T any] struct {
-	v T
-}
-
-func (p *Data[T]) Set(v T) {
-	p.v = v
-}
-
-func (p *(Data[T1])) Set2(v T1) {
-	p.v = v
-}
-
-type sliceOf[E any] interface {
-	~[]E
-}
-
-type Slice[S sliceOf[T], T any] struct {
-	Data S
-}
-
-func (p *Slice[S, T]) Append(t ...T) S {
-	p.Data = append(p.Data, t...)
-	return p.Data
-}
-
-func (p *Slice[S1, T1]) Append2(t ...T1) S1 {
-	p.Data = append(p.Data, t...)
-	return p.Data
-}
-
-type (
-	DataInt     = Data[int]
-	SliceInt    = Slice[[]int, int]
-	DataString  = Data[string]
-	SliceString = Slice[[]string, string]
-)
-
+// CHECK-LABEL: define {{.*}} @"{{.*}}/tptypes.main"{{.*}}
+// CHECK: PrintInt
+// CHECK: PrintString
+// CHECK: Append
+// CHECK: Append2
+// CHECK: AssertIndexRange
+// CHECK: ret void
 func main() {
 	println(DataInt{1}.v)
 	println(DataString{"hello"}.v)
@@ -61,3 +32,50 @@ func main() {
 	println(v2.Data, v2.Data[0])
 	println(v3.Data, v3.Data[0])
 }
+
+type Data[T any] struct {
+	v T
+}
+
+func (p *Data[T]) Set(v T) {
+	p.v = v
+}
+
+func (p *(Data[T1])) Set2(v T1) {
+	p.v = v
+}
+
+type sliceOf[E any] interface {
+	~[]E
+}
+
+type Slice[S sliceOf[T], T any] struct {
+	Data S
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/tptypes.(*Slice[[]int,int]).Append"{{.*}}
+// CHECK: SliceAppend
+// CHECK: ret
+//
+// CHECK-LABEL: define {{.*}} @"{{.*}}/tptypes.(*Slice[[]string,string]).Append"{{.*}}
+// CHECK: SliceAppend
+// CHECK: ret
+func (p *Slice[S, T]) Append(t ...T) S {
+	p.Data = append(p.Data, t...)
+	return p.Data
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/tptypes.(*Slice[[]int,int]).Append2"{{.*}}
+// CHECK: SliceAppend
+// CHECK: ret
+func (p *Slice[S1, T1]) Append2(t ...T1) S1 {
+	p.Data = append(p.Data, t...)
+	return p.Data
+}
+
+type (
+	DataInt     = Data[int]
+	SliceInt    = Slice[[]int, int]
+	DataString  = Data[string]
+	SliceString = Slice[[]string, string]
+)

@@ -1,8 +1,22 @@
+// LITTEST
 package main
 
 func test() {}
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/equal.assert"{{.*}}
+// CHECK: Panic
+// CHECK: ret void
+func assert(cond bool) {
+	if !cond {
+		panic("failed")
+	}
+}
+
 // func
+// CHECK-LABEL: define {{.*}} @"{{.*}}/equal.init#1"{{.*}}
+// CHECK: assert
+// CHECK: AllocZ
+// CHECK: ret void
 func init() {
 	fn1 := test
 	fn2 := func(i, j int) int { return i + j }
@@ -92,6 +106,9 @@ func init() {
 }
 
 // map
+// CHECK-LABEL: define {{.*}} @"{{.*}}/equal.init#6"{{.*}}
+// CHECK: assert
+// CHECK: ret void
 func init() {
 	m1 := make(map[int]string)
 	var m2 map[int]string
@@ -99,11 +116,7 @@ func init() {
 	assert(m2 == nil)
 }
 
-func assert(cond bool) {
-	if !cond {
-		panic("failed")
-	}
-}
-
+// CHECK-LABEL: define {{.*}} @"{{.*}}/equal.main"{{.*}}
+// CHECK: ret void
 func main() {
 }

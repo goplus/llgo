@@ -1,3 +1,4 @@
+// LITTEST
 package main
 
 import (
@@ -15,10 +16,21 @@ func (p *Point) Set(x int, y int) {
 	p.y = y
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflectmk.Point.String"{{.*}}
+// CHECK: AllocZ
+// CHECK: ret
+//
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflectmk.(*Point).String"{{.*}}
+// CHECK: Point.String
+// CHECK: ret
 func (p Point) String() string {
 	return fmt.Sprintf("(%v,%v)", p.x, p.y)
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflectmk.main"{{.*}}
+// CHECK: StringEqual
+// CHECK: Panic
+// CHECK: ret void
 func main() {
 	rt := reflect.TypeOf((*Point)(nil)).Elem()
 	if t := reflect.ArrayOf(1, rt); t.Elem() != rt {
@@ -61,6 +73,11 @@ func main() {
 	methodByName("String")
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflectmk.method"{{.*}}
+// CHECK: AssertIndexRange
+// CHECK: StringEqual
+// CHECK: Panic
+// CHECK: ret void
 func method(n int) {
 	v := reflect.ValueOf(&Point{1, 2})
 	if r := v.Method(n).Call(nil); r[0].String() != "(1,2)" {
@@ -68,6 +85,11 @@ func method(n int) {
 	}
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflectmk.methodByName"{{.*}}
+// CHECK: AssertIndexRange
+// CHECK: StringEqual
+// CHECK: Panic
+// CHECK: ret void
 func methodByName(name string) {
 	v := reflect.ValueOf(&Point{1, 2})
 	if r := v.MethodByName(name).Call(nil); r[0].String() != "(1,2)" {
