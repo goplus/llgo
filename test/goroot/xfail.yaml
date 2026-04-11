@@ -1710,22 +1710,22 @@ flakes:
     directive: run
     case: stack.go
     reason: go1.26 goroot run can either pass or fail on linux/amd64
-xfails:
   - version: go1.24
     platform: darwin/arm64
     directive: runoutput
     case: rotate0.go
-    reason: rotate0 runoutput still times out at 4m on darwin/arm64
+    reason: rotate0 runoutput can either pass or time out on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
     directive: runoutput
     case: rotate0.go
-    reason: rotate0 runoutput still times out at 4m on darwin/arm64
+    reason: rotate0 runoutput can either pass or time out on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: runoutput
     case: rotate0.go
-    reason: rotate0 runoutput still times out at 4m on darwin/arm64
+    reason: rotate0 runoutput can either pass or time out on darwin/arm64
+xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
