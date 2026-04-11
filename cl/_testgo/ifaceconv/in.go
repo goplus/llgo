@@ -1,3 +1,4 @@
+// LITTEST
 package main
 
 // Tests of interface conversions and type assertions.
@@ -15,13 +16,26 @@ type I2 interface {
 type C0 struct{}
 type C1 struct{}
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/ifaceconv.(*C1).f"{{.*}}
+// CHECK: C1.f
+// CHECK: ret void
 func (C1) f() {}
 
 type C2 struct{}
 
 func (C2) f() {}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/ifaceconv.(*C2).g"{{.*}}
+// CHECK: C2.g
+// CHECK: ret void
 func (C2) g() {}
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/ifaceconv.main"{{.*}}
+// CHECK: NewItab
+// CHECK: Implements
+// CHECK: IfaceType
+// CHECK: Panic
+// CHECK: ret void
 func main() {
 	var i0 I0
 	var i1 I1

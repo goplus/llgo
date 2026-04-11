@@ -1,3 +1,4 @@
+// LITTEST
 package main
 
 import _ "unsafe" // for go:linkname
@@ -23,6 +24,9 @@ func (s *S) Add(x int) int {
 	return s.v + x
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/closureall.(*S).Inc"{{.*}}
+// CHECK: S.Inc
+// CHECK: ret i64
 func (s S) Inc(x int) int {
 	return s.v + x
 }
@@ -39,10 +43,18 @@ func makeWithFree(base int) Fn {
 	return func(x int) int { return x + base }
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/closureall.callCallback"{{.*}}
+// CHECK: ret i32
 func callCallback(cb CCallback, v c.Int) c.Int {
 	return cb(v)
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/closureall.main"{{.*}}
+// CHECK: makeNoFree
+// CHECK: makeWithFree
+// CHECK: globalAdd
+// CHECK: callCallback
+// CHECK: NewItab
 func main() {
 	nf := makeNoFree()
 	wf := makeWithFree(3)

@@ -1,19 +1,10 @@
+// LITTEST
 package main
 
 import (
 	"reflect"
 	"unsafe"
 )
-
-func main() {
-	callSlice()
-	callFunc()
-	callClosure()
-	callMethod()
-	callIMethod()
-	mapDemo1()
-	mapDemo2()
-}
 
 func demo(n1, n2, n3, n4, n5, n6, n7, n8, n9 int, a ...interface{}) (int, int) {
 	var sum int
@@ -23,24 +14,17 @@ func demo(n1, n2, n3, n4, n5, n6, n7, n8, n9 int, a ...interface{}) (int, int) {
 	return n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9, sum
 }
 
-func callSlice() {
-	v := reflect.ValueOf(demo)
-	n := reflect.ValueOf(1)
-	r := v.Call([]reflect.Value{n, n, n, n, n, n, n, n, n,
-		reflect.ValueOf(1), reflect.ValueOf(2), reflect.ValueOf(3)})
-	println("call.slice", r[0].Int(), r[1].Int())
-	r = v.CallSlice([]reflect.Value{n, n, n, n, n, n, n, n, n,
-		reflect.ValueOf([]interface{}{1, 2, 3})})
-	println("call.slice", r[0].Int(), r[1].Int())
-}
-
-func callFunc() {
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.callClosure"{{.*}}
+// CHECK: reflect.Value.Call
+// CHECK: MatchesClosure
+func callClosure() {
+	m := 100
 	var f any = func(n int) int {
-		println("call.func")
-		return n + 1
+		println("call.closure")
+		return m + n + 1
 	}
 	fn := reflect.ValueOf(f)
-	println("func", fn.Kind(), fn.Type().String())
+	println("closure", fn.Kind(), fn.Type().String())
 	r := fn.Call([]reflect.Value{reflect.ValueOf(100)})
 	println(r[0].Int())
 	ifn, ok := fn.Interface().(func(int) int)
@@ -50,14 +34,17 @@ func callFunc() {
 	ifn(100)
 }
 
-func callClosure() {
-	m := 100
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.callFunc"{{.*}}
+// CHECK: PrintUint
+// CHECK: reflect.Value.Call
+// CHECK: MatchesClosure
+func callFunc() {
 	var f any = func(n int) int {
-		println("call.closure")
-		return m + n + 1
+		println("call.func")
+		return n + 1
 	}
 	fn := reflect.ValueOf(f)
-	println("closure", fn.Kind(), fn.Type().String())
+	println("func", fn.Kind(), fn.Type().String())
 	r := fn.Call([]reflect.Value{reflect.ValueOf(100)})
 	println(r[0].Int())
 	ifn, ok := fn.Interface().(func(int) int)
@@ -86,23 +73,9 @@ type abi struct {
 	data unsafe.Pointer
 }
 
-func callMethod() {
-	t := &T{1}
-	v := reflect.ValueOf(t)
-	fn := v.Method(0)
-	println("method", fn.Kind(), fn.Type().String())
-	r := fn.Call([]reflect.Value{reflect.ValueOf(100)})
-	println(r[0].Int())
-	ifn, ok := fn.Interface().(func(int) int)
-	if !ok {
-		panic("error")
-	}
-	ifn(1)
-	v2 := reflect.ValueOf(fn.Interface())
-	r2 := v2.Call([]reflect.Value{reflect.ValueOf(100)})
-	println(r2[0].Int())
-}
-
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.callIMethod"{{.*}}
+// CHECK: reflect.Value.Call
+// CHECK: MatchesClosure
 func callIMethod() {
 	var i I = &T{1}
 	v := reflect.ValueOf(i)
@@ -120,6 +93,63 @@ func callIMethod() {
 	println(r2[0].Int())
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.callMethod"{{.*}}
+// CHECK: reflect.Value.Call
+// CHECK: MatchesClosure
+func callMethod() {
+	t := &T{1}
+	v := reflect.ValueOf(t)
+	fn := v.Method(0)
+	println("method", fn.Kind(), fn.Type().String())
+	r := fn.Call([]reflect.Value{reflect.ValueOf(100)})
+	println(r[0].Int())
+	ifn, ok := fn.Interface().(func(int) int)
+	if !ok {
+		panic("error")
+	}
+	ifn(1)
+	v2 := reflect.ValueOf(fn.Interface())
+	r2 := v2.Call([]reflect.Value{reflect.ValueOf(100)})
+	println(r2[0].Int())
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.callSlice"{{.*}}
+// CHECK: reflect.Value.Call
+// CHECK: reflect.Value.CallSlice
+// CHECK: PrintString
+// CHECK: PrintInt
+func callSlice() {
+	v := reflect.ValueOf(demo)
+	n := reflect.ValueOf(1)
+	r := v.Call([]reflect.Value{n, n, n, n, n, n, n, n, n,
+		reflect.ValueOf(1), reflect.ValueOf(2), reflect.ValueOf(3)})
+	println("call.slice", r[0].Int(), r[1].Int())
+	r = v.CallSlice([]reflect.Value{n, n, n, n, n, n, n, n, n,
+		reflect.ValueOf([]interface{}{1, 2, 3})})
+	println("call.slice", r[0].Int(), r[1].Int())
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.main"{{.*}}
+// CHECK: callSlice
+// CHECK: callFunc
+// CHECK: callClosure
+// CHECK: callMethod
+// CHECK: callIMethod
+// CHECK: mapDemo1
+// CHECK: mapDemo2
+func main() {
+	callSlice()
+	callFunc()
+	callClosure()
+	callMethod()
+	callIMethod()
+	mapDemo1()
+	mapDemo2()
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.mapDemo1"{{.*}}
+// CHECK: MakeMap
+// CHECK: MapRange
 func mapDemo1() {
 	m := map[int]string{
 		1: "hello",
@@ -151,6 +181,9 @@ func mapDemo1() {
 	}
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/reflect.mapDemo2"{{.*}}
+// CHECK: reflect.MakeMap
+// CHECK: MapRange
 func mapDemo2() {
 	v := reflect.MakeMap(reflect.MapOf(reflect.TypeOf(0), reflect.TypeOf("")))
 	v.SetMapIndex(reflect.ValueOf(1), reflect.ValueOf("hello"))

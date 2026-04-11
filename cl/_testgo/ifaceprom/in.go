@@ -1,3 +1,4 @@
+// LITTEST
 package main
 
 // Test of promotion of methods of an interface embedded within a
@@ -9,6 +10,13 @@ type I interface {
 	two() string
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/ifaceprom.S.one"{{.*}}
+// CHECK: IfacePtrData
+// CHECK: ret i64
+//
+// CHECK-LABEL: define {{.*}} @"{{.*}}/ifaceprom.S.two"{{.*}}
+// CHECK: IfacePtrData
+// CHECK: ret
 type S struct {
 	I
 }
@@ -23,6 +31,11 @@ func (impl) two() string {
 	return "two"
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/ifaceprom.main"{{.*}}
+// CHECK: NewItab
+// CHECK: IfacePtrData
+// CHECK: PrintString
+// CHECK: ret void
 func main() {
 	var s S
 	s.I = impl{}

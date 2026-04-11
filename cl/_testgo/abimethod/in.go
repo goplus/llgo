@@ -1,3 +1,4 @@
+// LITTEST
 package main
 
 import (
@@ -7,6 +8,43 @@ import (
 	"unsafe"
 )
 
+type T struct {
+	n int
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/abimethod.T.Demo1"{{.*}}
+// CHECK: ret i64
+//
+// CHECK-LABEL: define {{.*}} @"{{.*}}/abimethod.(*T).Demo1"{{.*}}
+// CHECK: T.Demo1
+// CHECK: ret i64
+func (t T) Demo1() int {
+	return t.n
+}
+
+func (t *T) Demo2() int {
+	return t.n
+}
+
+func (t *T) demo3() int {
+	return t.n
+}
+
+type I interface {
+	Demo1() int
+}
+
+type I2 interface {
+	Demo2() int
+}
+
+// CHECK-LABEL: define {{.*}} @"{{.*}}/abimethod.main"{{.*}}
+// CHECK: testGeneric"
+// CHECK: testNamed1"
+// CHECK: testNamed2"
+// CHECK: testNamed3"
+// CHECK: testAnonymousBuffer"
+// CHECK: ret void
 func main() {
 	testGeneric()
 	testNamed1()
@@ -63,6 +101,10 @@ type IP interface {
 	Load() *any
 }
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/abimethod.testGeneric"{{.*}}
+// CHECK: NewItab
+// CHECK: IfacePtrData
+// CHECK: Panic
 func testGeneric() {
 	var p IP = &Pointer[any]{}
 	p.Store(func() *any {
@@ -178,28 +220,4 @@ func testAnonymousBuffer() {
 	if s.String() != "hello" {
 		panic("testAnonymousBuffer error")
 	}
-}
-
-type T struct {
-	n int
-}
-
-func (t T) Demo1() int {
-	return t.n
-}
-
-func (t *T) Demo2() int {
-	return t.n
-}
-
-func (t *T) demo3() int {
-	return t.n
-}
-
-type I interface {
-	Demo1() int
-}
-
-type I2 interface {
-	Demo2() int
 }

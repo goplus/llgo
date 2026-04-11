@@ -1,11 +1,22 @@
+// LITTEST
 package main
 
+// CHECK-LABEL: define {{.*}} @"{{.*}}/selects.main"{{.*}}
+// CHECK: NewChan
+// CHECK: CreateThread
+// CHECK: ChanSend
+// CHECK: Select
+// CHECK: PrintString
 func main() {
 	c1 := make(chan struct{}, 1)
 	c2 := make(chan struct{}, 1)
 	c3 := make(chan struct{}, 1)
 	c4 := make(chan struct{}, 1)
 
+	// CHECK-LABEL: define {{.*}} @"{{.*}}/selects.main$1"{{.*}}
+	// CHECK: ChanRecv
+	// CHECK: Select
+	// CHECK: Panic
 	go func() {
 		<-c1
 		println("<-c1")
