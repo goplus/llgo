@@ -990,107 +990,116 @@ _llgo_24:                                         ; preds = %_llgo_23
   br label %_llgo_12
 
 _llgo_25:                                         ; preds = %_llgo_26, %_llgo_12
-  %43 = phi double [ %16, %_llgo_12 ], [ %57, %_llgo_26 ]
-  %44 = phi i64 [ 0, %_llgo_12 ], [ %58, %_llgo_26 ]
+  %43 = phi double [ %16, %_llgo_12 ], [ %66, %_llgo_26 ]
+  %44 = phi i64 [ 0, %_llgo_12 ], [ %67, %_llgo_26 ]
   %45 = icmp slt i64 %44, 7
   br i1 %45, label %_llgo_26, label %_llgo_27
 
 _llgo_26:                                         ; preds = %_llgo_25
-  %46 = fptosi double %43 to i64
-  %47 = add i64 %44, 2
-  %48 = add i64 %46, 48
-  %49 = trunc i64 %48 to i8
-  %50 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %50)
-  %51 = icmp slt i64 %47, 0
-  %52 = icmp sge i64 %47, 14
-  %53 = or i1 %52, %51
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %53)
-  %54 = getelementptr inbounds i8, ptr %8, i64 %47
-  store i8 %49, ptr %54, align 1
-  %55 = sitofp i64 %46 to double
-  %56 = fsub double %43, %55
-  %57 = fmul double %56, 1.000000e+01
-  %58 = add i64 %44, 1
+  %46 = fcmp ole double %43, 0xC3E0000000000000
+  %47 = fcmp oge double %43, 0x43E0000000000000
+  %48 = fcmp uno double %43, %43
+  %49 = or i1 %46, %47
+  %50 = or i1 %48, %49
+  %51 = select i1 %50, double 0.000000e+00, double %43
+  %52 = fptosi double %51 to i64
+  %53 = select i1 %46, i64 -9223372036854775808, i64 %52
+  %54 = select i1 %47, i64 9223372036854775807, i64 %53
+  %55 = select i1 %48, i64 0, i64 %54
+  %56 = add i64 %44, 2
+  %57 = add i64 %55, 48
+  %58 = trunc i64 %57 to i8
+  %59 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %59)
+  %60 = icmp slt i64 %56, 0
+  %61 = icmp sge i64 %56, 14
+  %62 = or i1 %61, %60
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %62)
+  %63 = getelementptr inbounds i8, ptr %8, i64 %56
+  store i8 %58, ptr %63, align 1
+  %64 = sitofp i64 %55 to double
+  %65 = fsub double %43, %64
+  %66 = fmul double %65, 1.000000e+01
+  %67 = add i64 %44, 1
   br label %_llgo_25
 
 _llgo_27:                                         ; preds = %_llgo_25
-  %59 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %59)
-  %60 = getelementptr inbounds i8, ptr %8, i64 2
-  %61 = icmp eq ptr %60, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %61)
-  %62 = load i8, ptr %60, align 1
-  %63 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %63)
-  %64 = getelementptr inbounds i8, ptr %8, i64 1
-  store i8 %62, ptr %64, align 1
-  %65 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %65)
-  %66 = getelementptr inbounds i8, ptr %8, i64 2
-  store i8 46, ptr %66, align 1
-  %67 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %67)
-  %68 = getelementptr inbounds i8, ptr %8, i64 9
-  store i8 101, ptr %68, align 1
-  %69 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %69)
-  %70 = getelementptr inbounds i8, ptr %8, i64 10
-  store i8 43, ptr %70, align 1
-  %71 = icmp slt i64 %17, 0
-  br i1 %71, label %_llgo_28, label %_llgo_29
+  %68 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %68)
+  %69 = getelementptr inbounds i8, ptr %8, i64 2
+  %70 = icmp eq ptr %69, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %70)
+  %71 = load i8, ptr %69, align 1
+  %72 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %72)
+  %73 = getelementptr inbounds i8, ptr %8, i64 1
+  store i8 %71, ptr %73, align 1
+  %74 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %74)
+  %75 = getelementptr inbounds i8, ptr %8, i64 2
+  store i8 46, ptr %75, align 1
+  %76 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %76)
+  %77 = getelementptr inbounds i8, ptr %8, i64 9
+  store i8 101, ptr %77, align 1
+  %78 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %78)
+  %79 = getelementptr inbounds i8, ptr %8, i64 10
+  store i8 43, ptr %79, align 1
+  %80 = icmp slt i64 %17, 0
+  br i1 %80, label %_llgo_28, label %_llgo_29
 
 _llgo_28:                                         ; preds = %_llgo_27
-  %72 = sub i64 0, %17
-  %73 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %73)
-  %74 = getelementptr inbounds i8, ptr %8, i64 10
-  store i8 45, ptr %74, align 1
+  %81 = sub i64 0, %17
+  %82 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %82)
+  %83 = getelementptr inbounds i8, ptr %8, i64 10
+  store i8 45, ptr %83, align 1
   br label %_llgo_29
 
 _llgo_29:                                         ; preds = %_llgo_28, %_llgo_27
-  %75 = phi i64 [ %17, %_llgo_27 ], [ %72, %_llgo_28 ]
-  %76 = icmp eq i64 %75, -9223372036854775808
-  %77 = and i1 %76, false
-  %78 = select i1 %77, i64 0, i64 %75
-  %79 = select i1 %77, i64 1, i64 100
-  %80 = sdiv i64 %78, %79
-  %81 = select i1 %77, i64 %75, i64 %80
-  %82 = trunc i64 %81 to i8
-  %83 = add i8 %82, 48
-  %84 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %84)
-  %85 = getelementptr inbounds i8, ptr %8, i64 11
-  store i8 %83, ptr %85, align 1
-  %86 = icmp eq i64 %75, -9223372036854775808
-  %87 = and i1 %86, false
-  %88 = select i1 %87, i64 0, i64 %75
-  %89 = select i1 %87, i64 1, i64 10
-  %90 = sdiv i64 %88, %89
-  %91 = select i1 %87, i64 %75, i64 %90
-  %92 = trunc i64 %91 to i8
-  %93 = urem i8 %92, 10
-  %94 = add i8 %93, 48
-  %95 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %95)
-  %96 = getelementptr inbounds i8, ptr %8, i64 12
-  store i8 %94, ptr %96, align 1
-  %97 = icmp eq i64 %75, -9223372036854775808
-  %98 = and i1 %97, false
-  %99 = select i1 %98, i64 0, i64 %75
-  %100 = select i1 %98, i64 1, i64 10
-  %101 = srem i64 %99, %100
-  %102 = select i1 %98, i64 0, i64 %101
-  %103 = trunc i64 %102 to i8
-  %104 = add i8 %103, 48
-  %105 = icmp eq ptr %8, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %105)
-  %106 = getelementptr inbounds i8, ptr %8, i64 13
-  store i8 %104, ptr %106, align 1
-  %107 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %8, 0
-  %108 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %107, i64 14, 1
-  %109 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %108, i64 14, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %109)
+  %84 = phi i64 [ %17, %_llgo_27 ], [ %81, %_llgo_28 ]
+  %85 = icmp eq i64 %84, -9223372036854775808
+  %86 = and i1 %85, false
+  %87 = select i1 %86, i64 0, i64 %84
+  %88 = select i1 %86, i64 1, i64 100
+  %89 = sdiv i64 %87, %88
+  %90 = select i1 %86, i64 %84, i64 %89
+  %91 = trunc i64 %90 to i8
+  %92 = add i8 %91, 48
+  %93 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %93)
+  %94 = getelementptr inbounds i8, ptr %8, i64 11
+  store i8 %92, ptr %94, align 1
+  %95 = icmp eq i64 %84, -9223372036854775808
+  %96 = and i1 %95, false
+  %97 = select i1 %96, i64 0, i64 %84
+  %98 = select i1 %96, i64 1, i64 10
+  %99 = sdiv i64 %97, %98
+  %100 = select i1 %96, i64 %84, i64 %99
+  %101 = trunc i64 %100 to i8
+  %102 = urem i8 %101, 10
+  %103 = add i8 %102, 48
+  %104 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %104)
+  %105 = getelementptr inbounds i8, ptr %8, i64 12
+  store i8 %103, ptr %105, align 1
+  %106 = icmp eq i64 %84, -9223372036854775808
+  %107 = and i1 %106, false
+  %108 = select i1 %107, i64 0, i64 %84
+  %109 = select i1 %107, i64 1, i64 10
+  %110 = srem i64 %108, %109
+  %111 = select i1 %107, i64 0, i64 %110
+  %112 = trunc i64 %111 to i8
+  %113 = add i8 %112, 48
+  %114 = icmp eq ptr %8, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %114)
+  %115 = getelementptr inbounds i8, ptr %8, i64 13
+  store i8 %113, ptr %115, align 1
+  %116 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %8, 0
+  %117 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %116, i64 14, 1
+  %118 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %117, i64 14, 2
+  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %118)
   ret void
 }
 
