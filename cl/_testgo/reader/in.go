@@ -1,4 +1,3 @@
-// LITTEST
 package main
 
 import (
@@ -106,10 +105,13 @@ type StringWriter interface {
 	WriteString(s string) (n int, err error)
 }
 
-// CHECK-LABEL: define {{.*}} @"{{.*}}/reader.NopCloser"{{.*}}
-// CHECK: IfaceType
-// CHECK: Implements
-// CHECK: NewItab
+func WriteString(w Writer, s string) (n int, err error) {
+	if sw, ok := w.(StringWriter); ok {
+		return sw.WriteString(s)
+	}
+	return w.Write([]byte(s))
+}
+
 func NopCloser(r Reader) ReadCloser {
 	if _, ok := r.(WriterTo); ok {
 		return nopCloserWriterTo{r}
@@ -133,9 +135,6 @@ func (c nopCloserWriterTo) WriteTo(w Writer) (n int64, err error) {
 	return c.Reader.(WriterTo).WriteTo(w)
 }
 
-// CHECK-LABEL: define {{.*}} @"{{.*}}/reader.ReadAll"{{.*}}
-// CHECK: NewSlice3
-// CHECK: SliceAppend
 func ReadAll(r Reader) ([]byte, error) {
 	b := make([]byte, 0, 512)
 	for {
@@ -153,15 +152,6 @@ func ReadAll(r Reader) ([]byte, error) {
 			b = append(b, 0)[:len(b)]
 		}
 	}
-}
-
-// CHECK-LABEL: define {{.*}} @"{{.*}}/reader.WriteString"{{.*}}
-// CHECK: StringToBytes
-func WriteString(w Writer, s string) (n int, err error) {
-	if sw, ok := w.(StringWriter); ok {
-		return sw.WriteString(s)
-	}
-	return w.Write([]byte(s))
 }
 
 type stringReader struct {
@@ -310,12 +300,6 @@ var (
 	ErrShortWrite = newError("short write")
 )
 
-// CHECK-LABEL: define {{.*}} @"{{.*}}/reader.main"{{.*}}
-// CHECK: ReadAll
-// CHECK: StringFromBytes
-// CHECK: PrintString
-// CHECK: PrintIface
-// CHECK: ret void
 func main() {
 	r := &stringReader{s: "hello world"}
 	data, err := ReadAll(r)

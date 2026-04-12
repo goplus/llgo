@@ -79,6 +79,19 @@ func (t *T3) Invoke() int {
 
 type T4 [1]int
 
+// CHECK-LABEL: define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke"([1 x i64] %0) {
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %1 = alloca [1 x i64], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   store [1 x i64] %0, ptr %1, align 4
+// CHECK-NEXT:   %2 = getelementptr inbounds i64, ptr %1, i64 0
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 7 })
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+// CHECK-NEXT:   ret i64 4
+// CHECK-NEXT: }
 func (t T4) Invoke() int {
 	println("invoke4", t[0])
 	return 4
@@ -88,6 +101,19 @@ type T5 struct {
 	n int
 }
 
+// CHECK-LABEL: define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0) {
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/invoke.T5", align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   store %"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0, ptr %1, align 4
+// CHECK-NEXT:   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/invoke.T5", ptr %1, i32 0, i32 0
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 7 })
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
+// CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+// CHECK-NEXT:   ret i64 5
+// CHECK-NEXT: }
 func (t T5) Invoke() int {
 	println("invoke5", t.n)
 	return 5
@@ -112,6 +138,10 @@ func (t T6) Invoke() int {
 
 type I interface {
 	Invoke() int
+}
+
+func invoke(i I) {
+	println(i.Invoke())
 }
 
 // CHECK-LABEL: define void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %0) {
@@ -169,9 +199,20 @@ func main() {
 	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
 	invoke(&t3)
 
+	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"_llgo_{{.*}}invoke.T4")
+	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
 	invoke(t4)
+
+	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"*_llgo_{{.*}}invoke.T4")
+	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
 	invoke(&t4)
+
+	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"_llgo_{{.*}}invoke.T5")
+	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
 	invoke(t5)
+
+	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"*_llgo_{{.*}}invoke.T5")
+	// CHECK: call void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %{{[0-9]+}})
 	invoke(&t5)
 
 	// CHECK: call ptr @"{{.*}}AllocU"(i64 16)
@@ -218,10 +259,6 @@ func main() {
 
 	//panic
 	//invoke(nil)
-}
-
-func invoke(i I) {
-	println(i.Invoke())
 }
 
 type M interface {
