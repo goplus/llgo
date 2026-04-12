@@ -1447,28 +1447,16 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		// instance of generic function
 		if load := args[0].impl.IsALoadInst(); !load.IsNil() {
 			if gep := load.Operand(0).IsAGetElementPtrInst(); !gep.IsNil() {
-				if offset, ok := b.offsetOfSelectorGEP(gep); ok {
-					return b.Prog.IntVal(offset, b.Prog.Uintptr())
+				typ := gep.GEPSourceElementType()
+				offset := gep.Operand(2).IsAConstantInt()
+				if typ.TypeKind() == llvm.StructTypeKind && !offset.IsNil() {
+					return b.Prog.Val(int(b.Prog.td.ElementOffset(typ, int(offset.SExtValue()))))
 				}
 			}
 		}
 		panic("invalid argument for unsafe.Offsetof: must be a selector expression")
 	}
 	panic("todo: " + fn)
-}
-
-func (b Builder) offsetOfSelectorGEP(gep llvm.Value) (uint64, bool) {
-	var ret uint64
-	for !gep.IsNil() {
-		typ := gep.GEPSourceElementType()
-		field := gep.Operand(2).IsAConstantInt()
-		if typ.TypeKind() != llvm.StructTypeKind || field.IsNil() {
-			return 0, false
-		}
-		ret += b.Prog.td.ElementOffset(typ, int(field.SExtValue()))
-		gep = gep.Operand(0).IsAGetElementPtrInst()
-	}
-	return ret, true
 }
 
 func (p Program) tyPrintf() *types.Signature {
