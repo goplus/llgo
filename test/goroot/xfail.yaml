@@ -1725,6 +1725,11 @@ flakes:
     directive: run
     case: fixedbugs/issue52612.go
     reason: go1.26 goroot run can either pass or panic on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue52612.go
+    reason: go1.25 goroot run can panic on linux/amd64
   - version: go1.24
     platform: darwin/arm64
     directive: runoutput
