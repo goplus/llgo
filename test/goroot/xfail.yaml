@@ -1708,6 +1708,11 @@ flakes:
   - version: go1.26
     platform: linux/amd64
     directive: run
+    case: fixedbugs/issue13160.go
+    reason: go1.26 goroot run can either pass or panic in GC_call_with_stack_base on linux/amd64
+  - version: go1.26
+    platform: linux/amd64
+    directive: run
     case: stack.go
     reason: go1.26 goroot run can either pass or fail on linux/amd64
   - version: go1.24
