@@ -707,6 +707,17 @@ func TestExprCoverageHelpers(t *testing.T) {
 	b.Return()
 }
 
+func TestFunctionInlineAttributes(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+
+	fn.Inline(NoInline)
+	fn.Inline(AlwaysInline)
+	fn.Inline(InlineHint)
+}
+
 func TestTypes(t *testing.T) {
 	ctx := llvm.NewContext()
 	llvmIntType(ctx, 4)
@@ -725,6 +736,28 @@ func TestIndexType(t *testing.T) {
 		}
 	}()
 	indexType(types.Typ[types.Int])
+}
+
+func TestIndexRejectsInvalidTypes(t *testing.T) {
+	prog := NewProgram(nil)
+	b := &aBuilder{Prog: prog}
+	tests := []struct {
+		name string
+		x    Expr
+	}{
+		{name: "basic-non-string", x: Expr{Type: prog.rawType(types.Typ[types.Int])}},
+		{name: "pointer-non-array", x: Expr{Type: prog.rawType(types.NewPointer(types.Typ[types.Int]))}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Fatalf("Index should reject %s", tt.name)
+				}
+			}()
+			b.Index(tt.x, Nil, nil)
+		})
+	}
 }
 
 func TestCvtType(t *testing.T) {
