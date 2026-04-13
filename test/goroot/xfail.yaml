@@ -3298,11 +3298,6 @@ xfails:
     case: fixedbugs/issue73476.go
     reason: go1.26 goroot run failure on darwin/arm64
   - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: typeparam/typeswitch5.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
     platform: linux/amd64
     directive: run
     case: blank.go
@@ -3531,11 +3526,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue76008.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: typeparam/typeswitch5.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
