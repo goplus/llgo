@@ -180,6 +180,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
+				p.collectNoInterfaceByDoc(decl.Doc, decl.Name.Pos())
 				fullName, inPkgName := astFuncName(pkgPath, decl)
 				if !p.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, true) && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
@@ -216,6 +217,18 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 			}
 		}
 		processASTFileLinknames(p, file, fileSyms[file], true)
+	}
+}
+
+func (p *context) collectNoInterfaceByDoc(doc *ast.CommentGroup, pos token.Pos) {
+	if doc == nil {
+		return
+	}
+	for _, comment := range doc.List {
+		if strings.TrimSpace(comment.Text) == "//go:nointerface" {
+			p.prog.SetNoInterfaceMethod(pos)
+			return
+		}
 	}
 }
 

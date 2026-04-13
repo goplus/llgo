@@ -1898,21 +1898,6 @@ xfails:
     reason: go1.26 goroot ci-mode run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
-    directive: run
-    case: typeparam/mdempsky/15.go
-    reason: go1.24 goroot ci-mode run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: typeparam/mdempsky/15.go
-    reason: go1.25 goroot ci-mode run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: typeparam/mdempsky/15.go
-    reason: go1.26 goroot ci-mode run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
     directive: runoutput
     case: index0.go
     reason: go1.24 goroot ci-mode runoutput failure on linux/amd64
@@ -3152,11 +3137,6 @@ xfails:
     directive: run
     case: fixedbugs/issue70189.go
     reason: go1.24 goroot ci-mode run failure on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: typeparam/mdempsky/15.go
-    reason: go1.24 goroot ci-mode run failure on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
     directive: runoutput
@@ -3212,11 +3192,6 @@ xfails:
     directive: run
     case: fixedbugs/issue70189.go
     reason: go1.25 goroot ci-mode run failure on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: typeparam/mdempsky/15.go
-    reason: go1.25 goroot ci-mode run failure on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: runoutput
@@ -3261,11 +3236,6 @@ xfails:
     platform: darwin/arm64
     directive: run
     case: fixedbugs/issue47928.go
-    reason: go1.26 goroot ci-mode run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: typeparam/mdempsky/15.go
     reason: go1.26 goroot ci-mode run failure on darwin/arm64
   - version: go1.26
     platform: darwin/arm64

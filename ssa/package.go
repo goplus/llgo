@@ -109,7 +109,8 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
-	compileMethods func(Package, types.Type)
+	compileMethods     func(Package, types.Type)
+	noInterfaceMethods map[token.Pos]struct{}
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -298,6 +299,24 @@ func (p Program) patch(typ types.Type) types.Type {
 
 func (p Program) SetCompileMethods(check func(Package, types.Type)) {
 	p.compileMethods = check
+}
+
+func (p Program) SetNoInterfaceMethod(pos token.Pos) {
+	if pos == token.NoPos {
+		return
+	}
+	if p.noInterfaceMethods == nil {
+		p.noInterfaceMethods = make(map[token.Pos]struct{})
+	}
+	p.noInterfaceMethods[pos] = struct{}{}
+}
+
+func (p Program) IsNoInterfaceMethod(fn *types.Func) bool {
+	if fn == nil || fn.Pos() == token.NoPos {
+		return false
+	}
+	_, ok := p.noInterfaceMethods[fn.Pos()]
+	return ok
 }
 
 // SetRuntime sets the runtime.
