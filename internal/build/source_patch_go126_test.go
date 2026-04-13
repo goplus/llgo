@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/internal/env"
 	llruntime "github.com/goplus/llgo/runtime"
 )
 

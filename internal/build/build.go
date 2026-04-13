@@ -1529,31 +1529,31 @@ func toTypeList(args *types.TypeList) []types.Type {
 	return result
 }
 
-// fixUntypedShiftTypes fixes a bug in go/types where non-constant shift expressions
-// with untyped constant left operands have type "untyped int" instead of "int".
+// fixUntypedShiftTypes fixes a bug in go/types where non-constant expressions
+// derived from shifts with untyped constant left operands keep an untyped result
+// instead of being defaulted, typically to "int".
 //
 // According to the Go spec: "If the left operand of a non-constant shift expression
 // is an untyped constant, it is first implicitly converted to the type it would assume
 // if the shift expression were replaced by its left operand alone."
 //
-// This causes go/ssa sanity check to fail when the type remains untyped.
+// This can also leak to enclosing non-constant expressions, for example
+// "(0 >> n) + 0", and causes go/ssa sanity check to fail when the type remains
+// untyped.
 // See: https://github.com/golang/go/issues/77067
 func fixUntypedShiftTypes(p *packages.Package) {
-	// First pass: identify expressions needing fixes
-	// (avoid modifying map during iteration)
+	// First pass: identify expressions needing fixes.
+	// Avoid modifying the map during iteration.
 	var toFix []ast.Expr
 	for expr, tv := range p.TypesInfo.Types {
-		switch e := expr.(type) {
-		case *ast.BinaryExpr:
-			if e.Op != token.SHL && e.Op != token.SHR {
-				break
-			}
-			basic, ok := tv.Type.(*types.Basic)
-			if !ok || basic.Info()&types.IsUntyped == 0 {
-				break
-			}
-			toFix = append(toFix, expr)
+		if tv.Value != nil {
+			continue
 		}
+		basic, ok := tv.Type.(*types.Basic)
+		if !ok || basic.Info()&types.IsUntyped == 0 || basic.Kind() == types.UntypedNil {
+			continue
+		}
+		toFix = append(toFix, expr)
 	}
 
 	// Second pass: apply fixes
