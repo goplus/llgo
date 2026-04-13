@@ -169,19 +169,18 @@ func (b Builder) AllocaT(t Type) (ret Expr) {
 }
 
 func (b Builder) fixedAlloca(t llvm.Type) llvm.Value {
-	if b.blk == nil || b.Func == nil || len(b.Func.blks) == 0 || b.blk == b.Func.blks[0] {
+	if b.blk == nil || b.Func == nil || len(b.Func.blks) == 0 {
 		return llvm.CreateAlloca(b.impl, t)
 	}
-	cur := b.impl.GetInsertBlock()
+	ib := b.Prog.ctx.NewBuilder()
+	defer ib.Dispose()
 	first := b.Func.blks[0].first.FirstInstruction()
 	if first.IsNil() {
-		b.impl.SetInsertPointAtEnd(b.Func.blks[0].first)
+		ib.SetInsertPointAtEnd(b.Func.blks[0].first)
 	} else {
-		b.impl.SetInsertPointBefore(first)
+		ib.SetInsertPointBefore(first)
 	}
-	ret := llvm.CreateAlloca(b.impl, t)
-	b.impl.SetInsertPointAtEnd(cur)
-	return ret
+	return llvm.CreateAlloca(ib, t)
 }
 
 /* TODO(xsw):

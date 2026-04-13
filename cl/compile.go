@@ -808,7 +808,21 @@ func soleRefIsMemmoveStore(v *ssa.UnOp) bool {
 		return false
 	}
 	store, ok := (*refs)[0].(*ssa.Store)
-	return ok && store.Val == v
+	return ok && store.Val == v && memmoveStoreCanDeferLoad(v, store)
+}
+
+func memmoveStoreCanDeferLoad(load *ssa.UnOp, store *ssa.Store) bool {
+	if load.Block() != store.Block() {
+		return false
+	}
+	instrs := load.Block().Instrs
+	for i, instr := range instrs {
+		if instr != load {
+			continue
+		}
+		return i+1 < len(instrs) && instrs[i+1] == store
+	}
+	return false
 }
 
 func valueHasArrayLenRangeEvalEffect(v ssa.Value, seen map[ssa.Value]bool) bool {
@@ -1304,7 +1318,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				return
 			}
 		}
-		if load, ok := memmoveStoreLoad(v.Val); ok {
+		if load, ok := memmoveStoreLoad(v.Val); ok && memmoveStoreCanDeferLoad(load, v) {
 			t := p.type_(v.Val.Type(), llssa.InGo)
 			ptr := p.compileValue(b, va)
 			src := p.compileValue(b, load.X)
