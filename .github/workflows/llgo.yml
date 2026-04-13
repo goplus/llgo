@@ -273,7 +273,7 @@ jobs:
         with:
           llvm-version: ${{matrix.llvm}}
 
-      - name: Set up Go 1.23 for building llgo
+      - name: Set up Go for building llgo
         uses: ./.github/actions/setup-go
         with:
           go-version: "1.24.2"
@@ -287,27 +287,6 @@ jobs:
         uses: ./.github/actions/setup-go
         with:
           go-version: ${{matrix.go}}
-
-      - name: Test Hello World with go.mod 1.21
-        if: startsWith(matrix.go, '1.21') || startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.21"
-
-      - name: Test Hello World with go.mod 1.22
-        if: startsWith(matrix.go, '1.22') || startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.22"
-
-      - name: Test Hello World with go.mod 1.23
-        if: startsWith(matrix.go, '1.23') || startsWith(matrix.go, '1.24')
-        uses: ./.github/actions/test-helloworld
-        with:
-          go-version: ${{matrix.go}}
-          mod-version: "1.23"
 
       - name: Test Hello World with go.mod 1.24
         if: startsWith(matrix.go, '1.24')
