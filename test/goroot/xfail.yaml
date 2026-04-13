@@ -909,12 +909,6 @@ timeouts:
     reason: sigchld baseline run exceeds the default timeout on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
-    directive: run
-    case: slicecap.go
-    timeout: 1m
-    reason: slicecap baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
     directive: runoutput
     case: 64bit.go
     timeout: 8m
