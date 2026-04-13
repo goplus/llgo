@@ -129,24 +129,6 @@ timeouts:
     reason: go1.26 chanlinear needs extra runtime slack on loaded linux/amd64 runners
   - version: go1.24
     platform: linux/amd64
-    directive: run
-    case: typeparam/mdempsky/18.go
-    timeout: 2m
-    reason: mdempsky/18 runs past the default timeout on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: typeparam/mdempsky/18.go
-    timeout: 2m
-    reason: mdempsky/18 runs past the default timeout on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: typeparam/mdempsky/18.go
-    timeout: 2m
-    reason: mdempsky/18 runs past the default timeout on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
     directive: runoutput
     case: mergemul.go
     timeout: 1m
