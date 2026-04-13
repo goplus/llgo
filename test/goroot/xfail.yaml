@@ -3477,22 +3477,7 @@ xfails:
   - version: go1.26
     platform: darwin/arm64
     directive: run
-    case: print.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
     case: bigalg.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: deferprint.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: goprint.go
     reason: go1.26 goroot run failure on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
@@ -3502,22 +3487,7 @@ xfails:
   - version: go1.26
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue35576.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue73476.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue6899.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: ken/cplx0.go
     reason: go1.26 goroot run failure on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
@@ -3547,27 +3517,12 @@ xfails:
   - version: go1.26
     platform: linux/amd64
     directive: run
-    case: deferprint.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: goprint.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
     case: inline_literal.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
     case: mallocfin.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: print.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
@@ -3762,11 +3717,6 @@ xfails:
   - version: go1.26
     platform: linux/amd64
     directive: run
-    case: fixedbugs/issue6899.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/issue71675.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
@@ -3872,11 +3822,6 @@ xfails:
   - version: go1.26
     platform: linux/amd64
     directive: run
-    case: ken/cplx0.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/bug347.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
@@ -3953,11 +3898,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue32477.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue35576.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
