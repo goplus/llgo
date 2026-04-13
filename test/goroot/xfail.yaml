@@ -646,12 +646,6 @@ timeouts:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: stringrange.go
-    timeout: 2m
-    reason: stringrange baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: shift3.go
     timeout: 2m
     reason: shift3 baseline run exceeds the default timeout on darwin/arm64
@@ -1033,12 +1027,6 @@ timeouts:
     case: switch.go
     timeout: 1m
     reason: switch baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: stringrange.go
-    timeout: 2m
-    reason: stringrange baseline run exceeds the default timeout on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
     directive: run
@@ -1429,12 +1417,6 @@ timeouts:
     case: switch.go
     timeout: 1m
     reason: switch baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: stringrange.go
-    timeout: 2m
-    reason: stringrange baseline run exceeds the default timeout on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
