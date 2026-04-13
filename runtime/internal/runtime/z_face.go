@@ -341,6 +341,10 @@ func IfaceE2I(inter *interfacetype, e eface, dst *iface) {
 	*dst = iface{assertE2I(inter, e._type), e.data}
 }
 
+func PanicTypeAssert(inter, concrete, asserted *abi.Type) {
+	panic(&TypeAssertionError{_interface: inter, concrete: concrete, asserted: asserted})
+}
+
 func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {
 	if len(inter.Methods) == 0 {
 		panic("internal error - misuse of itab")
