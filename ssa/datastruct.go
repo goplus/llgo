@@ -264,7 +264,11 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 		check = Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
 	}
 	if checkMax {
-		r := Expr{llvm.CreateICmp(b.impl, llvm.IntSGE, idx.impl, max.impl), prog.Bool()}
+		pred := llvm.IntSGE
+		if idx.kind != vkSigned {
+			pred = llvm.IntUGE
+		}
+		r := Expr{llvm.CreateICmp(b.impl, pred, idx.impl, max.impl), prog.Bool()}
 		if check.IsNil() {
 			check = r
 		} else {

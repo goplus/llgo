@@ -783,6 +783,34 @@ func skipUnusedArrayDeref(v *ssa.UnOp) bool {
 	return !valueHasArrayLenRangeEvalEffect(v.X, nil)
 }
 
+func memmoveStoreLoad(v ssa.Value) (*ssa.UnOp, bool) {
+	load, ok := v.(*ssa.UnOp)
+	if !ok || load.Op != token.MUL || !memmoveCopyType(v.Type()) {
+		return nil, false
+	}
+	return load, true
+}
+
+func memmoveCopyType(t types.Type) bool {
+	switch types.Unalias(t).Underlying().(type) {
+	case *types.Array, *types.Struct:
+		return true
+	}
+	return false
+}
+
+func soleRefIsMemmoveStore(v *ssa.UnOp) bool {
+	if _, ok := memmoveStoreLoad(v); !ok {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 1 {
+		return false
+	}
+	store, ok := (*refs)[0].(*ssa.Store)
+	return ok && store.Val == v
+}
+
 func valueHasArrayLenRangeEvalEffect(v ssa.Value, seen map[ssa.Value]bool) bool {
 	if seen[v] {
 		return false
@@ -1027,6 +1055,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			return
 		}
 		if v.Op == token.MUL {
+			if soleRefIsMemmoveStore(v) {
+				return
+			}
 			if _, ok := v.X.(*ssa.UnOp); ok {
 				if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
 					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
@@ -1272,6 +1303,14 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				args[idx] = p.compileValue(b, val)
 				return
 			}
+		}
+		if load, ok := memmoveStoreLoad(v.Val); ok {
+			t := p.type_(v.Val.Type(), llssa.InGo)
+			ptr := p.compileValue(b, va)
+			src := p.compileValue(b, load.X)
+			b.AssertNilDeref(src)
+			b.Memmove(ptr, src, p.prog.SizeOf(t))
+			return
 		}
 		if p.rewrites != nil {
 			if g, ok := va.(*ssa.Global); ok {

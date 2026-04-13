@@ -385,6 +385,24 @@ func (b Builder) Store(ptr, val Expr) Expr {
 	return Expr{b.impl.CreateStore(val.impl, ptr.impl), b.Prog.Void()}
 }
 
+// Memmove copies size bytes from src to dst, preserving memmove overlap semantics.
+func (b Builder) Memmove(dst, src Expr, size uint64) Expr {
+	prog := b.Prog
+	paramPtr := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+	paramSize := types.NewParam(token.NoPos, nil, "", types.Typ[types.Uint64])
+	paramVolatile := types.NewParam(token.NoPos, nil, "", types.Typ[types.Bool])
+	params := types.NewTuple(paramPtr, paramPtr, paramSize, paramVolatile)
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := b.Pkg.cFunc("llvm.memmove.p0.p0.i64", sig)
+	return b.Call(
+		fn,
+		b.PtrCast(prog.VoidPtr(), dst),
+		b.PtrCast(prog.VoidPtr(), src),
+		prog.IntVal(size, prog.Uint64()),
+		prog.BoolVal(false),
+	)
+}
+
 // Advance returns the pointer ptr advanced by offset.
 func (b Builder) Advance(ptr Expr, offset Expr) Expr {
 	if debugInstr {

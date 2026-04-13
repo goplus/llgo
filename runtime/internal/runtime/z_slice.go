@@ -35,7 +35,7 @@ type Slice struct {
 
 func NewSlice3(base unsafe.Pointer, eltSize, cap, i, j, k int) (s Slice) {
 	if i < 0 || j < i || k < j || k > cap {
-		panic("slice index out of bounds")
+		panic(errorString("slice bounds out of range"))
 	}
 	s.len = j - i
 	s.cap = k - i
