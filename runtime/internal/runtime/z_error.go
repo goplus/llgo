@@ -49,9 +49,15 @@ func AssertNegativeShift(b bool) {
 	}
 }
 
-func AssertIndexRange(b bool) {
+func AssertIndexRange(b bool, x int, y int) {
 	if b {
-		panic(errorString("index out of range"))
+		panic(boundsError{x: int64(x), signed: true, y: y, code: boundsIndex})
+	}
+}
+
+func AssertIndexRangeU(b bool, x uint, y int) {
+	if b {
+		panic(boundsError{x: int64(x), signed: false, y: y, code: boundsIndex})
 	}
 }
 

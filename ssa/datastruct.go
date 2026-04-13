@@ -272,7 +272,11 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 		}
 	}
 	if !check.IsNil() {
-		b.InlineCall(b.Pkg.rtFunc("AssertIndexRange"), check)
+		fn := "AssertIndexRange"
+		if idx.kind != vkSigned {
+			fn = "AssertIndexRangeU"
+		}
+		b.InlineCall(b.Pkg.rtFunc(fn), check, idx, max)
 	}
 	return idx
 }

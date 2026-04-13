@@ -3222,11 +3222,6 @@ xfails:
   - version: go1.26
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue75327.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
     case: fixedbugs/bug409.go
     reason: go1.26 goroot run failure on darwin/arm64
   - version: go1.26
@@ -3668,11 +3663,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue73920.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue75327.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
