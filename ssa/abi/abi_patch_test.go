@@ -107,6 +107,20 @@ func TestTypeName_NamedWithoutPackage(t *testing.T) {
 	}
 }
 
+func TestTypeName_DetachedLocalScopeUsesPosition(t *testing.T) {
+	b := New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
+	pkg := types.NewPackage("example.com/p", "p")
+	local := types.NewScope(nil, token.Pos(100), token.Pos(200), "detached")
+	obj := types.NewTypeName(token.Pos(123), pkg, "Local", nil)
+	local.Insert(obj)
+	named := types.NewNamed(obj, types.Typ[types.Int], nil)
+
+	got, _ := b.TypeName(named)
+	if !strings.Contains(got, "Local.p123") {
+		t.Fatalf("TypeName = %q, want position suffix for detached local scope", got)
+	}
+}
+
 func TestBasicName_RuneAlias(t *testing.T) {
 	if got := BasicName(types.Typ[types.Rune]); got != "_llgo_int32" {
 		t.Fatalf("BasicName(rune) = %q, want %q", got, "_llgo_int32")
