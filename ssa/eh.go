@@ -520,7 +520,7 @@ func (b Builder) saveDeferArgsTo(argsPtr Expr, kind DoAction, id Expr, fn Expr, 
 
 func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr, ...Expr) Expr, fn Expr, args []Expr) {
 	if typ == nil {
-		buildCall(b, fn, args...)
+		b.callDeferredFunc(buildCall, fn, args)
 		return
 	}
 	prog := b.Prog
@@ -542,9 +542,33 @@ func (b Builder) callDefer(self *aDefer, typ Type, buildCall func(Builder, Expr,
 		for i := 0; i < len(args); i++ {
 			args[i] = b.getField(data, i+offset)
 		}
-		buildCall(b, fn, args...)
+		b.callDeferredFunc(buildCall, fn, args)
 		b.Call(b.Pkg.rtFunc("FreeDeferNode"), ptr)
 	})
+}
+
+func (b Builder) callDeferredFunc(buildCall func(Builder, Expr, ...Expr) Expr, fn Expr, args []Expr) Expr {
+	token := b.deferRecoverToken(fn)
+	if token == Nil {
+		return buildCall(b, fn, args...)
+	}
+	old := b.Call(b.Pkg.rtFunc("SetRecoverFunc"), token)
+	ret := buildCall(b, fn, args...)
+	b.Call(b.Pkg.rtFunc("RestoreRecoverFunc"), old)
+	return ret
+}
+
+func (b Builder) deferRecoverToken(fn Expr) Expr {
+	if fn == Nil {
+		return Nil
+	}
+	switch fn.kind {
+	case vkClosure:
+		return b.Convert(b.Prog.Uintptr(), b.Field(fn, 0))
+	case vkFuncDecl, vkFuncPtr:
+		return b.Convert(b.Prog.Uintptr(), fn)
+	}
+	return Nil
 }
 
 // RunDefers emits instructions to run deferred instructions.
@@ -619,7 +643,7 @@ func (b Builder) Recover() Expr {
 		log.Println("Recover")
 	}
 	// TODO(xsw): recover can't be a function call in Go
-	return b.Call(b.Pkg.rtFunc("Recover"))
+	return b.Call(b.Pkg.rtFunc("Recover"), b.Convert(b.Prog.Uintptr(), b.Func.Expr))
 }
 
 // Panic emits a panic instruction.

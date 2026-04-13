@@ -37,7 +37,10 @@ type Defer struct {
 }
 
 // Recover recovers a panic.
-func Recover() (ret any) {
+func Recover(fn uintptr) (ret any) {
+	if fn == 0 || uintptr(recoverKey.Get()) != fn {
+		return
+	}
 	ptr := excepKey.Get()
 	if ptr != nil {
 		excepKey.Set(nil)
@@ -45,6 +48,18 @@ func Recover() (ret any) {
 		c.Free(ptr)
 	}
 	return
+}
+
+// SetRecoverFunc sets the function that is currently eligible to recover.
+func SetRecoverFunc(fn uintptr) uintptr {
+	old := recoverKey.Get()
+	recoverKey.Set(unsafe.Pointer(fn))
+	return uintptr(old)
+}
+
+// RestoreRecoverFunc restores the previous recover-eligible function.
+func RestoreRecoverFunc(fn uintptr) {
+	recoverKey.Set(unsafe.Pointer(fn))
 }
 
 // Panic panics with a value.
@@ -58,6 +73,7 @@ func Panic(v any) {
 
 var (
 	excepKey   pthread.Key
+	recoverKey pthread.Key
 	goexitKey  pthread.Key
 	mainThread pthread.Thread
 )
@@ -69,6 +85,7 @@ func Goexit() {
 
 func init() {
 	excepKey.Create(nil)
+	recoverKey.Create(nil)
 	goexitKey.Create(nil)
 	mainThread = pthread.Self()
 }
