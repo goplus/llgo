@@ -269,6 +269,9 @@ func ifaceeq(tab *itab, x, y unsafe.Pointer) bool {
 func structequal(t, p, q unsafe.Pointer) bool {
 	x := (*structtype)(t)
 	for _, ft := range x.Fields {
+		if ft.Name_ == "_" {
+			continue
+		}
 		pi := add(p, ft.Offset)
 		qi := add(q, ft.Offset)
 		if !ft.Typ.Equal(pi, qi) {
