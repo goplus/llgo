@@ -3128,11 +3128,6 @@ xfails:
   - version: go1.26
     platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue76008.go
-    reason: go1.26 goroot run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
     case: devirtualization_nil_panics.go
     reason: go1.26 goroot run failure on darwin/arm64
   - version: go1.26
@@ -3374,11 +3369,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue73917.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue76008.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
