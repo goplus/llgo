@@ -508,12 +508,6 @@ timeouts:
   - version: go1.24
     platform: darwin/arm64
     directive: run
-    case: divmod.go
-    timeout: 1m
-    reason: divmod baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
     case: for.go
     timeout: 1m
     reason: for baseline run exceeds the default timeout on darwin/arm64
