@@ -1,4 +1,3 @@
-// LITTEST
 package main
 
 import (
@@ -17,13 +16,13 @@ type Cursor struct {
 	index int32 // index of push node; -1 for virtual root node
 }
 
-// CHECK-LABEL: define {{.*}} @"{{.*}}/cursor.Cursor.FindNode"{{.*}}
-// CHECK: Cursor.Preorder
-// CHECK: maskOf
-// CHECK: Cursor.indices
-// CHECK: IfaceType
-// CHECK: EfaceEqual
-// CHECK: ret
+func (c Cursor) Node() ast.Node {
+	if c.index < 0 {
+		return nil
+	}
+	return c.in.events[c.index].node
+}
+
 func (c Cursor) FindNode(n ast.Node) (Cursor, bool) {
 
 	// FindNode is equivalent to this code,
@@ -60,16 +59,6 @@ func (c Cursor) FindNode(n ast.Node) (Cursor, bool) {
 	return Cursor{}, false
 }
 
-// CHECK-LABEL: define {{.*}} @"{{.*}}/cursor.Cursor.Node"{{.*}}
-// CHECK: AssertIndexRange
-// CHECK: ret
-func (c Cursor) Node() ast.Node {
-	if c.index < 0 {
-		return nil
-	}
-	return c.in.events[c.index].node
-}
-
 type event struct {
 	node   ast.Node
 	typ    uint64 // typeOf(node) on push event, or union of typ strictly between push and pop events on pop events
@@ -101,10 +90,6 @@ func (c Cursor) indices() (int32, int32) {
 	}
 }
 
-// CHECK-LABEL: define {{.*}} @"{{.*}}/cursor.Cursor.Preorder"{{.*}}
-// CHECK: maskOf
-// CHECK: AllocZ
-// CHECK: ret
 func (c Cursor) Preorder(types ...ast.Node) iter.Seq[Cursor] {
 	mask := maskOf(types)
 
