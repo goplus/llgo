@@ -3,6 +3,7 @@ package abi
 import (
 	"go/types"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llgo/runtime/abi"
 )
@@ -73,13 +74,28 @@ func (b *Builder) Str(t types.Type) string {
 		return s + " " + b.realStr(t.Elem())
 	case *types.Named:
 		obj := t.Obj()
-		name := NamedName(t)
+		name := b.namedStr(t)
 		if pkg := obj.Pkg(); pkg != nil {
 			return pkg.Name() + "." + name
 		}
 		return name
+	case *types.Alias:
+		return b.Str(types.Unalias(t))
 	}
 	panic("unsupported str: " + t.String())
+}
+
+func (b *Builder) namedStr(t *types.Named) string {
+	name := t.Obj().Name()
+	if targs := t.TypeArgs(); targs != nil {
+		n := targs.Len()
+		infos := make([]string, n)
+		for i := 0; i < n; i++ {
+			infos[i] = b.realStr(targs.At(i))
+		}
+		name += "[" + strings.Join(infos, ",") + "]"
+	}
+	return name
 }
 
 func (b *Builder) structStr(t *types.Struct) string {
