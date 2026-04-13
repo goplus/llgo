@@ -399,6 +399,7 @@ func (b Builder) Slice(x, low, high, max Expr) (ret Expr) {
 		telem := t.Elem()
 		switch te := telem.Underlying().(type) {
 		case *types.Array:
+			b.AssertNilDeref(x)
 			elem := prog.rawType(te.Elem())
 			ret.Type = prog.Slice(elem)
 			nEltSize = SizeOf(prog, elem)

@@ -2492,11 +2492,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: nilptr.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: noinit.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -2759,11 +2754,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: mallocfin.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: nilptr.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
@@ -3339,11 +3329,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: init1.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: nilptr.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
