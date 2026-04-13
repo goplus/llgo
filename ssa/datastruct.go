@@ -775,14 +775,18 @@ func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
 	}
 	var fn Expr
 	if blocking {
-		fn = b.Pkg.rtFunc("Select")
+		fn = b.selectRuntimeFunc("Select", len(states))
 	} else {
-		fn = b.Pkg.rtFunc("TrySelect")
+		fn = b.selectRuntimeFunc("TrySelect", len(states))
 	}
 	prog := b.Prog
-	tSlice := lastParamType(prog, fn)
-	slice := b.SliceLit(tSlice, ops...)
-	ret = b.Call(fn, slice)
+	if len(states) > 0 && len(states) <= 8 {
+		ret = b.Call(fn, ops...)
+	} else {
+		tSlice := lastParamType(prog, fn)
+		slice := b.SliceLit(tSlice, ops...)
+		ret = b.Call(fn, slice)
+	}
 	chosen := b.impl.CreateExtractValue(ret.impl, 0, "")
 	recvOK := b.impl.CreateExtractValue(ret.impl, 1, "")
 	if !blocking {
@@ -802,6 +806,13 @@ func (b Builder) Select(states []*SelectState, blocking bool) (ret Expr) {
 		}
 	}
 	return b.aggregateValue(b.Prog.Struct(typs...), results...)
+}
+
+func (b Builder) selectRuntimeFunc(name string, n int) Expr {
+	if n > 0 && n <= 8 {
+		name = fmt.Sprintf("%s%d", name, n)
+	}
+	return b.Pkg.rtFunc(name)
 }
 
 func lastParamType(prog Program, fn Expr) Type {

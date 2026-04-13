@@ -32,15 +32,16 @@ const (
 )
 
 type Chan struct {
-	mutex sync.Mutex
-	cond  sync.Cond
-	data  unsafe.Pointer
-	getp  int
-	len   int
-	cap   int
-	sops  []*selectReg
-	sends uint16
-	close bool
+	mutex    sync.Mutex
+	cond     sync.Cond
+	data     unsafe.Pointer
+	getp     int
+	len      int
+	cap      int
+	sops     []*selectReg
+	sends    uint16
+	selsends uint16
+	close    bool
 }
 
 func NewChan(eltSize, cap int) *Chan {
@@ -186,6 +187,10 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 }
 
 func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK bool) {
+	return chanTryRecv(p, v, eltSize, true)
+}
+
+func chanTryRecv(p *Chan, v unsafe.Pointer, eltSize int, waitSelectSend bool) (recvOK bool, tryOK bool) {
 	if p == nil {
 		return false, false
 	}
@@ -194,6 +199,13 @@ func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK boo
 	if n == 0 {
 		if p.sends == 0 || p.getp == chanHasRecv || p.close {
 			tryOK = p.close
+			p.mutex.Unlock()
+			return
+		}
+		// A select-send only advertises potential progress. When both peers are
+		// blocked in mixed recv/send selects, at least one side must avoid waiting
+		// on a peer that has not committed to send yet.
+		if !waitSelectSend && p.sends == p.selsends {
 			p.mutex.Unlock()
 			return
 		}
@@ -360,6 +372,24 @@ func (r *selectReg) notify() {
 	op.cond.Signal()
 }
 
+func (p *selectOp) newReg(c *Chan, idx int) *selectReg {
+	n := len(p.regs)
+	var reg *selectReg
+	if n < cap(p.regs) {
+		p.regs = p.regs[:n+1]
+		reg = p.regs[n]
+		if reg == nil {
+			reg = new(selectReg)
+			p.regs[n] = reg
+		}
+	} else {
+		reg = new(selectReg)
+		p.regs = append(p.regs, reg)
+	}
+	*reg = selectReg{op: p, c: c, idx: idx, gen: p.gen}
+	return reg
+}
+
 func acquireSelectOp() *selectOp {
 	selectPool.mutex.Lock()
 	op := selectPool.head
@@ -393,6 +423,50 @@ type ChanOp struct {
 
 // TrySelect executes a non-blocking select operation.
 func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
+	return trySelectSource(ops)
+}
+
+func TrySelect1(op0 ChanOp) (int, bool, bool) {
+	ops := [1]ChanOp{op0}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect2(op0, op1 ChanOp) (int, bool, bool) {
+	ops := [2]ChanOp{op0, op1}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect3(op0, op1, op2 ChanOp) (int, bool, bool) {
+	ops := [3]ChanOp{op0, op1, op2}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect4(op0, op1, op2, op3 ChanOp) (int, bool, bool) {
+	ops := [4]ChanOp{op0, op1, op2, op3}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect5(op0, op1, op2, op3, op4 ChanOp) (int, bool, bool) {
+	ops := [5]ChanOp{op0, op1, op2, op3, op4}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect6(op0, op1, op2, op3, op4, op5 ChanOp) (int, bool, bool) {
+	ops := [6]ChanOp{op0, op1, op2, op3, op4, op5}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect7(op0, op1, op2, op3, op4, op5, op6 ChanOp) (int, bool, bool) {
+	ops := [7]ChanOp{op0, op1, op2, op3, op4, op5, op6}
+	return trySelectSource(ops[:])
+}
+
+func TrySelect8(op0, op1, op2, op3, op4, op5, op6, op7 ChanOp) (int, bool, bool) {
+	ops := [8]ChanOp{op0, op1, op2, op3, op4, op5, op6, op7}
+	return trySelectSource(ops[:])
+}
+
+func trySelectSource(ops []ChanOp) (isel int, recvOK, tryOK bool) {
 	for isel = range ops {
 		op := ops[isel]
 		if op.C == nil {
@@ -414,7 +488,52 @@ func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
 
 // Select executes a blocking select operation.
 func Select(ops ...ChanOp) (isel int, recvOK bool) {
+	return selectSlice(ops)
+}
+
+func Select1(op0 ChanOp) (int, bool) {
+	ops := [1]ChanOp{op0}
+	return selectSlice(ops[:])
+}
+
+func Select2(op0, op1 ChanOp) (int, bool) {
+	ops := [2]ChanOp{op0, op1}
+	return selectSlice(ops[:])
+}
+
+func Select3(op0, op1, op2 ChanOp) (int, bool) {
+	ops := [3]ChanOp{op0, op1, op2}
+	return selectSlice(ops[:])
+}
+
+func Select4(op0, op1, op2, op3 ChanOp) (int, bool) {
+	ops := [4]ChanOp{op0, op1, op2, op3}
+	return selectSlice(ops[:])
+}
+
+func Select5(op0, op1, op2, op3, op4 ChanOp) (int, bool) {
+	ops := [5]ChanOp{op0, op1, op2, op3, op4}
+	return selectSlice(ops[:])
+}
+
+func Select6(op0, op1, op2, op3, op4, op5 ChanOp) (int, bool) {
+	ops := [6]ChanOp{op0, op1, op2, op3, op4, op5}
+	return selectSlice(ops[:])
+}
+
+func Select7(op0, op1, op2, op3, op4, op5, op6 ChanOp) (int, bool) {
+	ops := [7]ChanOp{op0, op1, op2, op3, op4, op5, op6}
+	return selectSlice(ops[:])
+}
+
+func Select8(op0, op1, op2, op3, op4, op5, op6, op7 ChanOp) (int, bool) {
+	ops := [8]ChanOp{op0, op1, op2, op3, op4, op5, op6, op7}
+	return selectSlice(ops[:])
+}
+
+func selectSlice(ops []ChanOp) (isel int, recvOK bool) {
 	selOp := acquireSelectOp()
+	sendFirst := selectSendFirst(ops)
 	for _, op := range ops {
 		if op.C == nil {
 			continue
@@ -423,7 +542,7 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	}
 	var tryOK bool
 	for {
-		if isel, recvOK, tryOK = TrySelect(ops...); tryOK {
+		if isel, recvOK, tryOK = trySelect(ops, sendFirst); tryOK {
 			break
 		}
 		selOp.wait()
@@ -438,6 +557,66 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	return
 }
 
+func trySelect(ops []ChanOp, sendFirst bool) (isel int, recvOK, tryOK bool) {
+	if sendFirst {
+		if isel, recvOK, tryOK = trySelectDir(ops, true, false); tryOK {
+			return
+		}
+		return trySelectDir(ops, false, false)
+	}
+	if isel, recvOK, tryOK = trySelectDir(ops, false, true); tryOK {
+		return
+	}
+	return trySelectDir(ops, true, true)
+}
+
+func trySelectDir(ops []ChanOp, send bool, waitSelectSend bool) (isel int, recvOK, tryOK bool) {
+	for isel = range ops {
+		op := ops[isel]
+		if op.C == nil || op.Send != send {
+			continue
+		}
+		if op.Send {
+			if tryOK = ChanTrySend(op.C, op.Val, int(op.Size)); tryOK {
+				return
+			}
+			continue
+		}
+		if recvOK, tryOK = chanTryRecv(op.C, op.Val, int(op.Size), waitSelectSend); tryOK {
+			return
+		}
+	}
+	return
+}
+
+func selectSendFirst(ops []ChanOp) bool {
+	// Give mixed unbuffered select/select handshakes a deterministic direction:
+	// one peer tries sends first while the opposite peer can wait in recv.
+	const maxUintptr = ^uintptr(0)
+	minRecv := maxUintptr
+	minSend := maxUintptr
+	for _, op := range ops {
+		if op.C == nil {
+			continue
+		}
+		addr := uintptr(unsafe.Pointer(op.C))
+		if op.Send {
+			if addr < minSend {
+				minSend = addr
+			}
+		} else if addr < minRecv {
+			minRecv = addr
+		}
+	}
+	if minSend == maxUintptr {
+		return false
+	}
+	if minRecv == maxUintptr {
+		return true
+	}
+	return minSend < minRecv
+}
+
 func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	c.mutex.Lock()
 	// Unbuffered channel select support:
@@ -449,10 +628,10 @@ func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	// net.Pipe) to avoid deadlocks.
 	if c.cap == 0 && isSend {
 		c.sends++
+		c.selsends++
 	}
-	reg := &selectReg{op: selOp, c: c, idx: len(c.sops), gen: selOp.gen}
+	reg := selOp.newReg(c, len(c.sops))
 	c.sops = append(c.sops, reg)
-	selOp.regs = append(selOp.regs, reg)
 	if c.cap == 0 && isSend {
 		// A newly-registered select-send can make a select-recv runnable.
 		notifyOps(c)
@@ -464,6 +643,7 @@ func endSelect(c *Chan, selOp *selectOp, isSend bool) {
 	c.mutex.Lock()
 	if c.cap == 0 && isSend {
 		c.sends--
+		c.selsends--
 	}
 	for _, reg := range selOp.regs {
 		if reg == nil || reg.c != c {

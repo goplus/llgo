@@ -123,7 +123,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 		}
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
-		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
+		ret = Expr{b.fixedAlloca(elem.ll), prog.VoidPtr()}
 		ret.impl = b.zeroinit(ret, size).impl
 	}
 	ret.Type = prog.Pointer(elem)
@@ -163,9 +163,25 @@ func (b Builder) AllocaT(t Type) (ret Expr) {
 		log.Printf("AllocaT %v\n", t.RawType())
 	}
 	prog := b.Prog
-	ret.impl = llvm.CreateAlloca(b.impl, t.ll)
+	ret.impl = b.fixedAlloca(t.ll)
 	ret.Type = prog.Pointer(t)
 	return
+}
+
+func (b Builder) fixedAlloca(t llvm.Type) llvm.Value {
+	if b.blk == nil || b.Func == nil || len(b.Func.blks) == 0 || b.blk == b.Func.blks[0] {
+		return llvm.CreateAlloca(b.impl, t)
+	}
+	cur := b.impl.GetInsertBlock()
+	first := b.Func.blks[0].first.FirstInstruction()
+	if first.IsNil() {
+		b.impl.SetInsertPointAtEnd(b.Func.blks[0].first)
+	} else {
+		b.impl.SetInsertPointBefore(first)
+	}
+	ret := llvm.CreateAlloca(b.impl, t)
+	b.impl.SetInsertPointAtEnd(cur)
+	return ret
 }
 
 /* TODO(xsw):
