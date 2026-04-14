@@ -1713,6 +1713,38 @@ flakes:
     case: rotate0.go
     reason: rotate0 runoutput can either pass or time out on darwin/arm64
 xfails:
+  - platform: darwin/arm64
+    directive: run
+    case: nilptr2.go
+    reason: llgo does not panic for nil dereference through address-of-dereference
+  - platform: linux/amd64
+    directive: run
+    case: nilptr2.go
+    reason: llgo does not panic for nil dereference through address-of-dereference
+  - platform: darwin/arm64
+    directive: runoutput
+    case: chan/select5.go
+    reason: llgo select scheduling hangs in goroot runoutput
+  - platform: linux/amd64
+    directive: runoutput
+    case: chan/select5.go
+    reason: llgo select scheduling hangs in goroot runoutput
+  - platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue16870.go
+    reason: llgo comma-ok semantics case builds without producing llgo.out
+  - platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16870.go
+    reason: llgo comma-ok semantics case builds without producing llgo.out
+  - platform: darwin/arm64
+    directive: run
+    case: fixedbugs/issue72063.go
+    reason: llgo generic recursion case builds without producing llgo.out
+  - platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue72063.go
+    reason: llgo generic recursion case builds without producing llgo.out
   - version: go1.24
     platform: linux/amd64
     directive: run
@@ -1860,10 +1892,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: recover2.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: recover3.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -1908,10 +1936,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: interface/noeq.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: fixedbugs/bug336.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -1928,23 +1952,11 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue12133.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue13169.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue14646.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue15281.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue16130.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -1977,10 +1989,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue24491b.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue26094.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -2020,10 +2028,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: fixedbugs/issue32187.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: fixedbugs/issue32477.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -2049,10 +2053,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue4562.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue4585.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -2097,10 +2097,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue5856.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue59411.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -2811,7 +2807,7 @@ xfails:
     reason: go1.24 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
-    directive: run
+    directive: runoutput
     case: rangegen.go
     reason: go1.24 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.24
@@ -2841,7 +2837,7 @@ xfails:
     reason: go1.25 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
-    directive: run
+    directive: runoutput
     case: rangegen.go
     reason: go1.25 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.25
