@@ -1,9 +1,3 @@
 [UseIface]
 github.com/goplus/llgo/cl/_testgo/struczero.main:
     _llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo
-
-[MethodInfo]
-*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo:
-    0 Pb _llgo_func$bbS9EKnYgxbrRntc_6WJN6WLF9IKQADblvN_cLtKCqY github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb
-_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo:
-    0 Pb _llgo_func$bbS9EKnYgxbrRntc_6WJN6WLF9IKQADblvN_cLtKCqY github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb

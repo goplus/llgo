@@ -13,9 +13,6 @@ _llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer:
     github.com/goplus/llgo/cl/_testdata/foo.initGame _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
 
 [MethodInfo]
-*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game:
-    0 Load _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load
-    1 github.com/goplus/llgo/cl/_testdata/foo.initGame _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame
 *_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1:
     0 Load _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/interface.(*Game1).Load github.com/goplus/llgo/cl/_testgo/interface.(*Game1).Load
     1 github.com/goplus/llgo/cl/_testdata/foo.initGame _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/interface.(*Game1).initGame github.com/goplus/llgo/cl/_testgo/interface.(*Game1).initGame

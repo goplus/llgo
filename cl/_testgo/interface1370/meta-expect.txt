@@ -1,10 +1,3 @@
 [UseIface]
 github.com/goplus/llgo/cl/_testgo/interface1370.main:
     *_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle
-
-[MethodInfo]
-*_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle:
-    0 Area _llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8 github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).Area github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).Area
-    1 GetID _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).GetID github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).GetID
-    2 github.com/goplus/llgo/cl/_testdata/geometry1370.setID _llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).setID github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).setID
-    3 github.com/goplus/llgo/cl/_testdata/geometry1370.validate _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).validate github.com/goplus/llgo/cl/_testdata/geometry1370.(*Rectangle).validate

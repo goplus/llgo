@@ -299,7 +299,7 @@ func writeSymbolListSection(buf *bytes.Buffer, name string, data map[Symbol][]Sy
 	writeSectionHeader(buf, name)
 	for _, key := range sortedSymbolKeys(data) {
 		fmt.Fprintf(buf, "%s:\n", key)
-		for _, value := range data[key] {
+		for _, value := range sortedSymbols(data[key]) {
 			fmt.Fprintf(buf, "    %s\n", value)
 		}
 	}
@@ -312,7 +312,7 @@ func writeIfaceMethodSection(buf *bytes.Buffer, name string, data map[Symbol][]I
 	writeSectionHeader(buf, name)
 	for _, key := range sortedSymbolKeys(data) {
 		fmt.Fprintf(buf, "%s:\n", key)
-		for _, value := range data[key] {
+		for _, value := range sortedIfaceMethodDemands(data[key]) {
 			fmt.Fprintf(buf, "    %s %s %s\n", value.Target, value.Sig.Name, value.Sig.MType)
 		}
 	}
@@ -325,7 +325,7 @@ func writeInterfaceInfoSection(buf *bytes.Buffer, name string, data map[Symbol][
 	writeSectionHeader(buf, name)
 	for _, key := range sortedSymbolKeys(data) {
 		fmt.Fprintf(buf, "%s:\n", key)
-		for _, value := range data[key] {
+		for _, value := range sortedMethodSigs(data[key]) {
 			fmt.Fprintf(buf, "    %s %s\n", value.Name, value.MType)
 		}
 	}
@@ -351,7 +351,7 @@ func writeStringListSection(buf *bytes.Buffer, name string, data map[Symbol][]st
 	writeSectionHeader(buf, name)
 	for _, key := range sortedSymbolKeys(data) {
 		fmt.Fprintf(buf, "%s:\n", key)
-		for _, value := range data[key] {
+		for _, value := range sortedStrings(data[key]) {
 			fmt.Fprintf(buf, "    %s\n", value)
 		}
 	}
@@ -378,4 +378,43 @@ func sortedSymbolKeys[T any](m map[Symbol]T) []Symbol {
 
 func sortedSetKeys(m map[Symbol]struct{}) []Symbol {
 	return sortedSymbolKeys(m)
+}
+
+func sortedSymbols(values []Symbol) []Symbol {
+	out := append([]Symbol(nil), values...)
+	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
+	return out
+}
+
+func sortedIfaceMethodDemands(values []IfaceMethodDemand) []IfaceMethodDemand {
+	out := append([]IfaceMethodDemand(nil), values...)
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.Target != b.Target {
+			return a.Target < b.Target
+		}
+		if a.Sig.Name != b.Sig.Name {
+			return a.Sig.Name < b.Sig.Name
+		}
+		return a.Sig.MType < b.Sig.MType
+	})
+	return out
+}
+
+func sortedMethodSigs(values []MethodSig) []MethodSig {
+	out := append([]MethodSig(nil), values...)
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.Name != b.Name {
+			return a.Name < b.Name
+		}
+		return a.MType < b.MType
+	})
+	return out
+}
+
+func sortedStrings(values []string) []string {
+	out := append([]string(nil), values...)
+	sort.Strings(out)
+	return out
 }

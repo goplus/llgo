@@ -12,9 +12,6 @@ _llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object:
     github.com/goplus/llgo/cl/_testdata/embedunexport.setName _llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA
 
 [MethodInfo]
-*_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Base:
-    0 Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).Name
-    1 github.com/goplus/llgo/cl/_testdata/embedunexport.setName _llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName github.com/goplus/llgo/cl/_testdata/embedunexport.(*Base).setName
 *_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped:
     0 Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name
     1 github.com/goplus/llgo/cl/_testdata/embedunexport.setName _llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).setName github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).setName

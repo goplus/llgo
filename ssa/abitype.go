@@ -443,8 +443,42 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 			TFn:   tfn.Name(),
 		})
 	}
-	b.Pkg.emitMethodInfo(typeName, slots)
+	if b.Pkg.shouldEmitMethodInfo(t) {
+		b.Pkg.emitMethodInfo(typeName, slots)
+	}
 	return llvm.ConstArray(ft.ll, fields)
+}
+
+// shouldEmitMethodInfo reports whether the current package should emit
+// llgo.methodinfo for t.
+//
+// Ownership follows the concrete root type, not an outer pointer wrapper.
+// This keeps *T aligned with T for emission policy.
+//
+// The current policy is intentionally conservative:
+//   - local named types keep emitting in their defining/using package;
+//   - anonymous or synthetic types keep emitting in the current package;
+//   - instantiated generic named types stay allowed at use sites, because
+//     current LLGo may compile and materialize their methods there;
+//   - imported non-generic named types are suppressed here, so their
+//     method table metadata is emitted only by their defining package.
+func (p Package) shouldEmitMethodInfo(t types.Type) bool {
+	t = types.Unalias(t)
+	switch tt := t.(type) {
+	case *types.Pointer:
+		return p.shouldEmitMethodInfo(tt.Elem())
+	case *types.Named:
+		if ta := tt.TypeArgs(); ta != nil && ta.Len() != 0 {
+			return true
+		}
+		obj := tt.Obj()
+		if obj == nil || obj.Pkg() == nil {
+			return true
+		}
+		return abi.PathOf(obj.Pkg()) == p.Path()
+	default:
+		return true
+	}
 }
 
 func mthName(method *types.Func) string {
