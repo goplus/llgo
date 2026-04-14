@@ -17,10 +17,10 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/cursor"
 %"github.com/goplus/llgo/runtime/abi.ArrayType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr, ptr, i64 }
 %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" = type { ptr, i32 }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/cl/_testgo/cursor.event" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, i32, i32 }
 %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" = type { ptr, ptr }
 %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector" = type { %"github.com/goplus/llgo/runtime/internal/runtime.Slice" }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/cl/_testgo/cursor.event" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, i32, i32 }
 
 @"github.com/goplus/llgo/cl/_testgo/cursor.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [36 x i8] c"iterator call did not preserve panic", align 1
@@ -529,230 +529,232 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/cursor"
 define { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
 _llgo_0:
   %2 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %2, align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, ptr %3, align 8
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
+  %3 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
+  %4 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
+  call void @llvm.memset(ptr %4, i8 0, i64 16, i1 false)
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %4, align 8
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, ptr %5, align 8
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
   br i1 false, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %6 = icmp eq ptr %2, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
-  %7 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
-  %8 = icmp eq ptr %3, null
+  %8 = icmp eq ptr %4, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
-  %9 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
-  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %11 = icmp eq ptr %10, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
-  %12 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %10, i64 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %12, align 8
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %10, 0
-  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 1, 1
-  %15 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14, i64 1, 2
-  %16 = call %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %7, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %15)
-  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 32)
-  %19 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %18, i32 0, i32 0
-  store ptr %17, ptr %19, align 8
-  %20 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %18, i32 0, i32 1
-  store ptr %3, ptr %20, align 8
-  %21 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %18, i32 0, i32 2
-  store ptr %4, ptr %21, align 8
-  %22 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %18, i32 0, i32 3
-  store ptr %5, ptr %22, align 8
-  %23 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1", ptr undef }, ptr %18, 1
-  %24 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %16, 1
-  %25 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %16, 0
-  call void %25(ptr %24, { ptr, ptr } %23)
-  %26 = icmp eq ptr %17, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %26)
-  %27 = load i64, ptr %17, align 4
-  %28 = icmp eq i64 %27, -1
-  br i1 %28, label %_llgo_4, label %_llgo_5
+  %9 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
+  %10 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %5, align 8
+  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %13 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %12, i64 0
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %11, ptr %14, align 8
+  %15 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %15)
+  %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %12, 0
+  %17 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %16, i64 1, 1
+  %18 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, i64 1, 2
+  %19 = call %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %9, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 32)
+  %22 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %21, i32 0, i32 0
+  store ptr %20, ptr %22, align 8
+  %23 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %21, i32 0, i32 1
+  store ptr %5, ptr %23, align 8
+  %24 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %21, i32 0, i32 2
+  store ptr %6, ptr %24, align 8
+  %25 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %21, i32 0, i32 3
+  store ptr %7, ptr %25, align 8
+  %26 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1", ptr undef }, ptr %21, 1
+  %27 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %19, 1
+  %28 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %19, 0
+  call void %28(ptr %27, { ptr, ptr } %26)
+  %29 = icmp eq ptr %20, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %29)
+  %30 = load i64, ptr %20, align 4
+  %31 = icmp eq i64 %30, -1
+  br i1 %31, label %_llgo_4, label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %29 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %30 = icmp eq ptr %29, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %30)
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %29, i64 0
-  %32 = icmp eq ptr %3, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %32)
-  %33 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %33, ptr %31, align 8
-  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %29, 0
-  %35 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %34, i64 1, 1
-  %36 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, i64 1, 2
-  %37 = call i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %36)
-  %38 = icmp eq ptr %2, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %38)
-  %39 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
-  %40 = icmp eq ptr %39, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %40)
-  %41 = load ptr, ptr %39, align 8
-  %42 = icmp eq ptr %41, null
+  %32 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %33 = icmp eq ptr %32, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %33)
+  %34 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %32, i64 0
+  %35 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %35)
+  %36 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %5, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %36, ptr %34, align 8
+  %37 = icmp eq ptr %32, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %37)
+  %38 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %32, 0
+  %39 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %38, i64 1, 1
+  %40 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %39, i64 1, 2
+  %41 = call i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40)
+  %42 = icmp eq ptr %4, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %42)
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %41, i32 0, i32 0
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, i32 0, i32 0
   %44 = icmp eq ptr %43, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %44)
-  %45 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %43, align 8
-  %46 = icmp eq ptr %2, null
+  %45 = load ptr, ptr %43, align 8
+  %46 = icmp eq ptr %45, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %46)
-  %47 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
-  %48 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %47)
-  %49 = extractvalue { i32, i32 } %48, 0
-  %50 = extractvalue { i32, i32 } %48, 1
+  %47 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %45, i32 0, i32 0
+  %48 = icmp eq ptr %47, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %48)
+  %49 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %47, align 8
+  %50 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %50)
+  %51 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
+  %52 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %51)
+  %53 = extractvalue { i32, i32 } %52, 0
+  %54 = extractvalue { i32, i32 } %52, 1
   br label %_llgo_9
 
 _llgo_3:                                          ; preds = %_llgo_7, %_llgo_6
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %4, align 8
-  store i1 false, ptr %5, align 1
-  %51 = icmp eq ptr %4, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %51)
-  %52 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %53 = icmp eq ptr %5, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %53)
-  %54 = load i1, ptr %5, align 1
-  %55 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %52, 0
-  %56 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %55, i1 %54, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %56
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %6, align 8
+  store i1 false, ptr %7, align 1
+  %55 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %55)
+  %56 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %57 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %57)
+  %58 = load i1, ptr %7, align 1
+  %59 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %56, 0
+  %60 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %59, i1 %58, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %60
 
 _llgo_4:                                          ; preds = %_llgo_1
-  %57 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 36 }, ptr %57, align 8
-  %58 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %57, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %58)
+  %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 36 }, ptr %61, align 8
+  %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %61, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %62)
   unreachable
 
 _llgo_5:                                          ; preds = %_llgo_1
-  %59 = icmp eq i64 %27, 0
-  br i1 %59, label %_llgo_6, label %_llgo_7
+  %63 = icmp eq i64 %30, 0
+  br i1 %63, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  store i64 -2, ptr %17, align 4
+  store i64 -2, ptr %20, align 4
   br label %_llgo_3
 
 _llgo_7:                                          ; preds = %_llgo_5
-  %60 = icmp eq i64 %27, 1
-  br i1 %60, label %_llgo_8, label %_llgo_3
+  %64 = icmp eq i64 %30, 1
+  br i1 %64, label %_llgo_8, label %_llgo_3
 
 _llgo_8:                                          ; preds = %_llgo_7
-  %61 = icmp eq ptr %4, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %61)
-  %62 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %63 = icmp eq ptr %5, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %63)
-  %64 = load i1, ptr %5, align 1
-  %65 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %62, 0
-  %66 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %65, i1 %64, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %66
+  %65 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %65)
+  %66 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %67 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %67)
+  %68 = load i1, ptr %7, align 1
+  %69 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %66, 0
+  %70 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %69, i1 %68, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %70
 
 _llgo_9:                                          ; preds = %_llgo_13, %_llgo_2
-  %67 = phi i32 [ %49, %_llgo_2 ], [ %97, %_llgo_13 ]
-  %68 = icmp slt i32 %67, %50
-  br i1 %68, label %_llgo_10, label %_llgo_11
+  %71 = phi i32 [ %53, %_llgo_2 ], [ %99, %_llgo_13 ]
+  %72 = icmp slt i32 %71, %54
+  br i1 %72, label %_llgo_10, label %_llgo_11
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %69 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
-  call void @llvm.memset(ptr %69, i8 0, i64 32, i1 false)
-  %70 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %45, 0
-  %71 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %45, 1
-  %72 = sext i32 %67 to i64
-  %73 = icmp slt i64 %72, 0
-  %74 = icmp sge i64 %72, %71
-  %75 = or i1 %74, %73
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %75)
-  %76 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %70, i64 %72
-  %77 = icmp eq ptr %76, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %77)
-  %78 = load %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %76, align 8
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.event" %78, ptr %69, align 8
-  %79 = icmp eq ptr %69, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %79)
-  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %69, i32 0, i32 2
-  %81 = icmp eq ptr %80, null
+  call void @llvm.memset(ptr %3, i8 0, i64 32, i1 false)
+  %73 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %49, 0
+  %74 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %49, 1
+  %75 = sext i32 %71 to i64
+  %76 = icmp slt i64 %75, 0
+  %77 = icmp sge i64 %75, %74
+  %78 = or i1 %77, %76
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %78, i64 %75, i64 %74)
+  %79 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %73, i64 %75
+  %80 = icmp eq ptr %79, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %80)
+  call void @llvm.memmove.p0.p0.i64(ptr %3, ptr %79, i64 32, i1 false)
+  %81 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %81)
-  %82 = load i32, ptr %80, align 4
-  %83 = icmp sgt i32 %82, %67
-  br i1 %83, label %_llgo_12, label %_llgo_13
+  %82 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
+  %83 = icmp eq ptr %82, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %83)
+  %84 = load i32, ptr %82, align 4
+  %85 = icmp sgt i32 %84, %71
+  br i1 %85, label %_llgo_12, label %_llgo_13
 
 _llgo_11:                                         ; preds = %_llgo_9
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %4, align 8
-  store i1 false, ptr %5, align 1
-  %84 = icmp eq ptr %4, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %84)
-  %85 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %86 = icmp eq ptr %5, null
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %6, align 8
+  store i1 false, ptr %7, align 1
+  %86 = icmp eq ptr %6, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %86)
-  %87 = load i1, ptr %5, align 1
-  %88 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %85, 0
-  %89 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %88, i1 %87, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %89
+  %87 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %88 = icmp eq ptr %7, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %88)
+  %89 = load i1, ptr %7, align 1
+  %90 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %87, 0
+  %91 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %90, i1 %89, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %91
 
 _llgo_12:                                         ; preds = %_llgo_10
-  %90 = icmp eq ptr %69, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %90)
-  %91 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %69, i32 0, i32 1
-  %92 = icmp eq ptr %91, null
+  %92 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %92)
-  %93 = load i64, ptr %91, align 4
-  %94 = and i64 %93, %37
-  %95 = icmp ne i64 %94, 0
-  br i1 %95, label %_llgo_16, label %_llgo_15
+  %93 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 1
+  %94 = icmp eq ptr %93, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %94)
+  %95 = load i64, ptr %93, align 4
+  %96 = and i64 %95, %41
+  %97 = icmp ne i64 %96, 0
+  br i1 %97, label %_llgo_16, label %_llgo_15
 
 _llgo_13:                                         ; preds = %_llgo_17, %_llgo_15, %_llgo_10
-  %96 = phi i32 [ %67, %_llgo_10 ], [ %67, %_llgo_15 ], [ %118, %_llgo_17 ]
-  %97 = add i32 %96, 1
+  %98 = phi i32 [ %71, %_llgo_10 ], [ %71, %_llgo_15 ], [ %118, %_llgo_17 ]
+  %99 = add i32 %98, 1
   br label %_llgo_9
 
 _llgo_14:                                         ; preds = %_llgo_16
-  %98 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
-  call void @llvm.memset(ptr %98, i8 0, i64 16, i1 false)
-  %99 = icmp eq ptr %98, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %99)
-  %100 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %98, i32 0, i32 0
-  %101 = icmp eq ptr %2, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %101)
-  %102 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
-  %103 = icmp eq ptr %102, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %103)
-  %104 = load ptr, ptr %102, align 8
-  %105 = icmp eq ptr %98, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %105)
-  %106 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %98, i32 0, i32 1
-  store ptr %104, ptr %100, align 8
-  store i32 %67, ptr %106, align 4
-  %107 = icmp eq ptr %98, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %107)
-  %108 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %98, align 8
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %108, ptr %4, align 8
-  store i1 true, ptr %5, align 1
-  %109 = icmp eq ptr %4, null
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  %100 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %100)
+  %101 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
+  %102 = icmp eq ptr %4, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %102)
+  %103 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, i32 0, i32 0
+  %104 = icmp eq ptr %103, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %104)
+  %105 = load ptr, ptr %103, align 8
+  %106 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %106)
+  %107 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 1
+  store ptr %105, ptr %101, align 8
+  store i32 %71, ptr %107, align 4
+  %108 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %108)
+  call void @llvm.memmove.p0.p0.i64(ptr %6, ptr %2, i64 16, i1 false)
+  store i1 true, ptr %7, align 1
+  %109 = icmp eq ptr %6, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %109)
-  %110 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %111 = icmp eq ptr %5, null
+  %110 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %111 = icmp eq ptr %7, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %111)
-  %112 = load i1, ptr %5, align 1
+  %112 = load i1, ptr %7, align 1
   %113 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %110, 0
   %114 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %113, i1 %112, 1
   ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %114
 
 _llgo_15:                                         ; preds = %_llgo_16, %_llgo_12
-  %115 = icmp eq ptr %69, null
+  %115 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %115)
-  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %69, i32 0, i32 2
+  %116 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
   %117 = icmp eq ptr %116, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %117)
   %118 = load i32, ptr %116, align 4
-  %119 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %45, 0
-  %120 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %45, 1
+  %119 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %49, 0
+  %120 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %49, 1
   %121 = sext i32 %118 to i64
   %122 = icmp slt i64 %121, 0
   %123 = icmp sge i64 %121, %120
   %124 = or i1 %123, %122
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %124)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %124, i64 %121, i64 %120)
   %125 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %119, i64 %121
   %126 = icmp eq ptr %125, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %126)
@@ -760,20 +762,20 @@ _llgo_15:                                         ; preds = %_llgo_16, %_llgo_12
   %128 = icmp eq ptr %127, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %128)
   %129 = load i64, ptr %127, align 4
-  %130 = and i64 %129, %37
+  %130 = and i64 %129, %41
   %131 = icmp eq i64 %130, 0
   br i1 %131, label %_llgo_17, label %_llgo_13
 
 _llgo_16:                                         ; preds = %_llgo_12
-  %132 = icmp eq ptr %69, null
+  %132 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %132)
-  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %69, i32 0, i32 0
+  %133 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 0
   %134 = icmp eq ptr %133, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %134)
   %135 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %133, align 8
-  %136 = icmp eq ptr %3, null
+  %136 = icmp eq ptr %5, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %136)
-  %137 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
+  %137 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %5, align 8
   %138 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %135)
   %139 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %135, 1
   %140 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %138, 0
@@ -882,7 +884,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %22 = icmp slt i64 %21, 0
   %23 = icmp sge i64 %21, %20
   %24 = or i1 %23, %22
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %24)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %24, i64 %21, i64 %20)
   %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %19, i64 %21
   %26 = icmp eq ptr %25, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %26)
@@ -895,88 +897,88 @@ _llgo_2:                                          ; preds = %_llgo_0
 
 define %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1) {
 _llgo_0:
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %2, align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %4 = call i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
-  store i64 %4, ptr %3, align 4
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  %6 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 0
-  store ptr %2, ptr %6, align 8
-  %7 = getelementptr inbounds { ptr, ptr }, ptr %5, i32 0, i32 1
+  %2 = alloca %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]", align 8
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %3, align 8
+  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %5 = call i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %1)
+  store i64 %5, ptr %4, align 4
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  %7 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 0
   store ptr %3, ptr %7, align 8
-  %8 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder$1", ptr undef }, ptr %5, 1
-  %9 = alloca %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]", align 8
-  store { ptr, ptr } %8, ptr %9, align 8
-  %10 = load %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]", ptr %9, align 8
+  %8 = getelementptr inbounds { ptr, ptr }, ptr %6, i32 0, i32 1
+  store ptr %4, ptr %8, align 8
+  %9 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder$1", ptr undef }, ptr %6, 1
+  store { ptr, ptr } %9, ptr %2, align 8
+  %10 = load %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]", ptr %2, align 8
   ret %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %10
 }
 
 define void @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder$1"(ptr %0, { ptr, ptr } %1) {
 _llgo_0:
-  %2 = load { ptr, ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr, ptr } %2, 0
-  %4 = icmp eq ptr %3, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %3, i32 0, i32 0
+  %2 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
+  %3 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
+  %4 = load { ptr, ptr }, ptr %0, align 8
+  %5 = extractvalue { ptr, ptr } %4, 0
   %6 = icmp eq ptr %5, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
-  %7 = load ptr, ptr %5, align 8
+  %7 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %5, i32 0, i32 0
   %8 = icmp eq ptr %7, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %7, i32 0, i32 0
+  %9 = load ptr, ptr %7, align 8
   %10 = icmp eq ptr %9, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
-  %11 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %9, align 8
-  %12 = extractvalue { ptr, ptr } %2, 0
-  %13 = icmp eq ptr %12, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
-  %14 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %12, align 8
-  %15 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %14)
-  %16 = extractvalue { i32, i32 } %15, 0
-  %17 = extractvalue { i32, i32 } %15, 1
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %9, i32 0, i32 0
+  %12 = icmp eq ptr %11, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %11, align 8
+  %14 = extractvalue { ptr, ptr } %4, 0
+  %15 = icmp eq ptr %14, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %15)
+  %16 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %14, align 8
+  %17 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %16)
+  %18 = extractvalue { i32, i32 } %17, 0
+  %19 = extractvalue { i32, i32 } %17, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_5, %_llgo_8, %_llgo_0
-  %18 = phi i32 [ %16, %_llgo_0 ], [ %80, %_llgo_8 ], [ %44, %_llgo_5 ]
-  %19 = icmp slt i32 %18, %17
-  br i1 %19, label %_llgo_2, label %_llgo_3
+  %20 = phi i32 [ %18, %_llgo_0 ], [ %79, %_llgo_8 ], [ %44, %_llgo_5 ]
+  %21 = icmp slt i32 %20, %19
+  br i1 %21, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %20 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
-  call void @llvm.memset(ptr %20, i8 0, i64 32, i1 false)
-  %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, 0
-  %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, 1
-  %23 = sext i32 %18 to i64
-  %24 = icmp slt i64 %23, 0
-  %25 = icmp sge i64 %23, %22
-  %26 = or i1 %25, %24
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %26)
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %21, i64 %23
-  %28 = icmp eq ptr %27, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %28)
-  %29 = load %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %27, align 8
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.event" %29, ptr %20, align 8
-  %30 = icmp eq ptr %20, null
+  call void @llvm.memset(ptr %3, i8 0, i64 32, i1 false)
+  %22 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, 0
+  %23 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, 1
+  %24 = sext i32 %20 to i64
+  %25 = icmp slt i64 %24, 0
+  %26 = icmp sge i64 %24, %23
+  %27 = or i1 %26, %25
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %27, i64 %24, i64 %23)
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %22, i64 %24
+  %29 = icmp eq ptr %28, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %29)
+  call void @llvm.memmove.p0.p0.i64(ptr %3, ptr %28, i64 32, i1 false)
+  %30 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %30)
-  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %20, i32 0, i32 2
+  %31 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
   %32 = icmp eq ptr %31, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %32)
   %33 = load i32, ptr %31, align 4
-  %34 = icmp sgt i32 %33, %18
+  %34 = icmp sgt i32 %33, %20
   br i1 %34, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_7, %_llgo_1
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_2
-  %35 = icmp eq ptr %20, null
+  %35 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %35)
-  %36 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %20, i32 0, i32 1
+  %36 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 1
   %37 = icmp eq ptr %36, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %37)
   %38 = load i64, ptr %36, align 4
-  %39 = extractvalue { ptr, ptr } %2, 1
+  %39 = extractvalue { ptr, ptr } %4, 1
   %40 = icmp eq ptr %39, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %40)
   %41 = load i64, ptr %39, align 4
@@ -985,23 +987,23 @@ _llgo_4:                                          ; preds = %_llgo_2
   br i1 %43, label %_llgo_7, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_6, %_llgo_2
-  %44 = add i32 %18, 1
+  %44 = add i32 %20, 1
   br label %_llgo_1
 
 _llgo_6:                                          ; preds = %_llgo_7, %_llgo_4
-  %45 = icmp eq ptr %20, null
+  %45 = icmp eq ptr %3, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %45)
-  %46 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %20, i32 0, i32 2
+  %46 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
   %47 = icmp eq ptr %46, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %47)
   %48 = load i32, ptr %46, align 4
-  %49 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, 0
-  %50 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, 1
+  %49 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, 0
+  %50 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, 1
   %51 = sext i32 %48 to i64
   %52 = icmp slt i64 %51, 0
   %53 = icmp sge i64 %51, %50
   %54 = or i1 %53, %52
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %54)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %54, i64 %51, i64 %50)
   %55 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %49, i64 %51
   %56 = icmp eq ptr %55, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %56)
@@ -1009,7 +1011,7 @@ _llgo_6:                                          ; preds = %_llgo_7, %_llgo_4
   %58 = icmp eq ptr %57, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %58)
   %59 = load i64, ptr %57, align 4
-  %60 = extractvalue { ptr, ptr } %2, 1
+  %60 = extractvalue { ptr, ptr } %4, 1
   %61 = icmp eq ptr %60, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %61)
   %62 = load i64, ptr %60, align 4
@@ -1018,33 +1020,32 @@ _llgo_6:                                          ; preds = %_llgo_7, %_llgo_4
   br i1 %64, label %_llgo_8, label %_llgo_5
 
 _llgo_7:                                          ; preds = %_llgo_4
-  %65 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
-  call void @llvm.memset(ptr %65, i8 0, i64 16, i1 false)
-  %66 = icmp eq ptr %65, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %66)
-  %67 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %65, i32 0, i32 0
-  %68 = extractvalue { ptr, ptr } %2, 0
-  %69 = icmp eq ptr %68, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %69)
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %68, i32 0, i32 0
-  %71 = icmp eq ptr %70, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %71)
-  %72 = load ptr, ptr %70, align 8
-  %73 = icmp eq ptr %65, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %73)
-  %74 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %65, i32 0, i32 1
-  store ptr %72, ptr %67, align 8
-  store i32 %18, ptr %74, align 4
-  %75 = icmp eq ptr %65, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %75)
-  %76 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %65, align 8
-  %77 = extractvalue { ptr, ptr } %1, 1
-  %78 = extractvalue { ptr, ptr } %1, 0
-  %79 = call i1 %78(ptr %77, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %76)
-  br i1 %79, label %_llgo_6, label %_llgo_3
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  %65 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %65)
+  %66 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
+  %67 = extractvalue { ptr, ptr } %4, 0
+  %68 = icmp eq ptr %67, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %68)
+  %69 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %67, i32 0, i32 0
+  %70 = icmp eq ptr %69, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %70)
+  %71 = load ptr, ptr %69, align 8
+  %72 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %72)
+  %73 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 1
+  store ptr %71, ptr %66, align 8
+  store i32 %20, ptr %73, align 4
+  %74 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %74)
+  %75 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
+  %76 = extractvalue { ptr, ptr } %1, 1
+  %77 = extractvalue { ptr, ptr } %1, 0
+  %78 = call i1 %77(ptr %76, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %75)
+  br i1 %78, label %_llgo_6, label %_llgo_3
 
 _llgo_8:                                          ; preds = %_llgo_6
-  %80 = add i32 %48, 1
+  %79 = add i32 %48, 1
   br label %_llgo_1
 }
 
@@ -1111,7 +1112,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %37 = icmp slt i64 %36, 0
   %38 = icmp sge i64 %36, %35
   %39 = or i1 %38, %37
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %39)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %39, i64 %36, i64 %35)
   %40 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %34, i64 %36
   %41 = icmp eq ptr %40, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %41)
@@ -1222,7 +1223,7 @@ _llgo_4:                                          ; preds = %_llgo_3
   %10 = icmp slt i64 %6, 0
   %11 = icmp sge i64 %6, %9
   %12 = or i1 %11, %10
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %12, i64 %6, i64 %9)
   %13 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %8, i64 %6
   %14 = icmp eq ptr %13, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
@@ -2578,7 +2579,10 @@ _llgo_0:
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
+
+; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
+declare void @llvm.memmove.p0.p0.i64(ptr nocapture writeonly, ptr nocapture readonly, i64, i1 immarg) #1
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
@@ -2997,3 +3001,4 @@ declare i64 @"go/ast.(*ValueSpec).Pos"(ptr)
 declare void @"go/ast.(*ValueSpec).specNode"(ptr)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }

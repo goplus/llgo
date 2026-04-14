@@ -15,7 +15,6 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/closureall"
 %"github.com/goplus/llgo/cl/_testgo/closureall.S" = type { i64 }
 %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" = type { ptr, ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
-%"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/cl/_testgo/closureall.init$guard" = global i1 false, align 1
 @"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S" = weak_odr constant { %"github.com/goplus/llgo/runtime/abi.PtrType", %"github.com/goplus/llgo/runtime/abi.UncommonType", [2 x %"github.com/goplus/llgo/runtime/abi.Method"] } { %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -744503389, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 6 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S" }, %"github.com/goplus/llgo/runtime/abi.UncommonType" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 44 }, i16 2, i16 2, i32 24 }, [2 x %"github.com/goplus/llgo/runtime/abi.Method"] [%"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 3 }, ptr @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU", ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add", ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add" }, %"github.com/goplus/llgo/runtime/abi.Method" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 3 }, ptr @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU", ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc", ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc" }] }, align 8
@@ -38,10 +37,6 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/closureall"
 @7 = private unnamed_addr constant [26 x i8] c"interface { Add(int) int }", align 1
 @"*_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -721103048, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 26 }, ptr null }, ptr @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A" }, align 8
 @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 3 }, ptr @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU" }], align 8
-@8 = private unnamed_addr constant [72 x i8] c"type assertion interface{Add(int) int} -> interface{Add(int) int} failed", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 6 }, ptr @"*_llgo_string" }, align 8
-@9 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @9, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 @llvm.compiler.used = appending global [3 x ptr] [ptr @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc", ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add", ptr @"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc"], section "llvm.metadata"
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc"(%"github.com/goplus/llgo/cl/_testgo/closureall.S" %0, i64 %1) {
@@ -150,10 +145,7 @@ _llgo_1:                                          ; preds = %_llgo_0
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %33 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 72 }, ptr %33, align 8
-  %34 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %33, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %34)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PanicTypeAssert"(ptr @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", ptr %22, ptr @"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A")
   unreachable
 }
 
@@ -176,15 +168,15 @@ _llgo_0:
 
 define %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" @"github.com/goplus/llgo/cl/_testgo/closureall.makeWithFree"(i64 %0) {
 _llgo_0:
-  %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  store i64 %0, ptr %1, align 4
-  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
-  store ptr %1, ptr %3, align 8
-  %4 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.makeWithFree$1", ptr undef }, ptr %2, 1
-  %5 = alloca %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", align 8
-  store { ptr, ptr } %4, ptr %5, align 8
-  %6 = load %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", ptr %5, align 8
+  %1 = alloca %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", align 8
+  %2 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  store i64 %0, ptr %2, align 4
+  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
+  store ptr %2, ptr %4, align 8
+  %5 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/closureall.makeWithFree$1", ptr undef }, ptr %3, 1
+  store { ptr, ptr } %5, ptr %1, align 8
+  %6 = load %"github.com/goplus/llgo/cl/_testgo/closureall.Fn", ptr %1, align 8
   ret %"github.com/goplus/llgo/cl/_testgo/closureall.Fn" %6
 }
 
@@ -252,15 +244,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.NewItab"(ptr, ptr)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
-declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr, ptr)
-
-define linkonce i1 @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %0, ptr %1, ptr %2) {
-_llgo_0:
-  %3 = tail call i1 @"github.com/goplus/llgo/runtime/internal/runtime.strequal"(ptr %1, ptr %2)
-  ret i1 %3
-}
-
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PanicTypeAssert"(ptr, ptr, ptr)
 
 define i64 @"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int}.Add$bound"(ptr %0, i64 %1) {
 _llgo_0:

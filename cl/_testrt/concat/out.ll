@@ -28,7 +28,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %8 = icmp slt i64 %4, 0
   %9 = icmp sge i64 %4, %7
   %10 = or i1 %9, %8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10, i64 %4, i64 %7)
   %11 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %6, i64 %4
   %12 = icmp eq ptr %11, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
@@ -75,16 +75,18 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
   %6 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %0, i64 2
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 }, ptr %6, align 8
-  %7 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
-  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, i64 3, 1
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8, i64 3, 2
-  %10 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/concat.concat"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %10)
+  %7 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8, i64 3, 1
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, i64 3, 2
+  %11 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testrt/concat.concat"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" %11)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 

@@ -74,14 +74,16 @@ _llgo_1:                                          ; preds = %_llgo_3, %_llgo_0
   store i64 %3, ptr %21, align 4
   %22 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %21, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %22, ptr %20, align 8
-  %23 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %13, 0
-  %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %23, i64 2, 1
-  %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %24, i64 2, 2
-  %26 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @fmt.Sprintf(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 46 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25)
-  %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %26, ptr %27, align 8
-  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %27, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %28)
+  %23 = icmp eq ptr %13, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %23)
+  %24 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %13, 0
+  %25 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %24, i64 2, 1
+  %26 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %25, i64 2, 2
+  %27 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @fmt.Sprintf(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 46 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %26)
+  %28 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" %27, ptr %28, align 8
+  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %28, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %29)
   unreachable
 
 _llgo_2:                                          ; preds = %_llgo_3
@@ -90,8 +92,8 @@ _llgo_2:                                          ; preds = %_llgo_3
   ret void
 
 _llgo_3:                                          ; preds = %_llgo_0
-  %29 = icmp ne i64 %3, 2
-  br i1 %29, label %_llgo_1, label %_llgo_2
+  %30 = icmp ne i64 %3, 2
+  br i1 %30, label %_llgo_1, label %_llgo_2
 }
 
 define { %"github.com/goplus/llgo/cl/_testgo/returnorder.state", i64 } @"github.com/goplus/llgo/cl/_testgo/returnorder.returnStateAndMut"() {

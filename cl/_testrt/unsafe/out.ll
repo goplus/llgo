@@ -177,7 +177,7 @@ _llgo_24:                                         ; preds = %_llgo_25
   %41 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40, 0
   %42 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40, 1
   %43 = icmp sge i64 0, %42
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %43)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %43, i64 0, i64 %42)
   %44 = getelementptr inbounds i64, ptr %41, i64 0
   %45 = icmp eq ptr %44, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %45)
@@ -224,7 +224,7 @@ _llgo_29:                                         ; preds = %_llgo_24
   %64 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40, 0
   %65 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %40, 1
   %66 = icmp sge i64 1, %65
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %66)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %66, i64 1, i64 %65)
   %67 = getelementptr inbounds i64, ptr %64, i64 1
   %68 = icmp eq ptr %67, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %68)
@@ -284,4 +284,4 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.UnsafeSlice"(ptr, i64, i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)

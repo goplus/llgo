@@ -41,14 +41,16 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
   %10 = getelementptr inbounds i64, ptr %0, i64 4
   store i64 4, ptr %10, align 4
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, i64 5, 1
-  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12, i64 5, 2
-  %14 = call i64 @"github.com/goplus/llgo/cl/_testgo/tpindex.index[int]"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 3)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %14)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %15 = call i64 @"github.com/goplus/llgo/cl/_testgo/tpindex.index[int]"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 6)
+  %11 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12, i64 5, 1
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 5, 2
+  %15 = call i64 @"github.com/goplus/llgo/cl/_testgo/tpindex.index[int]"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14, i64 3)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %15)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
+  %16 = call i64 @"github.com/goplus/llgo/cl/_testgo/tpindex.index[int]"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14, i64 6)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %16)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -74,7 +76,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %8 = icmp slt i64 %4, 0
   %9 = icmp sge i64 %4, %7
   %10 = or i1 %9, %8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10, i64 %4, i64 %7)
   %11 = getelementptr inbounds i64, ptr %6, i64 %4
   %12 = icmp eq ptr %11, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
@@ -93,4 +95,4 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)

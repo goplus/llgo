@@ -107,50 +107,50 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 
 define void @"github.com/goplus/llgo/cl/_testgo/struczero.main"() {
 _llgo_0:
-  %0 = alloca %"github.com/goplus/llgo/cl/_testgo/struczero.bar", align 8
-  call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
-  %1 = call { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } @"github.com/goplus/llgo/cl/_testgo/struczero.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer)
-  %2 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } %1, 0
-  store %"github.com/goplus/llgo/cl/_testgo/struczero.bar" %2, ptr %0, align 8
-  %3 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } %1, 1
-  %4 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
-  %5 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %0, i32 0, i32 0
-  %6 = icmp eq ptr %5, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
-  %7 = load ptr, ptr %5, align 8
-  %8 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %0, i32 0, i32 1
-  %10 = icmp eq ptr %9, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
-  %11 = load float, ptr %9, align 4
-  %12 = xor i1 %3, true
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %7)
+  %0 = alloca %"github.com/goplus/llgo/cl/_testdata/foo.Foo", align 8
+  %1 = alloca %"github.com/goplus/llgo/cl/_testgo/struczero.bar", align 8
+  call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
+  %2 = call { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } @"github.com/goplus/llgo/cl/_testgo/struczero.Foo"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" zeroinitializer)
+  %3 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } %2, 0
+  store %"github.com/goplus/llgo/cl/_testgo/struczero.bar" %3, ptr %1, align 8
+  %4 = extractvalue { %"github.com/goplus/llgo/cl/_testgo/struczero.bar", i1 } %2, 1
+  %5 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %1, i32 0, i32 0
+  %7 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = load ptr, ptr %6, align 8
+  %9 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/struczero.bar", ptr %1, i32 0, i32 1
+  %11 = icmp eq ptr %10, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
+  %12 = load float, ptr %10, align 4
+  %13 = xor i1 %4, true
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %8)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  %13 = fpext float %11 to double
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %13)
+  %14 = fpext float %12 to double
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(double %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @11, i64 6 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %14 = alloca %"github.com/goplus/llgo/cl/_testdata/foo.Foo", align 8
-  call void @llvm.memset(ptr %14, i8 0, i64 16, i1 false)
+  call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)
   %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" zeroinitializer, ptr %15, align 8
   %16 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr undef }, ptr %15, 1
   %17 = call { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } @"github.com/goplus/llgo/cl/_testgo/struczero.Bar"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %16)
   %18 = extractvalue { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } %17, 0
-  store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" %18, ptr %14, align 8
+  store %"github.com/goplus/llgo/cl/_testdata/foo.Foo" %18, ptr %0, align 8
   %19 = extractvalue { %"github.com/goplus/llgo/cl/_testdata/foo.Foo", i1 } %17, 1
-  %20 = icmp eq ptr %14, null
+  %20 = icmp eq ptr %0, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %20)
-  %21 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %14, align 8
+  %21 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, align 8
   %22 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %21)
-  %23 = icmp eq ptr %14, null
+  %23 = icmp eq ptr %0, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %23)
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %14, i32 0, i32 1
+  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, i32 0, i32 1
   %25 = icmp eq ptr %24, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %25)
   %26 = load float, ptr %24, align 4

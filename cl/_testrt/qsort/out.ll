@@ -59,7 +59,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %18 = icmp slt i64 %16, 0
   %19 = icmp sge i64 %16, 5
   %20 = or i1 %19, %18
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %20)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %20, i64 %16, i64 5)
   %21 = getelementptr inbounds i64, ptr %0, i64 %16
   %22 = load i64, ptr %21, align 4
   %23 = call i32 (ptr, ...) @printf(ptr @0, i64 %22)
@@ -88,6 +88,6 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i
 
 declare void @qsort(ptr, i64, i64, ptr)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
 
 declare i32 @printf(ptr, ...)

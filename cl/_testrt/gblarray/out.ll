@@ -12,8 +12,8 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/gblarray"
 define ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.Basic"(i64 %0) {
 _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
-  %1 = icmp sge i64 %0, 25
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %1)
+  %1 = icmp uge i64 %0, 25
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRangeU"(i1 %1, i64 %0, i64 25)
   %2 = getelementptr inbounds ptr, ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.basicTypes", i64 %0
   %3 = icmp eq ptr %2, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
@@ -28,8 +28,8 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
   %3 = getelementptr inbounds %"github.com/goplus/llgo/runtime/abi.Type", ptr %1, i32 0, i32 0
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
-  %4 = icmp sge i64 %0, 25
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %4)
+  %4 = icmp uge i64 %0, 25
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRangeU"(i1 %4, i64 %0, i64 25)
   %5 = getelementptr inbounds i64, ptr @"github.com/goplus/llgo/cl/_testrt/gblarray.sizeBasicTypes", i64 %0
   %6 = icmp eq ptr %5, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
@@ -89,7 +89,7 @@ _llgo_0:
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRangeU"(i1, i64, i64)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 

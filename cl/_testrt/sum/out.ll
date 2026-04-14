@@ -38,11 +38,13 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
   %8 = getelementptr inbounds i64, ptr %0, i64 3
   store i64 4, ptr %8, align 4
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
-  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, i64 4, 1
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10, i64 4, 2
-  %12 = call i64 @"github.com/goplus/llgo/cl/_testrt/sum.sum"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11)
-  %13 = call i32 (ptr, ...) @printf(ptr @0, i64 %12)
+  %9 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10, i64 4, 1
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, i64 4, 2
+  %13 = call i64 @"github.com/goplus/llgo/cl/_testrt/sum.sum"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12)
+  %14 = call i32 (ptr, ...) @printf(ptr @0, i64 %13)
   ret void
 }
 
@@ -64,7 +66,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %8 = icmp slt i64 %4, 0
   %9 = icmp sge i64 %4, %7
   %10 = or i1 %9, %8
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10, i64 %4, i64 %7)
   %11 = getelementptr inbounds i64, ptr %6, i64 %4
   %12 = icmp eq ptr %11, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
@@ -82,4 +84,4 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i
 
 declare i32 @printf(ptr, ...)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)

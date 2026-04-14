@@ -14,7 +14,7 @@ _llgo_0:
   %2 = icmp slt i64 %1, 0
   %3 = icmp sge i64 %1, 8
   %4 = or i1 %3, %2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %4, i64 %1, i64 8)
   %5 = getelementptr inbounds i8, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.array", i64 %1
   %6 = icmp eq ptr %5, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
@@ -82,7 +82,7 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
 
 declare void @"unicode/utf8.init"()
 

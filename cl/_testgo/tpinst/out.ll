@@ -61,7 +61,9 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/tpinst"
 @15 = private unnamed_addr constant [30 x i8] c"interface { main.value() int }", align 1
 @"*github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -739630974, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @15, i64 30 }, ptr null }, ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww" }, align 8
 @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 46 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }], align 8
-@16 = private unnamed_addr constant [95 x i8] c"type assertion github.com/goplus/llgo/cl/_testgo/tpinst.I[int] -> interface{value() int} failed", align 1
+@"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.InterfaceType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 16, i32 1913113911, i8 4, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.interequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 11 }, ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]" }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 40 }, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$Jvxc0PCI_drlfK7S5npMGdZkQLeRkQ_x2e2CifPE6w8$imethods", i64 1, i64 1 } }, align 8
+@16 = private unnamed_addr constant [11 x i8] c"main.I[int]", align 1
+@"*_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -194235434, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 11 }, ptr null }, ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]" }, align 8
 @llvm.compiler.used = appending global [4 x ptr] [ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.(*M[int]).Value", ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.(*M[int]).value", ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.(*M[float64]).Value", ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.(*M[float64]).value"], section "llvm.metadata"
 
 define void @"github.com/goplus/llgo/cl/_testgo/tpinst.demo"() {
@@ -154,10 +156,7 @@ _llgo_7:                                          ; preds = %_llgo_4
   br i1 %53, label %_llgo_5, label %_llgo_6
 
 _llgo_8:                                          ; preds = %_llgo_4
-  %54 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @16, i64 95 }, ptr %54, align 8
-  %55 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %54, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %55)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PanicTypeAssert"(ptr @"_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]", ptr %36, ptr @"github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww")
   unreachable
 }
 
@@ -281,3 +280,5 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.Implements"(ptr, ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.PanicTypeAssert"(ptr, ptr, ptr)

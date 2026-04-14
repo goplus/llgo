@@ -31,7 +31,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %12 = icmp slt i64 %5, 0
   %13 = icmp sge i64 %5, %11
   %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14, i64 %5, i64 %11)
   %15 = getelementptr inbounds i32, ptr %10, i64 %5
   store i32 %9, ptr %15, align 4
   br label %_llgo_1
@@ -93,7 +93,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %7 = icmp slt i64 %3, 0
   %8 = icmp sge i64 %3, %6
   %9 = or i1 %8, %7
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9, i64 %3, i64 %6)
   %10 = getelementptr inbounds i32, ptr %5, i64 %3
   %11 = icmp eq ptr %10, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %11)
@@ -124,7 +124,7 @@ _llgo_5:                                          ; preds = %_llgo_4
   %25 = icmp slt i64 %21, 0
   %26 = icmp sge i64 %21, %24
   %27 = or i1 %26, %25
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %27)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %27, i64 %21, i64 %24)
   %28 = getelementptr inbounds i32, ptr %23, i64 %21
   %29 = icmp eq ptr %28, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %29)
@@ -158,7 +158,7 @@ _llgo_8:                                          ; preds = %_llgo_7
   %45 = icmp slt i64 %41, 0
   %46 = icmp sge i64 %41, %44
   %47 = or i1 %46, %45
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %47)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %47, i64 %41, i64 %44)
   %48 = getelementptr inbounds i32, ptr %43, i64 %41
   %49 = icmp eq ptr %48, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %49)
@@ -189,7 +189,7 @@ _llgo_0:
 
 declare %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"(i64, i64, i64)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 

@@ -64,31 +64,33 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
   %8 = getelementptr inbounds i64, ptr %0, i64 3
   store i64 4, ptr %8, align 4
-  %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
-  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, i64 4, 1
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10, i64 4, 2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.SliceClear"(ptr @"[]_llgo_int", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11)
+  %9 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %9)
+  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %0, 0
+  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10, i64 4, 1
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, i64 4, 2
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.SliceClear"(ptr @"[]_llgo_int", %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintSlice"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  %12 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_int", i64 4)
-  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  store i64 1, ptr %13, align 4
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %12, ptr %13)
+  %13 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_int", i64 4)
+  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 1, ptr %14, align 4
-  %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  store i64 2, ptr %15, align 4
-  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %12, ptr %15)
+  %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %13, ptr %14)
+  store i64 1, ptr %15, align 4
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 2, ptr %16, align 4
-  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  store i64 3, ptr %17, align 4
-  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %12, ptr %17)
+  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %13, ptr %16)
+  store i64 2, ptr %17, align 4
+  %18 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 3, ptr %18, align 4
-  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
-  store i64 4, ptr %19, align 4
-  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %12, ptr %19)
+  %19 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %13, ptr %18)
+  store i64 3, ptr %19, align 4
+  %20 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   store i64 4, ptr %20, align 4
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.MapClear"(ptr @"map[_llgo_int]_llgo_int", ptr %12)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %12)
+  %21 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_int", ptr %13, ptr %20)
+  store i64 4, ptr %21, align 4
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.MapClear"(ptr @"map[_llgo_int]_llgo_int", ptr %13)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr %13)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
