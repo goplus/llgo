@@ -237,16 +237,19 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0, !1}
-!llgo.methodoff = !{!2, !3, !4, !5, !6, !7, !8}
+!llgo.methodinfo = !{!2, !3, !4, !5, !6, !7, !8}
 !llgo.useifacemethod = !{!9}
+!llgo.interfaceinfo = !{!10, !11}
 
 !0 = !{!"github.com/goplus/llgo/cl/_testgo/interface.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1"}
 !1 = !{!"github.com/goplus/llgo/cl/_testgo/interface.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2"}
-!2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!4 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!5 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!6 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!7 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
-!8 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2", i32 0, !"github.com/goplus/llgo/cl/_testgo/interface.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
+!2 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load", !"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"}
+!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Game", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame", !"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"}
+!4 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).Load", !"github.com/goplus/llgo/cl/_testgo/interface.Game1.Load"}
+!5 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).initGame", !"github.com/goplus/llgo/cl/_testgo/interface.Game1.initGame"}
+!6 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 0, !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).Load", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).Load"}
+!7 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game1", i32 1, !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).initGame", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game1).initGame"}
+!8 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/interface.Game2", i32 0, !"github.com/goplus/llgo/cl/_testgo/interface.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game2).initGame", !"github.com/goplus/llgo/cl/_testgo/interface.(*Game2).initGame"}
 !9 = !{!"github.com/goplus/llgo/cl/_testgo/interface.main", !"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
+!10 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", !"Load", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}
+!11 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Gamer", !"github.com/goplus/llgo/cl/_testdata/foo.initGame", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac"}

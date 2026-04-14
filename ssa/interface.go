@@ -90,6 +90,16 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 		mthName(method),
 		mtypName,
 	)
+	methods := make([]interfaceInfoMethod, 0, rawIntf.NumMethods())
+	for i := 0; i < rawIntf.NumMethods(); i++ {
+		im := rawIntf.Method(i)
+		imtypName, _ := prog.abi.TypeName(funcType(prog, im.Type()))
+		methods = append(methods, interfaceInfoMethod{
+			Name:  mthName(im),
+			MType: imtypName,
+		})
+	}
+	b.Pkg.emitInterfaceInfo(intfTypeName, methods)
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}

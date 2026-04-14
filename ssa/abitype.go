@@ -402,6 +402,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	ft := prog.rtType("Method")
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
+	slots := make([]methodInfoSlot, 0, n)
 	typeName, _ := prog.abi.TypeName(t)
 	pkg, _ := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
@@ -434,8 +435,15 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 		mtypName, _ := prog.abi.TypeName(ftyp)
-		b.Pkg.emitMethodOff(typeName, i, fullName, mtypName)
+		slots = append(slots, methodInfoSlot{
+			Index: i,
+			Name:  fullName,
+			MType: mtypName,
+			IFn:   ifn.Name(),
+			TFn:   tfn.Name(),
+		})
 	}
+	b.Pkg.emitMethodInfo(typeName, slots)
 	return llvm.ConstArray(ft.ll, fields)
 }
 

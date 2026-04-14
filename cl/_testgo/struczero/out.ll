@@ -199,9 +199,9 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
-!llgo.methodoff = !{!0, !1}
+!llgo.methodinfo = !{!0, !1}
 !llgo.useiface = !{!2}
 
-!0 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", i32 0, !"Pb", !"_llgo_func$bbS9EKnYgxbrRntc_6WJN6WLF9IKQADblvN_cLtKCqY"}
-!1 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", i32 0, !"Pb", !"_llgo_func$bbS9EKnYgxbrRntc_6WJN6WLF9IKQADblvN_cLtKCqY"}
+!0 = !{!"*_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", i32 0, !"Pb", !"_llgo_func$bbS9EKnYgxbrRntc_6WJN6WLF9IKQADblvN_cLtKCqY", !"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb", !"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb"}
+!1 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo", i32 0, !"Pb", !"_llgo_func$bbS9EKnYgxbrRntc_6WJN6WLF9IKQADblvN_cLtKCqY", !"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb", !"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"}
 !2 = !{!"github.com/goplus/llgo/cl/_testgo/struczero.main", !"_llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo"}

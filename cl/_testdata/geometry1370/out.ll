@@ -90,5 +90,9 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 !llgo.useifacemethod = !{!0}
+!llgo.interfaceinfo = !{!1, !2, !3}
 
 !0 = !{!"github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape", !"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", !"github.com/goplus/llgo/cl/_testdata/geometry1370.setID", !"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA"}
+!1 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", !"Area", !"_llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8"}
+!2 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", !"github.com/goplus/llgo/cl/_testdata/geometry1370.setID", !"_llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA"}
+!3 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape", !"github.com/goplus/llgo/cl/_testdata/geometry1370.validate", !"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk"}

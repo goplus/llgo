@@ -1,8 +1,8 @@
 package ssa
 
 import (
+	"fmt"
 	"go/token"
-	"strconv"
 	"strings"
 
 	"github.com/goplus/llvm"
@@ -21,11 +21,15 @@ const (
 	// referenced interface method demand should participate in later method
 	// matching.
 	llgoUseIfaceMethodMetadata = "llgo.useifacemethod"
-	// llgoMethodOffMetadata is a module-level named metadata table whose rows are
-	// {concrete type name, method index, normalized method name, mtyp name}. Each
-	// row describes one concrete method candidate in the canonical abi.Method
-	// order.
-	llgoMethodOffMetadata = "llgo.methodoff"
+	// llgoInterfaceInfoMetadata is a module-level named metadata table whose rows
+	// are {interface type name, normalized method name, mtyp name}. Each row
+	// describes one method of one interface type.
+	llgoInterfaceInfoMetadata = "llgo.interfaceinfo"
+	// llgoMethodInfoMetadata is a module-level named metadata table whose rows
+	// are {concrete type name, index, normalized method name, mtyp name, ifn
+	// name, tfn name}. Each row describes one concrete type method slot in
+	// canonical abi.Method order. Types without methods emit no rows.
+	llgoMethodInfoMetadata = "llgo.methodinfo"
 	// llgoUseNamedMethodMetadata is a module-level named metadata table whose
 	// rows are {owner name, normalized method name}. Each row means that if the
 	// named owner function is reachable, deadcode analysis should treat the named
@@ -93,20 +97,54 @@ func (p Package) emitUseIfaceMethod(owner, target, name, mtyp string) {
 	)
 }
 
-func (p Package) emitMethodOff(owner string, index int, name, mtyp string) {
-	if owner == "" || name == "" || mtyp == "" {
+type interfaceInfoMethod struct {
+	Name  string
+	MType string
+}
+
+func (p Package) emitInterfaceInfo(target string, methods []interfaceInfoMethod) {
+	if target == "" || len(methods) == 0 {
 		return
 	}
 	ctx := p.mod.Context()
-	p.semMetaEmitter.add(
-		p.mod,
-		llgoMethodOffMetadata,
-		metadataKey(owner, strconv.Itoa(index), name, mtyp),
-		metadataString(ctx, owner),
-		metadataInt32(ctx, index),
-		metadataString(ctx, name),
-		metadataString(ctx, mtyp),
-	)
+	for _, method := range methods {
+		p.semMetaEmitter.add(
+			p.mod,
+			llgoInterfaceInfoMetadata,
+			metadataKey(target, method.Name, method.MType),
+			metadataString(ctx, target),
+			metadataString(ctx, method.Name),
+			metadataString(ctx, method.MType),
+		)
+	}
+}
+
+type methodInfoSlot struct {
+	Index int
+	Name  string
+	MType string
+	IFn   string
+	TFn   string
+}
+
+func (p Package) emitMethodInfo(typeSym string, slots []methodInfoSlot) {
+	if typeSym == "" || len(slots) == 0 {
+		return
+	}
+	ctx := p.mod.Context()
+	for _, slot := range slots {
+		p.semMetaEmitter.add(
+			p.mod,
+			llgoMethodInfoMetadata,
+			metadataKey(typeSym, fmt.Sprint(slot.Index), slot.Name, slot.MType, slot.IFn, slot.TFn),
+			metadataString(ctx, typeSym),
+			metadataInt32(ctx, slot.Index),
+			metadataString(ctx, slot.Name),
+			metadataString(ctx, slot.MType),
+			metadataString(ctx, slot.IFn),
+			metadataString(ctx, slot.TFn),
+		)
+	}
 }
 
 func (p Package) emitUseNamedMethod(owner, name string) {

@@ -62,5 +62,8 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
 
 !llgo.useifacemethod = !{!0}
+!llgo.interfaceinfo = !{!1, !2}
 
 !0 = !{!"github.com/goplus/llgo/cl/_testdata/embedunexport.Use", !"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}
+!1 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"Name", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to"}
+!2 = !{!"_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object", !"github.com/goplus/llgo/cl/_testdata/embedunexport.setName", !"_llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA"}

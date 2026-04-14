@@ -1,2 +1,1 @@
 *_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S: [0]
-_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S: []

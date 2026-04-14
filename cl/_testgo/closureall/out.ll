@@ -276,12 +276,14 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 
 !llgo.useiface = !{!0, !1}
-!llgo.methodoff = !{!2, !3, !4}
+!llgo.methodinfo = !{!2, !3, !4}
 !llgo.useifacemethod = !{!5}
+!llgo.interfaceinfo = !{!6}
 
 !0 = !{!"github.com/goplus/llgo/cl/_testgo/closureall.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S"}
 !1 = !{!"github.com/goplus/llgo/cl/_testgo/closureall.main", !"_llgo_string"}
-!2 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 0, !"Inc", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
-!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 0, !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
-!4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 1, !"Inc", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
+!2 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 0, !"Inc", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU", !"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc", !"github.com/goplus/llgo/cl/_testgo/closureall.S.Inc"}
+!3 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 0, !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU", !"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add", !"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Add"}
+!4 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/closureall.S", i32 1, !"Inc", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU", !"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc", !"github.com/goplus/llgo/cl/_testgo/closureall.(*S).Inc"}
 !5 = !{!"github.com/goplus/llgo/cl/_testgo/closureall.interface{Add(int) int}.Add$bound", !"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}
+!6 = !{!"_llgo_iface$VdBKYV8-gcMjZtZfcf-u2oKoj9Lu3VXwuG8TGCW2S4A", !"Add", !"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU"}

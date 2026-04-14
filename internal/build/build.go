@@ -34,6 +34,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/tools/go/ssa"
 
@@ -1005,9 +1006,18 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 			return err
 		}
 	}
-	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	renderStart := time.Now()
+	entryIR := []byte(entryPkg.LPkg.String())
+	if verbose && ctx.buildConf.BuildMode == BuildModeExe {
+		fmt.Fprintf(os.Stderr, "[dce] render_entry_module_ir: %s\n", time.Since(renderStart))
+	}
+	exportStart := time.Now()
+	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, entryIR)
 	if err != nil {
 		return err
+	}
+	if verbose && ctx.buildConf.BuildMode == BuildModeExe {
+		fmt.Fprintf(os.Stderr, "[dce] export_entry_module_object: %s\n", time.Since(exportStart))
 	}
 	linkInputs := []string{entryObjFile}
 
@@ -1078,11 +1088,12 @@ func dceSourceModules(pkgs []Package) []gllvm.Module {
 func applyDCEOverrides(ctx *context, pkgs []Package, entryPkg Package, verbose bool) error {
 	srcMods := dceSourceModules(pkgs)
 	mods := append(append([]gllvm.Module{}, srcMods...), entryPkg.LPkg.Module())
-	result, err := dce.Analyze(mods, dceEntryRoots())
+	result, stats, err := dce.AnalyzeWithStats(mods, dceEntryRoots())
 	if err != nil {
 		return fmt.Errorf("analyze link-time method reachability: %w", err)
 	}
 	if verbose {
+		fmt.Fprintf(os.Stderr, "[dce] timings:\n%s", dce.FormatAnalyzeStats(stats))
 		report := dce.FormatResult(result)
 		if report == "" {
 			fmt.Fprintln(os.Stderr, "[dce] live methods: none")
@@ -1090,8 +1101,12 @@ func applyDCEOverrides(ctx *context, pkgs []Package, entryPkg Package, verbose b
 			fmt.Fprintf(os.Stderr, "[dce] live methods:\n%s", report)
 		}
 	}
+	emitStart := time.Now()
 	if err := dce.EmitStrongTypeOverrides(entryPkg.LPkg.Module(), srcMods, result); err != nil {
 		return fmt.Errorf("emit dce type overrides: %w", err)
+	}
+	if verbose {
+		fmt.Fprintf(os.Stderr, "[dce] emit_strong_type_overrides: %s (types=%d)\n", time.Since(emitStart), len(result))
 	}
 	return nil
 }
