@@ -26,7 +26,6 @@ import (
 	"go/token"
 	"go/types"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -37,6 +36,7 @@ import (
 	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/internal/build"
+	"github.com/goplus/llgo/internal/littest"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/ssa/ssatest"
@@ -197,17 +197,27 @@ func Pkg(t *testing.T, pkgPath, outFile string) {
 }
 
 func testFrom(t *testing.T, pkgDir, sel string) {
+	t.Helper()
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
-	log.Println("Parsing", pkgDir)
+	spec, err := littest.LoadSpec(pkgDir)
+	if err != nil {
+		t.Fatal("LoadSpec failed:", err)
+	}
+	if spec.Mode == littest.ModeSkip {
+		return
+	}
 	v := llgen.GenFrom(pkgDir)
-	out := pkgDir + "/out.ll"
-	b, _ := os.ReadFile(out)
-	if !bytes.Equal(b, []byte{';'}) { // expected == ";" means skipping out.ll
-		if test.Diff(t, pkgDir+"/result.txt", []byte(v), b) {
-			t.Fatal("llgen.GenFrom: unexpect result")
+	if spec.Mode == littest.ModeFileCheck {
+		if err := littest.Check(spec, v); err != nil {
+			_ = os.WriteFile(pkgDir+"/result.txt", []byte(v), 0644)
+			t.Fatal(err)
 		}
+		return
+	}
+	if test.Diff(t, pkgDir+"/result.txt", []byte(v), []byte(spec.Text)) {
+		t.Fatal("llgen.GenFrom: unexpected result")
 	}
 }
 
