@@ -44,6 +44,7 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/tpabi"
 @12 = private unnamed_addr constant [20 x i8] c"interface { Demo() }", align 1
 @"*_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 2055694132, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @12, i64 20 }, ptr null }, ptr @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs" }, align 8
 @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs$imethods" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.Imethod"] [%"github.com/goplus/llgo/runtime/abi.Imethod" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 4 }, ptr @"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac" }], align 8
+@13 = private unnamed_addr constant [54 x i8] c"github.com/goplus/llgo/cl/_testrt/tpabi.T[string, int]", align 1
 @llvm.compiler.used = appending global [3 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int].Info", ptr @"github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Demo", ptr @"github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Info"], section "llvm.metadata"
 
 define void @"github.com/goplus/llgo/cl/_testrt/tpabi.init"() {
@@ -195,9 +196,11 @@ _llgo_0:
 define linkonce void @"github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Info"(ptr %0) {
 _llgo_0:
   %1 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
-  %2 = load %"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]", ptr %0, align 8
-  call void @"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int].Info"(%"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]" %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1 %1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @13, i64 54 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 4 })
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]", ptr %0, align 8
+  call void @"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int].Info"(%"github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]" %3)
   ret void
 }
 
@@ -260,5 +263,7 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfacePtrData"(%"gi
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintPointer"(ptr)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }

@@ -25,7 +25,9 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/foo"
 @4 = private unnamed_addr constant [39 x i8] c"github.com/goplus/llgo/cl/_testdata/foo", align 1
 @5 = private unnamed_addr constant [1 x i8] c"v", align 1
 @"github.com/goplus/llgo/cl/_testdata/foo.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88$fields" = weak_odr constant [1 x %"github.com/goplus/llgo/runtime/abi.StructField"] [%"github.com/goplus/llgo/runtime/abi.StructField" { %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 1 }, ptr @_llgo_int, i64 0, %"github.com/goplus/llgo/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
-@6 = private unnamed_addr constant [4 x i8] c"load", align 1
+@6 = private unnamed_addr constant [43 x i8] c"github.com/goplus/llgo/cl/_testdata/foo.Foo", align 1
+@7 = private unnamed_addr constant [2 x i8] c"Pb", align 1
+@8 = private unnamed_addr constant [4 x i8] c"load", align 1
 @llvm.compiler.used = appending global [4 x ptr] [ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb", ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb", ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load", ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).initGame"], section "llvm.metadata"
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"github.com/goplus/llgo/cl/_testdata/foo.Bar"() {
@@ -83,15 +85,17 @@ _llgo_0:
 define ptr @"github.com/goplus/llgo/cl/_testdata/foo.(*Foo).Pb"(ptr %0) {
 _llgo_0:
   %1 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
-  %2 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, align 8
-  %3 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %2)
-  ret ptr %3
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1 %1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 43 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @7, i64 2 })
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testdata/foo.Foo", ptr %0, align 8
+  %4 = call ptr @"github.com/goplus/llgo/cl/_testdata/foo.Foo.Pb"(%"github.com/goplus/llgo/cl/_testdata/foo.Foo" %3)
+  ret ptr %4
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/foo.(*Game).Load"(ptr %0) {
 _llgo_0:
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @6, i64 4 })
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @8, i64 4 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   ret void
 }
@@ -140,6 +144,8 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Typedmemmove"(ptr, ptr, ptr)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 

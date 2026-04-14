@@ -10,10 +10,13 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/closurebound"
 
 @"github.com/goplus/llgo/cl/_testrt/closurebound.init$guard" = global i1 false, align 1
 @"github.com/goplus/llgo/cl/_testrt/closurebound.my" = global { ptr, ptr } zeroinitializer, align 8
-@0 = private unnamed_addr constant [5 x i8] c"error", align 1
-@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 }, ptr @"*_llgo_string" }, align 8
-@1 = private unnamed_addr constant [6 x i8] c"string", align 1
-@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
+@0 = private unnamed_addr constant [52 x i8] c"github.com/goplus/llgo/cl/_testrt/closurebound.demo1", align 1
+@1 = private unnamed_addr constant [6 x i8] c"encode", align 1
+@2 = private unnamed_addr constant [52 x i8] c"github.com/goplus/llgo/cl/_testrt/closurebound.demo2", align 1
+@3 = private unnamed_addr constant [5 x i8] c"error", align 1
+@_llgo_string = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 16, i64 8, i32 1749264893, i8 4, i8 8, i8 8, i8 24, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.strequal", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr @"*_llgo_string" }, align 8
+@4 = private unnamed_addr constant [6 x i8] c"string", align 1
+@"*_llgo_string" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -1323879264, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 6 }, ptr null }, ptr @_llgo_string }, align 8
 @llvm.compiler.used = appending global [4 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode", ptr @"github.com/goplus/llgo/cl/_testrt/closurebound.(*demo1).encode", ptr @"github.com/goplus/llgo/cl/_testrt/closurebound.demo2.encode", ptr @"github.com/goplus/llgo/cl/_testrt/closurebound.(*demo2).encode"], section "llvm.metadata"
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo1" %0) {
@@ -24,10 +27,12 @@ _llgo_0:
 define i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.(*demo1).encode"(ptr %0) {
 _llgo_0:
   %1 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
-  %2 = load %"github.com/goplus/llgo/cl/_testrt/closurebound.demo1", ptr %0, align 1
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo1" %2)
-  ret i64 %3
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1 %1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 52 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 })
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testrt/closurebound.demo1", ptr %0, align 1
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo1.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo1" %3)
+  ret i64 %4
 }
 
 define i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo2.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" %0) {
@@ -38,10 +43,12 @@ _llgo_0:
 define i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.(*demo2).encode"(ptr %0) {
 _llgo_0:
   %1 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
-  %2 = load %"github.com/goplus/llgo/cl/_testrt/closurebound.demo2", ptr %0, align 1
-  %3 = call i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo2.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" %2)
-  ret i64 %3
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1 %1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @2, i64 52 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 6 })
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testrt/closurebound.demo2", ptr %0, align 1
+  %4 = call i64 @"github.com/goplus/llgo/cl/_testrt/closurebound.demo2.encode"(%"github.com/goplus/llgo/cl/_testrt/closurebound.demo2" %3)
+  ret i64 %4
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/closurebound.init"() {
@@ -76,7 +83,7 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %7, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @3, i64 5 }, ptr %7, align 8
   %8 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %7, 1
   call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %8)
   unreachable
@@ -84,6 +91,8 @@ _llgo_1:                                          ; preds = %_llgo_0
 _llgo_2:                                          ; preds = %_llgo_0
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 

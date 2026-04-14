@@ -2,11 +2,14 @@
 source_filename = "github.com/goplus/llgo/cl/_testrt/struct"
 
 %"github.com/goplus/llgo/cl/_testrt/struct.Foo" = type { i32, i1 }
+%"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
 
 @"github.com/goplus/llgo/runtime/internal/runtime.cgoAlwaysFalse" = external global i1, align 1
 @"github.com/goplus/llgo/cl/_testrt/struct.format" = global [10 x i8] zeroinitializer, align 1
 @"github.com/goplus/llgo/cl/_testrt/struct.init$guard" = global i1 false, align 1
+@0 = private unnamed_addr constant [44 x i8] c"github.com/goplus/llgo/cl/_testrt/struct.Foo", align 1
+@1 = private unnamed_addr constant [5 x i8] c"Print", align 1
 @llvm.compiler.used = appending global [2 x ptr] [ptr @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print", ptr @"github.com/goplus/llgo/cl/_testrt/struct.(*Foo).Print"], section "llvm.metadata"
 
 define void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %0) {
@@ -40,9 +43,11 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/struct.(*Foo).Print"(ptr %0) {
 _llgo_0:
   %1 = icmp eq ptr %0, null
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
-  %2 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
-  call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %2)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1 %1, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 44 }, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @1, i64 5 })
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load %"github.com/goplus/llgo/cl/_testrt/struct.Foo", ptr %0, align 4
+  call void @"github.com/goplus/llgo/cl/_testrt/struct.Foo.Print"(%"github.com/goplus/llgo/cl/_testrt/struct.Foo" %3)
   ret void
 }
 
@@ -114,6 +119,8 @@ declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @printf(ptr, ...)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertMethodWrapperNil"(i1, %"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 declare void @syscall.init()
 

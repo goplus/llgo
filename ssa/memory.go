@@ -378,6 +378,18 @@ func (b Builder) AssertNilDeref(ptr Expr) {
 	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
 }
 
+func (b Builder) AssertMethodWrapperNil(ptr Expr, typName, methodName string) {
+	if b.Pkg.Prog.runtime() == nil {
+		return
+	}
+	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
+		return
+	}
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertMethodWrapperNil"), isNil, b.Pkg.ConstString(typName), b.Pkg.ConstString(methodName))
+}
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {

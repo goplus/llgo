@@ -388,8 +388,7 @@ func (p Program) toType(raw types.Type) Type {
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
-		elem := p.rawType(t.Elem())
-		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
+		return &aType{llvm.PointerType(p.tyInt8(), 0), typ, vkPtr}
 	case *types.Interface:
 		if t.Empty() {
 			return &aType{p.rtEface(), typ, vkEface}

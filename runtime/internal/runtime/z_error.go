@@ -73,6 +73,19 @@ func AssertNilDeref(b bool) {
 	}
 }
 
+func AssertMethodWrapperNil(b bool, typName string, methodName string) {
+	if b {
+		ptrName := typName
+		for i := len(typName) - 1; i >= 0; i-- {
+			if typName[i] == '.' {
+				ptrName = typName[i+1:]
+				break
+			}
+		}
+		panic(plainError("value method " + typName + "." + methodName + " called using nil *" + ptrName + " pointer"))
+	}
+}
+
 // printany prints an argument passed to panic.
 // If panic is called with a value that has a String or Error method,
 // it has already been converted into a string by preprintpanics.

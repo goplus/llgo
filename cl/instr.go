@@ -847,9 +847,14 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 	switch cv := cv.(type) {
 	case *ssa.Builtin:
 		fn := cv.Name()
-		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-			arg := args[0]
-			ret = p.compileValue(b, arg)
+		if fn == "ssa:wrapnilchk" {
+			ret = p.compileValue(b, args[0])
+			typName, _ := constStr(args[1])
+			methodName, _ := constStr(args[2])
+			if suffix, ok := strings.CutPrefix(typName, "command-line-arguments."); ok {
+				typName = "main." + suffix
+			}
+			b.AssertMethodWrapperNil(ret, typName, methodName)
 		} else if fn == "Offsetof" && act == llssa.Call {
 			if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
 				ret = offset

@@ -62,6 +62,8 @@ var (
 	enableExportRename bool
 )
 
+const rangeFuncGotoRestartSentinel = -3
+
 // SetDebug sets debug flags.
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
@@ -1066,6 +1068,8 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
 		if skipUnusedArrayDeref(v) {
+			x := p.compileValue(b, v.X)
+			b.AssertNilDeref(x)
 			return
 		}
 		if v.Op == token.MUL {
@@ -1352,6 +1356,12 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		}
 		b.Return(results...)
 	case *ssa.If:
+		if p.compileRangeFuncGotoRestart(b, v) {
+			return
+		}
+		if p.compileRangeFuncGotoRestartResume(b, v) {
+			return
+		}
 		fn := p.fn
 		cond := p.compileValue(b, v.Cond)
 		succs := v.Block().Succs
@@ -1488,6 +1498,220 @@ func rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
 		}
 	}
 	return false
+}
+
+func (p *context) compileRangeFuncGotoRestart(b llssa.Builder, v *ssa.If) bool {
+	block := v.Block()
+	if block == nil || block.Parent().Synthetic != "range-over-func yield" || !p.ifConditionLineHasGoto(v) {
+		return false
+	}
+	succs := block.Succs
+	if len(succs) != 2 {
+		return false
+	}
+	yieldContinue := -1
+	for i, succ := range succs {
+		if succ.Comment == "yield-continue" {
+			yieldContinue = i
+			break
+		}
+	}
+	if yieldContinue < 0 {
+		return false
+	}
+	jump, ok := rangeFuncJumpFreeVar(block.Parent())
+	if !ok {
+		return false
+	}
+	fn := p.fn
+	cond := p.compileValue(b, v.Cond)
+	restart := fn.MakeBlock()
+	thenb := fn.Block(succs[0].Index)
+	elseb := fn.Block(succs[1].Index)
+	if yieldContinue == 0 {
+		thenb = restart
+	} else {
+		elseb = restart
+	}
+	b.If(cond, thenb, elseb)
+	b.SetBlockEx(restart, llssa.AtEnd, false)
+	b.Store(p.compileValue(b, jump), p.prog.Val(rangeFuncGotoRestartSentinel))
+	b.Return(p.prog.BoolVal(false))
+	return true
+}
+
+func (p *context) ifConditionLineHasGoto(v *ssa.If) bool {
+	pos := v.Cond.Pos()
+	if pos == token.NoPos {
+		return false
+	}
+	loc := p.goProg.Fset.Position(pos)
+	if loc.Filename == "" || loc.Line <= 0 {
+		return false
+	}
+	data, err := os.ReadFile(loc.Filename)
+	if err != nil {
+		return false
+	}
+	lines := strings.Split(string(data), "\n")
+	if loc.Line > len(lines) {
+		return false
+	}
+	return strings.Contains(lines[loc.Line-1], "goto ")
+}
+
+func rangeFuncJumpFreeVar(fn *ssa.Function) (ssa.Value, bool) {
+	for _, fv := range fn.FreeVars {
+		if strings.HasPrefix(fv.Name(), "jump$") {
+			return fv, true
+		}
+	}
+	return nil, false
+}
+
+func (p *context) compileRangeFuncGotoRestartResume(b llssa.Builder, v *ssa.If) bool {
+	block := v.Block()
+	if block == nil || len(block.Succs) != 2 || block.Succs[1].Comment != "rangefunc.done" {
+		return false
+	}
+	jumpVal, restartBlock, ok := rangeFuncResumeJumpValue(v.Cond)
+	if !ok {
+		return false
+	}
+	fn := p.fn
+	cond := p.compileValue(b, v.Cond)
+	match := fn.Block(block.Succs[0].Index)
+	checkRestart := fn.MakeBlock()
+	b.If(cond, match, checkRestart)
+	b.SetBlockEx(checkRestart, llssa.AtEnd, false)
+	isRestart := b.BinOp(token.EQL, p.compileValue(b, jumpVal), p.prog.Val(rangeFuncGotoRestartSentinel))
+	restart := fn.MakeBlock()
+	b.If(isRestart, restart, fn.Block(block.Succs[1].Index))
+	p.emitRangeFuncGotoRestart(b, restart, restartBlock, v)
+	return true
+}
+
+func (p *context) emitRangeFuncGotoRestart(b llssa.Builder, blk llssa.BasicBlock, restartBlock *ssa.BasicBlock, final *ssa.If) {
+	call := rangeFuncIteratorCall(restartBlock)
+	jumpLoad := rangeFuncBlockJumpLoad(restartBlock)
+	if call == nil || jumpLoad == nil || len(restartBlock.Succs) != 2 {
+		b.SetBlockEx(blk, llssa.AtEnd, false)
+		b.Jump(p.fn.Block(restartBlock.Index))
+		return
+	}
+	readyCheck := restartBlock.Succs[1]
+	if len(readyCheck.Succs) != 2 {
+		b.SetBlockEx(blk, llssa.AtEnd, false)
+		b.Jump(p.fn.Block(restartBlock.Index))
+		return
+	}
+	exitID, ok := rangeFuncResumeExitID(final.Cond)
+	if !ok {
+		b.SetBlockEx(blk, llssa.AtEnd, false)
+		b.Jump(p.fn.Block(restartBlock.Index))
+		return
+	}
+	fn := p.fn
+	done := fn.Block(final.Block().Succs[1].Index)
+	match := fn.Block(final.Block().Succs[0].Index)
+	busy := fn.Block(restartBlock.Succs[0].Index)
+	ready := fn.Block(readyCheck.Succs[0].Index)
+
+	b.SetBlockEx(blk, llssa.AtEnd, false)
+	jumpPtr := p.compileValue(b, jumpLoad.X)
+	b.Store(jumpPtr, p.prog.Val(0))
+	p.call(b, llssa.Call, &call.Call)
+	if rangeFuncCallNeedsDeferDrain(&call.Call) {
+		b.DeferStackDrain()
+	}
+	jumpVal := b.Load(jumpPtr)
+	notBusy := fn.MakeBlock()
+	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(-1)), busy, notBusy)
+
+	b.SetBlockEx(notBusy, llssa.AtEnd, false)
+	notReady := fn.MakeBlock()
+	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(0)), ready, notReady)
+
+	b.SetBlockEx(notReady, llssa.AtEnd, false)
+	notExit := fn.MakeBlock()
+	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(exitID)), match, notExit)
+
+	b.SetBlockEx(notExit, llssa.AtEnd, false)
+	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(rangeFuncGotoRestartSentinel)), blk, done)
+}
+
+func rangeFuncIteratorCall(block *ssa.BasicBlock) *ssa.Call {
+	for _, instr := range block.Instrs {
+		if call, ok := instr.(*ssa.Call); ok {
+			return call
+		}
+	}
+	return nil
+}
+
+func rangeFuncBlockJumpLoad(block *ssa.BasicBlock) *ssa.UnOp {
+	afterIteratorCall := false
+	for _, instr := range block.Instrs {
+		if _, ok := instr.(*ssa.Call); ok {
+			afterIteratorCall = true
+			continue
+		}
+		if !afterIteratorCall {
+			continue
+		}
+		load, ok := instr.(*ssa.UnOp)
+		if ok && load.Op == token.MUL {
+			return load
+		}
+	}
+	return nil
+}
+
+func rangeFuncResumeJumpValue(cond ssa.Value) (ssa.Value, *ssa.BasicBlock, bool) {
+	bin, ok := cond.(*ssa.BinOp)
+	if !ok || bin.Op != token.EQL {
+		return nil, nil, false
+	}
+	if isPositiveConstInt(bin.X) {
+		return rangeFuncResumeLoadedValue(bin.Y)
+	}
+	if isPositiveConstInt(bin.Y) {
+		return rangeFuncResumeLoadedValue(bin.X)
+	}
+	return nil, nil, false
+}
+
+func rangeFuncResumeExitID(cond ssa.Value) (int, bool) {
+	bin, ok := cond.(*ssa.BinOp)
+	if !ok || bin.Op != token.EQL {
+		return 0, false
+	}
+	if id, ok := positiveConstID(bin.X); ok {
+		return id, true
+	}
+	return positiveConstID(bin.Y)
+}
+
+func rangeFuncResumeLoadedValue(v ssa.Value) (ssa.Value, *ssa.BasicBlock, bool) {
+	load, ok := v.(*ssa.UnOp)
+	if !ok || load.Op != token.MUL || load.Block() == nil {
+		return nil, nil, false
+	}
+	return load, load.Block(), true
+}
+
+func isPositiveConstInt(v ssa.Value) bool {
+	_, ok := positiveConstID(v)
+	return ok
+}
+
+func positiveConstID(v ssa.Value) (int, bool) {
+	c, ok := v.(*ssa.Const)
+	if !ok || c.Value == nil {
+		return 0, false
+	}
+	n, exact := constant.Int64Val(c.Value)
+	return int(n), exact && n > 0
 }
 
 func functionHasExplicitStackDefer(fn *ssa.Function, seen map[*ssa.Function]bool) bool {

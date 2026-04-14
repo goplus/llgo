@@ -725,7 +725,11 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 				if pos == 2 && v[0] == 'p' && v[1] == 'y' {
 					return v[3:], pyVar, false
 				}
-				return replaceGoName(v, pos), goVar, false
+				link := replaceGoName(v, pos)
+				if link == "main..inittask" && pkg.Name() == "main" {
+					return link, goVar, true
+				}
+				return link, goVar, false
 			}
 			return v, cVar, false
 		}

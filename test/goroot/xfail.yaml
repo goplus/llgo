@@ -1714,14 +1714,6 @@ flakes:
     reason: rotate0 runoutput can either pass or time out on darwin/arm64
 xfails:
   - platform: darwin/arm64
-    directive: run
-    case: nilptr2.go
-    reason: llgo does not panic for nil dereference through address-of-dereference
-  - platform: linux/amd64
-    directive: run
-    case: nilptr2.go
-    reason: llgo does not panic for nil dereference through address-of-dereference
-  - platform: darwin/arm64
     directive: runoutput
     case: chan/select5.go
     reason: llgo select scheduling hangs in goroot runoutput
@@ -1876,10 +1868,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: noinit.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: peano.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -1936,10 +1924,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: fixedbugs/bug336.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: fixedbugs/bug347.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
@@ -1965,10 +1949,6 @@ xfails:
   - platform: darwin/arm64
     directive: run
     case: fixedbugs/issue18149.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue19040.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
@@ -2127,11 +2107,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: fixedbugs/bug336.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/bug347.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -2168,11 +2143,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue18149.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue19040.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
     platform: linux/amd64
@@ -2382,11 +2352,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: noinit.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: peano.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -2513,11 +2478,6 @@ xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
-    case: fixedbugs/issue19040.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/issue22083.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
@@ -2613,11 +2573,6 @@ xfails:
   - version: go1.24
     platform: linux/amd64
     directive: run
-    case: noinit.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
     case: peano.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
@@ -2659,11 +2614,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: tinyfin.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/bug336.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
@@ -2938,11 +2888,6 @@ xfails:
   - version: go1.26
     platform: linux/amd64
     directive: run
-    case: fixedbugs/bug336.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
     case: fixedbugs/bug348.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
@@ -3083,11 +3028,6 @@ xfails:
   - version: go1.26
     platform: linux/amd64
     directive: run
-    case: noinit.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
     case: peano.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
@@ -3129,11 +3069,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: fixedbugs/issue17381.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue19040.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
