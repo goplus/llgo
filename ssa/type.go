@@ -492,8 +492,9 @@ func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
 }
 
 func (p Program) toLLVMFuncPtr(sig *types.Signature) llvm.Type {
-	ft := p.toLLVMFunc(sig)
-	return llvm.PointerType(ft, 0)
+	// LLVM opaque pointers don't retain the pointee function type. Avoid
+	// recursively expanding named function types such as F func(F) F.
+	return llvm.PointerType(p.tyInt8(), 0)
 }
 
 func (p Program) retType(raw *types.Signature) Type {
@@ -579,6 +580,14 @@ func namedTypeEquivalent(a, b types.Type) bool {
 		return true
 	}
 	if NameOf(na) != NameOf(nb) {
+		return false
+	}
+	switch na.Underlying().(type) {
+	case *types.Signature:
+		return false
+	}
+	switch nb.Underlying().(type) {
+	case *types.Signature:
 		return false
 	}
 	// go/types may materialize the same package/type in distinct instances

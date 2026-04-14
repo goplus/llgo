@@ -1729,14 +1729,6 @@ xfails:
     directive: run
     case: fixedbugs/issue16870.go
     reason: llgo comma-ok semantics case builds without producing llgo.out
-  - platform: darwin/arm64
-    directive: run
-    case: fixedbugs/issue72063.go
-    reason: llgo generic recursion case builds without producing llgo.out
-  - platform: linux/amd64
-    directive: run
-    case: fixedbugs/issue72063.go
-    reason: llgo generic recursion case builds without producing llgo.out
   - version: go1.24
     platform: linux/amd64
     directive: run
