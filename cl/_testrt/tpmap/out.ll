@@ -221,3 +221,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/tpmap.main", !"_llgo_int"}

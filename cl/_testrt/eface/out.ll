@@ -372,3 +372,29 @@ _llgo_0:
 }
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.structequal"(ptr, ptr, ptr)
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5, !6, !7, !8, !9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20}
+!llgo.methodinfo = !{!21}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_bool"}
+!1 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_int"}
+!2 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_int8"}
+!3 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_int16"}
+!4 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_int32"}
+!5 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_int64"}
+!6 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_uint"}
+!7 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_uint8"}
+!8 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_uint16"}
+!9 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_uint32"}
+!10 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_uint64"}
+!11 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_uintptr"}
+!12 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_float32"}
+!13 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_float64"}
+!14 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"[10]_llgo_int"}
+!15 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8"}
+!16 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"*_llgo_int"}
+!17 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"[]_llgo_int"}
+!18 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_string"}
+!19 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"github.com/goplus/llgo/cl/_testrt/eface.struct$RKbUG45GE4henGMAdmt0Rju0JptyR8NsX7IZLsOI0OM"}
+!20 = !{!"github.com/goplus/llgo/cl/_testrt/eface.main", !"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T"}
+!21 = !{!"*_llgo_github.com/goplus/llgo/cl/_testrt/eface.T", i32 0, !"Invoke", !"_llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac", !"github.com/goplus/llgo/cl/_testrt/eface.(*T).Invoke", !"github.com/goplus/llgo/cl/_testrt/eface.(*T).Invoke"}
