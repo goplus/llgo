@@ -849,9 +849,53 @@ func memmoveStoreCanDeferLoad(load *ssa.UnOp, store *ssa.Store) bool {
 		if instr != load {
 			continue
 		}
-		return i+1 < len(instrs) && instrs[i+1] == store
+		if i+1 < len(instrs) && instrs[i+1] == store {
+			return true
+		}
+		return memmoveStoreCanDeferGlobalLoad(load, store, instrs[i+1:])
 	}
 	return false
+}
+
+func memmoveStoreCanDeferGlobalLoad(load *ssa.UnOp, store *ssa.Store, instrs []ssa.Instruction) bool {
+	source, ok := load.X.(*ssa.Global)
+	if !ok {
+		return false
+	}
+	for _, instr := range instrs {
+		if instr == store {
+			return true
+		}
+		if !memmoveStoreAllowsDeferAcross(instr, source) {
+			return false
+		}
+	}
+	return false
+}
+
+func memmoveStoreAllowsDeferAcross(instr ssa.Instruction, source *ssa.Global) bool {
+	switch instr := instr.(type) {
+	case *ssa.DebugRef, *ssa.FieldAddr, *ssa.IndexAddr, *ssa.UnOp:
+		return true
+	case *ssa.Store:
+		base := memmoveAddrBase(instr.Addr)
+		return base != nil && base != source
+	default:
+		return false
+	}
+}
+
+func memmoveAddrBase(v ssa.Value) ssa.Value {
+	for {
+		switch x := v.(type) {
+		case *ssa.FieldAddr:
+			v = x.X
+		case *ssa.IndexAddr:
+			v = x.X
+		default:
+			return v
+		}
+	}
 }
 
 func valueHasArrayLenRangeEvalEffect(v ssa.Value, seen map[ssa.Value]bool) bool {
