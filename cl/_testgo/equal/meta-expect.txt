@@ -1,0 +1,12 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/equal.assert:
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/equal.init#3:
+    _llgo_int
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/equal.init#5:
+    _llgo_github.com/goplus/llgo/cl/_testgo/equal.N
+    _llgo_github.com/goplus/llgo/cl/_testgo/equal.T
+    _llgo_int
+    _llgo_string
+    _llgo_struct$n1H8J_3prDN3firMwPxBLVTkE5hJ9Di-AqNvaC9jczw

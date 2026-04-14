@@ -1,0 +1,9 @@
+[UseIfaceMethod]
+github.com/goplus/llgo/cl/_testdata/geometry1370.RegisterShape:
+    _llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape github.com/goplus/llgo/cl/_testdata/geometry1370.setID _llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA
+
+[InterfaceInfo]
+_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Shape:
+    Area _llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8
+    github.com/goplus/llgo/cl/_testdata/geometry1370.setID _llgo_func$VZ-8VPNF1RaLICwxc1Ghn7BbgyFX3v762OCdx127EkA
+    github.com/goplus/llgo/cl/_testdata/geometry1370.validate _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk

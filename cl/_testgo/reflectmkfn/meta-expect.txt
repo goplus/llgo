@@ -1,0 +1,6 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/reflectmkfn.main:
+    _llgo_int
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/reflectmkfn.main$1:
+    _llgo_string

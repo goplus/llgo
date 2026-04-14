@@ -1,0 +1,11 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/cgobasic.main:
+    _llgo_float64
+github.com/goplus/llgo/cl/_testgo/cgobasic.main$1:
+    []_llgo_uint8
+github.com/goplus/llgo/cl/_testgo/cgobasic.main$2:
+    _llgo_Pointer
+github.com/goplus/llgo/cl/_testgo/cgobasic.main$3:
+    _llgo_Pointer
+github.com/goplus/llgo/cl/_testgo/cgobasic.main$4:
+    _llgo_Pointer

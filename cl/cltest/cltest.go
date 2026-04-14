@@ -39,6 +39,7 @@ import (
 	"github.com/goplus/llgo/internal/littest"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
+	"github.com/goplus/llgo/internal/semmeta"
 	"github.com/goplus/llgo/ssa/ssatest"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
@@ -205,20 +206,51 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 	if err != nil {
 		t.Fatal("LoadSpec failed:", err)
 	}
-	if spec.Mode == littest.ModeSkip {
+	metaExpected, hasMetaExpect, err := loadMetaExpect(pkgDir)
+	if err != nil {
+		t.Fatal("loadMetaExpect failed:", err)
+	}
+	if spec.Mode == littest.ModeSkip && !hasMetaExpect {
 		return
 	}
-	v := llgen.GenFrom(pkgDir)
+	mod, err := llgen.GenModuleFrom(pkgDir)
+	if err != nil {
+		t.Fatal("GenModuleFrom failed:", err)
+	}
+	defer mod.Dispose()
+	v := mod.String()
 	if spec.Mode == littest.ModeFileCheck {
 		if err := littest.Check(spec, v); err != nil {
 			_ = os.WriteFile(pkgDir+"/result.txt", []byte(v), 0644)
 			t.Fatal(err)
 		}
-		return
-	}
-	if test.Diff(t, pkgDir+"/result.txt", []byte(v), []byte(spec.Text)) {
+	} else if spec.Mode == littest.ModeLiteral && test.Diff(t, pkgDir+"/result.txt", []byte(v), []byte(spec.Text)) {
 		t.Fatal("llgen.GenFrom: unexpected result")
 	}
+	if hasMetaExpect {
+		info, err := semmeta.Read(mod)
+		if err != nil {
+			t.Fatal("semmeta.Read failed:", err)
+		}
+		if test.Diff(t, filepath.Join(pkgDir, "meta-expect.txt.new"), []byte(info.String()), metaExpected) {
+			t.Fatal("semmeta.Read: unexpected result")
+		}
+	}
+}
+
+func loadMetaExpect(pkgDir string) ([]byte, bool, error) {
+	path := filepath.Join(pkgDir, "meta-expect.txt")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	if bytes.Equal(bytes.TrimSpace(data), []byte{';'}) {
+		return nil, false, nil
+	}
+	return data, true, nil
 }
 
 func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {

@@ -1,0 +1,68 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo:
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/reader.NopCloser:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo
+github.com/goplus/llgo/cl/_testgo/reader.main:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader
+github.com/goplus/llgo/cl/_testgo/reader.newError:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString
+github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo:
+    _llgo_string
+
+[UseIfaceMethod]
+github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+github.com/goplus/llgo/cl/_testgo/reader.ReadAll:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+github.com/goplus/llgo/cl/_testgo/reader.WriteString:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter WriteString _llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer Write _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Read:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Read:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo:
+    _llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo WriteTo _llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4
+
+[InterfaceInfo]
+_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader:
+    Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter:
+    WriteString _llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw
+_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer:
+    Write _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk
+_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo:
+    WriteTo _llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString:
+    0 Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error
+*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser:
+    0 Close _llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close
+    1 Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read
+*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo:
+    0 Close _llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close
+    1 Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read
+    2 WriteTo _llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4 github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo
+*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader:
+    0 Len _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len
+    1 Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read
+    2 ReadAt _llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4 github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt
+    3 ReadByte _llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte
+    4 ReadRune _llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune
+    5 Seek _llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek
+    6 Size _llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size
+    7 UnreadByte _llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte
+    8 UnreadRune _llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune
+    9 WriteTo _llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4 github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo
+_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser:
+    0 Close _llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Close
+    1 Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Read
+_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo:
+    0 Close _llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Close
+    1 Read _llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Read
+    2 WriteTo _llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4 github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo

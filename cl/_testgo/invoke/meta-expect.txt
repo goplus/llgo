@@ -1,0 +1,53 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/invoke.main:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5
+    *_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.T
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6
+    _llgo_string
+
+[UseIfaceMethod]
+github.com/goplus/llgo/cl/_testgo/invoke.invoke:
+    _llgo_github.com/goplus/llgo/cl/_testgo/invoke.I Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
+
+[InterfaceInfo]
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.I:
+    Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T).Invoke
+    1 Method _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/invoke.(*T).Method github.com/goplus/llgo/cl/_testgo/invoke.(*T).Method
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T1).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T1).Invoke
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T2).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T2).Invoke
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T3:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T3).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T3).Invoke
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T4).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T4).Invoke
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T5).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T5).Invoke
+*_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T6).Invoke github.com/goplus/llgo/cl/_testgo/invoke.(*T6).Invoke
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T).Invoke github.com/goplus/llgo/cl/_testgo/invoke.T.Invoke
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T1:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T1).Invoke github.com/goplus/llgo/cl/_testgo/invoke.T1.Invoke
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T2:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T2).Invoke github.com/goplus/llgo/cl/_testgo/invoke.T2.Invoke
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T4:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T4).Invoke github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T5:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T5).Invoke github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke
+_llgo_github.com/goplus/llgo/cl/_testgo/invoke.T6:
+    0 Invoke _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testgo/invoke.(*T6).Invoke github.com/goplus/llgo/cl/_testgo/invoke.T6.Invoke

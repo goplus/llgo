@@ -1,0 +1,15 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/errors.New:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString
+
+[UseIfaceMethod]
+github.com/goplus/llgo/cl/_testgo/errors.main:
+    _llgo_error Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
+
+[InterfaceInfo]
+_llgo_error:
+    Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/cl/_testgo/errors.errorString:
+    0 Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/cl/_testgo/errors.(*errorString).Error github.com/goplus/llgo/cl/_testgo/errors.(*errorString).Error

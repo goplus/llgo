@@ -1,0 +1,30 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/cgofull._C2func_test_structs:
+    _llgo_syscall.Errno
+github.com/goplus/llgo/cl/_testgo/cgofull.main:
+    _llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_int
+    _llgo_int
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/cgofull.runPy$1:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_struct___sFILE
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_struct__object
+github.com/goplus/llgo/cl/_testgo/cgofull.runPy$2:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_struct___sFILE
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_struct__object
+github.com/goplus/llgo/cl/_testgo/cgofull.runPy$3:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_struct___sFILE
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgofull._Ctype_struct__object
+github.com/goplus/llgo/cl/_testgo/cgofull.triggerC2func:
+    _llgo_string
+
+[MethodInfo]
+*_llgo_syscall.Errno:
+    0 Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to syscall.(*Errno).Error syscall.(*Errno).Error
+    1 Is _llgo_func$2Qg95_k_45LmC8dW5EErhMgP_0seWyWBKziPTJSC4SU syscall.(*Errno).Is syscall.(*Errno).Is
+    2 Temporary _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk syscall.(*Errno).Temporary syscall.(*Errno).Temporary
+    3 Timeout _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk syscall.(*Errno).Timeout syscall.(*Errno).Timeout
+_llgo_syscall.Errno:
+    0 Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to syscall.(*Errno).Error syscall.Errno.Error
+    1 Is _llgo_func$2Qg95_k_45LmC8dW5EErhMgP_0seWyWBKziPTJSC4SU syscall.(*Errno).Is syscall.Errno.Is
+    2 Temporary _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk syscall.(*Errno).Temporary syscall.Errno.Temporary
+    3 Timeout _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk syscall.(*Errno).Timeout syscall.Errno.Timeout

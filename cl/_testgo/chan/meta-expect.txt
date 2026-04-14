@@ -1,0 +1,3 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/chan.main:
+    chan _llgo_int

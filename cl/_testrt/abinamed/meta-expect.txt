@@ -1,0 +1,177 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/abinamed.main:
+    _llgo_github.com/goplus/llgo/cl/_testrt/abinamed.T
+    _llgo_github.com/goplus/llgo/runtime/abi.Type
+    _llgo_string
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/runtime/abi.ArrayType:
+    0 Align _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*ArrayType).Align github.com/goplus/llgo/runtime/abi.(*ArrayType).Align
+    1 ArrayType _llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk github.com/goplus/llgo/runtime/abi.(*ArrayType).ArrayType github.com/goplus/llgo/runtime/abi.(*ArrayType).ArrayType
+    2 ChanDir _llgo_func$Qwe8YykhcqDIDEcT1jS_t1iUv4Im6IdGf17ASgXRQdc github.com/goplus/llgo/runtime/abi.(*ArrayType).ChanDir github.com/goplus/llgo/runtime/abi.(*ArrayType).ChanDir
+    3 Common _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*ArrayType).Common github.com/goplus/llgo/runtime/abi.(*ArrayType).Common
+    4 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*ArrayType).ExportedMethods github.com/goplus/llgo/runtime/abi.(*ArrayType).ExportedMethods
+    5 FieldAlign _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*ArrayType).FieldAlign github.com/goplus/llgo/runtime/abi.(*ArrayType).FieldAlign
+    6 FuncType _llgo_func$Jm50llMLYG9ysTYiSohNC-Ho1mhjzn-vnTRBILhJI88 github.com/goplus/llgo/runtime/abi.(*ArrayType).FuncType github.com/goplus/llgo/runtime/abi.(*ArrayType).FuncType
+    7 GcSlice _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q github.com/goplus/llgo/runtime/abi.(*ArrayType).GcSlice github.com/goplus/llgo/runtime/abi.(*ArrayType).GcSlice
+    8 HasName _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*ArrayType).HasName github.com/goplus/llgo/runtime/abi.(*ArrayType).HasName
+    9 IfaceIndir _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*ArrayType).IfaceIndir github.com/goplus/llgo/runtime/abi.(*ArrayType).IfaceIndir
+    10 InterfaceType _llgo_func$gPJieW0gawapuP7u0nJWjqAizA6ianfpIMmF5SojVDM github.com/goplus/llgo/runtime/abi.(*ArrayType).InterfaceType github.com/goplus/llgo/runtime/abi.(*ArrayType).InterfaceType
+    11 IsClosure _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*ArrayType).IsClosure github.com/goplus/llgo/runtime/abi.(*ArrayType).IsClosure
+    12 IsDirectIface _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*ArrayType).IsDirectIface github.com/goplus/llgo/runtime/abi.(*ArrayType).IsDirectIface
+    13 Key _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*ArrayType).Key github.com/goplus/llgo/runtime/abi.(*ArrayType).Key
+    14 Kind _llgo_func$Hsg8cfKiWmyMHfTCLbUouCMFmF6kp9x3qasAGPBLLfc github.com/goplus/llgo/runtime/abi.(*ArrayType).Kind github.com/goplus/llgo/runtime/abi.(*ArrayType).Kind
+    15 MapType _llgo_func$v23QoXYwI62Le4EtGc42fZr4iF7nBhA8A8t9lvpy0QY github.com/goplus/llgo/runtime/abi.(*ArrayType).MapType github.com/goplus/llgo/runtime/abi.(*ArrayType).MapType
+    16 NumMethod _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*ArrayType).NumMethod github.com/goplus/llgo/runtime/abi.(*ArrayType).NumMethod
+    17 Pointers _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*ArrayType).Pointers github.com/goplus/llgo/runtime/abi.(*ArrayType).Pointers
+    18 Size _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s github.com/goplus/llgo/runtime/abi.(*ArrayType).Size github.com/goplus/llgo/runtime/abi.(*ArrayType).Size
+    19 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*ArrayType).String github.com/goplus/llgo/runtime/abi.(*ArrayType).String
+    20 StructType _llgo_func$JNZyRh9Ldf2v-LKH-spUrxoORHTTH5NO358kWdhabp0 github.com/goplus/llgo/runtime/abi.(*ArrayType).StructType github.com/goplus/llgo/runtime/abi.(*ArrayType).StructType
+    21 Uncommon _llgo_func$iG49bujiXjI2lVflYdE0hPXlCAABL-XKRANSNJEKOio github.com/goplus/llgo/runtime/abi.(*ArrayType).Uncommon github.com/goplus/llgo/runtime/abi.(*ArrayType).Uncommon
+*_llgo_github.com/goplus/llgo/runtime/abi.FuncType:
+    0 Align _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*FuncType).Align github.com/goplus/llgo/runtime/abi.(*FuncType).Align
+    1 ArrayType _llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk github.com/goplus/llgo/runtime/abi.(*FuncType).ArrayType github.com/goplus/llgo/runtime/abi.(*FuncType).ArrayType
+    2 ChanDir _llgo_func$Qwe8YykhcqDIDEcT1jS_t1iUv4Im6IdGf17ASgXRQdc github.com/goplus/llgo/runtime/abi.(*FuncType).ChanDir github.com/goplus/llgo/runtime/abi.(*FuncType).ChanDir
+    3 Common _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*FuncType).Common github.com/goplus/llgo/runtime/abi.(*FuncType).Common
+    4 Elem _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*FuncType).Elem github.com/goplus/llgo/runtime/abi.(*FuncType).Elem
+    5 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*FuncType).ExportedMethods github.com/goplus/llgo/runtime/abi.(*FuncType).ExportedMethods
+    6 FieldAlign _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*FuncType).FieldAlign github.com/goplus/llgo/runtime/abi.(*FuncType).FieldAlign
+    7 FuncType _llgo_func$Jm50llMLYG9ysTYiSohNC-Ho1mhjzn-vnTRBILhJI88 github.com/goplus/llgo/runtime/abi.(*FuncType).FuncType github.com/goplus/llgo/runtime/abi.(*FuncType).FuncType
+    8 GcSlice _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q github.com/goplus/llgo/runtime/abi.(*FuncType).GcSlice github.com/goplus/llgo/runtime/abi.(*FuncType).GcSlice
+    9 HasName _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*FuncType).HasName github.com/goplus/llgo/runtime/abi.(*FuncType).HasName
+    10 IfaceIndir _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*FuncType).IfaceIndir github.com/goplus/llgo/runtime/abi.(*FuncType).IfaceIndir
+    11 InterfaceType _llgo_func$gPJieW0gawapuP7u0nJWjqAizA6ianfpIMmF5SojVDM github.com/goplus/llgo/runtime/abi.(*FuncType).InterfaceType github.com/goplus/llgo/runtime/abi.(*FuncType).InterfaceType
+    12 IsClosure _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*FuncType).IsClosure github.com/goplus/llgo/runtime/abi.(*FuncType).IsClosure
+    13 IsDirectIface _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*FuncType).IsDirectIface github.com/goplus/llgo/runtime/abi.(*FuncType).IsDirectIface
+    14 Key _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*FuncType).Key github.com/goplus/llgo/runtime/abi.(*FuncType).Key
+    15 Kind _llgo_func$Hsg8cfKiWmyMHfTCLbUouCMFmF6kp9x3qasAGPBLLfc github.com/goplus/llgo/runtime/abi.(*FuncType).Kind github.com/goplus/llgo/runtime/abi.(*FuncType).Kind
+    16 Len _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*FuncType).Len github.com/goplus/llgo/runtime/abi.(*FuncType).Len
+    17 MapType _llgo_func$v23QoXYwI62Le4EtGc42fZr4iF7nBhA8A8t9lvpy0QY github.com/goplus/llgo/runtime/abi.(*FuncType).MapType github.com/goplus/llgo/runtime/abi.(*FuncType).MapType
+    18 NumMethod _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*FuncType).NumMethod github.com/goplus/llgo/runtime/abi.(*FuncType).NumMethod
+    19 Pointers _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*FuncType).Pointers github.com/goplus/llgo/runtime/abi.(*FuncType).Pointers
+    20 Size _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s github.com/goplus/llgo/runtime/abi.(*FuncType).Size github.com/goplus/llgo/runtime/abi.(*FuncType).Size
+    21 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*FuncType).String github.com/goplus/llgo/runtime/abi.(*FuncType).String
+    22 StructType _llgo_func$JNZyRh9Ldf2v-LKH-spUrxoORHTTH5NO358kWdhabp0 github.com/goplus/llgo/runtime/abi.(*FuncType).StructType github.com/goplus/llgo/runtime/abi.(*FuncType).StructType
+    23 Uncommon _llgo_func$iG49bujiXjI2lVflYdE0hPXlCAABL-XKRANSNJEKOio github.com/goplus/llgo/runtime/abi.(*FuncType).Uncommon github.com/goplus/llgo/runtime/abi.(*FuncType).Uncommon
+    24 Variadic _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*FuncType).Variadic github.com/goplus/llgo/runtime/abi.(*FuncType).Variadic
+*_llgo_github.com/goplus/llgo/runtime/abi.Imethod:
+    0 Exported _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Imethod).Exported github.com/goplus/llgo/runtime/abi.(*Imethod).Exported
+    1 Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Imethod).Name github.com/goplus/llgo/runtime/abi.(*Imethod).Name
+    2 PkgPath _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Imethod).PkgPath github.com/goplus/llgo/runtime/abi.(*Imethod).PkgPath
+*_llgo_github.com/goplus/llgo/runtime/abi.InterfaceType:
+    0 Align _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*InterfaceType).Align github.com/goplus/llgo/runtime/abi.(*InterfaceType).Align
+    1 ArrayType _llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk github.com/goplus/llgo/runtime/abi.(*InterfaceType).ArrayType github.com/goplus/llgo/runtime/abi.(*InterfaceType).ArrayType
+    2 ChanDir _llgo_func$Qwe8YykhcqDIDEcT1jS_t1iUv4Im6IdGf17ASgXRQdc github.com/goplus/llgo/runtime/abi.(*InterfaceType).ChanDir github.com/goplus/llgo/runtime/abi.(*InterfaceType).ChanDir
+    3 Common _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*InterfaceType).Common github.com/goplus/llgo/runtime/abi.(*InterfaceType).Common
+    4 Elem _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*InterfaceType).Elem github.com/goplus/llgo/runtime/abi.(*InterfaceType).Elem
+    5 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*InterfaceType).ExportedMethods github.com/goplus/llgo/runtime/abi.(*InterfaceType).ExportedMethods
+    6 FieldAlign _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*InterfaceType).FieldAlign github.com/goplus/llgo/runtime/abi.(*InterfaceType).FieldAlign
+    7 FuncType _llgo_func$Jm50llMLYG9ysTYiSohNC-Ho1mhjzn-vnTRBILhJI88 github.com/goplus/llgo/runtime/abi.(*InterfaceType).FuncType github.com/goplus/llgo/runtime/abi.(*InterfaceType).FuncType
+    8 GcSlice _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q github.com/goplus/llgo/runtime/abi.(*InterfaceType).GcSlice github.com/goplus/llgo/runtime/abi.(*InterfaceType).GcSlice
+    9 HasName _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*InterfaceType).HasName github.com/goplus/llgo/runtime/abi.(*InterfaceType).HasName
+    10 IfaceIndir _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*InterfaceType).IfaceIndir github.com/goplus/llgo/runtime/abi.(*InterfaceType).IfaceIndir
+    11 InterfaceType _llgo_func$gPJieW0gawapuP7u0nJWjqAizA6ianfpIMmF5SojVDM github.com/goplus/llgo/runtime/abi.(*InterfaceType).InterfaceType github.com/goplus/llgo/runtime/abi.(*InterfaceType).InterfaceType
+    12 IsClosure _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsClosure github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsClosure
+    13 IsDirectIface _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsDirectIface github.com/goplus/llgo/runtime/abi.(*InterfaceType).IsDirectIface
+    14 Key _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*InterfaceType).Key github.com/goplus/llgo/runtime/abi.(*InterfaceType).Key
+    15 Kind _llgo_func$Hsg8cfKiWmyMHfTCLbUouCMFmF6kp9x3qasAGPBLLfc github.com/goplus/llgo/runtime/abi.(*InterfaceType).Kind github.com/goplus/llgo/runtime/abi.(*InterfaceType).Kind
+    16 Len _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*InterfaceType).Len github.com/goplus/llgo/runtime/abi.(*InterfaceType).Len
+    17 MapType _llgo_func$v23QoXYwI62Le4EtGc42fZr4iF7nBhA8A8t9lvpy0QY github.com/goplus/llgo/runtime/abi.(*InterfaceType).MapType github.com/goplus/llgo/runtime/abi.(*InterfaceType).MapType
+    18 NumMethod _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*InterfaceType).NumMethod github.com/goplus/llgo/runtime/abi.(*InterfaceType).NumMethod
+    19 Pointers _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*InterfaceType).Pointers github.com/goplus/llgo/runtime/abi.(*InterfaceType).Pointers
+    20 Size _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s github.com/goplus/llgo/runtime/abi.(*InterfaceType).Size github.com/goplus/llgo/runtime/abi.(*InterfaceType).Size
+    21 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*InterfaceType).String github.com/goplus/llgo/runtime/abi.(*InterfaceType).String
+    22 StructType _llgo_func$JNZyRh9Ldf2v-LKH-spUrxoORHTTH5NO358kWdhabp0 github.com/goplus/llgo/runtime/abi.(*InterfaceType).StructType github.com/goplus/llgo/runtime/abi.(*InterfaceType).StructType
+    23 Uncommon _llgo_func$iG49bujiXjI2lVflYdE0hPXlCAABL-XKRANSNJEKOio github.com/goplus/llgo/runtime/abi.(*InterfaceType).Uncommon github.com/goplus/llgo/runtime/abi.(*InterfaceType).Uncommon
+*_llgo_github.com/goplus/llgo/runtime/abi.Kind:
+    0 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Kind).String github.com/goplus/llgo/runtime/abi.(*Kind).String
+*_llgo_github.com/goplus/llgo/runtime/abi.MapType:
+    0 Align _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*MapType).Align github.com/goplus/llgo/runtime/abi.(*MapType).Align
+    1 ArrayType _llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk github.com/goplus/llgo/runtime/abi.(*MapType).ArrayType github.com/goplus/llgo/runtime/abi.(*MapType).ArrayType
+    2 ChanDir _llgo_func$Qwe8YykhcqDIDEcT1jS_t1iUv4Im6IdGf17ASgXRQdc github.com/goplus/llgo/runtime/abi.(*MapType).ChanDir github.com/goplus/llgo/runtime/abi.(*MapType).ChanDir
+    3 Common _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*MapType).Common github.com/goplus/llgo/runtime/abi.(*MapType).Common
+    4 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*MapType).ExportedMethods github.com/goplus/llgo/runtime/abi.(*MapType).ExportedMethods
+    5 FieldAlign _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*MapType).FieldAlign github.com/goplus/llgo/runtime/abi.(*MapType).FieldAlign
+    6 FuncType _llgo_func$Jm50llMLYG9ysTYiSohNC-Ho1mhjzn-vnTRBILhJI88 github.com/goplus/llgo/runtime/abi.(*MapType).FuncType github.com/goplus/llgo/runtime/abi.(*MapType).FuncType
+    7 GcSlice _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q github.com/goplus/llgo/runtime/abi.(*MapType).GcSlice github.com/goplus/llgo/runtime/abi.(*MapType).GcSlice
+    8 HasName _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).HasName github.com/goplus/llgo/runtime/abi.(*MapType).HasName
+    9 HashMightPanic _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).HashMightPanic github.com/goplus/llgo/runtime/abi.(*MapType).HashMightPanic
+    10 IfaceIndir _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).IfaceIndir github.com/goplus/llgo/runtime/abi.(*MapType).IfaceIndir
+    11 IndirectElem _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).IndirectElem github.com/goplus/llgo/runtime/abi.(*MapType).IndirectElem
+    12 IndirectKey _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).IndirectKey github.com/goplus/llgo/runtime/abi.(*MapType).IndirectKey
+    13 InterfaceType _llgo_func$gPJieW0gawapuP7u0nJWjqAizA6ianfpIMmF5SojVDM github.com/goplus/llgo/runtime/abi.(*MapType).InterfaceType github.com/goplus/llgo/runtime/abi.(*MapType).InterfaceType
+    14 IsClosure _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).IsClosure github.com/goplus/llgo/runtime/abi.(*MapType).IsClosure
+    15 IsDirectIface _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).IsDirectIface github.com/goplus/llgo/runtime/abi.(*MapType).IsDirectIface
+    16 Kind _llgo_func$Hsg8cfKiWmyMHfTCLbUouCMFmF6kp9x3qasAGPBLLfc github.com/goplus/llgo/runtime/abi.(*MapType).Kind github.com/goplus/llgo/runtime/abi.(*MapType).Kind
+    17 Len _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*MapType).Len github.com/goplus/llgo/runtime/abi.(*MapType).Len
+    18 MapType _llgo_func$v23QoXYwI62Le4EtGc42fZr4iF7nBhA8A8t9lvpy0QY github.com/goplus/llgo/runtime/abi.(*MapType).MapType github.com/goplus/llgo/runtime/abi.(*MapType).MapType
+    19 NeedKeyUpdate _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).NeedKeyUpdate github.com/goplus/llgo/runtime/abi.(*MapType).NeedKeyUpdate
+    20 NumMethod _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*MapType).NumMethod github.com/goplus/llgo/runtime/abi.(*MapType).NumMethod
+    21 Pointers _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).Pointers github.com/goplus/llgo/runtime/abi.(*MapType).Pointers
+    22 ReflexiveKey _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*MapType).ReflexiveKey github.com/goplus/llgo/runtime/abi.(*MapType).ReflexiveKey
+    23 Size _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s github.com/goplus/llgo/runtime/abi.(*MapType).Size github.com/goplus/llgo/runtime/abi.(*MapType).Size
+    24 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*MapType).String github.com/goplus/llgo/runtime/abi.(*MapType).String
+    25 StructType _llgo_func$JNZyRh9Ldf2v-LKH-spUrxoORHTTH5NO358kWdhabp0 github.com/goplus/llgo/runtime/abi.(*MapType).StructType github.com/goplus/llgo/runtime/abi.(*MapType).StructType
+    26 Uncommon _llgo_func$iG49bujiXjI2lVflYdE0hPXlCAABL-XKRANSNJEKOio github.com/goplus/llgo/runtime/abi.(*MapType).Uncommon github.com/goplus/llgo/runtime/abi.(*MapType).Uncommon
+*_llgo_github.com/goplus/llgo/runtime/abi.Method:
+    0 Exported _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Method).Exported github.com/goplus/llgo/runtime/abi.(*Method).Exported
+    1 Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Method).Name github.com/goplus/llgo/runtime/abi.(*Method).Name
+    2 PkgPath _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Method).PkgPath github.com/goplus/llgo/runtime/abi.(*Method).PkgPath
+*_llgo_github.com/goplus/llgo/runtime/abi.StructField:
+    0 Embedded _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructField).Embedded github.com/goplus/llgo/runtime/abi.(*StructField).Embedded
+    1 Exported _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructField).Exported github.com/goplus/llgo/runtime/abi.(*StructField).Exported
+*_llgo_github.com/goplus/llgo/runtime/abi.StructType:
+    0 Align _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*StructType).Align github.com/goplus/llgo/runtime/abi.(*StructType).Align
+    1 ArrayType _llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk github.com/goplus/llgo/runtime/abi.(*StructType).ArrayType github.com/goplus/llgo/runtime/abi.(*StructType).ArrayType
+    2 ChanDir _llgo_func$Qwe8YykhcqDIDEcT1jS_t1iUv4Im6IdGf17ASgXRQdc github.com/goplus/llgo/runtime/abi.(*StructType).ChanDir github.com/goplus/llgo/runtime/abi.(*StructType).ChanDir
+    3 Common _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*StructType).Common github.com/goplus/llgo/runtime/abi.(*StructType).Common
+    4 Elem _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*StructType).Elem github.com/goplus/llgo/runtime/abi.(*StructType).Elem
+    5 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*StructType).ExportedMethods github.com/goplus/llgo/runtime/abi.(*StructType).ExportedMethods
+    6 FieldAlign _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*StructType).FieldAlign github.com/goplus/llgo/runtime/abi.(*StructType).FieldAlign
+    7 FuncType _llgo_func$Jm50llMLYG9ysTYiSohNC-Ho1mhjzn-vnTRBILhJI88 github.com/goplus/llgo/runtime/abi.(*StructType).FuncType github.com/goplus/llgo/runtime/abi.(*StructType).FuncType
+    8 GcSlice _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q github.com/goplus/llgo/runtime/abi.(*StructType).GcSlice github.com/goplus/llgo/runtime/abi.(*StructType).GcSlice
+    9 HasName _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructType).HasName github.com/goplus/llgo/runtime/abi.(*StructType).HasName
+    10 IfaceIndir _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructType).IfaceIndir github.com/goplus/llgo/runtime/abi.(*StructType).IfaceIndir
+    11 InterfaceType _llgo_func$gPJieW0gawapuP7u0nJWjqAizA6ianfpIMmF5SojVDM github.com/goplus/llgo/runtime/abi.(*StructType).InterfaceType github.com/goplus/llgo/runtime/abi.(*StructType).InterfaceType
+    12 IsClosure _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructType).IsClosure github.com/goplus/llgo/runtime/abi.(*StructType).IsClosure
+    13 IsDirectIface _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructType).IsDirectIface github.com/goplus/llgo/runtime/abi.(*StructType).IsDirectIface
+    14 Key _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*StructType).Key github.com/goplus/llgo/runtime/abi.(*StructType).Key
+    15 Kind _llgo_func$Hsg8cfKiWmyMHfTCLbUouCMFmF6kp9x3qasAGPBLLfc github.com/goplus/llgo/runtime/abi.(*StructType).Kind github.com/goplus/llgo/runtime/abi.(*StructType).Kind
+    16 Len _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*StructType).Len github.com/goplus/llgo/runtime/abi.(*StructType).Len
+    17 MapType _llgo_func$v23QoXYwI62Le4EtGc42fZr4iF7nBhA8A8t9lvpy0QY github.com/goplus/llgo/runtime/abi.(*StructType).MapType github.com/goplus/llgo/runtime/abi.(*StructType).MapType
+    18 NumMethod _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*StructType).NumMethod github.com/goplus/llgo/runtime/abi.(*StructType).NumMethod
+    19 Pointers _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*StructType).Pointers github.com/goplus/llgo/runtime/abi.(*StructType).Pointers
+    20 Size _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s github.com/goplus/llgo/runtime/abi.(*StructType).Size github.com/goplus/llgo/runtime/abi.(*StructType).Size
+    21 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*StructType).String github.com/goplus/llgo/runtime/abi.(*StructType).String
+    22 StructType _llgo_func$JNZyRh9Ldf2v-LKH-spUrxoORHTTH5NO358kWdhabp0 github.com/goplus/llgo/runtime/abi.(*StructType).StructType github.com/goplus/llgo/runtime/abi.(*StructType).StructType
+    23 Uncommon _llgo_func$iG49bujiXjI2lVflYdE0hPXlCAABL-XKRANSNJEKOio github.com/goplus/llgo/runtime/abi.(*StructType).Uncommon github.com/goplus/llgo/runtime/abi.(*StructType).Uncommon
+*_llgo_github.com/goplus/llgo/runtime/abi.Type:
+    0 Align _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*Type).Align github.com/goplus/llgo/runtime/abi.(*Type).Align
+    1 ArrayType _llgo_func$E73lcQT8QN1_ra27XNBjrI9wUEDUjSPMu2bmnQKIbfk github.com/goplus/llgo/runtime/abi.(*Type).ArrayType github.com/goplus/llgo/runtime/abi.(*Type).ArrayType
+    2 ChanDir _llgo_func$Qwe8YykhcqDIDEcT1jS_t1iUv4Im6IdGf17ASgXRQdc github.com/goplus/llgo/runtime/abi.(*Type).ChanDir github.com/goplus/llgo/runtime/abi.(*Type).ChanDir
+    3 Common _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*Type).Common github.com/goplus/llgo/runtime/abi.(*Type).Common
+    4 Elem _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*Type).Elem github.com/goplus/llgo/runtime/abi.(*Type).Elem
+    5 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*Type).ExportedMethods github.com/goplus/llgo/runtime/abi.(*Type).ExportedMethods
+    6 FieldAlign _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*Type).FieldAlign github.com/goplus/llgo/runtime/abi.(*Type).FieldAlign
+    7 FuncType _llgo_func$Jm50llMLYG9ysTYiSohNC-Ho1mhjzn-vnTRBILhJI88 github.com/goplus/llgo/runtime/abi.(*Type).FuncType github.com/goplus/llgo/runtime/abi.(*Type).FuncType
+    8 GcSlice _llgo_func$LzCekhEgu6zUWu4l1EXz60BKkQEwZP0N14TLH8aZW6Q github.com/goplus/llgo/runtime/abi.(*Type).GcSlice github.com/goplus/llgo/runtime/abi.(*Type).GcSlice
+    9 HasName _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Type).HasName github.com/goplus/llgo/runtime/abi.(*Type).HasName
+    10 IfaceIndir _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Type).IfaceIndir github.com/goplus/llgo/runtime/abi.(*Type).IfaceIndir
+    11 InterfaceType _llgo_func$gPJieW0gawapuP7u0nJWjqAizA6ianfpIMmF5SojVDM github.com/goplus/llgo/runtime/abi.(*Type).InterfaceType github.com/goplus/llgo/runtime/abi.(*Type).InterfaceType
+    12 IsClosure _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Type).IsClosure github.com/goplus/llgo/runtime/abi.(*Type).IsClosure
+    13 IsDirectIface _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Type).IsDirectIface github.com/goplus/llgo/runtime/abi.(*Type).IsDirectIface
+    14 Key _llgo_func$w6XuV-1SmW103DbauPseXBpW50HpxXAEsUsGFibl0Uw github.com/goplus/llgo/runtime/abi.(*Type).Key github.com/goplus/llgo/runtime/abi.(*Type).Key
+    15 Kind _llgo_func$Hsg8cfKiWmyMHfTCLbUouCMFmF6kp9x3qasAGPBLLfc github.com/goplus/llgo/runtime/abi.(*Type).Kind github.com/goplus/llgo/runtime/abi.(*Type).Kind
+    16 Len _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*Type).Len github.com/goplus/llgo/runtime/abi.(*Type).Len
+    17 MapType _llgo_func$v23QoXYwI62Le4EtGc42fZr4iF7nBhA8A8t9lvpy0QY github.com/goplus/llgo/runtime/abi.(*Type).MapType github.com/goplus/llgo/runtime/abi.(*Type).MapType
+    18 NumMethod _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/runtime/abi.(*Type).NumMethod github.com/goplus/llgo/runtime/abi.(*Type).NumMethod
+    19 Pointers _llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk github.com/goplus/llgo/runtime/abi.(*Type).Pointers github.com/goplus/llgo/runtime/abi.(*Type).Pointers
+    20 Size _llgo_func$1kITCsyu7hFLMxHLR7kDlvu4SOra_HtrtdFUQH9P13s github.com/goplus/llgo/runtime/abi.(*Type).Size github.com/goplus/llgo/runtime/abi.(*Type).Size
+    21 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Type).String github.com/goplus/llgo/runtime/abi.(*Type).String
+    22 StructType _llgo_func$JNZyRh9Ldf2v-LKH-spUrxoORHTTH5NO358kWdhabp0 github.com/goplus/llgo/runtime/abi.(*Type).StructType github.com/goplus/llgo/runtime/abi.(*Type).StructType
+    23 Uncommon _llgo_func$iG49bujiXjI2lVflYdE0hPXlCAABL-XKRANSNJEKOio github.com/goplus/llgo/runtime/abi.(*Type).Uncommon github.com/goplus/llgo/runtime/abi.(*Type).Uncommon
+*_llgo_github.com/goplus/llgo/runtime/abi.UncommonType:
+    0 ExportedMethods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*UncommonType).ExportedMethods github.com/goplus/llgo/runtime/abi.(*UncommonType).ExportedMethods
+    1 Methods _llgo_func$fPOUeAcTITSSbJEvFFjAWZP6Eli7dk4j7E9mFFHRoNM github.com/goplus/llgo/runtime/abi.(*UncommonType).Methods github.com/goplus/llgo/runtime/abi.(*UncommonType).Methods
+_llgo_github.com/goplus/llgo/runtime/abi.Kind:
+    0 String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/runtime/abi.(*Kind).String github.com/goplus/llgo/runtime/abi.Kind.String

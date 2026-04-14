@@ -1,0 +1,3 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/defer3.fail:
+    _llgo_string

@@ -1,0 +1,5 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/syncmap.main:
+    _llgo_bool
+    _llgo_int
+    _llgo_string

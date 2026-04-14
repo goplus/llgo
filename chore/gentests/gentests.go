@@ -24,6 +24,8 @@ import (
 
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/internal/semmeta"
+	"github.com/goplus/llvm"
 	"github.com/goplus/mod"
 )
 
@@ -52,8 +54,37 @@ func llgenDir(dir string) {
 		testDir := dir + "/" + name
 		fmt.Fprintln(os.Stderr, "llgen", testDir)
 		check(os.Chdir(testDir))
-		llgen.SmartDoFile(testDir)
+		outFile := filepath.Join(testDir, "out.ll")
+		skipOut := false
+		if b, err := os.ReadFile(outFile); err == nil && len(b) == 1 && b[0] == ';' {
+			skipOut = true
+		}
+		mod, err := llgen.GenModuleFrom(testDir)
+		check(err)
+		func() {
+			defer mod.Dispose()
+			if !skipOut {
+				check(os.WriteFile(outFile, []byte(mod.String()), 0644))
+			}
+			writeMetaExpect(testDir, mod)
+		}()
 	}
+}
+
+func writeMetaExpect(testDir string, mod llvm.Module) {
+	metaFile := filepath.Join(testDir, "meta-expect.txt")
+	info, err := semmeta.Read(mod)
+	check(err)
+	text := info.String()
+
+	existing, err := os.ReadFile(metaFile)
+	if err != nil && !os.IsNotExist(err) {
+		check(err)
+	}
+	if err == nil && strings.TrimSpace(string(existing)) == ";" {
+		return
+	}
+	check(os.WriteFile(metaFile, []byte(text), 0644))
 }
 
 func genExpects(root string) {

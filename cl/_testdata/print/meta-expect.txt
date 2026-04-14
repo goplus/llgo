@@ -1,0 +1,17 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testdata/print.main:
+    _llgo_bool
+    _llgo_complex128
+    _llgo_float32
+    _llgo_float64
+    _llgo_int
+    _llgo_int16
+    _llgo_int32
+    _llgo_int64
+    _llgo_int8
+    _llgo_string
+    _llgo_uint16
+    _llgo_uint32
+    _llgo_uint64
+    _llgo_uint8
+    _llgo_uintptr

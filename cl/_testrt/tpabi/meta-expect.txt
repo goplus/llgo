@@ -1,0 +1,20 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/tpabi.main:
+    *_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]
+    _llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]
+    _llgo_string
+
+[UseIfaceMethod]
+github.com/goplus/llgo/cl/_testrt/tpabi.main:
+    _llgo_github.com/goplus/llgo/cl/_testrt/tpabi.I Demo _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+
+[InterfaceInfo]
+_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.I:
+    Demo _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]:
+    0 Demo _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Demo github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Demo
+    1 Info _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Info github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Info
+_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]:
+    0 Info _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testrt/tpabi.(*T[string,int]).Info github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int].Info

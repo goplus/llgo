@@ -1,0 +1,3 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/strucintf.Foo:
+    github.com/goplus/llgo/cl/_testgo/strucintf.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88

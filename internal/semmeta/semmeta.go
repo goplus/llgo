@@ -1,0 +1,500 @@
+/*
+ * Copyright (c) 2026 The XGo Authors (xgo.dev). All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package semmeta
+
+import (
+	"bytes"
+	"fmt"
+	"sort"
+
+	"github.com/goplus/llvm"
+)
+
+const (
+	useIfaceMetadata       = "llgo.useiface"
+	useIfaceMethodMetadata = "llgo.useifacemethod"
+	interfaceInfoMetadata  = "llgo.interfaceinfo"
+	methodInfoMetadata     = "llgo.methodinfo"
+	useNamedMethodMetadata = "llgo.usenamedmethod"
+	reflectMethodMetadata  = "llgo.reflectmethod"
+)
+
+type Symbol string
+
+type MethodSig struct {
+	Name  string
+	MType Symbol
+}
+
+type IfaceMethodDemand struct {
+	Target Symbol
+	Sig    MethodSig
+}
+
+type MethodSlot struct {
+	Index int
+	Sig   MethodSig
+	IFn   Symbol
+	TFn   Symbol
+}
+
+type ModuleInfo struct {
+	InterfaceInfo  map[Symbol][]MethodSig
+	UseIface       map[Symbol][]Symbol
+	UseIfaceMethod map[Symbol][]IfaceMethodDemand
+	MethodInfo     map[Symbol][]MethodSlot
+	UseNamedMethod map[Symbol][]string
+	ReflectMethod  map[Symbol]struct{}
+}
+
+func Read(mod llvm.Module) (ModuleInfo, error) {
+	info := ModuleInfo{
+		InterfaceInfo:  make(map[Symbol][]MethodSig),
+		UseIface:       make(map[Symbol][]Symbol),
+		UseIfaceMethod: make(map[Symbol][]IfaceMethodDemand),
+		MethodInfo:     make(map[Symbol][]MethodSlot),
+		UseNamedMethod: make(map[Symbol][]string),
+		ReflectMethod:  make(map[Symbol]struct{}),
+	}
+	if err := readUseIface(mod, &info); err != nil {
+		return ModuleInfo{}, err
+	}
+	if err := readUseIfaceMethod(mod, &info); err != nil {
+		return ModuleInfo{}, err
+	}
+	if err := readInterfaceInfo(mod, &info); err != nil {
+		return ModuleInfo{}, err
+	}
+	if err := readMethodInfo(mod, &info); err != nil {
+		return ModuleInfo{}, err
+	}
+	if err := readUseNamedMethod(mod, &info); err != nil {
+		return ModuleInfo{}, err
+	}
+	if err := readReflectMethod(mod, &info); err != nil {
+		return ModuleInfo{}, err
+	}
+	info.normalize()
+	return info, nil
+}
+
+func (info ModuleInfo) String() string {
+	var buf bytes.Buffer
+	writeSymbolListSection(&buf, "UseIface", info.UseIface)
+	writeIfaceMethodSection(&buf, "UseIfaceMethod", info.UseIfaceMethod)
+	writeInterfaceInfoSection(&buf, "InterfaceInfo", info.InterfaceInfo)
+	writeMethodInfoSection(&buf, "MethodInfo", info.MethodInfo)
+	writeStringListSection(&buf, "UseNamedMethod", info.UseNamedMethod)
+	writeReflectMethodSection(&buf, "ReflectMethod", info.ReflectMethod)
+	return buf.String()
+}
+
+func readUseIface(mod llvm.Module, info *ModuleInfo) error {
+	rows := mod.NamedMetadataOperands(useIfaceMetadata)
+	for i, row := range rows {
+		fields, err := rowFields(useIfaceMetadata, i, row, 2)
+		if err != nil {
+			return err
+		}
+		owner, err := fieldString(useIfaceMetadata, i, 0, fields[0])
+		if err != nil {
+			return err
+		}
+		target, err := fieldString(useIfaceMetadata, i, 1, fields[1])
+		if err != nil {
+			return err
+		}
+		info.UseIface[Symbol(owner)] = append(info.UseIface[Symbol(owner)], Symbol(target))
+	}
+	return nil
+}
+
+func readUseIfaceMethod(mod llvm.Module, info *ModuleInfo) error {
+	rows := mod.NamedMetadataOperands(useIfaceMethodMetadata)
+	for i, row := range rows {
+		fields, err := rowFields(useIfaceMethodMetadata, i, row, 4)
+		if err != nil {
+			return err
+		}
+		owner, err := fieldString(useIfaceMethodMetadata, i, 0, fields[0])
+		if err != nil {
+			return err
+		}
+		target, err := fieldString(useIfaceMethodMetadata, i, 1, fields[1])
+		if err != nil {
+			return err
+		}
+		name, err := fieldString(useIfaceMethodMetadata, i, 2, fields[2])
+		if err != nil {
+			return err
+		}
+		mtyp, err := fieldString(useIfaceMethodMetadata, i, 3, fields[3])
+		if err != nil {
+			return err
+		}
+		info.UseIfaceMethod[Symbol(owner)] = append(info.UseIfaceMethod[Symbol(owner)], IfaceMethodDemand{
+			Target: Symbol(target),
+			Sig: MethodSig{
+				Name:  name,
+				MType: Symbol(mtyp),
+			},
+		})
+	}
+	return nil
+}
+
+func readInterfaceInfo(mod llvm.Module, info *ModuleInfo) error {
+	rows := mod.NamedMetadataOperands(interfaceInfoMetadata)
+	for i, row := range rows {
+		fields, err := rowFields(interfaceInfoMetadata, i, row, 3)
+		if err != nil {
+			return err
+		}
+		target, err := fieldString(interfaceInfoMetadata, i, 0, fields[0])
+		if err != nil {
+			return err
+		}
+		name, err := fieldString(interfaceInfoMetadata, i, 1, fields[1])
+		if err != nil {
+			return err
+		}
+		mtyp, err := fieldString(interfaceInfoMetadata, i, 2, fields[2])
+		if err != nil {
+			return err
+		}
+		info.InterfaceInfo[Symbol(target)] = append(info.InterfaceInfo[Symbol(target)], MethodSig{
+			Name:  name,
+			MType: Symbol(mtyp),
+		})
+	}
+	return nil
+}
+
+func readMethodInfo(mod llvm.Module, info *ModuleInfo) error {
+	rows := mod.NamedMetadataOperands(methodInfoMetadata)
+	for i, row := range rows {
+		fields, err := rowFields(methodInfoMetadata, i, row, 6)
+		if err != nil {
+			return err
+		}
+		target, err := fieldString(methodInfoMetadata, i, 0, fields[0])
+		if err != nil {
+			return err
+		}
+		index, err := fieldInt(methodInfoMetadata, i, 1, fields[1])
+		if err != nil {
+			return err
+		}
+		name, err := fieldString(methodInfoMetadata, i, 2, fields[2])
+		if err != nil {
+			return err
+		}
+		mtyp, err := fieldString(methodInfoMetadata, i, 3, fields[3])
+		if err != nil {
+			return err
+		}
+		ifn, err := fieldString(methodInfoMetadata, i, 4, fields[4])
+		if err != nil {
+			return err
+		}
+		tfn, err := fieldString(methodInfoMetadata, i, 5, fields[5])
+		if err != nil {
+			return err
+		}
+		info.MethodInfo[Symbol(target)] = append(info.MethodInfo[Symbol(target)], MethodSlot{
+			Index: index,
+			Sig: MethodSig{
+				Name:  name,
+				MType: Symbol(mtyp),
+			},
+			IFn: Symbol(ifn),
+			TFn: Symbol(tfn),
+		})
+	}
+	return nil
+}
+
+func readUseNamedMethod(mod llvm.Module, info *ModuleInfo) error {
+	rows := mod.NamedMetadataOperands(useNamedMethodMetadata)
+	for i, row := range rows {
+		fields, err := rowFields(useNamedMethodMetadata, i, row, 2)
+		if err != nil {
+			return err
+		}
+		owner, err := fieldString(useNamedMethodMetadata, i, 0, fields[0])
+		if err != nil {
+			return err
+		}
+		name, err := fieldString(useNamedMethodMetadata, i, 1, fields[1])
+		if err != nil {
+			return err
+		}
+		info.UseNamedMethod[Symbol(owner)] = append(info.UseNamedMethod[Symbol(owner)], name)
+	}
+	return nil
+}
+
+func readReflectMethod(mod llvm.Module, info *ModuleInfo) error {
+	rows := mod.NamedMetadataOperands(reflectMethodMetadata)
+	for i, row := range rows {
+		fields, err := rowFields(reflectMethodMetadata, i, row, 1)
+		if err != nil {
+			return err
+		}
+		owner, err := fieldString(reflectMethodMetadata, i, 0, fields[0])
+		if err != nil {
+			return err
+		}
+		info.ReflectMethod[Symbol(owner)] = struct{}{}
+	}
+	return nil
+}
+
+func rowFields(table string, rowIndex int, row llvm.Value, want int) ([]llvm.Value, error) {
+	fields := row.MDNodeOperands()
+	if len(fields) != want {
+		return nil, fmt.Errorf("%s row %d: field count = %d, want %d", table, rowIndex, len(fields), want)
+	}
+	return fields, nil
+}
+
+func fieldString(table string, rowIndex, fieldIndex int, field llvm.Value) (string, error) {
+	if !field.IsAMDString() {
+		return "", fmt.Errorf("%s row %d field %d: want mdstring", table, rowIndex, fieldIndex)
+	}
+	return field.MDString(), nil
+}
+
+func fieldInt(table string, rowIndex, fieldIndex int, field llvm.Value) (int, error) {
+	if field.IsAConstantInt().IsNil() {
+		return 0, fmt.Errorf("%s row %d field %d: want constant int metadata", table, rowIndex, fieldIndex)
+	}
+	return int(field.ZExtValue()), nil
+}
+
+func (info *ModuleInfo) normalize() {
+	for owner, targets := range info.UseIface {
+		info.UseIface[owner] = uniqueSortedSymbols(targets)
+	}
+	for owner, demands := range info.UseIfaceMethod {
+		sort.Slice(demands, func(i, j int) bool {
+			if demands[i].Target != demands[j].Target {
+				return demands[i].Target < demands[j].Target
+			}
+			if demands[i].Sig.Name != demands[j].Sig.Name {
+				return demands[i].Sig.Name < demands[j].Sig.Name
+			}
+			return demands[i].Sig.MType < demands[j].Sig.MType
+		})
+		info.UseIfaceMethod[owner] = uniqueIfaceMethodDemands(demands)
+	}
+	for target, methods := range info.InterfaceInfo {
+		sort.Slice(methods, func(i, j int) bool {
+			if methods[i].Name != methods[j].Name {
+				return methods[i].Name < methods[j].Name
+			}
+			return methods[i].MType < methods[j].MType
+		})
+		info.InterfaceInfo[target] = uniqueMethodSigs(methods)
+	}
+	for target, slots := range info.MethodInfo {
+		sort.Slice(slots, func(i, j int) bool {
+			if slots[i].Index != slots[j].Index {
+				return slots[i].Index < slots[j].Index
+			}
+			if slots[i].Sig.Name != slots[j].Sig.Name {
+				return slots[i].Sig.Name < slots[j].Sig.Name
+			}
+			if slots[i].Sig.MType != slots[j].Sig.MType {
+				return slots[i].Sig.MType < slots[j].Sig.MType
+			}
+			if slots[i].IFn != slots[j].IFn {
+				return slots[i].IFn < slots[j].IFn
+			}
+			return slots[i].TFn < slots[j].TFn
+		})
+		info.MethodInfo[target] = uniqueMethodSlots(slots)
+	}
+	for owner, names := range info.UseNamedMethod {
+		sort.Strings(names)
+		info.UseNamedMethod[owner] = uniqueStrings(names)
+	}
+}
+
+func writeSectionHeader(buf *bytes.Buffer, name string) {
+	if buf.Len() != 0 {
+		buf.WriteByte('\n')
+	}
+	fmt.Fprintf(buf, "[%s]\n", name)
+}
+
+func writeSymbolListSection(buf *bytes.Buffer, name string, data map[Symbol][]Symbol) {
+	if len(data) == 0 {
+		return
+	}
+	writeSectionHeader(buf, name)
+	for _, key := range sortedSymbolKeys(data) {
+		fmt.Fprintf(buf, "%s:\n", key)
+		for _, value := range data[key] {
+			fmt.Fprintf(buf, "    %s\n", value)
+		}
+	}
+}
+
+func writeIfaceMethodSection(buf *bytes.Buffer, name string, data map[Symbol][]IfaceMethodDemand) {
+	if len(data) == 0 {
+		return
+	}
+	writeSectionHeader(buf, name)
+	for _, key := range sortedSymbolKeys(data) {
+		fmt.Fprintf(buf, "%s:\n", key)
+		for _, value := range data[key] {
+			fmt.Fprintf(buf, "    %s %s %s\n", value.Target, value.Sig.Name, value.Sig.MType)
+		}
+	}
+}
+
+func writeInterfaceInfoSection(buf *bytes.Buffer, name string, data map[Symbol][]MethodSig) {
+	if len(data) == 0 {
+		return
+	}
+	writeSectionHeader(buf, name)
+	for _, key := range sortedSymbolKeys(data) {
+		fmt.Fprintf(buf, "%s:\n", key)
+		for _, value := range data[key] {
+			fmt.Fprintf(buf, "    %s %s\n", value.Name, value.MType)
+		}
+	}
+}
+
+func writeMethodInfoSection(buf *bytes.Buffer, name string, data map[Symbol][]MethodSlot) {
+	if len(data) == 0 {
+		return
+	}
+	writeSectionHeader(buf, name)
+	for _, key := range sortedSymbolKeys(data) {
+		fmt.Fprintf(buf, "%s:\n", key)
+		for _, value := range data[key] {
+			fmt.Fprintf(buf, "    %d %s %s %s %s\n", value.Index, value.Sig.Name, value.Sig.MType, value.IFn, value.TFn)
+		}
+	}
+}
+
+func writeStringListSection(buf *bytes.Buffer, name string, data map[Symbol][]string) {
+	if len(data) == 0 {
+		return
+	}
+	writeSectionHeader(buf, name)
+	for _, key := range sortedSymbolKeys(data) {
+		fmt.Fprintf(buf, "%s:\n", key)
+		for _, value := range data[key] {
+			fmt.Fprintf(buf, "    %s\n", value)
+		}
+	}
+}
+
+func writeReflectMethodSection(buf *bytes.Buffer, name string, data map[Symbol]struct{}) {
+	if len(data) == 0 {
+		return
+	}
+	writeSectionHeader(buf, name)
+	for _, key := range sortedSetKeys(data) {
+		fmt.Fprintf(buf, "%s\n", key)
+	}
+}
+
+func sortedSymbolKeys[T any](m map[Symbol]T) []Symbol {
+	keys := make([]Symbol, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	return keys
+}
+
+func sortedSetKeys(m map[Symbol]struct{}) []Symbol {
+	return sortedSymbolKeys(m)
+}
+
+func uniqueSortedSymbols(values []Symbol) []Symbol {
+	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
+	if len(values) == 0 {
+		return values
+	}
+	out := values[:1]
+	for _, value := range values[1:] {
+		if value != out[len(out)-1] {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func uniqueStrings(values []string) []string {
+	if len(values) == 0 {
+		return values
+	}
+	out := values[:1]
+	for _, value := range values[1:] {
+		if value != out[len(out)-1] {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func uniqueMethodSigs(values []MethodSig) []MethodSig {
+	if len(values) == 0 {
+		return values
+	}
+	out := values[:1]
+	for _, value := range values[1:] {
+		last := out[len(out)-1]
+		if value.Name != last.Name || value.MType != last.MType {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func uniqueIfaceMethodDemands(values []IfaceMethodDemand) []IfaceMethodDemand {
+	if len(values) == 0 {
+		return values
+	}
+	out := values[:1]
+	for _, value := range values[1:] {
+		last := out[len(out)-1]
+		if value.Target != last.Target || value.Sig.Name != last.Sig.Name || value.Sig.MType != last.Sig.MType {
+			out = append(out, value)
+		}
+	}
+	return out
+}
+
+func uniqueMethodSlots(values []MethodSlot) []MethodSlot {
+	if len(values) == 0 {
+		return values
+	}
+	out := values[:1]
+	for _, value := range values[1:] {
+		last := out[len(out)-1]
+		if value.Index != last.Index || value.Sig.Name != last.Sig.Name || value.Sig.MType != last.Sig.MType || value.IFn != last.IFn || value.TFn != last.TFn {
+			out = append(out, value)
+		}
+	}
+	return out
+}

@@ -1,0 +1,17 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/ifaceconv.main:
+    _llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1
+    _llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2
+    _llgo_string
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1:
+    0 github.com/goplus/llgo/cl/_testgo/ifaceconv.f _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C1).f github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C1).f
+*_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2:
+    0 github.com/goplus/llgo/cl/_testgo/ifaceconv.f _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C2).f github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C2).f
+    1 github.com/goplus/llgo/cl/_testgo/ifaceconv.g _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C2).g github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C2).g
+_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C1:
+    0 github.com/goplus/llgo/cl/_testgo/ifaceconv.f _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C1).f github.com/goplus/llgo/cl/_testgo/ifaceconv.C1.f
+_llgo_github.com/goplus/llgo/cl/_testgo/ifaceconv.C2:
+    0 github.com/goplus/llgo/cl/_testgo/ifaceconv.f _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C2).f github.com/goplus/llgo/cl/_testgo/ifaceconv.C2.f
+    1 github.com/goplus/llgo/cl/_testgo/ifaceconv.g _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testgo/ifaceconv.(*C2).g github.com/goplus/llgo/cl/_testgo/ifaceconv.C2.g

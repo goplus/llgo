@@ -1,0 +1,13 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/methodthunk.main:
+    _llgo_closure$31N-NdXOzvOy55m3NGAY_hdZ_NIdtCAe5V7uk7-a5HU
+    _llgo_closure$ygdobeQSbhO1hSbeWA66ORl_cNKHor-iD8MqRFtuWHg
+    _llgo_string
+
+[MethodInfo]
+*_llgo_github.com/goplus/llgo/cl/_testrt/methodthunk.InnerInt:
+    0 M _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA github.com/goplus/llgo/cl/_testrt/methodthunk.(*InnerInt).M github.com/goplus/llgo/cl/_testrt/methodthunk.(*InnerInt).M
+*_llgo_github.com/goplus/llgo/cl/_testrt/methodthunk.inner:
+    0 M _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testrt/methodthunk.(*inner).M github.com/goplus/llgo/cl/_testrt/methodthunk.(*inner).M
+*_llgo_github.com/goplus/llgo/cl/_testrt/methodthunk.outer:
+    0 M _llgo_func$2_iS07vIlF2_rZqWB5eU0IvP_9HviM4MYZNkXZDvbac github.com/goplus/llgo/cl/_testrt/methodthunk.(*outer).M github.com/goplus/llgo/cl/_testrt/methodthunk.(*outer).M

@@ -1,0 +1,4 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/closureiface.main:
+    _llgo_closure$QIHBTaw1IFobr8yvWpq-2AJFm3xBNhdW_aNBicqUBGk
+    _llgo_string

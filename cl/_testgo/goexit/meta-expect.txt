@@ -1,0 +1,7 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/goexit.demo2$1$1:
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/goexit.demo3$1$1:
+    _llgo_string
+github.com/goplus/llgo/cl/_testgo/goexit.demo3$1$2:
+    _llgo_string

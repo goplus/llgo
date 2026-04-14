@@ -1,0 +1,5 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testdata/vargs.main:
+    _llgo_int
+github.com/goplus/llgo/cl/_testdata/vargs.test:
+    _llgo_string

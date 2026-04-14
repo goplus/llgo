@@ -1,0 +1,18 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$1:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$2:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct__object
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$3:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$4:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct__object
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$5:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$6:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct__object
+github.com/goplus/llgo/cl/_testgo/cgomacro.main$7:
+    *_llgo_github.com/goplus/llgo/cl/_testgo/cgomacro._Ctype_struct___sFILE

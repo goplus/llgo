@@ -1,0 +1,3 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/select.send:
+    _llgo_string

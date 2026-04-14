@@ -1,0 +1,8 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/any.hi:
+    _llgo_string
+github.com/goplus/llgo/cl/_testrt/any.incVal:
+    _llgo_string
+github.com/goplus/llgo/cl/_testrt/any.main:
+    *_llgo_int8
+    _llgo_int

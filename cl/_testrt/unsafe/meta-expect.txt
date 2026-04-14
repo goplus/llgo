@@ -1,0 +1,3 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/unsafe.main:
+    _llgo_string

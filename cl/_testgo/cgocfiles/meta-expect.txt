@@ -1,0 +1,4 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testgo/cgocfiles.main:
+    _llgo_github.com/goplus/llgo/cl/_testgo/cgocfiles._Ctype_int
+    _llgo_string

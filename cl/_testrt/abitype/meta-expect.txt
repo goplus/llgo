@@ -1,0 +1,5 @@
+[UseIface]
+github.com/goplus/llgo/cl/_testrt/abitype.main:
+    _llgo_int32
+    _llgo_string
+    _llgo_uint8
