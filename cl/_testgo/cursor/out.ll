@@ -617,7 +617,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %54 = extractvalue { i32, i32 } %52, 1
   br label %_llgo_9
 
-_llgo_3:                                          ; preds = %_llgo_22, %_llgo_18, %_llgo_6
+_llgo_3:                                          ; preds = %_llgo_7, %_llgo_6
   store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %6, align 8
   store i1 false, ptr %7, align 1
   %55 = icmp eq ptr %6, null
@@ -630,7 +630,7 @@ _llgo_3:                                          ; preds = %_llgo_22, %_llgo_18
   %60 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %59, i1 %58, 1
   ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %60
 
-_llgo_4:                                          ; preds = %_llgo_19, %_llgo_1
+_llgo_4:                                          ; preds = %_llgo_1
   %61 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
   store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 36 }, ptr %61, align 8
   %62 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %61, 1
@@ -641,15 +641,15 @@ _llgo_5:                                          ; preds = %_llgo_1
   %63 = icmp eq i64 %30, 0
   br i1 %63, label %_llgo_6, label %_llgo_7
 
-_llgo_6:                                          ; preds = %_llgo_20, %_llgo_5
+_llgo_6:                                          ; preds = %_llgo_5
   store i64 -2, ptr %20, align 4
   br label %_llgo_3
 
 _llgo_7:                                          ; preds = %_llgo_5
   %64 = icmp eq i64 %30, 1
-  br i1 %64, label %_llgo_8, label %_llgo_18
+  br i1 %64, label %_llgo_8, label %_llgo_3
 
-_llgo_8:                                          ; preds = %_llgo_21, %_llgo_7
+_llgo_8:                                          ; preds = %_llgo_7
   %65 = icmp eq ptr %6, null
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %65)
   %66 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
@@ -794,32 +794,10 @@ _llgo_16:                                         ; preds = %_llgo_12
 
 _llgo_17:                                         ; preds = %_llgo_15
   br label %_llgo_13
-
-_llgo_18:                                         ; preds = %_llgo_7
-  %147 = icmp eq i64 %30, -3
-  br i1 %147, label %_llgo_19, label %_llgo_3
-
-_llgo_19:                                         ; preds = %_llgo_22, %_llgo_18
-  store i64 0, ptr %20, align 4
-  %148 = call %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %9, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %18)
-  %149 = load i64, ptr %20, align 4
-  %150 = icmp eq i64 %149, -1
-  br i1 %150, label %_llgo_4, label %_llgo_20
-
-_llgo_20:                                         ; preds = %_llgo_19
-  %151 = icmp eq i64 %149, 0
-  br i1 %151, label %_llgo_6, label %_llgo_21
-
-_llgo_21:                                         ; preds = %_llgo_20
-  %152 = icmp eq i64 %149, 1
-  br i1 %152, label %_llgo_8, label %_llgo_22
-
-_llgo_22:                                         ; preds = %_llgo_21
-  %153 = icmp eq i64 %149, -3
-  br i1 %153, label %_llgo_19, label %_llgo_3
 }
 
-define i1 @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1"(ptr %0, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %1) {
+; Function Attrs: noinline optnone
+define i1 @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1"(ptr %0, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %1) #0 {
 _llgo_0:
   %2 = load { ptr, ptr, ptr, ptr }, ptr %0, align 8
   %3 = extractvalue { ptr, ptr, ptr, ptr } %2, 0
@@ -2589,7 +2567,7 @@ _llgo_285:                                        ; preds = %_llgo_284, %_llgo_2
 }
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: write)
-declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #0
+declare void @llvm.memset(ptr nocapture writeonly, i8, i64, i1 immarg) #1
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
@@ -2618,7 +2596,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.c
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
 
 ; Function Attrs: nocallback nofree nounwind willreturn memory(argmem: readwrite)
-declare void @llvm.memmove.p0.p0.i64(ptr nocapture writeonly, ptr nocapture readonly, i64, i1 immarg) #1
+declare void @llvm.memmove.p0.p0.i64(ptr nocapture writeonly, ptr nocapture readonly, i64, i1 immarg) #2
 
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
@@ -3038,5 +3016,6 @@ declare i64 @"go/ast.(*ValueSpec).Pos"(ptr)
 
 declare void @"go/ast.(*ValueSpec).specNode"(ptr)
 
-attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
-attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }
+attributes #0 = { noinline optnone }
+attributes #1 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+attributes #2 = { nocallback nofree nounwind willreturn memory(argmem: readwrite) }

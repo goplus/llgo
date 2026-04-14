@@ -498,6 +498,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		if disableInline {
 			fn.Inline(llssa.NoInline)
 		}
+		if p.rangeFuncYieldNeedsOptimizeNone(f) {
+			fn.OptimizeNone()
+		}
 	}
 	p.funcs[f] = fn
 	isCgo := isCgoExternSymbol(f)
@@ -1588,6 +1591,9 @@ func (p *context) compileRangeFuncGotoRestartResume(b llssa.Builder, v *ssa.If) 
 	if !ok {
 		return false
 	}
+	if !p.rangeFuncIteratorCallHasGotoRestart(restartBlock) {
+		return false
+	}
 	fn := p.fn
 	cond := p.compileValue(b, v.Cond)
 	match := fn.Block(block.Succs[0].Index)
@@ -1599,6 +1605,53 @@ func (p *context) compileRangeFuncGotoRestartResume(b llssa.Builder, v *ssa.If) 
 	b.If(isRestart, restart, fn.Block(block.Succs[1].Index))
 	p.emitRangeFuncGotoRestart(b, restart, restartBlock, v)
 	return true
+}
+
+func (p *context) rangeFuncIteratorCallHasGotoRestart(block *ssa.BasicBlock) bool {
+	call := rangeFuncIteratorCall(block)
+	if call == nil {
+		return false
+	}
+	for _, arg := range call.Call.Args {
+		closure, ok := arg.(*ssa.MakeClosure)
+		if !ok {
+			continue
+		}
+		fn, ok := closure.Fn.(*ssa.Function)
+		if !ok || fn.Synthetic != "range-over-func yield" {
+			continue
+		}
+		for _, block := range fn.Blocks {
+			if rangeFuncYieldBlockNeedsGotoRestart(p, block) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func rangeFuncYieldBlockNeedsGotoRestart(p *context, block *ssa.BasicBlock) bool {
+	if block == nil || block.Parent() == nil || block.Parent().Synthetic != "range-over-func yield" {
+		return false
+	}
+	jump, ok := rangeFuncJumpFreeVar(block.Parent())
+	if !ok || jump == nil {
+		return false
+	}
+	for _, instr := range block.Instrs {
+		if v, ok := instr.(*ssa.If); ok && p.ifConditionLineHasGoto(v) {
+			for _, succ := range block.Succs {
+				if succ.Comment == "yield-continue" {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (p *context) rangeFuncYieldNeedsOptimizeNone(fn *ssa.Function) bool {
+	return fn != nil && fn.Synthetic == "range-over-func yield"
 }
 
 func (p *context) emitRangeFuncGotoRestart(b llssa.Builder, blk llssa.BasicBlock, restartBlock *ssa.BasicBlock, final *ssa.If) {
@@ -1621,9 +1674,12 @@ func (p *context) emitRangeFuncGotoRestart(b llssa.Builder, blk llssa.BasicBlock
 		b.Jump(p.fn.Block(restartBlock.Index))
 		return
 	}
+	exits := rangeFuncResumeExits(restartBlock)
+	if len(exits) == 0 {
+		exits = []rangeFuncExit{{id: exitID, target: final.Block().Succs[0]}}
+	}
 	fn := p.fn
 	done := fn.Block(final.Block().Succs[1].Index)
-	match := fn.Block(final.Block().Succs[0].Index)
 	busy := fn.Block(restartBlock.Succs[0].Index)
 	ready := fn.Block(readyCheck.Succs[0].Index)
 
@@ -1643,11 +1699,60 @@ func (p *context) emitRangeFuncGotoRestart(b llssa.Builder, blk llssa.BasicBlock
 	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(0)), ready, notReady)
 
 	b.SetBlockEx(notReady, llssa.AtEnd, false)
-	notExit := fn.MakeBlock()
-	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(exitID)), match, notExit)
-
-	b.SetBlockEx(notExit, llssa.AtEnd, false)
+	for _, exit := range exits {
+		next := fn.MakeBlock()
+		b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(exit.id)), fn.Block(exit.target.Index), next)
+		b.SetBlockEx(next, llssa.AtEnd, false)
+	}
 	b.If(b.BinOp(token.EQL, jumpVal, p.prog.Val(rangeFuncGotoRestartSentinel)), blk, done)
+}
+
+type rangeFuncExit struct {
+	id     int
+	target *ssa.BasicBlock
+}
+
+func rangeFuncResumeExits(restartBlock *ssa.BasicBlock) []rangeFuncExit {
+	if restartBlock == nil || len(restartBlock.Succs) != 2 {
+		return nil
+	}
+	readyCheck := restartBlock.Succs[1]
+	if len(readyCheck.Succs) != 2 {
+		return nil
+	}
+	var exits []rangeFuncExit
+	for block := readyCheck.Succs[1]; block != nil; {
+		if len(block.Succs) != 2 {
+			return exits
+		}
+		term := blockTerminatingIf(block)
+		if term == nil {
+			return exits
+		}
+		id, ok := rangeFuncResumeExitID(term.Cond)
+		if !ok {
+			return exits
+		}
+		exits = append(exits, rangeFuncExit{id: id, target: block.Succs[0]})
+		if block.Succs[1].Comment == "rangefunc.done" {
+			return exits
+		}
+		block = block.Succs[1]
+	}
+	return exits
+}
+
+func blockTerminatingIf(block *ssa.BasicBlock) *ssa.If {
+	for i := len(block.Instrs) - 1; i >= 0; i-- {
+		if _, ok := block.Instrs[i].(*ssa.DebugRef); ok {
+			continue
+		}
+		if instr, ok := block.Instrs[i].(*ssa.If); ok {
+			return instr
+		}
+		return nil
+	}
+	return nil
 }
 
 func rangeFuncIteratorCall(block *ssa.BasicBlock) *ssa.Call {

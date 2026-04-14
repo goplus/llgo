@@ -401,4 +401,10 @@ func (p Function) Inline(inline inlineAttr) {
 	p.impl.AddFunctionAttr(inlineAttr)
 }
 
+func (p Function) OptimizeNone() {
+	ctx := p.Pkg.mod.Context()
+	p.impl.AddFunctionAttr(ctx.CreateEnumAttribute(llvm.AttributeKindID("noinline"), 0))
+	p.impl.AddFunctionAttr(ctx.CreateEnumAttribute(llvm.AttributeKindID("optnone"), 0))
+}
+
 // -----------------------------------------------------------------------------

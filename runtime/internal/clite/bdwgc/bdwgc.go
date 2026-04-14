@@ -100,6 +100,18 @@ func Gcollect()
 //go:linkname GetMemoryUse C.GC_get_memory_use
 func GetMemoryUse() uintptr
 
+//go:linkname GetHeapSize C.GC_get_heap_size
+func GetHeapSize() uintptr
+
+//go:linkname GetFreeBytes C.GC_get_free_bytes
+func GetFreeBytes() uintptr
+
+//go:linkname GetTotalBytes C.GC_get_total_bytes
+func GetTotalBytes() uintptr
+
+//go:linkname GetGCNo C.GC_get_gc_no
+func GetGCNo() uintptr
+
 // -----------------------------------------------------------------------------
 
 //go:linkname EnableIncremental C.GC_enable_incremental
