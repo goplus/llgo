@@ -1100,6 +1100,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		if v, ok := p.bvals[iv]; ok {
 			return v
 		}
+		if _, ok := iv.(*ssa.Alloc); ok {
+			return p.compileInstrOrValue(b, iv, false)
+		}
 		log.Panicln("unreachable:", iv)
 	}
 	switch v := iv.(type) {
