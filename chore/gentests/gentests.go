@@ -84,6 +84,14 @@ func writeMetaExpect(testDir string, mod llvm.Module) {
 	if err == nil && strings.TrimSpace(string(existing)) == ";" {
 		return
 	}
+	// Do not auto-create empty meta-expect files. Empty metadata cases are
+	// common enough that mass-generating empty fixtures creates too much noise.
+	// If a test wants to assert "metadata must stay empty", it can keep an
+	// explicit empty meta-expect.txt checked in and cltest will compare against
+	// that empty expectation.
+	if text == "" {
+		return
+	}
 	check(os.WriteFile(metaFile, []byte(text), 0644))
 }
 

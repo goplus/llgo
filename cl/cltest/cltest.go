@@ -247,6 +247,11 @@ func loadMetaExpect(pkgDir string) ([]byte, bool, error) {
 		}
 		return nil, false, err
 	}
+	// An explicit empty meta-expect.txt means "this case is expected to produce
+	// no semantic metadata". We do not auto-generate empty fixtures because they
+	// are too numerous, but if one is checked in intentionally we still compare
+	// the actual metadata against that empty expectation to catch accidental
+	// additions.
 	if bytes.Equal(bytes.TrimSpace(data), []byte{';'}) {
 		return nil, false, nil
 	}
