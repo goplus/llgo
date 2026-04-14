@@ -81,6 +81,25 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	}
 	tclosure := prog.Type(sig, InGo)
 	i := iMethodOf(rawIntf, method.Name())
+	ownerName := b.Func.impl.Name()
+	intfTypeName, _ := prog.abi.TypeName(intf.raw.Type)
+	mtypName, _ := prog.abi.TypeName(funcType(prog, method.Type()))
+	b.Pkg.emitUseIfaceMethod(
+		ownerName,
+		intfTypeName,
+		mthName(method),
+		mtypName,
+	)
+	methods := make([]interfaceInfoMethod, 0, rawIntf.NumMethods())
+	for i := 0; i < rawIntf.NumMethods(); i++ {
+		im := rawIntf.Method(i)
+		imtypName, _ := prog.abi.TypeName(funcType(prog, im.Type()))
+		methods = append(methods, interfaceInfoMethod{
+			Name:  mthName(im),
+			MType: imtypName,
+		})
+	}
+	b.Pkg.emitInterfaceInfo(intfTypeName, methods)
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
@@ -115,6 +134,14 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	}
 	prog := b.Prog
 	typ := x.Type
+	// Emit useiface only for concrete-to-interface conversions. If the source
+	// value is already an interface, this conversion does not expose a new
+	// concrete type to deadcode analysis.
+	if _, ok := typ.raw.Type.Underlying().(*types.Interface); !ok {
+		ownerName := b.Func.impl.Name()
+		typeName, _ := prog.abi.TypeName(typ.raw.Type)
+		b.Pkg.emitUseIface(ownerName, typeName)
+	}
 	tabi := b.abiType(typ.raw.Type)
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)
 	switch kind {

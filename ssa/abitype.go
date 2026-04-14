@@ -197,10 +197,7 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 		for i := 0; i < n; i++ {
 			f := t.Method(i)
 			var values []llvm.Value
-			name := f.Name()
-			if !token.IsExported(name) {
-				name = abi.FullName(f.Pkg(), name)
-			}
+			name := mthName(f)
 			values = append(values, b.Str(name).impl)
 			ftyp := funcType(prog, f.Type())
 			values = append(values, b.abiType(ftyp).impl)
@@ -405,6 +402,8 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	ft := prog.rtType("Method")
 	n := mset.Len()
 	fields := make([]llvm.Value, n)
+	slots := make([]methodInfoSlot, 0, n)
+	typeName, _ := prog.abi.TypeName(t)
 	pkg, _ := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
 	if anonymous {
@@ -412,20 +411,21 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	}
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
-		obj := m.Obj()
-		mName := obj.Name()
-		name := b.Str(mName).impl
-		if !token.IsExported(mName) {
-			name = b.Str(abi.FullName(obj.Pkg(), mName)).impl
+		obj := m.Obj().(*types.Func)
+		rawName := obj.Name()
+		fullName := mthName(obj)
+		name := b.Str(rawName).impl
+		if fullName != rawName {
+			name = b.Str(fullName).impl
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
-		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
+		tfn = b.abiMethodFunc(anonymous, pkg, rawName, mSig)
 		ifn = tfn
 		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
 			pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(mSig.Recv().Type()))
 			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
-			ifn = b.abiMethodFunc(anonymous, pkg, mName, pSig)
+			ifn = b.abiMethodFunc(anonymous, pkg, rawName, pSig)
 		}
 		var values []llvm.Value
 		values = append(values, name)
@@ -434,8 +434,25 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		values = append(values, ifn)
 		values = append(values, tfn)
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
+		mtypName, _ := prog.abi.TypeName(ftyp)
+		slots = append(slots, methodInfoSlot{
+			Index: i,
+			Name:  fullName,
+			MType: mtypName,
+			IFn:   ifn.Name(),
+			TFn:   tfn.Name(),
+		})
 	}
+	b.Pkg.emitMethodInfo(typeName, slots)
 	return llvm.ConstArray(ft.ll, fields)
+}
+
+func mthName(method *types.Func) string {
+	name := method.Name()
+	if !token.IsExported(name) {
+		return abi.FullName(method.Pkg(), name)
+	}
+	return name
 }
 
 // closure func type
