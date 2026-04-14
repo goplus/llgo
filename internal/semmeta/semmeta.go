@@ -88,7 +88,6 @@ func Read(mod llvm.Module) (ModuleInfo, error) {
 	if err := readReflectMethod(mod, &info); err != nil {
 		return ModuleInfo{}, err
 	}
-	info.normalize()
 	return info, nil
 }
 
@@ -286,55 +285,6 @@ func fieldInt(table string, rowIndex, fieldIndex int, field llvm.Value) (int, er
 	return int(field.ZExtValue()), nil
 }
 
-func (info *ModuleInfo) normalize() {
-	for owner, targets := range info.UseIface {
-		info.UseIface[owner] = uniqueSortedSymbols(targets)
-	}
-	for owner, demands := range info.UseIfaceMethod {
-		sort.Slice(demands, func(i, j int) bool {
-			if demands[i].Target != demands[j].Target {
-				return demands[i].Target < demands[j].Target
-			}
-			if demands[i].Sig.Name != demands[j].Sig.Name {
-				return demands[i].Sig.Name < demands[j].Sig.Name
-			}
-			return demands[i].Sig.MType < demands[j].Sig.MType
-		})
-		info.UseIfaceMethod[owner] = uniqueIfaceMethodDemands(demands)
-	}
-	for target, methods := range info.InterfaceInfo {
-		sort.Slice(methods, func(i, j int) bool {
-			if methods[i].Name != methods[j].Name {
-				return methods[i].Name < methods[j].Name
-			}
-			return methods[i].MType < methods[j].MType
-		})
-		info.InterfaceInfo[target] = uniqueMethodSigs(methods)
-	}
-	for target, slots := range info.MethodInfo {
-		sort.Slice(slots, func(i, j int) bool {
-			if slots[i].Index != slots[j].Index {
-				return slots[i].Index < slots[j].Index
-			}
-			if slots[i].Sig.Name != slots[j].Sig.Name {
-				return slots[i].Sig.Name < slots[j].Sig.Name
-			}
-			if slots[i].Sig.MType != slots[j].Sig.MType {
-				return slots[i].Sig.MType < slots[j].Sig.MType
-			}
-			if slots[i].IFn != slots[j].IFn {
-				return slots[i].IFn < slots[j].IFn
-			}
-			return slots[i].TFn < slots[j].TFn
-		})
-		info.MethodInfo[target] = uniqueMethodSlots(slots)
-	}
-	for owner, names := range info.UseNamedMethod {
-		sort.Strings(names)
-		info.UseNamedMethod[owner] = uniqueStrings(names)
-	}
-}
-
 func writeSectionHeader(buf *bytes.Buffer, name string) {
 	if buf.Len() != 0 {
 		buf.WriteByte('\n')
@@ -428,73 +378,4 @@ func sortedSymbolKeys[T any](m map[Symbol]T) []Symbol {
 
 func sortedSetKeys(m map[Symbol]struct{}) []Symbol {
 	return sortedSymbolKeys(m)
-}
-
-func uniqueSortedSymbols(values []Symbol) []Symbol {
-	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
-	if len(values) == 0 {
-		return values
-	}
-	out := values[:1]
-	for _, value := range values[1:] {
-		if value != out[len(out)-1] {
-			out = append(out, value)
-		}
-	}
-	return out
-}
-
-func uniqueStrings(values []string) []string {
-	if len(values) == 0 {
-		return values
-	}
-	out := values[:1]
-	for _, value := range values[1:] {
-		if value != out[len(out)-1] {
-			out = append(out, value)
-		}
-	}
-	return out
-}
-
-func uniqueMethodSigs(values []MethodSig) []MethodSig {
-	if len(values) == 0 {
-		return values
-	}
-	out := values[:1]
-	for _, value := range values[1:] {
-		last := out[len(out)-1]
-		if value.Name != last.Name || value.MType != last.MType {
-			out = append(out, value)
-		}
-	}
-	return out
-}
-
-func uniqueIfaceMethodDemands(values []IfaceMethodDemand) []IfaceMethodDemand {
-	if len(values) == 0 {
-		return values
-	}
-	out := values[:1]
-	for _, value := range values[1:] {
-		last := out[len(out)-1]
-		if value.Target != last.Target || value.Sig.Name != last.Sig.Name || value.Sig.MType != last.Sig.MType {
-			out = append(out, value)
-		}
-	}
-	return out
-}
-
-func uniqueMethodSlots(values []MethodSlot) []MethodSlot {
-	if len(values) == 0 {
-		return values
-	}
-	out := values[:1]
-	for _, value := range values[1:] {
-		last := out[len(out)-1]
-		if value.Index != last.Index || value.Sig.Name != last.Sig.Name || value.Sig.MType != last.Sig.MType || value.IFn != last.IFn || value.TFn != last.TFn {
-			out = append(out, value)
-		}
-	}
-	return out
 }

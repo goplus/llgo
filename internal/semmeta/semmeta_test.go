@@ -91,8 +91,8 @@ func TestReadAndString(t *testing.T) {
 	want := strings.TrimSpace(`
 [UseIface]
 github.com/goplus/llgo/demo.main:
-    *_llgo_github.com/goplus/llgo/demo.File
     *_llgo_github.com/goplus/llgo/demo.Other
+    *_llgo_github.com/goplus/llgo/demo.File
 
 [UseIfaceMethod]
 github.com/goplus/llgo/demo.consume:
@@ -105,13 +105,13 @@ _llgo_github.com/goplus/llgo/demo.Reader:
 
 [MethodInfo]
 *_llgo_github.com/goplus/llgo/demo.File:
-    0 Read _llgo_func$readsig github.com/goplus/llgo/demo.(*File).Read github.com/goplus/llgo/demo.File.Read
     1 Close _llgo_func$closesig github.com/goplus/llgo/demo.(*File).Close github.com/goplus/llgo/demo.File.Close
+    0 Read _llgo_func$readsig github.com/goplus/llgo/demo.(*File).Read github.com/goplus/llgo/demo.File.Read
 
 [UseNamedMethod]
 github.com/goplus/llgo/demo.lookup:
-    ServeHTTP
     String
+    ServeHTTP
 
 [ReflectMethod]
 github.com/goplus/llgo/demo.reflectAll
