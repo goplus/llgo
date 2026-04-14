@@ -177,3 +177,43 @@ func TestPreCollectLinknames(t *testing.T) {
 		})
 	}
 }
+
+// TestPreCollectLinknamesAfterDecl tests that go:linkname directives placed after
+// function declarations are correctly processed. See #1789.
+func TestPreCollectLinknamesAfterDecl(t *testing.T) {
+	cases := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "go-linkname-after-func",
+			src:  "package runtime\nimport _ \"unsafe\"\nfunc Sigsetjmp()\n//go:linkname Sigsetjmp C.sigsetjmp\n",
+			want: "C.sigsetjmp",
+		},
+		{
+			name: "llgo-link-after-func",
+			src:  "package runtime\nimport _ \"unsafe\"\nfunc Sigsetjmp()\n//llgo:link Sigsetjmp C.sigsetjmp\n",
+			want: "C.sigsetjmp",
+		},
+		{
+			name: "go-linkname-after-func-with-gap",
+			src:  "package runtime\nimport _ \"unsafe\"\nfunc Sigsetjmp()\n\n//go:linkname Sigsetjmp C.sigsetjmp\n",
+			want: "C.sigsetjmp",
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "runtime.go", tt.src, parser.ParseComments)
+			if err != nil {
+				t.Fatalf("ParseFile failed: %v", err)
+			}
+			prog := llssa.NewProgram(nil)
+			PreCollectLinknames(prog, llssa.PkgRuntime, []*ast.File{file})
+			if got, ok := prog.Linkname(llssa.PkgRuntime + ".Sigsetjmp"); !ok || got != tt.want {
+				t.Fatalf("pre-collected linkname = (%q,%v), want (%q,%v)", got, ok, tt.want, true)
+			}
+		})
+	}
+}

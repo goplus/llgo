@@ -215,6 +215,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 			}
 		}
 	}
+	p.processFloatingLinknames(pkgPath, files, true)
 }
 
 // PreCollectLinknames scans syntax files before SSA compilation and populates
@@ -239,6 +240,7 @@ func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) 
 			}
 		}
 	}
+	ctx.processFloatingLinknames(pkgPath, files, false)
 }
 
 // Collect skip names and skip other annotations, such as go: and llgo:
@@ -310,6 +312,53 @@ func (p *context) processLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgNam
 		}
 	}
 	return false
+}
+
+// processFloatingLinknames scans all comments in files for go:linkname directives
+// that are not attached as doc comments to any declaration (e.g., placed after the
+// function/variable declaration). See https://github.com/goplus/llgo/issues/1789.
+func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File, allowExport bool) {
+	type declInfo struct {
+		fullName string
+		isVar    bool
+	}
+	for _, file := range files {
+		decls := make(map[string]declInfo)
+		docComments := make(map[*ast.CommentGroup]bool)
+		for _, decl := range file.Decls {
+			switch decl := decl.(type) {
+			case *ast.FuncDecl:
+				fullName, inPkgName := astFuncName(pkgPath, decl)
+				decls[inPkgName] = declInfo{fullName, false}
+				if decl.Doc != nil {
+					docComments[decl.Doc] = true
+				}
+			case *ast.GenDecl:
+				if decl.Doc != nil {
+					docComments[decl.Doc] = true
+				}
+				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
+					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+						inPkgName := names[0].Name
+						decls[inPkgName] = declInfo{pkgPath + "." + inPkgName, true}
+					}
+				}
+			}
+		}
+		for _, cg := range file.Comments {
+			if docComments[cg] {
+				continue
+			}
+			for _, c := range cg.List {
+				p.initLinkname(c.Text, allowExport, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+					if d, exists := decls[inPkgName]; exists {
+						return d.fullName, d.isVar, true
+					}
+					return
+				})
+			}
+		}
+	}
 }
 
 const (
