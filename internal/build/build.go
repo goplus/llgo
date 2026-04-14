@@ -113,6 +113,13 @@ type OutFmtDetails struct {
 	Zip string // ZIP/DFU output file path (.zip)
 }
 
+// ModuleHook observes a package module immediately after it is generated and
+// before TransformModule mutates it. The callback runs synchronously and
+// receives the live llvm.Module, so callers that need a stable snapshot should
+// consume it immediately (for example, by calling mod.String() inside the
+// hook).
+type ModuleHook func(pkgPath string, mod gllvm.Module)
+
 type Config struct {
 	Goos          string
 	Goarch        string
@@ -148,6 +155,7 @@ type Config struct {
 	// string-typed globals are supported and "main" applies to all root main
 	// packages in the current build.
 	GlobalRewrites map[string]Rewrites
+	ModuleHook     ModuleHook
 }
 
 type Rewrites map[string]string
@@ -1230,6 +1238,9 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	check(err)
 
 	aPkg.LPkg = ret
+	if hook := ctx.buildConf.ModuleHook; hook != nil {
+		hook(pkgPath, ret.Module())
+	}
 
 	// If cache hit, we only needed to register types - skip compilation
 	if aPkg.CacheHit {
