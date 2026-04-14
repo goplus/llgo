@@ -785,6 +785,30 @@ func skipUnusedArrayDeref(v *ssa.UnOp) bool {
 	return !valueHasArrayLenRangeEvalEffect(v.X, nil)
 }
 
+func (p *context) unusedArrayDerefNeedsNilCheck(v *ssa.UnOp) bool {
+	loc := p.sourceLine(v.Pos())
+	return strings.Contains(loc, "&*") || strings.Contains(loc, "&(*")
+}
+
+func (p *context) sourceLine(pos token.Pos) string {
+	if pos == token.NoPos {
+		return ""
+	}
+	loc := p.goProg.Fset.Position(pos)
+	if loc.Filename == "" || loc.Line <= 0 {
+		return ""
+	}
+	data, err := os.ReadFile(loc.Filename)
+	if err != nil {
+		return ""
+	}
+	lines := strings.Split(string(data), "\n")
+	if loc.Line > len(lines) {
+		return ""
+	}
+	return lines[loc.Line-1]
+}
+
 func memmoveStoreLoad(v ssa.Value) (*ssa.UnOp, bool) {
 	load, ok := v.(*ssa.UnOp)
 	if !ok || load.Op != token.MUL || !memmoveCopyType(v.Type()) {
@@ -1068,8 +1092,10 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
 		if skipUnusedArrayDeref(v) {
-			x := p.compileValue(b, v.X)
-			b.AssertNilDeref(x)
+			if p.unusedArrayDerefNeedsNilCheck(v) {
+				x := p.compileValue(b, v.X)
+				b.AssertNilDeref(x)
+			}
 			return
 		}
 		if v.Op == token.MUL {
@@ -1541,23 +1567,7 @@ func (p *context) compileRangeFuncGotoRestart(b llssa.Builder, v *ssa.If) bool {
 }
 
 func (p *context) ifConditionLineHasGoto(v *ssa.If) bool {
-	pos := v.Cond.Pos()
-	if pos == token.NoPos {
-		return false
-	}
-	loc := p.goProg.Fset.Position(pos)
-	if loc.Filename == "" || loc.Line <= 0 {
-		return false
-	}
-	data, err := os.ReadFile(loc.Filename)
-	if err != nil {
-		return false
-	}
-	lines := strings.Split(string(data), "\n")
-	if loc.Line > len(lines) {
-		return false
-	}
-	return strings.Contains(lines[loc.Line-1], "goto ")
+	return strings.Contains(p.sourceLine(v.Cond.Pos()), "goto ")
 }
 
 func rangeFuncJumpFreeVar(fn *ssa.Function) (ssa.Value, bool) {
