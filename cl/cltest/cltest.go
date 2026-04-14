@@ -58,31 +58,14 @@ func InitDebug() {
 }
 
 func FromDir(t *testing.T, sel, relDir string) {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Getwd failed:", err)
-	}
-	dir = filepath.Join(dir, relDir)
-	fis, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal("ReadDir failed:", err)
-	}
-	for _, fi := range fis {
-		name := fi.Name()
-		if !fi.IsDir() || strings.HasPrefix(name, "_") {
-			continue
-		}
-		pkgDir := filepath.Join(dir, name)
-		t.Run(name, func(t *testing.T) {
-			testFrom(t, pkgDir, sel)
-		})
-	}
+	RunAndTestFromDir(t, sel, relDir, nil, WithOutputCheck(false))
 }
 
 type runOptions struct {
-	conf    *build.Config
-	filter  func(string) string
-	checkIR bool
+	conf        *build.Config
+	filter      func(string) string
+	checkIR     bool
+	checkOutput bool
 }
 
 // RunOption customizes directory-based test behavior.
@@ -99,6 +82,13 @@ func WithRunConfig(conf *build.Config) RunOption {
 func WithOutputFilter(filter func(string) string) RunOption {
 	return func(opts *runOptions) {
 		opts.filter = filter
+	}
+}
+
+// WithOutputCheck enables or disables runtime output golden checks in RunAndTestFromDir.
+func WithOutputCheck(enabled bool) RunOption {
+	return func(opts *runOptions) {
+		opts.checkOutput = enabled
 	}
 }
 
@@ -139,7 +129,7 @@ func RunAndTestFromDir(t *testing.T, sel, relDir string, ignore []string, opts .
 	for _, item := range ignore {
 		ignoreSet[item] = struct{}{}
 	}
-	options := runOptions{checkIR: true}
+	options := runOptions{checkIR: true, checkOutput: true}
 	for _, opt := range opts {
 		opt(&options)
 	}
@@ -226,9 +216,16 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		return
 	}
 
-	expectedOutput, checkOutput, err := readGolden(filepath.Join(pkgDir, "expect.txt"))
-	if err != nil {
-		t.Fatal("ReadFile failed:", err)
+	var (
+		expectedOutput []byte
+		checkOutput    bool
+		err            error
+	)
+	if opts.checkOutput {
+		expectedOutput, checkOutput, err = readGolden(filepath.Join(pkgDir, "expect.txt"))
+		if err != nil {
+			t.Fatal("ReadFile failed:", err)
+		}
 	}
 	if !checkOutput {
 		// IR-only mode: when expect.txt is not checked, use llgen.GenFrom via
@@ -416,16 +413,16 @@ func readGolden(file string) ([]byte, bool, error) {
 }
 
 func moduleIDFromIR(data []byte) string {
-	lines := strings.Split(string(data), "\n")
-	if len(lines) == 0 {
-		return ""
+	line := data
+	if idx := bytes.IndexByte(line, '\n'); idx >= 0 {
+		line = line[:idx]
 	}
+	line = bytes.TrimSpace(line)
 	const prefix = "; ModuleID = '"
-	line := strings.TrimSpace(lines[0])
-	if !strings.HasPrefix(line, prefix) || !strings.HasSuffix(line, "'") {
+	if !bytes.HasPrefix(line, []byte(prefix)) || !bytes.HasSuffix(line, []byte{'\''}) {
 		return ""
 	}
-	return strings.TrimSuffix(strings.TrimPrefix(line, prefix), "'")
+	return string(line[len(prefix) : len(line)-1])
 }
 
 func filterRunOutput(in []byte) []byte {
