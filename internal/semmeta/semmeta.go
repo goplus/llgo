@@ -32,18 +32,35 @@ const (
 	ReflectMethodMetadata  = "llgo.reflectmethod"
 )
 
+// Symbol is the metadata-level identity used by link-time semantic method pruning.
+// In current LLGo this is the symbol spelling emitted by ssa/cl into LLVM IR.
 type Symbol string
 
+// MethodSig identifies one interface-visible method slot by normalized method name
+// plus method type symbol.
+//
+// Name follows the same rule used by current LLGo metadata emission:
+// exported methods keep their declared name, while unexported methods are
+// package-qualified so whole-program matching can distinguish private methods
+// from different packages.
 type MethodSig struct {
 	Name  string
 	MType Symbol
 }
 
+// IfaceMethodUse records one interface method demand produced by a reachable
+// owner. Target is the interface type symbol, and Sig identifies the demanded
+// interface method slot on that interface.
 type IfaceMethodUse struct {
 	Target Symbol
 	Sig    MethodSig
 }
 
+// MethodSlot describes one candidate method-table slot on a concrete type.
+//
+// Index must match the final abi.Method slot index. If a slot is later judged
+// live by whole-program analysis, its MType/IFn/TFn are pulled back into the
+// ordinary reachability graph.
 type MethodSlot struct {
 	Index int
 	Sig   MethodSig
@@ -51,15 +68,38 @@ type MethodSlot struct {
 	TFn   Symbol
 }
 
+// ModuleInfo is the per-module semantic metadata view used by link-time
+// semantic method pruning.
+//
+// Current ssa/cl emission writes those semantic facts one row at a time into
+// llgo.xxx named metadata; Read folds the rows of one llvm.Module back into
+// this grouped form so later stages can merge them under a whole-program view.
 type ModuleInfo struct {
-	InterfaceInfo  map[Symbol][]MethodSig
-	UseIface       map[Symbol][]Symbol
+	// InterfaceInfo records the complete method set of an interface:
+	// interface symbol -> []MethodSig.
+	InterfaceInfo map[Symbol][]MethodSig
+	// UseIface records concrete types that have entered the interface dispatch
+	// semantic domain:
+	// owner symbol -> []concrete type symbol.
+	UseIface map[Symbol][]Symbol
+	// UseIfaceMethod records interface method demands:
+	// owner symbol -> []IfaceMethodUse.
 	UseIfaceMethod map[Symbol][]IfaceMethodUse
-	MethodInfo     map[Symbol][]MethodSlot
+	// MethodInfo records the candidate method-table slots of a concrete type:
+	// concrete type symbol -> []MethodSlot.
+	MethodInfo map[Symbol][]MethodSlot
+	// UseNamedMethod records exact MethodByName-like constant-name lookups:
+	// owner symbol -> []normalized method name.
 	UseNamedMethod map[Symbol][]string
-	ReflectMethod  map[Symbol]struct{}
+	// ReflectMethod marks owners that force conservative reflection handling.
+	ReflectMethod map[Symbol]struct{}
 }
 
+// Emitter owns the current llgo.xxx metadata wire format.
+//
+// The writer is intentionally row-oriented because LLVM named metadata is
+// appended one operand at a time. Read performs the inverse step and folds
+// those rows back into ModuleInfo.
 type Emitter struct {
 	mod  llvm.Module
 	ctx  llvm.Context
@@ -144,6 +184,7 @@ func (e *Emitter) AddReflectMethod(owner Symbol) {
 	)
 }
 
+// Read reconstructs the semantic metadata facts carried by one llvm.Module.
 func Read(mod llvm.Module) ModuleInfo {
 	info := ModuleInfo{
 		InterfaceInfo:  make(map[Symbol][]MethodSig),
