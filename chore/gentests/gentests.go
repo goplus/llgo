@@ -73,8 +73,7 @@ func llgenDir(dir string) {
 
 func writeMetaExpect(testDir string, mod llvm.Module) {
 	metaFile := filepath.Join(testDir, "meta-expect.txt")
-	info, err := semmeta.Read(mod)
-	check(err)
+	info := semmeta.Read(mod)
 	text := cltest.FormatSemMeta(info)
 
 	existing, err := os.ReadFile(metaFile)

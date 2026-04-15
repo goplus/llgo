@@ -67,10 +67,7 @@ func TestRead(t *testing.T) {
 	e.AddUseNamedMethod("github.com/goplus/llgo/demo.lookup", "ServeHTTP")
 	e.AddReflectMethod("github.com/goplus/llgo/demo.reflectAll")
 
-	info, err := Read(mod)
-	if err != nil {
-		t.Fatal(err)
-	}
+	info := Read(mod)
 	if got := info.UseIface[Symbol("github.com/goplus/llgo/demo.main")]; len(got) != 2 ||
 		got[0] != "*_llgo_github.com/goplus/llgo/demo.Other" ||
 		got[1] != "*_llgo_github.com/goplus/llgo/demo.File" {
@@ -99,28 +96,4 @@ func TestRead(t *testing.T) {
 	if _, ok := info.ReflectMethod[Symbol("github.com/goplus/llgo/demo.reflectAll")]; !ok {
 		t.Fatal("ReflectMethod entry missing")
 	}
-}
-
-func TestReadRejectsBadRowShape(t *testing.T) {
-	ctx := llvm.NewContext()
-	defer ctx.Dispose()
-
-	mod := ctx.NewModule("semmeta.bad")
-	defer mod.Dispose()
-
-	addRow(mod, MethodInfoMetadata,
-		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.File"),
-		ctx.MDString("Read"),
-		ctx.MDString("_llgo_func$readsig"),
-		ctx.MDString("github.com/goplus/llgo/demo.(*File).Read"),
-		ctx.MDString("github.com/goplus/llgo/demo.File.Read"),
-	)
-
-	if _, err := Read(mod); err == nil {
-		t.Fatal("Read should fail on malformed metadata")
-	}
-}
-
-func addRow(mod llvm.Module, table string, fields ...llvm.Metadata) {
-	mod.AddNamedMetadataOperand(table, mod.Context().MDNode(fields))
 }

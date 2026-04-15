@@ -228,10 +228,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 		t.Fatal("llgen.GenFrom: unexpected result")
 	}
 	if hasMetaExpect {
-		info, err := semmeta.Read(mod)
-		if err != nil {
-			t.Fatal("semmeta.Read failed:", err)
-		}
+		info := semmeta.Read(mod)
 		if test.Diff(t, filepath.Join(pkgDir, "meta-expect.txt.new"), []byte(FormatSemMeta(info)), metaExpected) {
 			t.Fatal("semmeta.Read: unexpected result")
 		}
