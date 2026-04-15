@@ -356,13 +356,13 @@ func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File) {
 				if !strings.HasPrefix(c.Text, linkname) {
 					continue
 				}
-				// Skip //go:linkname _name _name where name starts with "_"
+				// Skip //go:linkname _cgo_name _cgo_name where the name is a cgo symbol
 				// and both names are identical (e.g., //go:linkname _cgo_init _cgo_init).
 				if text := strings.TrimSpace(c.Text[len(linkname):]); text != "" {
 					if idx := strings.IndexByte(text, ' '); idx > 0 {
 						name1 := text[:idx]
 						name2 := strings.TrimLeft(text[idx+1:], " ")
-						if strings.HasPrefix(name1, "_") && name1 == name2 {
+						if checkCgo(name1) && name1 == name2 {
 							continue
 						}
 					}

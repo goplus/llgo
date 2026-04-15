@@ -213,8 +213,8 @@ func TestPreCollectLinknamesAfterDecl(t *testing.T) {
 	}
 }
 
-// TestFloatingLinknameSkipsUnderscoreSelfLink tests that //go:linkname _name _name
-// directives (where the name starts with "_" and both names are identical) are
+// TestFloatingLinknameSkipsUnderscoreSelfLink tests that //go:linkname _cgo_name _cgo_name
+// directives (where the name is a cgo symbol and both names are identical) are
 // skipped during floating linkname processing. See #1789.
 func TestFloatingLinknameSkipsUnderscoreSelfLink(t *testing.T) {
 	cases := []struct {
@@ -230,10 +230,10 @@ func TestFloatingLinknameSkipsUnderscoreSelfLink(t *testing.T) {
 			wantFound: false,
 		},
 		{
-			name:      "skip-underscore-self-link",
+			name:      "allow-non-cgo-underscore-self-link",
 			src:       "package runtime\nimport _ \"unsafe\"\nfunc _myFunc()\n//go:linkname _myFunc _myFunc\n",
 			symbol:    "_myFunc",
-			wantFound: false,
+			wantFound: true,
 		},
 		{
 			name:      "allow-underscore-different-link",
