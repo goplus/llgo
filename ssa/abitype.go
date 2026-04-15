@@ -416,7 +416,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		rawName := obj.Name()
 		fullName := mthName(obj)
 		name := b.Str(rawName).impl
-		if fullName != rawName {
+		if !token.IsExported(rawName) {
 			name = b.Str(fullName).impl
 		}
 		mSig := m.Type().(*types.Signature)
@@ -485,6 +485,15 @@ func (p Package) shouldEmitOwnedTypeMetadata(t types.Type) bool {
 	}
 }
 
+// mthName returns the semantic method name used in ABI metadata.
+//
+// Exported methods keep their declared identifier because that is already
+// globally visible, for example:
+//   - bytes.Buffer.Read -> "Read"
+//
+// Unexported methods are qualified with their package path so they stay unique
+// across packages, for example:
+//   - github.com/goplus/llgo/demo.(*T).close -> "github.com/goplus/llgo/demo.close"
 func mthName(method *types.Func) string {
 	name := method.Name()
 	if !token.IsExported(name) {
