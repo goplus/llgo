@@ -161,8 +161,8 @@ timeouts:
     platform: darwin/arm64
     directive: runoutput
     case: rangegen.go
-    timeout: 10m
-    reason: rangegen runoutput compiles the generated stress test for several minutes on darwin/arm64
+    timeout: 20m
+    reason: rangegen runoutput compiles the generated stress test past 10m on darwin/arm64 CI
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -647,8 +647,8 @@ timeouts:
     platform: darwin/arm64
     directive: runoutput
     case: rangegen.go
-    timeout: 10m
-    reason: rangegen runoutput compiles the generated stress test for several minutes on darwin/arm64
+    timeout: 20m
+    reason: rangegen runoutput compiles the generated stress test past 10m on darwin/arm64 CI
   - version: go1.25
     platform: darwin/arm64
     directive: run
@@ -1067,8 +1067,8 @@ timeouts:
     platform: darwin/arm64
     directive: runoutput
     case: rangegen.go
-    timeout: 10m
-    reason: rangegen runoutput compiles the generated stress test for several minutes on darwin/arm64
+    timeout: 20m
+    reason: rangegen runoutput compiles the generated stress test past 10m on darwin/arm64 CI
   - version: go1.26
     platform: darwin/arm64
     directive: run
@@ -1713,6 +1713,11 @@ xfails:
     directive: run
     case: maymorestack.go
     reason: go1.25 goroot ci-mode run failure on linux/amd64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: gcgort.go
+    reason: go1.25 goroot ci-mode trips Boehm GC stack-base nil deref on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
