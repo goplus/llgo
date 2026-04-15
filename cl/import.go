@@ -356,13 +356,6 @@ func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File) {
 				if !strings.HasPrefix(c.Text, linkname) {
 					continue
 				}
-				// Skip floating directives that reference names not declared in
-				// this file to avoid spurious warnings (e.g., runtime/cgo _cgo_* symbols).
-				if name := floatingLinknameTarget(c.Text); name != "" {
-					if _, exists := decls[name]; !exists {
-						continue
-					}
-				}
 				p.initLinkname(c.Text, false, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 					if d, exists := decls[inPkgName]; exists {
 						return d.fullName, d.isVar, true
@@ -379,20 +372,6 @@ const (
 	hasLinkname
 	unknownDirective = -1
 )
-
-// floatingLinknameTarget extracts the in-package name from a //go:linkname directive.
-// Returns empty string if the line is not a //go:linkname directive.
-func floatingLinknameTarget(line string) string {
-	const prefix = "//go:linkname "
-	if strings.HasPrefix(line, prefix) {
-		text := strings.TrimSpace(line[len(prefix):])
-		if idx := strings.IndexByte(text, ' '); idx > 0 {
-			return text[:idx]
-		}
-		return text
-	}
-	return ""
-}
 
 func (p *context) initLinkname(line string, allowExport bool, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
 	const (
