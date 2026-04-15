@@ -6,15 +6,6 @@ import (
 	"github.com/goplus/llgo/internal/semmeta"
 )
 
-const (
-	llgoUseIfaceMetadata       = semmeta.UseIfaceMetadata
-	llgoUseIfaceMethodMetadata = semmeta.UseIfaceMethodMetadata
-	llgoInterfaceInfoMetadata  = semmeta.InterfaceInfoMetadata
-	llgoMethodInfoMetadata     = semmeta.MethodInfoMetadata
-	llgoUseNamedMethodMetadata = semmeta.UseNamedMethodMetadata
-	llgoReflectMethodMetadata  = semmeta.ReflectMethodMetadata
-)
-
 func (p Package) emitUseIface(owner, target string) {
 	p.semMetaEmitter.AddUseIface(semmeta.Symbol(owner), semmeta.Symbol(target))
 }
