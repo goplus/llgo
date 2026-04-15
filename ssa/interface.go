@@ -21,6 +21,7 @@ import (
 	"go/token"
 	"go/types"
 
+	"github.com/goplus/llgo/internal/semmeta"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 )
@@ -90,13 +91,13 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 		mthName(method),
 		mtypName,
 	)
-	methods := make([]interfaceInfoMethod, 0, rawIntf.NumMethods())
+	methods := make([]semmeta.MethodSig, 0, rawIntf.NumMethods())
 	for i := 0; i < rawIntf.NumMethods(); i++ {
 		im := rawIntf.Method(i)
 		imtypName, _ := prog.abi.TypeName(funcType(prog, im.Type()))
-		methods = append(methods, interfaceInfoMethod{
+		methods = append(methods, semmeta.MethodSig{
 			Name:  mthName(im),
-			MType: imtypName,
+			MType: semmeta.Symbol(imtypName),
 		})
 	}
 	if b.Pkg.shouldEmitOwnedTypeMetadata(intf.raw.Type) {

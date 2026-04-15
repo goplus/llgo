@@ -29,57 +29,43 @@ func TestRead(t *testing.T) {
 	mod := ctx.NewModule("semmeta.test")
 	defer mod.Dispose()
 
-	addRow(mod, useIfaceMetadata,
-		ctx.MDString("github.com/goplus/llgo/demo.main"),
-		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.Other"),
-	)
-	addRow(mod, useIfaceMetadata,
-		ctx.MDString("github.com/goplus/llgo/demo.main"),
-		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.File"),
-	)
-	addRow(mod, useIfaceMethodMetadata,
-		ctx.MDString("github.com/goplus/llgo/demo.consume"),
-		ctx.MDString("_llgo_github.com/goplus/llgo/demo.Reader"),
-		ctx.MDString("Read"),
-		ctx.MDString("_llgo_func$readsig"),
-	)
-	addRow(mod, interfaceInfoMetadata,
-		ctx.MDString("_llgo_github.com/goplus/llgo/demo.Reader"),
-		ctx.MDString("Close"),
-		ctx.MDString("_llgo_func$closesig"),
-	)
-	addRow(mod, interfaceInfoMetadata,
-		ctx.MDString("_llgo_github.com/goplus/llgo/demo.Reader"),
-		ctx.MDString("Read"),
-		ctx.MDString("_llgo_func$readsig"),
-	)
-	addRow(mod, methodInfoMetadata,
-		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.File"),
-		llvm.ConstInt(ctx.Int32Type(), 1, false).ConstantAsMetadata(),
-		ctx.MDString("Close"),
-		ctx.MDString("_llgo_func$closesig"),
-		ctx.MDString("github.com/goplus/llgo/demo.(*File).Close"),
-		ctx.MDString("github.com/goplus/llgo/demo.File.Close"),
-	)
-	addRow(mod, methodInfoMetadata,
-		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.File"),
-		llvm.ConstInt(ctx.Int32Type(), 0, false).ConstantAsMetadata(),
-		ctx.MDString("Read"),
-		ctx.MDString("_llgo_func$readsig"),
-		ctx.MDString("github.com/goplus/llgo/demo.(*File).Read"),
-		ctx.MDString("github.com/goplus/llgo/demo.File.Read"),
-	)
-	addRow(mod, useNamedMethodMetadata,
-		ctx.MDString("github.com/goplus/llgo/demo.lookup"),
-		ctx.MDString("String"),
-	)
-	addRow(mod, useNamedMethodMetadata,
-		ctx.MDString("github.com/goplus/llgo/demo.lookup"),
-		ctx.MDString("ServeHTTP"),
-	)
-	addRow(mod, reflectMethodMetadata,
-		ctx.MDString("github.com/goplus/llgo/demo.reflectAll"),
-	)
+	e := NewEmitter(mod)
+	e.AddUseIface("github.com/goplus/llgo/demo.main", "*_llgo_github.com/goplus/llgo/demo.Other")
+	e.AddUseIface("github.com/goplus/llgo/demo.main", "*_llgo_github.com/goplus/llgo/demo.File")
+	e.AddUseIfaceMethod("github.com/goplus/llgo/demo.consume", IfaceMethodDemand{
+		Target: "_llgo_github.com/goplus/llgo/demo.Reader",
+		Sig: MethodSig{
+			Name:  "Read",
+			MType: "_llgo_func$readsig",
+		},
+	})
+	e.AddInterfaceInfo("_llgo_github.com/goplus/llgo/demo.Reader", []MethodSig{
+		{Name: "Close", MType: "_llgo_func$closesig"},
+		{Name: "Read", MType: "_llgo_func$readsig"},
+	})
+	e.AddMethodInfo("*_llgo_github.com/goplus/llgo/demo.File", []MethodSlot{
+		{
+			Index: 1,
+			Sig: MethodSig{
+				Name:  "Close",
+				MType: "_llgo_func$closesig",
+			},
+			IFn: "github.com/goplus/llgo/demo.(*File).Close",
+			TFn: "github.com/goplus/llgo/demo.File.Close",
+		},
+		{
+			Index: 0,
+			Sig: MethodSig{
+				Name:  "Read",
+				MType: "_llgo_func$readsig",
+			},
+			IFn: "github.com/goplus/llgo/demo.(*File).Read",
+			TFn: "github.com/goplus/llgo/demo.File.Read",
+		},
+	})
+	e.AddUseNamedMethod("github.com/goplus/llgo/demo.lookup", "String")
+	e.AddUseNamedMethod("github.com/goplus/llgo/demo.lookup", "ServeHTTP")
+	e.AddReflectMethod("github.com/goplus/llgo/demo.reflectAll")
 
 	info, err := Read(mod)
 	if err != nil {
@@ -122,7 +108,7 @@ func TestReadRejectsBadRowShape(t *testing.T) {
 	mod := ctx.NewModule("semmeta.bad")
 	defer mod.Dispose()
 
-	addRow(mod, methodInfoMetadata,
+	addRow(mod, MethodInfoMetadata,
 		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.File"),
 		ctx.MDString("wrong-index-kind"),
 		ctx.MDString("Read"),

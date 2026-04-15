@@ -18,17 +18,18 @@ package semmeta
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
 
 const (
-	useIfaceMetadata       = "llgo.useiface"
-	useIfaceMethodMetadata = "llgo.useifacemethod"
-	interfaceInfoMetadata  = "llgo.interfaceinfo"
-	methodInfoMetadata     = "llgo.methodinfo"
-	useNamedMethodMetadata = "llgo.usenamedmethod"
-	reflectMethodMetadata  = "llgo.reflectmethod"
+	UseIfaceMetadata       = "llgo.useiface"
+	UseIfaceMethodMetadata = "llgo.useifacemethod"
+	InterfaceInfoMetadata  = "llgo.interfaceinfo"
+	MethodInfoMetadata     = "llgo.methodinfo"
+	UseNamedMethodMetadata = "llgo.usenamedmethod"
+	ReflectMethodMetadata  = "llgo.reflectmethod"
 )
 
 type Symbol string
@@ -57,6 +58,88 @@ type ModuleInfo struct {
 	MethodInfo     map[Symbol][]MethodSlot
 	UseNamedMethod map[Symbol][]string
 	ReflectMethod  map[Symbol]struct{}
+}
+
+type Emitter struct {
+	mod  llvm.Module
+	seen map[string]struct{}
+}
+
+func NewEmitter(mod llvm.Module) *Emitter {
+	return &Emitter{
+		mod:  mod,
+		seen: make(map[string]struct{}),
+	}
+}
+
+func (e *Emitter) AddUseIface(owner, target Symbol) {
+	e.add(
+		UseIfaceMetadata,
+		metadataKey(string(owner), string(target)),
+		metadataString(e.mod.Context(), string(owner)),
+		metadataString(e.mod.Context(), string(target)),
+	)
+}
+
+func (e *Emitter) AddUseIfaceMethod(owner Symbol, demand IfaceMethodDemand) {
+	e.add(
+		UseIfaceMethodMetadata,
+		metadataKey(string(owner), string(demand.Target), demand.Sig.Name, string(demand.Sig.MType)),
+		metadataString(e.mod.Context(), string(owner)),
+		metadataString(e.mod.Context(), string(demand.Target)),
+		metadataString(e.mod.Context(), demand.Sig.Name),
+		metadataString(e.mod.Context(), string(demand.Sig.MType)),
+	)
+}
+
+func (e *Emitter) AddInterfaceInfo(target Symbol, methods []MethodSig) {
+	if target == "" || len(methods) == 0 {
+		return
+	}
+	for _, method := range methods {
+		e.add(
+			InterfaceInfoMetadata,
+			metadataKey(string(target), method.Name, string(method.MType)),
+			metadataString(e.mod.Context(), string(target)),
+			metadataString(e.mod.Context(), method.Name),
+			metadataString(e.mod.Context(), string(method.MType)),
+		)
+	}
+}
+
+func (e *Emitter) AddMethodInfo(typeSym Symbol, slots []MethodSlot) {
+	if typeSym == "" || len(slots) == 0 {
+		return
+	}
+	for _, slot := range slots {
+		e.add(
+			MethodInfoMetadata,
+			metadataKey(string(typeSym), fmt.Sprint(slot.Index), slot.Sig.Name, string(slot.Sig.MType), string(slot.IFn), string(slot.TFn)),
+			metadataString(e.mod.Context(), string(typeSym)),
+			metadataInt32(e.mod.Context(), slot.Index),
+			metadataString(e.mod.Context(), slot.Sig.Name),
+			metadataString(e.mod.Context(), string(slot.Sig.MType)),
+			metadataString(e.mod.Context(), string(slot.IFn)),
+			metadataString(e.mod.Context(), string(slot.TFn)),
+		)
+	}
+}
+
+func (e *Emitter) AddUseNamedMethod(owner Symbol, name string) {
+	e.add(
+		UseNamedMethodMetadata,
+		metadataKey(string(owner), name),
+		metadataString(e.mod.Context(), string(owner)),
+		metadataString(e.mod.Context(), name),
+	)
+}
+
+func (e *Emitter) AddReflectMethod(owner Symbol) {
+	e.add(
+		ReflectMethodMetadata,
+		string(owner),
+		metadataString(e.mod.Context(), string(owner)),
+	)
 }
 
 func Read(mod llvm.Module) (ModuleInfo, error) {
@@ -90,17 +173,17 @@ func Read(mod llvm.Module) (ModuleInfo, error) {
 }
 
 func readUseIface(mod llvm.Module, info *ModuleInfo) error {
-	rows := mod.NamedMetadataOperands(useIfaceMetadata)
+	rows := mod.NamedMetadataOperands(UseIfaceMetadata)
 	for i, row := range rows {
-		fields, err := rowFields(useIfaceMetadata, i, row, 2)
+		fields, err := rowFields(UseIfaceMetadata, i, row, 2)
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(useIfaceMetadata, i, 0, fields[0])
+		owner, err := fieldString(UseIfaceMetadata, i, 0, fields[0])
 		if err != nil {
 			return err
 		}
-		target, err := fieldString(useIfaceMetadata, i, 1, fields[1])
+		target, err := fieldString(UseIfaceMetadata, i, 1, fields[1])
 		if err != nil {
 			return err
 		}
@@ -110,25 +193,25 @@ func readUseIface(mod llvm.Module, info *ModuleInfo) error {
 }
 
 func readUseIfaceMethod(mod llvm.Module, info *ModuleInfo) error {
-	rows := mod.NamedMetadataOperands(useIfaceMethodMetadata)
+	rows := mod.NamedMetadataOperands(UseIfaceMethodMetadata)
 	for i, row := range rows {
-		fields, err := rowFields(useIfaceMethodMetadata, i, row, 4)
+		fields, err := rowFields(UseIfaceMethodMetadata, i, row, 4)
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(useIfaceMethodMetadata, i, 0, fields[0])
+		owner, err := fieldString(UseIfaceMethodMetadata, i, 0, fields[0])
 		if err != nil {
 			return err
 		}
-		target, err := fieldString(useIfaceMethodMetadata, i, 1, fields[1])
+		target, err := fieldString(UseIfaceMethodMetadata, i, 1, fields[1])
 		if err != nil {
 			return err
 		}
-		name, err := fieldString(useIfaceMethodMetadata, i, 2, fields[2])
+		name, err := fieldString(UseIfaceMethodMetadata, i, 2, fields[2])
 		if err != nil {
 			return err
 		}
-		mtyp, err := fieldString(useIfaceMethodMetadata, i, 3, fields[3])
+		mtyp, err := fieldString(UseIfaceMethodMetadata, i, 3, fields[3])
 		if err != nil {
 			return err
 		}
@@ -144,21 +227,21 @@ func readUseIfaceMethod(mod llvm.Module, info *ModuleInfo) error {
 }
 
 func readInterfaceInfo(mod llvm.Module, info *ModuleInfo) error {
-	rows := mod.NamedMetadataOperands(interfaceInfoMetadata)
+	rows := mod.NamedMetadataOperands(InterfaceInfoMetadata)
 	for i, row := range rows {
-		fields, err := rowFields(interfaceInfoMetadata, i, row, 3)
+		fields, err := rowFields(InterfaceInfoMetadata, i, row, 3)
 		if err != nil {
 			return err
 		}
-		target, err := fieldString(interfaceInfoMetadata, i, 0, fields[0])
+		target, err := fieldString(InterfaceInfoMetadata, i, 0, fields[0])
 		if err != nil {
 			return err
 		}
-		name, err := fieldString(interfaceInfoMetadata, i, 1, fields[1])
+		name, err := fieldString(InterfaceInfoMetadata, i, 1, fields[1])
 		if err != nil {
 			return err
 		}
-		mtyp, err := fieldString(interfaceInfoMetadata, i, 2, fields[2])
+		mtyp, err := fieldString(InterfaceInfoMetadata, i, 2, fields[2])
 		if err != nil {
 			return err
 		}
@@ -171,33 +254,33 @@ func readInterfaceInfo(mod llvm.Module, info *ModuleInfo) error {
 }
 
 func readMethodInfo(mod llvm.Module, info *ModuleInfo) error {
-	rows := mod.NamedMetadataOperands(methodInfoMetadata)
+	rows := mod.NamedMetadataOperands(MethodInfoMetadata)
 	for i, row := range rows {
-		fields, err := rowFields(methodInfoMetadata, i, row, 6)
+		fields, err := rowFields(MethodInfoMetadata, i, row, 6)
 		if err != nil {
 			return err
 		}
-		target, err := fieldString(methodInfoMetadata, i, 0, fields[0])
+		target, err := fieldString(MethodInfoMetadata, i, 0, fields[0])
 		if err != nil {
 			return err
 		}
-		index, err := fieldInt(methodInfoMetadata, i, 1, fields[1])
+		index, err := fieldInt(MethodInfoMetadata, i, 1, fields[1])
 		if err != nil {
 			return err
 		}
-		name, err := fieldString(methodInfoMetadata, i, 2, fields[2])
+		name, err := fieldString(MethodInfoMetadata, i, 2, fields[2])
 		if err != nil {
 			return err
 		}
-		mtyp, err := fieldString(methodInfoMetadata, i, 3, fields[3])
+		mtyp, err := fieldString(MethodInfoMetadata, i, 3, fields[3])
 		if err != nil {
 			return err
 		}
-		ifn, err := fieldString(methodInfoMetadata, i, 4, fields[4])
+		ifn, err := fieldString(MethodInfoMetadata, i, 4, fields[4])
 		if err != nil {
 			return err
 		}
-		tfn, err := fieldString(methodInfoMetadata, i, 5, fields[5])
+		tfn, err := fieldString(MethodInfoMetadata, i, 5, fields[5])
 		if err != nil {
 			return err
 		}
@@ -215,17 +298,17 @@ func readMethodInfo(mod llvm.Module, info *ModuleInfo) error {
 }
 
 func readUseNamedMethod(mod llvm.Module, info *ModuleInfo) error {
-	rows := mod.NamedMetadataOperands(useNamedMethodMetadata)
+	rows := mod.NamedMetadataOperands(UseNamedMethodMetadata)
 	for i, row := range rows {
-		fields, err := rowFields(useNamedMethodMetadata, i, row, 2)
+		fields, err := rowFields(UseNamedMethodMetadata, i, row, 2)
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(useNamedMethodMetadata, i, 0, fields[0])
+		owner, err := fieldString(UseNamedMethodMetadata, i, 0, fields[0])
 		if err != nil {
 			return err
 		}
-		name, err := fieldString(useNamedMethodMetadata, i, 1, fields[1])
+		name, err := fieldString(UseNamedMethodMetadata, i, 1, fields[1])
 		if err != nil {
 			return err
 		}
@@ -235,13 +318,13 @@ func readUseNamedMethod(mod llvm.Module, info *ModuleInfo) error {
 }
 
 func readReflectMethod(mod llvm.Module, info *ModuleInfo) error {
-	rows := mod.NamedMetadataOperands(reflectMethodMetadata)
+	rows := mod.NamedMetadataOperands(ReflectMethodMetadata)
 	for i, row := range rows {
-		fields, err := rowFields(reflectMethodMetadata, i, row, 1)
+		fields, err := rowFields(ReflectMethodMetadata, i, row, 1)
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(reflectMethodMetadata, i, 0, fields[0])
+		owner, err := fieldString(ReflectMethodMetadata, i, 0, fields[0])
 		if err != nil {
 			return err
 		}
@@ -270,4 +353,25 @@ func fieldInt(table string, rowIndex, fieldIndex int, field llvm.Value) (int, er
 		return 0, fmt.Errorf("%s row %d field %d: want constant int metadata", table, rowIndex, fieldIndex)
 	}
 	return int(field.ZExtValue()), nil
+}
+
+func (e *Emitter) add(table, key string, fields ...llvm.Metadata) {
+	fullKey := table + ":" + key
+	if _, ok := e.seen[fullKey]; ok {
+		return
+	}
+	e.seen[fullKey] = struct{}{}
+	e.mod.AddNamedMetadataOperand(table, e.mod.Context().MDNode(fields))
+}
+
+func metadataKey(parts ...string) string {
+	return strings.Join(parts, ":")
+}
+
+func metadataString(ctx llvm.Context, s string) llvm.Metadata {
+	return ctx.MDString(s)
+}
+
+func metadataInt32(ctx llvm.Context, i int) llvm.Metadata {
+	return llvm.ConstInt(ctx.Int32Type(), uint64(i), false).ConstantAsMetadata()
 }

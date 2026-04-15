@@ -33,6 +33,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/internal/semmeta"
 	"github.com/goplus/llvm"
 )
 
@@ -591,7 +592,7 @@ func TestInterfaceInfoMetadataSingleRow(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
-	pkg.emitInterfaceInfo("_llgo_foo/bar.IFmt", []interfaceInfoMethod{
+	pkg.emitInterfaceInfo("_llgo_foo/bar.IFmt", []semmeta.MethodSig{
 		{Name: "Read", MType: "_llgo_func$read"},
 		{Name: "Write", MType: "_llgo_func$write"},
 	})

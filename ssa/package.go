@@ -26,6 +26,7 @@ import (
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
+	"github.com/goplus/llgo/internal/semmeta"
 	"github.com/goplus/llgo/ssa/abi"
 	"github.com/goplus/llvm"
 	"golang.org/x/tools/go/types/typeutil"
@@ -458,7 +459,7 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	ret := &aPackage{
 		mod: mod, path: pkgPath, Prog: p, vars: gbls, fns: fns,
 		pyobjs: pyobjs, pymods: pymods, strs: strs,
-		semMetaEmitter: newSemMetaEmitter(),
+		semMetaEmitter: semmeta.NewEmitter(mod),
 		di:             nil,
 		cu:             nil,
 		glbDbgVars:     glbDbgVars,
@@ -709,7 +710,7 @@ type aPackage struct {
 	path string
 
 	Prog           Program
-	semMetaEmitter *semMetaEmitter
+	semMetaEmitter *semmeta.Emitter
 
 	di         diBuilder
 	cu         CompilationUnit
