@@ -232,7 +232,7 @@ func testFrom(t *testing.T, pkgDir, sel string) {
 		if err != nil {
 			t.Fatal("semmeta.Read failed:", err)
 		}
-		if test.Diff(t, filepath.Join(pkgDir, "meta-expect.txt.new"), []byte(info.String()), metaExpected) {
+		if test.Diff(t, filepath.Join(pkgDir, "meta-expect.txt.new"), []byte(FormatSemMeta(info)), metaExpected) {
 			t.Fatal("semmeta.Read: unexpected result")
 		}
 	}

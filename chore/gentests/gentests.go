@@ -75,7 +75,7 @@ func writeMetaExpect(testDir string, mod llvm.Module) {
 	metaFile := filepath.Join(testDir, "meta-expect.txt")
 	info, err := semmeta.Read(mod)
 	check(err)
-	text := info.String()
+	text := cltest.FormatSemMeta(info)
 
 	existing, err := os.ReadFile(metaFile)
 	if err != nil && !os.IsNotExist(err) {

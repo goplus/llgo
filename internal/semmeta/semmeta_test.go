@@ -17,13 +17,12 @@
 package semmeta
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/goplus/llvm"
 )
 
-func TestReadAndString(t *testing.T) {
+func TestRead(t *testing.T) {
 	ctx := llvm.NewContext()
 	defer ctx.Dispose()
 
@@ -86,38 +85,33 @@ func TestReadAndString(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	got := info.String()
-	want := strings.TrimSpace(`
-[UseIface]
-github.com/goplus/llgo/demo.main:
-    *_llgo_github.com/goplus/llgo/demo.File
-    *_llgo_github.com/goplus/llgo/demo.Other
-
-[UseIfaceMethod]
-github.com/goplus/llgo/demo.consume:
-    _llgo_github.com/goplus/llgo/demo.Reader Read _llgo_func$readsig
-
-[InterfaceInfo]
-_llgo_github.com/goplus/llgo/demo.Reader:
-    Close _llgo_func$closesig
-    Read _llgo_func$readsig
-
-[MethodInfo]
-*_llgo_github.com/goplus/llgo/demo.File:
-    1 Close _llgo_func$closesig github.com/goplus/llgo/demo.(*File).Close github.com/goplus/llgo/demo.File.Close
-    0 Read _llgo_func$readsig github.com/goplus/llgo/demo.(*File).Read github.com/goplus/llgo/demo.File.Read
-
-[UseNamedMethod]
-github.com/goplus/llgo/demo.lookup:
-    ServeHTTP
-    String
-
-[ReflectMethod]
-github.com/goplus/llgo/demo.reflectAll
-`) + "\n"
-	if got != want {
-		t.Fatalf("semmeta string mismatch\n==> got:\n%s\n==> want:\n%s", got, want)
+	if got := info.UseIface[Symbol("github.com/goplus/llgo/demo.main")]; len(got) != 2 ||
+		got[0] != "*_llgo_github.com/goplus/llgo/demo.Other" ||
+		got[1] != "*_llgo_github.com/goplus/llgo/demo.File" {
+		t.Fatalf("UseIface mismatch: %#v", got)
+	}
+	if got := info.UseIfaceMethod[Symbol("github.com/goplus/llgo/demo.consume")]; len(got) != 1 ||
+		got[0].Target != "_llgo_github.com/goplus/llgo/demo.Reader" ||
+		got[0].Sig.Name != "Read" ||
+		got[0].Sig.MType != "_llgo_func$readsig" {
+		t.Fatalf("UseIfaceMethod mismatch: %#v", got)
+	}
+	if got := info.InterfaceInfo[Symbol("_llgo_github.com/goplus/llgo/demo.Reader")]; len(got) != 2 ||
+		got[0].Name != "Close" || got[0].MType != "_llgo_func$closesig" ||
+		got[1].Name != "Read" || got[1].MType != "_llgo_func$readsig" {
+		t.Fatalf("InterfaceInfo mismatch: %#v", got)
+	}
+	if got := info.MethodInfo[Symbol("*_llgo_github.com/goplus/llgo/demo.File")]; len(got) != 2 ||
+		got[0].Index != 1 || got[0].Sig.Name != "Close" ||
+		got[1].Index != 0 || got[1].Sig.Name != "Read" {
+		t.Fatalf("MethodInfo mismatch: %#v", got)
+	}
+	if got := info.UseNamedMethod[Symbol("github.com/goplus/llgo/demo.lookup")]; len(got) != 2 ||
+		got[0] != "String" || got[1] != "ServeHTTP" {
+		t.Fatalf("UseNamedMethod mismatch: %#v", got)
+	}
+	if _, ok := info.ReflectMethod[Symbol("github.com/goplus/llgo/demo.reflectAll")]; !ok {
+		t.Fatal("ReflectMethod entry missing")
 	}
 }
 
