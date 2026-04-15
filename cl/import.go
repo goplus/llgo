@@ -215,7 +215,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 			}
 		}
 	}
-	p.processFloatingLinknames(pkgPath, files, true)
+	p.processFloatingLinknames(pkgPath, files)
 }
 
 // PreCollectLinknames scans syntax files before SSA compilation and populates
@@ -240,7 +240,7 @@ func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) 
 			}
 		}
 	}
-	ctx.processFloatingLinknames(pkgPath, files, false)
+	ctx.processFloatingLinknames(pkgPath, files)
 }
 
 // Collect skip names and skip other annotations, such as go: and llgo:
@@ -314,10 +314,13 @@ func (p *context) processLinknameByDoc(doc *ast.CommentGroup, fullName, inPkgNam
 	return false
 }
 
-// processFloatingLinknames scans all comments in files for go:linkname directives
+// processFloatingLinknames scans all comments in files for //go:linkname directives
 // that are not attached as doc comments to any declaration (e.g., placed after the
-// function/variable declaration). See https://github.com/goplus/llgo/issues/1789.
-func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File, allowExport bool) {
+// function/variable declaration). Only //go:linkname is supported at any position;
+// //llgo:link and //export must be doc comments attached to declarations.
+// See https://github.com/goplus/llgo/issues/1789.
+func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File) {
+	const linkname = "//go:linkname "
 	type declInfo struct {
 		fullName string
 		isVar    bool
@@ -350,14 +353,17 @@ func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File, al
 				continue
 			}
 			for _, c := range cg.List {
+				if !strings.HasPrefix(c.Text, linkname) {
+					continue
+				}
 				// Skip floating directives that reference names not declared in
 				// this file to avoid spurious warnings (e.g., runtime/cgo _cgo_* symbols).
-				if name := linknameTarget(c.Text); name != "" {
+				if name := floatingLinknameTarget(c.Text); name != "" {
 					if _, exists := decls[name]; !exists {
 						continue
 					}
 				}
-				p.initLinkname(c.Text, allowExport, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+				p.initLinkname(c.Text, false, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 					if d, exists := decls[inPkgName]; exists {
 						return d.fullName, d.isVar, true
 					}
@@ -374,19 +380,16 @@ const (
 	unknownDirective = -1
 )
 
-// linknameTarget extracts the in-package name from a linkname/link/export directive.
-// Returns empty string if the line is not a recognized directive.
-func linknameTarget(line string) string {
-	for _, prefix := range []string{
-		"//go:linkname ", "//llgo:link ", "// llgo:link ", "//export ",
-	} {
-		if strings.HasPrefix(line, prefix) {
-			text := strings.TrimSpace(line[len(prefix):])
-			if idx := strings.IndexByte(text, ' '); idx > 0 {
-				return text[:idx]
-			}
-			return text
+// floatingLinknameTarget extracts the in-package name from a //go:linkname directive.
+// Returns empty string if the line is not a //go:linkname directive.
+func floatingLinknameTarget(line string) string {
+	const prefix = "//go:linkname "
+	if strings.HasPrefix(line, prefix) {
+		text := strings.TrimSpace(line[len(prefix):])
+		if idx := strings.IndexByte(text, ' '); idx > 0 {
+			return text[:idx]
 		}
+		return text
 	}
 	return ""
 }

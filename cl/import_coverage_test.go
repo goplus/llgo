@@ -178,7 +178,7 @@ func TestPreCollectLinknames(t *testing.T) {
 	}
 }
 
-// TestPreCollectLinknamesAfterDecl tests that go:linkname directives placed after
+// TestPreCollectLinknamesAfterDecl tests that //go:linkname directives placed after
 // function declarations are correctly processed. See #1789.
 func TestPreCollectLinknamesAfterDecl(t *testing.T) {
 	cases := []struct {
@@ -189,11 +189,6 @@ func TestPreCollectLinknamesAfterDecl(t *testing.T) {
 		{
 			name: "go-linkname-after-func",
 			src:  "package runtime\nimport _ \"unsafe\"\nfunc Sigsetjmp()\n//go:linkname Sigsetjmp C.sigsetjmp\n",
-			want: "C.sigsetjmp",
-		},
-		{
-			name: "llgo-link-after-func",
-			src:  "package runtime\nimport _ \"unsafe\"\nfunc Sigsetjmp()\n//llgo:link Sigsetjmp C.sigsetjmp\n",
 			want: "C.sigsetjmp",
 		},
 		{
@@ -237,21 +232,21 @@ func TestFloatingLinknameIgnoresUndeclaredNames(t *testing.T) {
 	}
 }
 
-func TestLinknameTarget(t *testing.T) {
+func TestFloatingLinknameTarget(t *testing.T) {
 	cases := []struct {
 		line string
 		want string
 	}{
 		{"//go:linkname Foo C.foo", "Foo"},
-		{"//llgo:link Bar C.bar", "Bar"},
-		{"// llgo:link Baz C.baz", "Baz"},
-		{"//export Qux", "Qux"},
+		{"//llgo:link Bar C.bar", ""},
+		{"// llgo:link Baz C.baz", ""},
+		{"//export Qux", ""},
 		{"// not a directive", ""},
 		{"//go:noescape", ""},
 	}
 	for _, tt := range cases {
-		if got := linknameTarget(tt.line); got != tt.want {
-			t.Errorf("linknameTarget(%q) = %q, want %q", tt.line, got, tt.want)
+		if got := floatingLinknameTarget(tt.line); got != tt.want {
+			t.Errorf("floatingLinknameTarget(%q) = %q, want %q", tt.line, got, tt.want)
 		}
 	}
 }
