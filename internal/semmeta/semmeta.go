@@ -93,7 +93,7 @@ func (e *Emitter) AddUseIfaceMethod(owner Symbol, demand IfaceMethodDemand) {
 }
 
 func (e *Emitter) AddInterfaceInfo(target Symbol, methods []MethodSig) {
-	if target == "" || len(methods) == 0 {
+	if len(methods) == 0 {
 		return
 	}
 	for _, method := range methods {
@@ -108,7 +108,7 @@ func (e *Emitter) AddInterfaceInfo(target Symbol, methods []MethodSig) {
 }
 
 func (e *Emitter) AddMethodInfo(typeSym Symbol, slots []MethodSlot) {
-	if typeSym == "" || len(slots) == 0 {
+	if len(slots) == 0 {
 		return
 	}
 	for _, slot := range slots {
