@@ -159,6 +159,12 @@ timeouts:
     reason: clearfat runoutput generation runs past the default timeout on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
+    directive: runoutput
+    case: rangegen.go
+    timeout: 10m
+    reason: rangegen runoutput compiles the generated stress test for several minutes on darwin/arm64
+  - version: go1.24
+    platform: darwin/arm64
     directive: run
     case: closure.go
     timeout: 2m
@@ -639,6 +645,12 @@ timeouts:
     reason: clearfat runoutput generation runs past the 4m timeout on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
+    directive: runoutput
+    case: rangegen.go
+    timeout: 10m
+    reason: rangegen runoutput compiles the generated stress test for several minutes on darwin/arm64
+  - version: go1.25
+    platform: darwin/arm64
     directive: run
     case: closure2.go
     timeout: 2m
@@ -1051,6 +1063,12 @@ timeouts:
     case: clearfat.go
     timeout: 2m
     reason: clearfat runoutput generation runs past the default timeout on darwin/arm64
+  - version: go1.26
+    platform: darwin/arm64
+    directive: runoutput
+    case: rangegen.go
+    timeout: 10m
+    reason: rangegen runoutput compiles the generated stress test for several minutes on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
@@ -2610,11 +2628,6 @@ xfails:
     directive: run
     case: maymorestack.go
     reason: go1.24 goroot ci-mode run failure on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: runoutput
-    case: rangegen.go
-    reason: go1.24 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.25
     platform: darwin/arm64
     directive: run
@@ -2630,11 +2643,6 @@ xfails:
     directive: run
     case: maymorestack.go
     reason: go1.25 goroot ci-mode run failure on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: runoutput
-    case: rangegen.go
-    reason: go1.25 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
@@ -2650,11 +2658,6 @@ xfails:
     directive: run
     case: maymorestack.go
     reason: go1.26 goroot ci-mode run failure on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: runoutput
-    case: rangegen.go
-    reason: go1.26 goroot ci-mode runoutput failure on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
