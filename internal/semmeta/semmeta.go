@@ -78,8 +78,8 @@ func (e *Emitter) AddUseIface(owner, target Symbol) {
 	e.add(
 		UseIfaceMetadata,
 		metadataKey(string(owner), string(target)),
-		metadataString(e.ctx, string(owner)),
-		metadataString(e.ctx, string(target)),
+		e.mdString(string(owner)),
+		e.mdString(string(target)),
 	)
 }
 
@@ -87,10 +87,10 @@ func (e *Emitter) AddUseIfaceMethod(owner Symbol, demand IfaceMethodDemand) {
 	e.add(
 		UseIfaceMethodMetadata,
 		metadataKey(string(owner), string(demand.Target), demand.Sig.Name, string(demand.Sig.MType)),
-		metadataString(e.ctx, string(owner)),
-		metadataString(e.ctx, string(demand.Target)),
-		metadataString(e.ctx, demand.Sig.Name),
-		metadataString(e.ctx, string(demand.Sig.MType)),
+		e.mdString(string(owner)),
+		e.mdString(string(demand.Target)),
+		e.mdString(demand.Sig.Name),
+		e.mdString(string(demand.Sig.MType)),
 	)
 }
 
@@ -102,9 +102,9 @@ func (e *Emitter) AddInterfaceInfo(target Symbol, methods []MethodSig) {
 		e.add(
 			InterfaceInfoMetadata,
 			metadataKey(string(target), method.Name, string(method.MType)),
-			metadataString(e.ctx, string(target)),
-			metadataString(e.ctx, method.Name),
-			metadataString(e.ctx, string(method.MType)),
+			e.mdString(string(target)),
+			e.mdString(method.Name),
+			e.mdString(string(method.MType)),
 		)
 	}
 }
@@ -117,12 +117,12 @@ func (e *Emitter) AddMethodInfo(typeSym Symbol, slots []MethodSlot) {
 		e.add(
 			MethodInfoMetadata,
 			metadataKey(string(typeSym), fmt.Sprint(slot.Index), slot.Sig.Name, string(slot.Sig.MType), string(slot.IFn), string(slot.TFn)),
-			metadataString(e.ctx, string(typeSym)),
-			metadataInt32(e.ctx, slot.Index),
-			metadataString(e.ctx, slot.Sig.Name),
-			metadataString(e.ctx, string(slot.Sig.MType)),
-			metadataString(e.ctx, string(slot.IFn)),
-			metadataString(e.ctx, string(slot.TFn)),
+			e.mdString(string(typeSym)),
+			e.mdInt32(slot.Index),
+			e.mdString(slot.Sig.Name),
+			e.mdString(string(slot.Sig.MType)),
+			e.mdString(string(slot.IFn)),
+			e.mdString(string(slot.TFn)),
 		)
 	}
 }
@@ -131,8 +131,8 @@ func (e *Emitter) AddUseNamedMethod(owner Symbol, name string) {
 	e.add(
 		UseNamedMethodMetadata,
 		metadataKey(string(owner), name),
-		metadataString(e.ctx, string(owner)),
-		metadataString(e.ctx, name),
+		e.mdString(string(owner)),
+		e.mdString(name),
 	)
 }
 
@@ -140,7 +140,7 @@ func (e *Emitter) AddReflectMethod(owner Symbol) {
 	e.add(
 		ReflectMethodMetadata,
 		string(owner),
-		metadataString(e.ctx, string(owner)),
+		e.mdString(string(owner)),
 	)
 }
 
@@ -310,10 +310,10 @@ func metadataKey(parts ...string) string {
 	return strings.Join(parts, ":")
 }
 
-func metadataString(ctx llvm.Context, s string) llvm.Metadata {
-	return ctx.MDString(s)
+func (e *Emitter) mdString(s string) llvm.Metadata {
+	return e.ctx.MDString(s)
 }
 
-func metadataInt32(ctx llvm.Context, i int) llvm.Metadata {
-	return llvm.ConstInt(ctx.Int32Type(), uint64(i), false).ConstantAsMetadata()
+func (e *Emitter) mdInt32(i int) llvm.Metadata {
+	return llvm.ConstInt(e.ctx.Int32Type(), uint64(i), false).ConstantAsMetadata()
 }
