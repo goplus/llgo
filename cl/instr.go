@@ -69,41 +69,42 @@ func staticCallMethod(call *ssa.CallCommon) (recv types.Type, method string, ok 
 	return fn.Signature.Recv().Type(), fn.Name(), true
 }
 
-func (p *context) markReflectMethodCall(call *ssa.CallCommon) {
-	owner := p.fn.Name()
-
+func reflectMethodNameArg(call *ssa.CallCommon) (nameArg ssa.Value, ok bool) {
 	if method := call.Method; method != nil {
 		if !isNamedType(call.Value.Type(), "reflect", "Type") {
-			return
+			return nil, false
 		}
-		switch method.Name() {
-		case "Method":
-			p.pkg.EmitReflectMethod(owner)
-		case "MethodByName":
-			if name, ok := constStr(call.Args[0]); ok {
-				p.pkg.EmitUseNamedMethod(owner, name)
-				return
-			}
-			p.pkg.EmitReflectMethod(owner)
+		if method.Name() != "MethodByName" {
+			return nil, method.Name() == "Method"
 		}
-		return
+		return call.Args[0], true
 	}
 
 	recv, methodName, ok := staticCallMethod(call)
-	if ok && isNamedType(recv, "reflect", "Value") {
-		switch methodName {
-		case "Method":
-			p.pkg.EmitReflectMethod(owner)
-		case "MethodByName":
-			if method, ok := constStr(call.Args[len(call.Args)-1]); ok {
-				p.pkg.EmitUseNamedMethod(owner, method)
-				return
-			}
-			p.pkg.EmitReflectMethod(owner)
-		}
+	if !ok || !isNamedType(recv, "reflect", "Value") {
+		return nil, false
+	}
+	if methodName != "MethodByName" {
+		return nil, methodName == "Method"
+	}
+	return call.Args[len(call.Args)-1], true
+}
+
+func (p *context) markReflectMethodCall(call *ssa.CallCommon) {
+	owner := p.fn.Name()
+	nameArg, ok := reflectMethodNameArg(call)
+	if !ok {
 		return
 	}
-
+	if nameArg == nil {
+		p.pkg.EmitReflectMethod(owner)
+		return
+	}
+	if name, ok := constStr(nameArg); ok {
+		p.pkg.EmitUseNamedMethod(owner, name)
+		return
+	}
+	p.pkg.EmitReflectMethod(owner)
 }
 
 // func pystr(string) *py.Object
