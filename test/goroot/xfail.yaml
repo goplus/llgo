@@ -127,6 +127,12 @@ timeouts:
     case: chanlinear.go
     timeout: 1m
     reason: go1.26 chanlinear needs extra runtime slack on loaded linux/amd64 runners
+  - version: go1.26
+    platform: linux/amd64
+    directive: runoutput
+    case: chan/select5.go
+    timeout: 2m
+    reason: chan/select5 runoutput generation runs past the 1m timeout on linux/amd64
   - version: go1.24
     platform: linux/amd64
     directive: runoutput
@@ -151,24 +157,6 @@ timeouts:
     case: clearfat.go
     timeout: 2m
     reason: clearfat runoutput generation runs past the default timeout on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/select7.go
-    timeout: 4m
-    reason: chan/select7 baseline run exceeds the 2m timeout on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/sendstmt.go
-    timeout: 1m
-    reason: chan/sendstmt baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.24
-    platform: darwin/arm64
-    directive: run
-    case: chan/sieve2.go
-    timeout: 1m
-    reason: chan/sieve2 baseline run exceeds the default timeout on darwin/arm64
   - version: go1.24
     platform: darwin/arm64
     directive: run
@@ -658,24 +646,6 @@ timeouts:
   - version: go1.25
     platform: darwin/arm64
     directive: run
-    case: chan/select7.go
-    timeout: 4m
-    reason: chan/select7 baseline run exceeds the 2m timeout on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: chan/sendstmt.go
-    timeout: 4m
-    reason: chan/sendstmt baseline run exceeds the 2m timeout on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
-    case: chan/sieve2.go
-    timeout: 1m
-    reason: chan/sieve2 baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.25
-    platform: darwin/arm64
-    directive: run
     case: closure.go
     timeout: 2m
     reason: closure run runs past the default timeout on darwin/arm64
@@ -1081,24 +1051,6 @@ timeouts:
     case: clearfat.go
     timeout: 2m
     reason: clearfat runoutput generation runs past the default timeout on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: chan/select7.go
-    timeout: 4m
-    reason: chan/select7 baseline run exceeds the 2m timeout on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: chan/sendstmt.go
-    timeout: 1m
-    reason: chan/sendstmt baseline run exceeds the default timeout on darwin/arm64
-  - version: go1.26
-    platform: darwin/arm64
-    directive: run
-    case: chan/sieve2.go
-    timeout: 1m
-    reason: chan/sieve2 baseline run exceeds the default timeout on darwin/arm64
   - version: go1.26
     platform: darwin/arm64
     directive: run
@@ -1713,14 +1665,6 @@ flakes:
     case: rotate0.go
     reason: rotate0 runoutput can either pass or time out on darwin/arm64
 xfails:
-  - platform: darwin/arm64
-    directive: runoutput
-    case: chan/select5.go
-    reason: llgo select scheduling hangs in goroot runoutput
-  - platform: linux/amd64
-    directive: runoutput
-    case: chan/select5.go
-    reason: llgo select scheduling hangs in goroot runoutput
   - version: go1.24
     platform: linux/amd64
     directive: run

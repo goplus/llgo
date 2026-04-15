@@ -582,11 +582,24 @@ func trySelectDir(ops []ChanOp, send bool, waitSelectSend bool) (isel int, recvO
 			}
 			continue
 		}
-		if recvOK, tryOK = chanTryRecv(op.C, op.Val, int(op.Size), waitSelectSend); tryOK {
+		wait := waitSelectSend
+		if wait && selectHasSendOnChan(ops, op.C) {
+			wait = false
+		}
+		if recvOK, tryOK = chanTryRecv(op.C, op.Val, int(op.Size), wait); tryOK {
 			return
 		}
 	}
 	return
+}
+
+func selectHasSendOnChan(ops []ChanOp, c *Chan) bool {
+	for _, op := range ops {
+		if op.C == c && op.Send {
+			return true
+		}
+	}
+	return false
 }
 
 func selectSendFirst(ops []ChanOp) bool {
