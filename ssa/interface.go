@@ -99,7 +99,9 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 			MType: imtypName,
 		})
 	}
-	b.Pkg.emitInterfaceInfo(intfTypeName, methods)
+	if b.Pkg.shouldEmitOwnedTypeMetadata(intf.raw.Type) {
+		b.Pkg.emitInterfaceInfo(intfTypeName, methods)
+	}
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}

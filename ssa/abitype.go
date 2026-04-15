@@ -443,14 +443,14 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 			TFn:   tfn.Name(),
 		})
 	}
-	if b.Pkg.shouldEmitMethodInfo(t) {
+	if b.Pkg.shouldEmitOwnedTypeMetadata(t) {
 		b.Pkg.emitMethodInfo(typeName, slots)
 	}
 	return llvm.ConstArray(ft.ll, fields)
 }
 
-// shouldEmitMethodInfo reports whether the current package should emit
-// llgo.methodinfo for t.
+// shouldEmitOwnedTypeMetadata reports whether the current package should emit
+// owner-scoped semantic metadata for t at the current use site.
 //
 // Ownership follows the concrete root type, not an outer pointer wrapper.
 // This keeps *T aligned with T for emission policy.
@@ -461,12 +461,13 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 //   - instantiated generic named types stay allowed at use sites, because
 //     current LLGo may compile and materialize their methods there;
 //   - imported non-generic named types are suppressed here, so their
-//     method table metadata is emitted only by their defining package.
-func (p Package) shouldEmitMethodInfo(t types.Type) bool {
+//     method-table or interface-shape metadata is emitted only by their
+//     defining package.
+func (p Package) shouldEmitOwnedTypeMetadata(t types.Type) bool {
 	t = types.Unalias(t)
 	switch tt := t.(type) {
 	case *types.Pointer:
-		return p.shouldEmitMethodInfo(tt.Elem())
+		return p.shouldEmitOwnedTypeMetadata(tt.Elem())
 	case *types.Named:
 		if ta := tt.TypeArgs(); ta != nil && ta.Len() != 0 {
 			return true

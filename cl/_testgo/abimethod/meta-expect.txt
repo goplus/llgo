@@ -74,8 +74,6 @@ github.com/goplus/llgo/cl/_testgo/abimethod.testNamed3:
     _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I2 Demo2 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
 
 [InterfaceInfo]
-_llgo_fmt.Stringer:
-    String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I:
     Demo1 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
 _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I2:
