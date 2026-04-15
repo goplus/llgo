@@ -71,6 +71,8 @@ func staticCallMethod(call *ssa.CallCommon) (recv types.Type, method string, ok 
 
 func reflectMethodNameArg(call *ssa.CallCommon) (nameArg ssa.Value, ok bool) {
 	if method := call.Method; method != nil {
+		// invoke-mode on reflect.Type: Value is the interface receiver and
+		// Args[0] is the first real argument to MethodByName.
 		if !isNamedType(call.Value.Type(), "reflect", "Type") {
 			return nil, false
 		}
@@ -81,6 +83,8 @@ func reflectMethodNameArg(call *ssa.CallCommon) (nameArg ssa.Value, ok bool) {
 	}
 
 	recv, methodName, ok := staticCallMethod(call)
+	// static-call mode on reflect.Value: StaticCallee carries the concrete
+	// method, and the MethodByName string is the last explicit argument.
 	if !ok || !isNamedType(recv, "reflect", "Value") {
 		return nil, false
 	}
@@ -93,17 +97,21 @@ func reflectMethodNameArg(call *ssa.CallCommon) (nameArg ssa.Value, ok bool) {
 func (p *context) markReflectMethodCall(call *ssa.CallCommon) {
 	owner := p.fn.Name()
 	nameArg, ok := reflectMethodNameArg(call)
+	// Not a reflect.Type/reflect.Value Method* call.
 	if !ok {
 		return
 	}
+	// Method(index) and dynamic MethodByName(name) must stay conservative.
 	if nameArg == nil {
 		p.pkg.EmitReflectMethod(owner)
 		return
 	}
+	// Constant MethodByName("X") can record an exact method-name demand.
 	if name, ok := constStr(nameArg); ok {
 		p.pkg.EmitUseNamedMethod(owner, name)
 		return
 	}
+	// Dynamic MethodByName(name) falls back to conservative reflection.
 	p.pkg.EmitReflectMethod(owner)
 }
 
