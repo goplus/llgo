@@ -85,12 +85,13 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	ownerName := b.Func.impl.Name()
 	intfTypeName, _ := prog.abi.TypeName(intf.raw.Type)
 	mtypName, _ := prog.abi.TypeName(funcType(prog, method.Type()))
-	b.Pkg.emitUseIfaceMethod(
-		ownerName,
-		intfTypeName,
-		mthName(method),
-		mtypName,
-	)
+	b.Pkg.semMetaEmitter.AddUseIfaceMethod(semmeta.Symbol(ownerName), semmeta.IfaceMethodDemand{
+		Target: semmeta.Symbol(intfTypeName),
+		Sig: semmeta.MethodSig{
+			Name:  mthName(method),
+			MType: semmeta.Symbol(mtypName),
+		},
+	})
 	methods := make([]semmeta.MethodSig, 0, rawIntf.NumMethods())
 	for i := 0; i < rawIntf.NumMethods(); i++ {
 		im := rawIntf.Method(i)
@@ -101,7 +102,7 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 		})
 	}
 	if b.Pkg.shouldEmitOwnedTypeMetadata(intf.raw.Type) {
-		b.Pkg.emitInterfaceInfo(intfTypeName, methods)
+		b.Pkg.semMetaEmitter.AddInterfaceInfo(semmeta.Symbol(intfTypeName), methods)
 	}
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
@@ -143,7 +144,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	if _, ok := typ.raw.Type.Underlying().(*types.Interface); !ok {
 		ownerName := b.Func.impl.Name()
 		typeName, _ := prog.abi.TypeName(typ.raw.Type)
-		b.Pkg.emitUseIface(ownerName, typeName)
+		b.Pkg.semMetaEmitter.AddUseIface(semmeta.Symbol(ownerName), semmeta.Symbol(typeName))
 	}
 	tabi := b.abiType(typ.raw.Type)
 	kind, _, lvl := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits)

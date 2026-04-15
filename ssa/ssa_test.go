@@ -592,7 +592,7 @@ func TestInterfaceInfoMetadataSingleRow(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
-	pkg.emitInterfaceInfo("_llgo_foo/bar.IFmt", []semmeta.MethodSig{
+	pkg.semMetaEmitter.AddInterfaceInfo("_llgo_foo/bar.IFmt", []semmeta.MethodSig{
 		{Name: "Read", MType: "_llgo_func$read"},
 		{Name: "Write", MType: "_llgo_func$write"},
 	})

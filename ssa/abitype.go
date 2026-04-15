@@ -447,7 +447,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		})
 	}
 	if b.Pkg.shouldEmitOwnedTypeMetadata(t) {
-		b.Pkg.emitMethodInfo(typeName, slots)
+		b.Pkg.semMetaEmitter.AddMethodInfo(semmeta.Symbol(typeName), slots)
 	}
 	return llvm.ConstArray(ft.ll, fields)
 }
