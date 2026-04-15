@@ -29,6 +29,11 @@ host_skips:
     directive: run
     case: fixedbugs/issue16016.go
     reason: go1.25 goroot run is host-sensitive on linux/amd64
+  - version: go1.24
+    platform: linux/amd64
+    directive: run
+    case: fixedbugs/issue16016.go
+    reason: go1.24 goroot run is host-sensitive on linux/amd64
   - version: go1.25
     platform: linux/amd64
     directive: run
