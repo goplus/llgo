@@ -34,6 +34,11 @@ host_skips:
     directive: run
     case: fixedbugs/issue16016.go
     reason: go1.24 goroot run is host-sensitive on linux/amd64
+  - version: go1.24
+    platform: darwin/arm64
+    directive: runoutput
+    case: rangegen.go
+    reason: go1.24 rangegen runoutput exceeds the darwin/arm64 CI timeout
   - version: go1.25
     platform: linux/amd64
     directive: run
