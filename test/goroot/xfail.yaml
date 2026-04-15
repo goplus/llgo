@@ -1802,10 +1802,6 @@ xfails:
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
     directive: run
-    case: recover3.go
-    reason: latest main goroot run failure on darwin/arm64
-  - platform: darwin/arm64
-    directive: run
     case: recover4.go
     reason: latest main goroot run failure on darwin/arm64
   - platform: darwin/arm64
