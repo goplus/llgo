@@ -217,3 +217,41 @@ func TestPreCollectLinknamesAfterDecl(t *testing.T) {
 		})
 	}
 }
+
+// TestFloatingLinknameIgnoresUndeclaredNames verifies that floating directives
+// referencing names not declared in the file are silently ignored (no warnings).
+// See https://github.com/goplus/llgo/issues/1789.
+func TestFloatingLinknameIgnoresUndeclaredNames(t *testing.T) {
+	// Source has a floating //go:linkname for _cgo_init which is NOT declared in the file.
+	src := "package runtime\nimport _ \"unsafe\"\nfunc Foo()\n//go:linkname _cgo_init _cgo_init\n"
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "runtime.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile failed: %v", err)
+	}
+	prog := llssa.NewProgram(nil)
+	PreCollectLinknames(prog, llssa.PkgRuntime, []*ast.File{file})
+	// _cgo_init should NOT be registered since it's not declared in the file.
+	if got, ok := prog.Linkname(llssa.PkgRuntime + "._cgo_init"); ok {
+		t.Fatalf("undeclared floating linkname should be ignored, got (%q,%v)", got, ok)
+	}
+}
+
+func TestLinknameTarget(t *testing.T) {
+	cases := []struct {
+		line string
+		want string
+	}{
+		{"//go:linkname Foo C.foo", "Foo"},
+		{"//llgo:link Bar C.bar", "Bar"},
+		{"// llgo:link Baz C.baz", "Baz"},
+		{"//export Qux", "Qux"},
+		{"// not a directive", ""},
+		{"//go:noescape", ""},
+	}
+	for _, tt := range cases {
+		if got := linknameTarget(tt.line); got != tt.want {
+			t.Errorf("linknameTarget(%q) = %q, want %q", tt.line, got, tt.want)
+		}
+	}
+}

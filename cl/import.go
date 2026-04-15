@@ -350,6 +350,13 @@ func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File, al
 				continue
 			}
 			for _, c := range cg.List {
+				// Skip floating directives that reference names not declared in
+				// this file to avoid spurious warnings (e.g., runtime/cgo _cgo_* symbols).
+				if name := linknameTarget(c.Text); name != "" {
+					if _, exists := decls[name]; !exists {
+						continue
+					}
+				}
 				p.initLinkname(c.Text, allowExport, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 					if d, exists := decls[inPkgName]; exists {
 						return d.fullName, d.isVar, true
@@ -366,6 +373,23 @@ const (
 	hasLinkname
 	unknownDirective = -1
 )
+
+// linknameTarget extracts the in-package name from a linkname/link/export directive.
+// Returns empty string if the line is not a recognized directive.
+func linknameTarget(line string) string {
+	for _, prefix := range []string{
+		"//go:linkname ", "//llgo:link ", "// llgo:link ", "//export ",
+	} {
+		if strings.HasPrefix(line, prefix) {
+			text := strings.TrimSpace(line[len(prefix):])
+			if idx := strings.IndexByte(text, ' '); idx > 0 {
+				return text[:idx]
+			}
+			return text
+		}
+	}
+	return ""
+}
 
 func (p *context) initLinkname(line string, allowExport bool, f func(inPkgName string, isExport bool) (fullName string, isVar, ok bool)) int {
 	const (
