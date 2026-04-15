@@ -109,7 +109,8 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
-	compileMethods func(Package, types.Type)
+	compileMethods     func(Package, types.Type)
+	noInterfaceMethods map[token.Pos]struct{}
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -300,6 +301,24 @@ func (p Program) SetCompileMethods(check func(Package, types.Type)) {
 	p.compileMethods = check
 }
 
+func (p Program) SetNoInterfaceMethod(pos token.Pos) {
+	if pos == token.NoPos {
+		return
+	}
+	if p.noInterfaceMethods == nil {
+		p.noInterfaceMethods = make(map[token.Pos]struct{})
+	}
+	p.noInterfaceMethods[pos] = struct{}{}
+}
+
+func (p Program) IsNoInterfaceMethod(fn *types.Func) bool {
+	if fn == nil || fn.Pos() == token.NoPos {
+		return false
+	}
+	_, ok := p.noInterfaceMethods[fn.Pos()]
+	return ok
+}
+
 // SetRuntime sets the runtime.
 // Its type can be *types.Package or func() *types.Package.
 func (p Program) SetRuntime(runtime any) {
@@ -325,7 +344,7 @@ func (p Program) Linkname(name string) (link string, ok bool) {
 }
 
 func (p Program) runtime() *types.Package {
-	if p.rt == nil {
+	if p.rt == nil && p.rtget != nil {
 		p.rt = p.rtget()
 	}
 	return p.rt
@@ -718,6 +737,10 @@ func (p Package) Module() llvm.Module {
 func (p Package) SetExport(name, export string) {
 	p.export[name] = export
 	p.preserveSyms[export] = struct{}{}
+}
+
+func (p Package) Preserve(name string) {
+	p.preserveSyms[name] = struct{}{}
 }
 
 func (p Package) ExportFuncs() map[string]string {

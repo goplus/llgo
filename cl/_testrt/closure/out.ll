@@ -49,10 +49,12 @@ define void @"github.com/goplus/llgo/cl/_testrt/closure.main$3"(ptr %0) {
 _llgo_0:
   %1 = load { ptr }, ptr %0, align 8
   %2 = extractvalue { ptr } %1, 0
-  %3 = load { ptr, ptr }, ptr %2, align 8
-  %4 = extractvalue { ptr, ptr } %3, 1
-  %5 = extractvalue { ptr, ptr } %3, 0
-  call void %5(ptr %4, i64 100, i64 200)
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load { ptr, ptr }, ptr %2, align 8
+  %5 = extractvalue { ptr, ptr } %4, 1
+  %6 = extractvalue { ptr, ptr } %4, 0
+  call void %6(ptr %5, i64 100, i64 200)
   ret void
 }
 
@@ -67,3 +69,5 @@ _llgo_0:
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare i32 @printf(ptr, ...)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

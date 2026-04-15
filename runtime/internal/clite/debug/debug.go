@@ -1,4 +1,4 @@
-//go:build !wasm && !baremetal
+//go:build !wasm && !baremetal && !esp
 
 package debug
 

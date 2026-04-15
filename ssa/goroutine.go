@@ -75,7 +75,9 @@ func (b Builder) Go(fn Expr, buildCall func(Builder, Expr, ...Expr) Expr, args .
 	}
 	t := prog.Struct(typs...)
 	voidPtr := prog.VoidPtr()
-	data := Expr{b.aggregateMalloc(t, flds...), voidPtr}
+	// Goroutine startup data may carry Go pointers, including closure ctx.
+	// Keep it in GC-managed memory so it remains visible across the thread start.
+	data := Expr{b.aggregateAllocU(t, flds...), voidPtr}
 	size := prog.SizeOf(voidPtr)
 	pthd := b.Alloca(prog.IntVal(uint64(size), prog.Uintptr()))
 	b.pthreadCreate(pthd, prog.Nil(voidPtr), pkg.routine(t, fn, buildCall, len(args)), data)
@@ -102,7 +104,6 @@ func (p Package) routine(t Type, fn Expr, buildCall func(Builder, Expr, ...Expr)
 		args[i] = b.getField(data, i+offset)
 	}
 	buildCall(b, fn, args...)
-	b.free(param)
 	b.Return(prog.Nil(prog.VoidPtr()))
 	return routine.Expr
 }

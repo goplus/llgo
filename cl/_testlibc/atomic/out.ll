@@ -28,24 +28,34 @@ _llgo_0:
   %1 = load atomic i64, ptr %0 seq_cst, align 4
   %2 = call i32 (ptr, ...) @printf(ptr @0, i64 %1)
   %3 = atomicrmw add ptr %0, i64 1 seq_cst, align 8
-  %4 = load i64, ptr %0, align 4
-  %5 = call i32 (ptr, ...) @printf(ptr @1, i64 %3, i64 %4)
-  %6 = cmpxchg ptr %0, i64 100, i64 102 seq_cst seq_cst, align 8
-  %7 = extractvalue { i64, i1 } %6, 0
-  %8 = extractvalue { i64, i1 } %6, 1
-  %9 = load i64, ptr %0, align 4
-  %10 = call i32 (ptr, ...) @printf(ptr @2, i64 %7, i64 %9)
-  %11 = cmpxchg ptr %0, i64 101, i64 102 seq_cst seq_cst, align 8
-  %12 = extractvalue { i64, i1 } %11, 0
-  %13 = extractvalue { i64, i1 } %11, 1
-  %14 = load i64, ptr %0, align 4
-  %15 = call i32 (ptr, ...) @printf(ptr @3, i64 %12, i64 %14)
-  %16 = atomicrmw sub ptr %0, i64 1 seq_cst, align 8
+  %4 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %0, align 4
+  %6 = call i32 (ptr, ...) @printf(ptr @1, i64 %3, i64 %5)
+  %7 = cmpxchg ptr %0, i64 100, i64 102 seq_cst seq_cst, align 8
+  %8 = extractvalue { i64, i1 } %7, 0
+  %9 = extractvalue { i64, i1 } %7, 1
+  %10 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = load i64, ptr %0, align 4
+  %12 = call i32 (ptr, ...) @printf(ptr @2, i64 %8, i64 %11)
+  %13 = cmpxchg ptr %0, i64 101, i64 102 seq_cst seq_cst, align 8
+  %14 = extractvalue { i64, i1 } %13, 0
+  %15 = extractvalue { i64, i1 } %13, 1
+  %16 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %16)
   %17 = load i64, ptr %0, align 4
-  %18 = call i32 (ptr, ...) @printf(ptr @4, i64 %16, i64 %17)
+  %18 = call i32 (ptr, ...) @printf(ptr @3, i64 %14, i64 %17)
+  %19 = atomicrmw sub ptr %0, i64 1 seq_cst, align 8
+  %20 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %20)
+  %21 = load i64, ptr %0, align 4
+  %22 = call i32 (ptr, ...) @printf(ptr @4, i64 %19, i64 %21)
   ret void
 }
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
 declare i32 @printf(ptr, ...)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

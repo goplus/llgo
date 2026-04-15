@@ -66,7 +66,9 @@ func StringSlice(base String, i, j int) String {
 	if i < base.len {
 		return String{c.Advance(base.data, i), j - i}
 	}
-	return String{nil, 0}
+	// Keep the source base for empty suffix slices so repeated slicing
+	// continues to report a stable base pointer like the standard runtime.
+	return String{base.data, 0}
 }
 
 type StringIter struct {
@@ -162,6 +164,20 @@ func StringFromRune(r rune) (s String) {
 	s.len = n
 	s.data = unsafe.Pointer(&buf[0])
 	return
+}
+
+func StringFromInt64(r int64) String {
+	if r < 0 || r > maxRune {
+		return StringFromRune(runeError)
+	}
+	return StringFromRune(rune(r))
+}
+
+func StringFromUint64(r uint64) String {
+	if r > maxRune {
+		return StringFromRune(runeError)
+	}
+	return StringFromRune(rune(r))
 }
 
 func StringEqual(x, y String) bool {

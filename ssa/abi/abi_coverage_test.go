@@ -212,6 +212,55 @@ func TestTypeNameAndHashingCoverage(t *testing.T) {
 	}
 }
 
+func TestRuntimeNameAndFunctionStringCoverage(t *testing.T) {
+	b := newCoverageBuilder()
+	iface := types.NewInterfaceType(nil, nil)
+	iface.Complete()
+	sig := types.NewSignature(nil, nil, nil, false)
+	st := types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, nil, "N", types.Typ[types.Int], false),
+	}, nil)
+	named := types.NewNamed(types.NewTypeName(token.NoPos, nil, "NamedStruct", nil), st, nil)
+
+	cases := []struct {
+		typ  types.Type
+		want string
+	}{
+		{types.Typ[types.Int], "_type"},
+		{types.NewPointer(types.Typ[types.Int]), "ptrtype"},
+		{types.NewSlice(types.Typ[types.Int]), "slicetype"},
+		{sig, "functype"},
+		{iface, "interfacetype"},
+		{st, "structtype"},
+		{types.NewMap(types.Typ[types.String], types.Typ[types.Int]), "maptype"},
+		{types.NewArray(types.Typ[types.Int], 2), "arraytype"},
+		{types.NewChan(types.SendRecv, types.Typ[types.Int]), "chantype"},
+		{named, "structtype"},
+	}
+	for _, c := range cases {
+		if got := b.RuntimeName(c.typ); got != c.want {
+			t.Fatalf("RuntimeName(%v)=%q, want %q", c.typ, got, c.want)
+		}
+	}
+
+	variadic := types.NewSignature(
+		nil,
+		types.NewTuple(
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]),
+			types.NewVar(token.NoPos, nil, "", types.NewSlice(types.Typ[types.String])),
+		),
+		types.NewTuple(
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.Int]),
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.String]),
+		),
+		true,
+	)
+	const wantFunc = "func(int, ...string) (int, string)"
+	if got := b.Str(variadic); got != wantFunc {
+		t.Fatalf("Str(variadic signature)=%q, want %q", got, wantFunc)
+	}
+}
+
 func TestStructInterfaceClosureAndPathCoverage(t *testing.T) {
 	b := newCoverageBuilder()
 	pkg := types.NewPackage("example.com/q", "q")

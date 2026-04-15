@@ -72,3 +72,24 @@ func TestVarNameGoLinkRuntimeAndNonRuntime(t *testing.T) {
 		t.Fatalf("non-runtime varName = (%q,%d,%v), want (%q,%d,%v)", name, vtyp, define, "go:example.com/p.G", goVar, false)
 	}
 }
+
+func TestInitFilesCollectsGoNoInterface(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "p.go", `package p
+
+type T struct{}
+
+//go:nointerface
+func (T) Bad() {}
+`, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile failed: %v", err)
+	}
+	fn := file.Decls[1].(*ast.FuncDecl)
+	prog := llssa.NewProgram(nil)
+	c := &context{prog: prog, skips: make(map[string]none)}
+	c.initFiles("p", []*ast.File{file}, false)
+	if !prog.IsNoInterfaceMethod(types.NewFunc(fn.Name.Pos(), types.NewPackage("p", "p"), "Bad", nil)) {
+		t.Fatal("Bad was not marked nointerface")
+	}
+}

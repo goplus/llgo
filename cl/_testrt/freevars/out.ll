@@ -55,18 +55,22 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_0
   %12 = extractvalue { ptr } %2, 0
-  %13 = load { ptr, ptr }, ptr %12, align 8
-  %14 = extractvalue { ptr, ptr } %13, 1
-  %15 = extractvalue { ptr, ptr } %13, 0
-  call void %15(ptr %14, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
+  %13 = icmp eq ptr %12, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %13)
+  %14 = load { ptr, ptr }, ptr %12, align 8
+  %15 = extractvalue { ptr, ptr } %14, 1
+  %16 = extractvalue { ptr, ptr } %14, 0
+  call void %16(ptr %15, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1)
   ret void
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %16 = extractvalue { ptr } %2, 0
-  %17 = load { ptr, ptr }, ptr %16, align 8
-  %18 = extractvalue { ptr, ptr } %17, 1
-  %19 = extractvalue { ptr, ptr } %17, 0
-  call void %19(ptr %18, %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
+  %17 = extractvalue { ptr } %2, 0
+  %18 = icmp eq ptr %17, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %18)
+  %19 = load { ptr, ptr }, ptr %17, align 8
+  %20 = extractvalue { ptr, ptr } %19, 1
+  %21 = extractvalue { ptr, ptr } %19, 0
+  call void %21(ptr %20, %"github.com/goplus/llgo/runtime/internal/runtime.iface" zeroinitializer)
   ret void
 }
 
@@ -88,3 +92,5 @@ declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)

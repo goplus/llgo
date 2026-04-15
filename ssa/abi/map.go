@@ -86,16 +86,16 @@ func MapBucketType(t *types.Map, sizes types.Sizes) types.Type {
 	if uint8(sizes.Alignof(elemtype)) > BUCKETSIZE {
 		log.Fatalf("elem align %d too big for %v, BUCKETSIZE=%d", sizes.Alignof(elemtype), t, BUCKETSIZE)
 	}
-	if sizes.Alignof(keytype) > MAXKEYSIZE {
+	if sizes.Sizeof(keytype) > MAXKEYSIZE {
 		log.Fatalf("key size too large for %v", t)
 	}
-	if sizes.Alignof(elemtype) > MAXELEMSIZE {
+	if sizes.Sizeof(elemtype) > MAXELEMSIZE {
 		log.Fatalf("elem size too large for %v", t)
 	}
-	if sizes.Alignof(t.Key()) > MAXKEYSIZE && !isPointer(keytype) {
+	if sizes.Sizeof(t.Key()) > MAXKEYSIZE && !isPointer(keytype) {
 		log.Fatalf("key indirect incorrect for %v", t)
 	}
-	if sizes.Alignof(t.Elem()) > MAXELEMSIZE && !isPointer(elemtype) {
+	if sizes.Sizeof(t.Elem()) > MAXELEMSIZE && !isPointer(elemtype) {
 		log.Fatalf("elem indirect incorrect for %v", t)
 	}
 	if sizes.Sizeof(keytype)%sizes.Alignof(keytype) != 0 {

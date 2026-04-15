@@ -175,10 +175,12 @@ start:
 }
 
 func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
+	fileSyms := collectASTFileSyms(pkgPath, files)
 	for _, file := range files {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
+				p.collectNoInterfaceByDoc(decl.Doc, decl.Name.Pos())
 				fullName, inPkgName := astFuncName(pkgPath, decl)
 				if !p.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, true) && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
@@ -214,6 +216,19 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 				}
 			}
 		}
+		processASTFileLinknames(p, file, fileSyms[file], true)
+	}
+}
+
+func (p *context) collectNoInterfaceByDoc(doc *ast.CommentGroup, pos token.Pos) {
+	if doc == nil {
+		return
+	}
+	for _, comment := range doc.List {
+		if strings.TrimSpace(comment.Text) == "//go:nointerface" {
+			p.prog.SetNoInterfaceMethod(pos)
+			return
+		}
 	}
 }
 
@@ -223,20 +238,56 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 // during the pre-collection phase.
 func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) {
 	ctx := &context{prog: prog}
+	fileSyms := collectASTFileSyms(pkgPath, files)
 	for _, file := range files {
+		processASTFileLinknames(ctx, file, fileSyms[file], false)
+	}
+}
+
+type astFileSymInfo struct {
+	fullName string
+	isVar    bool
+}
+
+func collectASTFileSyms(pkgPath string, files []*ast.File) map[*ast.File]map[string]astFileSymInfo {
+	fileSyms := make(map[*ast.File]map[string]astFileSymInfo, len(files))
+	for _, file := range files {
+		syms := make(map[string]astFileSymInfo)
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
 				fullName, inPkgName := astFuncName(pkgPath, decl)
-				ctx.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, false)
+				syms[inPkgName] = astFileSymInfo{fullName: fullName}
 			case *ast.GenDecl:
 				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
 					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
 						inPkgName := names[0].Name
-						ctx.processLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true, false)
+						syms[inPkgName] = astFileSymInfo{
+							fullName: pkgPath + "." + inPkgName,
+							isVar:    true,
+						}
 					}
 				}
 			}
+		}
+		fileSyms[file] = syms
+	}
+	return fileSyms
+}
+
+func processASTFileLinknames(ctx *context, file *ast.File, syms map[string]astFileSymInfo, allowExport bool) {
+	if file == nil || len(syms) == 0 {
+		return
+	}
+	for _, group := range file.Comments {
+		for _, comment := range group.List {
+			ctx.initLinkname(comment.Text, allowExport, func(name string, isExport bool) (string, bool, bool) {
+				info, ok := syms[name]
+				if !ok {
+					return "", false, false
+				}
+				return info.fullName, info.isVar, true
+			})
 		}
 	}
 }
@@ -366,8 +417,10 @@ func (p *context) initLink(line string, prefix int, export bool, f func(inPkgNam
 			if export {
 				panic(fmt.Sprintf("export comment has wrong name %q", inPkgName))
 			}
-			fmt.Fprintln(os.Stderr, "==>", line)
-			fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
+			if debugInstr {
+				fmt.Fprintln(os.Stderr, "==>", line)
+				fmt.Fprintf(os.Stderr, "llgo: linkname %s not found and ignored\n", inPkgName)
+			}
 		}
 	}
 }
@@ -672,7 +725,11 @@ func (p *context) varName(pkg *types.Package, v *ssa.Global) (vName string, vtyp
 				if pos == 2 && v[0] == 'p' && v[1] == 'y' {
 					return v[3:], pyVar, false
 				}
-				return replaceGoName(v, pos), goVar, false
+				link := replaceGoName(v, pos)
+				if link == "main..inittask" && pkg.Name() == "main" {
+					return link, goVar, true
+				}
+				return link, goVar, false
 			}
 			return v, cVar, false
 		}

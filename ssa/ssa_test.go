@@ -707,6 +707,17 @@ func TestExprCoverageHelpers(t *testing.T) {
 	b.Return()
 }
 
+func TestFunctionInlineAttributes(t *testing.T) {
+	prog := NewProgram(nil)
+	pkg := prog.NewPackage("bar", "foo/bar")
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+
+	fn.Inline(NoInline)
+	fn.Inline(AlwaysInline)
+	fn.Inline(InlineHint)
+}
+
 func TestTypes(t *testing.T) {
 	ctx := llvm.NewContext()
 	llvmIntType(ctx, 4)
@@ -725,6 +736,28 @@ func TestIndexType(t *testing.T) {
 		}
 	}()
 	indexType(types.Typ[types.Int])
+}
+
+func TestIndexRejectsInvalidTypes(t *testing.T) {
+	prog := NewProgram(nil)
+	b := &aBuilder{Prog: prog}
+	tests := []struct {
+		name string
+		x    Expr
+	}{
+		{name: "basic-non-string", x: Expr{Type: prog.rawType(types.Typ[types.Int])}},
+		{name: "pointer-non-array", x: Expr{Type: prog.rawType(types.NewPointer(types.Typ[types.Int]))}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if r := recover(); r == nil {
+					t.Fatalf("Index should reject %s", tt.name)
+				}
+			}()
+			b.Index(tt.x, Nil, nil)
+		})
+	}
 }
 
 func TestCvtType(t *testing.T) {
@@ -1126,6 +1159,36 @@ func TestBasicType(t *testing.T) {
 		if info.typ.RawType() != types.Typ[info.kind] {
 			t.Fatal("bad type", info)
 		}
+	}
+}
+
+func TestRecvZeroesPointerBearingTemp(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	chType := types.NewChan(types.SendRecv, types.NewSlice(types.Typ[types.Byte]))
+	params := types.NewTuple(types.NewVar(0, nil, "ch", chType))
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := pkg.NewFunc("fn", sig, InGo)
+	b := fn.MakeBody(1)
+	b.Recv(fn.Param(0), true)
+	b.Return()
+
+	ir := pkg.String()
+	sliceAlloca := `alloca %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`
+	if got := strings.Count(ir, sliceAlloca); got != 1 {
+		t.Fatalf("recv should use one slice temp, got %d:\n%s", got, ir)
+	}
+	if strings.Contains(ir, `store %"github.com/goplus/llgo/runtime/internal/runtime.Slice"`) {
+		t.Fatalf("recv should not spill slice result into a second temp:\n%s", ir)
+	}
+	if got := strings.Count(ir, "call void @llvm.memset"); got != 2 {
+		t.Fatalf("recv temp should be zeroed before and after use, got %d memsets:\n%s", got, ir)
 	}
 }
 

@@ -3,6 +3,7 @@ package abi
 import (
 	"go/types"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llgo/runtime/abi"
 )
@@ -21,13 +22,24 @@ func (b *Builder) MapFlags(t *types.Map) (flags int) {
 }
 
 func (b *Builder) realStr(t types.Type) string {
+	t = PublicType(t)
 	if b.TFlag(t)&abi.TFlagExtraStar != 0 {
 		return "*" + b.Str(t)
 	}
 	return b.Str(t)
 }
 
+// PublicType maps LLGo's internal closure representation back to the source
+// function type used by reflection metadata.
+func PublicType(t types.Type) types.Type {
+	if st, ok := types.Unalias(t).(*types.Struct); ok && IsClosure(st) {
+		return st.Field(0).Type()
+	}
+	return t
+}
+
 func (b *Builder) Str(t types.Type) string {
+	t = PublicType(t)
 	switch t := types.Unalias(t).(type) {
 	case *types.Basic:
 		switch t.Kind() {
@@ -62,13 +74,28 @@ func (b *Builder) Str(t types.Type) string {
 		return s + " " + b.realStr(t.Elem())
 	case *types.Named:
 		obj := t.Obj()
-		name := NamedName(t)
+		name := b.namedStr(t)
 		if pkg := obj.Pkg(); pkg != nil {
 			return pkg.Name() + "." + name
 		}
 		return name
+	case *types.Alias:
+		return b.Str(types.Unalias(t))
 	}
 	panic("unsupported str: " + t.String())
+}
+
+func (b *Builder) namedStr(t *types.Named) string {
+	name := t.Obj().Name()
+	if targs := t.TypeArgs(); targs != nil {
+		n := targs.Len()
+		infos := make([]string, n)
+		for i := 0; i < n; i++ {
+			infos[i] = b.realStr(targs.At(i))
+		}
+		name += "[" + strings.Join(infos, ",") + "]"
+	}
+	return name
 }
 
 func (b *Builder) structStr(t *types.Struct) string {

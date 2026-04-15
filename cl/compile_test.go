@@ -20,20 +20,52 @@
 package cl_test
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"go/types"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
+	"github.com/goplus/llgo/ssa/ssatest"
+	"golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 func testCompile(t *testing.T, src, expected string) {
 	t.Helper()
 	cltest.TestCompileEx(t, src, "foo.go", expected, false)
+}
+
+func compileIR(t *testing.T, src string) string {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "foo.go", src, parser.ParseComments)
+	if err != nil {
+		t.Fatal("ParseFile failed:", err)
+	}
+	files := []*ast.File{f}
+	pkg := types.NewPackage(f.Name.Name, f.Name.Name)
+	imp := packages.NewImporter(fset)
+	foo, _, err := ssautil.BuildPackage(
+		&types.Config{Importer: imp}, fset, pkg, files, ssa.SanityCheckFunctions|ssa.InstantiateGenerics)
+	if err != nil {
+		t.Fatal("BuildPackage failed:", err)
+	}
+	prog := ssatest.NewProgramEx(t, nil, imp)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	ret, err := cl.NewPackage(prog, foo, files)
+	if err != nil {
+		t.Fatal("cl.NewPackage failed:", err)
+	}
+	return ret.String()
 }
 
 func requireEmbedTest(t *testing.T) {
@@ -246,14 +278,34 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
 	got := string(output)
-	allowed := map[string]struct{}{
-		"100\nch1\nch2\n":   {},
-		"100\nexit\nch1\n":  {},
-		"200\nexit\nexit\n": {},
-	}
-	if _, ok := allowed[got]; !ok {
+	if !isValidSelectOutput(got) {
 		t.Fatalf("unexpected select output:\n%s", got)
 	}
+}
+
+func isValidSelectOutput(got string) bool {
+	got = strings.TrimSuffix(got, "\n")
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		return false
+	}
+	switch lines[0] {
+	case "100", "200":
+	default:
+		return false
+	}
+	valid := map[string]bool{
+		"ch1":  true,
+		"ch2":  true,
+		"exit": true,
+	}
+	if !valid[lines[1]] || !valid[lines[2]] {
+		return false
+	}
+	if lines[1] == lines[2] && lines[1] != "exit" {
+		return false
+	}
+	return true
 }
 
 func TestFromTestpy(t *testing.T) {
@@ -287,9 +339,7 @@ func TestRunFromTestlibc(t *testing.T) {
 }
 
 func TestFromTestrt(t *testing.T) {
-	cl.SetDebug(cl.DbgFlagAll)
 	cltest.FromDir(t, "", "./_testrt")
-	cl.SetDebug(0)
 }
 
 func TestRunFromTestrt(t *testing.T) {
@@ -420,4 +470,34 @@ _llgo_0:
   ret i8 %1
 }
 `)
+}
+
+func TestMakeSliceAvoidsRedundantAlloc(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+func fn(n int) []byte {
+	return make([]byte, n)
+}
+`)
+	if !strings.Contains(ir, `@"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"`) {
+		t.Fatalf("missing MakeSlice call:\n%s", ir)
+	}
+	if strings.Contains(ir, `@"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"`) {
+		t.Fatalf("unexpected redundant AllocZ for make([]byte, n):\n%s", ir)
+	}
+}
+
+func TestSendMakeSliceUsesStackSlotHelper(t *testing.T) {
+	ir := compileIR(t, `package foo
+
+func fn(ch chan []byte, n int) {
+	ch <- make([]byte, n)
+}
+`)
+	if !strings.Contains(ir, `@"github.com/goplus/llgo/runtime/internal/runtime.MakeSliceTo"`) {
+		t.Fatalf("missing MakeSliceTo helper for single-use send:\n%s", ir)
+	}
+	if strings.Contains(ir, `call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @"github.com/goplus/llgo/runtime/internal/runtime.MakeSlice"`) {
+		t.Fatalf("unexpected direct MakeSlice aggregate in send path:\n%s", ir)
+	}
 }

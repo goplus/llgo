@@ -118,9 +118,12 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	pkg := b.Pkg
 	size := SizeOf(prog, elem)
 	if heap {
+		if prog.SizeOf(elem) == 0 {
+			return pkg.moduleZeroSizedAlloc(elem)
+		}
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
-		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
+		ret = Expr{b.fixedAlloca(elem.ll), prog.VoidPtr()}
 		ret.impl = b.zeroinit(ret, size).impl
 	}
 	ret.Type = prog.Pointer(elem)
@@ -160,9 +163,24 @@ func (b Builder) AllocaT(t Type) (ret Expr) {
 		log.Printf("AllocaT %v\n", t.RawType())
 	}
 	prog := b.Prog
-	ret.impl = llvm.CreateAlloca(b.impl, t.ll)
+	ret.impl = b.fixedAlloca(t.ll)
 	ret.Type = prog.Pointer(t)
 	return
+}
+
+func (b Builder) fixedAlloca(t llvm.Type) llvm.Value {
+	if b.blk == nil || b.Func == nil || len(b.Func.blks) == 0 {
+		return llvm.CreateAlloca(b.impl, t)
+	}
+	ib := b.Prog.ctx.NewBuilder()
+	defer ib.Dispose()
+	first := b.Func.blks[0].first.FirstInstruction()
+	if first.IsNil() {
+		ib.SetInsertPointAtEnd(b.Func.blks[0].first)
+	} else {
+		ib.SetInsertPointBefore(first)
+	}
+	return llvm.CreateAlloca(ib, t)
 }
 
 /* TODO(xsw):
@@ -345,6 +363,33 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 	return Expr{ret, prog.Struct(t, prog.Bool())}
 }
 
+func (b Builder) AssertNilDeref(ptr Expr) {
+	if b.Pkg.Prog.runtime() == nil {
+		return
+	}
+	if ptr.impl.IsNil() {
+		return
+	}
+	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
+		return
+	}
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+}
+
+func (b Builder) AssertMethodWrapperNil(ptr Expr, typName, methodName string) {
+	if b.Pkg.Prog.runtime() == nil {
+		return
+	}
+	if ptr.impl.IsConstant() && !ptr.impl.IsNull() {
+		return
+	}
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertMethodWrapperNil"), isNil, b.Pkg.ConstString(typName), b.Pkg.ConstString(methodName))
+}
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	if debugInstr {
@@ -365,6 +410,24 @@ func (b Builder) Store(ptr, val Expr) Expr {
 	}
 	val = checkExpr(val, raw.(*types.Pointer).Elem(), b)
 	return Expr{b.impl.CreateStore(val.impl, ptr.impl), b.Prog.Void()}
+}
+
+// Memmove copies size bytes from src to dst, preserving memmove overlap semantics.
+func (b Builder) Memmove(dst, src Expr, size uint64) Expr {
+	prog := b.Prog
+	paramPtr := types.NewParam(token.NoPos, nil, "", types.Typ[types.UnsafePointer])
+	paramSize := types.NewParam(token.NoPos, nil, "", types.Typ[types.Uint64])
+	paramVolatile := types.NewParam(token.NoPos, nil, "", types.Typ[types.Bool])
+	params := types.NewTuple(paramPtr, paramPtr, paramSize, paramVolatile)
+	sig := types.NewSignatureType(nil, nil, nil, params, nil, false)
+	fn := b.Pkg.cFunc("llvm.memmove.p0.p0.i64", sig)
+	return b.Call(
+		fn,
+		b.PtrCast(prog.VoidPtr(), dst),
+		b.PtrCast(prog.VoidPtr(), src),
+		prog.IntVal(size, prog.Uint64()),
+		prog.BoolVal(false),
+	)
 }
 
 // Advance returns the pointer ptr advanced by offset.

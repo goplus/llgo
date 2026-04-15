@@ -39,6 +39,18 @@ const (
 	OrderingSeqConsistent  = llvm.AtomicOrderingSequentiallyConsistent
 )
 
+var (
+	// int32 __eqsf2(float32, float32) and friends in compiler-rt.
+	softFloat32CmpSig = types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.Float32]),
+			types.NewVar(token.NoPos, nil, "", types.Typ[types.Float32]),
+		),
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Int32])),
+		false,
+	)
+)
+
 // -----------------------------------------------------------------------------
 
 type Expr struct {
@@ -492,46 +504,61 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				)
 				return b.aggregateValue(x.Type, r, i)
 			case token.QUO:
-				d := llvm.CreateBinOp(b.impl, llvm.FAdd, llvm.CreateBinOp(b.impl, llvm.FMul, yr, yr), llvm.CreateBinOp(b.impl, llvm.FMul, yi, yi))
-				zero := llvm.CreateFCmp(b.impl, llvm.FloatOEQ, d, llvm.ConstNull(d.Type()))
-				r := llvm.CreateSelect(b.impl, zero,
-					llvm.CreateBinOp(b.impl, llvm.FDiv, xr, d),
-					llvm.CreateBinOp(b.impl, llvm.FDiv,
-						llvm.CreateBinOp(b.impl, llvm.FAdd,
-							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yr),
-							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yi),
-						),
-						d,
-					),
-				)
-				i := llvm.CreateSelect(b.impl, zero,
-					llvm.CreateBinOp(b.impl, llvm.FDiv, xi, d),
-					llvm.CreateBinOp(b.impl, llvm.FDiv,
-						llvm.CreateBinOp(b.impl, llvm.FSub,
-							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yr),
-							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yi),
-						),
-						d,
-					),
-				)
-				return b.aggregateValue(x.Type, r, i)
+				x128 := b.Convert(b.Prog.Complex128(), x)
+				y128 := b.Convert(b.Prog.Complex128(), y)
+				ret := b.InlineCall(b.Pkg.rtFunc("Complex128Div"), x128, y128)
+				return b.Convert(x.Type, ret)
 			}
 		default:
 			idx := mathOpIdx(op, kind)
 			if llop := mathOpToLLVM[idx]; llop != 0 {
 				// Go requires integer division/modulo by zero to panic.
 				// LLVM's integer div/rem are undefined on zero divisor, so
-				// we insert an explicit runtime check here.
+				// we insert an explicit runtime check here and lower through a
+				// safe non-zero divisor so targets like x86 don't trap first.
+				var zero llvm.Value
+				var isZero llvm.Value
+				var safeY llvm.Value
 				if (op == token.QUO || op == token.REM) && (kind == vkSigned || kind == vkUnsigned) {
 					needsCheck := true
 					if rv := y.impl.IsAConstantInt(); !rv.IsNil() {
 						needsCheck = rv.ZExtValue() == 0
 					}
 					if needsCheck {
-						zero := llvm.ConstInt(y.ll, 0, false)
-						check := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero), b.Prog.Bool()}
+						zero = llvm.ConstInt(y.ll, 0, false)
+						isZero = llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero)
+						check := Expr{isZero, b.Prog.Bool()}
 						b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), check)
+						safeY = llvm.CreateSelect(b.impl, isZero, llvm.ConstInt(y.ll, 1, false), y.impl)
 					}
+				}
+				// On x86/x86_64, signed div/rem of minInt by -1 traps even
+				// though Go defines it to produce quotient=minInt and
+				// remainder=0. Lower through safe operands and select the
+				// Go-defined result for that overflow case.
+				if (op == token.QUO || op == token.REM) && kind == vkSigned {
+					bits := b.Prog.SizeOf(x.Type) * 8
+					minInt := llvm.ConstInt(x.ll, uint64(1)<<(bits-1), false)
+					negOne := llvm.ConstAllOnes(y.ll)
+					isMinInt := llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, minInt)
+					isNegOne := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, negOne)
+					overflow := llvm.CreateAnd(b.impl, isMinInt, isNegOne)
+
+					safeX := llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), x.impl)
+					if safeY.IsNil() {
+						safeY = y.impl
+					}
+					safeY = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(y.ll, 1, false), safeY)
+					v := llvm.CreateBinOp(b.impl, llop, safeX, safeY)
+					if op == token.QUO {
+						v = llvm.CreateSelect(b.impl, overflow, x.impl, v)
+					} else {
+						v = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), v)
+					}
+					return Expr{v, x.Type}
+				}
+				if !safeY.IsNil() {
+					return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, safeY), x.Type}
 				}
 				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 			}
@@ -581,6 +608,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			return Expr{llvm.CreateICmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkFloat:
 			pred := floatPredOpToLLVM[op-predOpBase]
+			if prog.Target() != nil && prog.Target().Target == "esp32" && x.ll == prog.Float32().ll {
+				return b.esp32Float32Pred(op, x, y, tret)
+			}
 			return Expr{llvm.CreateFCmp(b.impl, pred, x.impl, y.impl), tret}
 		case vkBool:
 			pred := boolPredOpToLLVM[op-predOpBase]
@@ -659,6 +689,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			typ := x.raw.Type.Underlying().(*types.Struct)
 			ret := prog.BoolVal(true)
 			for i, n := 0, typ.NumFields(); i < n; i++ {
+				if typ.Field(i).Name() == "_" {
+					continue
+				}
 				ft := prog.Type(typ.Field(i).Type(), InGo)
 				fx := b.impl.CreateExtractValue(x.impl, i, "")
 				fy := b.impl.CreateExtractValue(y.impl, i, "")
@@ -712,6 +745,7 @@ func (b Builder) UnOp(op token.Token, x Expr) (ret Expr) {
 	}
 	switch op {
 	case token.MUL:
+		b.AssertNilDeref(x)
 		return b.Load(x)
 	case token.SUB:
 		switch t := x.raw.Type.Underlying().(type) {
@@ -779,7 +813,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		case vkClosure:
 			// TODO(xsw): change type should be a noop instruction
 			convType := func() Expr {
-				r := Expr{llvm.CreateAlloca(b.impl, t.ll), b.Prog.Pointer(t)}
+				r := Expr{b.fixedAlloca(t.ll), b.Prog.Pointer(t)}
 				b.Store(r, x)
 				return b.Load(r)
 			}
@@ -809,7 +843,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		if x.impl.Type().String() == t.ll.String() {
 			ret.impl = x.impl
 		} else {
-			ptr := llvm.CreateAlloca(b.impl, t.ll)
+			ptr := b.fixedAlloca(t.ll)
 			b.impl.CreateStore(x.impl, ptr)
 			ret.impl = llvm.CreateLoad(b.impl, t.ll, ptr)
 		}
@@ -864,7 +898,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 			case *types.Slice:
 				if etyp, ok := xtyp.Elem().Underlying().(*types.Basic); ok {
 					switch etyp.Kind() {
-					case types.Byte:
+					case types.Byte, types.Int8:
 						ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromBytes"), x).impl
 						return
 					case types.Rune:
@@ -873,10 +907,23 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 				}
 			case *types.Basic:
-				if x.Type != b.Prog.Int32() {
+				if xtyp.Info()&types.IsInteger != 0 {
 					srcType := x.Type
-					x.Type = b.Prog.Int32()
-					x.impl = castInt(b, x.impl, srcType, b.Prog.Int32())
+					var arg Expr
+					var fn string
+					if xtyp.Info()&types.IsUnsigned != 0 {
+						arg.Type = b.Prog.Uint64()
+						fn = "StringFromUint64"
+					} else {
+						arg.Type = b.Prog.Int64()
+						fn = "StringFromInt64"
+					}
+					arg.impl = x.impl
+					if arg.impl.Type().String() != arg.Type.ll.String() {
+						arg.impl = castInt(b, x.impl, srcType, arg.Type)
+					}
+					ret.impl = b.InlineCall(b.Func.Pkg.rtFunc(fn), arg).impl
+					return
 				}
 				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
 				return
@@ -950,7 +997,7 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 	if types.Identical(dst.Underlying(), x.RawType().Underlying()) {
 		return b.ChangeType(t, x)
 	}
-	panic("todo")
+	panic(fmt.Sprintf("Convert todo: %v <- %v", dst, x.RawType()))
 }
 
 func castUintptr(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
@@ -979,30 +1026,61 @@ func castInt(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 
 func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	dstSize := b.Prog.td.TypeAllocSize(typ.ll)
-	if dstSize < 8 {
-		i64 := b.Prog.Int64()
-		if typ.kind == vkUnsigned {
-			// note(zzy): for unsigned targets, split negative vs non-negative.
-			// Negative values need signed expansion (FPToSI) before truncation;
-			// non-negative values can use unsigned expansion (FPToUI). This avoids
-			// direct float->narrow-unsigned conversions and preserves wrap/trunc behavior.
-			zero := llvm.ConstNull(x.Type())
-			isNeg := b.impl.CreateFCmp(llvm.FloatOLT, x, zero, "")
-			neg := llvm.CreateFPToSI(b.impl, x, i64.ll)
-			pos := llvm.CreateFPToUI(b.impl, x, i64.ll)
-			tmp := b.impl.CreateSelect(isNeg, neg, pos, "")
-			return llvm.CreateTrunc(b.impl, tmp, typ.ll)
-		}
-		tmp := llvm.CreateFPToSI(b.impl, x, i64.ll)
+	if dstSize < 4 {
+		// Go lowers float -> {u,}int8/{u,}int16 through a signed int32
+		// conversion and then truncates. Keep that behavior for the overflow
+		// cases covered by GOROOT convert5.go.
+		i32 := b.Prog.Int32()
+		tmp := castFloatToSignedWidth(b, x, i32, 32)
 		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
 	}
-	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
-	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction
-	// and https://llvm.org/docs/LangRef.html#fptosi-to-instruction
 	if typ.kind == vkUnsigned {
-		return llvm.CreateFPToUI(b.impl, x, typ.ll)
+		return castFloatToUnsignedWidth(b, x, typ, dstSize*8)
 	}
-	return llvm.CreateFPToSI(b.impl, x, typ.ll)
+	return castFloatToSignedWidth(b, x, typ, dstSize*8)
+}
+
+func castFloatToSignedWidth(b Builder, x llvm.Value, typ Type, bits uint64) llvm.Value {
+	tooLow := llvm.CreateFCmp(b.impl, llvm.FloatOLE, x, llvm.ConstFloat(x.Type(), -float64(uint64(1)<<(bits-1))))
+	tooHigh := llvm.CreateFCmp(b.impl, llvm.FloatOGE, x, llvm.ConstFloat(x.Type(), float64(signedMaxInt(bits))))
+	isNaN := llvm.CreateFCmp(b.impl, llvm.FloatUNO, x, x)
+	invalid := b.impl.CreateOr(isNaN, b.impl.CreateOr(tooLow, tooHigh, ""), "")
+	zeroFloat := llvm.ConstNull(x.Type())
+	safeX := llvm.CreateSelect(b.impl, invalid, zeroFloat, x)
+
+	ret := llvm.CreateFPToSI(b.impl, safeX, typ.ll)
+	ret = llvm.CreateSelect(b.impl, tooLow, signedMinValue(typ.ll, bits), ret)
+	ret = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, signedMaxInt(bits), false), ret)
+	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
+}
+
+func castFloatToUnsignedWidth(b Builder, x llvm.Value, typ Type, bits uint64) llvm.Value {
+	zeroFloat := llvm.ConstNull(x.Type())
+	tooLow := llvm.CreateFCmp(b.impl, llvm.FloatOLT, x, zeroFloat)
+	tooHigh := llvm.CreateFCmp(b.impl, llvm.FloatOGE, x, llvm.ConstFloat(x.Type(), float64(unsignedMaxInt(bits))))
+	isNaN := llvm.CreateFCmp(b.impl, llvm.FloatUNO, x, x)
+	invalid := b.impl.CreateOr(isNaN, b.impl.CreateOr(tooLow, tooHigh, ""), "")
+	safeX := llvm.CreateSelect(b.impl, invalid, zeroFloat, x)
+
+	ret := llvm.CreateFPToUI(b.impl, safeX, typ.ll)
+	ret = llvm.CreateSelect(b.impl, tooLow, llvm.ConstInt(typ.ll, 0, false), ret)
+	ret = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, unsignedMaxInt(bits), false), ret)
+	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
+}
+
+func signedMinValue(typ llvm.Type, bits uint64) llvm.Value {
+	return llvm.ConstInt(typ, uint64(1)<<(bits-1), false)
+}
+
+func signedMaxInt(bits uint64) uint64 {
+	return (uint64(1) << (bits - 1)) - 1
+}
+
+func unsignedMaxInt(bits uint64) uint64 {
+	if bits == 64 {
+		return ^uint64(0)
+	}
+	return (uint64(1) << bits) - 1
 }
 
 func castFloat(b Builder, x llvm.Value, typ Type) llvm.Value {
@@ -1189,6 +1267,36 @@ func (b Builder) compareSelect(op token.Token, x Expr, y ...Expr) Expr {
 	return ret
 }
 
+func (b Builder) esp32Float32Pred(op token.Token, x, y Expr, tret Type) Expr {
+	var name string
+	var pred llvm.IntPredicate
+	switch op {
+	case token.EQL:
+		name = "__eqsf2"
+		pred = llvm.IntEQ
+	case token.NEQ:
+		name = "__nesf2"
+		pred = llvm.IntNE
+	case token.LSS:
+		name = "__ltsf2"
+		pred = llvm.IntSLT
+	case token.LEQ:
+		name = "__lesf2"
+		pred = llvm.IntSLE
+	case token.GTR:
+		name = "__gtsf2"
+		pred = llvm.IntSGT
+	case token.GEQ:
+		name = "__gesf2"
+		pred = llvm.IntSGE
+	default:
+		panic("unreachable")
+	}
+	ret := b.Call(b.Pkg.cFunc(name, softFloat32CmpSig), x, y)
+	zero := Expr{llvm.ConstInt(b.Prog.Int32().ll, 0, false), b.Prog.Int32()}
+	return Expr{llvm.CreateICmp(b.impl, pred, ret.impl, zero.impl), tret}
+}
+
 // SelectValue chooses between two values based on the condition.
 func (b Builder) SelectValue(cond Expr, a Expr, bExpr Expr) Expr {
 	sel := llvm.CreateSelect(b.impl, cond.impl, a.impl, bExpr.impl)
@@ -1215,11 +1323,7 @@ func (b Builder) SelectValue(cond Expr, a Expr, bExpr Expr) Expr {
 func (b Builder) SliceToArrayPointer(x Expr, typ Type) (ret Expr) {
 	ret.Type = typ
 	max := b.Prog.IntVal(uint64(typ.RawType().Underlying().(*types.Pointer).Elem().Underlying().(*types.Array).Len()), b.Prog.Int())
-	failed := Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, b.SliceLen(x).impl, max.impl), b.Prog.Bool()}
-	b.IfThen(failed, func() {
-		b.InlineCall(b.Pkg.rtFunc("PanicSliceConvert"), b.SliceLen(x), max)
-	})
-	ret.impl = b.SliceData(x).impl
+	ret = b.PtrCast(typ, b.InlineCall(b.Pkg.rtFunc("SliceToArrayPtr"), x, max))
 	return
 }
 
@@ -1307,6 +1411,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	case "recover":
 		return b.Recover()
+	case "ssa:deferstack":
+		return b.DeferStack()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
 	case "complex":
@@ -1316,10 +1422,13 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 	case "imag":
 		return b.getField(args[0], 1)
 	case "String": // unsafe.String
-		return b.unsafeString(args[0].impl, args[1].impl)
+		size := b.fitIntSize(args[1])
+		return b.ChangeType(b.Prog.String(), b.InlineCall(b.Pkg.rtFunc("UnsafeString"), args[0], size))
 	case "Slice": // unsafe.Slice
 		size := b.fitIntSize(args[1])
-		return b.unsafeSlice(args[0], size.impl, size.impl)
+		eltSize := b.Prog.IntVal(b.Prog.SizeOf(b.Prog.Elem(args[0].Type)), b.Prog.Int())
+		tslice := b.Prog.Slice(b.Prog.Elem(args[0].Type))
+		return b.ChangeType(tslice, b.InlineCall(b.Pkg.rtFunc("UnsafeSlice"), args[0], size, eltSize))
 	case "StringData":
 		return b.StringData(args[0]) // TODO(xsw): check return type
 	case "SliceData":
@@ -1486,7 +1595,17 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 		}
 		return b.aggregateValue(tclosure, v.impl, data.impl)
 	}
-	return v
+	if types.Identical(v.raw.Type, t) || !types.AssignableTo(v.raw.Type, t) {
+		return v
+	}
+	dst := b.Prog.Type(t, InGo)
+	if _, ok := t.Underlying().(*types.Interface); ok {
+		if _, srcIsInterface := v.raw.Type.Underlying().(*types.Interface); srcIsInterface {
+			return b.ChangeInterface(dst, v)
+		}
+		return b.MakeInterface(dst, v)
+	}
+	return b.ChangeType(dst, v)
 }
 
 func needsNegativeCheck(x Expr) bool {

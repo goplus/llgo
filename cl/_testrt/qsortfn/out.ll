@@ -55,35 +55,49 @@ define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @0)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @1, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @1, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -92,46 +106,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1a$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @2)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @3, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @3, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -140,46 +172,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort1b$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @4)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @5, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @5, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -188,46 +238,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2a$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @6)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @7, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @7, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -236,46 +304,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort2b$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @8)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @9, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @9, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -284,46 +370,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3a$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @10)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @11, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @11, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -332,46 +436,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort3b$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @12)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @13, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @13, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -380,46 +502,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4a$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @14)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @15, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @15, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -428,46 +568,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort4b$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @16)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @17, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @17, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -476,46 +634,64 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5a$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b"() {
 _llgo_0:
   %0 = call i32 (ptr, ...) @printf(ptr @18)
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 40)
-  %2 = getelementptr inbounds i64, ptr %1, i64 0
-  %3 = getelementptr inbounds i64, ptr %1, i64 1
-  %4 = getelementptr inbounds i64, ptr %1, i64 2
-  %5 = getelementptr inbounds i64, ptr %1, i64 3
-  %6 = getelementptr inbounds i64, ptr %1, i64 4
-  store i64 100, ptr %2, align 4
-  store i64 8, ptr %3, align 4
-  store i64 23, ptr %4, align 4
-  store i64 2, ptr %5, align 4
-  store i64 7, ptr %6, align 4
-  %7 = getelementptr inbounds i64, ptr %1, i64 0
-  call void @qsort(ptr %7, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b$1")
-  %8 = load [5 x i64], ptr %1, align 4
+  %2 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = getelementptr inbounds i64, ptr %1, i64 0
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = getelementptr inbounds i64, ptr %1, i64 1
+  %6 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = getelementptr inbounds i64, ptr %1, i64 2
+  %8 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %8)
+  %9 = getelementptr inbounds i64, ptr %1, i64 3
+  %10 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %10)
+  %11 = getelementptr inbounds i64, ptr %1, i64 4
+  store i64 100, ptr %3, align 4
+  store i64 8, ptr %5, align 4
+  store i64 23, ptr %7, align 4
+  store i64 2, ptr %9, align 4
+  store i64 7, ptr %11, align 4
+  %12 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %12)
+  %13 = getelementptr inbounds i64, ptr %1, i64 0
+  call void @qsort(ptr %13, i64 5, i64 8, ptr @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b$1")
+  %14 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %14)
+  %15 = load [5 x i64], ptr %1, align 4
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
-  %9 = phi i64 [ -1, %_llgo_0 ], [ %10, %_llgo_2 ]
-  %10 = add i64 %9, 1
-  %11 = icmp slt i64 %10, 5
-  br i1 %11, label %_llgo_2, label %_llgo_3
+  %16 = phi i64 [ -1, %_llgo_0 ], [ %17, %_llgo_2 ]
+  %17 = add i64 %16, 1
+  %18 = icmp slt i64 %17, 5
+  br i1 %18, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %12 = icmp slt i64 %10, 0
-  %13 = icmp sge i64 %10, 5
-  %14 = or i1 %13, %12
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
-  %15 = getelementptr inbounds i64, ptr %1, i64 %10
-  %16 = load i64, ptr %15, align 4
-  %17 = call i32 (ptr, ...) @printf(ptr @19, i64 %16)
+  %19 = icmp slt i64 %17, 0
+  %20 = icmp sge i64 %17, 5
+  %21 = or i1 %20, %19
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21, i64 %17, i64 5)
+  %22 = getelementptr inbounds i64, ptr %1, i64 %17
+  %23 = load i64, ptr %22, align 4
+  %24 = call i32 (ptr, ...) @printf(ptr @19, i64 %23)
   br label %_llgo_1
 
 _llgo_3:                                          ; preds = %_llgo_1
@@ -524,17 +700,23 @@ _llgo_3:                                          ; preds = %_llgo_1
 
 define i32 @"github.com/goplus/llgo/cl/_testrt/qsortfn.sort5b$1"(ptr %0, ptr %1) {
 _llgo_0:
-  %2 = load i64, ptr %0, align 4
-  %3 = load i64, ptr %1, align 4
-  %4 = sub i64 %2, %3
-  %5 = trunc i64 %4 to i32
-  ret i32 %5
+  %2 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %2)
+  %3 = load i64, ptr %0, align 4
+  %4 = icmp eq ptr %1, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %4)
+  %5 = load i64, ptr %1, align 4
+  %6 = sub i64 %3, %5
+  %7 = trunc i64 %6 to i32
+  ret i32 %7
 }
 
 declare i32 @printf(ptr, ...)
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64)
 
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
 declare void @qsort(ptr, i64, i64, ptr)
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)

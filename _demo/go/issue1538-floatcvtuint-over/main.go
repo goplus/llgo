@@ -2,10 +2,10 @@ package main
 
 func main() {
 	cvt32Fto8U(-1, 255)
-	cvt32Fto32U(4294967295.1, 0)
-	cvt32Fto32U(5294967295.1, 1000000000)
-	cvt32Fto32U(-1294967295.1, 3000000000)
-	cvt32Fto32U(-1.1, 4294967295)
+	cvt32Fto32U(4294967295.1, 4294967295)
+	cvt32Fto32U(5294967295.1, 4294967295)
+	cvt32Fto32U(-1294967295.1, 0)
+	cvt32Fto32U(-1.1, 0)
 }
 
 func cvt32Fto8U(a float32, b uint8) {

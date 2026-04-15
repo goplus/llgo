@@ -12,6 +12,13 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.init$guard", align 1
   call void @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   store i8 72, ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello", align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello", i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello", i64 2), align 1
@@ -28,11 +35,14 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testdata/importpkg.main"() {
 _llgo_0:
   %0 = call i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64 2, i64 100)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testdata/importpkg.hello")
   ret void
 }
 
 declare void @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.init"()
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare i64 @"github.com/goplus/llgo/cl/_testdata/importpkg/stdio.Max"(i64, i64)
 

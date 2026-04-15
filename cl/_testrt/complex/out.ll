@@ -30,11 +30,26 @@ _llgo_0:
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double -5.000000e+00, double 1.000000e+01 })
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double 4.400000e-01, double 8.000000e-02 })
+  %0 = call { double, double } @"github.com/goplus/llgo/runtime/internal/runtime.Complex128Div"({ double, double } { double 1.000000e+00, double 2.000000e+00 }, { double, double } { double 3.000000e+00, double 4.000000e+00 })
+  %1 = extractvalue { double, double } %0, 0
+  %2 = extractvalue { double, double } %0, 1
+  %3 = insertvalue { double, double } undef, double %1, 0
+  %4 = insertvalue { double, double } %3, double %2, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } %4)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double 0x7FF0000000000000, double 0x7FF0000000000000 })
+  %5 = call { double, double } @"github.com/goplus/llgo/runtime/internal/runtime.Complex128Div"({ double, double } { double 1.000000e+00, double 2.000000e+00 }, { double, double } zeroinitializer)
+  %6 = extractvalue { double, double } %5, 0
+  %7 = extractvalue { double, double } %5, 1
+  %8 = insertvalue { double, double } undef, double %6, 0
+  %9 = insertvalue { double, double } %8, double %7, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } %9)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } { double 0x7FF8000000000000, double 0x7FF8000000000000 })
+  %10 = call { double, double } @"github.com/goplus/llgo/runtime/internal/runtime.Complex128Div"({ double, double } zeroinitializer, { double, double } zeroinitializer)
+  %11 = extractvalue { double, double } %10, 0
+  %12 = extractvalue { double, double } %10, 1
+  %13 = insertvalue { double, double } undef, double %11, 0
+  %14 = insertvalue { double, double } %13, double %12, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double } %14)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 10)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1 true)
   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
@@ -54,5 +69,7 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintFloat"(doubl
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintComplex"({ double, double })
+
+declare { double, double } @"github.com/goplus/llgo/runtime/internal/runtime.Complex128Div"({ double, double }, { double, double })
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.PrintBool"(i1)

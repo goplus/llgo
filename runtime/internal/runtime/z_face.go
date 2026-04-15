@@ -180,7 +180,7 @@ func IfaceType(i iface) *abi.Type {
 
 func IfacePtrData(i iface) unsafe.Pointer {
 	if i.tab == nil {
-		panic(errorString("invalid memory address or nil pointer dereference").Error())
+		panic(errorString("invalid memory address or nil pointer dereference"))
 	}
 	if DirectIfaceData(i.tab._type) {
 		// For direct-iface values, i.data holds the value bits (not a stable
@@ -280,6 +280,63 @@ func Implements(T, V *abi.Type) bool {
 	return false
 }
 
+func missingMethod(T, V *abi.Type) string {
+	if T == nil || T.Kind() != abi.Interface {
+		return ""
+	}
+	t := (*abi.InterfaceType)(unsafe.Pointer(T))
+	if len(t.Methods) == 0 {
+		return ""
+	}
+	if V == nil {
+		return t.Methods[0].Name()
+	}
+	if V.Kind() == abi.Interface {
+		v := (*abi.InterfaceType)(unsafe.Pointer(V))
+		for i := 0; i < len(t.Methods); i++ {
+			tm := &t.Methods[i]
+			found := false
+			for j := 0; j < len(v.Methods); j++ {
+				vm := &v.Methods[j]
+				if vm.Name_ == tm.Name_ {
+					found = true
+					if vm.Typ_ != tm.Typ_ {
+						return tm.Name()
+					}
+					break
+				}
+			}
+			if !found {
+				return tm.Name()
+			}
+		}
+		return ""
+	}
+	v := V.Uncommon()
+	if v == nil {
+		return t.Methods[0].Name()
+	}
+	vmethods := v.Methods()
+	for i := 0; i < len(t.Methods); i++ {
+		tm := &t.Methods[i]
+		found := false
+		for j := 0; j < len(vmethods); j++ {
+			vm := &vmethods[j]
+			if vm.Name_ == tm.Name_ {
+				found = true
+				if vm.Mtyp_ != tm.Typ_ {
+					return tm.Name()
+				}
+				break
+			}
+		}
+		if !found {
+			return tm.Name()
+		}
+	}
+	return ""
+}
+
 func EfaceEqual(v, u eface) bool {
 	if v._type == nil || u._type == nil {
 		return v._type == u._type
@@ -287,13 +344,14 @@ func EfaceEqual(v, u eface) bool {
 	if v._type != u._type {
 		return false
 	}
+	equal := v._type.Equal
+	if equal == nil {
+		panic(errorString("comparing uncomparable type " + v._type.String()))
+	}
 	if isDirectIface(v._type) {
 		return v.data == u.data
 	}
-	if equal := v._type.Equal; equal != nil {
-		return equal(v.data, u.data)
-	}
-	panic(errorString("comparing uncomparable type " + v._type.String()).Error())
+	return equal(v.data, u.data)
 }
 
 func (v eface) Kind() abi.Kind {
@@ -339,6 +397,15 @@ func assertE2I(inter *interfacetype, t *_type) *itab {
 
 func IfaceE2I(inter *interfacetype, e eface, dst *iface) {
 	*dst = iface{assertE2I(inter, e._type), e.data}
+}
+
+func PanicTypeAssert(inter, concrete, asserted *abi.Type) {
+	panic(&TypeAssertionError{
+		_interface:    inter,
+		concrete:      concrete,
+		asserted:      asserted,
+		missingMethod: missingMethod(asserted, concrete),
+	})
 }
 
 func getitab(inter *interfacetype, typ *_type, canfail bool) *itab {

@@ -58,6 +58,12 @@ func TestNamedTypeEquivalent(t *testing.T) {
 	b := types.NewNamed(obj2, types.NewStruct([]*types.Var{
 		types.NewField(token.NoPos, nil, "A", types.Typ[types.Int], false),
 	}, nil), nil)
+	if namedTypeEquivalent(types.Typ[types.Int], a) {
+		t.Fatalf("namedTypeEquivalent should be false for non-named inputs")
+	}
+	if !namedTypeEquivalent(a, a) {
+		t.Fatalf("namedTypeEquivalent should be true for identical named types")
+	}
 	if !namedTypeEquivalent(a, b) {
 		t.Fatalf("namedTypeEquivalent should be true for equivalent named structs")
 	}
@@ -67,6 +73,31 @@ func TestNamedTypeEquivalent(t *testing.T) {
 	}, nil), nil)
 	if namedTypeEquivalent(a, c) {
 		t.Fatalf("namedTypeEquivalent should be false for different underlying types")
+	}
+
+	d := types.NewNamed(types.NewTypeName(token.NoPos, pkg2, "U", nil), types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, nil, "A", types.Typ[types.Int], false),
+	}, nil), nil)
+	if namedTypeEquivalent(a, d) {
+		t.Fatalf("namedTypeEquivalent should be false for different names")
+	}
+}
+
+func TestNamedTypeEquivalentRecursiveSignature(t *testing.T) {
+	pkg1 := types.NewPackage("example.com/p", "p")
+	pkg2 := types.NewPackage("example.com/p", "p")
+	a := types.NewNamed(types.NewTypeName(token.NoPos, pkg1, "F", nil), nil, nil)
+	b := types.NewNamed(types.NewTypeName(token.NoPos, pkg2, "F", nil), nil, nil)
+	a.SetUnderlying(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", a)),
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", a)),
+		false))
+	b.SetUnderlying(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", b)),
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", b)),
+		false))
+	if namedTypeEquivalent(a, b) {
+		t.Fatalf("namedTypeEquivalent should be false for recursive function signatures")
 	}
 }
 
@@ -88,6 +119,20 @@ func TestNamedStructLayoutEquivalent(t *testing.T) {
 	same := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "T", nil), types.NewStruct([]*types.Var{
 		types.NewField(token.NoPos, nil, "A", types.Typ[types.Int], false),
 	}, nil), nil)
+	if prog.namedStructLayoutEquivalent(nil, same) {
+		t.Fatalf("namedStructLayoutEquivalent should be false for nil existing type")
+	}
+	if prog.namedStructLayoutEquivalent(&aType{raw: rawType{Type: types.Typ[types.Int]}}, same) {
+		t.Fatalf("namedStructLayoutEquivalent should be false for non-named existing type")
+	}
+	otherName := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "U", nil), s1, nil)
+	if prog.namedStructLayoutEquivalent(existing, otherName) {
+		t.Fatalf("namedStructLayoutEquivalent should be false for different names")
+	}
+	namedBasic := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "T", nil), types.Typ[types.Int], nil)
+	if prog.namedStructLayoutEquivalent(existing, namedBasic) {
+		t.Fatalf("namedStructLayoutEquivalent should be false for non-struct raw type")
+	}
 	if !prog.namedStructLayoutEquivalent(existing, same) {
 		t.Fatalf("namedStructLayoutEquivalent should be true for same layout")
 	}

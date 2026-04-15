@@ -327,7 +327,7 @@ func (b *Builder) tuple(h hash.Hash, t *types.Tuple) {
 	n := t.Len()
 	for i := 0; i < n; i++ {
 		v := t.At(i)
-		ft, _ := b.TypeName(v.Type())
+		ft, _ := b.TypeName(PublicType(v.Type()))
 		fmt.Fprintln(h, ft)
 	}
 }
@@ -412,8 +412,14 @@ func (b *Builder) structHash(t *types.Struct) (ret []byte, pkg string) {
 	return
 }
 
-func scopeIndex(scope, root *types.Scope, id string) string {
+func scopeIndex(scope, root *types.Scope, id string) (string, bool) {
+	if scope == nil || root == nil {
+		return "", false
+	}
 	parent := scope.Parent()
+	if parent == nil {
+		return "", false
+	}
 	n := parent.NumChildren()
 	for i := 0; i < n; i++ {
 		if parent.Child(i) == scope {
@@ -422,7 +428,7 @@ func scopeIndex(scope, root *types.Scope, id string) string {
 		}
 	}
 	if parent == root {
-		return id
+		return id, true
 	}
 	return scopeIndex(parent, root, id)
 }
@@ -433,7 +439,12 @@ func scopeIndices(obj types.Object) string {
 		return ""
 	}
 	if obj.Parent() != pkg.Scope() {
-		return scopeIndex(obj.Parent(), pkg.Scope(), "")
+		if ids, ok := scopeIndex(obj.Parent(), pkg.Scope(), ""); ok {
+			return ids
+		}
+		if pos := obj.Pos(); pos.IsValid() {
+			return ".p" + strconv.Itoa(int(pos))
+		}
 	}
 	return ""
 }

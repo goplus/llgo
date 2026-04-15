@@ -9,14 +9,17 @@ source_filename = "github.com/goplus/llgo/cl/_testdata/utf8"
 
 define i8 @"github.com/goplus/llgo/cl/_testdata/utf8.index"(i8 %0) {
 _llgo_0:
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   %1 = sext i8 %0 to i64
   %2 = icmp slt i64 %1, 0
   %3 = icmp sge i64 %1, 8
   %4 = or i1 %3, %2
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %4, i64 %1, i64 8)
   %5 = getelementptr inbounds i8, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.array", i64 %1
-  %6 = load i8, ptr %5, align 1
-  ret i8 %6
+  %6 = icmp eq ptr %5, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %6)
+  %7 = load i8, ptr %5, align 1
+  ret i8 %7
 }
 
 define void @"github.com/goplus/llgo/cl/_testdata/utf8.init"() {
@@ -27,6 +30,14 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.init$guard", align 1
   call void @"unicode/utf8.init"()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   store i8 1, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.array", align 1
   store i8 2, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.array", i64 1), align 1
   store i8 3, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testdata/utf8.array", i64 2), align 1
@@ -69,7 +80,9 @@ _llgo_3:                                          ; preds = %_llgo_1
   ret void
 }
 
-declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1)
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1, i64, i64)
 
 declare void @"unicode/utf8.init"()
 

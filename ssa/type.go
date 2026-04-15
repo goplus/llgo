@@ -345,6 +345,9 @@ func (p Program) toTuple(typ *types.Tuple) Type {
 */
 
 func (p Program) toType(raw types.Type) Type {
+	if typ, ok := cvtGoSSAOpaqueType(raw); ok {
+		return p.rawType(typ)
+	}
 	typ := rawType{raw}
 	switch t := raw.(type) {
 	case *types.Basic:
@@ -385,8 +388,7 @@ func (p Program) toType(raw types.Type) Type {
 			return &aType{p.tyVoidPtr(), typ, vkPtr}
 		}
 	case *types.Pointer:
-		elem := p.rawType(t.Elem())
-		return &aType{llvm.PointerType(elem.ll, 0), typ, vkPtr}
+		return &aType{llvm.PointerType(p.tyInt8(), 0), typ, vkPtr}
 	case *types.Interface:
 		if t.Empty() {
 			return &aType{p.rtEface(), typ, vkEface}
@@ -490,8 +492,9 @@ func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
 }
 
 func (p Program) toLLVMFuncPtr(sig *types.Signature) llvm.Type {
-	ft := p.toLLVMFunc(sig)
-	return llvm.PointerType(ft, 0)
+	// LLVM opaque pointers don't retain the pointee function type. Avoid
+	// recursively expanding named function types such as F func(F) F.
+	return llvm.PointerType(p.tyInt8(), 0)
 }
 
 func (p Program) retType(raw *types.Signature) Type {
@@ -579,6 +582,14 @@ func namedTypeEquivalent(a, b types.Type) bool {
 	if NameOf(na) != NameOf(nb) {
 		return false
 	}
+	switch na.Underlying().(type) {
+	case *types.Signature:
+		return false
+	}
+	switch nb.Underlying().(type) {
+	case *types.Signature:
+		return false
+	}
 	// go/types may materialize the same package/type in distinct instances
 	// (e.g. mixed importer paths across toolchains). Reuse LLVM named structs
 	// when full-name and underlying shape are equivalent.
@@ -651,15 +662,18 @@ func FuncName(pkg *types.Package, name string, recv *types.Var, org bool) string
 }
 
 func recvNamed(t types.Type) (typ *types.Named, ptr bool) {
-	if tp, ok := t.(*types.Pointer); ok {
-		t = tp.Elem()
-		ptr = true
+	for {
+		switch tt := t.(type) {
+		case *types.Alias:
+			t = types.Unalias(tt)
+		case *types.Pointer:
+			ptr = true
+			t = tt.Elem()
+		default:
+			typ, _ = t.(*types.Named)
+			return
+		}
 	}
-	if _, ok := t.(*types.Alias); ok {
-		t = types.Unalias(t)
-	}
-	typ, _ = t.(*types.Named)
-	return
 }
 
 func TypeArgs(typeArgs []types.Type) string {

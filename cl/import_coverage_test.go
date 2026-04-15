@@ -155,15 +155,23 @@ func TestPreCollectLinknames(t *testing.T) {
 	cases := []struct {
 		name      string
 		directive string
+		layout    string
 		want      string
 	}{
-		{name: "go-linkname", directive: "//go:linkname Sigsetjmp C.sigsetjmp", want: "C.sigsetjmp"},
-		{name: "llgo-linkname", directive: "//llgo:link Sigsetjmp C.sigsetjmp", want: "C.sigsetjmp"},
-		{name: "llgo-linkname-spaced", directive: "// llgo:link Sigsetjmp C.sigsetjmp", want: "C.sigsetjmp"},
+		{name: "go-linkname", directive: "//go:linkname Sigsetjmp C.sigsetjmp", layout: "before", want: "C.sigsetjmp"},
+		{name: "llgo-linkname", directive: "//llgo:link Sigsetjmp C.sigsetjmp", layout: "before", want: "C.sigsetjmp"},
+		{name: "llgo-linkname-spaced", directive: "// llgo:link Sigsetjmp C.sigsetjmp", layout: "before", want: "C.sigsetjmp"},
+		{name: "postdecl-go-linkname", directive: "//go:linkname Sigsetjmp C.sigsetjmp", layout: "after", want: "C.sigsetjmp"},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			src := "package runtime\nimport _ \"unsafe\"\n" + tt.directive + "\nfunc Sigsetjmp()\n"
+			var src string
+			switch tt.layout {
+			case "after":
+				src = "package runtime\nimport _ \"unsafe\"\nfunc Sigsetjmp()\n" + tt.directive + "\n"
+			default:
+				src = "package runtime\nimport _ \"unsafe\"\n" + tt.directive + "\nfunc Sigsetjmp()\n"
+			}
 			fset := token.NewFileSet()
 			file, err := parser.ParseFile(fset, "runtime.go", src, parser.ParseComments)
 			if err != nil {

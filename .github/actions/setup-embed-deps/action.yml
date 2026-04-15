@@ -28,6 +28,27 @@ runs:
         .github/workflows/install-esp-qemu.sh "$QEMU_DIR"
         echo "${PWD}/${QEMU_DIR}/bin" >> $GITHUB_PATH
 
+    - name: Restore ESP Clang cache
+      id: cache-esp-clang
+      uses: actions/cache/restore@v5
+      with:
+        path: crosscompile/clang
+        key: esp-clang-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/install-esp-clang.sh') }}
+
+    - name: Install ESP Clang
+      if: steps.cache-esp-clang.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        chmod +x .github/workflows/install-esp-clang.sh
+        .github/workflows/install-esp-clang.sh "crosscompile/clang"
+
+    - name: Save ESP Clang cache
+      if: steps.cache-esp-clang.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: crosscompile/clang
+        key: esp-clang-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/install-esp-clang.sh') }}
+
     - name: Verify ESP QEMU installation
       shell: bash
       run: |
@@ -35,3 +56,9 @@ runs:
         which qemu-system-xtensa
         qemu-system-riscv32 --version
         qemu-system-xtensa --version
+
+    - name: Verify ESP Clang installation
+      shell: bash
+      run: |
+        test -x crosscompile/clang/bin/clang++
+        crosscompile/clang/bin/clang++ --version

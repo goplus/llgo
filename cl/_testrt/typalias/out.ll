@@ -9,14 +9,23 @@ source_filename = "github.com/goplus/llgo/cl/_testrt/typalias"
 
 define void @"github.com/goplus/llgo/cl/_testrt/typalias.Print"(ptr %0) {
 _llgo_0:
-  %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
-  %2 = load i1, ptr %1, align 1
-  br i1 %2, label %_llgo_1, label %_llgo_2
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
+  %3 = icmp eq ptr %2, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = load i1, ptr %2, align 1
+  br i1 %4, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %3 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
-  %4 = load i32, ptr %3, align 4
-  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i32 %4)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  %5 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %5)
+  %6 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
+  %7 = icmp eq ptr %6, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %7)
+  %8 = load i32, ptr %6, align 4
+  call void (ptr, ...) @printf(ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i32 %8)
   br label %_llgo_2
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
@@ -40,6 +49,16 @@ _llgo_0:
 _llgo_1:                                          ; preds = %_llgo_0
   store i1 true, ptr @"github.com/goplus/llgo/cl/_testrt/typalias.init$guard", align 1
   call void @syscall.init()
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 false)
   store i8 72, ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", align 1
   store i8 101, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i64 1), align 1
   store i8 108, ptr getelementptr inbounds (i8, ptr @"github.com/goplus/llgo/cl/_testrt/typalias.format", i64 2), align 1
@@ -59,13 +78,19 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 define void @"github.com/goplus/llgo/cl/_testrt/typalias.main"() {
 _llgo_0:
   %0 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
-  %2 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
-  store i32 100, ptr %1, align 4
-  store i1 true, ptr %2, align 1
+  %1 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %1)
+  %2 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0
+  %3 = icmp eq ptr %0, null
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1 %3)
+  %4 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
+  store i32 100, ptr %2, align 4
+  store i1 true, ptr %4, align 1
   call void @"github.com/goplus/llgo/cl/_testrt/typalias.Print"(ptr %0)
   ret void
 }
+
+declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertNilDeref"(i1)
 
 declare void @printf(ptr, ...)
 
