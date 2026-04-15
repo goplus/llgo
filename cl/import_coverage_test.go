@@ -212,3 +212,55 @@ func TestPreCollectLinknamesAfterDecl(t *testing.T) {
 		})
 	}
 }
+
+// TestFloatingLinknameSkipsUnderscoreSelfLink tests that //go:linkname _name _name
+// directives (where the name starts with "_" and both names are identical) are
+// skipped during floating linkname processing. See #1789.
+func TestFloatingLinknameSkipsUnderscoreSelfLink(t *testing.T) {
+	cases := []struct {
+		name      string
+		src       string
+		symbol    string
+		wantFound bool
+	}{
+		{
+			name:      "skip-cgo-init-self-link",
+			src:       "package runtime\nimport _ \"unsafe\"\nfunc _cgo_init()\n//go:linkname _cgo_init _cgo_init\n",
+			symbol:    "_cgo_init",
+			wantFound: false,
+		},
+		{
+			name:      "skip-underscore-self-link",
+			src:       "package runtime\nimport _ \"unsafe\"\nfunc _myFunc()\n//go:linkname _myFunc _myFunc\n",
+			symbol:    "_myFunc",
+			wantFound: false,
+		},
+		{
+			name:      "allow-underscore-different-link",
+			src:       "package runtime\nimport _ \"unsafe\"\nfunc _myFunc()\n//go:linkname _myFunc C.my_func\n",
+			symbol:    "_myFunc",
+			wantFound: true,
+		},
+		{
+			name:      "allow-non-underscore-self-link",
+			src:       "package runtime\nimport _ \"unsafe\"\nfunc myFunc()\n//go:linkname myFunc myFunc\n",
+			symbol:    "myFunc",
+			wantFound: true,
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			fset := token.NewFileSet()
+			file, err := parser.ParseFile(fset, "runtime.go", tt.src, parser.ParseComments)
+			if err != nil {
+				t.Fatalf("ParseFile failed: %v", err)
+			}
+			prog := llssa.NewProgram(nil)
+			PreCollectLinknames(prog, llssa.PkgRuntime, []*ast.File{file})
+			_, found := prog.Linkname(llssa.PkgRuntime + "." + tt.symbol)
+			if found != tt.wantFound {
+				t.Fatalf("Linkname found=%v, want %v", found, tt.wantFound)
+			}
+		})
+	}
+}

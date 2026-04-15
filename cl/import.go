@@ -356,6 +356,17 @@ func (p *context) processFloatingLinknames(pkgPath string, files []*ast.File) {
 				if !strings.HasPrefix(c.Text, linkname) {
 					continue
 				}
+				// Skip //go:linkname _name _name where name starts with "_"
+				// and both names are identical (e.g., //go:linkname _cgo_init _cgo_init).
+				if text := strings.TrimSpace(c.Text[len(linkname):]); text != "" {
+					if idx := strings.IndexByte(text, ' '); idx > 0 {
+						name1 := text[:idx]
+						name2 := strings.TrimLeft(text[idx+1:], " ")
+						if strings.HasPrefix(name1, "_") && name1 == name2 {
+							continue
+						}
+					}
+				}
 				p.initLinkname(c.Text, false, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
 					if d, exists := decls[inPkgName]; exists {
 						return d.fullName, d.isVar, true
