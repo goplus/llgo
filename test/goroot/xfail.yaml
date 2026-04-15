@@ -1682,6 +1682,11 @@ flakes:
     directive: runoutput
     case: rotate0.go
     reason: rotate0 runoutput can either pass or time out on darwin/arm64
+  - version: go1.25
+    platform: linux/amd64
+    directive: run
+    case: gcgort.go
+    reason: go1.25 goroot ci-mode can either pass or panic in GC_call_with_stack_base on linux/amd64
 xfails:
   - version: go1.24
     platform: linux/amd64
@@ -1713,11 +1718,6 @@ xfails:
     directive: run
     case: maymorestack.go
     reason: go1.25 goroot ci-mode run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
-    case: gcgort.go
-    reason: go1.25 goroot ci-mode trips Boehm GC stack-base nil deref on linux/amd64
   - version: go1.26
     platform: linux/amd64
     directive: run
@@ -2265,11 +2265,6 @@ xfails:
   - version: go1.25
     platform: linux/amd64
     directive: run
-    case: recover3.go
-    reason: go1.25 goroot run failure on linux/amd64
-  - version: go1.25
-    platform: linux/amd64
-    directive: run
     case: reflectmethod1.go
     reason: go1.25 goroot run failure on linux/amd64
   - version: go1.25
@@ -2467,11 +2462,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: recover1.go
-    reason: go1.24 goroot run failure on linux/amd64
-  - version: go1.24
-    platform: linux/amd64
-    directive: run
-    case: recover3.go
     reason: go1.24 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
@@ -2687,11 +2677,6 @@ xfails:
     platform: linux/amd64
     directive: run
     case: recover1.go
-    reason: go1.26 goroot run failure on linux/amd64
-  - version: go1.26
-    platform: linux/amd64
-    directive: run
-    case: recover3.go
     reason: go1.26 goroot run failure on linux/amd64
   - version: go1.26
     platform: linux/amd64
