@@ -185,7 +185,7 @@ type Imethod struct {
 }
 */
 
-func (b Builder) abiInterfaceImethods(owner types.Type, t *types.Interface, name string) llvm.Value {
+func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Value {
 	prog := b.Prog
 	n := t.NumMethods()
 	if n == 0 {
@@ -314,7 +314,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		name, _ = prog.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.Str(pkg.Path()).impl,
-			b.abiInterfaceImethods(t, t, name+"$imethods"),
+			b.abiInterfaceImethods(t, name+"$imethods"),
 		}
 	case *types.Named:
 		return b.abiExtendedFields(t.Underlying(), name)
