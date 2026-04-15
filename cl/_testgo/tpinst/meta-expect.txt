@@ -15,8 +15,6 @@ _llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[float64]:
     Value _llgo_func$UYiLlmcWxoOKZPPzvR4LByitNeKoVGoTrB_5ubdOWW8
 _llgo_github.com/goplus/llgo/cl/_testgo/tpinst.I[int]:
     Value _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-github.com/goplus/llgo/cl/_testgo/tpinst.iface$2sV9fFeqOv1SzesvwIdhTqCFzDT8ZX5buKUSAoHNSww:
-    github.com/goplus/llgo/cl/_testgo/tpinst.value _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
 
 [MethodInfo]
 *_llgo_github.com/goplus/llgo/cl/_testgo/tpinst.M[float64]:

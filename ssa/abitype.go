@@ -185,7 +185,7 @@ type Imethod struct {
 }
 */
 
-func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Value {
+func (b Builder) abiInterfaceImethods(owner types.Type, t *types.Interface, name string) llvm.Value {
 	prog := b.Prog
 	n := t.NumMethods()
 	if n == 0 {
@@ -314,7 +314,7 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		name, _ = prog.abi.TypeName(t)
 		fields = []llvm.Value{
 			b.Str(pkg.Path()).impl,
-			b.abiInterfaceImethods(t, name+"$imethods"),
+			b.abiInterfaceImethods(t, t, name+"$imethods"),
 		}
 	case *types.Named:
 		return b.abiExtendedFields(t.Underlying(), name)
@@ -415,7 +415,10 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		obj := m.Obj().(*types.Func)
 		mName := obj.Name()
 		fullName := mthName(obj)
-		name := b.Str(fullName).impl
+		name := b.Str(mName).impl
+		if !token.IsExported(mName) {
+			name = b.Str(fullName).impl
+		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
 		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)

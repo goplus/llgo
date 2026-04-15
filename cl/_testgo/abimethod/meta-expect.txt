@@ -74,6 +74,8 @@ github.com/goplus/llgo/cl/_testgo/abimethod.testNamed3:
     _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I2 Demo2 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
 
 [InterfaceInfo]
+_llgo_fmt.Stringer:
+    String _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I:
     Demo1 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
 _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I2:
@@ -81,13 +83,6 @@ _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.I2:
 _llgo_github.com/goplus/llgo/cl/_testgo/abimethod.IP:
     Load _llgo_func$oqZ09zjnrQRdlivNw60EomwRoboDQbCk5_Y4MGDpQMQ
     Store _llgo_func$Y8Pl6IHgSDuynhMRTXPlqFo9zl71SSTuMe0Wi5m8eWw
-_llgo_iface$58AxoxqQ6sGUOM73FOqFrXsMlgxkU4HGd-S1Wl-ssYw:
-    Demo1 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-    Demo2 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-github.com/goplus/llgo/cl/_testgo/abimethod.iface$kT5SIXt45Cspjl04Bof3DZVSOIltlDo-njpk6KqtZvA:
-    Demo1 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-    Demo2 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
-    github.com/goplus/llgo/cl/_testgo/abimethod.demo3 _llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA
 
 [MethodInfo]
 *_llgo_github.com/goplus/llgo/cl/_testgo/abimethod.Pointer[any]:

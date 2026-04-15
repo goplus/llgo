@@ -6,6 +6,11 @@ github.com/goplus/llgo/cl/_testgo/embedunexport-1598.main:
 github.com/goplus/llgo/cl/_testgo/embedunexport-1598.main:
     _llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
 
+[InterfaceInfo]
+_llgo_github.com/goplus/llgo/cl/_testdata/embedunexport.Object:
+    Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
+    github.com/goplus/llgo/cl/_testdata/embedunexport.setName _llgo_func$dlTgtqQDYoqfVBQYEBE1Fa3ytcia1pdKaKVOnw8ZjkA
+
 [MethodInfo]
 *_llgo_github.com/goplus/llgo/cl/_testgo/embedunexport-1598.Wrapped:
     0 Name _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name github.com/goplus/llgo/cl/_testgo/embedunexport-1598.(*Wrapped).Name

@@ -581,8 +581,10 @@ func TestNamedMetadataReadback(t *testing.T) {
 	requireMDString(t, semmeta.UseIfaceMethodMetadata, useIfaceMethodFields, 3, mtypName)
 
 	interfaceInfoRows := pkg.Module().NamedMetadataOperands(semmeta.InterfaceInfoMetadata)
-	requireMetadataRows(t, semmeta.InterfaceInfoMetadata, interfaceInfoRows, 1)
-	interfaceInfoFields := requireMetadataFields(t, semmeta.InterfaceInfoMetadata, interfaceInfoRows[0], 3)
+	if len(interfaceInfoRows) == 0 {
+		t.Fatalf("%s rows len = 0, want at least 1", semmeta.InterfaceInfoMetadata)
+	}
+	interfaceInfoFields := requireMetadataFields(t, semmeta.InterfaceInfoMetadata, findMetadataRowByFirstString(t, semmeta.InterfaceInfoMetadata, interfaceInfoRows, ifaceTypeName), 3)
 	requireMDString(t, semmeta.InterfaceInfoMetadata, interfaceInfoFields, 0, ifaceTypeName)
 	requireMDString(t, semmeta.InterfaceInfoMetadata, interfaceInfoFields, 1, "Add")
 	requireMDString(t, semmeta.InterfaceInfoMetadata, interfaceInfoFields, 2, mtypName)
