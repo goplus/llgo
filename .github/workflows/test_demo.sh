@@ -184,6 +184,10 @@ ignore_esp32c3_basic=(
   "./_demo/go/timer" # panic: internal/bytealg selected .s files require plan9asm translation
 )
 
+ignore_host_linux_go121=(
+  "./_demo/go/sync" # flaky panic in GC_call_with_stack_base on linux with Go 1.21
+)
+
 should_ignore() {
   local dir="$1"
   local target="$2"
@@ -206,6 +210,22 @@ should_ignore() {
   return 1
 }
 
+should_ignore_host() {
+  local dir="$1"
+  if [ "$(go env GOOS)" = "linux" ]; then
+    case "$(go env GOVERSION)" in
+      go1.21.*)
+        for ignore in "${ignore_host_linux_go121[@]}"; do
+          if [ "$dir" = "$ignore" ]; then
+            return 0
+          fi
+        done
+        ;;
+    esac
+  fi
+  return 1
+}
+
 run_dirs=()
 run_targets=()
 run_labels=()
@@ -224,6 +244,10 @@ if [ "$mode" = "embedded" ]; then
   done
 else
   for d in "${cases[@]}"; do
+    if should_ignore_host "$d"; then
+      echo "SKIP $d (host=$(go env GOOS), go=$(go env GOVERSION))"
+      continue
+    fi
     run_dirs+=("$d")
     run_targets+=("")
     run_labels+=("$d")
