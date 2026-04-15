@@ -31,7 +31,7 @@ func TestFormatSemMeta(t *testing.T) {
 				"*_llgo_github.com/goplus/llgo/demo.File",
 			},
 		},
-		UseIfaceMethod: map[semmeta.Symbol][]semmeta.IfaceMethodDemand{
+		UseIfaceMethod: map[semmeta.Symbol][]semmeta.IfaceMethodUse{
 			"github.com/goplus/llgo/demo.consume": {
 				{
 					Target: "_llgo_github.com/goplus/llgo/demo.Reader",

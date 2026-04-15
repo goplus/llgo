@@ -32,7 +32,7 @@ func TestRead(t *testing.T) {
 	e := NewEmitter(mod)
 	e.AddUseIface("github.com/goplus/llgo/demo.main", "*_llgo_github.com/goplus/llgo/demo.Other")
 	e.AddUseIface("github.com/goplus/llgo/demo.main", "*_llgo_github.com/goplus/llgo/demo.File")
-	e.AddUseIfaceMethod("github.com/goplus/llgo/demo.consume", IfaceMethodDemand{
+	e.AddUseIfaceMethod("github.com/goplus/llgo/demo.consume", IfaceMethodUse{
 		Target: "_llgo_github.com/goplus/llgo/demo.Reader",
 		Sig: MethodSig{
 			Name:  "Read",

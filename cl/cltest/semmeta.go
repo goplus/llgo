@@ -57,7 +57,7 @@ func writeSymbolListSection(buf *bytes.Buffer, name string, data map[semmeta.Sym
 	}
 }
 
-func writeIfaceMethodSection(buf *bytes.Buffer, name string, data map[semmeta.Symbol][]semmeta.IfaceMethodDemand) {
+func writeIfaceMethodSection(buf *bytes.Buffer, name string, data map[semmeta.Symbol][]semmeta.IfaceMethodUse) {
 	if len(data) == 0 {
 		return
 	}
@@ -138,8 +138,8 @@ func sortedSymbols(values []semmeta.Symbol) []semmeta.Symbol {
 	return out
 }
 
-func sortedIfaceMethodDemands(values []semmeta.IfaceMethodDemand) []semmeta.IfaceMethodDemand {
-	out := append([]semmeta.IfaceMethodDemand(nil), values...)
+func sortedIfaceMethodDemands(values []semmeta.IfaceMethodUse) []semmeta.IfaceMethodUse {
+	out := append([]semmeta.IfaceMethodUse(nil), values...)
 	sort.Slice(out, func(i, j int) bool {
 		a, b := out[i], out[j]
 		if a.Target != b.Target {

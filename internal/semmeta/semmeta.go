@@ -39,7 +39,7 @@ type MethodSig struct {
 	MType Symbol
 }
 
-type IfaceMethodDemand struct {
+type IfaceMethodUse struct {
 	Target Symbol
 	Sig    MethodSig
 }
@@ -54,7 +54,7 @@ type MethodSlot struct {
 type ModuleInfo struct {
 	InterfaceInfo  map[Symbol][]MethodSig
 	UseIface       map[Symbol][]Symbol
-	UseIfaceMethod map[Symbol][]IfaceMethodDemand
+	UseIfaceMethod map[Symbol][]IfaceMethodUse
 	MethodInfo     map[Symbol][]MethodSlot
 	UseNamedMethod map[Symbol][]string
 	ReflectMethod  map[Symbol]struct{}
@@ -83,14 +83,14 @@ func (e *Emitter) AddUseIface(owner, target Symbol) {
 	)
 }
 
-func (e *Emitter) AddUseIfaceMethod(owner Symbol, demand IfaceMethodDemand) {
+func (e *Emitter) AddUseIfaceMethod(owner Symbol, use IfaceMethodUse) {
 	e.add(
 		UseIfaceMethodMetadata,
-		metadataKey(string(owner), string(demand.Target), demand.Sig.Name, string(demand.Sig.MType)),
+		metadataKey(string(owner), string(use.Target), use.Sig.Name, string(use.Sig.MType)),
 		e.mdString(string(owner)),
-		e.mdString(string(demand.Target)),
-		e.mdString(demand.Sig.Name),
-		e.mdString(string(demand.Sig.MType)),
+		e.mdString(string(use.Target)),
+		e.mdString(use.Sig.Name),
+		e.mdString(string(use.Sig.MType)),
 	)
 }
 
@@ -148,7 +148,7 @@ func Read(mod llvm.Module) ModuleInfo {
 	info := ModuleInfo{
 		InterfaceInfo:  make(map[Symbol][]MethodSig),
 		UseIface:       make(map[Symbol][]Symbol),
-		UseIfaceMethod: make(map[Symbol][]IfaceMethodDemand),
+		UseIfaceMethod: make(map[Symbol][]IfaceMethodUse),
 		MethodInfo:     make(map[Symbol][]MethodSlot),
 		UseNamedMethod: make(map[Symbol][]string),
 		ReflectMethod:  make(map[Symbol]struct{}),
@@ -178,7 +178,7 @@ func readUseIfaceMethod(mod llvm.Module, info *ModuleInfo) {
 		target := fieldString(fields[1])
 		name := fieldString(fields[2])
 		mtyp := fieldString(fields[3])
-		info.UseIfaceMethod[Symbol(owner)] = append(info.UseIfaceMethod[Symbol(owner)], IfaceMethodDemand{
+		info.UseIfaceMethod[Symbol(owner)] = append(info.UseIfaceMethod[Symbol(owner)], IfaceMethodUse{
 			Target: Symbol(target),
 			Sig: MethodSig{
 				Name:  name,
