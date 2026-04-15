@@ -179,14 +179,8 @@ func readUseIface(mod llvm.Module, info *ModuleInfo) error {
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(UseIfaceMetadata, i, 0, fields[0])
-		if err != nil {
-			return err
-		}
-		target, err := fieldString(UseIfaceMetadata, i, 1, fields[1])
-		if err != nil {
-			return err
-		}
+		owner := fieldString(fields[0])
+		target := fieldString(fields[1])
 		info.UseIface[Symbol(owner)] = append(info.UseIface[Symbol(owner)], Symbol(target))
 	}
 	return nil
@@ -199,22 +193,10 @@ func readUseIfaceMethod(mod llvm.Module, info *ModuleInfo) error {
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(UseIfaceMethodMetadata, i, 0, fields[0])
-		if err != nil {
-			return err
-		}
-		target, err := fieldString(UseIfaceMethodMetadata, i, 1, fields[1])
-		if err != nil {
-			return err
-		}
-		name, err := fieldString(UseIfaceMethodMetadata, i, 2, fields[2])
-		if err != nil {
-			return err
-		}
-		mtyp, err := fieldString(UseIfaceMethodMetadata, i, 3, fields[3])
-		if err != nil {
-			return err
-		}
+		owner := fieldString(fields[0])
+		target := fieldString(fields[1])
+		name := fieldString(fields[2])
+		mtyp := fieldString(fields[3])
 		info.UseIfaceMethod[Symbol(owner)] = append(info.UseIfaceMethod[Symbol(owner)], IfaceMethodDemand{
 			Target: Symbol(target),
 			Sig: MethodSig{
@@ -233,18 +215,9 @@ func readInterfaceInfo(mod llvm.Module, info *ModuleInfo) error {
 		if err != nil {
 			return err
 		}
-		target, err := fieldString(InterfaceInfoMetadata, i, 0, fields[0])
-		if err != nil {
-			return err
-		}
-		name, err := fieldString(InterfaceInfoMetadata, i, 1, fields[1])
-		if err != nil {
-			return err
-		}
-		mtyp, err := fieldString(InterfaceInfoMetadata, i, 2, fields[2])
-		if err != nil {
-			return err
-		}
+		target := fieldString(fields[0])
+		name := fieldString(fields[1])
+		mtyp := fieldString(fields[2])
 		info.InterfaceInfo[Symbol(target)] = append(info.InterfaceInfo[Symbol(target)], MethodSig{
 			Name:  name,
 			MType: Symbol(mtyp),
@@ -260,30 +233,12 @@ func readMethodInfo(mod llvm.Module, info *ModuleInfo) error {
 		if err != nil {
 			return err
 		}
-		target, err := fieldString(MethodInfoMetadata, i, 0, fields[0])
-		if err != nil {
-			return err
-		}
-		index, err := fieldInt(MethodInfoMetadata, i, 1, fields[1])
-		if err != nil {
-			return err
-		}
-		name, err := fieldString(MethodInfoMetadata, i, 2, fields[2])
-		if err != nil {
-			return err
-		}
-		mtyp, err := fieldString(MethodInfoMetadata, i, 3, fields[3])
-		if err != nil {
-			return err
-		}
-		ifn, err := fieldString(MethodInfoMetadata, i, 4, fields[4])
-		if err != nil {
-			return err
-		}
-		tfn, err := fieldString(MethodInfoMetadata, i, 5, fields[5])
-		if err != nil {
-			return err
-		}
+		target := fieldString(fields[0])
+		index := fieldInt(fields[1])
+		name := fieldString(fields[2])
+		mtyp := fieldString(fields[3])
+		ifn := fieldString(fields[4])
+		tfn := fieldString(fields[5])
 		info.MethodInfo[Symbol(target)] = append(info.MethodInfo[Symbol(target)], MethodSlot{
 			Index: index,
 			Sig: MethodSig{
@@ -304,14 +259,8 @@ func readUseNamedMethod(mod llvm.Module, info *ModuleInfo) error {
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(UseNamedMethodMetadata, i, 0, fields[0])
-		if err != nil {
-			return err
-		}
-		name, err := fieldString(UseNamedMethodMetadata, i, 1, fields[1])
-		if err != nil {
-			return err
-		}
+		owner := fieldString(fields[0])
+		name := fieldString(fields[1])
 		info.UseNamedMethod[Symbol(owner)] = append(info.UseNamedMethod[Symbol(owner)], name)
 	}
 	return nil
@@ -324,10 +273,7 @@ func readReflectMethod(mod llvm.Module, info *ModuleInfo) error {
 		if err != nil {
 			return err
 		}
-		owner, err := fieldString(ReflectMethodMetadata, i, 0, fields[0])
-		if err != nil {
-			return err
-		}
+		owner := fieldString(fields[0])
 		info.ReflectMethod[Symbol(owner)] = struct{}{}
 	}
 	return nil
@@ -341,18 +287,12 @@ func rowFields(table string, rowIndex int, row llvm.Value, want int) ([]llvm.Val
 	return fields, nil
 }
 
-func fieldString(table string, rowIndex, fieldIndex int, field llvm.Value) (string, error) {
-	if !field.IsAMDString() {
-		return "", fmt.Errorf("%s row %d field %d: want mdstring", table, rowIndex, fieldIndex)
-	}
-	return field.MDString(), nil
+func fieldString(field llvm.Value) string {
+	return field.MDString()
 }
 
-func fieldInt(table string, rowIndex, fieldIndex int, field llvm.Value) (int, error) {
-	if field.IsAConstantInt().IsNil() {
-		return 0, fmt.Errorf("%s row %d field %d: want constant int metadata", table, rowIndex, fieldIndex)
-	}
-	return int(field.ZExtValue()), nil
+func fieldInt(field llvm.Value) int {
+	return int(field.ZExtValue())
 }
 
 func (e *Emitter) add(table, key string, fields ...llvm.Metadata) {

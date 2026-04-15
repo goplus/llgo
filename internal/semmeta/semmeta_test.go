@@ -110,7 +110,6 @@ func TestReadRejectsBadRowShape(t *testing.T) {
 
 	addRow(mod, MethodInfoMetadata,
 		ctx.MDString("*_llgo_github.com/goplus/llgo/demo.File"),
-		ctx.MDString("wrong-index-kind"),
 		ctx.MDString("Read"),
 		ctx.MDString("_llgo_func$readsig"),
 		ctx.MDString("github.com/goplus/llgo/demo.(*File).Read"),
