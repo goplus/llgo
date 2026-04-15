@@ -85,10 +85,11 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	ownerName := b.Func.impl.Name()
 	intfTypeName, _ := prog.abi.TypeName(intf.raw.Type)
 	mtypName, _ := prog.abi.TypeName(funcType(prog, method.Type()))
+	methodName, _ := mthName(method)
 	b.Pkg.semMetaEmitter.AddUseIfaceMethod(semmeta.Symbol(ownerName), semmeta.IfaceMethodDemand{
 		Target: semmeta.Symbol(intfTypeName),
 		Sig: semmeta.MethodSig{
-			Name:  mthName(method),
+			Name:  methodName,
 			MType: semmeta.Symbol(mtypName),
 		},
 	})
@@ -96,8 +97,9 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 	for i := 0; i < rawIntf.NumMethods(); i++ {
 		im := rawIntf.Method(i)
 		imtypName, _ := prog.abi.TypeName(funcType(prog, im.Type()))
+		name, _ := mthName(im)
 		methods = append(methods, semmeta.MethodSig{
-			Name:  mthName(im),
+			Name:  name,
 			MType: semmeta.Symbol(imtypName),
 		})
 	}

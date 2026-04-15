@@ -198,7 +198,7 @@ func (b Builder) abiInterfaceImethods(t *types.Interface, name string) llvm.Valu
 		for i := 0; i < n; i++ {
 			f := t.Method(i)
 			var values []llvm.Value
-			name := mthName(f)
+			name, _ := mthName(f)
 			values = append(values, b.Str(name).impl)
 			ftyp := funcType(prog, f.Type())
 			values = append(values, b.abiType(ftyp).impl)
@@ -414,11 +414,10 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		m := mset.At(i)
 		obj := m.Obj().(*types.Func)
 		mName := obj.Name()
-		fullName := mName
-		name := b.Str(mName).impl
-		if !token.IsExported(mName) {
-			fullName = mthName(obj)
-			name = b.Str(fullName).impl
+		fullName, exported := mthName(obj)
+		name := b.Str(fullName).impl
+		if exported {
+			name = b.Str(mName).impl
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
@@ -486,7 +485,8 @@ func (p Package) shouldEmitOwnedTypeMetadata(t types.Type) bool {
 	}
 }
 
-// mthName returns the semantic method name used in ABI metadata.
+// mthName returns the semantic method name used in ABI metadata, together with
+// whether the method is exported.
 //
 // Exported methods keep their declared identifier because that is already
 // globally visible, for example:
@@ -495,12 +495,12 @@ func (p Package) shouldEmitOwnedTypeMetadata(t types.Type) bool {
 // Unexported methods are qualified with their package path so they stay unique
 // across packages, for example:
 //   - github.com/goplus/llgo/demo.(*T).close -> "github.com/goplus/llgo/demo.close"
-func mthName(method *types.Func) string {
-	name := method.Name()
-	if !token.IsExported(name) {
-		return abi.FullName(method.Pkg(), name)
+func mthName(method *types.Func) (name string, exported bool) {
+	rawName := method.Name()
+	if token.IsExported(rawName) {
+		return rawName, true
 	}
-	return name
+	return abi.FullName(method.Pkg(), rawName), false
 }
 
 // closure func type
