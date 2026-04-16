@@ -446,43 +446,8 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 			TFn: semmeta.Symbol(tfn.Name()),
 		})
 	}
-	if b.Pkg.shouldEmitOwnedTypeMetadata(t) {
-		b.Pkg.semMetaEmitter.AddMethodInfo(semmeta.Symbol(typeName), slots)
-	}
+	b.Pkg.semMetaEmitter.AddMethodInfo(semmeta.Symbol(typeName), slots)
 	return llvm.ConstArray(ft.ll, fields)
-}
-
-// shouldEmitOwnedTypeMetadata reports whether the current package should emit
-// owner-scoped semantic metadata for t at the current use site.
-//
-// Ownership follows the concrete root type, not an outer pointer wrapper.
-// This keeps *T aligned with T for emission policy.
-//
-// The current policy is intentionally conservative:
-//   - local named types keep emitting in their defining/using package;
-//   - anonymous or synthetic types keep emitting in the current package;
-//   - instantiated generic named types stay allowed at use sites, because
-//     current LLGo may compile and materialize their methods there;
-//   - imported non-generic named types are suppressed here, so their
-//     method-table or interface-shape metadata is emitted only by their
-//     defining package.
-func (p Package) shouldEmitOwnedTypeMetadata(t types.Type) bool {
-	t = types.Unalias(t)
-	switch tt := t.(type) {
-	case *types.Pointer:
-		return p.shouldEmitOwnedTypeMetadata(tt.Elem())
-	case *types.Named:
-		if ta := tt.TypeArgs(); ta != nil && ta.Len() != 0 {
-			return true
-		}
-		obj := tt.Obj()
-		if obj == nil || obj.Pkg() == nil {
-			return true
-		}
-		return abi.PathOf(obj.Pkg()) == p.Path()
-	default:
-		return true
-	}
 }
 
 // mthName returns the semantic method name used in ABI metadata.
