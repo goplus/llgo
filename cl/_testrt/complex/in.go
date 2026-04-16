@@ -15,11 +15,26 @@ package main
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } { double -5.000000e+00, double 1.000000e+01 })
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } { double 4.400000e-01, double 8.000000e-02 })
+// CHECK-NEXT:   %0 = call { double, double } @"{{.*}}/runtime/internal/runtime.Complex128Div"({ double, double } { double 1.000000e+00, double 2.000000e+00 }, { double, double } { double 3.000000e+00, double 4.000000e+00 })
+// CHECK-NEXT:   %1 = extractvalue { double, double } %0, 0
+// CHECK-NEXT:   %2 = extractvalue { double, double } %0, 1
+// CHECK-NEXT:   %3 = insertvalue { double, double } undef, double %1, 0
+// CHECK-NEXT:   %4 = insertvalue { double, double } %3, double %2, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } %4)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } { double 0x7FF0000000000000, double 0x7FF0000000000000 })
+// CHECK-NEXT:   %5 = call { double, double } @"{{.*}}/runtime/internal/runtime.Complex128Div"({ double, double } { double 1.000000e+00, double 2.000000e+00 }, { double, double } zeroinitializer)
+// CHECK-NEXT:   %6 = extractvalue { double, double } %5, 0
+// CHECK-NEXT:   %7 = extractvalue { double, double } %5, 1
+// CHECK-NEXT:   %8 = insertvalue { double, double } undef, double %6, 0
+// CHECK-NEXT:   %9 = insertvalue { double, double } %8, double %7, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } %9)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } { double 0x7FF8000000000000, double 0x7FF8000000000000 })
+// CHECK-NEXT:   %10 = call { double, double } @"{{.*}}/runtime/internal/runtime.Complex128Div"({ double, double } zeroinitializer, { double, double } zeroinitializer)
+// CHECK-NEXT:   %11 = extractvalue { double, double } %10, 0
+// CHECK-NEXT:   %12 = extractvalue { double, double } %10, 1
+// CHECK-NEXT:   %13 = insertvalue { double, double } undef, double %11, 0
+// CHECK-NEXT:   %14 = insertvalue { double, double } %13, double %12, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintComplex"({ double, double } %14)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 true)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
