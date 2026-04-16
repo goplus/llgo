@@ -1,5 +1,5 @@
-//go:build llgo && go1.26
-// +build llgo,go1.26
+//go:build go1.26
+// +build go1.26
 
 package test
 
