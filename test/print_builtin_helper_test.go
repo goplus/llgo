@@ -1,6 +1,7 @@
 package test
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,16 +26,18 @@ func TestBuiltinPrintHelper(t *testing.T) {
 	print(complex(1, nan), "\n")
 	print(complex(1, posInf), "\n")
 	print(complex(1, negInf), "\n")
-	os.Exit(0)
 }
 
 func runBuiltinPrintProbe(t *testing.T) string {
 	t.Helper()
 	cmd := exec.Command(os.Args[0], "-test.run=^TestBuiltinPrintHelper$")
 	cmd.Env = append(os.Environ(), "LLGO_PRINT_HELPER=1")
-	out, err := cmd.CombinedOutput()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		t.Fatalf("builtin print probe failed: %v\n%s", err, string(out))
+		t.Fatalf("builtin print probe failed: %v\nstdout:\n%s\nstderr:\n%s", err, stdout.String(), stderr.String())
 	}
-	return strings.ReplaceAll(string(out), "\r\n", "\n")
+	return strings.ReplaceAll(stderr.String(), "\r\n", "\n")
 }
