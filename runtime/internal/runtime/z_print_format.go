@@ -62,7 +62,7 @@ func formatLegacyComplex(v complex128) string {
 func formatGo126Complex(v complex128) string {
 	re := formatGo126Float(real(v))
 	im := formatGo126Float(imag(v))
-	if im[0] != '-' {
+	if im[0] != '-' && im[0] != '+' {
 		im = "+" + im
 	}
 	return "(" + re + im + "i)"

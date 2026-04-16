@@ -14,9 +14,20 @@ func TestBuiltinPrintHelper(t *testing.T) {
 	if os.Getenv("LLGO_PRINT_HELPER") == "" {
 		t.Skip("helper process")
 	}
+	zero := 0.0
+	nan := zero / zero
+	posInf := 1.0 / zero
+	negInf := -1.0 / zero
+
 	print(1e7, "\n")
 	print(complex(1e7, -1e7), "\n")
 	print(complex(1.5, -0.0), "\n")
+	print(nan, "\n")
+	print(posInf, "\n")
+	print(negInf, "\n")
+	print(complex(1, nan), "\n")
+	print(complex(1, posInf), "\n")
+	print(complex(1, negInf), "\n")
 	os.Exit(0)
 }
 
