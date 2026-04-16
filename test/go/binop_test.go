@@ -18,6 +18,7 @@ package gotest
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 )
@@ -228,6 +229,31 @@ func TestComplexDivisionAndMultiplication(t *testing.T) {
 	expectedMul := complex64(-3 + 4i)
 	if resultMul != expectedMul {
 		t.Errorf("complex multiplication: got %v, want %v", resultMul, expectedMul)
+	}
+}
+
+func TestComplexDivisionSpecialValues(t *testing.T) {
+	cases := []struct {
+		name string
+		num  complex128
+		den  complex128
+	}{
+		{
+			name: "finite over infinite denominator",
+			num:  complex(1, 1),
+			den:  complex(math.Inf(1), math.Inf(1)),
+		},
+		{
+			name: "finite over max finite denominator",
+			num:  complex(1, 1),
+			den:  complex(math.MaxFloat64, math.MaxFloat64),
+		},
+	}
+	for _, tc := range cases {
+		got := tc.num / tc.den
+		if real(got) != 0 || imag(got) != 0 {
+			t.Fatalf("%s: got %v, want 0+0i", tc.name, got)
+		}
 	}
 }
 
