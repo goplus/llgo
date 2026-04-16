@@ -41,6 +41,7 @@ import (
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/internal/semmeta"
 	"github.com/goplus/llgo/ssa/ssatest"
+	gllvm "github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -58,33 +59,17 @@ func InitDebug() {
 }
 
 func FromDir(t *testing.T, sel, relDir string) {
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatal("Getwd failed:", err)
-	}
-	dir = filepath.Join(dir, relDir)
-	fis, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal("ReadDir failed:", err)
-	}
-	for _, fi := range fis {
-		name := fi.Name()
-		if !fi.IsDir() || strings.HasPrefix(name, "_") {
-			continue
-		}
-		pkgDir := filepath.Join(dir, name)
-		t.Run(name, func(t *testing.T) {
-			testFrom(t, pkgDir, sel)
-		})
-	}
+	RunAndTestFromDir(t, sel, relDir, nil, WithOutputCheck(false))
 }
 
 type runOptions struct {
-	conf   *build.Config
-	filter func(string) string
+	conf        *build.Config
+	filter      func(string) string
+	checkIR     bool
+	checkOutput bool
 }
 
-// RunOption customizes RunFromDir behavior.
+// RunOption customizes directory-based test behavior.
 type RunOption func(*runOptions)
 
 // WithRunConfig uses the provided build config for test runs.
@@ -98,6 +83,20 @@ func WithRunConfig(conf *build.Config) RunOption {
 func WithOutputFilter(filter func(string) string) RunOption {
 	return func(opts *runOptions) {
 		opts.filter = filter
+	}
+}
+
+// WithOutputCheck enables or disables runtime output golden checks in RunAndTestFromDir.
+func WithOutputCheck(enabled bool) RunOption {
+	return func(opts *runOptions) {
+		opts.checkOutput = enabled
+	}
+}
+
+// WithIRCheck enables or disables IR golden checks in RunAndTestFromDir.
+func WithIRCheck(enabled bool) RunOption {
+	return func(opts *runOptions) {
+		opts.checkIR = enabled
 	}
 }
 
@@ -118,9 +117,10 @@ func FilterEmulatorOutput(output string) string {
 	return output
 }
 
-// RunFromDir executes tests under relDir, skipping any relPkg entries in ignore.
-// ignore entries should be relative package paths (e.g., "./_testgo/invoke").
-func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOption) {
+// RunAndTestFromDir executes tests under relDir and validates both runtime
+// output and the pre-transform package IR snapshot when the corresponding
+// golden files exist.
+func RunAndTestFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOption) {
 	rootDir, err := os.Getwd()
 	if err != nil {
 		t.Fatal("Getwd failed:", err)
@@ -130,7 +130,7 @@ func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOp
 	for _, item := range ignore {
 		ignoreSet[item] = struct{}{}
 	}
-	options := runOptions{}
+	options := runOptions{checkIR: true, checkOutput: true}
 	for _, opt := range opts {
 		opt(&options)
 	}
@@ -156,7 +156,7 @@ func RunFromDir(t *testing.T, sel, relDir string, ignore []string, opts ...RunOp
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
-			testRunFrom(t, pkgDir, relPkg, sel, options)
+			testRunAndTestFrom(t, pkgDir, relPkg, sel, options)
 		})
 	}
 }
@@ -255,37 +255,69 @@ func loadMetaExpect(pkgDir string) ([]byte, bool, error) {
 	return data, true, nil
 }
 
-func testRunFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
+func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOptions) {
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
-	expectedPath := filepath.Join(pkgDir, "expect.txt")
-	expected, err := os.ReadFile(expectedPath)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return
+
+	var (
+		expectedOutput []byte
+		checkOutput    bool
+		err            error
+	)
+	if opts.checkOutput {
+		expectedOutput, checkOutput, err = readGolden(filepath.Join(pkgDir, "expect.txt"))
+		if err != nil {
+			t.Fatal("ReadFile failed:", err)
 		}
-		t.Fatal("ReadFile failed:", err)
 	}
-	if bytes.Equal(expected, []byte{';'}) { // expected == ";" means skipping expect.txt
+	if !checkOutput {
+		// IR-only mode: when expect.txt is not checked, use llgen.GenFrom via
+		// testFrom to compare this package's generated IR against out.ll.
+		if opts.checkIR {
+			testFrom(t, pkgDir, sel)
+		}
 		return
 	}
 
-	var output []byte
-	if opts.conf != nil {
-		output, err = RunAndCaptureWithConf(relPkg, pkgDir, opts.conf)
-	} else {
-		output, err = RunAndCapture(relPkg, pkgDir)
+	var goldenIR []byte
+	checkIR := false
+	moduleID := ""
+	if opts.checkIR {
+		goldenIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
+		if err != nil {
+			t.Fatal("ReadFile failed:", err)
+		}
+		if checkIR {
+			moduleID = moduleIDFromIR(goldenIR)
+			if moduleID == "" {
+				t.Fatalf("missing ModuleID in golden IR for %s", pkgDir)
+			}
+		}
 	}
+	conf := opts.conf
+	var capturedIR *string
+	if checkIR {
+		conf, capturedIR = withModuleCapture(opts.conf, moduleID)
+	}
+
+	output, err := runWithConf(relPkg, pkgDir, conf)
 	if err != nil {
 		t.Logf("raw output:\n%s", string(output))
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
-	if opts.filter != nil {
-		output = []byte(opts.filter(string(output)))
+
+	if checkOutput {
+		assertExpectedOutput(t, pkgDir, expectedOutput, output, opts)
 	}
-	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expected) {
-		t.Fatal("unexpected output")
+	if !checkIR {
+		return
+	}
+	if capturedIR == nil || *capturedIR == "" {
+		t.Fatalf("module snapshot missing for package %s", moduleID)
+	}
+	if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(*capturedIR), goldenIR) {
+		t.Fatal("unexpected IR output")
 	}
 }
 
@@ -296,6 +328,31 @@ func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
 
 // RunAndCaptureWithConf runs llgo with a custom build config and captures output.
 func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
+	return runWithConf(relPkg, pkgDir, conf)
+}
+
+func withModuleCapture(conf *build.Config, targetPkgPath string) (*build.Config, *string) {
+	if conf == nil {
+		conf = build.NewDefaultConf(build.ModeRun)
+	}
+	localConf := *conf
+	var module string
+	prevHook := localConf.ModuleHook
+	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
+		if prevHook != nil {
+			prevHook(pkgPath, mod)
+		}
+		if pkgPath == targetPkgPath && module == "" {
+			module = mod.String()
+		}
+	}
+	return &localConf, &module
+}
+
+func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
+	if conf == nil {
+		conf = build.NewDefaultConf(build.ModeRun)
+	}
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
 		return nil, err
@@ -313,9 +370,6 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 		}
 	}()
 
-	if conf == nil {
-		return nil, fmt.Errorf("build config is nil")
-	}
 	localConf := *conf
 
 	originalStdout := os.Stdout
@@ -351,11 +405,6 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 		}
 		defer os.Chdir(origDir)
 		relPkg = "."
-		if _, err := os.Stat(filepath.Join(pkgDir, "in.go")); err == nil {
-			relPkg = "in.go"
-		} else if _, err := os.Stat(filepath.Join(pkgDir, "main.go")); err == nil {
-			relPkg = "main.go"
-		}
 	}
 
 	mockable.EnableMock()
@@ -381,6 +430,43 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 		return output, fmt.Errorf("run failed: %w", runErr)
 	}
 	return output, nil
+}
+
+func assertExpectedOutput(t *testing.T, pkgDir string, expectedOutput, output []byte, opts runOptions) {
+	t.Helper()
+	if opts.filter != nil {
+		output = []byte(opts.filter(string(output)))
+	}
+	if test.Diff(t, filepath.Join(pkgDir, "expect.txt.new"), output, expectedOutput) {
+		t.Fatal("unexpected output")
+	}
+}
+
+func readGolden(file string) ([]byte, bool, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, false, nil
+		}
+		return nil, false, err
+	}
+	if bytes.Equal(data, []byte{';'}) {
+		return data, false, nil
+	}
+	return data, true, nil
+}
+
+func moduleIDFromIR(data []byte) string {
+	line := data
+	if idx := bytes.IndexByte(line, '\n'); idx >= 0 {
+		line = line[:idx]
+	}
+	line = bytes.TrimSpace(line)
+	const prefix = "; ModuleID = '"
+	if !bytes.HasPrefix(line, []byte(prefix)) || !bytes.HasSuffix(line, []byte{'\''}) {
+		return ""
+	}
+	return string(line[len(prefix) : len(line)-1])
 }
 
 func filterRunOutput(in []byte) []byte {

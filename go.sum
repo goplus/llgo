@@ -22,8 +22,8 @@ github.com/marcinbor85/gohex v0.0.0-20210308104911-55fb1c624d84 h1:hyAgCuG5nqTMD
 github.com/marcinbor85/gohex v0.0.0-20210308104911-55fb1c624d84/go.mod h1:Pb6XcsXyropB9LNHhnqaknG/vEwYztLkQzVCHv8sQ3M=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
-github.com/mattn/go-tty v0.0.7 h1:KJ486B6qI8+wBO7kQxYgmmEFDaFEE96JMBQ7h400N8Q=
-github.com/mattn/go-tty v0.0.7/go.mod h1:f2i5ZOvXBU/tCABmLmOfzLz9azMo5wdAaElRNnJKr+k=
+github.com/mattn/go-tty v0.0.8 h1:yxtc0Ye17/1ne/bjy993YUoyP8bJJFa9n5M9XTdwoZQ=
+github.com/mattn/go-tty v0.0.8/go.mod h1:f2i5ZOvXBU/tCABmLmOfzLz9azMo5wdAaElRNnJKr+k=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/qiniu/x v1.17.0 h1:OsyDKXzYp5vw9Hc7VAe4Cso1Sp50fLKGsBuDteyTevE=
