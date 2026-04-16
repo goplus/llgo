@@ -37,26 +37,6 @@ func PrintByte(v byte) {
 	c.Fputc(c.Int(v), c.Stderr)
 }
 
-func PrintFloat(v float64) {
-	switch {
-	case v != v:
-		c.Fprintf(c.Stderr, c.Str("NaN"))
-		return
-	case v+v == v && v != 0:
-		if v > 0 {
-			c.Fprintf(c.Stderr, c.Str("+Inf"))
-		} else {
-			c.Fprintf(c.Stderr, c.Str("-Inf"))
-		}
-		return
-	}
-	c.Fprintf(c.Stderr, c.Str("%+e"), v)
-}
-
-func PrintComplex(v complex128) {
-	print("(", real(v), imag(v), "i)")
-}
-
 func PrintUint(v uint64) {
 	c.Fprintf(c.Stderr, printFormatPrefixUInt, v)
 }
