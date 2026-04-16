@@ -41,46 +41,11 @@ func formatFloatWithC(v float64, format *c.Char) string {
 	return c.GoString((*c.Char)(unsafe.Pointer(&buf[0])))
 }
 
-func zeroPad(n int) string {
-	switch n {
-	case 1:
-		return "0"
-	case 2:
-		return "00"
-	case 3:
-		return "000"
-	default:
-		return ""
-	}
-}
-
-func padExponentWidth(s string, width int) string {
-	idx := -1
-	for i := len(s) - 1; i >= 0; i-- {
-		if s[i] == 'e' || s[i] == 'E' {
-			idx = i
-			break
-		}
-	}
-	if idx < 0 || idx+2 >= len(s) {
-		return s
-	}
-	sign := s[idx+1]
-	if sign != '+' && sign != '-' {
-		return s
-	}
-	digits := len(s) - (idx + 2)
-	if digits >= width {
-		return s
-	}
-	return s[:idx+2] + zeroPad(width-digits) + s[idx+2:]
-}
-
 func formatLegacyFloat(v float64) string {
 	if s, ok := formatSpecialFloat(v); ok {
 		return s
 	}
-	return padExponentWidth(formatFloatWithC(v, c.Str("%+.6e")), 3)
+	return formatFloatWithC(v, c.Str("%+.6e"))
 }
 
 func formatGo126Float(v float64) string {
