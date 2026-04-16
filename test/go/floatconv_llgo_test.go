@@ -18,6 +18,7 @@ package gotest
 
 import (
 	"math"
+	"runtime"
 	"testing"
 )
 
@@ -35,9 +36,16 @@ func TestFloatToIntegerConversionBounds(t *testing.T) {
 
 	checkUint32("wrap above uint32 max", float32(5294967295.1), 1000000000)
 	checkUint32("wrap negative uint32", float32(-1.1), math.MaxUint32)
-	checkUint32("saturate huge uint32", float32(1e20), math.MaxUint32)
 	checkUint32("nan uint32", float32(math.NaN()), 0)
 
+	// gc still disagrees across targets for out-of-range float->int conversions
+	// (for example, go1.24.2 yields different results on linux/amd64 vs darwin/arm64).
+	// Keep the shared go/llgo test stable and only pin llgo's deterministic lowering.
+	if runtime.Compiler != "llgo" {
+		return
+	}
+
+	checkUint32("saturate huge uint32", float32(1e20), math.MaxUint32)
 	checkInt32("above int32 max", float64(math.MaxInt32)+1024, math.MaxInt32)
 	checkInt32("below int32 min", float64(math.MinInt32)-1024, math.MinInt32)
 	checkInt32("nan int32", math.NaN(), 0)
