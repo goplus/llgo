@@ -70,6 +70,24 @@ func TestNamedTypeEquivalent(t *testing.T) {
 	}
 }
 
+func TestNamedTypeEquivalentRecursiveSignature(t *testing.T) {
+	pkg1 := types.NewPackage("example.com/p", "p")
+	pkg2 := types.NewPackage("example.com/p", "p")
+	a := types.NewNamed(types.NewTypeName(token.NoPos, pkg1, "F", nil), nil, nil)
+	b := types.NewNamed(types.NewTypeName(token.NoPos, pkg2, "F", nil), nil, nil)
+	a.SetUnderlying(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", a)),
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", a)),
+		false))
+	b.SetUnderlying(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", b)),
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", b)),
+		false))
+	if namedTypeEquivalent(a, b) {
+		t.Fatalf("namedTypeEquivalent should be false for recursive function signatures")
+	}
+}
+
 func TestNamedStructLayoutEquivalent(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
