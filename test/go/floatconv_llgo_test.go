@@ -36,8 +36,9 @@ func TestFloatToIntegerConversionBounds(t *testing.T) {
 		}
 	}
 
-	checkUint32("above uint32 max", float32(5294967295.1), math.MaxUint32)
-	checkUint32("negative uint32", float32(-1.1), 0)
+	checkUint32("wrap above uint32 max", float32(5294967295.1), 1000000000)
+	checkUint32("wrap negative uint32", float32(-1.1), math.MaxUint32)
+	checkUint32("saturate huge uint32", float32(1e20), math.MaxUint32)
 	checkUint32("nan uint32", float32(math.NaN()), 0)
 
 	checkInt32("above int32 max", float64(math.MaxInt32)+1024, math.MaxInt32)

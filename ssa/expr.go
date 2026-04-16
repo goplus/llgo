@@ -978,6 +978,9 @@ func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
 	}
 	if typ.kind == vkUnsigned {
+		if dstSize == 4 {
+			return castFloatToUnsigned32(b, x, typ)
+		}
 		return castFloatToUnsignedWidth(b, x, typ, dstSize*8)
 	}
 	return castFloatToSignedWidth(b, x, typ, dstSize*8)
@@ -1008,6 +1011,32 @@ func castFloatToUnsignedWidth(b Builder, x llvm.Value, typ Type, bits uint64) ll
 	ret := llvm.CreateFPToUI(b.impl, safeX, typ.ll)
 	ret = llvm.CreateSelect(b.impl, tooLow, llvm.ConstInt(typ.ll, 0, false), ret)
 	ret = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, unsignedMaxInt(bits), false), ret)
+	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
+}
+
+func castFloatToUnsigned32(b Builder, x llvm.Value, typ Type) llvm.Value {
+	i64 := b.Prog.Int64()
+	u64 := b.Prog.Uint64()
+	zeroFloat := llvm.ConstNull(x.Type())
+	isNaN := llvm.CreateFCmp(b.impl, llvm.FloatUNO, x, x)
+	isNeg := llvm.CreateFCmp(b.impl, llvm.FloatOLT, x, zeroFloat)
+
+	minI64 := llvm.ConstFloat(x.Type(), -float64(uint64(1)<<63))
+	maxU64 := llvm.ConstFloat(x.Type(), float64(^uint64(0)))
+	tooLow := llvm.CreateFCmp(b.impl, llvm.FloatOLE, x, minI64)
+	tooHigh := llvm.CreateFCmp(b.impl, llvm.FloatOGE, x, maxU64)
+
+	negInvalid := b.impl.CreateOr(isNaN, tooLow, "")
+	posInvalid := b.impl.CreateOr(isNaN, tooHigh, "")
+	negX := llvm.CreateSelect(b.impl, negInvalid, zeroFloat, x)
+	posX := llvm.CreateSelect(b.impl, posInvalid, zeroFloat, x)
+
+	neg := llvm.CreateTrunc(b.impl, llvm.CreateFPToSI(b.impl, negX, i64.ll), typ.ll)
+	pos := llvm.CreateTrunc(b.impl, llvm.CreateFPToUI(b.impl, posX, u64.ll), typ.ll)
+	neg = llvm.CreateSelect(b.impl, tooLow, llvm.ConstInt(typ.ll, 0, false), neg)
+	pos = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, unsignedMaxInt(32), false), pos)
+
+	ret := llvm.CreateSelect(b.impl, isNeg, neg, pos)
 	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
 }
 
