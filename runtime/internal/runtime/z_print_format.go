@@ -17,56 +17,77 @@
 package runtime
 
 import (
-	"math"
-	"strconv"
-	"strings"
+	"unsafe"
+
+	c "github.com/goplus/llgo/runtime/internal/clite"
 )
 
 func formatSpecialFloat(v float64) (string, bool) {
 	switch {
-	case math.IsNaN(v):
+	case v != v:
 		return "NaN", true
-	case math.IsInf(v, 1):
+	case v+v == v && v != 0 && v > 0:
 		return "+Inf", true
-	case math.IsInf(v, -1):
+	case v+v == v && v != 0:
 		return "-Inf", true
 	default:
 		return "", false
 	}
 }
 
+func formatFloatWithC(v float64, format *c.Char) string {
+	var buf [64]byte
+	c.Snprintf((*c.Char)(unsafe.Pointer(&buf[0])), uintptr(len(buf)), format, v)
+	return c.GoString((*c.Char)(unsafe.Pointer(&buf[0])))
+}
+
+func zeroPad(n int) string {
+	switch n {
+	case 1:
+		return "0"
+	case 2:
+		return "00"
+	case 3:
+		return "000"
+	default:
+		return ""
+	}
+}
+
 func padExponentWidth(s string, width int) string {
-	idx := strings.LastIndexAny(s, "eE")
-	if idx < 0 || idx+2 > len(s) {
+	idx := -1
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == 'e' || s[i] == 'E' {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 || idx+2 >= len(s) {
 		return s
 	}
 	sign := s[idx+1]
 	if sign != '+' && sign != '-' {
 		return s
 	}
-	digits := s[idx+2:]
-	if len(digits) >= width {
+	digits := len(s) - (idx + 2)
+	if digits >= width {
 		return s
 	}
-	return s[:idx+2] + strings.Repeat("0", width-len(digits)) + digits
+	return s[:idx+2] + zeroPad(width-digits) + s[idx+2:]
 }
 
 func formatLegacyFloat(v float64) string {
 	if s, ok := formatSpecialFloat(v); ok {
 		return s
 	}
-	s := padExponentWidth(strconv.FormatFloat(v, 'e', 6, 64), 3)
-	if s[0] != '-' {
-		s = "+" + s
-	}
-	return s
+	return padExponentWidth(formatFloatWithC(v, c.Str("%+.6e")), 3)
 }
 
 func formatGo126Float(v float64) string {
 	if s, ok := formatSpecialFloat(v); ok {
 		return s
 	}
-	return strconv.FormatFloat(v, 'g', -1, 64)
+	return formatFloatWithC(v, c.Str("%g"))
 }
 
 func formatLegacyComplex(v complex128) string {
