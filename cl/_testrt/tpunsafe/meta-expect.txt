@@ -1,5 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[bool]).check:
-    _llgo_string
-github.com/goplus/llgo/cl/_testrt/tpunsafe.(*M[int64]).check:
-    _llgo_string

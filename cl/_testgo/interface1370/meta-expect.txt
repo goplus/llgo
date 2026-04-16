@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/interface1370.main:
-    *_llgo_github.com/goplus/llgo/cl/_testdata/geometry1370.Rectangle

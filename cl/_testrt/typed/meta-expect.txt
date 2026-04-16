@@ -1,5 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/typed.main:
-    _llgo_github.com/goplus/llgo/cl/_testrt/typed.A
-    _llgo_github.com/goplus/llgo/cl/_testrt/typed.T
-    _llgo_string

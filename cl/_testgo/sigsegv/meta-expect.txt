@@ -1,7 +1,0 @@
-[UseIfaceMethod]
-github.com/goplus/llgo/cl/_testgo/sigsegv.init#1$1:
-    _llgo_error Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to
-
-[InterfaceInfo]
-_llgo_error:
-    Error _llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to

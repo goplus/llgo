@@ -67,6 +67,7 @@ type runOptions struct {
 	filter      func(string) string
 	checkIR     bool
 	checkOutput bool
+	checkMeta   bool
 }
 
 // RunOption customizes directory-based test behavior.
@@ -97,6 +98,13 @@ func WithOutputCheck(enabled bool) RunOption {
 func WithIRCheck(enabled bool) RunOption {
 	return func(opts *runOptions) {
 		opts.checkIR = enabled
+	}
+}
+
+// WithMetaCheck enables or disables semantic metadata golden checks.
+func WithMetaCheck(enabled bool) RunOption {
+	return func(opts *runOptions) {
+		opts.checkMeta = enabled
 	}
 }
 
@@ -197,37 +205,59 @@ func Pkg(t *testing.T, pkgPath, outFile string) {
 	}
 }
 
-func testFrom(t *testing.T, pkgDir, sel string) {
+func testFrom(t *testing.T, pkgDir, sel string, opts runOptions) {
 	t.Helper()
 	if sel != "" && !strings.Contains(pkgDir, sel) {
 		return
 	}
-	spec, err := littest.LoadSpec(pkgDir)
-	if err != nil {
-		t.Fatal("LoadSpec failed:", err)
-	}
-	metaExpected, hasMetaExpect, err := loadMetaExpect(pkgDir)
-	if err != nil {
-		t.Fatal("loadMetaExpect failed:", err)
-	}
-	if spec.Mode == littest.ModeSkip && !hasMetaExpect {
+	if !opts.checkIR && !opts.checkMeta {
 		return
 	}
+
+	var err error
+	var metaExpected []byte
+	if opts.checkMeta {
+		var hasMetaExpect bool
+		metaExpected, hasMetaExpect, err = loadMetaExpect(pkgDir)
+		if err != nil {
+			t.Fatal("loadMetaExpect failed:", err)
+		}
+		if !hasMetaExpect {
+			t.Fatal("missing meta-expect.txt")
+		}
+	}
+
+	var spec littest.Spec
+	if opts.checkIR {
+		var err error
+		spec, err = littest.LoadSpec(pkgDir)
+		if err != nil {
+			t.Fatal("LoadSpec failed:", err)
+		}
+		if spec.Mode == littest.ModeSkip && !opts.checkMeta {
+			return
+		}
+	}
+
 	mod, err := llgen.GenModuleFrom(pkgDir)
 	if err != nil {
 		t.Fatal("GenModuleFrom failed:", err)
 	}
 	defer mod.Dispose()
-	v := mod.String()
-	if spec.Mode == littest.ModeFileCheck {
-		if err := littest.Check(spec, v); err != nil {
-			_ = os.WriteFile(pkgDir+"/result.txt", []byte(v), 0644)
-			t.Fatal(err)
+
+	if opts.checkIR {
+		v := mod.String()
+		if spec.Mode == littest.ModeFileCheck {
+			if err := littest.Check(spec, v); err != nil {
+				_ = os.WriteFile(pkgDir+"/result.txt", []byte(v), 0644)
+				t.Fatal(err)
+			}
+		} else if spec.Mode == littest.ModeLiteral && test.Diff(t, pkgDir+"/result.txt", []byte(v), []byte(spec.Text)) {
+			t.Fatal("llgen.GenFrom: unexpected result")
 		}
-	} else if spec.Mode == littest.ModeLiteral && test.Diff(t, pkgDir+"/result.txt", []byte(v), []byte(spec.Text)) {
-		t.Fatal("llgen.GenFrom: unexpected result")
 	}
-	if hasMetaExpect {
+
+	if opts.checkMeta {
 		info := semmeta.Read(mod)
 		if test.Diff(t, filepath.Join(pkgDir, "meta-expect.txt.new"), []byte(FormatSemMeta(info)), metaExpected) {
 			t.Fatal("semmeta.Read: unexpected result")
@@ -243,14 +273,6 @@ func loadMetaExpect(pkgDir string) ([]byte, bool, error) {
 			return nil, false, nil
 		}
 		return nil, false, err
-	}
-	// An explicit empty meta-expect.txt means "this case is expected to produce
-	// no semantic metadata". We do not auto-generate empty fixtures because they
-	// are too numerous, but if one is checked in intentionally we still compare
-	// the actual metadata against that empty expectation to catch accidental
-	// additions.
-	if bytes.Equal(bytes.TrimSpace(data), []byte{';'}) {
-		return nil, false, nil
 	}
 	return data, true, nil
 }
@@ -272,10 +294,11 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		}
 	}
 	if !checkOutput {
-		// IR-only mode: when expect.txt is not checked, use llgen.GenFrom via
-		// testFrom to compare this package's generated IR against out.ll.
-		if opts.checkIR {
-			testFrom(t, pkgDir, sel)
+		// IR-only or metadata-only mode: when expect.txt is not checked, use
+		// testFrom to compare this package's generated IR and/or semantic
+		// metadata against the corresponding golden files.
+		if opts.checkIR || opts.checkMeta {
+			testFrom(t, pkgDir, sel, opts)
 		}
 		return
 	}

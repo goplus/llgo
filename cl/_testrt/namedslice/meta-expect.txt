@@ -1,4 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/namedslice.main:
-    _llgo_github.com/goplus/llgo/cl/_testrt/namedslice.MyBytes
-    _llgo_string

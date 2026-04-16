@@ -1,5 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testdata/foo.Bar:
-    _llgo_struct$K-dZ9QotZfVPz2a0YdRa9vmZUuDXPTqZOlMShKEDJtk
-github.com/goplus/llgo/cl/_testdata/foo.F:
-    github.com/goplus/llgo/cl/_testdata/foo.struct$MYpsoM99ZwFY087IpUOkIw1zjBA_sgFXVodmn1m-G88

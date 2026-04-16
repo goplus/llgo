@@ -1,5 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/abinamed.main:
-    _llgo_github.com/goplus/llgo/cl/_testrt/abinamed.T
-    _llgo_github.com/goplus/llgo/runtime/abi.Type
-    _llgo_string

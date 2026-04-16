@@ -1,7 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/defer5.main:
-    _llgo_string
-github.com/goplus/llgo/cl/_testgo/defer5.main$1:
-    _llgo_string
-github.com/goplus/llgo/cl/_testgo/defer5.main$2:
-    _llgo_string

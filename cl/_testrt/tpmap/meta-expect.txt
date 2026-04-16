@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/tpmap.main:
-    _llgo_int

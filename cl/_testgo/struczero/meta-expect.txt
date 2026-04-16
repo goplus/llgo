@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/struczero.main:
-    _llgo_github.com/goplus/llgo/cl/_testdata/foo.Foo

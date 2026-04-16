@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/tprecur.recursive:
-    _llgo_string

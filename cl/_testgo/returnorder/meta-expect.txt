@@ -1,4 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/returnorder.main:
-    _llgo_int
-    _llgo_string

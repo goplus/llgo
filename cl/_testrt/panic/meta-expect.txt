@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/panic.main:
-    _llgo_string

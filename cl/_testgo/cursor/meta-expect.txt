@@ -1,5 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode:
-    _llgo_string
-github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1:
-    _llgo_string

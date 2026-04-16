@@ -1,7 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testdata/debug.main:
-    *_llgo_github.com/goplus/llgo/cl/_testdata/debug.Struct
-
-[MethodInfo]
-*_llgo_github.com/goplus/llgo/cl/_testdata/debug.Struct:
-    0 Foo _llgo_func$w7i25ru9Alz5aegActeASLLTXdwBqJ6Wc6FdpkIn_cs github.com/goplus/llgo/cl/_testdata/debug.(*Struct).Foo github.com/goplus/llgo/cl/_testdata/debug.(*Struct).Foo

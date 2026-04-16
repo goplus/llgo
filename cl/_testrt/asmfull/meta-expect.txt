@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testrt/asmfull.main:
-    _llgo_int

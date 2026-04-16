@@ -1,3 +1,0 @@
-[UseIface]
-github.com/goplus/llgo/cl/_testgo/cgodefer.main$1$1:
-    _llgo_Pointer
