@@ -655,6 +655,9 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			typ := x.raw.Type.Underlying().(*types.Struct)
 			ret := prog.BoolVal(true)
 			for i, n := 0, typ.NumFields(); i < n; i++ {
+				if typ.Field(i).Name() == "_" {
+					continue
+				}
 				ft := prog.Type(typ.Field(i).Type(), InGo)
 				fx := b.impl.CreateExtractValue(x.impl, i, "")
 				fy := b.impl.CreateExtractValue(y.impl, i, "")
