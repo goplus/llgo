@@ -313,6 +313,54 @@ func TestConvertNamedStructValue(t *testing.T) {
 	}
 }
 
+func TestConvertStringFromWideIntegers(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	params := types.NewTuple(
+		types.NewVar(0, nil, "i64", types.Typ[types.Int64]),
+		types.NewVar(0, nil, "u64", types.Typ[types.Uint64]),
+		types.NewVar(0, nil, "i32", types.Typ[types.Int32]),
+		types.NewVar(0, nil, "u32", types.Typ[types.Uint32]),
+	)
+	rets := types.NewTuple(
+		types.NewVar(0, nil, "", types.Typ[types.String]),
+		types.NewVar(0, nil, "", types.Typ[types.String]),
+		types.NewVar(0, nil, "", types.Typ[types.String]),
+		types.NewVar(0, nil, "", types.Typ[types.String]),
+	)
+	sig := types.NewSignatureType(nil, nil, nil, params, rets, false)
+	fn := pkg.NewFunc("convertStrings", sig, InGo)
+	b := fn.MakeBody(1)
+	str := prog.Type(types.Typ[types.String], InGo)
+	b.Return(
+		b.Convert(str, fn.Param(0)),
+		b.Convert(str, fn.Param(1)),
+		b.Convert(str, fn.Param(2)),
+		b.Convert(str, fn.Param(3)),
+	)
+
+	ir := fn.impl.String()
+	for _, want := range []string{
+		`StringFromInt64"(i64 %0)`,
+		`StringFromUint64"(i64 %1)`,
+		`sext i32 %2 to i64`,
+		`StringFromInt64"(i64 %6)`,
+		`zext i32 %3 to i64`,
+		`StringFromUint64"(i64 %8)`,
+	} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("missing %q in IR:\n%s", want, ir)
+		}
+	}
+}
+
 func TestCallClosureDynamic(t *testing.T) {
 	prog := NewProgram(nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
