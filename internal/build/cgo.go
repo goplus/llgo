@@ -53,6 +53,8 @@ static void* _Cmalloc(size_t size) {
 `
 )
 
+var cgoExternRE = regexp.MustCompile(`^(_cgo_[^_]+_(C2func|Cfunc|Cmacro)_)(.*)$`)
+
 func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, verbose bool) (llfiles, cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
 	if err != nil {
@@ -90,30 +92,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 			llfiles = append(llfiles, linkFile)
 		}, verbose)
 	}
-	re := regexp.MustCompile(`^(_cgo_[^_]+_(C2func|Cfunc|Cmacro)_)(.*)$`)
-	cgoSymbols := make(map[string]string)
-	mallocFix := false
-	for _, symbolName := range externs {
-		lastPart := symbolName
-		lastDot := strings.LastIndex(symbolName, ".")
-		if lastDot != -1 {
-			lastPart = symbolName[lastDot+1:]
-		}
-		if strings.HasPrefix(lastPart, "__cgo_") {
-			// func ptr var: main.__cgo_func_name
-			cgoSymbols[symbolName] = lastPart
-		} else if m := re.FindStringSubmatch(symbolName); len(m) > 0 {
-			prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
-			name := m[3]   // remaining part
-			cgoSymbols[symbolName] = name
-			// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
-			if !mallocFix && m[2] == "Cfunc" {
-				mallocName := prefix + "_Cmalloc"
-				cgoSymbols[mallocName] = "_Cmalloc"
-				mallocFix = true
-			}
-		}
-	}
+	cgoSymbols := collectCgoSymbols(externs)
 	for _, preamble := range preambles {
 		tmpFile, err := os.CreateTemp("", "-cgo-*.c")
 		if err != nil {
@@ -137,6 +116,33 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 		cgoLdflags = append(cgoLdflags, safesplit.SplitPkgConfigFlags(ldflag)...)
 	}
 	return
+}
+
+func collectCgoSymbols(externs []string) map[string]string {
+	cgoSymbols := make(map[string]string)
+	mallocFix := false
+	for _, symbolName := range externs {
+		lastPart := symbolName
+		lastDot := strings.LastIndex(symbolName, ".")
+		if lastDot != -1 {
+			lastPart = symbolName[lastDot+1:]
+		}
+		if strings.HasPrefix(lastPart, "__cgo_") {
+			// func ptr var: main.__cgo_func_name
+			cgoSymbols[symbolName] = lastPart
+		} else if m := cgoExternRE.FindStringSubmatch(lastPart); len(m) > 0 {
+			prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
+			name := m[3]   // remaining part
+			cgoSymbols[lastPart] = name
+			// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
+			if !mallocFix && m[2] == "Cfunc" {
+				mallocName := prefix + "_Cmalloc"
+				cgoSymbols[mallocName] = "_Cmalloc"
+				mallocFix = true
+			}
+		}
+	}
+	return cgoSymbols
 }
 
 // clangASTNode represents a node in clang's AST
