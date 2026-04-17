@@ -1,6 +1,7 @@
 package gotest
 
 import (
+	"encoding/asn1"
 	"reflect"
 	"testing"
 )
@@ -64,5 +65,28 @@ func TestReflectFieldInterfaceScalarComparison(t *testing.T) {
 	}
 	if v.Field(6).Interface() == v.Field(7).Interface() {
 		t.Fatal("different high-bit uint32 fields compared equal")
+	}
+}
+
+type directIfaceASN1BasicConstraints struct {
+	IsCA       bool `asn1:"optional"`
+	MaxPathLen int  `asn1:"optional,default:-1"`
+}
+
+func TestDirectInterfaceScalarDeepEqual(t *testing.T) {
+	if reflect.DeepEqual(true, false) {
+		t.Fatal("true and false compared equal")
+	}
+
+	der, err := asn1.Marshal(directIfaceASN1BasicConstraints{IsCA: true, MaxPathLen: -1})
+	if err != nil {
+		t.Fatalf("asn1 marshal failed: %v", err)
+	}
+	var out directIfaceASN1BasicConstraints
+	if _, err := asn1.Unmarshal(der, &out); err != nil {
+		t.Fatalf("asn1 unmarshal failed: %v", err)
+	}
+	if !out.IsCA {
+		t.Fatal("asn1 optional true bool was encoded as zero value")
 	}
 }

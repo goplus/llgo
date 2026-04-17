@@ -394,7 +394,7 @@ func (v Value) Bool() bool {
 	if v.kind() != Bool {
 		v.panicNotBool()
 	}
-	if v.flag&flagAddr != 0 {
+	if v.flag&flagIndir != 0 {
 		return *(*bool)(v.ptr)
 	}
 	return uintptr(v.ptr) != 0
