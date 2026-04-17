@@ -40,30 +40,3 @@ func formatFloatWithC(v float64, format *c.Char) string {
 	c.Snprintf((*c.Char)(unsafe.Pointer(&buf[0])), uintptr(len(buf)), format, v)
 	return c.GoString((*c.Char)(unsafe.Pointer(&buf[0])))
 }
-
-func formatLegacyFloat(v float64) string {
-	if s, ok := formatSpecialFloat(v); ok {
-		return s
-	}
-	return formatFloatWithC(v, c.Str("%+.6e"))
-}
-
-func formatGo126Float(v float64) string {
-	if s, ok := formatSpecialFloat(v); ok {
-		return s
-	}
-	return formatFloatWithC(v, c.Str("%g"))
-}
-
-func formatLegacyComplex(v complex128) string {
-	return "(" + formatLegacyFloat(real(v)) + formatLegacyFloat(imag(v)) + "i)"
-}
-
-func formatGo126Complex(v complex128) string {
-	re := formatGo126Float(real(v))
-	im := formatGo126Float(imag(v))
-	if im[0] != '-' && im[0] != '+' {
-		im = "+" + im
-	}
-	return "(" + re + im + "i)"
-}

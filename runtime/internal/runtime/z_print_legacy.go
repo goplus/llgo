@@ -20,10 +20,13 @@ package runtime
 
 import c "github.com/goplus/llgo/runtime/internal/clite"
 
-func PrintFloat(v float64) {
-	c.Fputs(c.AllocaCStr(formatLegacyFloat(v)), c.Stderr)
+func formatFloat(v float64) string {
+	if s, ok := formatSpecialFloat(v); ok {
+		return s
+	}
+	return formatFloatWithC(v, c.Str("%+.6e"))
 }
 
-func PrintComplex(v complex128) {
-	c.Fputs(c.AllocaCStr(formatLegacyComplex(v)), c.Stderr)
+func formatComplex(v complex128) string {
+	return "(" + formatFloat(real(v)) + formatFloat(imag(v)) + "i)"
 }

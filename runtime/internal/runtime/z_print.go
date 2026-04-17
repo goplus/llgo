@@ -45,6 +45,14 @@ func PrintInt(v int64) {
 	c.Fprintf(c.Stderr, printFormatPrefixInt, v)
 }
 
+func PrintFloat(v float64) {
+	c.Fputs(c.AllocaCStr(formatFloat(v)), c.Stderr)
+}
+
+func PrintComplex(v complex128) {
+	c.Fputs(c.AllocaCStr(formatComplex(v)), c.Stderr)
+}
+
 func PrintHex(v uint64) {
 	c.Fprintf(c.Stderr, printFormatPrefixHex, v)
 }
