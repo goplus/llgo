@@ -61,18 +61,38 @@ func TestStringConversionFromWideIntegers(t *testing.T) {
 	if err := os.WriteFile(file, []byte(stringConversionProbe), 0644); err != nil {
 		t.Fatal(err)
 	}
-	runStringConversionProbe(t, "go", "run", file)
+	repoRoot := findStringConversionRepoRoot(t)
+	runStringConversionProbe(t, repoRoot, "go", "run", file)
 	if os.Getenv("LLGO_ROOT") != "" {
-		runStringConversionProbe(t, "llgo", "run", file)
+		runStringConversionProbe(t, repoRoot, "go", "run", "./cmd/llgo", "run", file)
 	}
 }
 
-func runStringConversionProbe(t *testing.T, name string, args ...string) {
+func runStringConversionProbe(t *testing.T, dir, name string, args ...string) {
 	t.Helper()
 	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
 	cmd.Env = os.Environ()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("%s %v failed: %v\n%s", name, args, err, out)
+	}
+}
+
+func findStringConversionRepoRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("repo root not found")
+		}
+		dir = parent
 	}
 }
