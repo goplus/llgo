@@ -30,6 +30,7 @@ import (
 	"testing"
 
 	"github.com/goplus/gogen/packages"
+	llssa "github.com/goplus/llgo/ssa"
 	gossa "golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 )
@@ -148,6 +149,62 @@ func explicit[T any](v *outer[T]) uintptr {
 	if _, ok := fieldAddrName(&gossa.FieldAddr{}); ok {
 		t.Fatal("fieldAddrName returned true for invalid FieldAddr")
 	}
+	if ctx.isExplicitFieldAddr(&gossa.FieldAddr{}) != true {
+		t.Fatal("invalid FieldAddr should be treated as explicit")
+	}
+	if _, ok := ctx.offsetOfFieldAddr(&gossa.FieldAddr{}); ok {
+		t.Fatal("offsetOfFieldAddr returned true for invalid FieldAddr")
+	}
+	if _, ok := ctx.offsetOfFieldChain(&gossa.FieldAddr{}); ok {
+		t.Fatal("offsetOfFieldChain returned true for invalid FieldAddr")
+	}
+	if _, ok := ctx.offsetOfBuiltinArg(&gossa.UnOp{
+		Op: token.NOT,
+		X:  gossa.NewConst(constant.MakeBool(true), types.Typ[types.Bool]),
+	}); ok {
+		t.Fatal("offsetOfBuiltinArg returned true for a non-deref UnOp")
+	}
+	if _, ok := ctx.offsetOfBuiltinArg(&gossa.UnOp{
+		Op: token.MUL,
+		X:  gossa.NewConst(constant.MakeInt64(1), types.Typ[types.Int]),
+	}); ok {
+		t.Fatal("offsetOfBuiltinArg returned true for deref of a non-FieldAddr")
+	}
+	if _, ok := ctx.offsetOfBuiltinArg(&gossa.UnOp{
+		Op: token.MUL,
+		X:  &gossa.FieldAddr{},
+	}); ok {
+		t.Fatal("offsetOfBuiltinArg returned true for invalid FieldAddr")
+	}
+
+	stubStruct := types.NewStruct([]*types.Var{
+		types.NewVar(token.NoPos, nil, "F", types.Typ[types.Int]),
+	}, nil)
+	validSynthetic := &gossa.FieldAddr{
+		X:     fakeSSAValue{typ: types.NewPointer(stubStruct)},
+		Field: 0,
+	}
+	if ctx.isExplicitFieldAddr(validSynthetic) {
+		t.Fatal("FieldAddr without source position should not be considered explicit")
+	}
+	if _, _, ok := fieldAddrStruct(&gossa.FieldAddr{
+		X:     fakeSSAValue{typ: types.Typ[types.Int]},
+		Field: 0,
+	}); ok {
+		t.Fatal("fieldAddrStruct returned true for non-pointer receiver")
+	}
+	if _, _, ok := fieldAddrStruct(&gossa.FieldAddr{
+		X:     fakeSSAValue{typ: types.NewPointer(types.Typ[types.Int])},
+		Field: 0,
+	}); ok {
+		t.Fatal("fieldAddrStruct returned true for pointer to non-struct receiver")
+	}
+	if _, _, ok := fieldAddrStruct(&gossa.FieldAddr{
+		X:     fakeSSAValue{typ: types.NewPointer(stubStruct)},
+		Field: stubStruct.NumFields(),
+	}); ok {
+		t.Fatal("fieldAddrStruct returned true for out-of-range field")
+	}
 
 	file := filepath.Join(t.TempDir(), "lines.go")
 	if err := os.WriteFile(file, []byte("first\nsecond\n"), 0o644); err != nil {
@@ -170,7 +227,127 @@ func explicit[T any](v *outer[T]) uintptr {
 	if _, ok := (&context{}).sourceLine(filepath.Join(t.TempDir(), "missing.go"), 1); ok {
 		t.Fatal("sourceLine returned true for a missing file")
 	}
+
+	explicitFile := fset.Position(explicitField.Pos()).Filename
+	if explicitFile == "" {
+		t.Fatal("explicit FieldAddr has no filename")
+	}
+	shortLineCtx := &context{
+		prog: newLLSSAProg(t),
+		fset: fset,
+		srcLines: map[string][]string{
+			explicitFile: make([]string, fset.Position(explicitField.Pos()).Line),
+		},
+	}
+	if shortLineCtx.isExplicitFieldAddr(explicitField) {
+		t.Fatal("FieldAddr with column beyond source line should not be considered explicit")
+	}
+	if err := os.Remove(explicitFile); err != nil {
+		t.Fatal(err)
+	}
+	if (&context{prog: newLLSSAProg(t), fset: fset}).isExplicitFieldAddr(explicitField) {
+		t.Fatal("FieldAddr with missing source file should not be considered explicit")
+	}
 }
+
+func TestCompileOffsetOfPromotedFieldChain(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `package foo
+
+import "unsafe"
+
+type level1 struct{ B byte }
+type level2 struct {
+	C byte
+	level1
+}
+type outer[T any] struct {
+	A T
+	level2
+}
+
+func promoted[T any](v *outer[T]) uintptr {
+	return unsafe.Offsetof(v.B)
+}
+
+func Offset(v *outer[int]) uintptr {
+	return promoted(v)
+}
+`)
+	if fn := m.NamedFunction("foo.Offset"); fn.IsNil() {
+		t.Fatal("missing compiled Offset function")
+	}
+}
+
+func TestInstrHelperEdges(t *testing.T) {
+	ctx := &context{prog: newLLSSAProg(t)}
+
+	mustPanic(t, "funcPCABI0 invalid arguments", func() {
+		ctx.funcPCABI0Value(nil, fakeSSAValue{typ: types.Typ[types.Int]})
+	})
+	mustPanic(t, "syscall missing arguments", func() {
+		ctx.syscallIntrinsic(nil, nil, nil)
+	})
+
+	variadicSig := ctx.syscallFnSig(2)
+	if got := variadicSig.Params().Len(); got != 3 {
+		t.Fatalf("syscallFnSig params = %d, want 3", got)
+	}
+	if !variadicSig.Variadic() {
+		t.Fatal("syscallFnSig should be variadic")
+	}
+
+	sig := ctx.syscallFnSigFixed(2)
+	if got := sig.Params().Len(); got != 2 {
+		t.Fatalf("syscallFnSigFixed params = %d, want 2", got)
+	}
+	if got := sig.Results().Len(); got != 1 {
+		t.Fatalf("syscallFnSigFixed results = %d, want 1", got)
+	}
+
+	ssaPkg, _ := buildOffsetofPackage(t, `package foo
+func fakeUnknown() {}
+`)
+	fn := ssaPkg.Func("fakeUnknown")
+	ctx = &context{
+		prog:   newLLSSAProg(t),
+		goTyps: ssaPkg.Pkg,
+		loaded: make(map[*types.Package]*pkgInfo),
+	}
+	ctx.prog.SetLinkname("foo.fakeUnknown", "llgo.fakeUnknown")
+	old, hadOld := llgoInstrs["fakeUnknown"]
+	llgoInstrs["fakeUnknown"] = llgoInstrBase + 0x7f
+	defer func() {
+		if hadOld {
+			llgoInstrs["fakeUnknown"] = old
+		} else {
+			delete(llgoInstrs, "fakeUnknown")
+		}
+	}()
+	mustPanic(t, "unknown llgo instruction ftype", func() {
+		ctx.call(nil, llssa.Call, &gossa.CallCommon{Value: fn})
+	})
+}
+
+func mustPanic(t *testing.T, name string, fn func()) {
+	t.Helper()
+	defer func() {
+		if recover() == nil {
+			t.Fatalf("%s did not panic", name)
+		}
+	}()
+	fn()
+}
+
+type fakeSSAValue struct {
+	typ types.Type
+}
+
+func (v fakeSSAValue) Name() string                    { return "fake" }
+func (v fakeSSAValue) String() string                  { return "fake" }
+func (v fakeSSAValue) Type() types.Type                { return v.typ }
+func (v fakeSSAValue) Parent() *gossa.Function         { return nil }
+func (v fakeSSAValue) Referrers() *[]gossa.Instruction { return nil }
+func (v fakeSSAValue) Pos() token.Pos                  { return token.NoPos }
 
 func buildOffsetofPackage(t *testing.T, src string) (*gossa.Package, *token.FileSet) {
 	t.Helper()

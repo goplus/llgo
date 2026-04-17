@@ -703,10 +703,7 @@ func (p *context) offsetOfFieldChain(field *ssa.FieldAddr) (int, bool) {
 		if !ok || p.isExplicitFieldAddr(parent) {
 			return offset, true
 		}
-		parentOffset, ok := p.offsetOfFieldAddr(parent)
-		if !ok {
-			return 0, false
-		}
+		parentOffset, _ := p.offsetOfFieldAddr(parent)
 		offset += parentOffset
 		field = parent
 	}
