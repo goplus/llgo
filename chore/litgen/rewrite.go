@@ -449,7 +449,7 @@ func generalizeModulePath(line, modulePath string) string {
 	start := 0
 	inQuote := false
 	for i := 0; i < len(line); i++ {
-		if line[i] != '"' {
+		if line[i] != '"' || isEscapedQuote(line, i) {
 			continue
 		}
 		if !inQuote {
@@ -465,6 +465,14 @@ func generalizeModulePath(line, modulePath string) string {
 	}
 	b.WriteString(line[start:])
 	return b.String()
+}
+
+func isEscapedQuote(line string, idx int) bool {
+	backslashes := 0
+	for i := idx - 1; i >= 0 && line[i] == '\\'; i-- {
+		backslashes++
+	}
+	return backslashes%2 == 1
 }
 
 func shouldCheckGlobal(symbol string) bool {

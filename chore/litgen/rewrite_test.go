@@ -232,3 +232,12 @@ func TestGeneralizeModulePath_ReplacesOnlyQuotedSegments(t *testing.T) {
 		t.Fatalf("generalizeModulePath = %q, want %q", got, want)
 	}
 }
+
+func TestGeneralizeModulePath_IgnoresEscapedQuotes(t *testing.T) {
+	line := "  !0 = !{!\"prefix \\\"quoted\\\" suffix\", !\"go/example.fn\"}"
+	got := generalizeModulePath(line, "go")
+	want := "  !0 = !{!\"prefix \\\"quoted\\\" suffix\", !\"{{.*}}/example.fn\"}"
+	if got != want {
+		t.Fatalf("generalizeModulePath = %q, want %q", got, want)
+	}
+}

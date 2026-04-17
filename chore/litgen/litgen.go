@@ -62,7 +62,7 @@ func processPath(path string) error {
 	if !ok {
 		return fmt.Errorf("%s: missing // LITTEST marker", abs)
 	}
-	target, err := resolveTarget(abs, abs)
+	target, err := resolveTarget(abs, filepath.Dir(abs))
 	if err != nil {
 		return err
 	}
