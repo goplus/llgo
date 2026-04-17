@@ -304,6 +304,23 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
+	sourcePatchGOROOT, err := env.GOROOTWithEnv(cfg.Env)
+	if err != nil {
+		return nil, err
+	}
+	sourcePatchGoVersion, err := env.GOVERSIONWithEnv(cfg.Env)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Overlay, err = buildSourcePatchOverlayForGOROOT(cfg.Overlay, env.LLGoRuntimeDir(), sourcePatchGOROOT, sourcePatchBuildContext{
+		goos:       conf.Goos,
+		goarch:     conf.Goarch,
+		goversion:  sourcePatchGoVersion,
+		buildFlags: cfg.BuildFlags,
+	})
+	if err != nil {
+		return nil, err
+	}
 	initial, err := packages.LoadEx(dedup, sizes, cfg, patterns...)
 	if err != nil {
 		return nil, err
