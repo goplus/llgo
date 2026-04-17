@@ -29,6 +29,9 @@ func TestCgoMallocWrapperSymbols(t *testing.T) {
 	if strings.TrimSpace(runGoCmd(t, "", "env", "CGO_ENABLED")) != "1" {
 		t.Skip("cgo is disabled")
 	}
+	if _, err := exec.LookPath("clang"); err != nil {
+		t.Skip("clang is unavailable")
+	}
 
 	dir := t.TempDir()
 	src := `package main

@@ -67,6 +67,7 @@ func TestParseCgoDeclFlags(t *testing.T) {
 func TestCollectCgoSymbolsStripsPackagePrefix(t *testing.T) {
 	externs := []string{
 		"command-line-arguments._cgo_96608f8de8c8_Cfunc_fputs",
+		"_cgo_96608f8de8c8_Cfunc_puts",
 		"demo._cgo_123456789abc_C2func_errno",
 		"demo.__cgo_callback",
 	}
@@ -75,6 +76,7 @@ func TestCollectCgoSymbolsStripsPackagePrefix(t *testing.T) {
 	want := map[string]string{
 		"_cgo_96608f8de8c8_Cfunc__Cmalloc": "_Cmalloc",
 		"_cgo_96608f8de8c8_Cfunc_fputs":    "fputs",
+		"_cgo_96608f8de8c8_Cfunc_puts":     "puts",
 		"_cgo_123456789abc_C2func_errno":   "errno",
 		"demo.__cgo_callback":              "__cgo_callback",
 	}

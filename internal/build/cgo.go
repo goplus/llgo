@@ -119,7 +119,7 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 }
 
 func collectCgoSymbols(externs []string) map[string]string {
-	cgoSymbols := make(map[string]string)
+	cgoSymbols := make(map[string]string, len(externs))
 	mallocFix := false
 	for _, symbolName := range externs {
 		lastPart := symbolName
@@ -128,7 +128,8 @@ func collectCgoSymbols(externs []string) map[string]string {
 			lastPart = symbolName[lastDot+1:]
 		}
 		if strings.HasPrefix(lastPart, "__cgo_") {
-			// func ptr var: main.__cgo_func_name
+			// Func pointer vars are looked up in the Go package by their
+			// qualified names, but emitted C globals must use bare _cgo_* names.
 			cgoSymbols[symbolName] = lastPart
 		} else if m := cgoExternRE.FindStringSubmatch(lastPart); len(m) > 0 {
 			prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
