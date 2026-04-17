@@ -112,6 +112,13 @@ func fixSingleCaseSelectRecvAssignBlock(b *ssa.BasicBlock, recvAssigns map[token
 	}
 	for {
 		changed := false
+		instrIndex := make(map[ssa.Instruction]int, len(b.Instrs))
+		for i, ins := range b.Instrs {
+			instrIndex[ins] = i
+		}
+		// Restart after a move because instruction indexes change. Each move
+		// removes at least one root dependency from before its receive, so the
+		// loop converges once no safely movable dependencies remain.
 		for assignIdx, ins := range b.Instrs {
 			var roots []ssa.Value
 			var val ssa.Value
@@ -133,8 +140,8 @@ func fixSingleCaseSelectRecvAssignBlock(b *ssa.BasicBlock, recvAssigns map[token
 			if !ok {
 				continue
 			}
-			recvIdx := indexOfInstr(b.Instrs, recvInstr)
-			if recvIdx < 0 || recvIdx >= assignIdx {
+			recvIdx, found := instrIndex[recvInstr]
+			if !found || recvIdx >= assignIdx {
 				continue
 			}
 			if moveAssignDepsAfterRecv(b, roots, recv, recvIdx, assignIdx) {
@@ -157,8 +164,8 @@ func selectRecvRoot(v ssa.Value, recvAssigns map[token.Pos]struct{}) (ssa.Value,
 		}
 	case *ssa.Extract:
 		if u, ok := v.Tuple.(*ssa.UnOp); ok && u.Op == token.ARROW {
-			_, ok := recvAssigns[u.Pos()]
-			return u, ok
+			_, found := recvAssigns[u.Pos()]
+			return u, found
 		}
 	}
 	return nil, false
@@ -166,16 +173,20 @@ func selectRecvRoot(v ssa.Value, recvAssigns map[token.Pos]struct{}) (ssa.Value,
 
 func moveAssignDepsAfterRecv(b *ssa.BasicBlock, roots []ssa.Value, recv ssa.Value, recvIdx, assignIdx int) bool {
 	move := make(map[int]struct{})
+	seen := make(map[ssa.Value]struct{})
 	for i := 0; i < recvIdx; i++ {
 		v, ok := b.Instrs[i].(ssa.Value)
 		if !ok || v == nil {
 			continue
 		}
-		if valueDependsOnAny(roots, v) && !valueDependsOn(recv, v, map[ssa.Value]struct{}{}) {
+		if valueDependsOnAny(roots, v, seen) && !valueDependsOnReusing(recv, v, seen) {
 			move[i] = struct{}{}
 		}
 	}
 	if len(move) == 0 {
+		return false
+	}
+	if moveWouldBreakSSA(b.Instrs, move, recvIdx) {
 		return false
 	}
 	deps := make([]ssa.Instruction, 0, len(move))
@@ -194,13 +205,38 @@ func moveAssignDepsAfterRecv(b *ssa.BasicBlock, roots []ssa.Value, recv ssa.Valu
 	return true
 }
 
-func valueDependsOnAny(values []ssa.Value, target ssa.Value) bool {
+func moveWouldBreakSSA(instrs []ssa.Instruction, move map[int]struct{}, recvIdx int) bool {
+	moved := make(map[ssa.Value]struct{}, len(move))
+	for i := range move {
+		if v, ok := instrs[i].(ssa.Value); ok && v != nil {
+			moved[v] = struct{}{}
+		}
+	}
+	for i := 0; i <= recvIdx && i < len(instrs); i++ {
+		if _, moving := move[i]; moving {
+			continue
+		}
+		for v := range moved {
+			if instrUsesValue(instrs[i], v) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func valueDependsOnAny(values []ssa.Value, target ssa.Value, seen map[ssa.Value]struct{}) bool {
 	for _, v := range values {
-		if valueDependsOn(v, target, map[ssa.Value]struct{}{}) {
+		if valueDependsOnReusing(v, target, seen) {
 			return true
 		}
 	}
 	return false
+}
+
+func valueDependsOnReusing(v, target ssa.Value, seen map[ssa.Value]struct{}) bool {
+	clear(seen)
+	return valueDependsOn(v, target, seen)
 }
 
 func fixSSAOrderBlock(b *ssa.BasicBlock) {

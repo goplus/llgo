@@ -73,6 +73,48 @@ func f() {
 	}
 }
 
+func TestFixSSAOrderSingleCaseSelectTwoValueRecv(t *testing.T) {
+	const src = `package p
+var c = make(chan int, 1)
+var x int
+var ok bool
+func checkorder(o int) {}
+func fc(c chan int, o int) chan int { checkorder(o); return c }
+func fp(p *int, o int) *int { checkorder(o); return p }
+func f() {
+	c <- 1
+	select {
+	case *fp(&x, 100), ok = <-fc(c, 1):
+	}
+}`
+	fn := buildSSAOrderTestPackage(t, src)
+	got := instrOrder(fn, "fc(", "<-", "fp(", "*t")
+	if !inOrder(got, "fc(", "<-", "fp(") {
+		t.Fatalf("single-case select two-value receive assignment order = %v, want fc/receive before fp", got)
+	}
+}
+
+func TestFixSSAOrderMultiCaseSelectKeepsLeftToRight(t *testing.T) {
+	const src = `package p
+var c = make(chan int, 1)
+var x int
+func checkorder(o int) {}
+func fc(c chan int, o int) chan int { checkorder(o); return c }
+func fp(p *int, o int) *int { checkorder(o); return p }
+func f() {
+	c <- 1
+	select {
+	case *fp(&x, 100) = <-fc(c, 1):
+	case <-c:
+	}
+}`
+	fn := buildSSAOrderTestPackage(t, src)
+	got := instrOrder(fn, "fc(", "select", "fp(")
+	if !inOrder(got, "fc(", "select", "fp(") {
+		t.Fatalf("multi-case select receive assignment order = %v, want fp after select", got)
+	}
+}
+
 func buildSSAOrderTestPackage(t *testing.T, src string) *ssa.Function {
 	t.Helper()
 	fset := token.NewFileSet()
