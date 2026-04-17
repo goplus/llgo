@@ -67,19 +67,34 @@ func MapClear(t *maptype, h *hmap) {
 	mapclear(t, h)
 }
 
-func NewMapIter(t *maptype, h *hmap) *hiter {
-	var it hiter
-	mapiterinit(t, h, &it)
+type llgoMapIter struct {
+	hiter
+	ready bool
+}
+
+func NewMapIter(t *maptype, h *hmap) *llgoMapIter {
+	var it llgoMapIter
+	mapiterinit(t, h, &it.hiter)
+	it.ready = true
 	return &it
 }
 
-func MapIterNext(it *hiter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
+func MapIterNext(it *llgoMapIter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
+	if !it.ready {
+		mapiternext(&it.hiter)
+		it.ready = true
+	}
+	if it.h == nil || it.h.count == 0 {
+		it.key = nil
+		it.elem = nil
+		return
+	}
 	if it.key == nil {
 		return
 	}
 	ok = true
 	k, v = it.key, it.elem
-	mapiternext(it)
+	it.ready = false
 	return
 }
 
