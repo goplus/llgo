@@ -69,6 +69,9 @@ func MapClear(t *maptype, h *hmap) {
 
 type llgoMapIter struct {
 	hiter
+	// ready reports whether hiter.key/elem is still waiting to be yielded.
+	// Advancing is delayed until the next call so mutation after yield can stop
+	// iteration before mapiternext touches cleared map state.
 	ready bool
 }
 
@@ -80,14 +83,14 @@ func NewMapIter(t *maptype, h *hmap) *llgoMapIter {
 }
 
 func MapIterNext(it *llgoMapIter) (ok bool, k unsafe.Pointer, v unsafe.Pointer) {
-	if !it.ready {
-		mapiternext(&it.hiter)
-		it.ready = true
-	}
 	if it.h == nil || it.h.count == 0 {
 		it.key = nil
 		it.elem = nil
 		return
+	}
+	if !it.ready {
+		mapiternext(&it.hiter)
+		it.ready = true
 	}
 	if it.key == nil {
 		return

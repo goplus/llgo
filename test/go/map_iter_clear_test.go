@@ -26,3 +26,19 @@ func TestMapIterClearAfterGrowStops(t *testing.T) {
 		t.Fatalf("map iteration continued after clear; unexpected value %d", v)
 	}
 }
+
+func TestMapIterClearStops(t *testing.T) {
+	m := map[int]int{1: 1, 2: 2, 3: 3}
+	sawFirst := false
+	for _, v := range m {
+		if !sawFirst {
+			clear(m)
+			sawFirst = true
+			continue
+		}
+		t.Fatalf("map iteration continued after clear; unexpected value %d", v)
+	}
+	if !sawFirst {
+		t.Fatal("map iteration did not start")
+	}
+}
