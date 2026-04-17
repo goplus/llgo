@@ -22,6 +22,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 
@@ -676,6 +677,98 @@ func (p *context) pkgNoInit(pkg *types.Package) bool {
 	return false
 }
 
+func (p *context) offsetOfBuiltinArg(arg ssa.Value) (llssa.Expr, bool) {
+	load, ok := arg.(*ssa.UnOp)
+	if !ok || load.Op != token.MUL {
+		return llssa.Expr{}, false
+	}
+	field, ok := load.X.(*ssa.FieldAddr)
+	if !ok {
+		return llssa.Expr{}, false
+	}
+	offset, ok := p.offsetOfFieldChain(field)
+	if !ok {
+		return llssa.Expr{}, false
+	}
+	return p.prog.Val(offset), true
+}
+
+func (p *context) offsetOfFieldChain(field *ssa.FieldAddr) (int, bool) {
+	offset, ok := p.offsetOfFieldAddr(field)
+	if !ok {
+		return 0, false
+	}
+	for {
+		parent, ok := field.X.(*ssa.FieldAddr)
+		if !ok || p.isExplicitFieldAddr(parent) {
+			return offset, true
+		}
+		parentOffset, ok := p.offsetOfFieldAddr(parent)
+		if !ok {
+			return 0, false
+		}
+		offset += parentOffset
+		field = parent
+	}
+}
+
+func (p *context) offsetOfFieldAddr(field *ssa.FieldAddr) (int, bool) {
+	ptr, ok := field.X.Type().Underlying().(*types.Pointer)
+	if !ok {
+		return 0, false
+	}
+	st, ok := ptr.Elem().Underlying().(*types.Struct)
+	if !ok || field.Field < 0 || field.Field >= st.NumFields() {
+		return 0, false
+	}
+	typ := p.type_(ptr.Elem(), llssa.InGo)
+	return int(p.prog.OffsetOf(typ, field.Field)), true
+}
+
+func (p *context) isExplicitFieldAddr(field *ssa.FieldAddr) bool {
+	name, ok := fieldAddrName(field)
+	if !ok {
+		return true
+	}
+	pos := p.fset.Position(field.Pos())
+	if pos.Filename == "" || pos.Line <= 0 || pos.Column <= 0 {
+		return true
+	}
+	line, ok := sourceLine(pos.Filename, pos.Line)
+	if !ok {
+		return true
+	}
+	col := pos.Column - 1
+	if col < 0 || col >= len(line) {
+		return true
+	}
+	return strings.HasPrefix(line[col:], name)
+}
+
+func fieldAddrName(field *ssa.FieldAddr) (string, bool) {
+	ptr, ok := field.X.Type().Underlying().(*types.Pointer)
+	if !ok {
+		return "", false
+	}
+	st, ok := ptr.Elem().Underlying().(*types.Struct)
+	if !ok || field.Field < 0 || field.Field >= st.NumFields() {
+		return "", false
+	}
+	return st.Field(field.Field).Name(), true
+}
+
+func sourceLine(filename string, line int) (string, bool) {
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return "", false
+	}
+	lines := strings.Split(string(data), "\n")
+	if line > len(lines) {
+		return "", false
+	}
+	return lines[line-1], true
+}
+
 // -----------------------------------------------------------------------------
 
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
@@ -703,6 +796,13 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
 			arg := args[0]
 			ret = p.compileValue(b, arg)
+		} else if fn == "Offsetof" && act == llssa.Call {
+			if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
+				ret = offset
+			} else {
+				args := p.compileValues(b, args, kind)
+				ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
+			}
 		} else {
 			args := p.compileValues(b, args, kind)
 			ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
