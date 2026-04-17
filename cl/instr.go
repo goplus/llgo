@@ -713,12 +713,8 @@ func (p *context) offsetOfFieldChain(field *ssa.FieldAddr) (int, bool) {
 }
 
 func (p *context) offsetOfFieldAddr(field *ssa.FieldAddr) (int, bool) {
-	ptr, ok := field.X.Type().Underlying().(*types.Pointer)
+	ptr, _, ok := fieldAddrStruct(field)
 	if !ok {
-		return 0, false
-	}
-	st, ok := ptr.Elem().Underlying().(*types.Struct)
-	if !ok || field.Field < 0 || field.Field >= st.NumFields() {
 		return 0, false
 	}
 	typ := p.type_(ptr.Elem(), llssa.InGo)
@@ -732,38 +728,56 @@ func (p *context) isExplicitFieldAddr(field *ssa.FieldAddr) bool {
 	}
 	pos := p.fset.Position(field.Pos())
 	if pos.Filename == "" || pos.Line <= 0 || pos.Column <= 0 {
-		return true
+		return false
 	}
-	line, ok := sourceLine(pos.Filename, pos.Line)
+	line, ok := p.sourceLine(pos.Filename, pos.Line)
 	if !ok {
-		return true
+		return false
 	}
 	col := pos.Column - 1
 	if col < 0 || col >= len(line) {
-		return true
+		return false
 	}
 	return strings.HasPrefix(line[col:], name)
 }
 
-func fieldAddrName(field *ssa.FieldAddr) (string, bool) {
+func fieldAddrStruct(field *ssa.FieldAddr) (*types.Pointer, *types.Struct, bool) {
+	if field.X == nil {
+		return nil, nil, false
+	}
 	ptr, ok := field.X.Type().Underlying().(*types.Pointer)
 	if !ok {
-		return "", false
+		return nil, nil, false
 	}
 	st, ok := ptr.Elem().Underlying().(*types.Struct)
 	if !ok || field.Field < 0 || field.Field >= st.NumFields() {
+		return nil, nil, false
+	}
+	return ptr, st, true
+}
+
+func fieldAddrName(field *ssa.FieldAddr) (string, bool) {
+	_, st, ok := fieldAddrStruct(field)
+	if !ok {
 		return "", false
 	}
 	return st.Field(field.Field).Name(), true
 }
 
-func sourceLine(filename string, line int) (string, bool) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return "", false
+func (p *context) sourceLine(filename string, line int) (string, bool) {
+	if p.srcLines == nil {
+		p.srcLines = make(map[string][]string)
 	}
-	lines := strings.Split(string(data), "\n")
-	if line > len(lines) {
+	lines, ok := p.srcLines[filename]
+	if !ok {
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			return "", false
+		}
+		lines = strings.Split(string(data), "\n")
+		p.srcLines[filename] = lines
+	}
+	if line <= 0 || line > len(lines) {
 		return "", false
 	}
 	return lines[line-1], true
@@ -796,17 +810,15 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
 			arg := args[0]
 			ret = p.compileValue(b, arg)
+			return
 		} else if fn == "Offsetof" && act == llssa.Call {
 			if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
 				ret = offset
-			} else {
-				args := p.compileValues(b, args, kind)
-				ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
+				return
 			}
-		} else {
-			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
 		}
+		args := p.compileValues(b, args, kind)
+		ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
 	case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)
 		// TODO(xsw): check ca != llssa.Call

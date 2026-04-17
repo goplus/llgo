@@ -153,6 +153,7 @@ type context struct {
 
 	patches  Patches
 	blkInfos []blocks.Info
+	srcLines map[string][]string
 
 	inits     []func()
 	phis      []func()
