@@ -249,7 +249,7 @@ func (b Builder) abiTuples(t *types.Tuple, name string) llvm.Value {
 	if g == nil {
 		fields := make([]llvm.Value, n)
 		for i := 0; i < n; i++ {
-			fields[i] = b.abiType(t.At(i).Type()).impl
+			fields[i] = b.abiType(abi.PublicType(t.At(i).Type())).impl
 		}
 		ft := prog.AbiTypePtr()
 		atyp := prog.rawType(types.NewArray(ft.RawType(), int64(n)))

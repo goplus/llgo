@@ -327,7 +327,7 @@ func (b *Builder) tuple(h hash.Hash, t *types.Tuple) {
 	n := t.Len()
 	for i := 0; i < n; i++ {
 		v := t.At(i)
-		ft, _ := b.TypeName(v.Type())
+		ft, _ := b.TypeName(PublicType(v.Type()))
 		fmt.Fprintln(h, ft)
 	}
 }

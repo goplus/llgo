@@ -22,13 +22,24 @@ func (b *Builder) MapFlags(t *types.Map) (flags int) {
 }
 
 func (b *Builder) realStr(t types.Type) string {
+	t = PublicType(t)
 	if b.TFlag(t)&abi.TFlagExtraStar != 0 {
 		return "*" + b.Str(t)
 	}
 	return b.Str(t)
 }
 
+// PublicType maps LLGo's internal closure representation back to the source
+// function type used by reflection metadata.
+func PublicType(t types.Type) types.Type {
+	if st, ok := types.Unalias(t).(*types.Struct); ok && IsClosure(st) {
+		return st.Field(0).Type()
+	}
+	return t
+}
+
 func (b *Builder) Str(t types.Type) string {
+	t = PublicType(t)
 	switch t := types.Unalias(t).(type) {
 	case *types.Basic:
 		switch t.Kind() {
