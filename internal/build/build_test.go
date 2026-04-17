@@ -37,11 +37,10 @@ func TestNeedsLinuxNoPIE(t *testing.T) {
 	if !needsLinuxNoPIE(ctx, nil) {
 		t.Fatal("linux executable link should default to -no-pie")
 	}
-	if needsLinuxNoPIE(ctx, []string{"-pie"}) {
-		t.Fatal("explicit -pie should not be overridden")
-	}
-	if needsLinuxNoPIE(ctx, []string{"-no-pie"}) {
-		t.Fatal("existing -no-pie should not be duplicated")
+	for _, flag := range []string{"-pie", "-static-pie", "-no-pie", "-nopie"} {
+		if needsLinuxNoPIE(ctx, []string{flag}) {
+			t.Fatalf("explicit %s should not be overridden", flag)
+		}
 	}
 	ctx.buildConf.Goos = "darwin"
 	if needsLinuxNoPIE(ctx, nil) {

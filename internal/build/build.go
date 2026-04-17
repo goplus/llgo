@@ -1124,8 +1124,10 @@ func needsLinuxNoPIE(ctx *context, linkArgs []string) bool {
 	if ctx.buildConf.Target != "" || ctx.buildConf.Goos != "linux" {
 		return false
 	}
+	// Host Linux toolchains commonly default to PIE executables, which can
+	// break runtime assumptions unless the user explicitly requested a PIE mode.
 	for _, arg := range linkArgs {
-		if arg == "-pie" || arg == "-no-pie" || arg == "-nopie" {
+		if arg == "-pie" || arg == "-static-pie" || arg == "-no-pie" || arg == "-nopie" {
 			return false
 		}
 	}
