@@ -374,6 +374,14 @@ entry:
 }
 
 func TestAttrPointerCallParamNoLoadSourceReuse(t *testing.T) {
+	for _, arch := range []string{"arm64", "amd64"} {
+		t.Run(arch, func(t *testing.T) {
+			testAttrPointerCallParamNoLoadSourceReuse(t, arch)
+		})
+	}
+}
+
+func testAttrPointerCallParamNoLoadSourceReuse(t *testing.T, arch string) {
 	testIR := `; ModuleID = 'test'
 source_filename = "test"
 
@@ -413,7 +421,7 @@ entry:
 	}
 	defer mod.Dispose()
 
-	conf, _ := buildConf(cabi.ModeAllFunc, "arm64")
+	conf, _ := buildConf(cabi.ModeAllFunc, arch)
 	pkgs, err := build.Do([]string{"./_testdata/demo/demo.go"}, conf)
 	if err != nil {
 		t.Fatalf("Failed to build demo: %v", err)
@@ -429,10 +437,13 @@ entry:
 	if strings.Contains(ir, "call void @sink(ptr byval(%Slice) %src)") {
 		t.Fatalf("call reused load source that is later cleared:\n%s", ir)
 	}
+	if strings.Contains(ir, "call void @sink(ptr %src)") {
+		t.Fatalf("call reused load source that is later cleared:\n%s", ir)
+	}
 	if !strings.Contains(ir, "store %Slice %val, ptr") {
 		t.Fatalf("call argument should be materialized from loaded value:\n%s", ir)
 	}
-	if !strings.Contains(ir, "call void @sink(ptr %") {
+	if !strings.Contains(ir, "call void @sink(ptr") {
 		t.Fatalf("sink call was not rewritten to pointer argument:\n%s", ir)
 	}
 }
