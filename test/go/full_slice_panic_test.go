@@ -18,26 +18,86 @@ package gotest
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 )
 
 func TestFullSliceBoundsPanicText(t *testing.T) {
-	expectFullSlicePanicContaining(t, "slice bounds out of range", func() {
-		s := []int{1}
-		_ = s[:1:2]
-	})
+	tests := []struct {
+		name string
+		want string
+		f    func()
+	}{
+		{
+			name: "max exceeds cap",
+			want: "runtime error: slice bounds out of range [::2] with capacity 1",
+			f: func() {
+				s := []int{1}
+				k := 2
+				_ = s[:1:k]
+			},
+		},
+		{
+			name: "high exceeds max",
+			want: "runtime error: slice bounds out of range [:2:1]",
+			f: func() {
+				s := []int{1, 2}
+				j, k := 2, 1
+				_ = s[:j:k]
+			},
+		},
+		{
+			name: "low exceeds high",
+			want: "runtime error: slice bounds out of range [1:0:]",
+			f: func() {
+				s := []int{1, 2}
+				i, j := 1, 0
+				_ = s[i:j:1]
+			},
+		},
+		{
+			name: "negative low",
+			want: "runtime error: slice bounds out of range [-1::]",
+			f: func() {
+				s := []int{1, 2}
+				i := -1
+				_ = s[i:0:1]
+			},
+		},
+		{
+			name: "negative high",
+			want: "runtime error: slice bounds out of range [:-1:]",
+			f: func() {
+				s := []int{1, 2}
+				j := -1
+				_ = s[0:j:1]
+			},
+		},
+		{
+			name: "negative max",
+			want: "runtime error: slice bounds out of range [::-1]",
+			f: func() {
+				s := []int{1, 2}
+				k := -1
+				_ = s[0:0:k]
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectFullSlicePanic(t, tt.want, tt.f)
+		})
+	}
 }
 
-func expectFullSlicePanicContaining(t *testing.T, want string, f func()) {
+func expectFullSlicePanic(t *testing.T, want string, f func()) {
 	t.Helper()
 	defer func() {
 		err := recover()
 		if err == nil {
-			t.Fatalf("expected panic containing %q", want)
+			t.Fatalf("expected panic %q", want)
 		}
-		if got := fullSlicePanicString(err); !strings.Contains(got, want) {
-			t.Fatalf("panic = %q, want contains %q", got, want)
+		if got := fullSlicePanicString(err); got != want {
+			t.Fatalf("panic = %q, want %q", got, want)
 		}
 	}()
 	f()
