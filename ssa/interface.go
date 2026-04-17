@@ -93,24 +93,21 @@ func (b Builder) Imethod(intf Expr, method *types.Func) Expr {
 			MType: semmeta.Symbol(mtypName),
 		},
 	})
-	// Emit named-interface shape at use sites as well. In current LLGo
-	// lowering, interface operations often erase a named interface to its
-	// underlying *types.Interface before abiType materialization, so relying
-	// only on definition/type-processing paths would miss rows such as
-	// "_llgo_foo/bar.IFmt" even though later whole-program analysis still
-	// needs that complete interface method set.
-	if _, ok := types.Unalias(intf.raw.Type).(*types.Named); ok {
-		methods := make([]semmeta.MethodSig, 0, rawIntf.NumMethods())
-		for i := 0; i < rawIntf.NumMethods(); i++ {
-			im := rawIntf.Method(i)
-			imtypName, _ := prog.abi.TypeName(funcType(prog, im.Type()))
-			methods = append(methods, semmeta.MethodSig{
-				Name:  mthName(im),
-				MType: semmeta.Symbol(imtypName),
-			})
-		}
-		b.Pkg.semMetaEmitter.AddInterfaceInfo(semmeta.Symbol(intfTypeName), methods)
+	// Emit the complete interface shape at use sites as well. In current LLGo
+	// lowering, named interfaces may be erased to their underlying
+	// *types.Interface before later materialization, and anonymous interfaces
+	// have no definition-side fallback at all. Whole-program analysis still
+	// needs the full method set for the interface symbol used in UseIfaceMethod.
+	methods := make([]semmeta.MethodSig, 0, rawIntf.NumMethods())
+	for i := 0; i < rawIntf.NumMethods(); i++ {
+		im := rawIntf.Method(i)
+		imtypName, _ := prog.abi.TypeName(funcType(prog, im.Type()))
+		methods = append(methods, semmeta.MethodSig{
+			Name:  mthName(im),
+			MType: semmeta.Symbol(imtypName),
+		})
 	}
+	b.Pkg.semMetaEmitter.AddInterfaceInfo(semmeta.Symbol(intfTypeName), methods)
 	data := b.InlineCall(b.Pkg.rtFunc("IfacePtrData"), intf)
 	impl := intf.impl
 	itab := Expr{b.faceItab(impl), prog.VoidPtrPtr()}
