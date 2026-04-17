@@ -439,6 +439,9 @@ func (b Builder) abiUncommonMethods(t types.Type, methods []*types.Selection) ll
 }
 
 func (p Program) abiRuntimeMethods(mset *types.MethodSet) []*types.Selection {
+	if !p.hasNoInterfaceMethods() {
+		return methodSelections(mset)
+	}
 	n := mset.Len()
 	methods := make([]*types.Selection, 0, n)
 	for i := 0; i < n; i++ {
@@ -447,6 +450,15 @@ func (p Program) abiRuntimeMethods(mset *types.MethodSet) []*types.Selection {
 			continue
 		}
 		methods = append(methods, m)
+	}
+	return methods
+}
+
+func methodSelections(mset *types.MethodSet) []*types.Selection {
+	n := mset.Len()
+	methods := make([]*types.Selection, n)
+	for i := 0; i < n; i++ {
+		methods[i] = mset.At(i)
 	}
 	return methods
 }
