@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/goplus/llgo/internal/littest"
 )
 
 func main() {
@@ -34,7 +36,7 @@ func main() {
 		os.Exit(2)
 	}
 	for _, arg := range flag.Args() {
-		check(processPath(arg))
+		fatal(processPath(arg))
 	}
 }
 
@@ -53,7 +55,7 @@ func processPath(path string) error {
 	if filepath.Ext(abs) != ".go" {
 		return fmt.Errorf("%s: expected .go file or directory", abs)
 	}
-	ok, err := hasLITTESTMarker(abs)
+	ok, err := littest.HasMarker(abs)
 	if err != nil {
 		return err
 	}
@@ -80,7 +82,7 @@ func processTree(root string) error {
 		if path != root && len(d.Name()) > 0 && d.Name()[0] == '_' {
 			return filepath.SkipDir
 		}
-		marked, found, err := findMarkedSourceFile(path)
+		marked, found, err := littest.FindMarkedSourceFile(path)
 		if err != nil {
 			return err
 		}
@@ -109,8 +111,9 @@ func processTree(root string) error {
 	return nil
 }
 
-func check(err error) {
+func fatal(err error) {
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "litgen: %v\n", err)
+		os.Exit(1)
 	}
 }

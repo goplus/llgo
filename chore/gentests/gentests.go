@@ -17,13 +17,13 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/internal/littest"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/mod"
 )
@@ -107,43 +107,9 @@ func check(err error) {
 }
 
 func dirHasLITTESTSource(dir string) (bool, error) {
-	entries, err := os.ReadDir(dir)
+	_, ok, err := littest.FindMarkedSourceFile(dir)
 	if err != nil {
 		return false, err
 	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if filepath.Ext(name) != ".go" || strings.HasSuffix(name, "_test.go") {
-			continue
-		}
-		ok, err := hasLITTESTMarker(filepath.Join(dir, name))
-		if err != nil {
-			return false, err
-		}
-		if ok {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func hasLITTESTMarker(path string) (bool, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	if !scanner.Scan() {
-		return false, scanner.Err()
-	}
-	line := strings.TrimSpace(scanner.Text())
-	if !strings.HasPrefix(line, "//") {
-		return false, nil
-	}
-	return strings.TrimSpace(strings.TrimPrefix(line, "//")) == "LITTEST", nil
+	return ok, nil
 }

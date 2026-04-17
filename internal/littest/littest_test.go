@@ -177,9 +177,9 @@ func TestLoadSpecSupportsSkipOutLL(t *testing.T) {
 func TestHasMarker(t *testing.T) {
 	dir := t.TempDir()
 
-	ok, err := hasMarker(filepath.Join(dir, "missing.go"))
+	ok, err := HasMarker(filepath.Join(dir, "missing.go"))
 	if err == nil || ok {
-		t.Fatalf("hasMarker(missing) = (%v, %v)", ok, err)
+		t.Fatalf("HasMarker(missing) = (%v, %v)", ok, err)
 	}
 
 	empty := filepath.Join(dir, "empty.go")
@@ -187,9 +187,9 @@ func TestHasMarker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok, err = hasMarker(empty)
+	ok, err = HasMarker(empty)
 	if err != nil || ok {
-		t.Fatalf("hasMarker(empty) = (%v, %v)", ok, err)
+		t.Fatalf("HasMarker(empty) = (%v, %v)", ok, err)
 	}
 
 	plain := filepath.Join(dir, "plain.go")
@@ -197,9 +197,9 @@ func TestHasMarker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ok, err = hasMarker(plain)
+	ok, err = HasMarker(plain)
 	if err != nil || ok {
-		t.Fatalf("hasMarker(plain) = (%v, %v)", ok, err)
+		t.Fatalf("HasMarker(plain) = (%v, %v)", ok, err)
 	}
 }
 

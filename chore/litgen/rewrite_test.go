@@ -183,3 +183,52 @@ _llgo_0:
 		t.Fatalf("global checks should be placed before first declaration:\n%s", got)
 	}
 }
+
+func TestRewriteSource_SharesInitClosureCountsAcrossDecls(t *testing.T) {
+	const src = `// LITTEST
+package main
+
+var a = func() int { return 1 }()
+var b = func() int { return 2 }()
+`
+	const ir = `define void @"example.com/p.init"() {
+_llgo_0:
+  %0 = call i64 @"example.com/p.init$1"()
+  %1 = call i64 @"example.com/p.init$2"()
+  ret void
+}
+
+define i64 @"example.com/p.init$1"() {
+_llgo_0:
+  ret i64 1
+}
+
+define i64 @"example.com/p.init$2"() {
+_llgo_0:
+  ret i64 2
+}
+`
+	got, err := rewriteSource(src, "in.go", "example.com/p", "example.com", ir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstCheck := `// CHECK-LABEL: define i64 @"{{.*}}/p.init$1"() {`
+	secondCheck := `// CHECK-LABEL: define i64 @"{{.*}}/p.init$2"() {`
+	firstVar := "var a = func() int { return 1 }()"
+	secondVar := "var b = func() int { return 2 }()"
+	if strings.Index(got, firstCheck) > strings.Index(got, firstVar) {
+		t.Fatalf("first init closure should be anchored before first var decl:\n%s", got)
+	}
+	if strings.Index(got, secondCheck) > strings.Index(got, secondVar) {
+		t.Fatalf("second init closure should be anchored before second var decl:\n%s", got)
+	}
+}
+
+func TestGeneralizeModulePath_ReplacesOnlyQuotedSegments(t *testing.T) {
+	line := `  %0 = getelementptr inbounds %"go/example.Type", ptr @"go/example.fn"`
+	got := generalizeModulePath(line, "go")
+	want := `  %0 = getelementptr inbounds %"{{.*}}/example.Type", ptr @"{{.*}}/example.fn"`
+	if got != want {
+		t.Fatalf("generalizeModulePath = %q, want %q", got, want)
+	}
+}

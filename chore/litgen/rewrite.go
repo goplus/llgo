@@ -17,7 +17,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"go/ast"
 	"go/format"
@@ -28,14 +27,14 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 	"sort"
 	"strings"
 
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/mod"
+	"golang.org/x/mod/modfile"
 )
-
-const littestMarker = "LITTEST"
 
 type resolvedTarget struct {
 	sourceFile string
@@ -90,7 +89,7 @@ func generateFile(target resolvedTarget) error {
 	if err != nil {
 		return fmt.Errorf("%s: gofmt failed: %w", target.sourceFile, err)
 	}
-	return os.WriteFile(target.sourceFile, formatted, 0644)
+	return writeFileAtomically(target.sourceFile, formatted, 0644)
 }
 
 func resolveTarget(sourceFile, genTarget string) (resolvedTarget, error) {
@@ -119,33 +118,30 @@ func resolveTarget(sourceFile, genTarget string) (resolvedTarget, error) {
 func genIR(target string) (ret string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("llgen failed for %s: %v", target, r)
+			switch v := r.(type) {
+			case error:
+				err = fmt.Errorf("llgen failed for %s: %w", target, v)
+			case string:
+				err = fmt.Errorf("llgen failed for %s: %s", target, v)
+			default:
+				_, _ = os.Stderr.Write(debug.Stack())
+				panic(r)
+			}
 		}
 	}()
 	return llgen.GenFrom(target), nil
 }
 
 func readModulePath(goMod string) (string, error) {
-	f, err := os.Open(goMod)
+	data, err := os.ReadFile(goMod)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "//") {
-			continue
-		}
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
-		}
+	modulePath := modfile.ModulePath(data)
+	if modulePath == "" {
+		return "", fmt.Errorf("%s: module directive not found", goMod)
 	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-	return "", fmt.Errorf("%s: module directive not found", goMod)
+	return modulePath, nil
 }
 
 func packagePath(modulePath, root, pkgDir string) (string, error) {
@@ -199,6 +195,7 @@ func rewriteSource(src, srcPath, pkgPath, modulePath, ir string) (string, error)
 
 func collectAnchors(src string, fset *token.FileSet, file *ast.File) (map[string]int, int) {
 	anchors := make(map[string]int)
+	counts := make(map[string]int)
 	topPos := topInsertPos(src, fset, file)
 	if initPos, ok := syntheticInitPos(src, fset, file); ok {
 		anchors["init"] = initPos
@@ -208,12 +205,12 @@ func collectAnchors(src string, fset *token.FileSet, file *ast.File) (map[string
 		case *ast.FuncDecl:
 			name := inPkgFuncName(d)
 			anchors[name] = declInsertPos(src, fset, d.Pos(), d.Doc)
-			collectFuncLitAnchors(src, fset, d.Body, name, anchors)
+			collectFuncLitAnchors(src, fset, d.Body, name, anchors, counts)
 		case *ast.GenDecl:
 			if d.Tok == token.IMPORT {
 				continue
 			}
-			collectFuncLitAnchors(src, fset, d, "init", anchors)
+			collectFuncLitAnchors(src, fset, d, "init", anchors, counts)
 		}
 	}
 	return anchors, topPos
@@ -252,11 +249,10 @@ func declInsertPos(src string, fset *token.FileSet, pos token.Pos, doc *ast.Comm
 	return lineStart(src, offsetOf(fset, pos))
 }
 
-func collectFuncLitAnchors(src string, fset *token.FileSet, node ast.Node, parent string, anchors map[string]int) {
+func collectFuncLitAnchors(src string, fset *token.FileSet, node ast.Node, parent string, anchors map[string]int, counts map[string]int) {
 	if isNilNode(node) {
 		return
 	}
-	counts := make(map[string]int)
 	var walk func(ast.Node, string)
 	walk = func(root ast.Node, current string) {
 		if isNilNode(root) {
@@ -449,7 +445,26 @@ func generalizeModulePath(line, modulePath string) string {
 	if modulePath == "" {
 		return line
 	}
-	return strings.ReplaceAll(line, modulePath, "{{.*}}")
+	var b strings.Builder
+	start := 0
+	inQuote := false
+	for i := 0; i < len(line); i++ {
+		if line[i] != '"' {
+			continue
+		}
+		if !inQuote {
+			b.WriteString(line[start : i+1])
+			start = i + 1
+			inQuote = true
+			continue
+		}
+		b.WriteString(strings.ReplaceAll(line[start:i], modulePath, "{{.*}}"))
+		b.WriteByte('"')
+		start = i + 1
+		inQuote = false
+	}
+	b.WriteString(line[start:])
+	return b.String()
 }
 
 func shouldCheckGlobal(symbol string) bool {
@@ -563,57 +578,27 @@ func offsetOf(fset *token.FileSet, pos token.Pos) int {
 	return fset.PositionFor(pos, false).Offset
 }
 
-func findMarkedSourceFile(dir string) (string, bool, error) {
-	entries, err := os.ReadDir(dir)
+func writeFileAtomically(path string, data []byte, perm os.FileMode) (err error) {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, ".litgen-*")
 	if err != nil {
-		return "", false, err
+		return err
 	}
-	var marked string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if !isSourceSpecFile(name) {
-			continue
-		}
-		path := filepath.Join(dir, name)
-		ok, err := hasLITTESTMarker(path)
+	tmpPath := tmp.Name()
+	defer func() {
+		_ = tmp.Close()
 		if err != nil {
-			return "", false, err
+			_ = os.Remove(tmpPath)
 		}
-		if !ok {
-			continue
-		}
-		if marked != "" {
-			return "", false, fmt.Errorf("%s: multiple // LITTEST sources found: %s, %s", dir, filepath.Base(marked), name)
-		}
-		marked = path
+	}()
+	if err = tmp.Chmod(perm); err != nil {
+		return err
 	}
-	if marked == "" {
-		return "", false, nil
+	if _, err = tmp.Write(data); err != nil {
+		return err
 	}
-	return marked, true, nil
-}
-
-func hasLITTESTMarker(path string) (bool, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return false, err
+	if err = tmp.Close(); err != nil {
+		return err
 	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	if !scanner.Scan() {
-		return false, scanner.Err()
-	}
-	line := strings.TrimSpace(scanner.Text())
-	if !strings.HasPrefix(line, "//") {
-		return false, nil
-	}
-	return strings.TrimSpace(strings.TrimPrefix(line, "//")) == littestMarker, nil
-}
-
-func isSourceSpecFile(name string) bool {
-	return filepath.Ext(name) == ".go" && !strings.HasSuffix(name, "_test.go")
+	return os.Rename(tmpPath, path)
 }
