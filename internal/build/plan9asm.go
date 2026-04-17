@@ -77,35 +77,13 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		if pkg.PkgPath != "runtime" {
 			ctx.cTransformer.TransformModule(pkg.PkgPath, mod)
 		}
-		ll := mod.String()
-		mod.Dispose()
-
 		baseName := aPkg.ExportFile + filepath.Base(sfile) // used for stable debug output paths
 		tmpPrefix := "plan9asm-" + filepath.Base(sfile) + "-"
 
-		llFile, err := os.CreateTemp("", tmpPrefix+"*.ll")
-		if err != nil {
-			return nil, fmt.Errorf("%s: create temp .ll for %s: %w", pkg.PkgPath, sfile, err)
-		}
-		llPath := llFile.Name()
-		if _, err := llFile.WriteString(ll); err != nil {
-			llFile.Close()
-			os.Remove(llPath)
-			return nil, fmt.Errorf("%s: write temp .ll for %s: %w", pkg.PkgPath, sfile, err)
-		}
-		if err := llFile.Close(); err != nil {
-			os.Remove(llPath)
-			return nil, fmt.Errorf("%s: close temp .ll for %s: %w", pkg.PkgPath, sfile, err)
-		}
-		defer os.Remove(llPath)
-
 		// Keep a copy of translated .ll when GenLL is enabled (mirrors clFile/exportObject).
-		if ctx.buildConf.GenLL {
-			dst := baseName + ".ll"
-			if err := os.Chmod(llPath, 0644); err != nil {
-				return nil, fmt.Errorf("%s: chmod temp .ll for %s: %w", pkg.PkgPath, sfile, err)
-			}
-			if err := copyFileAtomic(llPath, dst); err != nil {
+		if ctx.buildConf.GenLL || ctx.buildConf.CheckLLFiles {
+			if err := ctx.writeModuleIR(tmpPrefix, baseName, mod); err != nil {
+				mod.Dispose()
 				return nil, fmt.Errorf("%s: keep .ll for %s: %w", pkg.PkgPath, sfile, err)
 			}
 		}
@@ -117,15 +95,15 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		objPath := objFile.Name()
 		objFile.Close()
 
-		args := []string{"-o", objPath, "-c", llPath, "-Wno-override-module"}
 		if ctx.shouldPrintCommands(verbose) {
-			fmt.Fprintf(os.Stderr, "# compiling %s for pkg: %s\n", objPath, pkg.PkgPath)
-			fmt.Fprintln(os.Stderr, "clang", args)
+			fmt.Fprintf(os.Stderr, "# emitting %s for pkg: %s via LLVM\n", objPath, pkg.PkgPath)
 		}
-		if err := ctx.compiler().Compile(args...); err != nil {
+		if err := ctx.emitModuleObject(pkg.PkgPath, mod, objPath); err != nil {
+			mod.Dispose()
 			os.Remove(objPath)
-			return nil, fmt.Errorf("%s: clang compile asm ll for %s: %w", pkg.PkgPath, sfile, err)
+			return nil, fmt.Errorf("%s: emit asm object for %s: %w", pkg.PkgPath, sfile, err)
 		}
+		mod.Dispose()
 		objFiles = append(objFiles, objPath)
 	}
 

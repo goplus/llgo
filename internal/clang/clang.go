@@ -103,6 +103,11 @@ func (c *Cmd) Compile(args ...string) error {
 	return c.exec(allArgs...)
 }
 
+// CompilerFlags returns the merged compiler flags that would be used by Compile.
+func (c *Cmd) CompilerFlags() []string {
+	return c.mergeCompilerFlags()
+}
+
 // Link executes a linking command with merged flags.
 func (c *Cmd) Link(args ...string) error {
 	flags := c.mergeLinkerFlags()
