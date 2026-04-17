@@ -168,7 +168,7 @@ func (b Builder) abiStructFields(t *types.Struct, name string) llvm.Value {
 			f := t.Field(i)
 			var values []llvm.Value
 			values = append(values, b.Str(f.Name()).impl)
-			values = append(values, b.abiType(f.Type()).impl)
+			values = append(values, b.abiType(abi.PublicType(f.Type())).impl)
 			values = append(values, prog.IntVal(prog.OffsetOf(typ, i), prog.Uintptr()).impl)
 			values = append(values, b.Str(t.Tag(i)).impl)
 			values = append(values, prog.BoolVal(f.Embedded()).impl)
@@ -274,22 +274,23 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 	case *types.Basic:
 	case *types.Pointer:
 		fields = []llvm.Value{
-			b.abiType(t.Elem()).impl,
+			b.abiType(abi.PublicType(t.Elem())).impl,
 		}
 	case *types.Chan:
 		dir, _ := abi.ChanDir(t.Dir())
 		fields = []llvm.Value{
-			b.abiType(t.Elem()).impl,
+			b.abiType(abi.PublicType(t.Elem())).impl,
 			prog.IntVal(uint64(dir), prog.Int()).impl,
 		}
 	case *types.Slice:
 		fields = []llvm.Value{
-			b.abiType(t.Elem()).impl,
+			b.abiType(abi.PublicType(t.Elem())).impl,
 		}
 	case *types.Array:
+		elem := abi.PublicType(t.Elem())
 		fields = []llvm.Value{
-			b.abiType(t.Elem()).impl,
-			b.abiType(types.NewSlice(t.Elem())).impl,
+			b.abiType(elem).impl,
+			b.abiType(types.NewSlice(elem)).impl,
 			prog.IntVal(uint64(t.Len()), prog.Uintptr()).impl,
 		}
 	case *types.Map:
@@ -299,8 +300,8 @@ func (b Builder) abiExtendedFields(t types.Type, name string) (fields []llvm.Val
 		env := b.abiType(t.Key())
 		hasher := b.aggregateValue(prog.Type(hashFunc, InGo), hash.impl, env.impl)
 		fields = []llvm.Value{
-			b.abiType(t.Key()).impl,
-			b.abiType(t.Elem()).impl,
+			b.abiType(abi.PublicType(t.Key())).impl,
+			b.abiType(abi.PublicType(t.Elem())).impl,
 			b.abiType(bucket).impl,
 			hasher.impl,
 			prog.IntVal(uint64(prog.abi.Size(t.Key())), prog.Byte()).impl,

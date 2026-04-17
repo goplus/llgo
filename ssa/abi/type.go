@@ -23,6 +23,8 @@ func (b *Builder) MapFlags(t *types.Map) (flags int) {
 
 func (b *Builder) realStr(t types.Type) string {
 	t = PublicType(t)
+	// The TFlag check must use the public type; Str also normalizes its input
+	// so callers that bypass realStr still get public reflected names.
 	if b.TFlag(t)&abi.TFlagExtraStar != 0 {
 		return "*" + b.Str(t)
 	}
@@ -30,7 +32,8 @@ func (b *Builder) realStr(t types.Type) string {
 }
 
 // PublicType maps LLGo's internal closure representation back to the source
-// function type used by reflection metadata.
+// function type when emitting reflected type names and type references. It must
+// not be used for physical layout computations such as size, align, or offsets.
 func PublicType(t types.Type) types.Type {
 	if st, ok := types.Unalias(t).(*types.Struct); ok && IsClosure(st) {
 		return st.Field(0).Type()
