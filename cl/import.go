@@ -84,6 +84,36 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 	}
 }
 
+func (p *pkgSymInfo) hasNoInterfaceByPos(fset *token.FileSet, pos token.Pos) bool {
+	fp := fset.Position(pos)
+	if fp.Line <= 1 {
+		return false
+	}
+	b, ok := p.files[fp.Filename]
+	if !ok {
+		var err error
+		b, err = os.ReadFile(fp.Filename)
+		if err != nil {
+			return false
+		}
+		p.files[fp.Filename] = b
+	}
+	lines := bytes.Split(b, []byte{'\n'})
+	for i := fp.Line - 2; i >= 0 && i < len(lines); i-- {
+		line := strings.TrimSpace(string(lines[i]))
+		if line == "//go:nointerface" {
+			return true
+		}
+		if line == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, "//") {
+			break
+		}
+	}
+	return false
+}
+
 // PkgKindOf returns the kind of a package.
 func PkgKindOf(pkg *types.Package) (int, string) {
 	scope := pkg.Scope()
@@ -162,6 +192,9 @@ start:
 						fn := t.Method(i)
 						fullName, inPkgName := typesFuncName(pkgPath, fn)
 						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
+						if syms.hasNoInterfaceByPos(fset, fn.Pos()) {
+							p.prog.SetNoInterfaceMethod(fn.Pos())
+						}
 					}
 				}
 			}
@@ -179,7 +212,9 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
-				p.collectNoInterfaceByDoc(decl.Doc, decl.Name.Pos())
+				if decl.Recv != nil {
+					p.collectNoInterfaceByDoc(decl.Doc, decl.Name.Pos())
+				}
 				fullName, inPkgName := astFuncName(pkgPath, decl)
 				if !p.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, true) && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
