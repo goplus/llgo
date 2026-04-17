@@ -45,7 +45,7 @@ func main() {
 	// CHECK-NEXT:   %18 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %6, 0
 	// CHECK-NEXT:   %19 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %6, 1
 	// CHECK-NEXT:   %20 = icmp slt i64 %16, 0
-	// CHECK-NEXT:   %21 = icmp sge i64 %16, %19
+	// CHECK-NEXT:   %21 = icmp uge i64 %16, %19
 	// CHECK-NEXT:   %22 = or i1 %21, %20
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %22)
 	// CHECK-NEXT:   %23 = getelementptr inbounds %"{{.*}}/runtime/internal/runtime.String", ptr %18, i64 %16

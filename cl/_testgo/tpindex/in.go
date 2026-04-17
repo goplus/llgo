@@ -36,7 +36,7 @@ func main() {
 // CHECK-NEXT:   %6 = extractvalue %"{{.*}}Slice" %0, 0
 // CHECK-NEXT:   %7 = extractvalue %"{{.*}}Slice" %0, 1
 // CHECK-NEXT:   %8 = icmp slt i64 %4, 0
-// CHECK-NEXT:   %9 = icmp sge i64 %4, %7
+// CHECK-NEXT:   %9 = icmp uge i64 %4, %7
 // CHECK-NEXT:   %10 = or i1 %9, %8
 // CHECK-NEXT:   call void @"{{.*}}AssertIndexRange"(i1 %10)
 // CHECK-NEXT:   %11 = getelementptr inbounds i64, ptr %6, i64 %4

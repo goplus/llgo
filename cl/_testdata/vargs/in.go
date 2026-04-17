@@ -15,6 +15,7 @@ func main() {
 // CHECK-LABEL: define void @"{{.*}}cl/_testdata/vargs.test"(%"{{.*}}runtime/internal/runtime.Slice" %0) {
 // CHECK:   %{{.*}} = getelementptr inbounds %"{{.*}}runtime/internal/runtime.eface", ptr %{{.*}}, i64 %{{.*}}
 // CHECK:   %{{.*}} = load %"{{.*}}runtime/internal/runtime.eface", ptr %{{.*}}, align 8
+// CHECK:   %{{.*}} = icmp uge i64 %{{.*}}, %{{.*}}
 // CHECK:   %{{.*}} = icmp eq ptr %{{.*}}, @_llgo_int
 // CHECK:   %{{.*}} = load i64, ptr %{{.*}}, align 4
 // CHECK:   %{{.*}} = call i32 (ptr, ...) @printf(ptr @{{.*}}, i64 %{{.*}})

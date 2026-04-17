@@ -23,11 +23,58 @@ import (
 )
 
 func TestUnsignedIndexBoundsCheck(t *testing.T) {
-	expectPanicContaining(t, "out of range", func() {
-		s := []int{1}
-		var idx uint64 = 1 << 63
-		_ = s[idx]
-	})
+	tests := []struct {
+		name string
+		f    func()
+	}{
+		{
+			name: "uint64 sign bit slice",
+			f: func() {
+				s := []int{1}
+				// Set the sign bit so a signed upper-bound compare would miss it.
+				var idx uint64 = 1 << 63
+				_ = s[idx]
+			},
+		},
+		{
+			name: "uint slice",
+			f: func() {
+				s := []int{1}
+				var idx uint = ^uint(0)
+				_ = s[idx]
+			},
+		},
+		{
+			name: "uint8 slice",
+			f: func() {
+				s := []int{1}
+				var idx uint8 = 255
+				_ = s[idx]
+			},
+		},
+		{
+			name: "uintptr slice",
+			f: func() {
+				s := []int{1}
+				var idx uintptr = ^uintptr(0)
+				_ = s[idx]
+			},
+		},
+		{
+			name: "uint64 sign bit array",
+			f: func() {
+				a := [1]int{1}
+				// Array indexing uses a separate IndexAddr path from slices.
+				var idx uint64 = 1 << 63
+				_ = a[idx]
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectPanicContaining(t, "out of range", tt.f)
+		})
+	}
 }
 
 func expectPanicContaining(t *testing.T, want string, f func()) {

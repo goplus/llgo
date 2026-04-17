@@ -236,11 +236,10 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 		check = Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
 	}
 	if checkMax {
-		pred := llvm.IntSGE
-		if idx.kind != vkSigned {
-			pred = llvm.IntUGE
-		}
-		r := Expr{llvm.CreateICmp(b.impl, pred, idx.impl, max.impl), prog.Bool()}
+		// max is a non-negative len/cap value. Unsigned comparison is valid for
+		// both signed and unsigned indexes, and signed negatives fail as large
+		// unsigned values.
+		r := Expr{llvm.CreateICmp(b.impl, llvm.IntUGE, idx.impl, max.impl), prog.Bool()}
 		if check.IsNil() {
 			check = r
 		} else {
