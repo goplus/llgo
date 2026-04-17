@@ -19,7 +19,7 @@ func TestRangeOverNilArrayPointerUsesLength(t *testing.T) {
 }
 
 func TestRangeOverNilArrayPointerFieldUsesLength(t *testing.T) {
-	var holder *rangeArrayPointerHolder
+	holder := &rangeArrayPointerHolder{}
 
 	sum := 0
 	for i := range *holder.data {
@@ -27,5 +27,24 @@ func TestRangeOverNilArrayPointerFieldUsesLength(t *testing.T) {
 	}
 	if sum != 3 {
 		t.Fatalf("range over nil *array field sum = %d, want 3", sum)
+	}
+}
+
+func TestRangeOverNilArrayPointerCallIsEvaluated(t *testing.T) {
+	calls := 0
+	next := func() *[3]int {
+		calls++
+		return nil
+	}
+
+	sum := 0
+	for i := range *next() {
+		sum += i
+	}
+	if calls != 1 {
+		t.Fatalf("range expression calls = %d, want 1", calls)
+	}
+	if sum != 3 {
+		t.Fatalf("range over nil *array call sum = %d, want 3", sum)
 	}
 }

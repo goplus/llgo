@@ -644,56 +644,7 @@ func skipUnusedArrayDeref(v *ssa.UnOp) bool {
 	if _, ok := v.Type().Underlying().(*types.Array); !ok {
 		return false
 	}
-	return !valueHasArrayLenRangeEvalEffect(v.X, nil)
-}
-
-func valueHasArrayLenRangeEvalEffect(v ssa.Value, seen map[ssa.Value]bool) bool {
-	if seen[v] {
-		return false
-	}
-	if seen == nil {
-		seen = make(map[ssa.Value]bool)
-	}
-	seen[v] = true
-
-	switch v := v.(type) {
-	case *ssa.Call:
-		return true
-	case *ssa.UnOp:
-		if v.Op == token.ARROW {
-			return true
-		}
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.BinOp:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen) || valueHasArrayLenRangeEvalEffect(v.Y, seen)
-	case *ssa.ChangeInterface:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.ChangeType:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.Convert:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.Extract:
-		return valueHasArrayLenRangeEvalEffect(v.Tuple, seen)
-	case *ssa.Field:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.FieldAddr:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.Index:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen) || valueHasArrayLenRangeEvalEffect(v.Index, seen)
-	case *ssa.IndexAddr:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen) || valueHasArrayLenRangeEvalEffect(v.Index, seen)
-	case *ssa.Lookup:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen) || valueHasArrayLenRangeEvalEffect(v.Index, seen)
-	case *ssa.MakeInterface:
-		return valueHasArrayLenRangeEvalEffect(v.X, seen)
-	case *ssa.Phi:
-		for _, edge := range v.Edges {
-			if valueHasArrayLenRangeEvalEffect(edge, seen) {
-				return true
-			}
-		}
-	}
-	return false
+	return true
 }
 
 func (p *context) cgoErrnoType() types.Type {
