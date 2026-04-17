@@ -1541,6 +1541,9 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 		return v
 	}
 	dst := b.Prog.Type(t, InGo)
+	// Range and assignment lowering can produce a value whose source type is
+	// assignable but not identical to the destination, so preserve the value
+	// while retagging it with the destination runtime type.
 	if _, ok := t.Underlying().(*types.Interface); ok {
 		if _, srcIsInterface := v.raw.Type.Underlying().(*types.Interface); srcIsInterface {
 			return b.ChangeInterface(dst, v)

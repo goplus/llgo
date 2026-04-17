@@ -9,6 +9,7 @@ type rangeAssignmentIface interface{ rangeAssignmentM() int }
 
 type rangeAssignmentKey int
 type rangeAssignmentValue int
+type rangeAssignmentSlice []int
 
 func (rangeAssignmentKey) rangeAssignmentM() int   { return 0 }
 func (rangeAssignmentValue) rangeAssignmentM() int { return 0 }
@@ -28,6 +29,9 @@ func TestRangeAssignmentConversions(t *testing.T) {
 	rangeAssignmentMatch2(t, "int", "rangeAssignmentValue", k, v)
 	k, v = rangeSliceIface[rangeAssignmentValue]()
 	rangeAssignmentMatch2(t, "int", "rangeAssignmentValue", k, v)
+	if got := rangeSliceChangeType(); len(got) != 2 || got[0] != 1 || got[1] != 2 {
+		t.Fatalf("range assignment ChangeType result = %v, want [1 2]", got)
+	}
 }
 
 func rangeAssignmentMatch1(t *testing.T, want string, arg any) {
@@ -94,6 +98,12 @@ func rangeSliceAny[V any]() (k, v any) {
 
 func rangeSliceIface[V rangeAssignmentIface]() (k any, v rangeAssignmentIface) {
 	for k, v = range []V{rangeAssignmentZero[V]()} {
+	}
+	return
+}
+
+func rangeSliceChangeType() (v []int) {
+	for _, v = range []rangeAssignmentSlice{{1, 2}} {
 	}
 	return
 }
