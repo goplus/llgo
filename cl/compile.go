@@ -341,10 +341,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	if ftype != goFunc {
 		return nil, nil, ignoredFunc
 	}
-	oldGoFn := p.goFn
-	p.goFn = f
-	sig := p.patchType(f.Signature).(*types.Signature)
-	p.goFn = oldGoFn
+	sig := func() *types.Signature {
+		oldGoFn := p.goFn
+		p.goFn = f
+		defer func() {
+			p.goFn = oldGoFn
+		}()
+		return p.patchType(f.Signature).(*types.Signature)
+	}()
 	state := p.state
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
 	if isInit && state == pkgHasPatch {
@@ -1363,6 +1367,23 @@ func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 		if t, ok := p._patchType(typ.Elem()); ok {
 			return types.NewChan(typ.Dir(), t), true
 		}
+	case *types.Struct:
+		var patched bool
+		vars := make([]*types.Var, typ.NumFields())
+		tags := make([]string, typ.NumFields())
+		for i := 0; i < typ.NumFields(); i++ {
+			v := typ.Field(i)
+			if t, ok := p._patchType(v.Type()); ok {
+				vars[i] = types.NewField(v.Pos(), v.Pkg(), v.Name(), t, v.Anonymous())
+				patched = true
+			} else {
+				vars[i] = v
+			}
+			tags[i] = typ.Tag(i)
+		}
+		if patched {
+			return types.NewStruct(vars, tags), true
+		}
 	case *types.Named:
 		if t, ok := p.patchLocalGenericNamed(typ); ok {
 			return t, true
@@ -1405,13 +1426,25 @@ func (p *context) patchLocalGenericNamed(t *types.Named) (*types.Named, bool) {
 	if p.goFn == nil || len(p.goFn.TypeArgs()) == 0 || !p.isGenericLocalType(t.Obj()) {
 		return nil, false
 	}
-	obj := types.NewTypeName(token.NoPos, t.Obj().Pkg(), p.localNamedName(t, false), nil)
+	if isPatchedLocalGenericName(t.Obj().Name()) {
+		return nil, false
+	}
+	obj := types.NewTypeName(t.Obj().Pos(), t.Obj().Pkg(), p.localNamedName(t, true), nil)
 	return types.NewNamed(obj, t.Underlying(), nil), true
+}
+
+func isPatchedLocalGenericName(name string) bool {
+	// The patched name embeds type arguments in brackets. Go identifiers cannot
+	// contain '[', so this also prevents repeatedly expanding the generated name.
+	return strings.Contains(name, "[")
 }
 
 func (p *context) localNamedName(t *types.Named, suffix bool) string {
 	obj := t.Obj()
 	name := obj.Name()
+	if isPatchedLocalGenericName(name) {
+		return name
+	}
 	outer := p.localTypeOuterArgs(obj)
 	own := typeListArgs(t.TypeArgs(), p.typeArgName)
 	switch {
@@ -1431,6 +1464,8 @@ func (p *context) localNamedName(t *types.Named, suffix bool) string {
 }
 
 func (p *context) localTypeOuterArgs(obj types.Object) []string {
+	// localNamedName is also used by non-local type arguments, so keep this
+	// guard here even though patchLocalGenericNamed has already checked it.
 	if p.goFn == nil || len(p.goFn.TypeArgs()) == 0 || !p.isGenericLocalType(obj) {
 		return nil
 	}
@@ -1454,6 +1489,8 @@ func typeListArgs(list *types.TypeList, nameOf func(types.Type) string) []string
 }
 
 func (p *context) typeArgName(t types.Type) string {
+	// Keep this formatter aligned with ssa/abi.typeArgString; this variant must
+	// additionally encode local generic type names while patching frontend types.
 	switch t := t.(type) {
 	case *types.Alias:
 		return p.typeArgName(types.Unalias(t))
@@ -1462,7 +1499,7 @@ func (p *context) typeArgName(t types.Type) string {
 	case *types.Named:
 		name := p.localNamedName(t, p.isLocalType(t.Obj()))
 		if pkg := t.Obj().Pkg(); pkg != nil {
-			return pkg.Name() + "." + name
+			return pkg.Path() + "." + name
 		}
 		return name
 	case *types.Pointer:
