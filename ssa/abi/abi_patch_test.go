@@ -85,12 +85,29 @@ func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
 	foo := types.NewNamed(fooObj, types.Typ[types.Int], nil)
 	generic := testGenericNamed(pkg, "F")
 
-	inst, err := types.Instantiate(types.NewContext(), generic, []types.Type{foo}, false)
-	if err != nil {
-		t.Fatalf("Instantiate failed: %v", err)
+	otherPkg := types.NewPackage("example.com/other", "other")
+	barObj := types.NewTypeName(token.NoPos, otherPkg, "Bar", nil)
+	bar := types.NewNamed(barObj, types.Typ[types.Int], nil)
+
+	cases := []struct {
+		name string
+		arg  types.Type
+		want string
+	}{
+		{"same package named", foo, "main.F[main.foo]"},
+		{"different package named", bar, "main.F[other.Bar]"},
+		{"composite pointer", types.NewPointer(foo), "main.F[*main.foo]"},
+		{"composite slice", types.NewSlice(types.Typ[types.String]), "main.F[[]string]"},
+		{"nil package named", testLocalNamed(), "main.F[Local]"},
 	}
-	if got, want := b.Str(inst), "main.F[main.foo]"; got != want {
-		t.Fatalf("Str(%s) = %q, want %q", inst.String(), got, want)
+	for _, tc := range cases {
+		inst, err := types.Instantiate(types.NewContext(), generic, []types.Type{tc.arg}, false)
+		if err != nil {
+			t.Fatalf("%s: Instantiate failed: %v", tc.name, err)
+		}
+		if got := b.Str(inst); got != tc.want {
+			t.Fatalf("%s: Str(%s) = %q, want %q", tc.name, inst.String(), got, tc.want)
+		}
 	}
 }
 

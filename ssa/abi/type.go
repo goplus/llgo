@@ -62,9 +62,8 @@ func (b *Builder) Str(t types.Type) string {
 		_, s := ChanDir(t.Dir())
 		return s + " " + b.realStr(t.Elem())
 	case *types.Named:
-		obj := t.Obj()
 		name := b.namedStr(t)
-		if pkg := obj.Pkg(); pkg != nil {
+		if pkg := t.Obj().Pkg(); pkg != nil {
 			return pkg.Name() + "." + name
 		}
 		return name
