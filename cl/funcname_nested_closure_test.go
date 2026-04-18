@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/goplus/gogen/packages"
+	llssa "github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/ssa/ssatest"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 )
@@ -123,6 +125,9 @@ func iter(yield func(int) bool) {
 	_ = yield(1)
 }
 
+func takes(int) {}
+func takesFunc(func()) {}
+
 func noDeferRange() {
 	for range iter {
 	}
@@ -134,6 +139,8 @@ func normalDefer() {
 
 func plainClosure() {
 	_ = func() int { return 1 }()
+	takes(1)
+	takesFunc(func() {})
 }
 `)
 
@@ -166,24 +173,38 @@ func plainClosure() {
 	if !sawNoImplicitReturn {
 		t.Fatal("expected noDeferRange return to skip implicit RunDefers")
 	}
+	for _, child := range noDefer.AnonFuncs {
+		if child.Synthetic == "range-over-func yield" && ctx.rangeFuncCallNeedsDeferDrain(&ssa.CallCommon{Args: []ssa.Value{ssa.NewConst(nil, types.Typ[types.Int])}}) {
+			t.Fatal("non-closure range call argument should not need defer-stack drain")
+		}
+	}
 
 	normal := ssapkg.Func("normalDefer")
 	if normal == nil {
 		t.Fatal("missing function normalDefer")
 	}
-	var sawRunDefersBeforeReturn bool
+	var sawRunDefersBeforeReturn, sawReturnSkipImplicit bool
 	for _, block := range normal.Blocks {
 		for _, instr := range block.Instrs {
 			if ret, ok := instr.(*ssa.Return); ok && previousNonDebugInstrIsRunDefers(ret) {
 				sawRunDefersBeforeReturn = true
+				if !ctx.returnNeedsImplicitRunDefers(ret) {
+					sawReturnSkipImplicit = true
+				}
 			}
 		}
 	}
 	if !sawRunDefersBeforeReturn {
 		t.Fatal("expected normalDefer return to be preceded by RunDefers")
 	}
+	if !sawReturnSkipImplicit {
+		t.Fatal("expected normalDefer return to skip implicit RunDefers")
+	}
+	if previousNonDebugInstrIsRunDefers(&ssa.Return{}) {
+		t.Fatal("return without a block should not report previous RunDefers")
+	}
 
-	if ctx.functionHasExplicitStackDefer(nil) {
+	if (&context{}).functionHasExplicitStackDefer(nil) {
 		t.Fatal("nil function should not report stack defers")
 	}
 	if ctx.functionHasExplicitStackDeferSeen(noDefer, map[*ssa.Function]bool{noDefer: true}) {
@@ -202,6 +223,124 @@ func plainClosure() {
 	if ctx.functionHasExplicitStackDeferInAnonSeen(noDefer, map[*ssa.Function]bool{noDefer: true}) {
 		t.Fatal("seen function should not recurse through anonymous functions")
 	}
+	withDefer := buildSSAPackage(t, `package foo
+
+func iter(yield func(int) bool) {
+	_ = yield(1)
+}
+
+func f() {
+	for v := range iter {
+		defer func(int) {}(v)
+	}
+}
+`).Func("f")
+	if withDefer == nil {
+		t.Fatal("missing function f")
+	}
+	if !(&context{}).functionHasExplicitStackDefer(withDefer) {
+		t.Fatal("direct functionHasExplicitStackDefer should recurse into range-yield child")
+	}
+	ownerProg := ssatest.NewProgram(t, nil)
+	ownerPkg := ownerProg.NewPackage("foo", "foo")
+	owner := ownerPkg.NewFunc("owner", llssa.NoArgsNoRet, llssa.InGo)
+	ownerCtx := &context{funcs: map[*ssa.Function]llssa.Function{withDefer: owner}}
+	var yieldFn *ssa.Function
+	for _, child := range withDefer.AnonFuncs {
+		if child.Synthetic == "range-over-func yield" {
+			yieldFn = child
+			break
+		}
+	}
+	if yieldFn == nil {
+		t.Fatal("missing range-yield function")
+	}
+	if got := ownerCtx.deferStackOwner(yieldFn); got != owner {
+		t.Fatal("deferStackOwner should resolve synthetic yield to source owner")
+	}
+	if got := ownerCtx.deferStackOwner(nil); got != nil {
+		t.Fatal("deferStackOwner(nil) should return nil")
+	}
+}
+
+func TestRangeFuncCallLoweringHelpers(t *testing.T) {
+	ssapkg := buildSSAPackage(t, `package foo
+
+func g() {}
+func f() { g() }
+func h() { println() }
+`)
+	prog := ssatest.NewProgram(t, nil)
+	llpkg := prog.NewPackage("foo", "foo")
+	fn := llpkg.NewFunc("main", llssa.NoArgsNoRet, llssa.InGo)
+	fn.SetRecover(fn.MakeBlock())
+	builder := fn.MakeBody(1)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("call lowering helper panicked: %v", r)
+		}
+	}()
+
+	ctx := &context{
+		prog:    prog,
+		pkg:     llpkg,
+		fn:      fn,
+		goProg:  ssapkg.Prog,
+		goPkg:   ssapkg,
+		goTyps:  ssapkg.Pkg,
+		funcs:   map[*ssa.Function]llssa.Function{},
+		bvals:   map[ssa.Value]llssa.Expr{},
+		vargs:   map[*ssa.Alloc][]llssa.Expr{},
+		loaded:  map[*types.Package]*pkgInfo{types.Unsafe: {kind: PkgDeclOnly}},
+		patches: Patches{},
+	}
+	g := ssapkg.Func("g")
+	if g == nil {
+		t.Fatal("missing function g")
+	}
+	if got := ctx.deferStackOwner(g); got == nil {
+		t.Fatal("deferStackOwner should compile a direct source owner")
+	}
+	ctx.funcs[g] = fn
+	call := &ssa.CallCommon{Value: g}
+	if ret := ctx.call(builder, llssa.Call, call); ret.IsNil() {
+		t.Fatal("call should lower a direct Go function call")
+	}
+	stack := ssa.NewConst(nil, types.Typ[types.UnsafePointer])
+	_ = builder.DeferStack()
+	ctx.callDeferStack(builder, llssa.DeferInLoop, call, stack, g)
+
+	h := ssapkg.Func("h")
+	if h == nil {
+		t.Fatal("missing function h")
+	}
+	var builtinCall *ssa.CallCommon
+	for _, block := range h.Blocks {
+		for _, instr := range block.Instrs {
+			if call, ok := instr.(*ssa.Call); ok {
+				if _, ok := call.Call.Value.(*ssa.Builtin); ok {
+					builtinCall = &call.Call
+					break
+				}
+			}
+		}
+	}
+	if builtinCall == nil {
+		t.Fatal("missing builtin call in h")
+	}
+	ctx.call(builder, llssa.Call, builtinCall)
+
+	methodSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	method := types.NewFunc(token.NoPos, ssapkg.Pkg, "M", methodSig)
+	iface := types.NewInterfaceType([]*types.Func{method}, nil)
+	iface.Complete()
+	ctx.call(builder, llssa.Call, &ssa.CallCommon{
+		Value:  ssa.NewConst(nil, iface),
+		Method: method,
+	})
+
+	builder.Return()
+	builder.EndBuild()
 }
 
 func TestFuncName_NestedClosureInMethodIncludesRecv(t *testing.T) {

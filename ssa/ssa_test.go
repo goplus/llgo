@@ -782,6 +782,76 @@ func TestCvtType(t *testing.T) {
 	gt.cvtType(nil)
 }
 
+func TestRangeFuncDeferTypeCoverageHelpers(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+
+	closureFields := []*types.Var{
+		types.NewField(token.NoPos, nil, "$f", NoArgsNoRet, false),
+		types.NewField(token.NoPos, nil, "$data", types.Typ[types.UnsafePointer], false),
+	}
+	sizes := prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
+	if got := sizes.Offsetsof(closureFields); len(got) != 2 || got[0] != 0 || got[1] != int64(prog.PointerSize()) {
+		t.Fatalf("closure Offsetsof = %v, want [0 ptrSize]", got)
+	}
+	closureStruct := types.NewStruct(closureFields, nil)
+	if got := sizes.Sizeof(closureStruct); got <= 0 {
+		t.Fatalf("closure Sizeof = %d, want positive size", got)
+	}
+
+	gt := newGoTypes()
+	if raw, cvt := gt.cvtType(closureStruct); raw != closureStruct || cvt {
+		t.Fatalf("cvtType(closureStruct) = %v, %v, want unchanged", raw, cvt)
+	}
+
+	pkg := types.NewPackage("example.com/c", "c")
+	named := types.NewNamed(types.NewTypeName(token.NoPos, pkg, "N", nil), NoArgsNoRet, nil)
+	gt.typbg.Store(namedLinkname(named), InC)
+	if raw, cvt := gt.cvtType(named); raw != named || cvt {
+		t.Fatalf("cvtType(InC named) = %v, %v, want unchanged", raw, cvt)
+	}
+
+	if _, cvt := gt.cvtType(NoArgsNoRet); !cvt {
+		t.Fatal("cvtType(signature) should convert to closure struct")
+	}
+	if _, cvt := gt.cvtType(types.NewMap(NoArgsNoRet, types.Typ[types.Int])); !cvt {
+		t.Fatal("cvtType(map with signature key) should convert")
+	}
+	if _, cvt := gt.cvtType(types.NewArray(NoArgsNoRet, 2)); !cvt {
+		t.Fatal("cvtType(array of signature) should convert")
+	}
+	if _, cvt := gt.cvtType(types.NewChan(types.SendRecv, NoArgsNoRet)); !cvt {
+		t.Fatal("cvtType(chan of signature) should convert")
+	}
+	if _, cvt := gt.cvtType(types.NewTuple(types.NewParam(token.NoPos, nil, "fn", NoArgsNoRet))); !cvt {
+		t.Fatal("cvtType(tuple of signature) should convert")
+	}
+	tpObj := types.NewTypeName(token.NoPos, nil, "T", nil)
+	tp := types.NewTypeParam(tpObj, types.NewInterfaceType(nil, nil))
+	if raw, cvt := gt.cvtType(tp); raw != tp.Underlying() || cvt {
+		t.Fatalf("cvtType(type param) = %v, %v, want underlying without conversion flag", raw, cvt)
+	}
+	func() {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Fatal("cvtType(nil) should panic")
+			}
+		}()
+		gt.cvtType(nil)
+	}()
+
+	withExtra := []*types.Var{
+		types.NewField(token.NoPos, nil, "fn", NoArgsNoRet, false),
+		types.NewField(token.NoPos, nil, "n", types.Typ[types.Int], false),
+	}
+	if got := sizes.Offsetsof(withExtra); len(got) != 2 || got[1] <= got[0] {
+		t.Fatalf("Offsetsof(fields with closure extra size) = %v, want increasing offsets", got)
+	}
+	if got := sizes.Sizeof(types.Typ[types.Int]); got <= 0 {
+		t.Fatalf("Sizeof(int) = %d, want positive size", got)
+	}
+}
+
 func TestUserdefExpr(t *testing.T) {
 	c := &pyVarTy{}
 	b := &builtinTy{}
