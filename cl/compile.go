@@ -150,6 +150,8 @@ type context struct {
 	bvals       map[ssa.Value]llssa.Expr    // block values
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
 	funcs       map[*ssa.Function]llssa.Function
+	stackDefers map[*ssa.Function]bool
+	anonDefers  map[*ssa.Function]bool
 	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
@@ -440,6 +442,9 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for _, phi := range p.phis {
 				phi()
 			}
+			// EndBuild can compile functions referenced while lowering bodies.
+			// Run all body-lowering inits first so those deferred compile requests
+			// are visible before any function finalizes its blocks.
 			p.finals = append(p.finals, b.EndBuild)
 		})
 		for _, af := range f.AnonFuncs {
@@ -813,7 +818,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	switch v := iv.(type) {
 	case *ssa.Call:
 		ret = p.call(b, llssa.Call, &v.Call)
-		if rangeFuncCallNeedsDeferDrain(&v.Call) {
+		if p.rangeFuncCallNeedsDeferDrain(&v.Call) {
 			b.DeferStackDrain()
 		}
 	case *ssa.BinOp:
@@ -1042,7 +1047,7 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				results[i] = p.compileValue(b, r)
 			}
 		}
-		if returnNeedsImplicitRunDefers(v) {
+		if p.returnNeedsImplicitRunDefers(v) {
 			b.RunDefers()
 		}
 		b.Return(results...)
@@ -1155,7 +1160,7 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 }
 
-func rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
+func (p *context) rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
 	for _, arg := range call.Args {
 		closure, ok := arg.(*ssa.MakeClosure)
 		if !ok {
@@ -1165,34 +1170,50 @@ func rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
 		if !ok || fn.Synthetic != "range-over-func yield" {
 			continue
 		}
-		if functionHasExplicitStackDefer(fn, make(map[*ssa.Function]bool)) {
+		if p.functionHasExplicitStackDefer(fn) {
 			return true
 		}
 	}
 	return false
 }
 
-func functionHasExplicitStackDefer(fn *ssa.Function, seen map[*ssa.Function]bool) bool {
+func (p *context) functionHasExplicitStackDefer(fn *ssa.Function) bool {
+	if p.stackDefers == nil {
+		p.stackDefers = make(map[*ssa.Function]bool)
+	}
+	return p.functionHasExplicitStackDeferSeen(fn, make(map[*ssa.Function]bool))
+}
+
+func (p *context) functionHasExplicitStackDeferSeen(fn *ssa.Function, seen map[*ssa.Function]bool) bool {
 	if fn == nil || seen[fn] {
 		return false
+	}
+	if p.stackDefers == nil {
+		p.stackDefers = make(map[*ssa.Function]bool)
+	}
+	if has, ok := p.stackDefers[fn]; ok {
+		return has
 	}
 	seen[fn] = true
 	for _, block := range fn.Blocks {
 		for _, instr := range block.Instrs {
 			if d, ok := instr.(*ssa.Defer); ok && d.DeferStack != nil {
+				p.stackDefers[fn] = true
 				return true
 			}
 		}
 	}
 	for _, child := range fn.AnonFuncs {
-		if functionHasExplicitStackDefer(child, seen) {
+		if p.functionHasExplicitStackDeferSeen(child, seen) {
+			p.stackDefers[fn] = true
 			return true
 		}
 	}
+	p.stackDefers[fn] = false
 	return false
 }
 
-func returnNeedsImplicitRunDefers(ret *ssa.Return) bool {
+func (p *context) returnNeedsImplicitRunDefers(ret *ssa.Return) bool {
 	fn := ret.Parent()
 	if fn == nil || fn.Synthetic != "" || ret.Block() == fn.Recover {
 		return false
@@ -1200,7 +1221,7 @@ func returnNeedsImplicitRunDefers(ret *ssa.Return) bool {
 	if previousNonDebugInstrIsRunDefers(ret) {
 		return false
 	}
-	return functionHasExplicitStackDeferInAnon(fn, make(map[*ssa.Function]bool))
+	return p.functionHasExplicitStackDeferInAnon(fn)
 }
 
 func previousNonDebugInstrIsRunDefers(ret *ssa.Return) bool {
@@ -1222,16 +1243,28 @@ func previousNonDebugInstrIsRunDefers(ret *ssa.Return) bool {
 	return false
 }
 
-func functionHasExplicitStackDeferInAnon(fn *ssa.Function, seen map[*ssa.Function]bool) bool {
+func (p *context) functionHasExplicitStackDeferInAnon(fn *ssa.Function) bool {
+	if p.anonDefers == nil {
+		p.anonDefers = make(map[*ssa.Function]bool)
+	}
+	return p.functionHasExplicitStackDeferInAnonSeen(fn, make(map[*ssa.Function]bool))
+}
+
+func (p *context) functionHasExplicitStackDeferInAnonSeen(fn *ssa.Function, seen map[*ssa.Function]bool) bool {
 	if fn == nil || seen[fn] {
 		return false
 	}
+	if has, ok := p.anonDefers[fn]; ok {
+		return has
+	}
 	seen[fn] = true
 	for _, child := range fn.AnonFuncs {
-		if functionHasExplicitStackDefer(child, seen) {
+		if p.functionHasExplicitStackDeferSeen(child, seen) {
+			p.anonDefers[fn] = true
 			return true
 		}
 	}
+	p.anonDefers[fn] = false
 	return false
 }
 

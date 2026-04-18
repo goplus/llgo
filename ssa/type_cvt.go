@@ -145,6 +145,9 @@ func isGoSSAOpaqueType(typ types.Type) bool {
 	if rt.Kind() == reflect.Pointer {
 		rt = rt.Elem()
 	}
+	// go/ssa uses an unexported opaqueType for synthetic range/defer-stack
+	// values and exposes no predicate for it, so reflection is the only stable
+	// boundary we can check without depending on unsafe package internals.
 	return rt.PkgPath() == "golang.org/x/tools/go/ssa" && rt.Name() == "opaqueType"
 }
 

@@ -249,6 +249,9 @@ func (b Builder) getDeferInCurrentBlock() *aDefer {
 		return self.defer_
 	}
 
+	// This intentionally mirrors getDefer's frame setup but keeps the initial
+	// sigsetjmp in the current block. Range-over-func yield bodies need a stack
+	// handle before their synthetic function returns to the outer body.
 	logicalBlk := b.blk
 	prog := b.Prog
 	blks := self.MakeBlocks(4)
@@ -366,6 +369,9 @@ func (b Builder) DeferTo(owner Function, stack Expr, fn Expr, buildCall func(Bui
 	argsPtr := b.PtrCast(b.Prog.Pointer(b.Prog.VoidPtr()), stack)
 	typ := b.saveDeferArgsTo(argsPtr, DeferInLoop, id, fn, args)
 	loopCase := loopDeferCase{id: id, typ: typ, fn: fn, args: args, buildCall: buildCall}
+	// Do not append to stmts here. The explicit stack is drained only at
+	// DeferStackDrain sites in the owning function, which preserves
+	// range-over-func defer lifetime until the outer function exits or breaks.
 	self.loopCases = append(self.loopCases, loopCase)
 }
 

@@ -809,7 +809,10 @@ func (p *context) deferStackOwner(fn *ssa.Function) llssa.Function {
 	if owner := p.funcs[fn]; owner != nil {
 		return owner
 	}
-	owner, _, _ := p.compileFunction(fn)
+	owner, _, kind := p.compileFunction(fn)
+	if kind == ignoredFunc {
+		return nil
+	}
 	return owner
 }
 
