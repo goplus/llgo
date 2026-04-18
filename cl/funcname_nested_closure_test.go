@@ -74,6 +74,120 @@ func expectTwoDistinctNamesForTypes(t *testing.T, got []string, suffix string) {
 	}
 }
 
+func TestGenericLocalTypePatchHelpers(t *testing.T) {
+	ssapkg := buildSSAPackage(t, `package foo
+
+func use() {
+	_ = localType[int]()
+	_ = localType[string]()
+}
+
+func localType[T any]() any {
+	type local struct {
+		value T
+	}
+	return local{}
+}
+`)
+
+	fn, local := firstGenericLocalNamed(t, ssapkg)
+	ctx := &context{goFn: fn}
+	if !ctx.isGenericLocalType(local.Obj()) {
+		t.Fatalf("%s should be detected as a generic local type", local.Obj().Name())
+	}
+
+	patched, ok := ctx.patchLocalGenericNamed(local)
+	if !ok {
+		t.Fatalf("patchLocalGenericNamed(%v) was not patched", local)
+	}
+	name := patched.Obj().Name()
+	if !strings.Contains(name, "[") || !strings.Contains(name, "·") {
+		t.Fatalf("patched local generic name = %q, want type args and ordinal suffix", name)
+	}
+	if _, ok := ctx.patchLocalGenericNamed(patched); ok {
+		t.Fatalf("already-patched local generic name %q should not be patched again", name)
+	}
+
+	for _, typ := range []types.Type{
+		types.NewPointer(local),
+		types.NewSlice(local),
+		types.NewArray(local, 2),
+		types.NewMap(types.Typ[types.String], local),
+		types.NewChan(types.SendRecv, local),
+		types.NewStruct([]*types.Var{types.NewField(token.NoPos, ssapkg.Pkg, "field", local, false)}, []string{`json:"field"`}),
+	} {
+		if _, ok := ctx._patchType(typ); !ok {
+			t.Fatalf("_patchType(%v) did not patch nested local generic type", typ)
+		}
+	}
+
+	argName := ctx.typeArgName(types.NewMap(
+		types.NewChan(types.RecvOnly, types.Typ[types.Int]),
+		types.NewArray(types.NewSlice(local), 3),
+	))
+	if !strings.Contains(argName, "<-chan int") || !strings.Contains(argName, "[]") {
+		t.Fatalf("typeArgName did not format nested composite type: %q", argName)
+	}
+
+	if got := typeListArgs(nil, ctx.typeArgName); got != nil {
+		t.Fatalf("typeListArgs(nil) = %v, want nil", got)
+	}
+}
+
+func firstGenericLocalNamed(t *testing.T, ssapkg *ssa.Package) (*ssa.Function, *types.Named) {
+	t.Helper()
+	for fn := range ssautil.AllFunctions(ssapkg.Prog) {
+		if fn == nil || len(fn.TypeArgs()) == 0 {
+			continue
+		}
+		for _, block := range fn.Blocks {
+			for _, instr := range block.Instrs {
+				if mi, ok := instr.(*ssa.MakeInterface); ok {
+					if named := findLocalNamed(mi.X.Type(), ssapkg.Pkg); named != nil {
+						return fn, named
+					}
+				}
+				if val, ok := instr.(ssa.Value); ok {
+					if named := findLocalNamed(val.Type(), ssapkg.Pkg); named != nil {
+						return fn, named
+					}
+				}
+			}
+		}
+	}
+	t.Fatal("could not find instantiated generic local named type")
+	return nil, nil
+}
+
+func findLocalNamed(typ types.Type, pkg *types.Package) *types.Named {
+	switch t := types.Unalias(typ).(type) {
+	case *types.Named:
+		if obj := t.Obj(); obj != nil && obj.Pkg() == pkg && obj.Parent() != pkg.Scope() {
+			return t
+		}
+	case *types.Pointer:
+		return findLocalNamed(t.Elem(), pkg)
+	case *types.Slice:
+		return findLocalNamed(t.Elem(), pkg)
+	case *types.Array:
+		return findLocalNamed(t.Elem(), pkg)
+	case *types.Map:
+		if named := findLocalNamed(t.Key(), pkg); named != nil {
+			return named
+		}
+		return findLocalNamed(t.Elem(), pkg)
+	case *types.Chan:
+		return findLocalNamed(t.Elem(), pkg)
+	case *types.Struct:
+		for i := 0; i < t.NumFields(); i++ {
+			if named := findLocalNamed(t.Field(i).Type(), pkg); named != nil {
+				return named
+			}
+		}
+	}
+	return nil
+}
+
 func TestFuncName_NestedClosureInMethodIncludesRecv(t *testing.T) {
 	const src = `package foo
 
