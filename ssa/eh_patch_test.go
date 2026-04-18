@@ -128,6 +128,7 @@ func TestDeferStackWithoutRecoverIsNoop(t *testing.T) {
 	b := fn.MakeBody(1)
 	stack := b.DeferStack()
 	b.DeferTo(nil, stack, callee.Expr, ssa.Builder.Call)
+	b.DeferTo(fn, stack, callee.Expr, ssa.Builder.Call)
 	b.DeferStackDrain()
 	b.Return()
 	b.EndBuild()

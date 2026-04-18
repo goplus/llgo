@@ -116,6 +116,94 @@ func f() {
 	}
 }
 
+func TestRangeFuncDeferStackCompileHelperBranches(t *testing.T) {
+	ssapkg := buildSSAPackage(t, `package foo
+
+func iter(yield func(int) bool) {
+	_ = yield(1)
+}
+
+func noDeferRange() {
+	for range iter {
+	}
+}
+
+func normalDefer() {
+	defer func() {}()
+}
+
+func plainClosure() {
+	_ = func() int { return 1 }()
+}
+`)
+
+	ctx := &context{}
+	noDefer := ssapkg.Func("noDeferRange")
+	if noDefer == nil {
+		t.Fatal("missing function noDeferRange")
+	}
+	if ctx.functionHasExplicitStackDeferInAnon(noDefer) {
+		t.Fatal("noDeferRange should not report explicit stack defer in anonymous functions")
+	}
+	if ctx.functionHasExplicitStackDeferInAnon(noDefer) {
+		t.Fatal("cached noDeferRange result should remain false")
+	}
+
+	var sawNoDrainCall, sawNoImplicitReturn bool
+	for _, block := range noDefer.Blocks {
+		for _, instr := range block.Instrs {
+			if call, ok := instr.(*ssa.Call); ok && !ctx.rangeFuncCallNeedsDeferDrain(&call.Call) {
+				sawNoDrainCall = true
+			}
+			if ret, ok := instr.(*ssa.Return); ok && !ctx.returnNeedsImplicitRunDefers(ret) {
+				sawNoImplicitReturn = true
+			}
+		}
+	}
+	if !sawNoDrainCall {
+		t.Fatal("expected range-over-func call without defers to skip defer-stack drain")
+	}
+	if !sawNoImplicitReturn {
+		t.Fatal("expected noDeferRange return to skip implicit RunDefers")
+	}
+
+	normal := ssapkg.Func("normalDefer")
+	if normal == nil {
+		t.Fatal("missing function normalDefer")
+	}
+	var sawRunDefersBeforeReturn bool
+	for _, block := range normal.Blocks {
+		for _, instr := range block.Instrs {
+			if ret, ok := instr.(*ssa.Return); ok && previousNonDebugInstrIsRunDefers(ret) {
+				sawRunDefersBeforeReturn = true
+			}
+		}
+	}
+	if !sawRunDefersBeforeReturn {
+		t.Fatal("expected normalDefer return to be preceded by RunDefers")
+	}
+
+	if ctx.functionHasExplicitStackDefer(nil) {
+		t.Fatal("nil function should not report stack defers")
+	}
+	if ctx.functionHasExplicitStackDeferSeen(noDefer, map[*ssa.Function]bool{noDefer: true}) {
+		t.Fatal("seen function should not recurse")
+	}
+	plain := ssapkg.Func("plainClosure")
+	if plain == nil {
+		t.Fatal("missing function plainClosure")
+	}
+	if ctx.functionHasExplicitStackDefer(plain) {
+		t.Fatal("plainClosure should not report explicit stack defers")
+	}
+	if ctx.functionHasExplicitStackDefer(plain) {
+		t.Fatal("cached plainClosure result should remain false")
+	}
+	if ctx.functionHasExplicitStackDeferInAnonSeen(noDefer, map[*ssa.Function]bool{noDefer: true}) {
+		t.Fatal("seen function should not recurse through anonymous functions")
+	}
+}
+
 func TestFuncName_NestedClosureInMethodIncludesRecv(t *testing.T) {
 	const src = `package foo
 
