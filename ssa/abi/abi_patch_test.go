@@ -88,6 +88,10 @@ func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
 	otherPkg := types.NewPackage("example.com/other", "other")
 	barObj := types.NewTypeName(token.NoPos, otherPkg, "Bar", nil)
 	bar := types.NewNamed(barObj, types.Typ[types.Int], nil)
+	fn := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", foo)),
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", bar)),
+		false)
 
 	cases := []struct {
 		name string
@@ -96,8 +100,17 @@ func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
 	}{
 		{"same package named", foo, "main.F[main.foo]"},
 		{"different package named", bar, "main.F[example.com/other.Bar]"},
+		{"unsafe pointer", types.Typ[types.UnsafePointer], "main.F[unsafe.Pointer]"},
+		{"byte alias", types.Typ[types.Byte], "main.F[uint8]"},
+		{"rune alias", types.Typ[types.Rune], "main.F[int32]"},
+		{"any alias", types.Universe.Lookup("any").Type(), "main.F[interface {}]"},
 		{"composite pointer", types.NewPointer(foo), "main.F[*main.foo]"},
+		{"composite pointer pointer", types.NewPointer(types.NewPointer(foo)), "main.F[**main.foo]"},
 		{"composite slice", types.NewSlice(types.Typ[types.String]), "main.F[[]string]"},
+		{"composite array", types.NewArray(foo, 2), "main.F[[2]main.foo]"},
+		{"composite map", types.NewMap(foo, bar), "main.F[map[main.foo]example.com/other.Bar]"},
+		{"composite chan", types.NewChan(types.RecvOnly, foo), "main.F[<-chan main.foo]"},
+		{"func fallback", fn, "main.F[func(main.foo) example.com/other.Bar]"},
 		{"nil package named", testLocalNamed(), "main.F[Local]"},
 	}
 	for _, tc := range cases {
@@ -108,6 +121,9 @@ func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
 		if got := b.Str(inst); got != tc.want {
 			t.Fatalf("%s: Str(%s) = %q, want %q", tc.name, inst.String(), got, tc.want)
 		}
+	}
+	if got := reflectTypeArgPkgPath(nil); got != "" {
+		t.Fatalf("reflectTypeArgPkgPath(nil) = %q, want empty string", got)
 	}
 }
 
