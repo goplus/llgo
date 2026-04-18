@@ -18,7 +18,7 @@ type u64parts struct {
 	hi uint32
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check32"
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check32"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
 // CHECK: icmp eq ptr {{.*}}, @_llgo_float32
 // CHECK: load i32, ptr
 // CHECK: icmp ne i32 {{.*}}, 1078530011
@@ -34,10 +34,10 @@ func check32(v any) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check64"
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check64"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
 // CHECK: icmp eq ptr {{.*}}, @_llgo_float64
 // CHECK: load i32, ptr
-// CHECK: icmp ne i32 {{.*}}, 1405674737
+// CHECK: icmp ne i32 {{.*}}, 1405670641
 // CHECK: load i32, ptr
 // CHECK: icmp ne i32 {{.*}}, 1074340347
 func check64(v any) {
