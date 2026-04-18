@@ -105,6 +105,29 @@ func TestTypeName_DetachedLocalScopeUsesPosition(t *testing.T) {
 	}
 }
 
+func TestScopeIndexHandlesRootAndInvalidScopes(t *testing.T) {
+	pkg := types.NewPackage("example.com/p", "p")
+	root := pkg.Scope()
+	parent := types.NewScope(root, token.NoPos, token.NoPos, "parent")
+	child := types.NewScope(parent, token.NoPos, token.NoPos, "child")
+
+	if got, ok := scopeIndex(child, root, ""); !ok || got != ".0.0" {
+		t.Fatalf("scopeIndex(child, root) = %q, %v, want .0.0, true", got, ok)
+	}
+	if _, ok := scopeIndex(nil, root, ""); ok {
+		t.Fatal("scopeIndex(nil, root) succeeded")
+	}
+	if _, ok := scopeIndex(child, nil, ""); ok {
+		t.Fatal("scopeIndex(child, nil) succeeded")
+	}
+	if _, ok := scopeIndex(root, root, ""); ok {
+		t.Fatal("scopeIndex(root, root) succeeded")
+	}
+	if _, ok := scopeIndex(types.NewScope(nil, token.NoPos, token.NoPos, "detached"), root, ""); ok {
+		t.Fatal("scopeIndex(detached, root) succeeded")
+	}
+}
+
 func TestBasicName_RuneAlias(t *testing.T) {
 	if got := BasicName(types.Typ[types.Rune]); got != "_llgo_int32" {
 		t.Fatalf("BasicName(rune) = %q, want %q", got, "_llgo_int32")

@@ -134,6 +134,88 @@ func localType[T any]() any {
 	}
 }
 
+func TestGenericLocalTypePatchHelperBranches(t *testing.T) {
+	ssapkg := buildSSAPackage(t, `package foo
+
+func outer[T any]() any {
+	type one struct{ value T }
+	type two struct{ value T }
+	_ = one{}
+	return two{}
+}
+
+func use() {
+	_ = outer[int]()
+}
+`)
+	fn, local := firstGenericLocalNamed(t, ssapkg)
+	ctx := &context{goFn: fn}
+
+	if ctx.isGenericLocalType(nil) {
+		t.Fatal("nil object should not be a generic local type")
+	}
+	topObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "Top", nil)
+	if ctx.isLocalType(topObj) {
+		t.Fatal("top-level type should not be local")
+	}
+	if ctx.localTypeOuterArgs(topObj) != nil {
+		t.Fatal("top-level type should not report outer type arguments")
+	}
+	if _, ok := (&context{}).patchLocalGenericNamed(local); ok {
+		t.Fatal("patchLocalGenericNamed should require a current generic function")
+	}
+
+	if _, ok := ctx._patchType(types.NewMap(local, types.Typ[types.Int])); !ok {
+		t.Fatal("_patchType should patch map key local type")
+	}
+	if _, ok := ctx._patchType(types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, ssapkg.Pkg, "plain", types.Typ[types.Int], false),
+	}, nil)); ok {
+		t.Fatal("_patchType should not patch structs without local generic fields")
+	}
+
+	pkglessObj := types.NewTypeName(token.NoPos, nil, "Pkgless", nil)
+	pkgless := types.NewNamed(pkglessObj, types.Typ[types.Int], nil)
+	if got := ctx.typeArgName(pkgless); !strings.Contains(got, "Pkgless") {
+		t.Fatalf("typeArgName(pkgless) = %q, want local name", got)
+	}
+	aliasObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "Alias", nil)
+	alias := types.NewAlias(aliasObj, local)
+	if got := ctx.typeArgName(alias); !strings.Contains(got, "foo.two[") {
+		t.Fatalf("typeArgName(alias) = %q, want unaliased local named type", got)
+	}
+	send := types.NewChan(types.SendOnly, types.Typ[types.Int])
+	recv := types.NewChan(types.RecvOnly, types.Typ[types.Int])
+	if got := ctx.typeArgName(send); !strings.Contains(got, "chan<-") {
+		t.Fatalf("typeArgName(send chan) = %q, want chan<-", got)
+	}
+	if got := ctx.typeArgName(types.NewChan(types.SendRecv, recv)); !strings.Contains(got, "chan (<-chan int)") {
+		t.Fatalf("typeArgName(chan recv) = %q, want parenthesized recv channel", got)
+	}
+	if got := ctx.typeArgName(types.NewSignatureType(nil, nil, nil, nil, nil, false)); !strings.Contains(got, "func") {
+		t.Fatalf("typeArgName(signature) = %q, want fallback TypeString", got)
+	}
+
+	tpObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "T", nil)
+	tparam := types.NewTypeParam(tpObj, types.NewInterfaceType(nil, nil))
+	scopeWithTypeParam := types.NewScope(ssapkg.Pkg.Scope(), token.NoPos, token.NoPos, "typed")
+	scopeWithTypeParam.Insert(types.NewTypeName(token.NoPos, ssapkg.Pkg, "N", types.Typ[types.Int]))
+	scopeWithTypeParam.Insert(types.NewTypeName(token.NoPos, ssapkg.Pkg, "T", tparam))
+	if !scopeHasTypeParams(scopeWithTypeParam) {
+		t.Fatal("scopeHasTypeParams should detect type parameters")
+	}
+	if !isTypeParamObject(tpObj) {
+		t.Fatal("isTypeParamObject should detect type parameter type names")
+	}
+	if isTypeParamObject(types.NewVar(token.NoPos, ssapkg.Pkg, "v", types.Typ[types.Int])) {
+		t.Fatal("isTypeParamObject should ignore non-type names")
+	}
+
+	mustPanicContains(t, "invalid channel direction", func() {
+		_ = chanDirName(types.ChanDir(99))
+	})
+}
+
 func firstGenericLocalNamed(t *testing.T, ssapkg *ssa.Package) (*ssa.Function, *types.Named) {
 	t.Helper()
 	for fn := range ssautil.AllFunctions(ssapkg.Prog) {
