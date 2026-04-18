@@ -782,7 +782,46 @@ func (p *context) sourceLine(filename string, line int) (string, bool) {
 
 // -----------------------------------------------------------------------------
 
+type explicitDeferStack struct {
+	stack llssa.Expr
+	owner llssa.Function
+}
+
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
+	return p.callEx(b, act, call, nil)
+}
+
+func (p *context) callDeferStack(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon, stack ssa.Value, fn *ssa.Function) (ret llssa.Expr) {
+	ds := &explicitDeferStack{
+		stack: p.compileValue(b, stack),
+		owner: p.deferStackOwner(fn),
+	}
+	return p.callEx(b, act, call, ds)
+}
+
+func (p *context) deferStackOwner(fn *ssa.Function) llssa.Function {
+	for fn != nil && fn.Synthetic != "" {
+		fn = fn.Parent()
+	}
+	if fn == nil {
+		return nil
+	}
+	if owner := p.funcs[fn]; owner != nil {
+		return owner
+	}
+	owner, _, _ := p.compileFunction(fn)
+	return owner
+}
+
+func (p *context) emitDo(b llssa.Builder, act llssa.DoAction, ds *explicitDeferStack, fn llssa.Expr, buildCall func(llssa.Builder, llssa.Expr, ...llssa.Expr) llssa.Expr, args ...llssa.Expr) llssa.Expr {
+	if ds != nil {
+		b.DeferTo(ds.owner, ds.stack, fn, buildCall, args...)
+		return llssa.Nil
+	}
+	return b.Do(act, fn, buildCall, args...)
+}
+
+func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon, ds *explicitDeferStack) (ret llssa.Expr) {
 	cv := call.Value
 	if mthd := call.Method; mthd != nil {
 		o := p.compileValue(b, cv)
@@ -792,7 +831,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			hasVArg = fnHasVArg
 		}
 		args := p.compileValues(b, call.Args, hasVArg)
-		ret = b.Do(act, fn, llssa.Builder.Call, args...)
+		ret = p.emitDo(b, act, ds, fn, llssa.Builder.Call, args...)
 		return
 	}
 	kind := p.funcKind(cv)
@@ -802,21 +841,22 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	args := call.Args
 	dbgGoSSAln(">>> Do", act, cv, args)
 	switch cv := cv.(type) {
-	case *ssa.Builtin:
-		fn := cv.Name()
-		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-			arg := args[0]
-			ret = p.compileValue(b, arg)
-			return
-		} else if fn == "Offsetof" && act == llssa.Call {
-			if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
-				ret = offset
+		case *ssa.Builtin:
+			fn := cv.Name()
+			if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
+				arg := args[0]
+				ret = p.compileValue(b, arg)
 				return
+			} else if fn == "Offsetof" && act == llssa.Call {
+				if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
+					ret = offset
+					return
+				}
+			} else {
+				args := p.compileValues(b, args, kind)
+				ret = p.emitDo(b, act, ds, llssa.Builtin(fn), llssa.Builder.Call, args...)
 			}
-		}
-		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, llssa.Builtin(fn), llssa.Builder.Call, args...)
-	case *ssa.Function:
+		case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
@@ -824,13 +864,13 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			p.inCFunc = true
 			args := p.compileValues(b, args, kind)
 			p.inCFunc = false
-			ret = b.Do(act, aFn.Expr, llssa.Builder.Call, args...)
+			ret = p.emitDo(b, act, ds, aFn.Expr, llssa.Builder.Call, args...)
 		case goFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, aFn.Expr, llssa.Builder.Call, args...)
+			ret = p.emitDo(b, act, ds, aFn.Expr, llssa.Builder.Call, args...)
 		case pyFunc:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, pyFn.Expr, llssa.Builder.Call, args...)
+			ret = p.emitDo(b, act, ds, pyFn.Expr, llssa.Builder.Call, args...)
 		case llgoPyList:
 			args := p.compileValues(b, args, fnHasVArg)
 			ret = b.PyList(args...)
@@ -899,33 +939,33 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 			b.Unreachable()
 		case llgoAtomicLoad:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+			ret = p.emitDo(b, act, ds, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicLoad(b, args)
 			}, args...)
 		case llgoAtomicStore:
 			args := p.compileValues(b, args, kind)
-			b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+			p.emitDo(b, act, ds, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicStore(b, args)
 			}, args...)
 		case llgoAtomicCmpXchg:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+			ret = p.emitDo(b, act, ds, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicCmpXchg(b, args)
 			}, args...)
 		case llgoAtomicCmpXchgOK:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+			ret = p.emitDo(b, act, ds, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return p.atomicCmpXchgOK(b, args)
 			}, args...)
 		case llgoAtomicAddReturnNew:
 			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+			ret = p.emitDo(b, act, ds, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 				return b.BinOp(token.ADD, p.atomic(b, llssa.OpAdd, args), args[1])
 			}, args...)
 		default:
 			if ftype >= llgoAtomicOpBase && ftype <= llgoAtomicOpLast {
 				args := p.compileValues(b, args, kind)
-				ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
+				ret = p.emitDo(b, act, ds, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
 					return p.atomic(b, llssa.AtomicOp(ftype-llgoAtomicOpBase), args)
 				}, args...)
 			} else {
@@ -935,7 +975,7 @@ func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon
 	default:
 		fn := p.compileValue(b, cv)
 		args := p.compileValues(b, args, kind)
-		ret = b.Do(act, fn, llssa.Builder.Call, args...)
+		ret = p.emitDo(b, act, ds, fn, llssa.Builder.Call, args...)
 	}
 	return
 }
