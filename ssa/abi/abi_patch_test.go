@@ -78,6 +78,22 @@ func TestNamedName_UsesTypeArgString(t *testing.T) {
 	}
 }
 
+func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
+	b := New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
+	pkg := types.NewPackage("command-line-arguments", "main")
+	fooObj := types.NewTypeName(token.NoPos, pkg, "foo", nil)
+	foo := types.NewNamed(fooObj, types.Typ[types.Int], nil)
+	generic := testGenericNamed(pkg, "F")
+
+	inst, err := types.Instantiate(types.NewContext(), generic, []types.Type{foo}, false)
+	if err != nil {
+		t.Fatalf("Instantiate failed: %v", err)
+	}
+	if got, want := b.Str(inst), "main.F[main.foo]"; got != want {
+		t.Fatalf("Str(%s) = %q, want %q", inst.String(), got, want)
+	}
+}
+
 func TestTypeName_NamedWithoutPackage(t *testing.T) {
 	b := New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
 	obj := types.NewTypeName(token.NoPos, nil, "Anon", nil)
