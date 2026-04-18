@@ -66,8 +66,8 @@ func StringSlice(base String, i, j int) String {
 	if i < base.len {
 		return String{c.Advance(base.data, i), j - i}
 	}
-	// Keep the source base for empty suffix slices so repeated slicing
-	// continues to report a stable base pointer like the standard runtime.
+	// Keep the source base for empty suffix slices to avoid advancing past
+	// the underlying allocation while still preserving a stable non-nil base.
 	return String{base.data, 0}
 }
 
