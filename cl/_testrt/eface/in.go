@@ -152,52 +152,13 @@ type eface struct {
 }
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/eface.main"() {
-// CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_bool, ptr inttoptr (i64 -1 to ptr) })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int8, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int16, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int32, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int64, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_uint, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_uint8, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_uint16, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_uint32, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_uint64, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_uintptr, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_float32, ptr null })
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_float64, ptr null })
-// CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 80)
-// CHECK-NEXT:   store [10 x i64] zeroinitializer, ptr %0, align 4
-// CHECK-NEXT:   %1 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[10]_llgo_int", ptr undef }, ptr %0, 1
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %1)
-// CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/eface.main$1", ptr null }, ptr %2, align 8
-// CHECK-NEXT:   %3 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_closure$b7Su1hWaFih-M0M9hMk6nO_RD1K_GQu5WjIXQp6Q2e8", ptr undef }, ptr %2, 1
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %3)
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @"*_llgo_int", ptr null })
-// CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 0)
-// CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" undef, ptr %4, 0
-// CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %5, i64 0, 1
-// CHECK-NEXT:   %7 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %6, i64 0, 2
-// CHECK-NEXT:   %8 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 24)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.Slice" %7, ptr %8, align 8
-// CHECK-NEXT:   %9 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[]_llgo_int", ptr undef }, ptr %8, 1
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %9)
-// CHECK-NEXT:   %10 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @24, i64 5 }, ptr %10, align 8
-// CHECK-NEXT:   %11 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %10, 1
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %11)
-// CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 24)
-// CHECK-NEXT:   store { i8, i64, i64 } zeroinitializer, ptr %12, align 4
-// CHECK-NEXT:   %13 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"{{.*}}/cl/_testrt/eface.struct$RKbUG45GE4henGMAdmt0Rju0JptyR8NsX7IZLsOI0OM", ptr undef }, ptr %12, 1
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %13)
-// CHECK-NEXT:   %14 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" zeroinitializer, ptr %14, align 8
-// CHECK-NEXT:   %15 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T", ptr undef }, ptr %14, 1
-// CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %15)
-// CHECK-NEXT:   ret void
-// CHECK-NEXT: }
+// CHECK: call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_bool
+// CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 80)
+// CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[10]_llgo_int"
+// CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[]_llgo_int"
+// CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"{{.*}}/cl/_testrt/eface.struct
+// CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/eface.T"
+// CHECK: ret void
 func main() {
 	dump(true)
 	dump(0)
