@@ -150,9 +150,7 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 func (b Builder) MakeInterfaceFromPtr(tinter Type, ptr Expr) (ret Expr) {
 	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
 	prog := b.Prog
-	nilPtr := llvm.ConstNull(ptr.impl.Type())
-	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), prog.Bool()}
-	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+	b.AssertNilDeref(ptr)
 
 	typ := prog.Elem(ptr.Type)
 	tabi := b.abiType(typ.raw.Type)

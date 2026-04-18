@@ -4,14 +4,72 @@ import "testing"
 
 type nilPointerInterfaceLarge [1 << 21]byte
 
-var nilPointerInterfaceSink any
+type nilPointerInterfaceLargeStruct struct {
+	data [1 << 21]byte
+}
 
-func TestNilPointerLargeValueToInterfacePanics(t *testing.T) {
+func (nilPointerInterfaceLargeStruct) marker() {}
+
+type nilPointerInterfaceMarker interface {
+	marker()
+}
+
+type nilPointerInterfaceLargeField struct {
+	pad   [1 << 21]byte
+	value nilPointerInterfaceLargeStruct
+}
+
+var nilPointerInterfaceSink any
+var nilPointerInterfaceMarkerSink nilPointerInterfaceMarker
+
+func expectNilPointerInterfacePanic(t *testing.T, f func()) {
+	t.Helper()
 	defer func() {
 		if recover() == nil {
 			t.Fatal("expected nil pointer dereference panic")
 		}
 	}()
-	var p *nilPointerInterfaceLarge
-	nilPointerInterfaceSink = *p
+	f()
+}
+
+func TestNilPointerLargeArrayToInterfacePanics(t *testing.T) {
+	expectNilPointerInterfacePanic(t, func() {
+		var p *nilPointerInterfaceLarge
+		nilPointerInterfaceSink = *p
+	})
+}
+
+func TestNilPointerLargeStructToInterfacePanics(t *testing.T) {
+	expectNilPointerInterfacePanic(t, func() {
+		var p *nilPointerInterfaceLargeStruct
+		nilPointerInterfaceSink = *p
+	})
+}
+
+func TestNilPointerLargeValueStandaloneDerefPanics(t *testing.T) {
+	expectNilPointerInterfacePanic(t, func() {
+		var p *nilPointerInterfaceLarge
+		_ = *p
+	})
+}
+
+func TestNilPointerLargeValueToNonEmptyInterfacePanics(t *testing.T) {
+	expectNilPointerInterfacePanic(t, func() {
+		var p *nilPointerInterfaceLargeStruct
+		nilPointerInterfaceMarkerSink = *p
+	})
+}
+
+func TestNilPointerLargeFieldToInterfacePanics(t *testing.T) {
+	expectNilPointerInterfacePanic(t, func() {
+		var p *nilPointerInterfaceLargeField
+		nilPointerInterfaceSink = p.value
+	})
+}
+
+func TestNilPointerLargeValueToInterfacePanics(t *testing.T) {
+	expectNilPointerInterfacePanic(t, func() {
+		var p *nilPointerInterfaceLarge
+		nilPointerInterfaceSink = *p
+	})
 }
