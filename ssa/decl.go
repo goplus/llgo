@@ -17,8 +17,6 @@
 package ssa
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"go/types"
 	"strconv"
 
@@ -80,16 +78,11 @@ type Global = *aGlobal
 const moduleZeroName = "__llgo.moduleZeroSizedAlloc$"
 
 func (p Package) moduleZeroSizedAlloc(elem Type) Expr {
-	key := elem.ll.String()
-	if raw := elem.RawType(); raw != nil {
-		key = raw.String()
-	}
-	sum := sha256.Sum256([]byte(key))
-	name := moduleZeroName + hex.EncodeToString(sum[:8])
-	zerobase := p.mod.NamedGlobal(name)
+	zerobase := p.mod.NamedGlobal(moduleZeroName)
 	if zerobase.IsNil() {
-		zerobase = llvm.AddGlobal(p.mod, elem.ll, name)
-		zerobase.SetInitializer(llvm.ConstNull(elem.ll))
+		byteTy := p.Prog.Byte()
+		zerobase = llvm.AddGlobal(p.mod, byteTy.ll, moduleZeroName)
+		zerobase.SetInitializer(llvm.ConstNull(byteTy.ll))
 		zerobase.SetLinkage(llvm.PrivateLinkage)
 		zerobase.SetUnnamedAddr(true)
 	}
