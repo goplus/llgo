@@ -95,7 +95,7 @@ func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
 		want string
 	}{
 		{"same package named", foo, "main.F[main.foo]"},
-		{"different package named", bar, "main.F[other.Bar]"},
+		{"different package named", bar, "main.F[example.com/other.Bar]"},
 		{"composite pointer", types.NewPointer(foo), "main.F[*main.foo]"},
 		{"composite slice", types.NewSlice(types.Typ[types.String]), "main.F[[]string]"},
 		{"nil package named", testLocalNamed(), "main.F[Local]"},

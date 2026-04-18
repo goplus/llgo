@@ -77,11 +77,67 @@ func (b *Builder) namedStr(t *types.Named) string {
 		n := targs.Len()
 		infos := make([]string, n)
 		for i := 0; i < n; i++ {
-			infos[i] = b.realStr(targs.At(i))
+			infos[i] = b.reflectTypeArgString(targs.At(i))
 		}
 		name += "[" + strings.Join(infos, ",") + "]"
 	}
 	return name
+}
+
+func (b *Builder) reflectTypeArgString(t types.Type) string {
+	if b.TFlag(t)&abi.TFlagExtraStar != 0 {
+		return "*" + b.reflectTypeArgBaseString(t)
+	}
+	return b.reflectTypeArgBaseString(t)
+}
+
+func (b *Builder) reflectTypeArgBaseString(t types.Type) string {
+	switch t := types.Unalias(t).(type) {
+	case *types.Basic:
+		switch t.Kind() {
+		case types.UnsafePointer:
+			return "unsafe.Pointer"
+		case types.Byte:
+			return "uint8"
+		case types.Rune:
+			return "int32"
+		}
+		return t.String()
+	case *types.Named:
+		name := b.namedStr(t)
+		if pkg := t.Obj().Pkg(); pkg != nil {
+			return reflectTypeArgPkgPath(pkg) + "." + name
+		}
+		return name
+	case *types.Interface:
+		return b.interfaceStr(t)
+	case *types.Pointer:
+		elem := t.Elem()
+		if b.TFlag(elem)&abi.TFlagExtraStar != 0 {
+			return "**" + b.reflectTypeArgBaseString(elem)
+		}
+		return b.reflectTypeArgBaseString(elem)
+	case *types.Slice:
+		return "[]" + b.reflectTypeArgString(t.Elem())
+	case *types.Array:
+		return "[" + strconv.Itoa(int(t.Len())) + "]" + b.reflectTypeArgString(t.Elem())
+	case *types.Map:
+		return "map[" + b.reflectTypeArgBaseString(t.Key()) + "]" + b.reflectTypeArgString(t.Elem())
+	case *types.Chan:
+		_, s := ChanDir(t.Dir())
+		return s + " " + b.reflectTypeArgString(t.Elem())
+	}
+	return types.TypeString(t, reflectTypeArgPkgPath)
+}
+
+func reflectTypeArgPkgPath(pkg *types.Package) string {
+	if pkg == nil {
+		return ""
+	}
+	if pkg.Path() == "command-line-arguments" && pkg.Name() != "" {
+		return pkg.Name()
+	}
+	return PathOf(pkg)
 }
 
 func (b *Builder) structStr(t *types.Struct) string {
