@@ -38,6 +38,26 @@ func TestConstBool(t *testing.T) {
 	}
 }
 
+func TestIsLargeNonPointerValue(t *testing.T) {
+	prog := llssa.NewProgram(nil)
+	ctx := &context{prog: prog}
+
+	largeArray := prog.Type(types.NewArray(types.Typ[types.Byte], int64(maxDirectDerefSize)+1), llssa.InGo)
+	if !ctx.isLargeNonPointerValue(largeArray) {
+		t.Fatal("large array should require explicit nil-deref guard")
+	}
+
+	smallArray := prog.Type(types.NewArray(types.Typ[types.Byte], 16), llssa.InGo)
+	if ctx.isLargeNonPointerValue(smallArray) {
+		t.Fatal("small array should not require explicit nil-deref guard")
+	}
+
+	largePointer := prog.Type(types.NewPointer(types.NewArray(types.Typ[types.Byte], int64(maxDirectDerefSize)+1)), llssa.InGo)
+	if ctx.isLargeNonPointerValue(largePointer) {
+		t.Fatal("pointer values should not be classified as large direct values")
+	}
+}
+
 func TestToBackground(t *testing.T) {
 	if v := toBackground(""); v != llssa.InGo {
 		t.Fatal("toBackground:", v)
