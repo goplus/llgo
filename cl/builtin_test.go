@@ -58,6 +58,41 @@ func TestIsLargeNonPointerValue(t *testing.T) {
 	}
 }
 
+func TestCompileLargeNilDerefInterfaceGuards(t *testing.T) {
+	_, m := mustCompileLLPkgFromSrc(t, `
+package foo
+
+type large [1 << 21]byte
+type largeStruct struct {
+	data [1 << 21]byte
+}
+type holder struct {
+	pad [1 << 21]byte
+	value largeStruct
+}
+
+var sink any
+
+func arrayIface(p *large) {
+	sink = *p
+}
+
+func standalone(p *large) {
+	_ = *p
+}
+
+func fieldIface(p *holder) {
+	sink = p.value
+}
+`)
+	ir := m.String()
+	for _, want := range []string{"AssertNilDeref", "Typedmemmove"} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("compiled IR missing %s for large nil-deref guard path:\n%s", want, ir)
+		}
+	}
+}
+
 func TestToBackground(t *testing.T) {
 	if v := toBackground(""); v != llssa.InGo {
 		t.Fatal("toBackground:", v)
