@@ -74,6 +74,48 @@ func expectTwoDistinctNamesForTypes(t *testing.T, got []string, suffix string) {
 	}
 }
 
+func TestRangeFuncDeferStackCompileHelpers(t *testing.T) {
+	ssapkg := buildSSAPackage(t, `package foo
+
+func iter(yield func(int) bool) {
+	_ = yield(1) && yield(2)
+}
+
+func f() {
+	for v := range iter {
+		defer func(int) {}(v)
+	}
+}
+`)
+
+	fn := ssapkg.Func("f")
+	if fn == nil {
+		t.Fatal("missing function f")
+	}
+	ctx := &context{}
+	if !ctx.functionHasExplicitStackDeferInAnon(fn) {
+		t.Fatal("expected f to have an anonymous range-yield function with explicit defer stack")
+	}
+
+	var sawRangeCall, sawImplicitReturn bool
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			if call, ok := instr.(*ssa.Call); ok && ctx.rangeFuncCallNeedsDeferDrain(&call.Call) {
+				sawRangeCall = true
+			}
+			if ret, ok := instr.(*ssa.Return); ok && ctx.returnNeedsImplicitRunDefers(ret) {
+				sawImplicitReturn = true
+			}
+		}
+	}
+	if !sawRangeCall {
+		t.Fatal("expected range-over-func call to need explicit defer-stack drain")
+	}
+	if !sawImplicitReturn {
+		t.Fatal("expected function return to need implicit RunDefers")
+	}
+}
+
 func TestFuncName_NestedClosureInMethodIncludesRecv(t *testing.T) {
 	const src = `package foo
 

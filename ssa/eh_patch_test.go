@@ -88,3 +88,47 @@ func TestDeferInLoopContiguousDrainerGeneration(t *testing.T) {
 		t.Fatalf("expected defer node drain/free in IR, got:\n%s", ir)
 	}
 }
+
+func TestExplicitDeferStackIR(t *testing.T) {
+	prog := ssatest.NewProgram(t, nil)
+	pkg := prog.NewPackage("foo", "foo")
+
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	cb := callee.MakeBody(1)
+	cb.Return()
+	cb.EndBuild()
+
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	b := fn.MakeBody(1)
+	fn.SetRecover(fn.MakeBlock())
+	stack := b.DeferStack()
+	b.DeferTo(fn, stack, callee.Expr, ssa.Builder.Call)
+	b.DeferStackDrain()
+	b.Return()
+	b.EndBuild()
+
+	ir := pkg.Module().String()
+	for _, want := range []string{"GetThreadDefer", "SetThreadDefer", "FreeDeferNode"} {
+		if !strings.Contains(ir, want) {
+			t.Fatalf("expected %s in explicit defer-stack IR, got:\n%s", want, ir)
+		}
+	}
+}
+
+func TestDeferStackWithoutRecoverIsNoop(t *testing.T) {
+	prog := ssatest.NewProgram(t, nil)
+	pkg := prog.NewPackage("foo", "foo")
+
+	callee := pkg.NewFunc("callee", ssa.NoArgsNoRet, ssa.InGo)
+	cb := callee.MakeBody(1)
+	cb.Return()
+	cb.EndBuild()
+
+	fn := pkg.NewFunc("main", ssa.NoArgsNoRet, ssa.InGo)
+	b := fn.MakeBody(1)
+	stack := b.DeferStack()
+	b.DeferTo(nil, stack, callee.Expr, ssa.Builder.Call)
+	b.DeferStackDrain()
+	b.Return()
+	b.EndBuild()
+}
