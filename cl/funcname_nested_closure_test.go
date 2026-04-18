@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/goplus/gogen/packages"
+	"github.com/goplus/llgo/internal/typepatch"
+	"github.com/goplus/llgo/ssa/ssatest"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
 )
@@ -173,6 +175,35 @@ func use() {
 	}, nil)); ok {
 		t.Fatal("_patchType should not patch structs without local generic fields")
 	}
+	if _, ok := ctx._patchType(types.NewTuple(types.NewVar(token.NoPos, ssapkg.Pkg, "v", local))); !ok {
+		t.Fatal("_patchType should patch tuple elements")
+	}
+	if _, ok := ctx._patchType(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, ssapkg.Pkg, "p", local)),
+		types.NewTuple(types.NewVar(token.NoPos, ssapkg.Pkg, "r", local)),
+		false)); !ok {
+		t.Fatal("_patchType should patch signature params and results")
+	}
+	if _, ok := ctx._patchType(types.NewTuple(types.NewVar(token.NoPos, ssapkg.Pkg, "v", types.Typ[types.Int]))); ok {
+		t.Fatal("_patchType should not patch tuple without local generic elements")
+	}
+
+	oldPkg := types.NewPackage("example.com/patched", "patched")
+	oldObj := types.NewTypeName(token.NoPos, oldPkg, "N", nil)
+	oldNamed := types.NewNamed(oldObj, types.Typ[types.Int], nil)
+	oldPkg.Scope().Insert(oldObj)
+	patchPkg := types.NewPackage(oldPkg.Path(), oldPkg.Name())
+	patchObj := types.NewTypeName(token.NoPos, patchPkg, "N", nil)
+	patchNamed := types.NewNamed(patchObj, types.Typ[types.String], nil)
+	patchPkg.Scope().Insert(patchObj)
+	typepatch.Merge(patchPkg, oldPkg, nil, false)
+	patchCtx := &context{
+		prog:    ssatest.NewProgram(t, nil),
+		patches: Patches{oldPkg.Path(): {Types: patchPkg}},
+	}
+	if got, ok := patchCtx._patchType(oldNamed); !ok || !types.Identical(got, patchNamed) {
+		t.Fatalf("_patchType(patched named) = %v, %v, want patched named", got, ok)
+	}
 
 	pkglessObj := types.NewTypeName(token.NoPos, nil, "Pkgless", nil)
 	pkgless := types.NewNamed(pkglessObj, types.Typ[types.Int], nil)
@@ -184,6 +215,9 @@ func use() {
 	if got := ctx.typeArgName(alias); !strings.Contains(got, "foo.two[") {
 		t.Fatalf("typeArgName(alias) = %q, want unaliased local named type", got)
 	}
+	if got := ctx.typeArgName(types.NewPointer(local)); !strings.HasPrefix(got, "*foo.two[") {
+		t.Fatalf("typeArgName(pointer) = %q, want pointer to patched local name", got)
+	}
 	send := types.NewChan(types.SendOnly, types.Typ[types.Int])
 	recv := types.NewChan(types.RecvOnly, types.Typ[types.Int])
 	if got := ctx.typeArgName(send); !strings.Contains(got, "chan<-") {
@@ -194,6 +228,34 @@ func use() {
 	}
 	if got := ctx.typeArgName(types.NewSignatureType(nil, nil, nil, nil, nil, false)); !strings.Contains(got, "func") {
 		t.Fatalf("typeArgName(signature) = %q, want fallback TypeString", got)
+	}
+	otherPkg := types.NewPackage("example.com/bar", "bar")
+	other := types.NewNamed(types.NewTypeName(token.NoPos, otherPkg, "Other", nil), types.Typ[types.Int], nil)
+	sigWithPkg := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, otherPkg, "x", other)),
+		nil, false)
+	if got := ctx.typeArgName(sigWithPkg); !strings.Contains(got, "bar.Other") {
+		t.Fatalf("typeArgName(signature with package) = %q, want package-qualified param", got)
+	}
+
+	patchedObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "Already[int]", nil)
+	patched := types.NewNamed(patchedObj, types.Typ[types.Int], nil)
+	if got := ctx.localNamedName(patched, true); got != "Already[int]" {
+		t.Fatalf("localNamedName(already patched) = %q, want unchanged name", got)
+	}
+
+	topTypeParamObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "V", nil)
+	topTypeParam := types.NewTypeParam(topTypeParamObj, types.NewInterfaceType(nil, nil))
+	topBoxObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "TopBox", nil)
+	ssapkg.Pkg.Scope().Insert(topBoxObj)
+	topBox := types.NewNamed(topBoxObj, types.Typ[types.Int], nil)
+	topBox.SetTypeParams([]*types.TypeParam{topTypeParam})
+	topBoxInt, err := types.Instantiate(types.NewContext(), topBox, []types.Type{types.Typ[types.Int]}, false)
+	if err != nil {
+		t.Fatalf("Instantiate(TopBox[int]) failed: %v", err)
+	}
+	if got := ctx.localNamedName(topBoxInt.(*types.Named), false); !strings.Contains(got, "[int]") || strings.Contains(got, ";") {
+		t.Fatalf("localNamedName(top-level generic) = %q, want own args only", got)
 	}
 
 	tpObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "T", nil)
@@ -209,6 +271,70 @@ func use() {
 	}
 	if isTypeParamObject(types.NewVar(token.NoPos, ssapkg.Pkg, "v", types.Typ[types.Int])) {
 		t.Fatal("isTypeParamObject should ignore non-type names")
+	}
+
+	localScope := types.NewScope(ssapkg.Pkg.Scope(), token.NoPos, token.NoPos, "local")
+	localScope.Insert(types.NewVar(token.NoPos, ssapkg.Pkg, "v", types.Typ[types.Int]))
+	localScope.Insert(tpObj)
+	localScope.Insert(types.NewTypeName(token.Pos(10), ssapkg.Pkg, "Before", types.Typ[types.Int]))
+	manualObj := types.NewTypeName(token.Pos(20), ssapkg.Pkg, "Manual", nil)
+	localScope.Insert(manualObj)
+	localScope.Insert(types.NewTypeName(token.Pos(30), ssapkg.Pkg, "After", types.Typ[types.Int]))
+	manual := types.NewNamed(manualObj, types.Typ[types.Int], nil)
+	if got := ctx.localTypeOrdinal(manual.Obj()); got != 2 {
+		t.Fatalf("localTypeOrdinal(manual) = %d, want 2", got)
+	}
+	if !ctx.isGenericLocalType(manual.Obj()) {
+		t.Fatal("manual object in type-param scope should be generic local")
+	}
+
+	localPlainScope := types.NewScope(nil, token.NoPos, token.NoPos, "plain")
+	plainObj := types.NewTypeName(token.Pos(1), ssapkg.Pkg, "Plain", nil)
+	localPlainScope.Insert(plainObj)
+	if ctx.isGenericLocalType(plainObj) {
+		t.Fatal("local type without type-param scope should not be generic local")
+	}
+	childScope := types.NewScope(ssapkg.Pkg.Scope(), token.NoPos, token.NoPos, "child")
+	childObj := types.NewTypeName(token.Pos(2), ssapkg.Pkg, "Child", nil)
+	childScope.Insert(childObj)
+	if ctx.isGenericLocalType(childObj) {
+		t.Fatal("local type whose scope reaches package scope without type params should not be generic local")
+	}
+	if !ctx.isGenericLocalType(types.NewTypeName(fn.Syntax().Pos()+1, ssapkg.Pkg, "SyntaxLocal", nil)) {
+		t.Fatal("parentless object inside current function syntax should be generic local")
+	}
+	if ctx.inCurrentFunction(token.NoPos) {
+		t.Fatal("invalid position should not be inside current function")
+	}
+	if (&context{}).currentFunctionSyntax() != nil {
+		t.Fatal("currentFunctionSyntax without goFn should be nil")
+	}
+	if (&context{}).localTypeOrdinalBySyntax(token.Pos(1)) != 0 {
+		t.Fatal("localTypeOrdinalBySyntax without current function should be zero")
+	}
+	if !ctx.inCurrentFunction(fn.Syntax().Pos() + 1) {
+		t.Fatal("position inside current function should be detected")
+	}
+
+	typeParamObj := types.NewTypeName(token.NoPos, ssapkg.Pkg, "U", nil)
+	typeParam := types.NewTypeParam(typeParamObj, types.NewInterfaceType(nil, nil))
+	genericScope := types.NewScope(ssapkg.Pkg.Scope(), token.NoPos, token.NoPos, "generic")
+	genericScope.Insert(typeParamObj)
+	boxObj := types.NewTypeName(token.Pos(40), ssapkg.Pkg, "Box", nil)
+	genericScope.Insert(boxObj)
+	box := types.NewNamed(boxObj, types.NewStruct([]*types.Var{
+		types.NewField(token.NoPos, ssapkg.Pkg, "value", typeParam, false),
+	}, nil), nil)
+	box.SetTypeParams([]*types.TypeParam{typeParam})
+	boxInt, err := types.Instantiate(types.NewContext(), box, []types.Type{types.Typ[types.Int]}, false)
+	if err != nil {
+		t.Fatalf("Instantiate(Box[int]) failed: %v", err)
+	}
+	if got := ctx.localNamedName(boxInt.(*types.Named), false); !strings.Contains(got, ";int]") {
+		t.Fatalf("localNamedName(local generic with own args) = %q, want outer and own args", got)
+	}
+	if got := typeListArgs(boxInt.(*types.Named).TypeArgs(), ctx.typeArgName); len(got) != 1 || got[0] != "int" {
+		t.Fatalf("typeListArgs(non-nil) = %v, want [int]", got)
 	}
 
 	mustPanicContains(t, "invalid channel direction", func() {
