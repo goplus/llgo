@@ -61,6 +61,12 @@ func AssertDivideByZero(b bool) {
 	}
 }
 
+func AssertNilDeref(b bool) {
+	if b {
+		panic(errorString("invalid memory address or nil pointer dereference").Error())
+	}
+}
+
 // printany prints an argument passed to panic.
 // If panic is called with a value that has a String or Error method,
 // it has already been converted into a string by preprintpanics.

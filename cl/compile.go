@@ -80,6 +80,18 @@ func dbgInstrln(args ...any) {
 	}
 }
 
+func (p *context) isLargeNonPointerValue(t types.Type) bool {
+	raw := types.Unalias(t)
+	if _, ok := raw.Underlying().(*types.Pointer); ok {
+		return false
+	}
+	arch := "amd64"
+	if p.prog.PointerSize() == 4 {
+		arch = "386"
+	}
+	return types.SizesFor("gc", arch).Sizeof(raw) > 1<<20
+}
+
 func dbgGoSSADump(f interface {
 	WriteTo(io.Writer) (int64, error)
 }) {
@@ -814,11 +826,33 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
-	case *ssa.UnOp:
-		if skipUnusedArrayDeref(v) {
-			return
-		}
-		x := p.compileValue(b, v.X)
+		case *ssa.UnOp:
+			if skipUnusedArrayDeref(v) {
+				return
+			}
+			if v.Op == token.MUL {
+				if _, ok := v.X.(*ssa.UnOp); ok {
+					if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
+						if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if p.isLargeNonPointerValue(t.RawType()) {
+							x := p.compileValue(b, v.X)
+							b.AssertNilDeref(x)
+							return
+						}
+					}
+				}
+			}
+			if refs := v.Referrers(); refs != nil && len(*refs) == 1 {
+				if _, ok := (*refs)[0].(*ssa.MakeInterface); ok {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if p.isLargeNonPointerValue(t.RawType()) {
+							return
+						}
+						}
+					}
+				}
+			}
+			x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
 			ret = b.Recv(x, v.CommaOk)
 		} else {
@@ -902,6 +936,16 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
+		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
+			if vt := p.type_(unop.Type(), llssa.InGo); vt.RawType() != nil {
+				if p.isLargeNonPointerValue(vt.RawType()) {
+					if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
+						ret = b.MakeInterfaceFromPtr(t, ptr)
+						break
+					}
+				}
+			}
+		}
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:

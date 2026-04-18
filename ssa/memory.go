@@ -326,6 +326,12 @@ func (b Builder) AtomicCmpXchg(ptr, old, new Expr) Expr {
 	return Expr{ret, prog.Struct(t, prog.Bool())}
 }
 
+func (b Builder) AssertNilDeref(ptr Expr) {
+	nilPtr := llvm.ConstNull(ptr.impl.Type())
+	isNil := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, ptr.impl, nilPtr), b.Prog.Bool()}
+	b.InlineCall(b.Pkg.rtFunc("AssertNilDeref"), isNil)
+}
+
 // Load returns the value at the pointer ptr.
 func (b Builder) Load(ptr Expr) Expr {
 	dbgInstrf("Load %v\n", ptr.impl)
