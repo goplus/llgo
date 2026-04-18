@@ -66,7 +66,9 @@ func StringSlice(base String, i, j int) String {
 	if i < base.len {
 		return String{c.Advance(base.data, i), j - i}
 	}
-	return String{nil, 0}
+	// Keep the source base for empty suffix slices so repeated slicing
+	// continues to report a stable base pointer like the standard runtime.
+	return String{base.data, 0}
 }
 
 type StringIter struct {
