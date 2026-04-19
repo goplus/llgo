@@ -10,9 +10,9 @@ import (
 func main() {
 	var v int64
 
-	// CHECK: store atomic i64 100, ptr %0 seq_cst, align 4
+	// CHECK: store atomic i64 100, ptr %0 seq_cst, align 8
 	atomic.Store(&v, 100)
-	// CHECK: %1 = load atomic i64, ptr %0 seq_cst, align 4
+	// CHECK: %1 = load atomic i64, ptr %0 seq_cst, align 8
 	c.Printf(c.Str("store: %ld\n"), atomic.Load(&v))
 	// CHECK: %3 = atomicrmw add ptr %0, i64 1 seq_cst, align 8
 	ret := atomic.Add(&v, 1)

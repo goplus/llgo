@@ -19,7 +19,7 @@ func demo() {
 // CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reflectfn.main"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
-// CHECK-NEXT:   store i64 100, ptr %0, align 4
+// CHECK-NEXT:   store i64 100, ptr %0, align 8
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   %2 = getelementptr inbounds { ptr }, ptr %1, i32 0, i32 0
 // CHECK-NEXT:   store ptr %0, ptr %2, align 8

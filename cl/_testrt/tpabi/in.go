@@ -34,7 +34,7 @@ func (t *K[N]) Advance(n int) *K[N] {
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, i32 0, i32 1
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 1 }, ptr %1, align 8
-// CHECK-NEXT:   store i64 1, ptr %2, align 4
+// CHECK-NEXT:   store i64 1, ptr %2, align 8
 // CHECK-NEXT:   %3 = load %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 24)
 // CHECK-NEXT:   store %"{{.*}}/cl/_testrt/tpabi.T[string,int]" %3, ptr %4, align 8
@@ -53,7 +53,7 @@ func (t *K[N]) Advance(n int) *K[N] {
 // CHECK-NEXT:   %12 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %11, i32 0, i32 0
 // CHECK-NEXT:   %13 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %11, i32 0, i32 1
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @11, i64 5 }, ptr %12, align 8
-// CHECK-NEXT:   store i64 100, ptr %13, align 4
+// CHECK-NEXT:   store i64 100, ptr %13, align 8
 // CHECK-NEXT:   %14 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$BP0p_lUsEd-IbbtJVukGmgrdQkqzcoYzSiwgUvgFvUs", ptr @"*_llgo_github.com/goplus/llgo/cl/_testrt/tpabi.T[string,int]")
 // CHECK-NEXT:   %15 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %14, 0
 // CHECK-NEXT:   %16 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %15, ptr %11, 1
@@ -71,10 +71,10 @@ func (t *K[N]) Advance(n int) *K[N] {
 // CHECK-NEXT:   %27 = getelementptr inbounds i64, ptr %25, i64 1
 // CHECK-NEXT:   %28 = getelementptr inbounds i64, ptr %25, i64 2
 // CHECK-NEXT:   %29 = getelementptr inbounds i64, ptr %25, i64 3
-// CHECK-NEXT:   store i64 1, ptr %26, align 4
-// CHECK-NEXT:   store i64 2, ptr %27, align 4
-// CHECK-NEXT:   store i64 3, ptr %28, align 4
-// CHECK-NEXT:   store i64 4, ptr %29, align 4
+// CHECK-NEXT:   store i64 1, ptr %26, align 8
+// CHECK-NEXT:   store i64 2, ptr %27, align 8
+// CHECK-NEXT:   store i64 3, ptr %28, align 8
+// CHECK-NEXT:   store i64 4, ptr %29, align 8
 // CHECK-NEXT:   %30 = getelementptr [4 x i64], ptr %25, i64 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintPointer"(ptr %30)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
@@ -109,7 +109,7 @@ func main() {
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %1, i32 0, i32 0
 // CHECK-NEXT:   %3 = load %"{{.*}}/runtime/internal/runtime.String", ptr %2, align 8
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %1, i32 0, i32 1
-// CHECK-NEXT:   %5 = load i64, ptr %4, align 4
+// CHECK-NEXT:   %5 = load i64, ptr %4, align 8
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %3)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %5)
@@ -122,7 +122,7 @@ func main() {
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}/runtime/internal/runtime.String", ptr %1, align 8
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpabi.T[string,int]", ptr %0, i32 0, i32 1
-// CHECK-NEXT:   %4 = load i64, ptr %3, align 4
+// CHECK-NEXT:   %4 = load i64, ptr %3, align 8
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %2)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %4)

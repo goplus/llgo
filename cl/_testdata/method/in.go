@@ -12,7 +12,7 @@ type T int
 // CHECK-NEXT: }
 // CHECK-LABEL: define i64 @"{{.*}}.(*T).Add"(ptr %0, i64 %1) {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
+// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}.T.Add"(i64 %2, i64 %1)
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }

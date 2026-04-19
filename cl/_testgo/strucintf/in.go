@@ -8,10 +8,10 @@ import "github.com/goplus/llgo/cl/_testdata/foo"
 // CHECK-NEXT:   %0 = alloca { i64 }, align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64 }, ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 1, ptr %1, align 4
-// CHECK-NEXT:   %2 = load { i64 }, ptr %0, align 4
+// CHECK-NEXT:   store i64 1, ptr %1, align 8
+// CHECK-NEXT:   %2 = load { i64 }, ptr %0, align 8
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store { i64 } %2, ptr %3, align 4
+// CHECK-NEXT:   store { i64 } %2, ptr %3, align 8
 // CHECK-NEXT:   %4 = insertvalue %"{{.*}}eface" { ptr @"{{.*}}strucintf.struct{{.*}}", ptr undef }, ptr %3, 1
 // CHECK-NEXT:   ret %"{{.*}}eface" %4
 func Foo() any {

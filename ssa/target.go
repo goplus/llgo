@@ -18,6 +18,7 @@ package ssa
 
 import (
 	"runtime"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -40,8 +41,46 @@ func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
 	if err != nil {
 		panic(err)
 	}
-	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
+	machine := t.CreateTargetMachineWithOptions(
+		spec.Triple,
+		spec.CPU,
+		spec.Features,
+		llvm.CodeGenLevelNone,
+		p.targetRelocMode(),
+		llvm.CodeModelDefault,
+		p.targetMachineOptions(),
+	)
 	return machine.CreateTargetData(), machine
+}
+
+func (p *Target) targetRelocMode() llvm.RelocMode {
+	if p.useNativeObjectSections() {
+		return llvm.RelocPIC
+	}
+	return llvm.RelocDefault
+}
+
+func (p *Target) targetMachineOptions() llvm.TargetMachineOptions {
+	if !p.useNativeObjectSections() {
+		return llvm.TargetMachineOptions{}
+	}
+	return llvm.TargetMachineOptions{
+		FunctionSections:   true,
+		DataSections:       true,
+		UniqueSectionNames: true,
+	}
+}
+
+func (p *Target) useNativeObjectSections() bool {
+	goos := p.GOOS
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	goarch := p.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	return p.Target == "" && goos == runtime.GOOS && goarch == runtime.GOARCH && goarch != "wasm"
 }
 
 type TargetSpec struct {
@@ -138,6 +177,19 @@ func (p *Target) Spec() (spec TargetSpec) {
 		spec.Features = "+bulk-memory,+mutable-globals,+nontrapping-fptoint,+sign-ext"
 	}
 	return
+}
+
+func StripModuleTarget(ir string) string {
+	var b strings.Builder
+	for _, line := range strings.SplitAfter(ir, "\n") {
+		trimmed := strings.TrimSuffix(line, "\n")
+		if strings.HasPrefix(trimmed, "target datalayout = ") ||
+			strings.HasPrefix(trimmed, "target triple = ") {
+			continue
+		}
+		b.WriteString(line)
+	}
+	return b.String()
 }
 
 // -----------------------------------------------------------------------------

@@ -24,9 +24,9 @@ type S struct {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = alloca %"{{.*}}/cl/_testgo/closureall.S", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %2, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   store %"{{.*}}/cl/_testgo/closureall.S" %0, ptr %2, align 4
+// CHECK-NEXT:   store %"{{.*}}/cl/_testgo/closureall.S" %0, ptr %2, align 8
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testgo/closureall.S", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   %4 = load i64, ptr %3, align 4
+// CHECK-NEXT:   %4 = load i64, ptr %3, align 8
 // CHECK-NEXT:   %5 = add i64 %4, %1
 // CHECK-NEXT:   ret i64 %5
 // CHECK-NEXT: }
@@ -37,7 +37,7 @@ func (s S) Inc(x int) int {
 // CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add"(ptr %0, i64 %1) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/closureall.S", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 8
 // CHECK-NEXT:   %4 = add i64 %3, %1
 // CHECK-NEXT:   ret i64 %4
 // CHECK-NEXT: }
@@ -47,7 +47,7 @@ func (s *S) Add(x int) int {
 
 // CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Inc"(ptr %0, i64 %1) {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %2 = load %"{{.*}}/cl/_testgo/closureall.S", ptr %0, align 4
+// CHECK-NEXT:   %2 = load %"{{.*}}/cl/_testgo/closureall.S", ptr %0, align 8
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/cl/_testgo/closureall.S.Inc"(%"{{.*}}/cl/_testgo/closureall.S" %2, i64 %1)
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
@@ -83,7 +83,7 @@ func globalAdd(x, y int) int {
 // CHECK-NEXT:   %8 = call i64 @"{{.*}}/cl/_testgo/closureall.globalAdd"(i64 1, i64 2)
 // CHECK-NEXT:   %9 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %10 = getelementptr inbounds %"{{.*}}/cl/_testgo/closureall.S", ptr %9, i32 0, i32 0
-// CHECK-NEXT:   store i64 5, ptr %10, align 4
+// CHECK-NEXT:   store i64 5, ptr %10, align 8
 // CHECK-NEXT:   %11 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   %12 = getelementptr inbounds { ptr }, ptr %11, i32 0, i32 0
 // CHECK-NEXT:   store ptr %9, ptr %12, align 8
@@ -164,7 +164,7 @@ func makeNoFree() Fn {
 // CHECK-LABEL: define %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeWithFree"(i64 %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
-// CHECK-NEXT:   store i64 %0, ptr %1, align 4
+// CHECK-NEXT:   store i64 %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
 // CHECK-NEXT:   store ptr %1, ptr %3, align 8
@@ -179,7 +179,7 @@ func makeNoFree() Fn {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 // CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
-// CHECK-NEXT:   %4 = load i64, ptr %3, align 4
+// CHECK-NEXT:   %4 = load i64, ptr %3, align 8
 // CHECK-NEXT:   %5 = add i64 %1, %4
 // CHECK-NEXT:   ret i64 %5
 // CHECK-NEXT: }

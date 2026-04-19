@@ -51,11 +51,11 @@ type A [2]int
 // CHECK-NEXT:   call void @llvm.memset(ptr %17, i8 0, i64 16, i1 false)
 // CHECK-NEXT:   %18 = getelementptr inbounds i64, ptr %17, i64 0
 // CHECK-NEXT:   %19 = getelementptr inbounds i64, ptr %17, i64 1
-// CHECK-NEXT:   store i64 1, ptr %18, align 4
-// CHECK-NEXT:   store i64 2, ptr %19, align 4
-// CHECK-NEXT:   %20 = load [2 x i64], ptr %17, align 4
+// CHECK-NEXT:   store i64 1, ptr %18, align 8
+// CHECK-NEXT:   store i64 2, ptr %19, align 8
+// CHECK-NEXT:   %20 = load [2 x i64], ptr %17, align 8
 // CHECK-NEXT:   %21 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store [2 x i64] %20, ptr %21, align 4
+// CHECK-NEXT:   store [2 x i64] %20, ptr %21, align 8
 // CHECK-NEXT:   %22 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/typed.A", ptr undef }, ptr %21, 1
 // CHECK-NEXT:   %23 = alloca [2 x i64], align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %23, i8 0, i64 16, i1 false)
@@ -65,7 +65,7 @@ type A [2]int
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_6:                                          ; preds = %_llgo_5
 // CHECK-NEXT:   %26 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %22, 1
-// CHECK-NEXT:   %27 = load [2 x i64], ptr %26, align 4
+// CHECK-NEXT:   %27 = load [2 x i64], ptr %26, align 8
 // CHECK-NEXT:   %28 = insertvalue { [2 x i64], i1 } undef, [2 x i64] %27, 0
 // CHECK-NEXT:   %29 = insertvalue { [2 x i64], i1 } %28, i1 true, 1
 // CHECK-NEXT:   br label %_llgo_8
@@ -76,12 +76,12 @@ type A [2]int
 // CHECK-NEXT: _llgo_8:                                          ; preds = %_llgo_7, %_llgo_6
 // CHECK-NEXT:   %30 = phi { [2 x i64], i1 } [ %29, %_llgo_6 ], [ zeroinitializer, %_llgo_7 ]
 // CHECK-NEXT:   %31 = extractvalue { [2 x i64], i1 } %30, 0
-// CHECK-NEXT:   store [2 x i64] %31, ptr %23, align 4
+// CHECK-NEXT:   store [2 x i64] %31, ptr %23, align 8
 // CHECK-NEXT:   %32 = extractvalue { [2 x i64], i1 } %30, 1
 // CHECK-NEXT:   %33 = getelementptr inbounds i64, ptr %23, i64 0
-// CHECK-NEXT:   %34 = load i64, ptr %33, align 4
+// CHECK-NEXT:   %34 = load i64, ptr %33, align 8
 // CHECK-NEXT:   %35 = getelementptr inbounds i64, ptr %23, i64 1
-// CHECK-NEXT:   %36 = load i64, ptr %35, align 4
+// CHECK-NEXT:   %36 = load i64, ptr %35, align 8
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %34)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %36)

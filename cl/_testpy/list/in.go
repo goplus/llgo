@@ -12,7 +12,7 @@ import (
 // CHECK-LABEL: define void @"{{.*}}/cl/_testpy/list.main"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
-// CHECK-NEXT:   store i64 100, ptr %0, align 4
+// CHECK-NEXT:   store i64 100, ptr %0, align 8
 // CHECK-NEXT:   %1 = call %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/runtime/internal/runtime.StringToBytes"(%"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 })
 // CHECK-NEXT:   %2 = alloca [3 x i8], align 1
 // CHECK-NEXT:   call void @llvm.memset(ptr %2, i8 0, i64 3, i1 false)

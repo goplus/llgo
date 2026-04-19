@@ -4,11 +4,11 @@ package main
 // CHECK-LABEL: define void @"{{.*}}tpindex.main"() {
 func main() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 40)
-	// CHECK: store i64 1, ptr %1, align 4
-	// CHECK: store i64 3, ptr %2, align 4
-	// CHECK: store i64 5, ptr %3, align 4
-	// CHECK: store i64 2, ptr %4, align 4
-	// CHECK: store i64 4, ptr %5, align 4
+	// CHECK: store i64 1, ptr %1, align 8
+	// CHECK: store i64 3, ptr %2, align 8
+	// CHECK: store i64 5, ptr %3, align 8
+	// CHECK: store i64 2, ptr %4, align 8
+	// CHECK: store i64 4, ptr %5, align 8
 	// CHECK: call i64 @"{{.*}}tpindex.index[int]"(%"{{.*}}Slice" %8, i64 3)
 	// CHECK: call void @"{{.*}}PrintInt"(i64 %9)
 	// CHECK: call i64 @"{{.*}}tpindex.index[int]"(%"{{.*}}Slice" %8, i64 6)
@@ -40,7 +40,7 @@ func main() {
 // CHECK-NEXT:   %10 = or i1 %9, %8
 // CHECK-NEXT:   call void @"{{.*}}AssertIndexRange"(i1 %10)
 // CHECK-NEXT:   %11 = getelementptr inbounds i64, ptr %6, i64 %4
-// CHECK-NEXT:   %12 = load i64, ptr %11, align 4
+// CHECK-NEXT:   %12 = load i64, ptr %11, align 8
 // CHECK-NEXT:   %13 = icmp eq i64 %1, %12
 // CHECK-NEXT:   br i1 %13, label %_llgo_4, label %_llgo_1
 // CHECK-EMPTY:

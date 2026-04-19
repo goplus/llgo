@@ -447,7 +447,7 @@ define { ptr, ptr } @outer(i64 %0) {
 _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
   %2 = getelementptr inbounds { i64 }, ptr %1, i32 0, i32 0
-  store i64 %0, ptr %2, align 4
+  store i64 %0, ptr %2, align 8
   %3 = insertvalue { ptr, ptr } { ptr @inner, ptr undef }, ptr %1, 1
   ret { ptr, ptr } %3
 }
@@ -741,6 +741,43 @@ func TestMakeInterfaceFromPtrKinds(t *testing.T) {
 	}
 }
 
+func TestTypeAssertSingleElemArrayUsesInsertValue(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	arrayRaw := types.NewArray(types.Typ[types.Int], 1)
+	arrayType := prog.Type(arrayRaw, InGo)
+
+	params := types.NewTuple(types.NewVar(0, nil, "x", emptyIface))
+	results := types.NewTuple(
+		types.NewVar(0, nil, "", arrayRaw),
+		types.NewVar(0, nil, "", types.Typ[types.Bool]),
+	)
+	sig := types.NewSignatureType(nil, nil, nil, params, results, false)
+	fn := pkg.NewFunc("assertArray", sig, InGo)
+	b := fn.MakeBody(1)
+	ret := b.TypeAssert(fn.Param(0), arrayType, true)
+	b.Return(b.Extract(ret, 0), b.Extract(ret, 1))
+
+	ir := fn.impl.String()
+	if !strings.Contains(ir, "insertvalue { [1 x i") {
+		t.Fatalf("single element array type assert should rebuild via insertvalue:\n%s", ir)
+	}
+	if strings.Contains(ir, "alloca [1 x i") {
+		t.Fatalf("single element array type assert should not rebuild via alloca:\n%s", ir)
+	}
+}
+
 func TestInterfaceHelpers(t *testing.T) {
 	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	rawMeth := types.NewFunc(0, nil, "M", rawSig)
@@ -915,8 +952,10 @@ func TestAny(t *testing.T) {
 
 func assertPkg(t *testing.T, p Package, expected string) {
 	t.Helper()
-	if v := p.String(); v != expected {
-		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", v, expected)
+	got := StripModuleTarget(p.String())
+	want := StripModuleTarget(expected)
+	if got != want {
+		t.Fatalf("\n==> got:\n%s\n==> expected:\n%s\n", got, want)
 	}
 }
 
@@ -949,12 +988,12 @@ func TestVar(t *testing.T) {
 	pkg.NewVarEx("a", prog.Type(typ, InGo))
 	a.Init(prog.Val(100))
 	b := pkg.NewVar("b", typ, InGo)
-	b.Init(a.Expr)
+	b.Init(Expr{llvm.ConstPtrToInt(a.impl, prog.Int().ll), prog.Int()})
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
 @a = global i64 100, align 8
-@b = global i64 @a, align 8
+@b = global i64 ptrtoint (ptr @a to i64), align 8
 `)
 }
 
@@ -1114,7 +1153,8 @@ func TestFuncMultiRet(t *testing.T) {
 	a := pkg.NewVar("a", types.NewPointer(types.Typ[types.Int]), InGo)
 	fn := pkg.NewFunc("fn", sig, InGo)
 	b := fn.MakeBody(1)
-	b.Return(a.Expr, fn.Param(0))
+	aInt := Expr{llvm.ConstPtrToInt(a.impl, prog.Int().ll), prog.Int()}
+	b.Return(aInt, fn.Param(0))
 	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
 source_filename = "foo/bar"
 
@@ -1122,7 +1162,7 @@ source_filename = "foo/bar"
 
 define { i64, double } @fn(double %0) {
 _llgo_0:
-  %1 = insertvalue { i64, double } { ptr @a, double undef }, double %0, 1
+  %1 = insertvalue { i64, double } { i64 ptrtoint (ptr @a to i64), double undef }, double %0, 1
   ret { i64, double } %1
 }
 `)
@@ -1236,9 +1276,9 @@ source_filename = "foo/bar"
 
 define i64 @fn(ptr %0) {
 _llgo_0:
-  %1 = load i64, ptr %0, align 4
+  %1 = load i64, ptr %0, align 8
   %2 = xor i64 %1, 1
-  store i64 %2, ptr %0, align 4
+  store i64 %2, ptr %0, align 8
   ret i64 %2
 }
 `)
@@ -1487,6 +1527,11 @@ func TestTargetMachineAndDataLayout(t *testing.T) {
 		// Test DataLayout() returns the expected data layout string
 		if dl := prog.DataLayout(); dl != tt.dataLayout {
 			t.Fatalf("%s/%s DataLayout mismatch: got %q, want %q", tt.goos, tt.goarch, dl, tt.dataLayout)
+		}
+
+		pkg := prog.NewPackage("foo", "foo/bar")
+		if dl := pkg.Module().DataLayout(); dl != tt.dataLayout {
+			t.Fatalf("%s/%s module DataLayout mismatch: got %q, want %q", tt.goos, tt.goarch, dl, tt.dataLayout)
 		}
 
 		// Test Target().Spec().Triple returns the expected triple

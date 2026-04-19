@@ -149,8 +149,8 @@ type N struct {
 // CHECK-NEXT:   %28 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
 // CHECK-NEXT:   %29 = getelementptr inbounds i64, ptr %28, i64 0
 // CHECK-NEXT:   %30 = getelementptr inbounds i64, ptr %28, i64 1
-// CHECK-NEXT:   store i64 1, ptr %29, align 4
-// CHECK-NEXT:   store i64 2, ptr %30, align 4
+// CHECK-NEXT:   store i64 1, ptr %29, align 8
+// CHECK-NEXT:   store i64 2, ptr %30, align 8
 // CHECK-NEXT:   %31 = getelementptr inbounds i64, ptr %28, i64 0
 // CHECK-NEXT:   %32 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" undef, ptr %31, 0
 // CHECK-NEXT:   %33 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %32, i64 2, 1
@@ -160,7 +160,7 @@ type N struct {
 // CHECK-NEXT:   %37 = icmp uge i64 0, %36
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %37)
 // CHECK-NEXT:   %38 = getelementptr inbounds i64, ptr %35, i64 0
-// CHECK-NEXT:   %39 = load i64, ptr %38, align 4
+// CHECK-NEXT:   %39 = load i64, ptr %38, align 8
 // CHECK-NEXT:   %40 = icmp ne i64 %39, 1
 // CHECK-NEXT:   br i1 %40, label %_llgo_27, label %_llgo_29
 // CHECK-EMPTY:
@@ -183,7 +183,7 @@ type N struct {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_28:                                         ; preds = %_llgo_29
 // CHECK-NEXT:   %47 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %34, 0
-// CHECK-NEXT:   %48 = load i64, ptr %47, align 4
+// CHECK-NEXT:   %48 = load i64, ptr %47, align 8
 // CHECK-NEXT:   %49 = icmp ne i64 %48, 1
 // CHECK-NEXT:   br i1 %49, label %_llgo_30, label %_llgo_31
 // CHECK-EMPTY:
@@ -193,7 +193,7 @@ type N struct {
 // CHECK-NEXT:   %52 = icmp uge i64 1, %51
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %52)
 // CHECK-NEXT:   %53 = getelementptr inbounds i64, ptr %50, i64 1
-// CHECK-NEXT:   %54 = load i64, ptr %53, align 4
+// CHECK-NEXT:   %54 = load i64, ptr %53, align 8
 // CHECK-NEXT:   %55 = icmp ne i64 %54, 2
 // CHECK-NEXT:   br i1 %55, label %_llgo_27, label %_llgo_28
 // CHECK-EMPTY:

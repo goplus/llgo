@@ -31,14 +31,14 @@ type cacheKey struct {
 // CHECK-NEXT:   %6 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpmap.T3[any]", ptr %5, i32 0, i32 0
 // CHECK-NEXT:   %7 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpmap.cacheKey", ptr %1, i32 0, i32 3
 // CHECK-NEXT:   %8 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpmap.cacheKey", ptr %1, i32 0, i32 4
-// CHECK-NEXT:   store i64 0, ptr %2, align 4
-// CHECK-NEXT:   store i64 0, ptr %4, align 4
+// CHECK-NEXT:   store i64 0, ptr %2, align 8
+// CHECK-NEXT:   store i64 0, ptr %4, align 8
 // CHECK-NEXT:   %9 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 0, ptr %9, align 4
+// CHECK-NEXT:   store i64 0, ptr %9, align 8
 // CHECK-NEXT:   %10 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %9, 1
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %10, ptr %6, align 8
 // CHECK-NEXT:   store ptr null, ptr %7, align 8
-// CHECK-NEXT:   store i64 0, ptr %8, align 4
+// CHECK-NEXT:   store i64 0, ptr %8, align 8
 // CHECK-NEXT:   %11 = load %"{{.*}}/cl/_testrt/tpmap.cacheKey", ptr %1, align 8
 // CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 48)
 // CHECK-NEXT:   store %"{{.*}}/cl/_testrt/tpmap.cacheKey" %11, ptr %12, align 8
@@ -53,14 +53,14 @@ type cacheKey struct {
 // CHECK-NEXT:   %19 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpmap.T3[any]", ptr %18, i32 0, i32 0
 // CHECK-NEXT:   %20 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpmap.cacheKey", ptr %14, i32 0, i32 3
 // CHECK-NEXT:   %21 = getelementptr inbounds %"{{.*}}/cl/_testrt/tpmap.cacheKey", ptr %14, i32 0, i32 4
-// CHECK-NEXT:   store i64 0, ptr %15, align 4
-// CHECK-NEXT:   store i64 0, ptr %17, align 4
+// CHECK-NEXT:   store i64 0, ptr %15, align 8
+// CHECK-NEXT:   store i64 0, ptr %17, align 8
 // CHECK-NEXT:   %22 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 0, ptr %22, align 4
+// CHECK-NEXT:   store i64 0, ptr %22, align 8
 // CHECK-NEXT:   %23 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %22, 1
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %23, ptr %19, align 8
 // CHECK-NEXT:   store ptr null, ptr %20, align 8
-// CHECK-NEXT:   store i64 0, ptr %21, align 4
+// CHECK-NEXT:   store i64 0, ptr %21, align 8
 // CHECK-NEXT:   %24 = load %"{{.*}}/cl/_testrt/tpmap.cacheKey", ptr %14, align 8
 // CHECK-NEXT:   %25 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 48)
 // CHECK-NEXT:   store %"{{.*}}/cl/_testrt/tpmap.cacheKey" %24, ptr %25, align 8

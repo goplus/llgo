@@ -37,9 +37,9 @@ func dump(v any) {
 // CHECK-NEXT:   %2 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/abi.(*Type).String"(ptr %0)
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/runtime/abi.(*Type).Kind"(ptr %0)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   %5 = load i64, ptr %4, align 4
+// CHECK-NEXT:   %5 = load i64, ptr %4, align 8
 // CHECK-NEXT:   %6 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 1
-// CHECK-NEXT:   %7 = load i64, ptr %6, align 4
+// CHECK-NEXT:   %7 = load i64, ptr %6, align 8
 // CHECK-NEXT:   %8 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   %9 = load i32, ptr %8, align 4
 // CHECK-NEXT:   %10 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 3
@@ -157,7 +157,7 @@ type eface struct {
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_bool, ptr undef }
 // CHECK: call void @"{{.*}}/cl/_testrt/eface.dump"
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK: store i64 0, ptr {{%[0-9]+}}, align 4
+// CHECK: store i64 0, ptr {{%[0-9]+}}, align 8
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }
 // CHECK: call void @"{{.*}}/cl/_testrt/eface.dump"
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 80)

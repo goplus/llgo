@@ -439,6 +439,8 @@ func (p Program) tyComplex128() llvm.Type {
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
+	mod.SetDataLayout(p.DataLayout())
+	mod.SetTarget(p.Target().Spec().Triple)
 	// TODO(lijie): enable target output will check module override, but can't
 	// pass the snapshot test, so disable it for now
 	// if p.target.GOARCH != runtime.GOARCH && p.target.GOOS != runtime.GOOS {

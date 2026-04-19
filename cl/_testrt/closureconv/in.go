@@ -13,7 +13,7 @@ type Call struct {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = add i64 %1, %2
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/closureconv.Call", ptr %0, i32 0, i32 1
-// CHECK-NEXT:   %5 = load i64, ptr %4, align 4
+// CHECK-NEXT:   %5 = load i64, ptr %4, align 8
 // CHECK-NEXT:   %6 = add i64 %3, %5
 // CHECK-NEXT:   ret i64 %6
 // CHECK-NEXT: }
@@ -34,7 +34,7 @@ func add(a int, b int) int {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 24)
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testrt/closureconv.Call", ptr %1, i32 0, i32 1
-// CHECK-NEXT:   store i64 %0, ptr %2, align 4
+// CHECK-NEXT:   store i64 %0, ptr %2, align 8
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds { ptr }, ptr %3, i32 0, i32 0
 // CHECK-NEXT:   store ptr %1, ptr %4, align 8
@@ -98,7 +98,7 @@ func demo4() Func {
 // CHECK-LABEL: define %"{{.*}}/cl/_testrt/closureconv.Func" @"{{.*}}/cl/_testrt/closureconv.demo5"(i64 %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
-// CHECK-NEXT:   store i64 %0, ptr %1, align 4
+// CHECK-NEXT:   store i64 %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   %3 = getelementptr inbounds { ptr }, ptr %2, i32 0, i32 0
 // CHECK-NEXT:   store ptr %1, ptr %3, align 8
@@ -114,7 +114,7 @@ func demo4() Func {
 // CHECK-NEXT:   %3 = add i64 %1, %2
 // CHECK-NEXT:   %4 = load { ptr }, ptr %0, align 8
 // CHECK-NEXT:   %5 = extractvalue { ptr } %4, 0
-// CHECK-NEXT:   %6 = load i64, ptr %5, align 4
+// CHECK-NEXT:   %6 = load i64, ptr %5, align 8
 // CHECK-NEXT:   %7 = add i64 %3, %6
 // CHECK-NEXT:   ret i64 %7
 // CHECK-NEXT: }

@@ -81,7 +81,7 @@ func init() {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %1 = load { ptr }, ptr %0, align 8
 	// CHECK-NEXT:   %2 = extractvalue { ptr } %1, 0
-	// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+	// CHECK-NEXT:   %3 = load i64, ptr %2, align 8
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %3)
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 	// CHECK-NEXT:   ret void
@@ -107,19 +107,19 @@ func init() {
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
 // CHECK-NEXT:   %2 = getelementptr inbounds i64, ptr %0, i64 1
 // CHECK-NEXT:   %3 = getelementptr inbounds i64, ptr %0, i64 2
-// CHECK-NEXT:   store i64 1, ptr %1, align 4
-// CHECK-NEXT:   store i64 2, ptr %2, align 4
-// CHECK-NEXT:   store i64 3, ptr %3, align 4
+// CHECK-NEXT:   store i64 1, ptr %1, align 8
+// CHECK-NEXT:   store i64 2, ptr %2, align 8
+// CHECK-NEXT:   store i64 3, ptr %3, align 8
 // CHECK-NEXT:   %4 = alloca [3 x i64], align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %4, i8 0, i64 24, i1 false)
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %4, i64 0
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %4, i64 1
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %4, i64 2
-// CHECK-NEXT:   store i64 1, ptr %5, align 4
-// CHECK-NEXT:   store i64 2, ptr %6, align 4
-// CHECK-NEXT:   store i64 3, ptr %7, align 4
-// CHECK-NEXT:   %8 = load [3 x i64], ptr %0, align 4
-// CHECK-NEXT:   %9 = load [3 x i64], ptr %4, align 4
+// CHECK-NEXT:   store i64 1, ptr %5, align 8
+// CHECK-NEXT:   store i64 2, ptr %6, align 8
+// CHECK-NEXT:   store i64 3, ptr %7, align 8
+// CHECK-NEXT:   %8 = load [3 x i64], ptr %0, align 8
+// CHECK-NEXT:   %9 = load [3 x i64], ptr %4, align 8
 // CHECK-NEXT:   %10 = extractvalue [3 x i64] %8, 0
 // CHECK-NEXT:   %11 = extractvalue [3 x i64] %9, 0
 // CHECK-NEXT:   %12 = icmp eq i64 %10, %11
@@ -134,9 +134,9 @@ func init() {
 // CHECK-NEXT:   %21 = and i1 %17, %20
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testgo/equal.assert"(i1 %21)
 // CHECK-NEXT:   %22 = getelementptr inbounds i64, ptr %4, i64 1
-// CHECK-NEXT:   store i64 1, ptr %22, align 4
-// CHECK-NEXT:   %23 = load [3 x i64], ptr %0, align 4
-// CHECK-NEXT:   %24 = load [3 x i64], ptr %4, align 4
+// CHECK-NEXT:   store i64 1, ptr %22, align 8
+// CHECK-NEXT:   %23 = load [3 x i64], ptr %0, align 8
+// CHECK-NEXT:   %24 = load [3 x i64], ptr %4, align 8
 // CHECK-NEXT:   %25 = extractvalue [3 x i64] %23, 0
 // CHECK-NEXT:   %26 = extractvalue [3 x i64] %24, 0
 // CHECK-NEXT:   %27 = icmp eq i64 %25, %26
@@ -175,7 +175,7 @@ type N struct{}
 // CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#3"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 1, ptr {{%[0-9]+}}, align 4
+// CHECK-NEXT:   store i64 1, ptr {{%[0-9]+}}, align 8
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }
 // CHECK: call i1 @"{{.*}}/runtime/internal/runtime.EfaceEqual"
 // CHECK: call void @"{{.*}}/cl/_testgo/equal.assert"
@@ -199,11 +199,11 @@ func init() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 24)
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
-// CHECK-NEXT:   store i64 1, ptr %1, align 4
+// CHECK-NEXT:   store i64 1, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds i64, ptr %0, i64 1
-// CHECK-NEXT:   store i64 2, ptr %2, align 4
+// CHECK-NEXT:   store i64 2, ptr %2, align 8
 // CHECK-NEXT:   %3 = getelementptr inbounds i64, ptr %0, i64 2
-// CHECK-NEXT:   store i64 3, ptr %3, align 4
+// CHECK-NEXT:   store i64 3, ptr %3, align 8
 // CHECK-NEXT:   %4 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" undef, ptr %0, 0
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %4, i64 3, 1
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %5, i64 3, 2
@@ -241,10 +241,10 @@ func init() {
 // CHECK-LABEL: define void @"{{.*}}/cl/_testgo/equal.init#5"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 100, ptr {{%[0-9]+}}, align 4
+// CHECK-NEXT:   store i64 100, ptr {{%[0-9]+}}, align 8
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 1, ptr {{%[0-9]+}}, align 4
+// CHECK-NEXT:   store i64 1, ptr {{%[0-9]+}}, align 8
 // CHECK: call i1 @"{{.*}}/runtime/internal/runtime.EfaceEqual"
 // CHECK: call void @"{{.*}}/cl/_testgo/equal.assert"
 // CHECK: ret void
