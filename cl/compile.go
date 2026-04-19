@@ -321,6 +321,10 @@ func isCgoCmacro(name string) bool {
 }
 
 func isCgoVar(name string) bool {
+	return strings.HasPrefix(name, "_cgo_") || isCgoFuncPtrVar(name)
+}
+
+func isCgoFuncPtrVar(name string) bool {
 	return strings.HasPrefix(name, "__cgo_")
 }
 
@@ -1308,7 +1312,7 @@ func processPkg(ctx *context, ret llssa.Package, pkg *ssa.Package) {
 		case *ssa.Type:
 			ctx.compileType(ret, member)
 		case *ssa.Global:
-			if !isCgoVar(member.Name()) {
+			if !isCgoFuncPtrVar(member.Name()) {
 				ctx.compileGlobal(ret, member)
 			}
 		}
