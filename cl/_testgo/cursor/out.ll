@@ -17,10 +17,10 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/cursor"
 %"github.com/goplus/llgo/runtime/abi.ArrayType" = type { %"github.com/goplus/llgo/runtime/abi.Type", ptr, ptr, i64 }
 %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" = type { ptr, i32 }
 %"github.com/goplus/llgo/runtime/internal/runtime.iface" = type { ptr, ptr }
+%"github.com/goplus/llgo/cl/_testgo/cursor.event" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, i32, i32 }
 %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" = type { ptr, ptr }
 %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector" = type { %"github.com/goplus/llgo/runtime/internal/runtime.Slice" }
 %"github.com/goplus/llgo/runtime/internal/runtime.eface" = type { ptr, ptr }
-%"github.com/goplus/llgo/cl/_testgo/cursor.event" = type { %"github.com/goplus/llgo/runtime/internal/runtime.iface", i64, i32, i32 }
 
 @"github.com/goplus/llgo/cl/_testgo/cursor.init$guard" = global i1 false, align 1
 @0 = private unnamed_addr constant [36 x i8] c"iterator call did not preserve panic", align 1
@@ -528,163 +528,163 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/cursor"
 define { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1) {
 _llgo_0:
   %2 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
-  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %2, align 8
-  %3 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, ptr %3, align 8
-  %4 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
+  %3 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
+  %4 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
+  call void @llvm.memset(ptr %4, i8 0, i64 16, i1 false)
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %0, ptr %4, align 8
+  %5 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %1, ptr %5, align 8
+  %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %7 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 1)
   br i1 false, label %_llgo_1, label %_llgo_2
 
 _llgo_1:                                          ; preds = %_llgo_0
-  %6 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
-  %7 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
-  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %9 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %8, i64 0
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %7, ptr %9, align 8
-  %10 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %8, 0
-  %11 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %10, i64 1, 1
-  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %11, i64 1, 2
-  %13 = call %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %6, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12)
-  %14 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
-  %15 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 32)
-  %16 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %15, i32 0, i32 0
-  store ptr %14, ptr %16, align 8
-  %17 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %15, i32 0, i32 1
-  store ptr %3, ptr %17, align 8
-  %18 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %15, i32 0, i32 2
-  store ptr %4, ptr %18, align 8
-  %19 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %15, i32 0, i32 3
+  %8 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
+  %9 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %5, align 8
+  %10 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %11 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %10, i64 0
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %9, ptr %11, align 8
+  %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %10, 0
+  %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %12, i64 1, 1
+  %14 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %13, i64 1, 2
+  %15 = call %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %8, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %14)
+  %16 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 8)
+  %17 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 32)
+  %18 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %17, i32 0, i32 0
+  store ptr %16, ptr %18, align 8
+  %19 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %17, i32 0, i32 1
   store ptr %5, ptr %19, align 8
-  %20 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1", ptr undef }, ptr %15, 1
-  %21 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %13, 1
-  %22 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %13, 0
-  call void %22(ptr %21, { ptr, ptr } %20)
-  %23 = load i64, ptr %14, align 4
-  %24 = icmp eq i64 %23, -1
-  br i1 %24, label %_llgo_4, label %_llgo_5
+  %20 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %17, i32 0, i32 2
+  store ptr %6, ptr %20, align 8
+  %21 = getelementptr inbounds { ptr, ptr, ptr, ptr }, ptr %17, i32 0, i32 3
+  store ptr %7, ptr %21, align 8
+  %22 = insertvalue { ptr, ptr } { ptr @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.FindNode$1", ptr undef }, ptr %17, 1
+  %23 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %15, 1
+  %24 = extractvalue %"iter.Seq[github.com/goplus/llgo/cl/_testgo/cursor.Cursor]" %15, 0
+  call void %24(ptr %23, { ptr, ptr } %22)
+  %25 = load i64, ptr %16, align 4
+  %26 = icmp eq i64 %25, -1
+  br i1 %26, label %_llgo_4, label %_llgo_5
 
 _llgo_2:                                          ; preds = %_llgo_0
-  %25 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
-  %26 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %25, i64 0
-  %27 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
-  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %27, ptr %26, align 8
-  %28 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %25, 0
-  %29 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %28, i64 1, 1
-  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %29, i64 1, 2
-  %31 = call i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30)
-  %32 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
-  %33 = load ptr, ptr %32, align 8
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %33, i32 0, i32 0
-  %35 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %34, align 8
-  %36 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
-  %37 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %36)
-  %38 = extractvalue { i32, i32 } %37, 0
-  %39 = extractvalue { i32, i32 } %37, 1
+  %27 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %27, i64 0
+  %29 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %5, align 8
+  store %"github.com/goplus/llgo/runtime/internal/runtime.iface" %29, ptr %28, align 8
+  %30 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %27, 0
+  %31 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %30, i64 1, 1
+  %32 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %31, i64 1, 2
+  %33 = call i64 @"github.com/goplus/llgo/cl/_testgo/cursor.maskOf"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %32)
+  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, i32 0, i32 0
+  %35 = load ptr, ptr %34, align 8
+  %36 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %35, i32 0, i32 0
+  %37 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %36, align 8
+  %38 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
+  %39 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %38)
+  %40 = extractvalue { i32, i32 } %39, 0
+  %41 = extractvalue { i32, i32 } %39, 1
   br label %_llgo_9
 
 _llgo_3:                                          ; preds = %_llgo_7, %_llgo_6
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %4, align 8
-  store i1 false, ptr %5, align 1
-  %40 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %41 = load i1, ptr %5, align 1
-  %42 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %40, 0
-  %43 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %42, i1 %41, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %43
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %6, align 8
+  store i1 false, ptr %7, align 1
+  %42 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %43 = load i1, ptr %7, align 1
+  %44 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %42, 0
+  %45 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %44, i1 %43, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %45
 
 _llgo_4:                                          ; preds = %_llgo_1
-  %44 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
-  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 36 }, ptr %44, align 8
-  %45 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %44, 1
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %45)
+  %46 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 16)
+  store %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 36 }, ptr %46, align 8
+  %47 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %46, 1
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %47)
   unreachable
 
 _llgo_5:                                          ; preds = %_llgo_1
-  %46 = icmp eq i64 %23, 0
-  br i1 %46, label %_llgo_6, label %_llgo_7
+  %48 = icmp eq i64 %25, 0
+  br i1 %48, label %_llgo_6, label %_llgo_7
 
 _llgo_6:                                          ; preds = %_llgo_5
-  store i64 -2, ptr %14, align 4
+  store i64 -2, ptr %16, align 4
   br label %_llgo_3
 
 _llgo_7:                                          ; preds = %_llgo_5
-  %47 = icmp eq i64 %23, 1
-  br i1 %47, label %_llgo_8, label %_llgo_3
+  %49 = icmp eq i64 %25, 1
+  br i1 %49, label %_llgo_8, label %_llgo_3
 
 _llgo_8:                                          ; preds = %_llgo_7
-  %48 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %49 = load i1, ptr %5, align 1
-  %50 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %48, 0
-  %51 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %50, i1 %49, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %51
+  %50 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %51 = load i1, ptr %7, align 1
+  %52 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %50, 0
+  %53 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %52, i1 %51, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %53
 
 _llgo_9:                                          ; preds = %_llgo_13, %_llgo_2
-  %52 = phi i32 [ %38, %_llgo_2 ], [ %75, %_llgo_13 ]
-  %53 = icmp slt i32 %52, %39
-  br i1 %53, label %_llgo_10, label %_llgo_11
+  %54 = phi i32 [ %40, %_llgo_2 ], [ %76, %_llgo_13 ]
+  %55 = icmp slt i32 %54, %41
+  br i1 %55, label %_llgo_10, label %_llgo_11
 
 _llgo_10:                                         ; preds = %_llgo_9
-  %54 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
-  call void @llvm.memset(ptr %54, i8 0, i64 32, i1 false)
-  %55 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 0
-  %56 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
-  %57 = sext i32 %52 to i64
-  %58 = icmp slt i64 %57, 0
-  %59 = icmp sge i64 %57, %56
-  %60 = or i1 %59, %58
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %60)
-  %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %55, i64 %57
-  %62 = load %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %61, align 8
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.event" %62, ptr %54, align 8
-  %63 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %54, i32 0, i32 2
-  %64 = load i32, ptr %63, align 4
-  %65 = icmp sgt i32 %64, %52
-  br i1 %65, label %_llgo_12, label %_llgo_13
+  call void @llvm.memset(ptr %3, i8 0, i64 32, i1 false)
+  %56 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %37, 0
+  %57 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %37, 1
+  %58 = sext i32 %54 to i64
+  %59 = icmp slt i64 %58, 0
+  %60 = icmp sge i64 %58, %57
+  %61 = or i1 %60, %59
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %61)
+  %62 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %56, i64 %58
+  %63 = load %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %62, align 8
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.event" %63, ptr %3, align 8
+  %64 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
+  %65 = load i32, ptr %64, align 4
+  %66 = icmp sgt i32 %65, %54
+  br i1 %66, label %_llgo_12, label %_llgo_13
 
 _llgo_11:                                         ; preds = %_llgo_9
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %4, align 8
-  store i1 false, ptr %5, align 1
-  %66 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %67 = load i1, ptr %5, align 1
-  %68 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %66, 0
-  %69 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %68, i1 %67, 1
-  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %69
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" zeroinitializer, ptr %6, align 8
+  store i1 false, ptr %7, align 1
+  %67 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %68 = load i1, ptr %7, align 1
+  %69 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %67, 0
+  %70 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %69, i1 %68, 1
+  ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %70
 
 _llgo_12:                                         ; preds = %_llgo_10
-  %70 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %54, i32 0, i32 1
-  %71 = load i64, ptr %70, align 4
-  %72 = and i64 %71, %31
-  %73 = icmp ne i64 %72, 0
-  br i1 %73, label %_llgo_16, label %_llgo_15
+  %71 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 1
+  %72 = load i64, ptr %71, align 4
+  %73 = and i64 %72, %33
+  %74 = icmp ne i64 %73, 0
+  br i1 %74, label %_llgo_16, label %_llgo_15
 
 _llgo_13:                                         ; preds = %_llgo_17, %_llgo_15, %_llgo_10
-  %74 = phi i32 [ %52, %_llgo_10 ], [ %52, %_llgo_15 ], [ %87, %_llgo_17 ]
-  %75 = add i32 %74, 1
+  %75 = phi i32 [ %54, %_llgo_10 ], [ %54, %_llgo_15 ], [ %87, %_llgo_17 ]
+  %76 = add i32 %75, 1
   br label %_llgo_9
 
 _llgo_14:                                         ; preds = %_llgo_16
-  %76 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
-  call void @llvm.memset(ptr %76, i8 0, i64 16, i1 false)
-  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %76, i32 0, i32 0
-  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  %77 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
+  %78 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, i32 0, i32 0
   %79 = load ptr, ptr %78, align 8
-  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %76, i32 0, i32 1
+  %80 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 1
   store ptr %79, ptr %77, align 8
-  store i32 %52, ptr %80, align 4
-  %81 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %76, align 8
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %81, ptr %4, align 8
-  store i1 true, ptr %5, align 1
-  %82 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %4, align 8
-  %83 = load i1, ptr %5, align 1
+  store i32 %54, ptr %80, align 4
+  %81 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %81, ptr %6, align 8
+  store i1 true, ptr %7, align 1
+  %82 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %6, align 8
+  %83 = load i1, ptr %7, align 1
   %84 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } undef, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %82, 0
   %85 = insertvalue { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %84, i1 %83, 1
   ret { %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", i1 } %85
 
 _llgo_15:                                         ; preds = %_llgo_16, %_llgo_12
-  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %54, i32 0, i32 2
+  %86 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
   %87 = load i32, ptr %86, align 4
-  %88 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 0
-  %89 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
+  %88 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %37, 0
+  %89 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %37, 1
   %90 = sext i32 %87 to i64
   %91 = icmp slt i64 %90, 0
   %92 = icmp sge i64 %90, %89
@@ -693,14 +693,14 @@ _llgo_15:                                         ; preds = %_llgo_16, %_llgo_12
   %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %88, i64 %90
   %95 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %94, i32 0, i32 1
   %96 = load i64, ptr %95, align 4
-  %97 = and i64 %96, %31
+  %97 = and i64 %96, %33
   %98 = icmp eq i64 %97, 0
   br i1 %98, label %_llgo_17, label %_llgo_13
 
 _llgo_16:                                         ; preds = %_llgo_12
-  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %54, i32 0, i32 0
+  %99 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 0
   %100 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %99, align 8
-  %101 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %3, align 8
+  %101 = load %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %5, align 8
   %102 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface" %100)
   %103 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.iface" %100, 1
   %104 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" undef, ptr %102, 0
@@ -817,95 +817,95 @@ _llgo_0:
 
 define void @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.Preorder$1"(ptr %0, { ptr, ptr } %1) {
 _llgo_0:
-  %2 = load { ptr, ptr }, ptr %0, align 8
-  %3 = extractvalue { ptr, ptr } %2, 0
-  %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %3, i32 0, i32 0
-  %5 = load ptr, ptr %4, align 8
-  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %5, i32 0, i32 0
-  %7 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %6, align 8
-  %8 = extractvalue { ptr, ptr } %2, 0
-  %9 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %8, align 8
-  %10 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %9)
-  %11 = extractvalue { i32, i32 } %10, 0
-  %12 = extractvalue { i32, i32 } %10, 1
+  %2 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
+  %3 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
+  %4 = load { ptr, ptr }, ptr %0, align 8
+  %5 = extractvalue { ptr, ptr } %4, 0
+  %6 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %5, i32 0, i32 0
+  %7 = load ptr, ptr %6, align 8
+  %8 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Inspector", ptr %7, i32 0, i32 0
+  %9 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %8, align 8
+  %10 = extractvalue { ptr, ptr } %4, 0
+  %11 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %10, align 8
+  %12 = call { i32, i32 } @"github.com/goplus/llgo/cl/_testgo/cursor.Cursor.indices"(%"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %11)
+  %13 = extractvalue { i32, i32 } %12, 0
+  %14 = extractvalue { i32, i32 } %12, 1
   br label %_llgo_1
 
 _llgo_1:                                          ; preds = %_llgo_5, %_llgo_8, %_llgo_0
-  %13 = phi i32 [ %11, %_llgo_0 ], [ %59, %_llgo_8 ], [ %33, %_llgo_5 ]
-  %14 = icmp slt i32 %13, %12
-  br i1 %14, label %_llgo_2, label %_llgo_3
+  %15 = phi i32 [ %13, %_llgo_0 ], [ %59, %_llgo_8 ], [ %34, %_llgo_5 ]
+  %16 = icmp slt i32 %15, %14
+  br i1 %16, label %_llgo_2, label %_llgo_3
 
 _llgo_2:                                          ; preds = %_llgo_1
-  %15 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.event", align 8
-  call void @llvm.memset(ptr %15, i8 0, i64 32, i1 false)
-  %16 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
-  %17 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %18 = sext i32 %13 to i64
-  %19 = icmp slt i64 %18, 0
-  %20 = icmp sge i64 %18, %17
-  %21 = or i1 %20, %19
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21)
-  %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %16, i64 %18
-  %23 = load %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %22, align 8
-  store %"github.com/goplus/llgo/cl/_testgo/cursor.event" %23, ptr %15, align 8
-  %24 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %15, i32 0, i32 2
-  %25 = load i32, ptr %24, align 4
-  %26 = icmp sgt i32 %25, %13
-  br i1 %26, label %_llgo_4, label %_llgo_5
+  call void @llvm.memset(ptr %3, i8 0, i64 32, i1 false)
+  %17 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, 0
+  %18 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, 1
+  %19 = sext i32 %15 to i64
+  %20 = icmp slt i64 %19, 0
+  %21 = icmp sge i64 %19, %18
+  %22 = or i1 %21, %20
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %22)
+  %23 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %17, i64 %19
+  %24 = load %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %23, align 8
+  store %"github.com/goplus/llgo/cl/_testgo/cursor.event" %24, ptr %3, align 8
+  %25 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
+  %26 = load i32, ptr %25, align 4
+  %27 = icmp sgt i32 %26, %15
+  br i1 %27, label %_llgo_4, label %_llgo_5
 
 _llgo_3:                                          ; preds = %_llgo_7, %_llgo_1
   ret void
 
 _llgo_4:                                          ; preds = %_llgo_2
-  %27 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %15, i32 0, i32 1
-  %28 = load i64, ptr %27, align 4
-  %29 = extractvalue { ptr, ptr } %2, 1
-  %30 = load i64, ptr %29, align 4
-  %31 = and i64 %28, %30
-  %32 = icmp ne i64 %31, 0
-  br i1 %32, label %_llgo_7, label %_llgo_6
+  %28 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 1
+  %29 = load i64, ptr %28, align 4
+  %30 = extractvalue { ptr, ptr } %4, 1
+  %31 = load i64, ptr %30, align 4
+  %32 = and i64 %29, %31
+  %33 = icmp ne i64 %32, 0
+  br i1 %33, label %_llgo_7, label %_llgo_6
 
 _llgo_5:                                          ; preds = %_llgo_6, %_llgo_2
-  %33 = add i32 %13, 1
+  %34 = add i32 %15, 1
   br label %_llgo_1
 
 _llgo_6:                                          ; preds = %_llgo_7, %_llgo_4
-  %34 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %15, i32 0, i32 2
-  %35 = load i32, ptr %34, align 4
-  %36 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
-  %37 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %38 = sext i32 %35 to i64
-  %39 = icmp slt i64 %38, 0
-  %40 = icmp sge i64 %38, %37
-  %41 = or i1 %40, %39
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %41)
-  %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %36, i64 %38
-  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %42, i32 0, i32 1
-  %44 = load i64, ptr %43, align 4
-  %45 = extractvalue { ptr, ptr } %2, 1
-  %46 = load i64, ptr %45, align 4
-  %47 = and i64 %44, %46
-  %48 = icmp eq i64 %47, 0
-  br i1 %48, label %_llgo_8, label %_llgo_5
+  %35 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %3, i32 0, i32 2
+  %36 = load i32, ptr %35, align 4
+  %37 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, 0
+  %38 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %9, 1
+  %39 = sext i32 %36 to i64
+  %40 = icmp slt i64 %39, 0
+  %41 = icmp sge i64 %39, %38
+  %42 = or i1 %41, %40
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %42)
+  %43 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %37, i64 %39
+  %44 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %43, i32 0, i32 1
+  %45 = load i64, ptr %44, align 4
+  %46 = extractvalue { ptr, ptr } %4, 1
+  %47 = load i64, ptr %46, align 4
+  %48 = and i64 %45, %47
+  %49 = icmp eq i64 %48, 0
+  br i1 %49, label %_llgo_8, label %_llgo_5
 
 _llgo_7:                                          ; preds = %_llgo_4
-  %49 = alloca %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", align 8
-  call void @llvm.memset(ptr %49, i8 0, i64 16, i1 false)
-  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %49, i32 0, i32 0
-  %51 = extractvalue { ptr, ptr } %2, 0
+  call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
+  %50 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 0
+  %51 = extractvalue { ptr, ptr } %4, 0
   %52 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %51, i32 0, i32 0
   %53 = load ptr, ptr %52, align 8
-  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %49, i32 0, i32 1
+  %54 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, i32 0, i32 1
   store ptr %53, ptr %50, align 8
-  store i32 %13, ptr %54, align 4
-  %55 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %49, align 8
+  store i32 %15, ptr %54, align 4
+  %55 = load %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor", ptr %2, align 8
   %56 = extractvalue { ptr, ptr } %1, 1
   %57 = extractvalue { ptr, ptr } %1, 0
   %58 = call i1 %57(ptr %56, %"github.com/goplus/llgo/cl/_testgo/cursor.Cursor" %55)
   br i1 %58, label %_llgo_6, label %_llgo_3
 
 _llgo_8:                                          ; preds = %_llgo_6
-  %59 = add i32 %35, 1
+  %59 = add i32 %36, 1
   br label %_llgo_1
 }
 

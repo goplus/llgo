@@ -774,7 +774,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		case vkClosure:
 			// TODO(xsw): change type should be a noop instruction
 			convType := func() Expr {
-				r := Expr{llvm.CreateAlloca(b.impl, t.ll), b.Prog.Pointer(t)}
+				r := Expr{b.createEntryAlloca(t.ll), b.Prog.Pointer(t)}
 				b.Store(r, x)
 				return b.Load(r)
 			}
@@ -804,7 +804,7 @@ func (b Builder) ChangeType(t Type, x Expr) (ret Expr) {
 		if x.impl.Type().String() == t.ll.String() {
 			ret.impl = x.impl
 		} else {
-			ptr := llvm.CreateAlloca(b.impl, t.ll)
+			ptr := b.createEntryAlloca(t.ll)
 			b.impl.CreateStore(x.impl, ptr)
 			ret.impl = llvm.CreateLoad(b.impl, t.ll, ptr)
 		}
