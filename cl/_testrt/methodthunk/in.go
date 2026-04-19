@@ -13,7 +13,7 @@ type outer struct {
 // CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/methodthunk.(*InnerInt).M"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/methodthunk.InnerInt", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:   %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:   ret i64 %2
 // CHECK-NEXT: }
 func (*inner) M() {}

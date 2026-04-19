@@ -40,8 +40,46 @@ func (p *Target) targetInfo() (llvm.TargetData, llvm.TargetMachine) {
 	if err != nil {
 		panic(err)
 	}
-	machine := t.CreateTargetMachine(spec.Triple, spec.CPU, spec.Features, llvm.CodeGenLevelDefault, llvm.RelocDefault, llvm.CodeModelDefault)
+	machine := t.CreateTargetMachineWithOptions(
+		spec.Triple,
+		spec.CPU,
+		spec.Features,
+		llvm.CodeGenLevelDefault,
+		p.targetRelocMode(),
+		llvm.CodeModelDefault,
+		p.targetMachineOptions(),
+	)
 	return machine.CreateTargetData(), machine
+}
+
+func (p *Target) targetRelocMode() llvm.RelocMode {
+	if p.useNativeObjectSections() {
+		return llvm.RelocPIC
+	}
+	return llvm.RelocDefault
+}
+
+func (p *Target) targetMachineOptions() llvm.TargetMachineOptions {
+	if !p.useNativeObjectSections() {
+		return llvm.TargetMachineOptions{}
+	}
+	return llvm.TargetMachineOptions{
+		FunctionSections:   true,
+		DataSections:       true,
+		UniqueSectionNames: true,
+	}
+}
+
+func (p *Target) useNativeObjectSections() bool {
+	goos := p.GOOS
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	goarch := p.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	return p.Target == "" && goos == runtime.GOOS && goarch == runtime.GOARCH && goarch != "wasm"
 }
 
 type TargetSpec struct {
