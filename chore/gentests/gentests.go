@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/goplus/llgo/cl/cltest"
+	"github.com/goplus/llgo/internal/littest"
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/semmeta"
 	"github.com/goplus/llvm"
@@ -46,6 +47,12 @@ func main() {
 
 func llgenDir(dir string) {
 	forEachTestDir(dir, func(name, testDir string) {
+		skip, err := dirHasLITTESTSource(testDir)
+		check(err)
+		if skip {
+			fmt.Fprintln(os.Stderr, "skip llgen", testDir, "(// LITTEST)")
+			return
+		}
 		fmt.Fprintln(os.Stderr, "llgen", testDir)
 		check(os.Chdir(testDir))
 		outFile := filepath.Join(testDir, "out.ll")
@@ -128,4 +135,12 @@ func check(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func dirHasLITTESTSource(dir string) (bool, error) {
+	_, ok, err := littest.FindMarkedSourceFile(dir)
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
 }

@@ -42,7 +42,7 @@ type Spec struct {
 	Mode Mode
 }
 
-const marker = "LITTEST"
+const Marker = "LITTEST"
 
 func LoadSpec(pkgDir string) (Spec, error) {
 	if spec, ok, err := loadSourceSpec(pkgDir); err != nil {
@@ -79,31 +79,12 @@ func Check(spec Spec, actual string) error {
 }
 
 func loadSourceSpec(pkgDir string) (Spec, bool, error) {
-	entries, err := os.ReadDir(pkgDir)
+	marked, ok, err := FindMarkedSourceFile(pkgDir)
 	if err != nil {
 		return Spec{}, false, err
 	}
-	var marked string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if !isSourceSpecFile(name) {
-			continue
-		}
-		path := filepath.Join(pkgDir, name)
-		ok, err := hasMarker(path)
-		if err != nil {
-			return Spec{}, false, err
-		}
-		if !ok {
-			continue
-		}
-		if marked != "" {
-			return Spec{}, false, fmt.Errorf("%s: multiple source lit specs found: %s, %s", pkgDir, filepath.Base(marked), filepath.Base(path))
-		}
-		marked = path
+	if !ok {
+		return Spec{}, false, nil
 	}
 	if marked == "" {
 		return Spec{}, false, nil
@@ -113,12 +94,12 @@ func loadSourceSpec(pkgDir string) (Spec, bool, error) {
 		return Spec{}, false, err
 	}
 	text := string(data)
-	ok, err := filecheck.HasDirectives(text)
+	ok, err = filecheck.HasDirectives(text)
 	if err != nil {
 		return Spec{}, false, err
 	}
 	if !ok {
-		return Spec{}, false, fmt.Errorf("%s: %s is marked %s but has no FileCheck directives", pkgDir, filepath.Base(marked), marker)
+		return Spec{}, false, fmt.Errorf("%s: %s is marked %s but has no FileCheck directives", pkgDir, filepath.Base(marked), Marker)
 	}
 	return Spec{
 		Path: marked,
@@ -127,7 +108,40 @@ func loadSourceSpec(pkgDir string) (Spec, bool, error) {
 	}, true, nil
 }
 
-func hasMarker(path string) (bool, error) {
+func FindMarkedSourceFile(dir string) (string, bool, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", false, err
+	}
+	var marked string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !IsSourceSpecFile(name) {
+			continue
+		}
+		path := filepath.Join(dir, name)
+		ok, err := HasMarker(path)
+		if err != nil {
+			return "", false, err
+		}
+		if !ok {
+			continue
+		}
+		if marked != "" {
+			return "", false, fmt.Errorf("%s: multiple source lit specs found: %s, %s", dir, filepath.Base(marked), filepath.Base(path))
+		}
+		marked = path
+	}
+	if marked == "" {
+		return "", false, nil
+	}
+	return marked, true, nil
+}
+
+func HasMarker(path string) (bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err
@@ -142,9 +156,9 @@ func hasMarker(path string) (bool, error) {
 	if !strings.HasPrefix(line, "//") {
 		return false, nil
 	}
-	return strings.TrimSpace(strings.TrimPrefix(line, "//")) == marker, nil
+	return strings.TrimSpace(strings.TrimPrefix(line, "//")) == Marker, nil
 }
 
-func isSourceSpecFile(name string) bool {
+func IsSourceSpecFile(name string) bool {
 	return filepath.Ext(name) == ".go" && !strings.HasSuffix(name, "_test.go")
 }
