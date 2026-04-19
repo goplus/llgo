@@ -553,11 +553,11 @@ func (p Package) getAbiTypesFor(name string, filter func(sym *AbiSymbol) bool) E
 	size := uint64(len(names))
 	typ := prog.Slice(prog.AbiTypePtr())
 	g := p.doNewVar(name+"$slice", prog.Pointer(typ))
-	g.impl.SetInitializer(prog.ctx.ConstStruct([]llvm.Value{
+	g.impl.SetInitializer(llvm.ConstNamedStruct(typ.ll, []llvm.Value{
 		array.impl,
 		prog.IntVal(size, prog.Int()).impl,
 		prog.IntVal(size, prog.Int()).impl,
-	}, false))
+	}))
 	g.impl.SetGlobalConstant(true)
 	return g.Expr
 }

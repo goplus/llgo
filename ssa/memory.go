@@ -117,7 +117,7 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	if heap {
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
-		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
+		ret = Expr{b.createEntryAlloca(elem.ll), prog.VoidPtr()}
 		ret.impl = b.zeroinit(ret, size).impl
 	}
 	ret.Type = prog.Pointer(elem)
@@ -156,6 +156,18 @@ func (b Builder) AllocaT(t Type) (ret Expr) {
 	ret.impl = llvm.CreateAlloca(b.impl, t.ll)
 	ret.Type = prog.Pointer(t)
 	return
+}
+
+func (b Builder) createEntryAlloca(typ llvm.Type) llvm.Value {
+	entry := b.Func.impl.EntryBasicBlock()
+	entryB := b.Prog.ctx.NewBuilder()
+	defer entryB.Dispose()
+	if first := entry.FirstInstruction(); !first.IsNil() {
+		entryB.SetInsertPointBefore(first)
+	} else {
+		entryB.SetInsertPointAtEnd(entry)
+	}
+	return llvm.CreateAlloca(entryB, typ)
 }
 
 /* TODO(xsw):

@@ -200,7 +200,7 @@ func (b Builder) buildVal(typ Type, val llvm.Value, lvl int) Expr {
 	case *types.Array:
 		telem := b.Prog.rawType(t.Elem())
 		elem := b.buildVal(telem, val, lvl-1)
-		return Expr{llvm.ConstArray(typ.ll, []llvm.Value{elem.impl}), typ}
+		return Expr{aggregateValue(b.impl, typ.ll, elem.impl), typ}
 	}
 	panic("todo")
 }

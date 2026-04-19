@@ -231,127 +231,134 @@ type N1 [1]int
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make2"() {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
-// CHECK-NEXT:   %1 = call i64 @"{{.*}}/runtime/internal/runtime.MapLen"(ptr %0)
-// CHECK-NEXT:   %2 = icmp eq ptr %0, null
-// CHECK-NEXT:   %3 = icmp ne ptr %0, null
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintPointer"(ptr %0)
+// CHECK-NEXT:   %0 = alloca [1 x i64], align 8
+// CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
+// CHECK-NEXT:   %2 = call i64 @"{{.*}}/runtime/internal/runtime.MapLen"(ptr %1)
+// CHECK-NEXT:   %3 = icmp eq ptr %1, null
+// CHECK-NEXT:   %4 = icmp ne ptr %1, null
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintPointer"(ptr %1)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %1)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %2)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %2)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %3)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %4)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   %4 = call i64 @"{{.*}}/runtime/internal/runtime.MapLen"(ptr null)
+// CHECK-NEXT:   %5 = call i64 @"{{.*}}/runtime/internal/runtime.MapLen"(ptr null)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintPointer"(ptr null)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %4)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %5)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 true)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 false)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
-// CHECK-NEXT:   %6 = alloca [1 x i64], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %6, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %6, i64 0
-// CHECK-NEXT:   store i64 1, ptr %7, align 4
-// CHECK-NEXT:   %8 = load [1 x i64], ptr %6, align 4
-// CHECK-NEXT:   %9 = extractvalue [1 x i64] %8, 0
-// CHECK-NEXT:   %10 = inttoptr i64 %9 to ptr
-// CHECK-NEXT:   %11 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %10, 1
-// CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %11, ptr %12, align 8
-// CHECK-NEXT:   %13 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %12)
-// CHECK-NEXT:   store i64 100, ptr %13, align 4
-// CHECK-NEXT:   %14 = alloca [1 x i64], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %14, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %14, i64 0
-// CHECK-NEXT:   store i64 2, ptr %15, align 4
-// CHECK-NEXT:   %16 = load [1 x i64], ptr %14, align 4
-// CHECK-NEXT:   %17 = extractvalue [1 x i64] %16, 0
-// CHECK-NEXT:   %18 = inttoptr i64 %17 to ptr
-// CHECK-NEXT:   %19 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %18, 1
-// CHECK-NEXT:   %20 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %19, ptr %20, align 8
-// CHECK-NEXT:   %21 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %20)
-// CHECK-NEXT:   store i64 200, ptr %21, align 4
-// CHECK-NEXT:   %22 = alloca [1 x i64], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %22, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %23 = getelementptr inbounds i64, ptr %22, i64 0
-// CHECK-NEXT:   store i64 3, ptr %23, align 4
-// CHECK-NEXT:   %24 = load [1 x i64], ptr %22, align 4
-// CHECK-NEXT:   %25 = extractvalue [1 x i64] %24, 0
-// CHECK-NEXT:   %26 = inttoptr i64 %25 to ptr
-// CHECK-NEXT:   %27 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %26, 1
-// CHECK-NEXT:   %28 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %27, ptr %28, align 8
-// CHECK-NEXT:   %29 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %28)
-// CHECK-NEXT:   store i64 300, ptr %29, align 4
-// CHECK-NEXT:   %30 = alloca [1 x i64], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %30, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %31 = getelementptr inbounds i64, ptr %30, i64 0
-// CHECK-NEXT:   store i64 2, ptr %31, align 4
-// CHECK-NEXT:   %32 = load [1 x i64], ptr %30, align 4
-// CHECK-NEXT:   %33 = extractvalue [1 x i64] %32, 0
-// CHECK-NEXT:   %34 = inttoptr i64 %33 to ptr
-// CHECK-NEXT:   %35 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1", ptr undef }, ptr %34, 1
-// CHECK-NEXT:   %36 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %35, ptr %36, align 8
-// CHECK-NEXT:   %37 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %5, ptr %36)
-// CHECK-NEXT:   store i64 -200, ptr %37, align 4
-// CHECK-NEXT:   %38 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %5)
+// CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
+// CHECK-NEXT:   %7 = alloca [1 x i64], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %7, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %8 = getelementptr inbounds i64, ptr %7, i64 0
+// CHECK-NEXT:   store i64 1, ptr %8, align 4
+// CHECK-NEXT:   %9 = load [1 x i64], ptr %7, align 4
+// CHECK-NEXT:   %10 = extractvalue [1 x i64] %9, 0
+// CHECK-NEXT:   %11 = inttoptr i64 %10 to ptr
+// CHECK-NEXT:   %12 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.N1", ptr undef }, ptr %11, 1
+// CHECK-NEXT:   %13 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %12, ptr %13, align 8
+// CHECK-NEXT:   %14 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %6, ptr %13)
+// CHECK-NEXT:   store i64 100, ptr %14, align 4
+// CHECK-NEXT:   %15 = alloca [1 x i64], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %15, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %16 = getelementptr inbounds i64, ptr %15, i64 0
+// CHECK-NEXT:   store i64 2, ptr %16, align 4
+// CHECK-NEXT:   %17 = load [1 x i64], ptr %15, align 4
+// CHECK-NEXT:   %18 = extractvalue [1 x i64] %17, 0
+// CHECK-NEXT:   %19 = inttoptr i64 %18 to ptr
+// CHECK-NEXT:   %20 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.N1", ptr undef }, ptr %19, 1
+// CHECK-NEXT:   %21 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %20, ptr %21, align 8
+// CHECK-NEXT:   %22 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %6, ptr %21)
+// CHECK-NEXT:   store i64 200, ptr %22, align 4
+// CHECK-NEXT:   %23 = alloca [1 x i64], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %23, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %24 = getelementptr inbounds i64, ptr %23, i64 0
+// CHECK-NEXT:   store i64 3, ptr %24, align 4
+// CHECK-NEXT:   %25 = load [1 x i64], ptr %23, align 4
+// CHECK-NEXT:   %26 = extractvalue [1 x i64] %25, 0
+// CHECK-NEXT:   %27 = inttoptr i64 %26 to ptr
+// CHECK-NEXT:   %28 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.N1", ptr undef }, ptr %27, 1
+// CHECK-NEXT:   %29 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %28, ptr %29, align 8
+// CHECK-NEXT:   %30 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %6, ptr %29)
+// CHECK-NEXT:   store i64 300, ptr %30, align 4
+// CHECK-NEXT:   %31 = alloca [1 x i64], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %31, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %32 = getelementptr inbounds i64, ptr %31, i64 0
+// CHECK-NEXT:   store i64 2, ptr %32, align 4
+// CHECK-NEXT:   %33 = load [1 x i64], ptr %31, align 4
+// CHECK-NEXT:   %34 = extractvalue [1 x i64] %33, 0
+// CHECK-NEXT:   %35 = inttoptr i64 %34 to ptr
+// CHECK-NEXT:   %36 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.N1", ptr undef }, ptr %35, 1
+// CHECK-NEXT:   %37 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %36, ptr %37, align 8
+// CHECK-NEXT:   %38 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %6, ptr %37)
+// CHECK-NEXT:   store i64 -200, ptr %38, align 4
+// CHECK-NEXT:   %39 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %6)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_7, %_llgo_0
-// CHECK-NEXT:   %39 = call { i1, ptr, ptr } @"{{.*}}/runtime/internal/runtime.MapIterNext"(ptr %38)
-// CHECK-NEXT:   %40 = extractvalue { i1, ptr, ptr } %39, 0
-// CHECK-NEXT:   br i1 %40, label %_llgo_4, label %_llgo_5
+// CHECK-NEXT:   %40 = call { i1, ptr, ptr } @"{{.*}}/runtime/internal/runtime.MapIterNext"(ptr %39)
+// CHECK-NEXT:   %41 = extractvalue { i1, ptr, ptr } %40, 0
+// CHECK-NEXT:   br i1 %41, label %_llgo_4, label %_llgo_5
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_6
-// CHECK-NEXT:   %41 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %51, 1
-// CHECK-NEXT:   %42 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %51, 2
-// CHECK-NEXT:   %43 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %41, 0
-// CHECK-NEXT:   %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N1"
-// CHECK-NEXT:   br i1 %44, label %_llgo_7, label %_llgo_8
+// CHECK-NEXT:   %42 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %52, 1
+// CHECK-NEXT:   %43 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %52, 2
+// CHECK-NEXT:   %44 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %42, 0
+// CHECK-NEXT:   %45 = icmp eq ptr %44, @"_llgo_{{.*}}/cl/_testrt/makemap.N1"
+// CHECK-NEXT:   br i1 %45, label %_llgo_7, label %_llgo_8
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_6
 // CHECK-NEXT:   ret void
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_4:                                          ; preds = %_llgo_1
-// CHECK-NEXT:   %45 = extractvalue { i1, ptr, ptr } %39, 1
-// CHECK-NEXT:   %46 = extractvalue { i1, ptr, ptr } %39, 2
-// CHECK-NEXT:   %47 = load %"{{.*}}/runtime/internal/runtime.eface", ptr %45, align 8
-// CHECK-NEXT:   %48 = load i64, ptr %46, align 4
-// CHECK-NEXT:   %49 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } { i1 true, %"{{.*}}/runtime/internal/runtime.eface" undef, i64 undef }, %"{{.*}}/runtime/internal/runtime.eface" %47, 1
-// CHECK-NEXT:   %50 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %49, i64 %48, 2
+// CHECK-NEXT:   %46 = extractvalue { i1, ptr, ptr } %40, 1
+// CHECK-NEXT:   %47 = extractvalue { i1, ptr, ptr } %40, 2
+// CHECK-NEXT:   %48 = load %"{{.*}}/runtime/internal/runtime.eface", ptr %46, align 8
+// CHECK-NEXT:   %49 = load i64, ptr %47, align 4
+// CHECK-NEXT:   %50 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } { i1 true, %"{{.*}}/runtime/internal/runtime.eface" undef, i64 undef }, %"{{.*}}/runtime/internal/runtime.eface" %48, 1
+// CHECK-NEXT:   %51 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %50, i64 %49, 2
 // CHECK-NEXT:   br label %_llgo_6
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_5:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   br label %_llgo_6
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-// CHECK-NEXT:   %51 = phi { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } [ %50, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
-// CHECK-NEXT:   %52 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %51, 0
-// CHECK-NEXT:   br i1 %52, label %_llgo_2, label %_llgo_3
+// CHECK-NEXT:   %52 = phi { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } [ %51, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
+// CHECK-NEXT:   %53 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %52, 0
+// CHECK-NEXT:   br i1 %53, label %_llgo_2, label %_llgo_3
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_7:                                          ; preds = %_llgo_2
-// CHECK-NEXT:   %53 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %41, 1
-// CHECK-NEXT:   %54 = ptrtoint ptr %53 to i64
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %54)
+// CHECK-NEXT:   %54 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %42, 1
+// CHECK-NEXT:   %55 = ptrtoint ptr %54 to i64
+// CHECK-NEXT:   %56 = insertvalue [1 x i64] undef, i64 %55, 0
+// CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   store [1 x i64] %56, ptr %0, align 4
+// CHECK-NEXT:   %57 = getelementptr inbounds i64, ptr %0, i64 0
+// CHECK-NEXT:   %58 = load i64, ptr %57, align 4
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %58)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %42)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %43)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_8:                                          ; preds = %_llgo_2
-// CHECK-NEXT:   %55 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @32, i64 81 }, ptr %55, align 8
-// CHECK-NEXT:   %56 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %55, 1
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %56)
+// CHECK-NEXT:   %59 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @32, i64 81 }, ptr %59, align 8
+// CHECK-NEXT:   %60 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %59, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %60)
 // CHECK-NEXT:   unreachable
 // CHECK-NEXT: }
+
 func make2() {
 	m2 := make(map[int]string)
 	println(m2, len(m2), m2 == nil, m2 != nil)
@@ -378,109 +385,109 @@ type K2 [1]*N
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make3"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 2, i1 false)
-// CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %0, i64 0
-// CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %1, i32 0, i32 0
-// CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %1, i32 0, i32 1
-// CHECK-NEXT:   store i8 1, ptr %2, align 1
-// CHECK-NEXT:   store i8 2, ptr %3, align 1
-// CHECK-NEXT:   %4 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %0, align 1
-// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
-// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %4, ptr %5, align 1
-// CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %5, 1
-// CHECK-NEXT:   %7 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %7, i8 0, i64 2, i1 false)
-// CHECK-NEXT:   %8 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %7, i64 0
-// CHECK-NEXT:   %9 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %8, i32 0, i32 0
-// CHECK-NEXT:   %10 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %8, i32 0, i32 1
-// CHECK-NEXT:   store i8 1, ptr %9, align 1
-// CHECK-NEXT:   store i8 2, ptr %10, align 1
-// CHECK-NEXT:   %11 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %7, align 1
-// CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
-// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %11, ptr %12, align 1
-// CHECK-NEXT:   %13 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %12, 1
-// CHECK-NEXT:   %14 = call i1 @"{{.*}}/runtime/internal/runtime.EfaceEqual"(%"{{.*}}/runtime/internal/runtime.eface" %6, %"{{.*}}/runtime/internal/runtime.eface" %13)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %14)
+// CHECK-NEXT:   %1 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 2, i1 false)
+// CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %1, i64 0
+// CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %2, i32 0, i32 0
+// CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %2, i32 0, i32 1
+// CHECK-NEXT:   store i8 1, ptr %3, align 1
+// CHECK-NEXT:   store i8 2, ptr %4, align 1
+// CHECK-NEXT:   %5 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %1, align 1
+// CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
+// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %5, ptr %6, align 1
+// CHECK-NEXT:   %7 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K", ptr undef }, ptr %6, 1
+// CHECK-NEXT:   %8 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %8, i8 0, i64 2, i1 false)
+// CHECK-NEXT:   %9 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %8, i64 0
+// CHECK-NEXT:   %10 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %9, i32 0, i32 0
+// CHECK-NEXT:   %11 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %9, i32 0, i32 1
+// CHECK-NEXT:   store i8 1, ptr %10, align 1
+// CHECK-NEXT:   store i8 2, ptr %11, align 1
+// CHECK-NEXT:   %12 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %8, align 1
+// CHECK-NEXT:   %13 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
+// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %12, ptr %13, align 1
+// CHECK-NEXT:   %14 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K", ptr undef }, ptr %13, 1
+// CHECK-NEXT:   %15 = call i1 @"{{.*}}/runtime/internal/runtime.EfaceEqual"(%"{{.*}}/runtime/internal/runtime.eface" %7, %"{{.*}}/runtime/internal/runtime.eface" %14)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %15)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   %15 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
-// CHECK-NEXT:   %16 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %16, i8 0, i64 2, i1 false)
-// CHECK-NEXT:   %17 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %16, i64 0
-// CHECK-NEXT:   %18 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %17, i32 0, i32 0
-// CHECK-NEXT:   %19 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %17, i32 0, i32 1
-// CHECK-NEXT:   store i8 1, ptr %18, align 1
-// CHECK-NEXT:   store i8 2, ptr %19, align 1
-// CHECK-NEXT:   %20 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %16, align 1
-// CHECK-NEXT:   %21 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
-// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %20, ptr %21, align 1
-// CHECK-NEXT:   %22 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %21, 1
-// CHECK-NEXT:   %23 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %22, ptr %23, align 8
-// CHECK-NEXT:   %24 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %15, ptr %23)
-// CHECK-NEXT:   store i64 100, ptr %24, align 4
-// CHECK-NEXT:   %25 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %25, i8 0, i64 2, i1 false)
-// CHECK-NEXT:   %26 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %25, i64 0
-// CHECK-NEXT:   %27 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %26, i32 0, i32 0
-// CHECK-NEXT:   %28 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %26, i32 0, i32 1
-// CHECK-NEXT:   store i8 3, ptr %27, align 1
-// CHECK-NEXT:   store i8 4, ptr %28, align 1
-// CHECK-NEXT:   %29 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %25, align 1
-// CHECK-NEXT:   %30 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
-// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %29, ptr %30, align 1
-// CHECK-NEXT:   %31 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K", ptr undef }, ptr %30, 1
-// CHECK-NEXT:   %32 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %31, ptr %32, align 8
-// CHECK-NEXT:   %33 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %15, ptr %32)
-// CHECK-NEXT:   store i64 200, ptr %33, align 4
-// CHECK-NEXT:   %34 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %15)
+// CHECK-NEXT:   %16 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
+// CHECK-NEXT:   %17 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %17, i8 0, i64 2, i1 false)
+// CHECK-NEXT:   %18 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %17, i64 0
+// CHECK-NEXT:   %19 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %18, i32 0, i32 0
+// CHECK-NEXT:   %20 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %18, i32 0, i32 1
+// CHECK-NEXT:   store i8 1, ptr %19, align 1
+// CHECK-NEXT:   store i8 2, ptr %20, align 1
+// CHECK-NEXT:   %21 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %17, align 1
+// CHECK-NEXT:   %22 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
+// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %21, ptr %22, align 1
+// CHECK-NEXT:   %23 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K", ptr undef }, ptr %22, 1
+// CHECK-NEXT:   %24 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %23, ptr %24, align 8
+// CHECK-NEXT:   %25 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %16, ptr %24)
+// CHECK-NEXT:   store i64 100, ptr %25, align 4
+// CHECK-NEXT:   %26 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %26, i8 0, i64 2, i1 false)
+// CHECK-NEXT:   %27 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %26, i64 0
+// CHECK-NEXT:   %28 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %27, i32 0, i32 0
+// CHECK-NEXT:   %29 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %27, i32 0, i32 1
+// CHECK-NEXT:   store i8 3, ptr %28, align 1
+// CHECK-NEXT:   store i8 4, ptr %29, align 1
+// CHECK-NEXT:   %30 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %26, align 1
+// CHECK-NEXT:   %31 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 2)
+// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %30, ptr %31, align 1
+// CHECK-NEXT:   %32 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K", ptr undef }, ptr %31, 1
+// CHECK-NEXT:   %33 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %32, ptr %33, align 8
+// CHECK-NEXT:   %34 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %16, ptr %33)
+// CHECK-NEXT:   store i64 200, ptr %34, align 4
+// CHECK-NEXT:   %35 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_7, %_llgo_0
-// CHECK-NEXT:   %35 = call { i1, ptr, ptr } @"{{.*}}/runtime/internal/runtime.MapIterNext"(ptr %34)
-// CHECK-NEXT:   %36 = extractvalue { i1, ptr, ptr } %35, 0
-// CHECK-NEXT:   br i1 %36, label %_llgo_4, label %_llgo_5
+// CHECK-NEXT:   %36 = call { i1, ptr, ptr } @"{{.*}}/runtime/internal/runtime.MapIterNext"(ptr %35)
+// CHECK-NEXT:   %37 = extractvalue { i1, ptr, ptr } %36, 0
+// CHECK-NEXT:   br i1 %37, label %_llgo_4, label %_llgo_5
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_6
-// CHECK-NEXT:   %37 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %47, 1
-// CHECK-NEXT:   %38 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %47, 2
-// CHECK-NEXT:   %39 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %37, 0
-// CHECK-NEXT:   %40 = icmp eq ptr %39, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K"
-// CHECK-NEXT:   br i1 %40, label %_llgo_7, label %_llgo_8
+// CHECK-NEXT:   %38 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %48, 1
+// CHECK-NEXT:   %39 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %48, 2
+// CHECK-NEXT:   %40 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %38, 0
+// CHECK-NEXT:   %41 = icmp eq ptr %40, @"_llgo_{{.*}}/cl/_testrt/makemap.K"
+// CHECK-NEXT:   br i1 %41, label %_llgo_7, label %_llgo_8
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_6
 // CHECK-NEXT:   ret void
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_4:                                          ; preds = %_llgo_1
-// CHECK-NEXT:   %41 = extractvalue { i1, ptr, ptr } %35, 1
-// CHECK-NEXT:   %42 = extractvalue { i1, ptr, ptr } %35, 2
-// CHECK-NEXT:   %43 = load %"{{.*}}/runtime/internal/runtime.eface", ptr %41, align 8
-// CHECK-NEXT:   %44 = load i64, ptr %42, align 4
-// CHECK-NEXT:   %45 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } { i1 true, %"{{.*}}/runtime/internal/runtime.eface" undef, i64 undef }, %"{{.*}}/runtime/internal/runtime.eface" %43, 1
-// CHECK-NEXT:   %46 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %45, i64 %44, 2
+// CHECK-NEXT:   %42 = extractvalue { i1, ptr, ptr } %36, 1
+// CHECK-NEXT:   %43 = extractvalue { i1, ptr, ptr } %36, 2
+// CHECK-NEXT:   %44 = load %"{{.*}}/runtime/internal/runtime.eface", ptr %42, align 8
+// CHECK-NEXT:   %45 = load i64, ptr %43, align 4
+// CHECK-NEXT:   %46 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } { i1 true, %"{{.*}}/runtime/internal/runtime.eface" undef, i64 undef }, %"{{.*}}/runtime/internal/runtime.eface" %44, 1
+// CHECK-NEXT:   %47 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %46, i64 %45, 2
 // CHECK-NEXT:   br label %_llgo_6
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_5:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   br label %_llgo_6
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-// CHECK-NEXT:   %47 = phi { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } [ %46, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
-// CHECK-NEXT:   %48 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %47, 0
-// CHECK-NEXT:   br i1 %48, label %_llgo_2, label %_llgo_3
+// CHECK-NEXT:   %48 = phi { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } [ %47, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
+// CHECK-NEXT:   %49 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %48, 0
+// CHECK-NEXT:   br i1 %49, label %_llgo_2, label %_llgo_3
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_7:                                          ; preds = %_llgo_2
-// CHECK-NEXT:   %49 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %37, 1
-// CHECK-NEXT:   %50 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %49, align 1
-// CHECK-NEXT:   %51 = alloca [1 x %"{{.*}}/cl/_testrt/makemap.N"], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %51, i8 0, i64 2, i1 false)
-// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %50, ptr %51, align 1
-// CHECK-NEXT:   %52 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %51, i64 0
+// CHECK-NEXT:   %50 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %38, 1
+// CHECK-NEXT:   %51 = load [1 x %"{{.*}}/cl/_testrt/makemap.N"], ptr %50, align 1
+// CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 2, i1 false)
+// CHECK-NEXT:   store [1 x %"{{.*}}/cl/_testrt/makemap.N"] %51, ptr %0, align 1
+// CHECK-NEXT:   %52 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %0, i64 0
 // CHECK-NEXT:   %53 = load %"{{.*}}/cl/_testrt/makemap.N", ptr %52, align 1
 // CHECK-NEXT:   %54 = extractvalue %"{{.*}}/cl/_testrt/makemap.N" %53, 0
 // CHECK-NEXT:   %55 = sext i8 %54 to i64
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %55)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %38)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %39)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -491,6 +498,7 @@ type K2 [1]*N
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %57)
 // CHECK-NEXT:   unreachable
 // CHECK-NEXT: }
+
 func make3() {
 	var a any = K{N{1, 2}}
 	var b any = K{N{1, 2}}
@@ -507,118 +515,125 @@ func make3() {
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make4"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca [1 x ptr], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %1 = getelementptr inbounds ptr, ptr %0, i64 0
-// CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
-// CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %2, i32 0, i32 1
-// CHECK-NEXT:   store i8 1, ptr %3, align 1
-// CHECK-NEXT:   store i8 2, ptr %4, align 1
-// CHECK-NEXT:   store ptr %2, ptr %1, align 8
-// CHECK-NEXT:   %5 = load [1 x ptr], ptr %0, align 8
-// CHECK-NEXT:   %6 = extractvalue [1 x ptr] %5, 0
-// CHECK-NEXT:   %7 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %6, 1
-// CHECK-NEXT:   %8 = alloca [1 x ptr], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %8, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %9 = getelementptr inbounds ptr, ptr %8, i64 0
-// CHECK-NEXT:   %10 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
-// CHECK-NEXT:   %11 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %10, i32 0, i32 0
-// CHECK-NEXT:   %12 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %10, i32 0, i32 1
-// CHECK-NEXT:   store i8 1, ptr %11, align 1
-// CHECK-NEXT:   store i8 2, ptr %12, align 1
-// CHECK-NEXT:   store ptr %10, ptr %9, align 8
-// CHECK-NEXT:   %13 = load [1 x ptr], ptr %8, align 8
-// CHECK-NEXT:   %14 = extractvalue [1 x ptr] %13, 0
-// CHECK-NEXT:   %15 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %14, 1
-// CHECK-NEXT:   %16 = call i1 @"{{.*}}/runtime/internal/runtime.EfaceEqual"(%"{{.*}}/runtime/internal/runtime.eface" %7, %"{{.*}}/runtime/internal/runtime.eface" %15)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %16)
+// CHECK-NEXT:   %1 = alloca [1 x ptr], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %2 = getelementptr inbounds ptr, ptr %1, i64 0
+// CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
+// CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %3, i32 0, i32 0
+// CHECK-NEXT:   %5 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %3, i32 0, i32 1
+// CHECK-NEXT:   store i8 1, ptr %4, align 1
+// CHECK-NEXT:   store i8 2, ptr %5, align 1
+// CHECK-NEXT:   store ptr %3, ptr %2, align 8
+// CHECK-NEXT:   %6 = load [1 x ptr], ptr %1, align 8
+// CHECK-NEXT:   %7 = extractvalue [1 x ptr] %6, 0
+// CHECK-NEXT:   %8 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K2", ptr undef }, ptr %7, 1
+// CHECK-NEXT:   %9 = alloca [1 x ptr], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %9, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %10 = getelementptr inbounds ptr, ptr %9, i64 0
+// CHECK-NEXT:   %11 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
+// CHECK-NEXT:   %12 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %11, i32 0, i32 0
+// CHECK-NEXT:   %13 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %11, i32 0, i32 1
+// CHECK-NEXT:   store i8 1, ptr %12, align 1
+// CHECK-NEXT:   store i8 2, ptr %13, align 1
+// CHECK-NEXT:   store ptr %11, ptr %10, align 8
+// CHECK-NEXT:   %14 = load [1 x ptr], ptr %9, align 8
+// CHECK-NEXT:   %15 = extractvalue [1 x ptr] %14, 0
+// CHECK-NEXT:   %16 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K2", ptr undef }, ptr %15, 1
+// CHECK-NEXT:   %17 = call i1 @"{{.*}}/runtime/internal/runtime.EfaceEqual"(%"{{.*}}/runtime/internal/runtime.eface" %8, %"{{.*}}/runtime/internal/runtime.eface" %16)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %17)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   %17 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
-// CHECK-NEXT:   %18 = alloca [1 x ptr], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %18, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %19 = getelementptr inbounds ptr, ptr %18, i64 0
-// CHECK-NEXT:   %20 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
-// CHECK-NEXT:   %21 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %20, i32 0, i32 0
-// CHECK-NEXT:   %22 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %20, i32 0, i32 1
-// CHECK-NEXT:   store i8 1, ptr %21, align 1
-// CHECK-NEXT:   store i8 2, ptr %22, align 1
-// CHECK-NEXT:   store ptr %20, ptr %19, align 8
-// CHECK-NEXT:   %23 = load [1 x ptr], ptr %18, align 8
-// CHECK-NEXT:   %24 = extractvalue [1 x ptr] %23, 0
-// CHECK-NEXT:   %25 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %24, 1
-// CHECK-NEXT:   %26 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %25, ptr %26, align 8
-// CHECK-NEXT:   %27 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %17, ptr %26)
-// CHECK-NEXT:   store i64 100, ptr %27, align 4
-// CHECK-NEXT:   %28 = alloca [1 x ptr], align 8
-// CHECK-NEXT:   call void @llvm.memset(ptr %28, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   %29 = getelementptr inbounds ptr, ptr %28, i64 0
-// CHECK-NEXT:   %30 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
-// CHECK-NEXT:   %31 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %30, i32 0, i32 0
-// CHECK-NEXT:   %32 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %30, i32 0, i32 1
-// CHECK-NEXT:   store i8 3, ptr %31, align 1
-// CHECK-NEXT:   store i8 4, ptr %32, align 1
-// CHECK-NEXT:   store ptr %30, ptr %29, align 8
-// CHECK-NEXT:   %33 = load [1 x ptr], ptr %28, align 8
-// CHECK-NEXT:   %34 = extractvalue [1 x ptr] %33, 0
-// CHECK-NEXT:   %35 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2", ptr undef }, ptr %34, 1
-// CHECK-NEXT:   %36 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %35, ptr %36, align 8
-// CHECK-NEXT:   %37 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %17, ptr %36)
-// CHECK-NEXT:   store i64 200, ptr %37, align 4
-// CHECK-NEXT:   %38 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %17)
+// CHECK-NEXT:   %18 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_any]_llgo_int", i64 0)
+// CHECK-NEXT:   %19 = alloca [1 x ptr], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %19, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %20 = getelementptr inbounds ptr, ptr %19, i64 0
+// CHECK-NEXT:   %21 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
+// CHECK-NEXT:   %22 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %21, i32 0, i32 0
+// CHECK-NEXT:   %23 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %21, i32 0, i32 1
+// CHECK-NEXT:   store i8 1, ptr %22, align 1
+// CHECK-NEXT:   store i8 2, ptr %23, align 1
+// CHECK-NEXT:   store ptr %21, ptr %20, align 8
+// CHECK-NEXT:   %24 = load [1 x ptr], ptr %19, align 8
+// CHECK-NEXT:   %25 = extractvalue [1 x ptr] %24, 0
+// CHECK-NEXT:   %26 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K2", ptr undef }, ptr %25, 1
+// CHECK-NEXT:   %27 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %26, ptr %27, align 8
+// CHECK-NEXT:   %28 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %18, ptr %27)
+// CHECK-NEXT:   store i64 100, ptr %28, align 4
+// CHECK-NEXT:   %29 = alloca [1 x ptr], align 8
+// CHECK-NEXT:   call void @llvm.memset(ptr %29, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   %30 = getelementptr inbounds ptr, ptr %29, i64 0
+// CHECK-NEXT:   %31 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 2)
+// CHECK-NEXT:   %32 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %31, i32 0, i32 0
+// CHECK-NEXT:   %33 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %31, i32 0, i32 1
+// CHECK-NEXT:   store i8 3, ptr %32, align 1
+// CHECK-NEXT:   store i8 4, ptr %33, align 1
+// CHECK-NEXT:   store ptr %31, ptr %30, align 8
+// CHECK-NEXT:   %34 = load [1 x ptr], ptr %29, align 8
+// CHECK-NEXT:   %35 = extractvalue [1 x ptr] %34, 0
+// CHECK-NEXT:   %36 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"_llgo_{{.*}}/cl/_testrt/makemap.K2", ptr undef }, ptr %35, 1
+// CHECK-NEXT:   %37 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %36, ptr %37, align 8
+// CHECK-NEXT:   %38 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_any]_llgo_int", ptr %18, ptr %37)
+// CHECK-NEXT:   store i64 200, ptr %38, align 4
+// CHECK-NEXT:   %39 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_any]_llgo_int", ptr %18)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_7, %_llgo_0
-// CHECK-NEXT:   %39 = call { i1, ptr, ptr } @"{{.*}}/runtime/internal/runtime.MapIterNext"(ptr %38)
-// CHECK-NEXT:   %40 = extractvalue { i1, ptr, ptr } %39, 0
-// CHECK-NEXT:   br i1 %40, label %_llgo_4, label %_llgo_5
+// CHECK-NEXT:   %40 = call { i1, ptr, ptr } @"{{.*}}/runtime/internal/runtime.MapIterNext"(ptr %39)
+// CHECK-NEXT:   %41 = extractvalue { i1, ptr, ptr } %40, 0
+// CHECK-NEXT:   br i1 %41, label %_llgo_4, label %_llgo_5
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_6
-// CHECK-NEXT:   %41 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %51, 1
-// CHECK-NEXT:   %42 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %51, 2
-// CHECK-NEXT:   %43 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %41, 0
-// CHECK-NEXT:   %44 = icmp eq ptr %43, @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.K2"
-// CHECK-NEXT:   br i1 %44, label %_llgo_7, label %_llgo_8
+// CHECK-NEXT:   %42 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %52, 1
+// CHECK-NEXT:   %43 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %52, 2
+// CHECK-NEXT:   %44 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %42, 0
+// CHECK-NEXT:   %45 = icmp eq ptr %44, @"_llgo_{{.*}}/cl/_testrt/makemap.K2"
+// CHECK-NEXT:   br i1 %45, label %_llgo_7, label %_llgo_8
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_6
 // CHECK-NEXT:   ret void
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_4:                                          ; preds = %_llgo_1
-// CHECK-NEXT:   %45 = extractvalue { i1, ptr, ptr } %39, 1
-// CHECK-NEXT:   %46 = extractvalue { i1, ptr, ptr } %39, 2
-// CHECK-NEXT:   %47 = load %"{{.*}}/runtime/internal/runtime.eface", ptr %45, align 8
-// CHECK-NEXT:   %48 = load i64, ptr %46, align 4
-// CHECK-NEXT:   %49 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } { i1 true, %"{{.*}}/runtime/internal/runtime.eface" undef, i64 undef }, %"{{.*}}/runtime/internal/runtime.eface" %47, 1
-// CHECK-NEXT:   %50 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %49, i64 %48, 2
+// CHECK-NEXT:   %46 = extractvalue { i1, ptr, ptr } %40, 1
+// CHECK-NEXT:   %47 = extractvalue { i1, ptr, ptr } %40, 2
+// CHECK-NEXT:   %48 = load %"{{.*}}/runtime/internal/runtime.eface", ptr %46, align 8
+// CHECK-NEXT:   %49 = load i64, ptr %47, align 4
+// CHECK-NEXT:   %50 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } { i1 true, %"{{.*}}/runtime/internal/runtime.eface" undef, i64 undef }, %"{{.*}}/runtime/internal/runtime.eface" %48, 1
+// CHECK-NEXT:   %51 = insertvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %50, i64 %49, 2
 // CHECK-NEXT:   br label %_llgo_6
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_5:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   br label %_llgo_6
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_6:                                          ; preds = %_llgo_5, %_llgo_4
-// CHECK-NEXT:   %51 = phi { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } [ %50, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
-// CHECK-NEXT:   %52 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %51, 0
-// CHECK-NEXT:   br i1 %52, label %_llgo_2, label %_llgo_3
+// CHECK-NEXT:   %52 = phi { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } [ %51, %_llgo_4 ], [ zeroinitializer, %_llgo_5 ]
+// CHECK-NEXT:   %53 = extractvalue { i1, %"{{.*}}/runtime/internal/runtime.eface", i64 } %52, 0
+// CHECK-NEXT:   br i1 %53, label %_llgo_2, label %_llgo_3
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_7:                                          ; preds = %_llgo_2
-// CHECK-NEXT:   %53 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %41, 1
-// CHECK-NEXT:   %54 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %53, i32 0, i32 0
-// CHECK-NEXT:   %55 = load i8, ptr %54, align 1
-// CHECK-NEXT:   %56 = sext i8 %55 to i64
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %56)
+// CHECK-NEXT:   %54 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %42, 1
+// CHECK-NEXT:   %55 = insertvalue [1 x ptr] undef, ptr %54, 0
+// CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
+// CHECK-NEXT:   store [1 x ptr] %55, ptr %0, align 8
+// CHECK-NEXT:   %56 = getelementptr inbounds ptr, ptr %0, i64 0
+// CHECK-NEXT:   %57 = load ptr, ptr %56, align 8
+// CHECK-NEXT:   %58 = getelementptr inbounds %"{{.*}}/cl/_testrt/makemap.N", ptr %57, i32 0, i32 0
+// CHECK-NEXT:   %59 = load i8, ptr %58, align 1
+// CHECK-NEXT:   %60 = sext i8 %59 to i64
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %60)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %42)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %43)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_8:                                          ; preds = %_llgo_2
-// CHECK-NEXT:   %57 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @42, i64 81 }, ptr %57, align 8
-// CHECK-NEXT:   %58 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %57, 1
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %58)
+// CHECK-NEXT:   %61 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @42, i64 81 }, ptr %61, align 8
+// CHECK-NEXT:   %62 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %61, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %62)
 // CHECK-NEXT:   unreachable
 // CHECK-NEXT: }
+
 func make4() {
 	var a any = K2{&N{1, 2}}
 	var b any = K2{&N{1, 2}}
@@ -686,6 +701,7 @@ func make4() {
 // CHECK-NEXT:   %21 = extractvalue { i1, ptr, i64 } %20, 0
 // CHECK-NEXT:   br i1 %21, label %_llgo_2, label %_llgo_3
 // CHECK-NEXT: }
+
 func make5() {
 	ch := make(chan int)
 	var a any = ch
@@ -706,9 +722,9 @@ type M map[int]string
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 0)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   store i64 1, ptr %1, align 4
-// CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M", ptr %0, ptr %1)
+// CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"_llgo_{{.*}}/cl/_testrt/makemap.M", ptr %0, ptr %1)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @16, i64 5 }, ptr %2, align 8
-// CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"_llgo_github.com/goplus/llgo/cl/_testrt/makemap.M", ptr %0)
+// CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"_llgo_{{.*}}/cl/_testrt/makemap.M", ptr %0)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -745,6 +761,7 @@ type M map[int]string
 // CHECK-NEXT:   %15 = extractvalue { i1, i64, %"{{.*}}/runtime/internal/runtime.String" } %14, 0
 // CHECK-NEXT:   br i1 %15, label %_llgo_2, label %_llgo_3
 // CHECK-NEXT: }
+
 func make6() {
 	var m M
 	m = make(map[int]string)
@@ -756,16 +773,16 @@ func make6() {
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/makemap.make7"() {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N.7.0]_llgo_string", i64 2)
+// CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_{{.*}}/cl/_testrt/makemap.N.7.0]_llgo_string", i64 2)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   store i64 1, ptr %1, align 4
-// CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %1)
+// CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_{{.*}}/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %1)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @16, i64 5 }, ptr %2, align 8
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   store i64 2, ptr %3, align 4
-// CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %3)
+// CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_{{.*}}/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %3)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @17, i64 5 }, ptr %4, align 8
-// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0)
+// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.NewMapIter"(ptr @"map[_llgo_{{.*}}/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -785,7 +802,7 @@ func make6() {
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_6
 // CHECK-NEXT:   %10 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   store i64 1, ptr %10, align 4
-// CHECK-NEXT:   %11 = call ptr @"{{.*}}/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_github.com/goplus/llgo/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %10)
+// CHECK-NEXT:   %11 = call ptr @"{{.*}}/runtime/internal/runtime.MapAccess1"(ptr @"map[_llgo_{{.*}}/cl/_testrt/makemap.N.7.0]_llgo_string", ptr %0, ptr %10)
 // CHECK-NEXT:   %12 = load %"{{.*}}/runtime/internal/runtime.String", ptr %11, align 8
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %12)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
@@ -808,6 +825,7 @@ func make6() {
 // CHECK-NEXT:   %20 = extractvalue { i1, i64, %"{{.*}}/runtime/internal/runtime.String" } %19, 0
 // CHECK-NEXT:   br i1 %20, label %_llgo_2, label %_llgo_3
 // CHECK-NEXT: }
+
 func make7() {
 	type N int
 	m := map[N]string{
