@@ -1007,7 +1007,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 		methodByName:  methodByName,
 		abiSymbols:    linkedModuleGlobals(linkedOrder),
 	})
-	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, []byte(entryPkg.LPkg.String()))
+	entryObjFile, err := exportObject(ctx, "entry_main", entryPkg.ExportFile, entryPkg.LPkg)
 	if err != nil {
 		return err
 	}
@@ -1303,7 +1303,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
 	}
 	if pkg.ExportFile != "" {
-		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, []byte(ret.String()))
+		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, ret)
 		if err != nil {
 			return fmt.Errorf("export object of %v failed: %v", pkgPath, err)
 		}
@@ -1315,7 +1315,95 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	return nil
 }
 
-func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
+func exportObject(ctx *context, pkgPath string, exportFile string, pkg llssa.Package) (string, error) {
+	if useInMemoryNativeCodegen(ctx) {
+		return exportObjectInMemory(ctx, pkgPath, exportFile, pkg)
+	}
+	return exportObjectWithClang(ctx, pkgPath, exportFile, []byte(pkg.String()))
+}
+
+func useInMemoryNativeCodegen(ctx *context) bool {
+	return useInMemoryNativeCodegenConf(ctx.buildConf)
+}
+
+func useInMemoryNativeCodegenConf(conf *Config) bool {
+	return conf != nil &&
+		conf.Target == "" &&
+		conf.Goos == runtime.GOOS &&
+		conf.Goarch == runtime.GOARCH &&
+		conf.Goarch != "wasm"
+}
+
+func dumpLLVMIRIfNeeded(ctx *context, pkgPath string, exportFile string, data string) error {
+	if !ctx.buildConf.CheckLLFiles && !ctx.buildConf.GenLL {
+		return nil
+	}
+
+	base := filepath.Base(exportFile)
+	f, err := os.CreateTemp("", base+"-*.ll")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.WriteString(data); err != nil {
+		f.Close()
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+	if ctx.buildConf.CheckLLFiles {
+		if msg, err := llcCheck(ctx.env, f.Name()); err != nil {
+			fmt.Fprintf(os.Stderr, "==> llc %v: %v\n%v\n", pkgPath, f.Name(), msg)
+		}
+	}
+	// If GenLL is enabled, keep a copy of the .ll file for debugging
+	if ctx.buildConf.GenLL {
+		llFile := exportFile + ".ll"
+		if err := os.Chmod(f.Name(), 0644); err != nil {
+			return err
+		}
+		if err := copyFileAtomic(f.Name(), llFile); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func exportObjectInMemory(ctx *context, pkgPath string, exportFile string, pkg llssa.Package) (string, error) {
+	if ctx.buildConf.CheckLLFiles || ctx.buildConf.GenLL {
+		// Avoid formatting large IR unless a debug/check path needs it.
+		if err := dumpLLVMIRIfNeeded(ctx, pkgPath, exportFile, pkg.String()); err != nil {
+			return "", err
+		}
+	}
+	pkg.MarkEmitted()
+	buf, err := ctx.prog.TargetMachine().EmitToMemoryBuffer(pkg.Module(), gllvm.ObjectFile)
+	if err != nil {
+		return "", err
+	}
+	defer buf.Dispose()
+
+	base := filepath.Base(exportFile)
+	objFile, err := os.CreateTemp("", base+"-*.o")
+	if err != nil {
+		return "", err
+	}
+	objFileName := objFile.Name()
+	if _, err := objFile.Write(buf.Bytes()); err != nil {
+		objFile.Close()
+		os.Remove(objFileName)
+		return "", err
+	}
+	if err := objFile.Close(); err != nil {
+		os.Remove(objFileName)
+		return "", err
+	}
+	return objFileName, nil
+}
+
+func exportObjectWithClang(ctx *context, pkgPath string, exportFile string, data []byte) (string, error) {
 	base := filepath.Base(exportFile)
 	f, err := os.CreateTemp("", base+"-*.ll")
 	if err != nil {
@@ -1331,10 +1419,9 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 	}
 	if ctx.buildConf.CheckLLFiles {
 		if msg, err := llcCheck(ctx.env, f.Name()); err != nil {
-			fmt.Fprintf(os.Stderr, "==> lcc %v: %v\n%v\n", pkgPath, f.Name(), msg)
+			fmt.Fprintf(os.Stderr, "==> llc %v: %v\n%v\n", pkgPath, f.Name(), msg)
 		}
 	}
-	// If GenLL is enabled, keep a copy of the .ll file for debugging
 	if ctx.buildConf.GenLL {
 		llFile := exportFile + ".ll"
 		if err := os.Chmod(f.Name(), 0644); err != nil {
@@ -1345,7 +1432,6 @@ func exportObject(ctx *context, pkgPath string, exportFile string, data []byte) 
 			return "", err
 		}
 	}
-	// Always compile .ll to .o for linking
 	objFile, err := os.CreateTemp("", base+"-*.o")
 	if err != nil {
 		return "", err

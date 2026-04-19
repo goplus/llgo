@@ -37,9 +37,9 @@ func dump(v any) {
 // CHECK-NEXT:   %2 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/abi.(*Type).String"(ptr %0)
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/runtime/abi.(*Type).Kind"(ptr %0)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   %5 = load i64, ptr %4, align 4
+// CHECK-NEXT:   %5 = load i64, ptr %4, align 8
 // CHECK-NEXT:   %6 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 1
-// CHECK-NEXT:   %7 = load i64, ptr %6, align 4
+// CHECK-NEXT:   %7 = load i64, ptr %6, align 8
 // CHECK-NEXT:   %8 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   %9 = load i32, ptr %8, align 4
 // CHECK-NEXT:   %10 = getelementptr inbounds %"{{.*}}/runtime/abi.Type", ptr %0, i32 0, i32 3
@@ -168,7 +168,7 @@ type eface struct {
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_float32, ptr null })
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_float64, ptr null })
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 80)
-// CHECK-NEXT:   store [10 x i64] zeroinitializer, ptr %0, align 4
+// CHECK-NEXT:   store [10 x i64] zeroinitializer, ptr %0, align 8
 // CHECK-NEXT:   %1 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[10]_llgo_int", ptr undef }, ptr %0, 1
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %1)
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -189,7 +189,7 @@ type eface struct {
 // CHECK-NEXT:   %11 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %10, 1
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %11)
 // CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 24)
-// CHECK-NEXT:   store { i8, i64, i64 } zeroinitializer, ptr %12, align 4
+// CHECK-NEXT:   store { i8, i64, i64 } zeroinitializer, ptr %12, align 8
 // CHECK-NEXT:   %13 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"{{.*}}/cl/_testrt/eface.struct$RKbUG45GE4henGMAdmt0Rju0JptyR8NsX7IZLsOI0OM", ptr undef }, ptr %12, 1
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" %13)
 // CHECK-NEXT:   %14 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)

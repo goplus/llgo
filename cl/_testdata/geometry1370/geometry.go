@@ -39,7 +39,7 @@ func (r *Rectangle) Area() float64 { return r.Width * r.Height }
 // CHECK-LABEL: define i64 @"{{.*}}geometry1370.(*Rectangle).GetID"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}geometry1370.Rectangle", ptr %0, i32 0, i32 2
-// CHECK-NEXT:   %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:   %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:   ret i64 %2
 // CHECK-NEXT: }
 func (r *Rectangle) GetID() int { return r.id }
@@ -47,7 +47,7 @@ func (r *Rectangle) GetID() int { return r.id }
 // CHECK-LABEL: define void @"{{.*}}geometry1370.(*Rectangle).setID"(ptr %0, i64 %1) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}geometry1370.Rectangle", ptr %0, i32 0, i32 2
-// CHECK-NEXT:   store i64 %1, ptr %2, align 4
+// CHECK-NEXT:   store i64 %1, ptr %2, align 8
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 func (r *Rectangle) setID(id int) { r.id = id }
