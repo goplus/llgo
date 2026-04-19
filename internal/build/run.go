@@ -33,7 +33,7 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 	}
 
 	switch mode {
-	case ModeRun:
+	case ModeRun, ModeGenAndRun:
 		args := make([]string, 0, len(conf.RunArgs)+1)
 		if isWasmTarget(conf.Goos) {
 			wasmer := os.ExpandEnv(WasmRuntime())
@@ -67,7 +67,7 @@ func runNative(ctx *context, app, pkgDir, pkgName string, conf *Config, mode Mod
 		if err != nil {
 			return err
 		}
-		if s := cmd.ProcessState; s != nil {
+		if s := cmd.ProcessState; mode == ModeRun && s != nil {
 			mockable.Exit(s.ExitCode())
 		}
 	case ModeTest:

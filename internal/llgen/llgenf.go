@@ -28,7 +28,7 @@ import (
 func GenFrom(fileOrPkg string) string {
 	pkg, err := genFrom(fileOrPkg, 0)
 	check(err)
-	return pkg.LPkg.String()
+	return pkg.CaptureIR
 }
 
 func genFrom(pkgPath string, abiMode build.AbiMode) (build.Package, error) {
@@ -98,7 +98,7 @@ func SmartDoFileEx(pkgPath string, abiMode build.AbiMode) {
 		return // skip to gen
 	}
 
-	if err = os.WriteFile(outFile, []byte(pkg.LPkg.String()), 0644); err != nil {
+	if err = os.WriteFile(outFile, []byte(pkg.CaptureIR), 0644); err != nil {
 		panic(err)
 	}
 	if false && fname == autgenFile {

@@ -68,6 +68,7 @@ const (
 	ModeTest
 	ModeCmpTest
 	ModeGen
+	ModeGenAndRun
 )
 
 type BuildMode string
@@ -113,13 +114,6 @@ type OutFmtDetails struct {
 	Zip string // ZIP/DFU output file path (.zip)
 }
 
-// ModuleHook observes a package module immediately after it is generated and
-// before TransformModule mutates it. The callback runs synchronously and
-// receives the live llvm.Module, so callers that need a stable snapshot should
-// consume it immediately (for example, by calling mod.String() inside the
-// hook).
-type ModuleHook func(pkgPath string, mod gllvm.Module)
-
 type Config struct {
 	Goos          string
 	Goarch        string
@@ -155,7 +149,6 @@ type Config struct {
 	// string-typed globals are supported and "main" applies to all root main
 	// packages in the current build.
 	GlobalRewrites map[string]Rewrites
-	ModuleHook     ModuleHook
 }
 
 type Rewrites map[string]string
@@ -327,7 +320,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			if conf.Target != "" {
 				return nil, fmt.Errorf("cannot install multiple packages to embedded target")
 			}
-		case ModeRun:
+		case ModeRun, ModeGenAndRun:
 			return nil, fmt.Errorf("cannot run multiple packages")
 		}
 	}
@@ -394,6 +387,15 @@ func Do(args []string, conf *Config) ([]Package, error) {
 
 	allPkgs := append([]*aPackage{}, pkgs...)
 	allPkgs = append(allPkgs, depPkgs...)
+
+	if conf.Mode == ModeGenAndRun || conf.Mode == ModeGen {
+		for _, pkg := range allPkgs {
+			if pkg.Package == initial[0] {
+				pkg.NeedCaptureIR = true
+			}
+		}
+	}
+
 	allPkgs, err = buildAllPkgs(ctx, allPkgs, verbose)
 	if err != nil {
 		return nil, err
@@ -406,6 +408,18 @@ func Do(args []string, conf *Config) ([]Package, error) {
 			}
 		}
 		return nil, fmt.Errorf("initial package not found")
+	}
+
+	if mode == ModeGenAndRun {
+		newAllPkgs := []*aPackage{nil}
+		for _, pkg := range allPkgs {
+			if pkg.Package == initial[0] {
+				newAllPkgs[0] = pkg
+			} else {
+				newAllPkgs = append(newAllPkgs, pkg)
+			}
+		}
+		allPkgs = newAllPkgs
 	}
 
 	for _, pkg := range initial {
@@ -470,7 +484,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 					}
 				}
 
-			case ModeRun, ModeTest, ModeCmpTest:
+			case ModeRun, ModeTest, ModeCmpTest, ModeGenAndRun:
 				if conf.Target == "" {
 					err = runNative(ctx, outFmts.Out, pkg.Dir, pkg.PkgPath, conf, mode)
 				} else if conf.Emulator {
@@ -1238,10 +1252,10 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	check(err)
 
 	aPkg.LPkg = ret
-	if hook := ctx.buildConf.ModuleHook; hook != nil {
-		hook(pkgPath, ret.Module())
-	}
 
+	if aPkg.NeedCaptureIR {
+		aPkg.CaptureIR = ret.String()
+	}
 	// If cache hit, we only needed to register types - skip compilation
 	if aPkg.CacheHit {
 		return nil
@@ -1433,6 +1447,9 @@ type aPackage struct {
 	ObjFiles    []string // object files: .o or .ll (output of compiler, input to archiver)
 	ArchiveFile string   // archive file: .a (output of archiver, used for linking)
 	rewriteVars map[string]string
+
+	NeedCaptureIR bool
+	CaptureIR     string
 
 	// Cache related fields
 	Fingerprint string // fingerprint digest

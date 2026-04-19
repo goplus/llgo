@@ -171,7 +171,7 @@ func buildOutFmts(pkgName string, conf *Config, multiPkg bool, crossCompile *cro
 		return details, nil
 	}
 
-	needRun := slices.Contains([]Mode{ModeRun, ModeTest, ModeCmpTest, ModeInstall}, conf.Mode)
+	needRun := slices.Contains([]Mode{ModeRun, ModeTest, ModeCmpTest, ModeInstall, ModeGenAndRun}, conf.Mode)
 
 	// Check emulator format if emulator mode is enabled
 	outFmt := ""
