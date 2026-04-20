@@ -829,9 +829,6 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
-		if skipUnusedArrayDeref(v) {
-			return
-		}
 		if v.Op == token.MUL {
 			if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
 				if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
@@ -842,6 +839,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 						return
 					}
 				}
+			}
+			if skipUnusedArrayDeref(v) {
+				return
 			}
 			if refs := v.Referrers(); refs != nil && len(*refs) == 1 {
 				if _, ok := (*refs)[0].(*ssa.MakeInterface); ok {
