@@ -1083,7 +1083,9 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	case BuildModeCShared:
 		buildArgs = append(buildArgs, "-shared", "-fPIC")
 	case BuildModeExe:
-		// Default executable mode, no additional flags needed
+		if needsLinuxNoPIE(ctx, linkArgs) {
+			buildArgs = append(buildArgs, "-no-pie")
+		}
 	}
 
 	// Add common linker arguments based on target OS and architecture
@@ -1116,6 +1118,20 @@ func linkObjFiles(ctx *context, app string, objFiles, linkArgs []string, verbose
 	cmd := ctx.linker()
 	cmd.Verbose = printCmds
 	return cmd.Link(buildArgs...)
+}
+
+func needsLinuxNoPIE(ctx *context, linkArgs []string) bool {
+	if ctx.buildConf.Target != "" || ctx.buildConf.Goos != "linux" {
+		return false
+	}
+	// Host Linux toolchains commonly default to PIE executables, which can
+	// break runtime assumptions unless the user explicitly requested a PIE mode.
+	for _, arg := range linkArgs {
+		if arg == "-pie" || arg == "-static-pie" || arg == "-no-pie" || arg == "-nopie" {
+			return false
+		}
+	}
+	return true
 }
 
 // archiver returns the archiving tool to use for the current context.
