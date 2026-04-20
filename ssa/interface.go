@@ -152,6 +152,24 @@ func (b Builder) MakeInterface(tinter Type, x Expr) (ret Expr) {
 	return Expr{b.unsafeInterface(rawIntf, tabi, data), tinter}
 }
 
+func (b Builder) MakeInterfaceFromPtr(tinter Type, ptr Expr) (ret Expr) {
+	rawIntf := tinter.raw.Type.Underlying().(*types.Interface)
+	prog := b.Prog
+	b.AssertNilDeref(ptr)
+
+	typ := prog.Elem(ptr.Type)
+	tabi := b.abiType(typ.raw.Type)
+	if kind, _, _ := abi.DataKindOf(typ.raw.Type, 0, prog.is32Bits); kind != abi.Indirect {
+		return b.MakeInterface(tinter, b.Load(ptr))
+	}
+
+	vptr := b.AllocU(typ)
+	dst := b.Convert(prog.VoidPtr(), vptr)
+	src := b.Convert(prog.VoidPtr(), ptr)
+	b.Call(b.Pkg.rtFunc("Typedmemmove"), tabi, dst, src)
+	return Expr{b.unsafeInterface(rawIntf, tabi, vptr.impl), tinter}
+}
+
 func (b Builder) valFromData(typ Type, data llvm.Value) Expr {
 	prog := b.Prog
 	if !directIfaceType(typ.raw.Type) {

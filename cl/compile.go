@@ -80,6 +80,20 @@ func dbgInstrln(args ...any) {
 	}
 }
 
+const maxDirectDerefSize = 1 << 20
+
+func (p *context) isLargeNonPointerValue(t llssa.Type) bool {
+	raw := types.Unalias(t.RawType())
+	if _, ok := raw.Underlying().(*types.Pointer); ok {
+		return false
+	}
+	// Very large values may be addressed far beyond the first guard page. Emit
+	// an explicit nil check instead of relying on the eventual load to fault.
+	ptrSize := int64(p.prog.PointerSize())
+	sizes := &types.StdSizes{WordSize: ptrSize, MaxAlign: ptrSize}
+	return sizes.Sizeof(raw) > maxDirectDerefSize
+}
+
 func dbgGoSSADump(f interface {
 	WriteTo(io.Writer) (int64, error)
 }) {
@@ -815,8 +829,31 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
-		if skipUnusedArrayDeref(v) {
-			return
+		if v.Op == token.MUL {
+			if refs := v.Referrers(); refs != nil && len(*refs) == 0 {
+				if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+					if p.isLargeNonPointerValue(t) {
+						x := p.compileValue(b, v.X)
+						p.assertNilDerefBase(b, v.X)
+						b.AssertNilDeref(x)
+						return
+					}
+				}
+			}
+			if skipUnusedArrayDeref(v) {
+				return
+			}
+			if refs := v.Referrers(); refs != nil && len(*refs) == 1 {
+				if _, ok := (*refs)[0].(*ssa.MakeInterface); ok {
+					if t := p.type_(v.Type(), llssa.InGo); t.RawType() != nil {
+						if p.isLargeNonPointerValue(t) {
+							// Skip the load: the MakeInterface handler below copies
+							// from the original pointer and preserves the nil check.
+							return
+						}
+					}
+				}
+			}
 		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
@@ -902,6 +939,17 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			}
 		}
 		t := p.type_(v.Type(), llssa.InGo)
+		if unop, ok := v.X.(*ssa.UnOp); ok && unop.Op == token.MUL {
+			if vt := p.type_(unop.Type(), llssa.InGo); vt.RawType() != nil {
+				if p.isLargeNonPointerValue(vt) {
+					if ptr := p.compileValue(b, unop.X); ptr.Type != nil {
+						p.assertNilDerefBase(b, unop.X)
+						ret = b.MakeInterfaceFromPtr(t, ptr)
+						break
+					}
+				}
+			}
+		}
 		x := p.compileValue(b, v.X)
 		ret = b.MakeInterface(t, x)
 	case *ssa.MakeSlice:
@@ -969,6 +1017,13 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	}
 	p.bvals[iv] = ret
 	return ret
+}
+
+func (p *context) assertNilDerefBase(b llssa.Builder, addr ssa.Value) {
+	if field, ok := addr.(*ssa.FieldAddr); ok {
+		base := p.compileValue(b, field.X)
+		b.AssertNilDeref(base)
+	}
 }
 
 func (p *context) jumpTo(v *ssa.Jump) llssa.BasicBlock {

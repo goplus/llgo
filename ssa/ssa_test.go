@@ -640,6 +640,45 @@ func TestCheckExprAssignmentConversions(t *testing.T) {
 	b.Return()
 }
 
+func TestMakeInterfaceFromPtrKinds(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	emptyType := prog.Type(emptyIface, InGo)
+	returns := types.NewTuple(types.NewVar(0, nil, "", emptyIface))
+
+	makePtrIface := func(name string, elem types.Type) {
+		ptrTyp := types.NewPointer(elem)
+		params := types.NewTuple(types.NewVar(0, nil, "p", ptrTyp))
+		sig := types.NewSignatureType(nil, nil, nil, params, returns, false)
+		fn := pkg.NewFunc(name, sig, InGo)
+		b := fn.MakeBody(1)
+		b.Return(b.MakeInterfaceFromPtr(emptyType, fn.Param(0)))
+		b.EndBuild()
+	}
+
+	makePtrIface("smallPtrIface", types.Typ[types.Int])
+	makePtrIface("largePtrIface", types.NewArray(types.Typ[types.Byte], 1<<21))
+
+	ir := pkg.Module().String()
+	if !strings.Contains(ir, "AssertNilDeref") {
+		t.Fatalf("MakeInterfaceFromPtr should emit nil-deref guard, got:\n%s", ir)
+	}
+	if !strings.Contains(ir, "Typedmemmove") {
+		t.Fatalf("large MakeInterfaceFromPtr should copy via Typedmemmove, got:\n%s", ir)
+	}
+}
+
 func TestInterfaceHelpers(t *testing.T) {
 	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	rawMeth := types.NewFunc(0, nil, "M", rawSig)
