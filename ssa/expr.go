@@ -1537,7 +1537,20 @@ func checkExpr(v Expr, t types.Type, b Builder) Expr {
 		}
 		return b.aggregateValue(tclosure, v.impl, data.impl)
 	}
-	return v
+	if types.Identical(v.raw.Type, t) || !types.AssignableTo(v.raw.Type, t) {
+		return v
+	}
+	dst := b.Prog.Type(t, InGo)
+	// Range and assignment lowering can produce a value whose source type is
+	// assignable but not identical to the destination, so preserve the value
+	// while retagging it with the destination runtime type.
+	if _, ok := t.Underlying().(*types.Interface); ok {
+		if _, srcIsInterface := v.raw.Type.Underlying().(*types.Interface); srcIsInterface {
+			return b.ChangeInterface(dst, v)
+		}
+		return b.MakeInterface(dst, v)
+	}
+	return b.ChangeType(dst, v)
 }
 
 func needsNegativeCheck(x Expr) bool {

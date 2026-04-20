@@ -791,6 +791,45 @@ func TestMakeInterfaceKinds(t *testing.T) {
 	bNE.Return(bNE.MakeInterface(nonEmptyType, prog.Val(7)))
 }
 
+func TestCheckExprAssignmentConversions(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.sizes = types.SizesFor("gc", runtime.GOARCH)
+	prog.SetRuntime(func() *types.Package {
+		pkg, err := importer.For("source", nil).Import(PkgRuntime)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	fn := pkg.NewFunc("checkExprAssignmentConversions", NoArgsNoRet, InGo)
+	b := fn.MakeBody(1)
+
+	pkgTypes := types.NewPackage("foo/bar", "bar")
+	intSlice := types.NewSlice(types.Typ[types.Int])
+	namedSlice := types.NewNamed(types.NewTypeName(token.NoPos, pkgTypes, "checkExprSlice", nil), intSlice, nil)
+	concrete := checkExpr(prog.Zero(prog.Type(namedSlice, InGo)), intSlice, b)
+	if !types.Identical(concrete.RawType(), intSlice) {
+		t.Fatalf("concrete retag type = %v, want %v", concrete.RawType(), intSlice)
+	}
+
+	emptyIface := types.NewInterfaceType(nil, nil)
+	emptyIface.Complete()
+	toIface := checkExpr(prog.Val(7), emptyIface, b)
+	if !types.Identical(toIface.RawType(), emptyIface) {
+		t.Fatalf("concrete-to-interface type = %v, want %v", toIface.RawType(), emptyIface)
+	}
+
+	namedIface := types.NewNamed(types.NewTypeName(token.NoPos, pkgTypes, "checkExprIface", nil), emptyIface, nil)
+	fromIface := b.MakeInterface(prog.Type(namedIface, InGo), prog.Val(7))
+	changedIface := checkExpr(fromIface, emptyIface, b)
+	if !types.Identical(changedIface.RawType(), emptyIface) {
+		t.Fatalf("interface-to-interface type = %v, want %v", changedIface.RawType(), emptyIface)
+	}
+
+	b.Return()
+}
+
 func TestInterfaceHelpers(t *testing.T) {
 	rawSig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
 	rawMeth := types.NewFunc(0, nil, "M", rawSig)

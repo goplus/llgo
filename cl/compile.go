@@ -638,6 +638,20 @@ func intVal(v ssa.Value) int64 {
 	panic("intVal: ssa.Value is not a const int")
 }
 
+func skipUnusedArrayDeref(v *ssa.UnOp) bool {
+	if v.Op != token.MUL {
+		return false
+	}
+	refs := v.Referrers()
+	if refs == nil || len(*refs) != 0 {
+		return false
+	}
+	if _, ok := v.Type().Underlying().(*types.Array); !ok {
+		return false
+	}
+	return true
+}
+
 func (p *context) cgoErrnoType() types.Type {
 	if p.cgoErrnoTy != nil {
 		return p.cgoErrnoTy
@@ -801,6 +815,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 		y := p.compileValue(b, v.Y)
 		ret = b.BinOp(v.Op, x, y)
 	case *ssa.UnOp:
+		if skipUnusedArrayDeref(v) {
+			return
+		}
 		x := p.compileValue(b, v.X)
 		if v.Op == token.ARROW {
 			ret = b.Recv(x, v.CommaOk)

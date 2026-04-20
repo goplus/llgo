@@ -32,6 +32,27 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestNeedsLinuxNoPIE(t *testing.T) {
+	ctx := &context{buildConf: &Config{Goos: "linux"}}
+	if !needsLinuxNoPIE(ctx, nil) {
+		t.Fatal("linux executable link should default to -no-pie")
+	}
+	for _, flag := range []string{"-pie", "-static-pie", "-no-pie", "-nopie"} {
+		if needsLinuxNoPIE(ctx, []string{flag}) {
+			t.Fatalf("explicit %s should not be overridden", flag)
+		}
+	}
+	ctx.buildConf.Goos = "darwin"
+	if needsLinuxNoPIE(ctx, nil) {
+		t.Fatal("non-linux executable link should not force -no-pie")
+	}
+	ctx.buildConf.Goos = "linux"
+	ctx.buildConf.Target = "wasi"
+	if needsLinuxNoPIE(ctx, nil) {
+		t.Fatal("named targets should not force host linux -no-pie")
+	}
+}
+
 func mockRun(args []string, cfg *Config) {
 	defer mockable.DisableMock()
 	mockable.EnableMock()
