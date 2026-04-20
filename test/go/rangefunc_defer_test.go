@@ -256,7 +256,8 @@ func TestRangeFuncRejectsYieldAfterLoopExit(t *testing.T) {
 	}()
 
 	msg := fmt.Sprint(recovered)
-	if !strings.Contains(msg, "continued iteration") || !strings.Contains(msg, "returned false") {
+	if !(strings.Contains(msg, "continued iteration") && strings.Contains(msg, "returned false")) &&
+		msg != "yield function called after range loop exit" {
 		t.Fatalf("panic = %q, want range loop exit panic", msg)
 	}
 }
@@ -282,7 +283,8 @@ func TestRangeFuncRejectsYieldAfterBodyPanic(t *testing.T) {
 	}()
 
 	msg := fmt.Sprint(recovered)
-	if !strings.Contains(msg, "continued iteration") || !strings.Contains(msg, "loop body panic") {
+	if !(strings.Contains(msg, "continued iteration") && strings.Contains(msg, "loop body panic")) &&
+		msg != "yield function called after range loop exit" {
 		t.Fatalf("panic = %q, want range body panic", msg)
 	}
 }
