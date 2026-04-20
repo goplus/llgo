@@ -125,8 +125,8 @@ func (impl) two() string {
 // CHECK-NEXT:   %34 = getelementptr inbounds %"{{.*}}/cl/_testgo/ifaceprom.S", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %35 = load %"{{.*}}/runtime/internal/runtime.iface", ptr %34, align 8
 // CHECK-NEXT:   %36 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %35)
-// CHECK-NEXT:   %37 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %35, 1
-// CHECK-NEXT:   br i1 true, label %_llgo_17, label %_llgo_18
+// CHECK-NEXT:   %37 = icmp ne ptr %36, null
+// CHECK-NEXT:   br i1 %37, label %_llgo_17, label %_llgo_18
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_5:                                          ; preds = %_llgo_17
 // CHECK-NEXT:   %38 = inttoptr i64 %93 to ptr
@@ -138,8 +138,8 @@ func (impl) two() string {
 // CHECK-NEXT:   %40 = load %"{{.*}}/cl/_testgo/ifaceprom.S", ptr %0, align 8
 // CHECK-NEXT:   %41 = extractvalue %"{{.*}}/cl/_testgo/ifaceprom.S" %40, 0
 // CHECK-NEXT:   %42 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %41)
-// CHECK-NEXT:   %43 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %41, 1
-// CHECK-NEXT:   br i1 true, label %_llgo_19, label %_llgo_20
+// CHECK-NEXT:   %43 = icmp ne ptr %42, null
+// CHECK-NEXT:   br i1 %43, label %_llgo_19, label %_llgo_20
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_7:                                          ; preds = %_llgo_19
 // CHECK-NEXT:   %44 = inttoptr i64 %102 to ptr
@@ -197,8 +197,8 @@ func (impl) two() string {
 // CHECK-NEXT:   %76 = getelementptr inbounds %"{{.*}}/cl/_testgo/ifaceprom.S", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %77 = load %"{{.*}}/runtime/internal/runtime.iface", ptr %76, align 8
 // CHECK-NEXT:   %78 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %77)
-// CHECK-NEXT:   %79 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %77, 1
-// CHECK-NEXT:   br i1 true, label %_llgo_21, label %_llgo_22
+// CHECK-NEXT:   %79 = icmp ne ptr %78, null
+// CHECK-NEXT:   br i1 %79, label %_llgo_21, label %_llgo_22
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_13:                                         ; preds = %_llgo_21
 // CHECK-NEXT:   %80 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -211,8 +211,8 @@ func (impl) two() string {
 // CHECK-NEXT:   %82 = load %"{{.*}}/cl/_testgo/ifaceprom.S", ptr %0, align 8
 // CHECK-NEXT:   %83 = extractvalue %"{{.*}}/cl/_testgo/ifaceprom.S" %82, 0
 // CHECK-NEXT:   %84 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %83)
-// CHECK-NEXT:   %85 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %83, 1
-// CHECK-NEXT:   br i1 true, label %_llgo_23, label %_llgo_24
+// CHECK-NEXT:   %85 = icmp ne ptr %84, null
+// CHECK-NEXT:   br i1 %85, label %_llgo_23, label %_llgo_24
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_15:                                         ; preds = %_llgo_23
 // CHECK-NEXT:   %86 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
