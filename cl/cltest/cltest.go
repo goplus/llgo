@@ -40,7 +40,6 @@ import (
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/ssa/ssatest"
-	gllvm "github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -246,28 +245,17 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		return
 	}
 
-	var goldenIR []byte
+	var irSpec littest.Spec
 	checkIR := false
-	moduleID := ""
 	if opts.checkIR {
-		goldenIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
+		irSpec, checkIR, err = readIRSpec(pkgDir)
 		if err != nil {
-			t.Fatal("ReadFile failed:", err)
-		}
-		if checkIR {
-			moduleID = moduleIDFromIR(goldenIR)
-			if moduleID == "" {
-				t.Fatalf("missing ModuleID in golden IR for %s", pkgDir)
-			}
+			t.Fatal("LoadSpec failed:", err)
 		}
 	}
 	conf := opts.conf
-	var capturedIR *string
-	if checkIR {
-		conf, capturedIR = withModuleCapture(opts.conf, moduleID)
-	}
 
-	output, err := runWithConf(relPkg, pkgDir, conf)
+	output, pkg, err := runWithConfResult(relPkg, pkgDir, conf)
 	if err != nil {
 		t.Logf("raw output:\n%s", string(output))
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
@@ -279,16 +267,14 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 	if !checkIR {
 		return
 	}
-	if capturedIR == nil || *capturedIR == "" {
-		t.Fatalf("module snapshot missing for package %s", moduleID)
-	}
-	if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(*capturedIR), goldenIR) {
-		t.Fatal("unexpected IR output")
+	if err := littest.Check(irSpec, pkg.CaptureIR); err != nil {
+		_ = os.WriteFile(filepath.Join(pkgDir, "result.txt"), []byte(pkg.CaptureIR), 0644)
+		t.Fatal(err)
 	}
 }
 
 func RunAndCapture(relPkg, pkgDir string) ([]byte, error) {
-	conf := build.NewDefaultConf(build.ModeRun)
+	conf := build.NewDefaultConf(build.ModeGenAndRun)
 	return RunAndCaptureWithConf(relPkg, pkgDir, conf)
 }
 
@@ -297,36 +283,23 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 	return runWithConf(relPkg, pkgDir, conf)
 }
 
-func withModuleCapture(conf *build.Config, targetPkgPath string) (*build.Config, *string) {
-	if conf == nil {
-		conf = build.NewDefaultConf(build.ModeRun)
-	}
-	localConf := *conf
-	var module string
-	prevHook := localConf.ModuleHook
-	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
-		if prevHook != nil {
-			prevHook(pkgPath, mod)
-		}
-		if pkgPath == targetPkgPath && module == "" {
-			module = mod.String()
-		}
-	}
-	return &localConf, &module
+func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
+	result, _, err := runWithConfResult(relPkg, pkgDir, conf)
+	return result, err
 }
 
-func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
+func runWithConfResult(relPkg, pkgDir string, conf *build.Config) ([]byte, build.Package, error) {
 	if conf == nil {
-		conf = build.NewDefaultConf(build.ModeRun)
+		conf = build.NewDefaultConf(build.ModeGenAndRun)
 	}
 	cacheDir, err := os.MkdirTemp("", "llgo-gocache-*")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer os.RemoveAll(cacheDir)
 	oldCache := os.Getenv("GOCACHE")
 	if err := os.Setenv("GOCACHE", cacheDir); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func() {
 		if oldCache == "" {
@@ -342,7 +315,7 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 	originalStderr := os.Stderr
 	r, w, err := os.Pipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	os.Stdout = w
 	os.Stderr = w
@@ -362,12 +335,12 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 	origDir, err := os.Getwd()
 	if err != nil {
 		_ = w.Close()
-		return nil, err
+		return nil, nil, err
 	}
 	if pkgDir != "" {
 		if err := os.Chdir(pkgDir); err != nil {
 			_ = w.Close()
-			return nil, err
+			return nil, nil, err
 		}
 		defer os.Chdir(origDir)
 		relPkg = "."
@@ -377,6 +350,7 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 	defer mockable.DisableMock()
 
 	var runErr error
+	pkgs := []build.Package{nil}
 	func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -386,16 +360,15 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 				panic(r)
 			}
 		}()
-		_, runErr = build.Do([]string{relPkg}, &localConf)
+		pkgs, runErr = build.Do([]string{relPkg}, &localConf)
 	}()
-
 	_ = w.Close()
 	output := <-outputCh
 	output = filterRunOutput(output)
 	if runErr != nil {
-		return output, fmt.Errorf("run failed: %w", runErr)
+		return output, pkgs[0], fmt.Errorf("run failed: %w", runErr)
 	}
-	return output, nil
+	return output, pkgs[0], nil
 }
 
 func assertExpectedOutput(t *testing.T, pkgDir string, expectedOutput, output []byte, opts runOptions) {
@@ -422,17 +395,16 @@ func readGolden(file string) ([]byte, bool, error) {
 	return data, true, nil
 }
 
-func moduleIDFromIR(data []byte) string {
-	line := data
-	if idx := bytes.IndexByte(line, '\n'); idx >= 0 {
-		line = line[:idx]
+func readIRSpec(pkgDir string) (littest.Spec, bool, error) {
+	spec, err := littest.LoadSpec(pkgDir)
+	if err != nil {
+		var pathErr *os.PathError
+		if errors.Is(err, os.ErrNotExist) && errors.As(err, &pathErr) && filepath.Clean(pathErr.Path) == filepath.Join(pkgDir, "out.ll") {
+			return littest.Spec{}, false, nil
+		}
+		return littest.Spec{}, false, err
 	}
-	line = bytes.TrimSpace(line)
-	const prefix = "; ModuleID = '"
-	if !bytes.HasPrefix(line, []byte(prefix)) || !bytes.HasSuffix(line, []byte{'\''}) {
-		return ""
-	}
-	return string(line[len(prefix) : len(line)-1])
+	return spec, true, nil
 }
 
 func filterRunOutput(in []byte) []byte {
