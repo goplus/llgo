@@ -397,3 +397,76 @@ func f() {
 		t.Fatalf("deferStackOwner(yield) = %v, want %v", got, owner)
 	}
 }
+
+func TestRangeFuncDeferHelperNilAndCachePaths(t *testing.T) {
+	ctx := &context{}
+	if ctx.functionHasExplicitStackDefer(nil) {
+		t.Fatal("nil function should not report explicit stack defer")
+	}
+	if ctx.functionHasExplicitStackDeferInAnon(nil) {
+		t.Fatal("nil function should not report anon explicit stack defer")
+	}
+
+	const src = `package foo
+
+func plain() {}
+
+func wrap() {
+	plain()
+}
+`
+	ssapkg := buildSSAPackage(t, src)
+	plain := ssapkg.Func("plain")
+	wrap := ssapkg.Func("wrap")
+	if plain == nil || wrap == nil {
+		t.Fatal("missing test functions")
+	}
+	if ctx.functionHasExplicitStackDefer(plain) {
+		t.Fatal("plain should not report explicit stack defer")
+	}
+	if ctx.functionHasExplicitStackDeferInAnon(wrap) {
+		t.Fatal("wrap should not report anon explicit stack defer")
+	}
+	if ctx.functionHasExplicitStackDeferSeen(plain, map[*ssa.Function]bool{plain: true}) {
+		t.Fatal("seen function should short-circuit to false")
+	}
+	if ctx.functionHasExplicitStackDeferInAnonSeen(wrap, map[*ssa.Function]bool{wrap: true}) {
+		t.Fatal("seen function should short-circuit anon scan")
+	}
+	call := findStaticCallByName(t, wrap, "plain")
+	if ctx.rangeFuncCallNeedsDeferDrain(call.Common()) {
+		t.Fatal("plain call should not require defer drain")
+	}
+	if ctx.deferStackOwner(nil) != nil {
+		t.Fatal("nil deferStackOwner should return nil")
+	}
+
+	if previousNonDebugInstrIsRunDefers(&ssa.Return{}) {
+		t.Fatal("return without block should not see RunDefers")
+	}
+}
+
+func TestEmitDoWithoutExplicitDeferStack(t *testing.T) {
+	prog := ssatest.NewProgram(t, nil)
+	pkg := prog.NewPackage("foo", "foo")
+	sig := types.NewSignatureType(nil, nil, nil, nil,
+		types.NewTuple(types.NewVar(0, nil, "", types.Typ[types.Int])),
+		false)
+
+	callee := pkg.NewFunc("callee", sig, llssa.InGo)
+	cb := callee.MakeBody(1)
+	cb.Return(prog.IntVal(7, prog.Int()))
+	cb.EndBuild()
+
+	fn := pkg.NewFunc("main", llssa.NoArgsNoRet, llssa.InGo)
+	b := fn.MakeBody(1)
+
+	ctx := &context{}
+	got := ctx.emitDo(b, llssa.Call, nil, callee.Expr, llssa.Builder.Call)
+	if got.IsNil() {
+		t.Fatal("emitDo without explicit defer stack should return direct call result")
+	}
+	if got.Type == nil || got.Type.RawType() != types.Typ[types.Int] {
+		t.Fatalf("emitDo returned unexpected type: %v", got.Type)
+	}
+}

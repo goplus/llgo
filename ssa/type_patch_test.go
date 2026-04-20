@@ -4,11 +4,17 @@
 package ssa
 
 import (
+	"go/ast"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/goplus/gogen/packages"
+	gossa "golang.org/x/tools/go/ssa"
+	"golang.org/x/tools/go/ssa/ssautil"
 )
 
 func TestFieldOutOfRangePanicsWithTypeString(t *testing.T) {
@@ -98,5 +104,85 @@ func TestNamedStructLayoutEquivalent(t *testing.T) {
 	}, nil), nil)
 	if prog.namedStructLayoutEquivalent(existing, diff) {
 		t.Fatalf("namedStructLayoutEquivalent should be false for different layout")
+	}
+}
+
+func buildGoSSAPackageForOpaque(t *testing.T, src string) *gossa.Package {
+	t.Helper()
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "opaque.go", src, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []*ast.File{f}
+	pkg := types.NewPackage("foo", "foo")
+	imp := packages.NewImporter(fset)
+	mode := gossa.SanityCheckFunctions | gossa.InstantiateGenerics
+	ssapkg, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, mode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ssapkg
+}
+
+func TestGoSSAOpaqueTypeConversion(t *testing.T) {
+	ssapkg := buildGoSSAPackageForOpaque(t, `package foo
+
+func seq(yield func(int) bool) { _ = yield(1) }
+
+func f() {
+	for v := range seq {
+		defer func() { _ = v }()
+	}
+}
+`)
+
+	var deferStackTy types.Type
+	for fn := range ssautil.AllFunctions(ssapkg.Prog) {
+		if fn == nil {
+			continue
+		}
+		for _, blk := range fn.Blocks {
+			for _, instr := range blk.Instrs {
+				if d, ok := instr.(*gossa.Defer); ok && d.DeferStack != nil {
+					deferStackTy = d.DeferStack.Type()
+					break
+				}
+			}
+			if deferStackTy != nil {
+				break
+			}
+		}
+		if deferStackTy != nil {
+			break
+		}
+	}
+	if deferStackTy == nil {
+		t.Fatal("missing defer stack type")
+	}
+
+	ptrTy, ok := deferStackTy.(*types.Pointer)
+	if !ok {
+		t.Fatalf("expected pointer defer stack type, got %T", deferStackTy)
+	}
+	if !isGoSSAOpaqueType(ptrTy.Elem()) {
+		t.Fatalf("expected opaque defer stack elem type, got %T", ptrTy.Elem())
+	}
+	if raw, ok := cvtGoSSAOpaqueType(deferStackTy); !ok || raw != types.Typ[types.UnsafePointer] {
+		t.Fatalf("cvtGoSSAOpaqueType = (%v, %v), want (unsafe.Pointer, true)", raw, ok)
+	}
+	if raw, ok := cvtGoSSAOpaqueType(ptrTy.Elem()); !ok || raw != types.Typ[types.UnsafePointer] {
+		t.Fatalf("cvtGoSSAOpaqueType(ptr) = (%v, %v), want (unsafe.Pointer, true)", raw, ok)
+	}
+	if isGoSSAOpaqueType(types.Typ[types.Int]) {
+		t.Fatal("plain int must not be treated as opaque type")
+	}
+	if raw, ok := cvtGoSSAOpaqueType(types.Typ[types.Int]); ok || raw != nil {
+		t.Fatalf("cvtGoSSAOpaqueType(int) = (%v, %v), want (nil, false)", raw, ok)
+	}
+
+	prog := NewProgram(nil)
+	if got := prog.toType(deferStackTy).RawType(); got != types.Typ[types.UnsafePointer] {
+		t.Fatalf("toType(opaque) raw = %v, want unsafe.Pointer", got)
 	}
 }
