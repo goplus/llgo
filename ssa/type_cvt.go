@@ -138,6 +138,9 @@ func cvtGoSSAOpaqueType(typ types.Type) (types.Type, bool) {
 }
 
 func isGoSSAOpaqueType(typ types.Type) bool {
+	// opaqueType is unexported in x/tools/go/ssa with no public detection API.
+	// We fall back to reflection here; TestGoSSAOpaqueTypeConversion guards
+	// against upstream renames or representation changes.
 	rt := reflect.TypeOf(typ)
 	if rt == nil {
 		return false

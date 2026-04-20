@@ -183,26 +183,10 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			b, next = self.deferInitBuilder()
 		}
 
-		prog := b.Prog
 		blks := self.MakeBlocks(2)
 		procBlk, rethrowBlk := blks[0], blks[1]
-
-		zero := prog.Val(uintptr(0))
-		link := b.Call(b.Pkg.rtFunc("GetThreadDefer"))
-		jb := b.AllocaSigjmpBuf()
-		ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
-		deferData := Expr{ptr, prog.DeferPtr()}
-		b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
-		bitsPtr := b.FieldAddr(deferData, deferBits)
-		rethPtr := b.FieldAddr(deferData, deferRethrow)
-		rundPtr := b.FieldAddr(deferData, deferRunDefers)
-		argsPtr := b.FieldAddr(deferData, deferArgs)
-		// Initialize the args list so later guards (e.g. DeferAlways/DeferInLoop)
-		// can safely detect an empty chain without a prior push.
-		b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
-
-		czero := prog.IntVal(0, prog.CInt())
-		retval := b.Sigsetjmp(jb, czero)
+		deferState, link, retval := b.initDeferState(procBlk, rethrowBlk)
+		czero := b.Prog.IntVal(0, b.Prog.CInt())
 		if kind != DeferAlways {
 			panicBlk = self.MakeBlock()
 		} else {
@@ -210,21 +194,7 @@ func (b Builder) getDefer(kind DoAction) *aDefer {
 			next, panicBlk = blks[0], blks[1]
 		}
 		b.If(b.BinOp(token.EQL, retval, czero), next, panicBlk)
-
-		self.defer_ = &aDefer{
-			data:      deferData,
-			bitsPtr:   bitsPtr,
-			rethPtr:   rethPtr,
-			rundPtr:   rundPtr,
-			argsPtr:   argsPtr,
-			procBlk:   procBlk,
-			panicBlk:  panicBlk,
-			rundsNext: []BasicBlock{rethrowBlk},
-		}
-		if len(self.pendingLoopCases) > 0 {
-			self.defer_.loopCases = append(self.defer_.loopCases, self.pendingLoopCases...)
-			self.pendingLoopCases = nil
-		}
+		deferState.panicBlk = panicBlk
 
 		b.SetBlockEx(rethrowBlk, AtEnd, false) // rethrow
 		b.Call(b.Pkg.rtFunc("Rethrow"), link)
@@ -255,40 +225,12 @@ func (b Builder) getDeferInCurrentBlock() *aDefer {
 	// Range-over-func yield bodies need an addressable defer stack in the
 	// current block so the synthetic frame can push into its enclosing owner.
 	logicalBlk := b.blk
-	prog := b.Prog
 	blks := self.MakeBlocks(4)
 	procBlk, rethrowBlk, next, panicBlk := blks[0], blks[1], blks[2], blks[3]
-
-	zero := prog.Val(uintptr(0))
-	link := b.Call(b.Pkg.rtFunc("GetThreadDefer"))
-	jb := b.AllocaSigjmpBuf()
-	ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
-	deferData := Expr{ptr, prog.DeferPtr()}
-	b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
-	bitsPtr := b.FieldAddr(deferData, deferBits)
-	rethPtr := b.FieldAddr(deferData, deferRethrow)
-	rundPtr := b.FieldAddr(deferData, deferRunDefers)
-	argsPtr := b.FieldAddr(deferData, deferArgs)
-	b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
-
-	czero := prog.IntVal(0, prog.CInt())
-	retval := b.Sigsetjmp(jb, czero)
+	deferState, link, retval := b.initDeferState(procBlk, rethrowBlk)
+	czero := b.Prog.IntVal(0, b.Prog.CInt())
 	b.If(b.BinOp(token.EQL, retval, czero), next, panicBlk)
-
-	self.defer_ = &aDefer{
-		data:      deferData,
-		bitsPtr:   bitsPtr,
-		rethPtr:   rethPtr,
-		rundPtr:   rundPtr,
-		argsPtr:   argsPtr,
-		procBlk:   procBlk,
-		panicBlk:  panicBlk,
-		rundsNext: []BasicBlock{rethrowBlk},
-	}
-	if len(self.pendingLoopCases) > 0 {
-		self.defer_.loopCases = append(self.defer_.loopCases, self.pendingLoopCases...)
-		self.pendingLoopCases = nil
-	}
+	deferState.panicBlk = panicBlk
 
 	b.SetBlockEx(rethrowBlk, AtEnd, false)
 	b.Call(b.Pkg.rtFunc("Rethrow"), link)
@@ -300,6 +242,42 @@ func (b Builder) getDeferInCurrentBlock() *aDefer {
 	}
 	b.blk = logicalBlk
 	return self.defer_
+}
+
+func (b Builder) initDeferState(procBlk, rethrowBlk BasicBlock) (*aDefer, Expr, Expr) {
+	self := b.Func
+	prog := b.Prog
+	zero := prog.Val(uintptr(0))
+	link := b.Call(b.Pkg.rtFunc("GetThreadDefer"))
+	jb := b.AllocaSigjmpBuf()
+	ptr := b.aggregateAllocU(prog.Defer(), jb.impl, zero.impl, link.impl, procBlk.Addr().impl)
+	deferData := Expr{ptr, prog.DeferPtr()}
+	b.Call(b.Pkg.rtFunc("SetThreadDefer"), deferData)
+	bitsPtr := b.FieldAddr(deferData, deferBits)
+	rethPtr := b.FieldAddr(deferData, deferRethrow)
+	rundPtr := b.FieldAddr(deferData, deferRunDefers)
+	argsPtr := b.FieldAddr(deferData, deferArgs)
+	// Initialize the args list so later guards (e.g. DeferAlways/DeferInLoop)
+	// can safely detect an empty chain without a prior push.
+	b.Store(argsPtr, prog.Nil(prog.VoidPtr()))
+
+	czero := prog.IntVal(0, prog.CInt())
+	retval := b.Sigsetjmp(jb, czero)
+
+	self.defer_ = &aDefer{
+		data:      deferData,
+		bitsPtr:   bitsPtr,
+		rethPtr:   rethPtr,
+		rundPtr:   rundPtr,
+		argsPtr:   argsPtr,
+		procBlk:   procBlk,
+		rundsNext: []BasicBlock{rethrowBlk},
+	}
+	if len(self.pendingLoopCases) > 0 {
+		self.defer_.loopCases = append(self.defer_.loopCases, self.pendingLoopCases...)
+		self.pendingLoopCases = nil
+	}
+	return self.defer_, link, retval
 }
 
 // DeferStack returns a stable handle to the current function's explicit
@@ -367,31 +345,22 @@ func (b Builder) DeferTo(owner Function, stack Expr, fn Expr, buildCall func(Bui
 		return
 	}
 	self := owner.defer_
-	if self == nil {
-		id := b.Prog.Val(owner.nextDeferID)
-		owner.nextDeferID++
-		argsPtr := b.PtrCast(b.Prog.Pointer(b.Prog.VoidPtr()), stack)
-		typ := b.saveDeferArgsTo(argsPtr, DeferInLoop, id, fn, args)
-		owner.pendingLoopCases = append(owner.pendingLoopCases, loopDeferCase{
-			id:        id,
-			typ:       typ,
-			fn:        fn,
-			args:      args,
-			buildCall: buildCall,
-		})
-		return
-	}
 	id := b.Prog.Val(owner.nextDeferID)
 	owner.nextDeferID++
 	argsPtr := b.PtrCast(b.Prog.Pointer(b.Prog.VoidPtr()), stack)
 	typ := b.saveDeferArgsTo(argsPtr, DeferInLoop, id, fn, args)
-	self.loopCases = append(self.loopCases, loopDeferCase{
+	loopCase := loopDeferCase{
 		id:        id,
 		typ:       typ,
 		fn:        fn,
 		args:      args,
 		buildCall: buildCall,
-	})
+	}
+	if self == nil {
+		owner.pendingLoopCases = append(owner.pendingLoopCases, loopCase)
+		return
+	}
+	self.loopCases = append(self.loopCases, loopCase)
 }
 
 func (b Builder) appendDeferStmt(self *aDefer, kind DoAction, typ Type, buildCall func(Builder, Expr, ...Expr) Expr, fn Expr, args []Expr, nextbit Expr) {

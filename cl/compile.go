@@ -1221,6 +1221,8 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
 }
 
+const rangeOverFuncYieldSynthetic = "range-over-func yield"
+
 func (p *context) rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
 	for _, arg := range call.Args {
 		closure, ok := arg.(*ssa.MakeClosure)
@@ -1228,7 +1230,7 @@ func (p *context) rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
 			continue
 		}
 		fn, ok := closure.Fn.(*ssa.Function)
-		if !ok || fn.Synthetic != "range-over-func yield" {
+		if !ok || fn.Synthetic != rangeOverFuncYieldSynthetic {
 			continue
 		}
 		if p.functionHasExplicitStackDefer(fn) {
