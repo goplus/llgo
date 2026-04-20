@@ -365,14 +365,14 @@ func (b Builder) abiUncommonMethodSet(t types.Type) (mset *types.MethodSet, ok b
 		}
 		mset := types.NewMethodSet(t)
 		if mset.Len() != 0 {
-			if prog.compileMethods != nil {
+			if prog.compileMethods != nil && !prog.abiTypePruning {
 				prog.compileMethods(b.Pkg, t)
 			}
 		}
 		return mset, true
 	case *types.Struct, *types.Pointer:
 		if mset := types.NewMethodSet(t); mset.Len() != 0 {
-			if prog.compileMethods != nil {
+			if prog.compileMethods != nil && !prog.abiTypePruning {
 				prog.compileMethods(b.Pkg, t)
 			}
 			return mset, true
@@ -419,7 +419,7 @@ type Method struct {
 }
 */
 
-func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Value {
+func (b Builder) abiUncommonMethods(t types.Type, name string, mset *types.MethodSet) llvm.Value {
 	prog := b.Prog
 	ft := prog.rtType("Method")
 	n := mset.Len()
@@ -427,7 +427,13 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 	pkg, _ := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
 	if anonymous {
-		pkg = types.NewPackage(b.Pkg.Path(), "")
+		pkgPath := b.Pkg.Path()
+		if prog.abiTypePruning {
+			if sym, ok := prog.abiSymbol[name]; ok {
+				pkgPath = sym.PkgPath
+			}
+		}
+		pkg = types.NewPackage(pkgPath, "")
 	}
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
@@ -439,12 +445,17 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		}
 		mSig := m.Type().(*types.Signature)
 		var tfn, ifn llvm.Value
-		tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
-		ifn = tfn
-		if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
-			pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(mSig.Recv().Type()))
-			pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
-			ifn = b.abiMethodFunc(anonymous, pkg, mName, pSig)
+		if prog.abiTypePruning && !prog.methodIsInvoke(i, m) {
+			tfn = prog.Nil(prog.VoidPtr()).impl
+			ifn = tfn
+		} else {
+			tfn = b.abiMethodFunc(anonymous, pkg, mName, mSig)
+			ifn = tfn
+			if _, ok := m.Recv().Underlying().(*types.Pointer); !ok {
+				pRecv := types.NewVar(token.NoPos, pkg, "", types.NewPointer(mSig.Recv().Type()))
+				pSig := types.NewSignature(pRecv, mSig.Params(), mSig.Results(), mSig.Variadic())
+				ifn = b.abiMethodFunc(anonymous, pkg, mName, pSig)
+			}
 		}
 		var values []llvm.Value
 		values = append(values, name)
@@ -466,7 +477,7 @@ func funcType(prog Program, typ types.Type) types.Type {
 func (b Builder) abiMethodFunc(anonymous bool, mPkg *types.Package, mName string, mSig *types.Signature) (tfn llvm.Value) {
 	var fullName string
 	if anonymous {
-		fullName = b.Pkg.Path() + "." + mSig.Recv().Type().String() + "." + mName
+		fullName = mPkg.Path() + "." + mSig.Recv().Type().String() + "." + mName
 	} else {
 		fullName = FuncName(mPkg, mName, mSig.Recv(), false)
 	}
@@ -521,13 +532,15 @@ func (b Builder) abiType(t types.Type) Expr {
 			fields = []llvm.Value{
 				llvm.ConstNamedStruct(prog.Type(rt, InGo).ll, fields),
 				b.abiUncommonType(t, mset),
-				b.abiUncommonMethods(t, mset),
+				b.abiUncommonMethods(t, name, mset),
 			}
 		}
 		g.impl.SetInitializer(llvm.ConstNamedStruct(g.impl.GlobalValueType(), fields))
 		g.impl.SetGlobalConstant(true)
-		g.impl.SetLinkage(llvm.WeakODRLinkage)
-		prog.abiSymbol[name] = &AbiSymbol{Name: name, PkgPath: pkg.Path(), Raw: t, Typ: g.Type, MSet: mset}
+		if !prog.abiTypePruning {
+			g.impl.SetLinkage(llvm.WeakODRLinkage)
+			prog.abiSymbol[name] = &AbiSymbol{Name: name, PkgPath: pkg.Path(), Raw: t, Typ: g.Type, MSet: mset}
+		}
 	}
 	return Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 		llvm.ConstInt(prog.Int32().ll, 0, false),
@@ -554,9 +567,12 @@ func (p Package) getAbiTypesFor(name string, filter func(sym *AbiSymbol) bool) E
 	sort.Strings(names)
 	fields := make([]llvm.Value, len(names))
 	for i, name := range names {
-		g := p.doNewVar(name, prog.abiSymbol[name].Typ)
-		g.impl.SetLinkage(llvm.ExternalLinkage)
-		g.impl.SetGlobalConstant(true)
+		g := p.VarOf(name)
+		if g == nil {
+			g = p.doNewVar(name, prog.abiSymbol[name].Typ)
+			g.impl.SetLinkage(llvm.ExternalLinkage)
+			g.impl.SetGlobalConstant(true)
+		}
 		ptr := Expr{llvm.ConstGEP(g.impl.GlobalValueType(), g.impl, []llvm.Value{
 			llvm.ConstInt(prog.Int32().ll, 0, false),
 			llvm.ConstInt(prog.Int32().ll, 0, false),
@@ -600,6 +616,45 @@ func (p Package) InitAbiTypesFor(fname string, filter func(sym *AbiSymbol) bool)
 
 func (p Package) InitAbiTypes(fname string) Function {
 	return p.InitAbiTypesFor(fname, nil)
+}
+
+func (p Package) PruneAbiTypes(needAbiInit int, methodIsInvoke func(index int, method *types.Selection) bool) {
+	prog := p.Prog
+	var names []string
+	for k, sym := range prog.abiSymbol {
+		if sym.MSet == nil {
+			continue
+		}
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	p.SetResolveLinkname(prog.ResolveLinkname)
+	if methodIsInvoke == nil {
+		methodIsInvoke = func(index int, method *types.Selection) bool {
+			name := method.Obj().Name()
+			if needAbiInit != 0 && ast.IsExported(name) {
+				return true
+			}
+			if ms, ok := prog.invokeMethods[name]; ok {
+				for m := range ms {
+					if types.Identical(m, method.Type()) {
+						return true
+					}
+				}
+			}
+			return false
+		}
+	}
+	prog.abiTypePruning = true
+	defer func() {
+		prog.abiTypePruning = false
+	}()
+	prog.methodIsInvoke = methodIsInvoke
+	b := (&aFunction{Pkg: p, Prog: prog}).NewBuilder()
+	for _, name := range names {
+		sym := prog.abiSymbol[name]
+		b.abiType(sym.Raw)
+	}
 }
 
 // -----------------------------------------------------------------------------

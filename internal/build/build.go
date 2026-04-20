@@ -1002,6 +1002,7 @@ func linkMainPkg(ctx *context, pkg *packages.Package, pkgs []*aPackage, outputPa
 	entryPkg := genMainModule(ctx, llssa.PkgRuntime, pkg, &genConfig{
 		rtInit:        needRuntime,
 		pyInit:        needPyInit,
+		abiPrune:      !IsDbgEnabled(),
 		abiInit:       needAbiInit,
 		methodByIndex: methodByIndex,
 		methodByName:  methodByName,

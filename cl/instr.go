@@ -785,6 +785,7 @@ func (p *context) sourceLine(filename string, line int) (string, bool) {
 func (p *context) call(b llssa.Builder, act llssa.DoAction, call *ssa.CallCommon) (ret llssa.Expr) {
 	cv := call.Value
 	if mthd := call.Method; mthd != nil {
+		p.prog.AddInvoke(mthd)
 		o := p.compileValue(b, cv)
 		fn := b.Imethod(o, mthd)
 		hasVArg := fnNormal

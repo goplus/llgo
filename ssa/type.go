@@ -448,7 +448,7 @@ func (p Program) toLLVMFields(raw *types.Struct) (fields []llvm.Type) {
 	if n > 0 {
 		fields = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			fields[i] = p.rawType(p.patch(raw.Field(i).Type())).ll
+			fields[i] = p.rawType(p.Patch(raw.Field(i).Type())).ll
 		}
 	}
 	return
@@ -462,7 +462,7 @@ func (p Program) toLLVMTypes(t *types.Tuple, n int) (ret []llvm.Type) {
 	if n > 0 {
 		ret = make([]llvm.Type, n)
 		for i := 0; i < n; i++ {
-			ret[i] = p.rawType(p.patch(t.At(i).Type())).ll
+			ret[i] = p.rawType(p.Patch(t.At(i).Type())).ll
 		}
 	}
 	return
