@@ -157,7 +157,7 @@ type N struct {
 // CHECK-NEXT:   %34 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %33, i64 2, 2
 // CHECK-NEXT:   %35 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %34, 0
 // CHECK-NEXT:   %36 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %34, 1
-// CHECK-NEXT:   %37 = icmp sge i64 0, %36
+// CHECK-NEXT:   %37 = icmp uge i64 0, %36
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %37)
 // CHECK-NEXT:   %38 = getelementptr inbounds i64, ptr %35, i64 0
 // CHECK-NEXT:   %39 = load i64, ptr %38, align 4
@@ -190,7 +190,7 @@ type N struct {
 // CHECK-NEXT: _llgo_29:                                         ; preds = %_llgo_24
 // CHECK-NEXT:   %50 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %34, 0
 // CHECK-NEXT:   %51 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %34, 1
-// CHECK-NEXT:   %52 = icmp sge i64 1, %51
+// CHECK-NEXT:   %52 = icmp uge i64 1, %51
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %52)
 // CHECK-NEXT:   %53 = getelementptr inbounds i64, ptr %50, i64 1
 // CHECK-NEXT:   %54 = load i64, ptr %53, align 4
