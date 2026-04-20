@@ -163,6 +163,9 @@ type context struct {
 	loaded      map[*types.Package]*pkgInfo // loaded packages
 	bvals       map[ssa.Value]llssa.Expr    // block values
 	vargs       map[*ssa.Alloc][]llssa.Expr // varargs
+	funcs       map[*ssa.Function]llssa.Function
+	stackDefers map[*ssa.Function]bool
+	anonDefers  map[*ssa.Function]bool
 	paramDIVars map[*types.Var]llssa.DIVar
 
 	patches  Patches
@@ -387,8 +390,19 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			fn.Inline(llssa.NoInline)
 		}
 	}
+	p.funcs[f] = fn
 	isCgo := isCgoExternSymbol(f)
 	if nblk := len(f.Blocks); nblk > 0 {
+		var childInits []func()
+		if len(f.AnonFuncs) > 0 {
+			parentInits := p.inits
+			p.inits = nil
+			for _, af := range f.AnonFuncs {
+				p.compileFuncDecl(pkg, af)
+			}
+			childInits = append(childInits, p.inits...)
+			p.inits = parentInits
+		}
 		p.cgoCalled = false
 		p.cgoArgs = nil
 		p.cgoErrno = llssa.Nil
@@ -451,11 +465,11 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 			for _, phi := range p.phis {
 				phi()
 			}
+			for _, childInit := range childInits {
+				childInit()
+			}
 			b.EndBuild()
 		})
-		for _, af := range f.AnonFuncs {
-			p.compileFuncDecl(pkg, af)
-		}
 	}
 	return fn, nil, goFunc
 }
@@ -824,6 +838,9 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 	switch v := iv.(type) {
 	case *ssa.Call:
 		ret = p.call(b, llssa.Call, &v.Call)
+		if p.rangeFuncCallNeedsDeferDrain(&v.Call) {
+			b.DeferStackDrain()
+		}
 	case *ssa.BinOp:
 		x := p.compileValue(b, v.X)
 		y := p.compileValue(b, v.Y)
@@ -1091,6 +1108,9 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 				results[i] = p.compileValue(b, r)
 			}
 		}
+		if p.returnNeedsImplicitRunDefers(v) {
+			b.RunDefers()
+		}
 		b.Return(results...)
 	case *ssa.If:
 		fn := p.fn
@@ -1105,6 +1125,10 @@ func (p *context) compileInstr(b llssa.Builder, instr ssa.Instruction) {
 		val := p.compileValue(b, v.Value)
 		b.MapUpdate(m, key, val)
 	case *ssa.Defer:
+		if v.DeferStack != nil {
+			p.callDeferStack(b, p.blkInfos[v.Block().Index].Kind, &v.Call, v.DeferStack, v.Parent())
+			return
+		}
 		p.call(b, p.blkInfos[v.Block().Index].Kind, &v.Call)
 	case *ssa.Go:
 		p.call(b, llssa.Go, &v.Call)
@@ -1195,6 +1219,119 @@ func (p *context) compileValue(b llssa.Builder, v ssa.Value) llssa.Expr {
 		}
 	}
 	panic(fmt.Sprintf("compileValue: unknown value - %T\n", v))
+}
+
+func (p *context) rangeFuncCallNeedsDeferDrain(call *ssa.CallCommon) bool {
+	for _, arg := range call.Args {
+		closure, ok := arg.(*ssa.MakeClosure)
+		if !ok {
+			continue
+		}
+		fn, ok := closure.Fn.(*ssa.Function)
+		if !ok || fn.Synthetic != "range-over-func yield" {
+			continue
+		}
+		if p.functionHasExplicitStackDefer(fn) {
+			return true
+		}
+	}
+	return false
+}
+
+// Explicit defer stacks live in nested yield closures, but their drain point
+// belongs to the enclosing function immediately after the rangefunc call.
+func (p *context) functionHasExplicitStackDefer(fn *ssa.Function) bool {
+	if p.stackDefers == nil {
+		p.stackDefers = make(map[*ssa.Function]bool)
+	}
+	return p.functionHasExplicitStackDeferSeen(fn, make(map[*ssa.Function]bool))
+}
+
+func (p *context) functionHasExplicitStackDeferSeen(fn *ssa.Function, seen map[*ssa.Function]bool) bool {
+	if fn == nil || seen[fn] {
+		return false
+	}
+	if p.stackDefers == nil {
+		p.stackDefers = make(map[*ssa.Function]bool)
+	}
+	if has, ok := p.stackDefers[fn]; ok {
+		return has
+	}
+	seen[fn] = true
+	for _, block := range fn.Blocks {
+		for _, instr := range block.Instrs {
+			if d, ok := instr.(*ssa.Defer); ok && d.DeferStack != nil {
+				p.stackDefers[fn] = true
+				return true
+			}
+		}
+	}
+	for _, child := range fn.AnonFuncs {
+		if p.functionHasExplicitStackDeferSeen(child, seen) {
+			p.stackDefers[fn] = true
+			return true
+		}
+	}
+	p.stackDefers[fn] = false
+	return false
+}
+
+func (p *context) returnNeedsImplicitRunDefers(ret *ssa.Return) bool {
+	fn := ret.Parent()
+	if fn == nil || fn.Synthetic != "" || ret.Block() == fn.Recover {
+		return false
+	}
+	if previousNonDebugInstrIsRunDefers(ret) {
+		return false
+	}
+	return p.functionHasExplicitStackDeferInAnon(fn)
+}
+
+func previousNonDebugInstrIsRunDefers(ret *ssa.Return) bool {
+	block := ret.Block()
+	if block == nil {
+		return false
+	}
+	for i := len(block.Instrs) - 1; i >= 0; i-- {
+		instr := block.Instrs[i]
+		if instr == ret {
+			continue
+		}
+		if _, ok := instr.(*ssa.DebugRef); ok {
+			continue
+		}
+		_, ok := instr.(*ssa.RunDefers)
+		return ok
+	}
+	return false
+}
+
+func (p *context) functionHasExplicitStackDeferInAnon(fn *ssa.Function) bool {
+	if p.anonDefers == nil {
+		p.anonDefers = make(map[*ssa.Function]bool)
+	}
+	return p.functionHasExplicitStackDeferInAnonSeen(fn, make(map[*ssa.Function]bool))
+}
+
+func (p *context) functionHasExplicitStackDeferInAnonSeen(fn *ssa.Function, seen map[*ssa.Function]bool) bool {
+	if fn == nil || seen[fn] {
+		return false
+	}
+	if p.anonDefers == nil {
+		p.anonDefers = make(map[*ssa.Function]bool)
+	}
+	if has, ok := p.anonDefers[fn]; ok {
+		return has
+	}
+	seen[fn] = true
+	for _, child := range fn.AnonFuncs {
+		if p.functionHasExplicitStackDeferSeen(child, seen) {
+			p.anonDefers[fn] = true
+			return true
+		}
+	}
+	p.anonDefers[fn] = false
+	return false
 }
 
 func (p *context) compileVArg(ret []llssa.Expr, b llssa.Builder, v ssa.Value) []llssa.Expr {
@@ -1296,6 +1433,7 @@ func newPackageEx(prog llssa.Program, patches Patches, rewrites map[string]strin
 		patches: patches,
 		skips:   make(map[string]none),
 		vargs:   make(map[*ssa.Alloc][]llssa.Expr),
+		funcs:   make(map[*ssa.Function]llssa.Function),
 		loaded: map[*types.Package]*pkgInfo{
 			types.Unsafe: {kind: PkgDeclOnly}, // TODO(xsw): PkgNoInit or PkgDeclOnly?
 		},
