@@ -62,6 +62,24 @@ var (
 		types.NewTuple(types.NewVar(token.NoPos, nil, "", types.Typ[types.Uintptr])), false)
 )
 
+func directIfaceType(t types.Type) bool {
+	switch t := types.Unalias(t).(type) {
+	case *types.Named:
+		return directIfaceType(t.Underlying())
+	case *types.Pointer:
+		return true
+	case *types.Chan, *types.Map, *types.Signature:
+		return true
+	case *types.Basic:
+		return t.Kind() == types.UnsafePointer
+	case *types.Array:
+		return t.Len() == 1 && directIfaceType(t.Elem())
+	case *types.Struct:
+		return t.NumFields() == 1 && directIfaceType(t.Field(0).Type())
+	}
+	return false
+}
+
 func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (fields []llvm.Value) {
 	prog := b.Prog
 	ab := prog.abi
@@ -87,7 +105,7 @@ func (b Builder) abiCommonFields(t types.Type, name string, hasUncommon bool) (f
 	fields = append(fields, fieldAlign)
 	// Kind uint8
 	kind := uint8(ab.Kind(t))
-	if k, _, _ := abi.DataKindOf(t, 0, prog.is32Bits); k != abi.Indirect {
+	if directIfaceType(t) {
 		kind |= uint8(abi.KindDirectIface)
 	}
 	fields = append(fields, prog.IntVal(uint64(kind), prog.Byte()).impl)

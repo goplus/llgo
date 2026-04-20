@@ -152,7 +152,14 @@ type eface struct {
 }
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/eface.main"() {
-// CHECK: call void @"{{.*}}/cl/_testrt/eface.dump"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_bool
+// CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 1)
+// CHECK: store i1 true, ptr {{%[0-9]+}}, align 1
+// CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_bool, ptr undef }
+// CHECK: call void @"{{.*}}/cl/_testrt/eface.dump"
+// CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
+// CHECK: store i64 0, ptr {{%[0-9]+}}, align 4
+// CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }
+// CHECK: call void @"{{.*}}/cl/_testrt/eface.dump"
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 80)
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[10]_llgo_int"
 // CHECK: insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @"[]_llgo_int"
