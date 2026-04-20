@@ -72,12 +72,12 @@ func TestUnsignedIndexBoundsCheck(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expectPanicContaining(t, "out of range", tt.f)
+			expectUnsignedIndexPanicContaining(t, "out of range", tt.f)
 		})
 	}
 }
 
-func expectPanicContaining(t *testing.T, want string, f func()) {
+func expectUnsignedIndexPanicContaining(t *testing.T, want string, f func()) {
 	t.Helper()
 	defer func() {
 		err := recover()
