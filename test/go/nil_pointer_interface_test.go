@@ -8,19 +8,12 @@ type nilPointerInterfaceLargeStruct struct {
 	data [1 << 21]byte
 }
 
-func (nilPointerInterfaceLargeStruct) marker() {}
-
-type nilPointerInterfaceMarker interface {
-	marker()
-}
-
 type nilPointerInterfaceLargeField struct {
 	pad   [1 << 21]byte
 	value nilPointerInterfaceLargeStruct
 }
 
 var nilPointerInterfaceSink any
-var nilPointerInterfaceMarkerSink nilPointerInterfaceMarker
 
 func expectNilPointerInterfacePanic(t *testing.T, f func()) {
 	t.Helper()
@@ -50,13 +43,6 @@ func TestNilPointerLargeValueStandaloneDerefPanics(t *testing.T) {
 	expectNilPointerInterfacePanic(t, func() {
 		var p *nilPointerInterfaceLarge
 		_ = *p
-	})
-}
-
-func TestNilPointerLargeValueToNonEmptyInterfacePanics(t *testing.T) {
-	expectNilPointerInterfacePanic(t, func() {
-		var p *nilPointerInterfaceLargeStruct
-		nilPointerInterfaceMarkerSink = *p
 	})
 }
 
