@@ -844,22 +844,22 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 	args := call.Args
 	dbgGoSSAln(">>> Do", act, cv, args)
 	switch cv := cv.(type) {
-		case *ssa.Builtin:
-			fn := cv.Name()
-			if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
-				arg := args[0]
-				ret = p.compileValue(b, arg)
+	case *ssa.Builtin:
+		fn := cv.Name()
+		if fn == "ssa:wrapnilchk" { // TODO(xsw): check nil ptr
+			arg := args[0]
+			ret = p.compileValue(b, arg)
+			return
+		} else if fn == "Offsetof" && act == llssa.Call {
+			if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
+				ret = offset
 				return
-			} else if fn == "Offsetof" && act == llssa.Call {
-				if offset, ok := p.offsetOfBuiltinArg(args[0]); ok {
-					ret = offset
-					return
-				}
-			} else {
-				args := p.compileValues(b, args, kind)
-				ret = p.emitDo(b, act, ds, llssa.Builtin(fn), llssa.Builder.Call, args...)
 			}
-		case *ssa.Function:
+		} else {
+			args := p.compileValues(b, args, kind)
+			ret = p.emitDo(b, act, ds, llssa.Builtin(fn), llssa.Builder.Call, args...)
+		}
+	case *ssa.Function:
 		aFn, pyFn, ftype := p.compileFunction(cv)
 		// TODO(xsw): check ca != llssa.Call
 		switch ftype {
