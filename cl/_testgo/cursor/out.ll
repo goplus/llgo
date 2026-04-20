@@ -630,7 +630,7 @@ _llgo_10:                                         ; preds = %_llgo_9
   %56 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
   %57 = sext i32 %52 to i64
   %58 = icmp slt i64 %57, 0
-  %59 = icmp sge i64 %57, %56
+  %59 = icmp uge i64 %57, %56
   %60 = or i1 %59, %58
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %60)
   %61 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %55, i64 %57
@@ -687,7 +687,7 @@ _llgo_15:                                         ; preds = %_llgo_16, %_llgo_12
   %89 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %35, 1
   %90 = sext i32 %87 to i64
   %91 = icmp slt i64 %90, 0
-  %92 = icmp sge i64 %90, %89
+  %92 = icmp uge i64 %90, %89
   %93 = or i1 %92, %91
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %93)
   %94 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %88, i64 %90
@@ -787,7 +787,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %12 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %8, 1
   %13 = sext i32 %10 to i64
   %14 = icmp slt i64 %13, 0
-  %15 = icmp sge i64 %13, %12
+  %15 = icmp uge i64 %13, %12
   %16 = or i1 %15, %14
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %16)
   %17 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %11, i64 %13
@@ -842,7 +842,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %17 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
   %18 = sext i32 %13 to i64
   %19 = icmp slt i64 %18, 0
-  %20 = icmp sge i64 %18, %17
+  %20 = icmp uge i64 %18, %17
   %21 = or i1 %20, %19
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %21)
   %22 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %16, i64 %18
@@ -876,7 +876,7 @@ _llgo_6:                                          ; preds = %_llgo_7, %_llgo_4
   %37 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
   %38 = sext i32 %35 to i64
   %39 = icmp slt i64 %38, 0
-  %40 = icmp sge i64 %38, %37
+  %40 = icmp uge i64 %38, %37
   %41 = or i1 %40, %39
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %41)
   %42 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %36, i64 %38
@@ -942,7 +942,7 @@ _llgo_2:                                          ; preds = %_llgo_0
   %21 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %17, 1
   %22 = sext i32 %19 to i64
   %23 = icmp slt i64 %22, 0
-  %24 = icmp sge i64 %22, %21
+  %24 = icmp uge i64 %22, %21
   %25 = or i1 %24, %23
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %25)
   %26 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/cursor.event", ptr %20, i64 %22
@@ -1039,7 +1039,7 @@ _llgo_4:                                          ; preds = %_llgo_3
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
   %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   %10 = icmp slt i64 %6, 0
-  %11 = icmp sge i64 %6, %9
+  %11 = icmp uge i64 %6, %9
   %12 = or i1 %11, %10
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %12)
   %13 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.iface", ptr %8, i64 %6

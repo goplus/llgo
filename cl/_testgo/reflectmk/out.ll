@@ -463,7 +463,7 @@ _llgo_20:                                         ; preds = %_llgo_21
   %256 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %255, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %257 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %256, 0
   %258 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %256, 1
-  %259 = icmp sge i64 0, %258
+  %259 = icmp uge i64 0, %258
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %259)
   %260 = getelementptr inbounds %reflect.Value, ptr %257, i64 0
   %261 = load %reflect.Value, ptr %260, align 8
@@ -491,7 +491,7 @@ _llgo_23:                                         ; preds = %_llgo_20
   %272 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %271, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %273 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %272, 0
   %274 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %272, 1
-  %275 = icmp sge i64 0, %274
+  %275 = icmp uge i64 0, %274
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %275)
   %276 = getelementptr inbounds %reflect.Value, ptr %273, i64 0
   %277 = load %reflect.Value, ptr %276, align 8
@@ -526,7 +526,7 @@ _llgo_0:
   %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %6, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
   %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %10 = icmp sge i64 0, %9
+  %10 = icmp uge i64 0, %9
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
   %11 = getelementptr inbounds %reflect.Value, ptr %8, i64 0
   %12 = load %reflect.Value, ptr %11, align 8
@@ -559,7 +559,7 @@ _llgo_0:
   %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %6, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
   %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %10 = icmp sge i64 0, %9
+  %10 = icmp uge i64 0, %9
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
   %11 = getelementptr inbounds %reflect.Value, ptr %8, i64 0
   %12 = load %reflect.Value, ptr %11, align 8
