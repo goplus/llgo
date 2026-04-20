@@ -9,7 +9,7 @@ import (
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = sext i8 %0 to i64
 // CHECK-NEXT:   %2 = icmp slt i64 %1, 0
-// CHECK-NEXT:   %3 = icmp sge i64 %1, 8
+// CHECK-NEXT:   %3 = icmp uge i64 %1, 8
 // CHECK-NEXT:   %4 = or i1 %3, %2
 // CHECK-NEXT:   call void @"{{.*}}.AssertIndexRange"(i1 %4)
 // CHECK-NEXT:   %5 = getelementptr inbounds i8, ptr @"{{.*}}.array", i64 %1

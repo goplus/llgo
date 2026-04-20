@@ -397,7 +397,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   %151 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRunes"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %149)
   %152 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %148, 0
   %153 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %148, 1
-  %154 = icmp sge i64 3, %153
+  %154 = icmp uge i64 3, %153
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %154)
   %155 = getelementptr inbounds i8, ptr %152, i64 3
   %156 = load i8, ptr %155, align 1
@@ -405,7 +405,7 @@ _llgo_3:                                          ; preds = %_llgo_1
   %158 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/runtime/internal/runtime.StringFromRune"(i32 %157)
   %159 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %149, 0
   %160 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %149, 1
-  %161 = icmp sge i64 0, %160
+  %161 = icmp uge i64 0, %160
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %161)
   %162 = getelementptr inbounds i32, ptr %159, i64 0
   %163 = load i32, ptr %162, align 4

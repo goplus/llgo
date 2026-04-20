@@ -123,7 +123,7 @@ _llgo_4:                                          ; preds = %_llgo_3
   %7 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   %9 = icmp slt i64 %5, 0
-  %10 = icmp sge i64 %5, %8
+  %10 = icmp uge i64 %5, %8
   %11 = or i1 %10, %9
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %11)
   %12 = getelementptr inbounds i8, ptr %7, i64 %5
@@ -929,7 +929,7 @@ _llgo_26:                                         ; preds = %_llgo_25
   %45 = add i64 %43, 48
   %46 = trunc i64 %45 to i8
   %47 = icmp slt i64 %44, 0
-  %48 = icmp sge i64 %44, 14
+  %48 = icmp uge i64 %44, 14
   %49 = or i1 %48, %47
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %49)
   %50 = getelementptr inbounds i8, ptr %8, i64 %44
@@ -992,12 +992,12 @@ _llgo_0:
 
 _llgo_1:                                          ; preds = %_llgo_3
   %2 = urem i64 %22, 16
-  %3 = icmp sge i64 %2, 16
+  %3 = icmp uge i64 %2, 16
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %3)
   %4 = getelementptr inbounds i8, ptr @28, i64 %2
   %5 = load i8, ptr %4, align 1
   %6 = icmp slt i64 %23, 0
-  %7 = icmp sge i64 %23, 100
+  %7 = icmp uge i64 %23, 100
   %8 = or i1 %7, %6
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %8)
   %9 = getelementptr inbounds i8, ptr %1, i64 %23
@@ -1008,14 +1008,14 @@ _llgo_1:                                          ; preds = %_llgo_3
 _llgo_2:                                          ; preds = %_llgo_5, %_llgo_3
   %11 = sub i64 %23, 1
   %12 = icmp slt i64 %11, 0
-  %13 = icmp sge i64 %11, 100
+  %13 = icmp uge i64 %11, 100
   %14 = or i1 %13, %12
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %14)
   %15 = getelementptr inbounds i8, ptr %1, i64 %11
   store i8 120, ptr %15, align 1
   %16 = sub i64 %11, 1
   %17 = icmp slt i64 %16, 0
-  %18 = icmp sge i64 %16, 100
+  %18 = icmp uge i64 %16, 100
   %19 = or i1 %18, %17
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %19)
   %20 = getelementptr inbounds i8, ptr %1, i64 %16
@@ -1073,7 +1073,7 @@ _llgo_2:                                          ; preds = %_llgo_1
   %5 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 0
   %6 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %0, 1
   %7 = icmp slt i64 %3, 0
-  %8 = icmp sge i64 %3, %6
+  %8 = icmp uge i64 %3, %6
   %9 = or i1 %8, %7
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %9)
   %10 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %5, i64 %3
@@ -1123,7 +1123,7 @@ _llgo_1:                                          ; preds = %_llgo_3
   %3 = add i64 %2, 48
   %4 = trunc i64 %3 to i8
   %5 = icmp slt i64 %12, 0
-  %6 = icmp sge i64 %12, 100
+  %6 = icmp uge i64 %12, 100
   %7 = or i1 %6, %5
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %7)
   %8 = getelementptr inbounds i8, ptr %1, i64 %12

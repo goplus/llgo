@@ -109,7 +109,7 @@ _llgo_0:
   %52 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %51, align 8
   %53 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %52, 0
   %54 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %52, 1
-  %55 = icmp sge i64 0, %54
+  %55 = icmp uge i64 0, %54
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %55)
   %56 = getelementptr inbounds i64, ptr %53, i64 0
   %57 = load i64, ptr %56, align 4
@@ -123,7 +123,7 @@ _llgo_0:
   %61 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %60, align 8
   %62 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %61, 0
   %63 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %61, 1
-  %64 = icmp sge i64 0, %63
+  %64 = icmp uge i64 0, %63
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %64)
   %65 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %62, i64 0
   %66 = load %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr %65, align 8
@@ -137,7 +137,7 @@ _llgo_0:
   %70 = load %"github.com/goplus/llgo/runtime/internal/runtime.Slice", ptr %69, align 8
   %71 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %70, 0
   %72 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %70, 1
-  %73 = icmp sge i64 0, %72
+  %73 = icmp uge i64 0, %72
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %73)
   %74 = getelementptr inbounds i64, ptr %71, i64 0
   %75 = load i64, ptr %74, align 4

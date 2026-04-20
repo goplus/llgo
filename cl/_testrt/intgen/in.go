@@ -24,7 +24,7 @@ import (
 // CHECK-NEXT:   %10 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %2, 0
 // CHECK-NEXT:   %11 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %2, 1
 // CHECK-NEXT:   %12 = icmp slt i64 %5, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %5, %11
+// CHECK-NEXT:   %13 = icmp uge i64 %5, %11
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i32, ptr %10, i64 %5
@@ -78,7 +78,7 @@ type generator struct {
 // CHECK-NEXT:   %5 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %0, 0
 // CHECK-NEXT:   %6 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %0, 1
 // CHECK-NEXT:   %7 = icmp slt i64 %3, 0
-// CHECK-NEXT:   %8 = icmp sge i64 %3, %6
+// CHECK-NEXT:   %8 = icmp uge i64 %3, %6
 // CHECK-NEXT:   %9 = or i1 %8, %7
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %9)
 // CHECK-NEXT:   %10 = getelementptr inbounds i32, ptr %5, i64 %3
@@ -107,7 +107,7 @@ type generator struct {
 // CHECK-NEXT:   %22 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %17, 0
 // CHECK-NEXT:   %23 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %17, 1
 // CHECK-NEXT:   %24 = icmp slt i64 %20, 0
-// CHECK-NEXT:   %25 = icmp sge i64 %20, %23
+// CHECK-NEXT:   %25 = icmp uge i64 %20, %23
 // CHECK-NEXT:   %26 = or i1 %25, %24
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %26)
 // CHECK-NEXT:   %27 = getelementptr inbounds i32, ptr %22, i64 %20
@@ -137,7 +137,7 @@ type generator struct {
 // CHECK-NEXT:   %40 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %35, 0
 // CHECK-NEXT:   %41 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %35, 1
 // CHECK-NEXT:   %42 = icmp slt i64 %38, 0
-// CHECK-NEXT:   %43 = icmp sge i64 %38, %41
+// CHECK-NEXT:   %43 = icmp uge i64 %38, %41
 // CHECK-NEXT:   %44 = or i1 %43, %42
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %44)
 // CHECK-NEXT:   %45 = getelementptr inbounds i32, ptr %40, i64 %38
