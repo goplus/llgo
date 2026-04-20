@@ -70,6 +70,49 @@ func TestNamedTypeEquivalent(t *testing.T) {
 	}
 }
 
+func TestNamedTypeEquivalentRecursiveSignature(t *testing.T) {
+	pkg1 := types.NewPackage("example.com/p", "p")
+	pkg2 := types.NewPackage("example.com/p", "p")
+	a := types.NewNamed(types.NewTypeName(token.NoPos, pkg1, "F", nil), nil, nil)
+	b := types.NewNamed(types.NewTypeName(token.NoPos, pkg2, "F", nil), nil, nil)
+	a.SetUnderlying(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", a)),
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", a)),
+		false))
+	b.SetUnderlying(types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", b)),
+		types.NewTuple(types.NewParam(token.NoPos, nil, "", b)),
+		false))
+	if namedTypeEquivalent(a, b) {
+		t.Fatalf("namedTypeEquivalent should be false for recursive function signatures")
+	}
+}
+
+func TestNamedTypeEquivalentRejectsAnySignature(t *testing.T) {
+	pkg1 := types.NewPackage("example.com/p", "p")
+	pkg2 := types.NewPackage("example.com/p", "p")
+	sigNamed := types.NewNamed(types.NewTypeName(token.NoPos, pkg1, "F", nil),
+		types.NewSignatureType(nil, nil, nil, nil, nil, false), nil)
+	structNamed := types.NewNamed(types.NewTypeName(token.NoPos, pkg2, "F", nil),
+		types.NewStruct([]*types.Var{
+			types.NewField(token.NoPos, nil, "A", types.Typ[types.Int], false),
+		}, nil), nil)
+	if namedTypeEquivalent(sigNamed, structNamed) {
+		t.Fatalf("namedTypeEquivalent should be false when only one side is a signature")
+	}
+	if namedTypeEquivalent(structNamed, sigNamed) {
+		t.Fatalf("namedTypeEquivalent should be false when only one side is a signature")
+	}
+}
+
+func TestToLLVMFuncPtrUsesVoidPtr(t *testing.T) {
+	prog := NewProgram(nil)
+	sig := types.NewSignatureType(nil, nil, nil, nil, nil, false)
+	if got, want := prog.toLLVMFuncPtr(sig).String(), prog.tyVoidPtr().String(); got != want {
+		t.Fatalf("toLLVMFuncPtr() = %q, want %q", got, want)
+	}
+}
+
 func TestNamedStructLayoutEquivalent(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.TypeSizes(types.SizesFor("gc", runtime.GOARCH))
