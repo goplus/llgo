@@ -224,8 +224,10 @@ type aFunction struct {
 
 	blks []BasicBlock
 
-	defer_ *aDefer
-	recov  BasicBlock
+	defer_           *aDefer
+	pendingLoopCases []loopDeferCase
+	nextDeferID      uintptr
+	recov            BasicBlock
 
 	params   []Type
 	freeVars Expr
