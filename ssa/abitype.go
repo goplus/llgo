@@ -371,16 +371,16 @@ type UncommonType struct {
 }
 */
 
-func (b Builder) abiUncommonType(t types.Type, mset *types.MethodSet) llvm.Value {
+func (b Builder) abiUncommonType(t types.Type, methods []*types.Selection) llvm.Value {
 	prog := b.Prog
 	ft := prog.rtType("uncommonType")
 	var fields []llvm.Value
 	_, pkgPath := b.abiUncommonPkg(t)
 	fields = append(fields, b.Str(pkgPath).impl)
-	mcount := mset.Len()
+	mcount := len(methods)
 	var xcount int
 	for i := 0; i < mcount; i++ {
-		if ast.IsExported(mset.At(i).Obj().Name()) {
+		if ast.IsExported(methods[i].Obj().Name()) {
 			xcount++
 		}
 	}
@@ -400,10 +400,10 @@ type Method struct {
 }
 */
 
-func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Value {
+func (b Builder) abiUncommonMethods(t types.Type, methods []*types.Selection) llvm.Value {
 	prog := b.Prog
 	ft := prog.rtType("Method")
-	n := mset.Len()
+	n := len(methods)
 	fields := make([]llvm.Value, n)
 	pkg, _ := b.abiUncommonPkg(t)
 	anonymous := pkg == nil
@@ -411,7 +411,7 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		pkg = types.NewPackage(b.Pkg.Path(), "")
 	}
 	for i := 0; i < n; i++ {
-		m := mset.At(i)
+		m := methods[i]
 		obj := m.Obj()
 		mName := obj.Name()
 		name := b.Str(mName).impl
@@ -436,6 +436,31 @@ func (b Builder) abiUncommonMethods(t types.Type, mset *types.MethodSet) llvm.Va
 		fields[i] = llvm.ConstNamedStruct(ft.ll, values)
 	}
 	return llvm.ConstArray(ft.ll, fields)
+}
+
+func (p Program) abiRuntimeMethods(mset *types.MethodSet) []*types.Selection {
+	if !p.hasNoInterfaceMethods() {
+		return methodSelections(mset)
+	}
+	n := mset.Len()
+	methods := make([]*types.Selection, 0, n)
+	for i := 0; i < n; i++ {
+		m := mset.At(i)
+		if fn, ok := m.Obj().(*types.Func); ok && p.IsNoInterfaceMethod(fn) {
+			continue
+		}
+		methods = append(methods, m)
+	}
+	return methods
+}
+
+func methodSelections(mset *types.MethodSet) []*types.Selection {
+	n := mset.Len()
+	methods := make([]*types.Selection, n)
+	for i := 0; i < n; i++ {
+		methods[i] = mset.At(i)
+	}
+	return methods
 }
 
 // closure func type
@@ -479,6 +504,10 @@ func (b Builder) abiType(t types.Type) Expr {
 			t = prog.patchType(t)
 		}
 		mset, hasUncommon := b.abiUncommonMethodSet(t)
+		var methods []*types.Selection
+		if hasUncommon {
+			methods = prog.abiRuntimeMethods(mset)
+		}
 		rt := prog.rtNamed(prog.abi.RuntimeName(t))
 		var typ types.Type = rt
 		if hasUncommon {
@@ -487,7 +516,7 @@ func (b Builder) abiType(t types.Type) Expr {
 			fields := []*types.Var{
 				types.NewVar(token.NoPos, nil, "T", rt),
 				types.NewVar(token.NoPos, nil, "U", ut),
-				types.NewVar(token.NoPos, nil, "M", types.NewArray(mt, int64(mset.Len()))),
+				types.NewVar(token.NoPos, nil, "M", types.NewArray(mt, int64(len(methods)))),
 			}
 			typ = types.NewStruct(fields, nil)
 		}
@@ -501,8 +530,8 @@ func (b Builder) abiType(t types.Type) Expr {
 		if hasUncommon {
 			fields = []llvm.Value{
 				llvm.ConstNamedStruct(prog.Type(rt, InGo).ll, fields),
-				b.abiUncommonType(t, mset),
-				b.abiUncommonMethods(t, mset),
+				b.abiUncommonType(t, methods),
+				b.abiUncommonMethods(t, methods),
 			}
 		}
 		g.impl.SetInitializer(llvm.ConstNamedStruct(g.impl.GlobalValueType(), fields))

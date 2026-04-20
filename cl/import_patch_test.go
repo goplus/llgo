@@ -8,6 +8,8 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/goplus/gogen/packages"
@@ -70,5 +72,84 @@ func TestVarNameGoLinkRuntimeAndNonRuntime(t *testing.T) {
 	name, vtyp, define = c.varName(pkg, global)
 	if name != "go:example.com/p.G" || vtyp != goVar || define {
 		t.Fatalf("non-runtime varName = (%q,%d,%v), want (%q,%d,%v)", name, vtyp, define, "go:example.com/p.G", goVar, false)
+	}
+}
+
+func TestInitFilesCollectsGoNoInterface(t *testing.T) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "p.go", `package p
+
+type T struct{}
+
+//go:nointerface
+func (T) Bad() {}
+func (T) Good() {}
+
+//go:nointerface
+func Plain() {}
+`, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile failed: %v", err)
+	}
+	funcPos := make(map[string]token.Pos)
+	for _, decl := range file.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok {
+			funcPos[fn.Name.Name] = fn.Name.Pos()
+		}
+	}
+	prog := llssa.NewProgram(nil)
+	c := &context{prog: prog, skips: make(map[string]none)}
+	c.initFiles("p", []*ast.File{file}, false)
+	pkg := types.NewPackage("p", "p")
+	if !prog.IsNoInterfaceMethod(types.NewFunc(funcPos["Bad"], pkg, "Bad", nil)) {
+		t.Fatal("Bad was not marked nointerface")
+	}
+	if prog.IsNoInterfaceMethod(types.NewFunc(funcPos["Good"], pkg, "Good", nil)) {
+		t.Fatal("Good was incorrectly marked nointerface")
+	}
+	if prog.IsNoInterfaceMethod(types.NewFunc(funcPos["Plain"], pkg, "Plain", nil)) {
+		t.Fatal("Plain function was incorrectly marked nointerface")
+	}
+}
+
+func TestImportPkgCollectsGoNoInterface(t *testing.T) {
+	src := `package p
+
+const LLGoPackage = "decl"
+
+type T struct{}
+
+//go:nointerface
+func (T) Bad() {}
+func (T) Good() {}
+`
+	srcPath := filepath.Join(t.TempDir(), "p.go")
+	if err := os.WriteFile(srcPath, []byte(src), 0o644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, srcPath, src, parser.ParseComments)
+	if err != nil {
+		t.Fatalf("ParseFile failed: %v", err)
+	}
+	files := []*ast.File{file}
+	pkg := types.NewPackage("example.com/p", "p")
+	imp := packages.NewImporter(fset)
+	if _, _, err := ssautil.BuildPackage(&types.Config{Importer: imp}, fset, pkg, files, gossa.SanityCheckFunctions); err != nil {
+		t.Fatalf("BuildPackage failed: %v", err)
+	}
+	named := pkg.Scope().Lookup("T").Type().(*types.Named)
+	methods := make(map[string]*types.Func)
+	for i := 0; i < named.NumMethods(); i++ {
+		methods[named.Method(i).Name()] = named.Method(i)
+	}
+	prog := llssa.NewProgram(nil)
+	c := &context{prog: prog, fset: fset}
+	c.importPkg(pkg, &pkgInfo{})
+	if !prog.IsNoInterfaceMethod(methods["Bad"]) {
+		t.Fatal("imported Bad was not marked nointerface")
+	}
+	if prog.IsNoInterfaceMethod(methods["Good"]) {
+		t.Fatal("imported Good was incorrectly marked nointerface")
 	}
 }

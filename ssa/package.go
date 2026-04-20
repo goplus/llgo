@@ -23,6 +23,7 @@ import (
 	"log"
 	"runtime"
 	"strconv"
+	"sync"
 	"unsafe"
 
 	"github.com/goplus/llgo/internal/env"
@@ -122,7 +123,9 @@ type aProgram struct {
 
 	patchType func(types.Type) types.Type
 
-	compileMethods func(Package, types.Type)
+	compileMethods      func(Package, types.Type)
+	noInterfaceMethods  map[token.Pos]struct{}
+	noInterfaceMethodsM sync.RWMutex
 
 	rt    *types.Package
 	rtget func() *types.Package
@@ -285,6 +288,7 @@ func NewProgram(target *Target) Program {
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
+		noInterfaceMethods: make(map[token.Pos]struct{}),
 	}
 	prog.abi.Init(uintptr(prog.ptrSize), (*goProgram)(unsafe.Pointer(prog)))
 	return prog
@@ -319,6 +323,31 @@ func (p Program) patch(typ types.Type) types.Type {
 
 func (p Program) SetCompileMethods(check func(Package, types.Type)) {
 	p.compileMethods = check
+}
+
+func (p Program) SetNoInterfaceMethod(pos token.Pos) {
+	if pos == token.NoPos {
+		return
+	}
+	p.noInterfaceMethodsM.Lock()
+	defer p.noInterfaceMethodsM.Unlock()
+	p.noInterfaceMethods[pos] = struct{}{}
+}
+
+func (p Program) IsNoInterfaceMethod(fn *types.Func) bool {
+	if fn == nil || fn.Pos() == token.NoPos {
+		return false
+	}
+	p.noInterfaceMethodsM.RLock()
+	defer p.noInterfaceMethodsM.RUnlock()
+	_, ok := p.noInterfaceMethods[fn.Pos()]
+	return ok
+}
+
+func (p Program) hasNoInterfaceMethods() bool {
+	p.noInterfaceMethodsM.RLock()
+	defer p.noInterfaceMethodsM.RUnlock()
+	return len(p.noInterfaceMethods) != 0
 }
 
 // SetRuntime sets the runtime.
