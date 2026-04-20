@@ -78,6 +78,55 @@ func TestNamedName_UsesTypeArgString(t *testing.T) {
 	}
 }
 
+func TestStr_NamedTypeArgsUsePackageName(t *testing.T) {
+	b := New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
+	pkg := types.NewPackage("command-line-arguments", "main")
+	fooObj := types.NewTypeName(token.NoPos, pkg, "foo", nil)
+	foo := types.NewNamed(fooObj, types.Typ[types.Int], nil)
+	generic := testGenericNamed(pkg, "F")
+
+	otherPkg := types.NewPackage("example.com/other", "other")
+	barObj := types.NewTypeName(token.NoPos, otherPkg, "Bar", nil)
+	bar := types.NewNamed(barObj, types.Typ[types.Int], nil)
+	fn := types.NewSignatureType(nil, nil, nil,
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", foo)),
+		types.NewTuple(types.NewVar(token.NoPos, nil, "", bar)),
+		false)
+
+	cases := []struct {
+		name string
+		arg  types.Type
+		want string
+	}{
+		{"same package named", foo, "main.F[main.foo]"},
+		{"different package named", bar, "main.F[example.com/other.Bar]"},
+		{"unsafe pointer", types.Typ[types.UnsafePointer], "main.F[unsafe.Pointer]"},
+		{"byte alias", types.Typ[types.Byte], "main.F[uint8]"},
+		{"rune alias", types.Typ[types.Rune], "main.F[int32]"},
+		{"any alias", types.Universe.Lookup("any").Type(), "main.F[interface {}]"},
+		{"composite pointer", types.NewPointer(foo), "main.F[*main.foo]"},
+		{"composite pointer pointer", types.NewPointer(types.NewPointer(foo)), "main.F[**main.foo]"},
+		{"composite slice", types.NewSlice(types.Typ[types.String]), "main.F[[]string]"},
+		{"composite array", types.NewArray(foo, 2), "main.F[[2]main.foo]"},
+		{"composite map", types.NewMap(foo, bar), "main.F[map[main.foo]example.com/other.Bar]"},
+		{"composite chan", types.NewChan(types.RecvOnly, foo), "main.F[<-chan main.foo]"},
+		{"func fallback", fn, "main.F[func(main.foo) example.com/other.Bar]"},
+		{"nil package named", testLocalNamed(), "main.F[Local]"},
+	}
+	for _, tc := range cases {
+		inst, err := types.Instantiate(types.NewContext(), generic, []types.Type{tc.arg}, false)
+		if err != nil {
+			t.Fatalf("%s: Instantiate failed: %v", tc.name, err)
+		}
+		if got := b.Str(inst); got != tc.want {
+			t.Fatalf("%s: Str(%s) = %q, want %q", tc.name, inst.String(), got, tc.want)
+		}
+	}
+	if got := reflectTypeArgPkgPath(nil); got != "" {
+		t.Fatalf("reflectTypeArgPkgPath(nil) = %q, want empty string", got)
+	}
+}
+
 func TestTypeName_NamedWithoutPackage(t *testing.T) {
 	b := New(unsafe.Sizeof(uintptr(0)), types.SizesFor("gc", runtime.GOARCH))
 	obj := types.NewTypeName(token.NoPos, nil, "Anon", nil)
