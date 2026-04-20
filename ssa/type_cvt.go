@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"reflect"
 	"sync"
 	"unsafe"
 )
@@ -73,6 +74,9 @@ func (p Program) Closure(sig *types.Signature) Type {
 }
 
 func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
+	if raw, ok := cvtGoSSAOpaqueType(typ); ok {
+		return raw, true
+	}
 	switch t := typ.(type) {
 	case *types.Basic:
 	case *types.Pointer:
@@ -121,6 +125,30 @@ func (p goTypes) cvtType(typ types.Type) (raw types.Type, cvt bool) {
 		panic(fmt.Sprintf("cvtType: unexpected type - %T", typ))
 	}
 	return typ, false
+}
+
+func cvtGoSSAOpaqueType(typ types.Type) (types.Type, bool) {
+	if ptr, ok := typ.(*types.Pointer); ok && isGoSSAOpaqueType(ptr.Elem()) {
+		return types.Typ[types.UnsafePointer], true
+	}
+	if isGoSSAOpaqueType(typ) {
+		return types.Typ[types.UnsafePointer], true
+	}
+	return nil, false
+}
+
+func isGoSSAOpaqueType(typ types.Type) bool {
+	rt := reflect.TypeOf(typ)
+	if rt == nil {
+		return false
+	}
+	if rt.Kind() == reflect.Pointer {
+		rt = rt.Elem()
+	}
+	// go/ssa uses an unexported opaqueType for synthetic range/defer-stack
+	// values and exposes no predicate for it, so reflection is the only stable
+	// boundary we can check without depending on unsafe package internals.
+	return rt.PkgPath() == "golang.org/x/tools/go/ssa" && rt.Name() == "opaqueType"
 }
 
 func namedLinkname(t *types.Named) string {
