@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,7 +41,6 @@ import (
 	"github.com/goplus/llgo/internal/llgen"
 	"github.com/goplus/llgo/internal/mockable"
 	"github.com/goplus/llgo/ssa/ssatest"
-	gllvm "github.com/goplus/llvm"
 	"github.com/qiniu/x/test"
 	"golang.org/x/tools/go/ssa"
 	"golang.org/x/tools/go/ssa/ssautil"
@@ -246,25 +246,18 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		return
 	}
 
-	var goldenIR []byte
-	checkIR := false
-	moduleID := ""
-	if opts.checkIR {
-		goldenIR, checkIR, err = readGolden(filepath.Join(pkgDir, "out.ll"))
-		if err != nil {
-			t.Fatal("ReadFile failed:", err)
-		}
-		if checkIR {
-			moduleID = moduleIDFromIR(goldenIR)
-			if moduleID == "" {
-				t.Fatalf("missing ModuleID in golden IR for %s", pkgDir)
-			}
-		}
-	}
+	var irSpec littest.Spec
 	conf := opts.conf
 	var capturedIR *string
-	if checkIR {
-		conf, capturedIR = withModuleCapture(opts.conf, moduleID)
+	var checkIR bool
+	if opts.checkIR {
+		irSpec, checkIR, err = readIRSpec(pkgDir)
+		if err != nil {
+			t.Fatal("LoadSpec failed:", err)
+		}
+		if checkIR {
+			conf, capturedIR = withModuleCapture(opts.conf, pkgDir)
+		}
 	}
 
 	output, err := runWithConf(relPkg, pkgDir, conf)
@@ -273,17 +266,16 @@ func testRunAndTestFrom(t *testing.T, pkgDir, relPkg, sel string, opts runOption
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
 
-	if checkOutput {
-		assertExpectedOutput(t, pkgDir, expectedOutput, output, opts)
-	}
+	assertExpectedOutput(t, pkgDir, expectedOutput, output, opts)
 	if !checkIR {
 		return
 	}
 	if capturedIR == nil || *capturedIR == "" {
-		t.Fatalf("module snapshot missing for package %s", moduleID)
+		t.Fatalf("module snapshot missing for file %s", irSpec.Path)
 	}
-	if test.Diff(t, filepath.Join(pkgDir, "result.txt"), []byte(*capturedIR), goldenIR) {
-		t.Fatal("unexpected IR output")
+	if err := littest.Check(irSpec, *capturedIR); err != nil {
+		_ = os.WriteFile(filepath.Join(pkgDir, "result.txt"), []byte(*capturedIR), 0644)
+		t.Fatal(err)
 	}
 }
 
@@ -297,19 +289,21 @@ func RunAndCaptureWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, e
 	return runWithConf(relPkg, pkgDir, conf)
 }
 
-func withModuleCapture(conf *build.Config, targetPkgPath string) (*build.Config, *string) {
+func withModuleCapture(conf *build.Config, pkgDir string) (*build.Config, *string) {
 	if conf == nil {
 		conf = build.NewDefaultConf(build.ModeRun)
 	}
 	localConf := *conf
 	var module string
 	prevHook := localConf.ModuleHook
-	localConf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
+	localConf.ModuleHook = func(pkg build.Package) {
 		if prevHook != nil {
-			prevHook(pkgPath, mod)
+			prevHook(pkg)
 		}
-		if pkgPath == targetPkgPath && module == "" {
-			module = mod.String()
+		if slices.ContainsFunc(pkg.Package.GoFiles, func(file string) bool {
+			return filepath.Dir(file) == pkgDir
+		}) {
+			module = pkg.LPkg.String()
 		}
 	}
 	return &localConf, &module
@@ -388,7 +382,6 @@ func runWithConf(relPkg, pkgDir string, conf *build.Config) ([]byte, error) {
 		}()
 		_, runErr = build.Do([]string{relPkg}, &localConf)
 	}()
-
 	_ = w.Close()
 	output := <-outputCh
 	output = filterRunOutput(output)
@@ -422,17 +415,16 @@ func readGolden(file string) ([]byte, bool, error) {
 	return data, true, nil
 }
 
-func moduleIDFromIR(data []byte) string {
-	line := data
-	if idx := bytes.IndexByte(line, '\n'); idx >= 0 {
-		line = line[:idx]
+func readIRSpec(pkgDir string) (littest.Spec, bool, error) {
+	spec, err := littest.LoadSpec(pkgDir)
+	if err != nil {
+		var pathErr *os.PathError
+		if errors.Is(err, os.ErrNotExist) && errors.As(err, &pathErr) && filepath.Clean(pathErr.Path) == filepath.Join(pkgDir, "out.ll") {
+			return littest.Spec{}, false, nil
+		}
+		return littest.Spec{}, false, err
 	}
-	line = bytes.TrimSpace(line)
-	const prefix = "; ModuleID = '"
-	if !bytes.HasPrefix(line, []byte(prefix)) || !bytes.HasSuffix(line, []byte{'\''}) {
-		return ""
-	}
-	return string(line[len(prefix) : len(line)-1])
+	return spec, true, nil
 }
 
 func filterRunOutput(in []byte) []byte {

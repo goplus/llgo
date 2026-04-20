@@ -5,8 +5,6 @@ package build
 
 import (
 	"testing"
-
-	gllvm "github.com/goplus/llvm"
 )
 
 func TestModuleHookReceivesMainPackageModule(t *testing.T) {
@@ -14,10 +12,10 @@ func TestModuleHookReceivesMainPackageModule(t *testing.T) {
 
 	counts := make(map[string]int)
 	snapshots := make(map[string]string)
-	conf.ModuleHook = func(pkgPath string, mod gllvm.Module) {
-		counts[pkgPath]++
-		if _, ok := snapshots[pkgPath]; !ok {
-			snapshots[pkgPath] = mod.String()
+	conf.ModuleHook = func(pkg Package) {
+		counts[pkg.PkgPath]++
+		if _, ok := snapshots[pkg.PkgPath]; !ok {
+			snapshots[pkg.PkgPath] = pkg.LPkg.String()
 		}
 	}
 
