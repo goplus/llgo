@@ -1261,6 +1261,36 @@ source_filename = "global"
 `)
 }
 
+func TestZeroSizedGlobalEmitsAliasSymbol(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Chdir("../../runtime")
+	defer os.Chdir(wd)
+
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("bar", "foo/bar")
+	typ := types.NewPointer(types.NewArray(types.Typ[types.Int], 0))
+	a := pkg.NewVar("foo/bar.a", typ, InGo)
+	a.InitNil()
+	pkg.NewVar("other/pkg.a", typ, InGo)
+	assertPkg(t, pkg, `; ModuleID = 'foo/bar'
+source_filename = "foo/bar"
+
+@"__llgo.moduleZeroSizedAlloc$" = linkonce_odr unnamed_addr global i8 0
+@"other/pkg.a" = external global [0 x i64], align 8
+
+@"foo/bar.a" = alias [0 x i64], ptr @"__llgo.moduleZeroSizedAlloc$"
+`)
+}
+
 func TestGlobalConstLiterals(t *testing.T) {
 	prog := NewProgram(nil)
 	prog.SetRuntime(func() *types.Package {

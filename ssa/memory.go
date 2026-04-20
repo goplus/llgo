@@ -115,8 +115,13 @@ func (b Builder) Alloc(elem Type, heap bool) (ret Expr) {
 	pkg := b.Pkg
 	size := SizeOf(prog, elem)
 	if heap {
+		if prog.SizeOf(elem) == 0 {
+			return pkg.moduleZeroSizedAlloc(elem)
+		}
 		ret = b.InlineCall(pkg.rtFunc("AllocZ"), size)
 	} else {
+		// Stack-local zero-sized variables keep a distinct alloca. Only heap
+		// allocations and package globals use the shared module sentinel.
 		ret = Expr{llvm.CreateAlloca(b.impl, elem.ll), prog.VoidPtr()}
 		ret.impl = b.zeroinit(ret, size).impl
 	}

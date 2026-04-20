@@ -19,6 +19,7 @@ package ssa
 import (
 	"go/types"
 	"strconv"
+	"strings"
 
 	"github.com/goplus/llvm"
 )
@@ -75,6 +76,30 @@ type aGlobal struct {
 // variable.
 type Global = *aGlobal
 
+const (
+	moduleZeroName              = "__llgo.moduleZeroSizedAlloc$"
+	runtimeZeroSizedAllocSymbol = "zeroSizedAlloc"
+)
+
+func (p Package) moduleZeroSizedAlloc(elem Type) Expr {
+	zerobase := p.mod.NamedGlobal(moduleZeroName)
+	if zerobase.IsNil() {
+		byteTy := p.Prog.Byte()
+		zerobase = llvm.AddGlobal(p.mod, byteTy.ll, moduleZeroName)
+		zerobase.SetInitializer(llvm.ConstNull(byteTy.ll))
+		zerobase.SetLinkage(llvm.LinkOnceODRLinkage)
+		zerobase.SetUnnamedAddr(true)
+	}
+	return Expr{zerobase, p.Prog.Pointer(elem)}
+}
+
+func (p Package) ownsGlobal(name string) bool {
+	if p.path == "" {
+		return true
+	}
+	return strings.HasPrefix(name, p.path+".")
+}
+
 // NewVar creates a new global variable.
 func (p Package) NewVar(name string, typ types.Type, bg Background) Global {
 	if v, ok := p.vars[name]; ok {
@@ -94,6 +119,27 @@ func (p Package) NewVarEx(name string, t Type) Global {
 
 func (p Package) doNewVar(name string, t Type) Global {
 	typ := p.Prog.Elem(t).ll
+	if p.Prog.td.TypeAllocSize(typ) == 0 {
+		var rt *types.Package
+		if p.Prog.rt != nil || p.Prog.rtget != nil {
+			rt = p.Prog.runtime()
+		}
+		if rt != nil {
+			// Do not redirect the runtime's own zero-sized allocation sentinel.
+			zeroName := FullName(rt, runtimeZeroSizedAllocSymbol)
+			if name != zeroName && p.ownsGlobal(name) {
+				zero := p.moduleZeroSizedAlloc(p.Prog.Elem(t))
+				alias := llvm.AddAlias(p.mod, typ, 0, zero.impl, name)
+				alias.SetLinkage(llvm.ExternalLinkage)
+				// The returned Global intentionally points at the shared
+				// sentinel; the alias above preserves this package variable's
+				// symbol for external references.
+				ret := &aGlobal{zero}
+				p.vars[name] = ret
+				return ret
+			}
+		}
+	}
 	gbl := llvm.AddGlobal(p.mod, typ, name)
 	alignment := p.Prog.td.ABITypeAlignment(typ)
 	gbl.SetAlignment(alignment)
