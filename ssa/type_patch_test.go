@@ -185,4 +185,7 @@ func f() {
 	if got := prog.toType(deferStackTy).RawType(); got != types.Typ[types.UnsafePointer] {
 		t.Fatalf("toType(opaque) raw = %v, want unsafe.Pointer", got)
 	}
+	if got := prog.toType(ptrTy.Elem()).RawType(); got != types.Typ[types.UnsafePointer] {
+		t.Fatalf("toType(opaque elem) raw = %v, want unsafe.Pointer", got)
+	}
 }

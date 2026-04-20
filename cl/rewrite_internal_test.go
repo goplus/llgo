@@ -260,6 +260,9 @@ func directDefer() {
 	if !ctx.functionHasExplicitStackDefer(yieldFn) {
 		t.Fatal("yield closure should have explicit defer stack")
 	}
+	if ctx.returnNeedsImplicitRunDefers(lastNonRecoverReturn(t, yieldFn)) {
+		t.Fatal("synthetic yield closure should not insert implicit RunDefers")
+	}
 	if !ctx.functionHasExplicitStackDeferInAnon(withRangeDefer) {
 		t.Fatal("outer function should detect explicit defer stack in anon funcs")
 	}
@@ -468,5 +471,95 @@ func TestEmitDoWithoutExplicitDeferStack(t *testing.T) {
 	}
 	if got.Type == nil || got.Type.RawType() != types.Typ[types.Int] {
 		t.Fatalf("emitDo returned unexpected type: %v", got.Type)
+	}
+}
+
+func TestNestedRangeFuncDeferAnalysisCombinations(t *testing.T) {
+	const src = `package foo
+
+func outerSeq(yield func(int) bool) {
+	_ = yield(1)
+}
+
+func innerSeq(base int) func(func(int) bool) {
+	return func(yield func(int) bool) {
+		_ = yield(base*10 + 1)
+		_ = yield(base*10 + 2)
+	}
+}
+
+func nestedReturn() {
+	for i := range outerSeq {
+		defer func() { println(i) }()
+		for j := range innerSeq(i) {
+			defer func() { println(j) }()
+			return
+		}
+	}
+}
+`
+
+	ssapkg := buildSSAPackage(t, src)
+	ctx := &context{}
+
+	root := ssapkg.Func("nestedReturn")
+	if root == nil || len(root.AnonFuncs) == 0 {
+		t.Fatalf("expected nestedReturn with yield closures, got %v", root)
+	}
+
+	outerCall := findStaticCallByName(t, root, "outerSeq")
+	if !ctx.rangeFuncCallNeedsDeferDrain(outerCall.Common()) {
+		t.Fatal("outer range-over-func call should require defer drain")
+	}
+	if !ctx.returnNeedsImplicitRunDefers(lastNonRecoverReturn(t, root)) {
+		t.Fatal("nested return should still require implicit RunDefers")
+	}
+
+	var outerYield *ssa.Function
+	for _, child := range root.AnonFuncs {
+		if child.Synthetic == "range-over-func yield" {
+			outerYield = child
+			break
+		}
+	}
+	if outerYield == nil {
+		t.Fatal("missing outer yield closure")
+	}
+	if !ctx.functionHasExplicitStackDefer(outerYield) {
+		t.Fatal("outer yield closure should report explicit stack defer")
+	}
+	if ctx.returnNeedsImplicitRunDefers(lastNonRecoverReturn(t, outerYield)) {
+		t.Fatal("synthetic outer yield closure must not insert implicit RunDefers")
+	}
+}
+
+func TestDeferStackOwnerCompilesMissingOwner(t *testing.T) {
+	ssapkg, fset, files := buildGoSSAPkg(t, `package foo
+
+func f() {}
+`)
+	prog := newLLSSAProg(t)
+	pkg := prog.NewPackage("foo", "foo")
+	ctx := &context{
+		prog:   prog,
+		pkg:    pkg,
+		fset:   fset,
+		goProg: ssapkg.Prog,
+		goTyps: ssapkg.Pkg,
+		goPkg:  ssapkg,
+		funcs:  map[*ssa.Function]llssa.Function{},
+	}
+	_ = files
+
+	root := ssapkg.Func("f")
+	if root == nil {
+		t.Fatal("missing source function f")
+	}
+	owner := ctx.deferStackOwner(root)
+	if owner == nil {
+		t.Fatal("deferStackOwner should lazily compile missing owner")
+	}
+	if ctx.funcs[root] != owner {
+		t.Fatal("compiled owner should be cached")
 	}
 }

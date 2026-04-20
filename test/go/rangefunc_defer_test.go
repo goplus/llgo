@@ -207,6 +207,63 @@ func TestNestedRangeFuncDefers(t *testing.T) {
 	}
 }
 
+func TestNestedRangeFuncDefersRunAfterReturn(t *testing.T) {
+	var saved []int
+	save := func(v int) {
+		saved = append(saved, v)
+	}
+
+	func() {
+		defer save(99)
+		for i := range rangefuncDeferNestedOuter {
+			defer save(i)
+			for j := range rangefuncDeferNestedInner(i) {
+				defer save(j)
+				if j == 12 {
+					return
+				}
+			}
+		}
+	}()
+
+	want := []int{12, 11, 1, 99}
+	if !reflect.DeepEqual(saved, want) {
+		t.Fatalf("nested defer order after return = %v, want %v", saved, want)
+	}
+}
+
+func TestNestedRangeFuncDefersRunAfterPanicRecover(t *testing.T) {
+	var saved []int
+	save := func(v int) {
+		saved = append(saved, v)
+	}
+
+	var recovered any
+	func() {
+		defer func() {
+			recovered = recover()
+			save(99)
+		}()
+		for i := range rangefuncDeferNestedOuter {
+			defer save(i)
+			for j := range rangefuncDeferNestedInner(i) {
+				defer save(j)
+				if j == 12 {
+					panic("nested boom")
+				}
+			}
+		}
+	}()
+
+	want := []int{12, 11, 1, 99}
+	if !reflect.DeepEqual(saved, want) {
+		t.Fatalf("nested defer order after panic = %v, want %v", saved, want)
+	}
+	if recovered != "nested boom" {
+		t.Fatalf("recover = %v, want nested boom", recovered)
+	}
+}
+
 func TestRangeFuncDefersRunAfterPanicRecover(t *testing.T) {
 	var saved []int
 	save := func(v int) {
