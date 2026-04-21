@@ -46,7 +46,7 @@ var (
 // CHECK-NEXT:   %6 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr @"{{.*}}/cl/_testrt/mapclosure.list", align 8
 // CHECK-NEXT:   %7 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %6, 0
 // CHECK-NEXT:   %8 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %6, 1
-// CHECK-NEXT:   %9 = icmp sge i64 0, %8
+// CHECK-NEXT:   %9 = icmp uge i64 0, %8
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %9)
 // CHECK-NEXT:   %10 = getelementptr inbounds { ptr, ptr }, ptr %7, i64 0
 // CHECK-NEXT:   %11 = load { ptr, ptr }, ptr %10, align 8

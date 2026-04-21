@@ -62,7 +62,7 @@ func main() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -120,7 +120,7 @@ func sort1a() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -178,7 +178,7 @@ func sort1b() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -236,7 +236,7 @@ func sort2a() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -294,7 +294,7 @@ func sort2b() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -352,7 +352,7 @@ func sort3a() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -410,7 +410,7 @@ func sort3b() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -468,7 +468,7 @@ func sort4a() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -526,7 +526,7 @@ func sort4b() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
@@ -584,7 +584,7 @@ func sort5a() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %12 = icmp slt i64 %10, 0
-// CHECK-NEXT:   %13 = icmp sge i64 %10, 5
+// CHECK-NEXT:   %13 = icmp uge i64 %10, 5
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
