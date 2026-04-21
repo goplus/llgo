@@ -293,6 +293,75 @@ func TestRangeFuncDefersRunAfterPanicRecover(t *testing.T) {
 	}
 }
 
+func TestRangeFuncDeferredRecoverInLoopBody(t *testing.T) {
+	var saved []int
+	save := func(v int) {
+		saved = append(saved, v)
+	}
+
+	var recovered any
+	func() {
+		defer save(9)
+		for i := range rangefuncDeferYield4 {
+			defer func(v int) {
+				if r := recover(); r != nil {
+					recovered = r
+					save(100 + v)
+					return
+				}
+				save(v)
+			}(i)
+			if i == 2 {
+				panic("boom")
+			}
+		}
+	}()
+
+	want := []int{102, 1, 9}
+	if !reflect.DeepEqual(saved, want) {
+		t.Fatalf("defer order after in-body recover = %v, want %v", saved, want)
+	}
+	if recovered != "boom" {
+		t.Fatalf("recover = %v, want boom", recovered)
+	}
+}
+
+func TestNestedRangeFuncDeferredRecoverInLoopBody(t *testing.T) {
+	var saved []int
+	save := func(v int) {
+		saved = append(saved, v)
+	}
+
+	var recovered any
+	func() {
+		defer save(99)
+		for i := range rangefuncDeferNestedOuter {
+			defer save(i)
+			for j := range rangefuncDeferNestedInner(i) {
+				defer func(v int) {
+					if r := recover(); r != nil {
+						recovered = r
+						save(100 + v)
+						return
+					}
+					save(v)
+				}(j)
+				if j == 12 {
+					panic("nested boom")
+				}
+			}
+		}
+	}()
+
+	want := []int{112, 11, 1, 99}
+	if !reflect.DeepEqual(saved, want) {
+		t.Fatalf("nested defer order after in-body recover = %v, want %v", saved, want)
+	}
+	if recovered != "nested boom" {
+		t.Fatalf("recover = %v, want nested boom", recovered)
+	}
+}
+
 func TestRangeFuncRejectsYieldAfterLoopExit(t *testing.T) {
 	var recovered any
 
