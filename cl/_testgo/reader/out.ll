@@ -1073,3 +1073,48 @@ declare void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"
 declare { i32, i64 } @"unicode/utf8.DecodeRuneInString"(%"github.com/goplus/llgo/runtime/internal/runtime.String")
 
 attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
+
+!llgo.useiface = !{!0, !1, !2, !3, !4, !5}
+!llgo.methodinfo = !{!6, !7, !8, !9, !10, !11, !12, !13, !14, !15, !16, !17, !18, !19, !20, !21, !22, !23, !24, !25, !26}
+!llgo.useifacemethod = !{!27, !28, !29, !30, !31, !32, !33, !34}
+!llgo.interfaceinfo = !{!35, !36, !37, !38}
+
+!0 = !{!"github.com/goplus/llgo/cl/_testgo/reader.NopCloser", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo"}
+!1 = !{!"github.com/goplus/llgo/cl/_testgo/reader.NopCloser", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser"}
+!2 = !{!"github.com/goplus/llgo/cl/_testgo/reader.main", !"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader"}
+!3 = !{!"github.com/goplus/llgo/cl/_testgo/reader.newError", !"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString"}
+!4 = !{!"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo", !"_llgo_string"}
+!5 = !{!"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo", !"_llgo_string"}
+!6 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", i32 0, !"Close", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close"}
+!7 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", i32 1, !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read"}
+!8 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", i32 2, !"WriteTo", !"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo"}
+!9 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", i32 0, !"Close", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Close", !"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Close"}
+!10 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", i32 1, !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", !"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Read"}
+!11 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo", i32 2, !"WriteTo", !"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo", !"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo"}
+!12 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser", i32 0, !"Close", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close"}
+!13 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser", i32 1, !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read"}
+!14 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser", i32 0, !"Close", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Close", !"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Close"}
+!15 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.nopCloser", i32 1, !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", !"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", !"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Read"}
+!16 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 0, !"Len", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Len"}
+!17 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 1, !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Read"}
+!18 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 2, !"ReadAt", !"_llgo_func$QoHVzMQ4PMXOd5kbZvdARJn-o_00R6hNyf6LoVk3X_4", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadAt"}
+!19 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 3, !"ReadByte", !"_llgo_func$lukqSsfDYBoIp_R8GMojGkZnrYDqaq2iHn8RkCjW7iQ", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadByte"}
+!20 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 4, !"ReadRune", !"_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).ReadRune"}
+!21 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 5, !"Seek", !"_llgo_func$HE7H49xPa1uXmrkMDpqB3RCRGf3qzhLGrxKCEXOYjms", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Seek"}
+!22 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 6, !"Size", !"_llgo_func$Eoig9xhJM5GShHH5aNPxTZZXp1IZxprRl4zPuv2hkug", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).Size"}
+!23 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 7, !"UnreadByte", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadByte"}
+!24 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 8, !"UnreadRune", !"_llgo_func$8rsrSd_r3UHd_2DiYTyaOKR7BYkei4zw5ysG35KF38w", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).UnreadRune"}
+!25 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.stringReader", i32 9, !"WriteTo", !"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo", !"github.com/goplus/llgo/cl/_testgo/reader.(*stringReader).WriteTo"}
+!26 = !{!"*_llgo_github.com/goplus/llgo/cl/_testgo/reader.errorString", i32 0, !"Error", !"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to", !"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error", !"github.com/goplus/llgo/cl/_testgo/reader.(*errorString).Error"}
+!27 = !{!"github.com/goplus/llgo/cl/_testgo/reader.ReadAll", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!28 = !{!"github.com/goplus/llgo/cl/_testgo/reader.WriteString", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter", !"WriteString", !"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw"}
+!29 = !{!"github.com/goplus/llgo/cl/_testgo/reader.WriteString", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer", !"Write", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!30 = !{!"github.com/goplus/llgo/cl/_testgo/reader.nopCloser.Read", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!31 = !{!"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloser).Read", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!32 = !{!"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.Read", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!33 = !{!"github.com/goplus/llgo/cl/_testgo/reader.nopCloserWriterTo.WriteTo", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", !"WriteTo", !"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4"}
+!34 = !{!"github.com/goplus/llgo/cl/_testgo/reader.(*nopCloserWriterTo).Read", !"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!35 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Reader", !"Read", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!36 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.StringWriter", !"WriteString", !"_llgo_func$thH5FBpdXzJNnCpSfiLU5ItTntFU6LWp0RJhDm2XJjw"}
+!37 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.Writer", !"Write", !"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk"}
+!38 = !{!"_llgo_github.com/goplus/llgo/cl/_testgo/reader.WriterTo", !"WriteTo", !"_llgo_func$V_kP-r1nn8Ij-G2jGIm9ROLn4CjtLBch-g3Ha7pGJo4"}
