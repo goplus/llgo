@@ -465,8 +465,15 @@ func (p Program) abiRuntimeMethods(mset *types.MethodSet) []*types.Selection {
 	methods := make([]*types.Selection, 0, n)
 	for i := 0; i < n; i++ {
 		m := mset.At(i)
-		if fn, ok := m.Obj().(*types.Func); ok && p.IsNoInterfaceMethod(fn) {
-			continue
+		if fn, ok := m.Obj().(*types.Func); ok {
+			pkg := fn.Pkg()
+			if pkg != nil {
+				sig := fn.Type().(*types.Signature)
+				fullName := FuncName(pkg, fn.Name(), sig.Recv(), false)
+				if p.IsNoInterfaceMethod(fullName) {
+					continue
+				}
+			}
 		}
 		methods = append(methods, m)
 	}

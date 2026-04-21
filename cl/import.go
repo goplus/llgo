@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/constant"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"os"
@@ -82,36 +83,6 @@ func (p *pkgSymInfo) initLinknames(ctx *context) {
 			}
 		}
 	}
-}
-
-func (p *pkgSymInfo) hasNoInterfaceByPos(fset *token.FileSet, pos token.Pos) bool {
-	fp := fset.Position(pos)
-	if fp.Line <= 1 {
-		return false
-	}
-	b, ok := p.files[fp.Filename]
-	if !ok {
-		var err error
-		b, err = os.ReadFile(fp.Filename)
-		if err != nil {
-			return false
-		}
-		p.files[fp.Filename] = b
-	}
-	lines := bytes.Split(b, []byte{'\n'})
-	for i := fp.Line - 2; i >= 0 && i < len(lines); i-- {
-		line := strings.TrimSpace(string(lines[i]))
-		if line == "//go:nointerface" {
-			return true
-		}
-		if line == "" {
-			continue
-		}
-		if !strings.HasPrefix(line, "//") {
-			break
-		}
-	}
-	return false
 }
 
 // PkgKindOf returns the kind of a package.
@@ -177,6 +148,7 @@ start:
 	fset := p.fset
 	names := scope.Names()
 	syms := newPkgSymInfo()
+	importFiles := make(map[string]struct{})
 	for _, name := range names {
 		obj := scope.Lookup(name)
 		switch obj := obj.(type) {
@@ -184,6 +156,7 @@ start:
 			if pos := obj.Pos(); pos != token.NoPos {
 				fullName, inPkgName := typesFuncName(pkgPath, obj)
 				syms.addSym(fset, pos, fullName, inPkgName, false)
+				addImportFile(importFiles, fset, pos)
 			}
 		case *types.TypeName:
 			if !obj.IsAlias() {
@@ -192,29 +165,27 @@ start:
 						fn := t.Method(i)
 						fullName, inPkgName := typesFuncName(pkgPath, fn)
 						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
-						if syms.hasNoInterfaceByPos(fset, fn.Pos()) {
-							p.prog.SetNoInterfaceMethod(fn.Pos())
-						}
+						addImportFile(importFiles, fset, fn.Pos())
 					}
 				}
 			}
 		case *types.Var:
 			if pos := obj.Pos(); pos != token.NoPos {
 				syms.addSym(fset, pos, pkgPath+"."+name, name, true)
+				addImportFile(importFiles, fset, pos)
 			}
 		}
 	}
 	syms.initLinknames(p)
+	p.collectImportedNoInterface(pkgPath, importFiles)
 }
 
 func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	for _, file := range files {
+		processASTFileNoInterface(p.prog, pkgPath, file)
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
-				if decl.Recv != nil {
-					p.collectNoInterfaceByDoc(decl.Doc, decl.Name.Pos())
-				}
 				fullName, inPkgName := astFuncName(pkgPath, decl)
 				if !p.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, true) && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
@@ -253,18 +224,6 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	}
 }
 
-func (p *context) collectNoInterfaceByDoc(doc *ast.CommentGroup, pos token.Pos) {
-	if doc == nil {
-		return
-	}
-	for _, comment := range doc.List {
-		if strings.TrimSpace(comment.Text) == "//go:nointerface" {
-			p.prog.SetNoInterfaceMethod(pos)
-			return
-		}
-	}
-}
-
 // PreCollectLinknames scans syntax files before SSA compilation and populates
 // prog.Linkname for package-level //go:linkname / //llgo:link declarations.
 // It intentionally ignores //export because there is no package export context
@@ -287,6 +246,54 @@ func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) 
 			}
 		}
 	}
+}
+
+func addImportFile(files map[string]struct{}, fset *token.FileSet, pos token.Pos) {
+	if pos == token.NoPos {
+		return
+	}
+	if f := fset.File(pos); f != nil {
+		if file := f.Position(pos).Filename; file != "" {
+			files[file] = struct{}{}
+		}
+	}
+}
+
+func (p *context) collectImportedNoInterface(pkgPath string, files map[string]struct{}) {
+	fset := token.NewFileSet()
+	for file := range files {
+		parsed, err := parser.ParseFile(fset, file, nil, parser.ParseComments)
+		if err != nil {
+			continue
+		}
+		processASTFileNoInterface(p.prog, pkgPath, parsed)
+	}
+}
+
+func processASTFileNoInterface(prog llssa.Program, pkgPath string, file *ast.File) {
+	if file == nil {
+		return
+	}
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Recv == nil || !hasNoInterfaceDirective(fn.Doc) {
+			continue
+		}
+		fullName, _ := astFuncName(pkgPath, fn)
+		prog.SetNoInterfaceMethod(fullName)
+	}
+}
+
+func hasNoInterfaceDirective(doc *ast.CommentGroup) bool {
+	if doc == nil {
+		return false
+	}
+	for _, comment := range doc.List {
+		if strings.TrimSpace(comment.Text) == "//go:nointerface" {
+			return true
+		}
+	}
+	return false
 }
 
 // Collect skip names and skip other annotations, such as go: and llgo:

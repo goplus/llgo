@@ -124,7 +124,7 @@ type aProgram struct {
 	patchType func(types.Type) types.Type
 
 	compileMethods      func(Package, types.Type)
-	noInterfaceMethods  map[token.Pos]struct{}
+	noInterfaceMethods  map[string]struct{}
 	noInterfaceMethodsM sync.RWMutex
 
 	rt    *types.Package
@@ -288,7 +288,7 @@ func NewProgram(target *Target) Program {
 		target: target, td: td, tm: tm, is32Bits: is32Bits,
 		ptrSize: td.PointerSize(), named: make(map[string]Type), fnnamed: make(map[string]int),
 		linkname: make(map[string]string), abiSymbol: make(map[string]*AbiSymbol),
-		noInterfaceMethods: make(map[token.Pos]struct{}),
+		noInterfaceMethods: make(map[string]struct{}),
 	}
 	prog.abi.Init(uintptr(prog.ptrSize), (*goProgram)(unsafe.Pointer(prog)))
 	return prog
@@ -325,22 +325,22 @@ func (p Program) SetCompileMethods(check func(Package, types.Type)) {
 	p.compileMethods = check
 }
 
-func (p Program) SetNoInterfaceMethod(pos token.Pos) {
-	if pos == token.NoPos {
+func (p Program) SetNoInterfaceMethod(name string) {
+	if name == "" {
 		return
 	}
 	p.noInterfaceMethodsM.Lock()
 	defer p.noInterfaceMethodsM.Unlock()
-	p.noInterfaceMethods[pos] = struct{}{}
+	p.noInterfaceMethods[name] = struct{}{}
 }
 
-func (p Program) IsNoInterfaceMethod(fn *types.Func) bool {
-	if fn == nil || fn.Pos() == token.NoPos {
+func (p Program) IsNoInterfaceMethod(name string) bool {
+	if name == "" {
 		return false
 	}
 	p.noInterfaceMethodsM.RLock()
 	defer p.noInterfaceMethodsM.RUnlock()
-	_, ok := p.noInterfaceMethods[fn.Pos()]
+	_, ok := p.noInterfaceMethods[name]
 	return ok
 }
 

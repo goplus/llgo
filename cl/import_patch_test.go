@@ -91,23 +91,23 @@ func Plain() {}
 	if err != nil {
 		t.Fatalf("ParseFile failed: %v", err)
 	}
-	funcPos := make(map[string]token.Pos)
+	funcNames := make(map[string]string)
 	for _, decl := range file.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok {
-			funcPos[fn.Name.Name] = fn.Name.Pos()
+			fullName, _ := astFuncName("p", fn)
+			funcNames[fn.Name.Name] = fullName
 		}
 	}
 	prog := llssa.NewProgram(nil)
 	c := &context{prog: prog, skips: make(map[string]none)}
 	c.initFiles("p", []*ast.File{file}, false)
-	pkg := types.NewPackage("p", "p")
-	if !prog.IsNoInterfaceMethod(types.NewFunc(funcPos["Bad"], pkg, "Bad", nil)) {
+	if !prog.IsNoInterfaceMethod(funcNames["Bad"]) {
 		t.Fatal("Bad was not marked nointerface")
 	}
-	if prog.IsNoInterfaceMethod(types.NewFunc(funcPos["Good"], pkg, "Good", nil)) {
+	if prog.IsNoInterfaceMethod(funcNames["Good"]) {
 		t.Fatal("Good was incorrectly marked nointerface")
 	}
-	if prog.IsNoInterfaceMethod(types.NewFunc(funcPos["Plain"], pkg, "Plain", nil)) {
+	if prog.IsNoInterfaceMethod(funcNames["Plain"]) {
 		t.Fatal("Plain function was incorrectly marked nointerface")
 	}
 }
@@ -146,10 +146,12 @@ func (T) Good() {}
 	prog := llssa.NewProgram(nil)
 	c := &context{prog: prog, fset: fset}
 	c.importPkg(pkg, &pkgInfo{})
-	if !prog.IsNoInterfaceMethod(methods["Bad"]) {
+	badName, _ := typesFuncName(pkg.Path(), methods["Bad"])
+	goodName, _ := typesFuncName(pkg.Path(), methods["Good"])
+	if !prog.IsNoInterfaceMethod(badName) {
 		t.Fatal("imported Bad was not marked nointerface")
 	}
-	if prog.IsNoInterfaceMethod(methods["Good"]) {
+	if prog.IsNoInterfaceMethod(goodName) {
 		t.Fatal("imported Good was incorrectly marked nointerface")
 	}
 }

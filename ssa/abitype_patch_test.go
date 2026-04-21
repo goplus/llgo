@@ -17,7 +17,8 @@ func TestAbiRuntimeMethodsSkipsNoInterface(t *testing.T) {
 	named.AddMethod(bad)
 	named.AddMethod(good)
 
-	prog.SetNoInterfaceMethod(bad.Pos())
+	badName := FuncName(pkg, bad.Name(), bad.Type().(*types.Signature).Recv(), false)
+	prog.SetNoInterfaceMethod(badName)
 	methods := prog.abiRuntimeMethods(types.NewMethodSet(named))
 	if len(methods) != 1 || methods[0].Obj() != good {
 		t.Fatalf("runtime methods = %v, want only Good", methods)
