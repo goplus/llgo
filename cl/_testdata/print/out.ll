@@ -938,7 +938,7 @@ _llgo_26:                                         ; preds = %_llgo_25
   %54 = add i64 %52, 48
   %55 = trunc i64 %54 to i8
   %56 = icmp slt i64 %53, 0
-  %57 = icmp sge i64 %53, 14
+  %57 = icmp uge i64 %53, 14
   %58 = or i1 %57, %56
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %58)
   %59 = getelementptr inbounds i8, ptr %8, i64 %53
