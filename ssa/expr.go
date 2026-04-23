@@ -488,29 +488,10 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				)
 				return b.aggregateValue(x.Type, r, i)
 			case token.QUO:
-				d := llvm.CreateBinOp(b.impl, llvm.FAdd, llvm.CreateBinOp(b.impl, llvm.FMul, yr, yr), llvm.CreateBinOp(b.impl, llvm.FMul, yi, yi))
-				zero := llvm.CreateFCmp(b.impl, llvm.FloatOEQ, d, llvm.ConstNull(d.Type()))
-				r := llvm.CreateSelect(b.impl, zero,
-					llvm.CreateBinOp(b.impl, llvm.FDiv, xr, d),
-					llvm.CreateBinOp(b.impl, llvm.FDiv,
-						llvm.CreateBinOp(b.impl, llvm.FAdd,
-							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yr),
-							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yi),
-						),
-						d,
-					),
-				)
-				i := llvm.CreateSelect(b.impl, zero,
-					llvm.CreateBinOp(b.impl, llvm.FDiv, xi, d),
-					llvm.CreateBinOp(b.impl, llvm.FDiv,
-						llvm.CreateBinOp(b.impl, llvm.FSub,
-							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yr),
-							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yi),
-						),
-						d,
-					),
-				)
-				return b.aggregateValue(x.Type, r, i)
+				x128 := b.Convert(b.Prog.Complex128(), x)
+				y128 := b.Convert(b.Prog.Complex128(), y)
+				ret := b.InlineCall(b.Pkg.rtFunc("Complex128Div"), x128, y128)
+				return b.Convert(x.Type, ret)
 			}
 		default:
 			idx := mathOpIdx(op, kind)
