@@ -45,6 +45,68 @@ func TestEndDefer(t *testing.T) {
 	fn.endDefer(b)
 }
 
+func TestDeferToPendingLoopCasesAndFallback(t *testing.T) {
+	prog := NewProgram(nil)
+	prog.SetRuntime(func() *types.Package {
+		fset := token.NewFileSet()
+		imp := packages.NewImporter(fset)
+		pkg, _ := imp.Import(PkgRuntime)
+		return pkg
+	})
+	pkg := prog.NewPackage("foo", "foo")
+
+	callee := pkg.NewFunc("callee", NoArgsNoRet, InGo)
+	cb := callee.MakeBody(1)
+	cb.Return()
+	cb.EndBuild()
+
+	fn := pkg.NewFunc("main", NoArgsNoRet, InGo)
+	fn.SetRecover(fn.MakeBlock())
+	b := fn.MakeBody(1)
+
+	stack := b.DeferStack()
+	if stack.IsNil() {
+		t.Fatal("defer stack should be available with recover")
+	}
+	fn.defer_ = nil
+	fn.pendingLoopCases = nil
+	fn.nextDeferID = 0
+
+	b.DeferTo(fn, stack, callee.Expr, Builder.Call)
+	if got := len(fn.pendingLoopCases); got != 1 {
+		t.Fatalf("pendingLoopCases len = %d, want 1", got)
+	}
+	if fn.nextDeferID != 1 {
+		t.Fatalf("nextDeferID = %d, want 1", fn.nextDeferID)
+	}
+
+	self := b.getDeferInCurrentBlock()
+	if self == nil {
+		t.Fatal("expected current-block defer stack")
+	}
+	if len(fn.pendingLoopCases) != 0 {
+		t.Fatal("pendingLoopCases should be consumed once defer stack is materialized")
+	}
+	if got := len(self.loopCases); got != 1 {
+		t.Fatalf("loopCases len = %d, want 1", got)
+	}
+
+	b.DeferTo(fn, stack, callee.Expr, Builder.Call)
+	if got := len(self.loopCases); got != 2 {
+		t.Fatalf("loopCases len after direct append = %d, want 2", got)
+	}
+
+	fallback := pkg.NewFunc("fallback", NoArgsNoRet, InGo)
+	fallback.SetRecover(fallback.MakeBlock())
+	fb := fallback.MakeBody(1)
+	fb.Return()
+	fb.SetBlockEx(fallback.Block(0), BeforeLast, true)
+	fb.DeferTo(nil, prog.Nil(prog.VoidPtr()), callee.Expr, Builder.Call)
+	if fallback.defer_ == nil || len(fallback.defer_.loopCases) != 1 {
+		t.Fatal("owner=nil should fall back to normal loop defer")
+	}
+}
+
 func TestUnsafeString(t *testing.T) {
 	wd, err := os.Getwd()
 	if err != nil {
