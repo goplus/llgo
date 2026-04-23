@@ -118,7 +118,7 @@ type OutFmtDetails struct {
 // receives the live llvm.Module, so callers that need a stable snapshot should
 // consume it immediately (for example, by calling mod.String() inside the
 // hook).
-type ModuleHook func(pkgPath string, mod gllvm.Module)
+type ModuleHook func(pkg Package)
 
 type Config struct {
 	Goos          string
@@ -1255,7 +1255,7 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 
 	aPkg.LPkg = ret
 	if hook := ctx.buildConf.ModuleHook; hook != nil {
-		hook(pkgPath, ret.Module())
+		hook(aPkg)
 	}
 
 	// If cache hit, we only needed to register types - skip compilation
