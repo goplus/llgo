@@ -27,18 +27,22 @@
 package build
 
 import (
+	"go/ast"
 	"go/token"
 	"go/types"
 
 	"github.com/goplus/llgo/internal/packages"
-	llvm "github.com/goplus/llvm"
-
 	llssa "github.com/goplus/llgo/ssa"
+	llvm "github.com/goplus/llvm"
+	"golang.org/x/tools/go/callgraph"
+	"golang.org/x/tools/go/callgraph/rta"
+	"golang.org/x/tools/go/ssa"
 )
 
 type genConfig struct {
 	rtInit        bool
 	pyInit        bool
+	abiPrune      bool
 	abiInit       int
 	methodByIndex map[int]none
 	methodByName  map[string]none
@@ -89,6 +93,35 @@ func genMainModule(ctx *context, rtPkgPath string, pkg *packages.Package, cfg *g
 	var rtInit llssa.Function
 	if cfg.rtInit {
 		rtInit = declareNoArgFunc(mainPkg, rtPkgPath+".init")
+	}
+
+	if cfg.abiPrune {
+		progSSA := ctx.progSSA
+		res := buildRTAResult(progSSA)
+		invoked := buildInvokeIndex(res.CallGraph)
+		mainPkg.PruneAbiTypes(cfg.abiInit, func(index int, method *types.Selection) bool {
+			if cfg.abiInit != 0 && ast.IsExported(method.Obj().Name()) {
+				return true
+			}
+			mth := progSSA.MethodValue(method)
+			if _, ok := invoked[mth]; ok {
+				return true
+			}
+			mtyp := method.Type()
+			for v := range invoked {
+				if v.Name() == mth.Name() {
+					vtyp := v.Type()
+					if !types.Identical(prog.Patch(vtyp.(*types.Signature).Recv().Type()), mtyp.(*types.Signature).Recv().Type()) {
+						continue
+					}
+					if !types.Identical(prog.Patch(vtyp), mtyp) {
+						continue
+					}
+					return true
+				}
+			}
+			return false
+		})
 	}
 
 	var abiInit llssa.Function
@@ -148,6 +181,36 @@ func filterAbiSymbol(abiInit int, sym *llssa.AbiSymbol) bool {
 		}
 	}
 	return false
+}
+
+func buildRTAResult(progSSA *ssa.Program) *rta.Result {
+	var roots []*ssa.Function
+	for _, pkg := range progSSA.AllPackages() {
+		if pkg.Pkg.Name() == "main" {
+			if fn := pkg.Func("main"); fn != nil {
+				roots = append(roots, fn)
+			}
+		}
+		if fn := pkg.Func("init"); fn != nil {
+			roots = append(roots, fn)
+		}
+	}
+	res := rta.Analyze(roots, true)
+	return res
+}
+
+func buildInvokeIndex(cg *callgraph.Graph) map[*ssa.Function]bool {
+	invoked := make(map[*ssa.Function]bool)
+	for _, node := range cg.Nodes {
+		for _, out := range node.Out {
+			if out.Callee != nil && out.Callee.Func != nil {
+				if out.Site != nil && out.Site.Common().IsInvoke() {
+					invoked[out.Callee.Func] = true
+				}
+			}
+		}
+	}
+	return invoked
 }
 
 // defineEntryFunction creates the program's entry function. The name is
