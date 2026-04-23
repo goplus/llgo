@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/goplus/llgo/cl/blocks"
@@ -154,6 +155,7 @@ type context struct {
 	prog        llssa.Program
 	pkg         llssa.Package
 	fn          llssa.Function
+	goFn        *ssa.Function
 	fset        *token.FileSet
 	goProg      *ssa.Program
 	goTyps      *types.Package
@@ -361,7 +363,14 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 	if ftype != goFunc {
 		return nil, nil, ignoredFunc
 	}
-	sig := p.patchType(f.Signature).(*types.Signature)
+	sig := func() *types.Signature {
+		oldGoFn := p.goFn
+		p.goFn = f
+		defer func() {
+			p.goFn = oldGoFn
+		}()
+		return p.patchType(f.Signature).(*types.Signature)
+	}()
 	state := p.state
 	isInit := (f.Name() == "init" && sig.Recv() == nil)
 	if isInit && state == pkgHasPatch {
@@ -417,10 +426,12 @@ func (p *context) compileFuncDecl(pkg llssa.Package, f *ssa.Function) (llssa.Fun
 		dbgEnabled := enableDbg && (f == nil || f.Origin() == nil)
 		dbgSymsEnabled := enableDbgSyms && (f == nil || f.Origin() == nil)
 		p.inits = append(p.inits, func() {
+			oldFn, oldGoFn := p.fn, p.goFn
 			p.fn = fn
+			p.goFn = f
 			p.state = state // restore pkgState when compiling funcBody
 			defer func() {
-				p.fn = nil
+				p.fn, p.goFn = oldFn, oldGoFn
 			}()
 			p.phis = nil
 			if dbgSymsEnabled {
@@ -937,7 +948,7 @@ func (p *context) compileInstrOrValue(b llssa.Builder, iv instrOrValue, asValue 
 			max = p.compileValue(b, v.Max)
 		}
 		ret = b.Slice(x, low, high, max)
-		ret.Type = b.Prog.Type(v.Type(), llssa.InGo)
+		ret.Type = p.type_(v.Type(), llssa.InGo)
 	case *ssa.MakeInterface:
 		if refs := *v.Referrers(); len(refs) == 1 {
 			switch ref := refs[0].(type) {
@@ -1546,7 +1557,54 @@ func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 		if t, ok := p._patchType(typ.Elem()); ok {
 			return types.NewPointer(t), true
 		}
+	case *types.Slice:
+		if t, ok := p._patchType(typ.Elem()); ok {
+			return types.NewSlice(t), true
+		}
+	case *types.Array:
+		if t, ok := p._patchType(typ.Elem()); ok {
+			return types.NewArray(t, typ.Len()), true
+		}
+	case *types.Map:
+		var patched bool
+		key := typ.Key()
+		elem := typ.Elem()
+		if t, ok := p._patchType(key); ok {
+			key = t
+			patched = true
+		}
+		if t, ok := p._patchType(elem); ok {
+			elem = t
+			patched = true
+		}
+		if patched {
+			return types.NewMap(key, elem), true
+		}
+	case *types.Chan:
+		if t, ok := p._patchType(typ.Elem()); ok {
+			return types.NewChan(typ.Dir(), t), true
+		}
+	case *types.Struct:
+		var patched bool
+		vars := make([]*types.Var, typ.NumFields())
+		tags := make([]string, typ.NumFields())
+		for i := 0; i < typ.NumFields(); i++ {
+			v := typ.Field(i)
+			if t, ok := p._patchType(v.Type()); ok {
+				vars[i] = types.NewField(v.Pos(), v.Pkg(), v.Name(), t, v.Anonymous())
+				patched = true
+			} else {
+				vars[i] = v
+			}
+			tags[i] = typ.Tag(i)
+		}
+		if patched {
+			return types.NewStruct(vars, tags), true
+		}
 	case *types.Named:
+		if t, ok := p.patchLocalGenericNamed(typ); ok {
+			return t, true
+		}
 		o := typ.Obj()
 		if pkg := o.Pkg(); typepatch.IsPatched(pkg) {
 			if patch, ok := p.patches[pkg.Path()]; ok {
@@ -1579,6 +1637,228 @@ func (p *context) _patchType(typ types.Type) (types.Type, bool) {
 		}
 	}
 	return typ, false
+}
+
+func (p *context) patchLocalGenericNamed(t *types.Named) (*types.Named, bool) {
+	if p.goFn == nil || len(p.goFn.TypeArgs()) == 0 || !p.isGenericLocalType(t.Obj()) {
+		return nil, false
+	}
+	if isPatchedLocalGenericName(t.Obj().Name()) {
+		return nil, false
+	}
+	obj := types.NewTypeName(t.Obj().Pos(), t.Obj().Pkg(), p.localNamedName(t, true), nil)
+	return types.NewNamed(obj, t.Underlying(), nil), true
+}
+
+func isPatchedLocalGenericName(name string) bool {
+	// The patched name embeds type arguments in brackets. Go identifiers cannot
+	// contain '[', so this also prevents repeatedly expanding the generated name.
+	return strings.Contains(name, "[")
+}
+
+func (p *context) localNamedName(t *types.Named, suffix bool) string {
+	obj := t.Obj()
+	name := obj.Name()
+	if isPatchedLocalGenericName(name) {
+		return name
+	}
+	outer := p.localTypeOuterArgs(obj)
+	own := typeListArgs(t.TypeArgs(), p.typeArgName)
+	switch {
+	case len(outer) != 0 && len(own) != 0:
+		name += "[" + strings.Join(outer, ",") + ";" + strings.Join(own, ",") + "]"
+	case len(outer) != 0:
+		name += "[" + strings.Join(outer, ",") + "]"
+	case len(own) != 0:
+		name += "[" + strings.Join(own, ",") + "]"
+	}
+	if suffix {
+		if n := p.localTypeOrdinal(obj); n != 0 {
+			name += "·" + strconv.Itoa(n)
+		}
+	}
+	return name
+}
+
+func (p *context) localTypeOuterArgs(obj types.Object) []string {
+	// localNamedName is also used by non-local type arguments, so keep this
+	// guard here even though patchLocalGenericNamed has already checked it.
+	if p.goFn == nil || len(p.goFn.TypeArgs()) == 0 || !p.isGenericLocalType(obj) {
+		return nil
+	}
+	args := p.goFn.TypeArgs()
+	ret := make([]string, len(args))
+	for i, arg := range args {
+		ret[i] = p.typeArgName(arg)
+	}
+	return ret
+}
+
+func typeListArgs(list *types.TypeList, nameOf func(types.Type) string) []string {
+	if list == nil {
+		return nil
+	}
+	ret := make([]string, list.Len())
+	for i := 0; i < list.Len(); i++ {
+		ret[i] = nameOf(list.At(i))
+	}
+	return ret
+}
+
+func (p *context) typeArgName(t types.Type) string {
+	// Keep this formatter aligned with ssa/abi.typeArgString; this variant must
+	// additionally encode local generic type names while patching frontend types.
+	switch t := t.(type) {
+	case *types.Alias:
+		return p.typeArgName(types.Unalias(t))
+	case *types.Basic:
+		return t.String()
+	case *types.Named:
+		name := p.localNamedName(t, p.isLocalType(t.Obj()))
+		if pkg := t.Obj().Pkg(); pkg != nil {
+			return pkg.Path() + "." + name
+		}
+		return name
+	case *types.Pointer:
+		return "*" + p.typeArgName(t.Elem())
+	case *types.Slice:
+		return "[]" + p.typeArgName(t.Elem())
+	case *types.Array:
+		return fmt.Sprintf("[%v]%s", t.Len(), p.typeArgName(t.Elem()))
+	case *types.Map:
+		return fmt.Sprintf("map[%s]%s", p.typeArgName(t.Key()), p.typeArgName(t.Elem()))
+	case *types.Chan:
+		s := chanDirName(t.Dir())
+		elem := p.typeArgName(t.Elem())
+		if t.Dir() == types.SendRecv {
+			if ch, ok := t.Elem().(*types.Chan); ok && ch.Dir() == types.RecvOnly {
+				elem = "(" + elem + ")"
+			}
+		}
+		return fmt.Sprintf("%s %s", s, elem)
+	default:
+		return types.TypeString(t, func(pkg *types.Package) string {
+			if pkg == nil {
+				return ""
+			}
+			return pkg.Name()
+		})
+	}
+}
+
+func chanDirName(dir types.ChanDir) string {
+	switch dir {
+	case types.SendRecv:
+		return "chan"
+	case types.SendOnly:
+		return "chan<-"
+	case types.RecvOnly:
+		return "<-chan"
+	default:
+		panic("invalid channel direction")
+	}
+}
+
+func (p *context) isGenericLocalType(obj types.Object) bool {
+	if !p.isLocalType(obj) {
+		return false
+	}
+	if obj.Parent() == nil {
+		return p.inCurrentFunction(obj.Pos())
+	}
+	for scope := obj.Parent(); scope != nil; scope = scope.Parent() {
+		if pkg := obj.Pkg(); pkg != nil && scope == pkg.Scope() {
+			return false
+		}
+		if scopeHasTypeParams(scope) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *context) isLocalType(obj types.Object) bool {
+	if obj == nil || obj.Pkg() == nil {
+		return false
+	}
+	parent := obj.Parent()
+	if parent == nil {
+		return obj.Pos().IsValid()
+	}
+	return parent != obj.Pkg().Scope()
+}
+
+func scopeHasTypeParams(scope *types.Scope) bool {
+	for _, name := range scope.Names() {
+		if isTypeParamObject(scope.Lookup(name)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *context) localTypeOrdinal(obj types.Object) int {
+	scope := obj.Parent()
+	if scope == nil || !obj.Pos().IsValid() {
+		return p.localTypeOrdinalBySyntax(obj.Pos())
+	}
+	n := 0
+	for _, name := range scope.Names() {
+		o := scope.Lookup(name)
+		if _, ok := o.(*types.TypeName); !ok || isTypeParamObject(o) {
+			continue
+		}
+		if pos := o.Pos(); pos.IsValid() && pos <= obj.Pos() {
+			n++
+		}
+	}
+	return n
+}
+
+func (p *context) inCurrentFunction(pos token.Pos) bool {
+	if !pos.IsValid() {
+		return false
+	}
+	syntax := p.currentFunctionSyntax()
+	return syntax != nil && syntax.Pos() <= pos && pos <= syntax.End()
+}
+
+func (p *context) localTypeOrdinalBySyntax(pos token.Pos) int {
+	if !p.inCurrentFunction(pos) {
+		return 0
+	}
+	n := 0
+	ast.Inspect(p.currentFunctionSyntax(), func(node ast.Node) bool {
+		spec, ok := node.(*ast.TypeSpec)
+		if !ok {
+			return true
+		}
+		if spec.Name != nil && spec.Name.Pos().IsValid() && spec.Name.Pos() <= pos {
+			n++
+		}
+		return true
+	})
+	return n
+}
+
+func (p *context) currentFunctionSyntax() ast.Node {
+	if p.goFn == nil {
+		return nil
+	}
+	fn := p.goFn
+	if origin := fn.Origin(); origin != nil {
+		fn = origin
+	}
+	return fn.Syntax()
+}
+
+func isTypeParamObject(obj types.Object) bool {
+	tn, ok := obj.(*types.TypeName)
+	if !ok {
+		return false
+	}
+	_, ok = tn.Type().(*types.TypeParam)
+	return ok
 }
 
 func instantiate(orig types.Type, t *types.Named) (typ types.Type) {
