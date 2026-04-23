@@ -918,79 +918,70 @@ _llgo_24:                                         ; preds = %_llgo_23
   br label %_llgo_12
 
 _llgo_25:                                         ; preds = %_llgo_26, %_llgo_12
-  %40 = phi double [ %15, %_llgo_12 ], [ %62, %_llgo_26 ]
-  %41 = phi i64 [ 0, %_llgo_12 ], [ %63, %_llgo_26 ]
+  %40 = phi double [ %15, %_llgo_12 ], [ %53, %_llgo_26 ]
+  %41 = phi i64 [ 0, %_llgo_12 ], [ %54, %_llgo_26 ]
   %42 = icmp slt i64 %41, 7
   br i1 %42, label %_llgo_26, label %_llgo_27
 
 _llgo_26:                                         ; preds = %_llgo_25
-  %43 = fcmp ole double %40, 0xC3E0000000000000
-  %44 = fcmp oge double %40, 0x43E0000000000000
-  %45 = fcmp uno double %40, %40
-  %46 = or i1 %43, %44
-  %47 = or i1 %45, %46
-  %48 = select i1 %47, double 0.000000e+00, double %40
-  %49 = fptosi double %48 to i64
-  %50 = select i1 %43, i64 -9223372036854775808, i64 %49
-  %51 = select i1 %44, i64 9223372036854775807, i64 %50
-  %52 = select i1 %45, i64 0, i64 %51
-  %53 = add i64 %41, 2
-  %54 = add i64 %52, 48
-  %55 = trunc i64 %54 to i8
-  %56 = icmp slt i64 %53, 0
-  %57 = icmp uge i64 %53, 14
-  %58 = or i1 %57, %56
-  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %58)
-  %59 = getelementptr inbounds i8, ptr %8, i64 %53
-  store i8 %55, ptr %59, align 1
-  %60 = sitofp i64 %52 to double
-  %61 = fsub double %40, %60
-  %62 = fmul double %61, 1.000000e+01
-  %63 = add i64 %41, 1
+  %43 = fptosi double %40 to i64
+  %44 = add i64 %41, 2
+  %45 = add i64 %43, 48
+  %46 = trunc i64 %45 to i8
+  %47 = icmp slt i64 %44, 0
+  %48 = icmp uge i64 %44, 14
+  %49 = or i1 %48, %47
+  call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %49)
+  %50 = getelementptr inbounds i8, ptr %8, i64 %44
+  store i8 %46, ptr %50, align 1
+  %51 = sitofp i64 %43 to double
+  %52 = fsub double %40, %51
+  %53 = fmul double %52, 1.000000e+01
+  %54 = add i64 %41, 1
   br label %_llgo_25
 
 _llgo_27:                                         ; preds = %_llgo_25
-  %64 = getelementptr inbounds i8, ptr %8, i64 2
-  %65 = load i8, ptr %64, align 1
-  %66 = getelementptr inbounds i8, ptr %8, i64 1
-  store i8 %65, ptr %66, align 1
-  %67 = getelementptr inbounds i8, ptr %8, i64 2
-  store i8 46, ptr %67, align 1
-  %68 = getelementptr inbounds i8, ptr %8, i64 9
-  store i8 101, ptr %68, align 1
-  %69 = getelementptr inbounds i8, ptr %8, i64 10
-  store i8 43, ptr %69, align 1
-  %70 = icmp slt i64 %16, 0
-  br i1 %70, label %_llgo_28, label %_llgo_29
+  %55 = getelementptr inbounds i8, ptr %8, i64 2
+  %56 = load i8, ptr %55, align 1
+  %57 = getelementptr inbounds i8, ptr %8, i64 1
+  store i8 %56, ptr %57, align 1
+  %58 = getelementptr inbounds i8, ptr %8, i64 2
+  store i8 46, ptr %58, align 1
+  %59 = getelementptr inbounds i8, ptr %8, i64 9
+  store i8 101, ptr %59, align 1
+  %60 = getelementptr inbounds i8, ptr %8, i64 10
+  store i8 43, ptr %60, align 1
+  %61 = icmp slt i64 %16, 0
+  br i1 %61, label %_llgo_28, label %_llgo_29
 
 _llgo_28:                                         ; preds = %_llgo_27
-  %71 = sub i64 0, %16
-  %72 = getelementptr inbounds i8, ptr %8, i64 10
-  store i8 45, ptr %72, align 1
+  %62 = sub i64 0, %16
+  %63 = getelementptr inbounds i8, ptr %8, i64 10
+  store i8 45, ptr %63, align 1
   br label %_llgo_29
 
 _llgo_29:                                         ; preds = %_llgo_28, %_llgo_27
-  %73 = phi i64 [ %16, %_llgo_27 ], [ %71, %_llgo_28 ]
-  %74 = sdiv i64 %73, 100
+  %64 = phi i64 [ %16, %_llgo_27 ], [ %62, %_llgo_28 ]
+  %65 = sdiv i64 %64, 100
+  %66 = trunc i64 %65 to i8
+  %67 = add i8 %66, 48
+  %68 = getelementptr inbounds i8, ptr %8, i64 11
+  store i8 %67, ptr %68, align 1
+  %69 = sdiv i64 %64, 10
+  %70 = trunc i64 %69 to i8
+  %71 = urem i8 %70, 10
+  %72 = add i8 %71, 48
+  %73 = getelementptr inbounds i8, ptr %8, i64 12
+  store i8 %72, ptr %73, align 1
+  %74 = srem i64 %64, 10
   %75 = trunc i64 %74 to i8
   %76 = add i8 %75, 48
-  %77 = getelementptr inbounds i8, ptr %8, i64 11
+  %77 = getelementptr inbounds i8, ptr %8, i64 13
   store i8 %76, ptr %77, align 1
-  %78 = sdiv i64 %73, 10
-  %79 = trunc i64 %78 to i8
-  %80 = urem i8 %79, 10
-  %81 = add i8 %80, 48
-  %82 = getelementptr inbounds i8, ptr %8, i64 12
-  store i8 %81, ptr %82, align 1
-  %83 = srem i64 %73, 10
-  %84 = trunc i64 %83 to i8
-  %85 = add i8 %84, 48
-  %86 = getelementptr inbounds i8, ptr %8, i64 13
-  store i8 %85, ptr %86, align 1
-  %87 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %8, 0
-  %88 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %87, i64 14, 1
-  %89 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %88, i64 14, 2
-  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %89)
+  %78 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %8, 0
+  %79 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %78, i64 14, 1
+  %80 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %79, i64 14, 2
+  call void @"github.com/goplus/llgo/cl/_testdata/print.gwrite"(%"github.com/goplus/llgo/runtime/internal/runtime.Slice" %80)
   ret void
 }
 

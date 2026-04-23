@@ -972,90 +972,30 @@ func castInt(b Builder, x llvm.Value, xtyp Type, typ Type) llvm.Value {
 
 func castFloatToInt(b Builder, x llvm.Value, typ Type) llvm.Value {
 	dstSize := b.Prog.td.TypeAllocSize(typ.ll)
-	if dstSize < 4 {
-		// Go lowers float -> {u,}int8/{u,}int16 through a signed int32
-		// conversion and then truncates. Keep that behavior for the overflow
-		// cases covered by GOROOT convert5.go.
-		i32 := b.Prog.Int32()
-		tmp := castFloatToSignedWidth(b, x, i32, 32)
+	if dstSize < 8 {
+		i64 := b.Prog.Int64()
+		if typ.kind == vkUnsigned {
+			// note(zzy): for unsigned targets, split negative vs non-negative.
+			// Negative values need signed expansion (FPToSI) before truncation;
+			// non-negative values can use unsigned expansion (FPToUI). This avoids
+			// direct float->narrow-unsigned conversions and preserves wrap/trunc behavior.
+			zero := llvm.ConstNull(x.Type())
+			isNeg := b.impl.CreateFCmp(llvm.FloatOLT, x, zero, "")
+			neg := llvm.CreateFPToSI(b.impl, x, i64.ll)
+			pos := llvm.CreateFPToUI(b.impl, x, i64.ll)
+			tmp := b.impl.CreateSelect(isNeg, neg, pos, "")
+			return llvm.CreateTrunc(b.impl, tmp, typ.ll)
+		}
+		tmp := llvm.CreateFPToSI(b.impl, x, i64.ll)
 		return llvm.CreateTrunc(b.impl, tmp, typ.ll)
 	}
+	// note(zzy): dst is already 64-bit wide, so no extra widen+trunc roundtrip is needed here;
+	// see LLVM fptoui/fptosi semantics: https://llvm.org/docs/LangRef.html#fptoui-to-instruction
+	// and https://llvm.org/docs/LangRef.html#fptosi-to-instruction
 	if typ.kind == vkUnsigned {
-		if dstSize == 4 {
-			return castFloatToUnsigned32(b, x, typ)
-		}
-		return castFloatToUnsignedWidth(b, x, typ, dstSize*8)
+		return llvm.CreateFPToUI(b.impl, x, typ.ll)
 	}
-	return castFloatToSignedWidth(b, x, typ, dstSize*8)
-}
-
-func castFloatToSignedWidth(b Builder, x llvm.Value, typ Type, bits uint64) llvm.Value {
-	tooLow := llvm.CreateFCmp(b.impl, llvm.FloatOLE, x, llvm.ConstFloat(x.Type(), -float64(uint64(1)<<(bits-1))))
-	tooHigh := llvm.CreateFCmp(b.impl, llvm.FloatOGE, x, llvm.ConstFloat(x.Type(), float64(signedMaxInt(bits))))
-	isNaN := llvm.CreateFCmp(b.impl, llvm.FloatUNO, x, x)
-	invalid := b.impl.CreateOr(isNaN, b.impl.CreateOr(tooLow, tooHigh, ""), "")
-	zeroFloat := llvm.ConstNull(x.Type())
-	safeX := llvm.CreateSelect(b.impl, invalid, zeroFloat, x)
-
-	ret := llvm.CreateFPToSI(b.impl, safeX, typ.ll)
-	ret = llvm.CreateSelect(b.impl, tooLow, signedMinValue(typ.ll, bits), ret)
-	ret = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, signedMaxInt(bits), false), ret)
-	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
-}
-
-func castFloatToUnsignedWidth(b Builder, x llvm.Value, typ Type, bits uint64) llvm.Value {
-	zeroFloat := llvm.ConstNull(x.Type())
-	tooLow := llvm.CreateFCmp(b.impl, llvm.FloatOLT, x, zeroFloat)
-	tooHigh := llvm.CreateFCmp(b.impl, llvm.FloatOGE, x, llvm.ConstFloat(x.Type(), float64(unsignedMaxInt(bits))))
-	isNaN := llvm.CreateFCmp(b.impl, llvm.FloatUNO, x, x)
-	invalid := b.impl.CreateOr(isNaN, b.impl.CreateOr(tooLow, tooHigh, ""), "")
-	safeX := llvm.CreateSelect(b.impl, invalid, zeroFloat, x)
-
-	ret := llvm.CreateFPToUI(b.impl, safeX, typ.ll)
-	ret = llvm.CreateSelect(b.impl, tooLow, llvm.ConstInt(typ.ll, 0, false), ret)
-	ret = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, unsignedMaxInt(bits), false), ret)
-	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
-}
-
-func castFloatToUnsigned32(b Builder, x llvm.Value, typ Type) llvm.Value {
-	i64 := b.Prog.Int64()
-	u64 := b.Prog.Uint64()
-	zeroFloat := llvm.ConstNull(x.Type())
-	isNaN := llvm.CreateFCmp(b.impl, llvm.FloatUNO, x, x)
-	isNeg := llvm.CreateFCmp(b.impl, llvm.FloatOLT, x, zeroFloat)
-
-	minI64 := llvm.ConstFloat(x.Type(), -float64(uint64(1)<<63))
-	maxU64 := llvm.ConstFloat(x.Type(), float64(^uint64(0)))
-	tooLow := llvm.CreateFCmp(b.impl, llvm.FloatOLE, x, minI64)
-	tooHigh := llvm.CreateFCmp(b.impl, llvm.FloatOGE, x, maxU64)
-
-	negInvalid := b.impl.CreateOr(isNaN, tooLow, "")
-	posInvalid := b.impl.CreateOr(isNaN, tooHigh, "")
-	negX := llvm.CreateSelect(b.impl, negInvalid, zeroFloat, x)
-	posX := llvm.CreateSelect(b.impl, posInvalid, zeroFloat, x)
-
-	neg := llvm.CreateTrunc(b.impl, llvm.CreateFPToSI(b.impl, negX, i64.ll), typ.ll)
-	pos := llvm.CreateTrunc(b.impl, llvm.CreateFPToUI(b.impl, posX, u64.ll), typ.ll)
-	neg = llvm.CreateSelect(b.impl, tooLow, llvm.ConstInt(typ.ll, 0, false), neg)
-	pos = llvm.CreateSelect(b.impl, tooHigh, llvm.ConstInt(typ.ll, unsignedMaxInt(32), false), pos)
-
-	ret := llvm.CreateSelect(b.impl, isNeg, neg, pos)
-	return llvm.CreateSelect(b.impl, isNaN, llvm.ConstInt(typ.ll, 0, false), ret)
-}
-
-func signedMinValue(typ llvm.Type, bits uint64) llvm.Value {
-	return llvm.ConstInt(typ, uint64(1)<<(bits-1), false)
-}
-
-func signedMaxInt(bits uint64) uint64 {
-	return (uint64(1) << (bits - 1)) - 1
-}
-
-func unsignedMaxInt(bits uint64) uint64 {
-	if bits == 64 {
-		return ^uint64(0)
-	}
-	return (uint64(1) << bits) - 1
+	return llvm.CreateFPToSI(b.impl, x, typ.ll)
 }
 
 func castFloat(b Builder, x llvm.Value, typ Type) llvm.Value {

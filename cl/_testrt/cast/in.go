@@ -4,13 +4,22 @@ package main
 //"github.com/goplus/lib/c"
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto32"(float %0, i32 %1) {
-// CHECK:   {{%.*}} = fcmp ole float %0, 0xC1E0000000000000
-// CHECK:   {{%.*}} = fcmp oge float %0, 0x41E0000000000000
-// CHECK:   {{%.*}} = fcmp uno float %0, %0
-// CHECK:   {{%.*}} = fptosi float {{%.*}} to i32
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 -2147483648, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 2147483647, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 0, i32 {{%.*}}
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %2 = fptosi float %0 to i64
+// CHECK-NEXT:   %3 = trunc i64 %2 to i32
+// CHECK-NEXT:   %4 = icmp ne i32 %3, %1
+// CHECK-NEXT:   br i1 %4, label %_llgo_1, label %_llgo_2
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
+// CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %5, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %6)
+// CHECK-NEXT:   unreachable
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   ret void
+// CHECK-NEXT: }
 func cvt32Fto32(a float32, b int32) {
 	if int32(a) != b {
 		panic("error")
@@ -18,16 +27,25 @@ func cvt32Fto32(a float32, b int32) {
 }
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto32U"(float %0, i32 %1) {
-// CHECK:   {{%.*}} = fcmp uno float %0, %0
-// CHECK:   {{%.*}} = fcmp olt float %0, 0.000000e+00
-// CHECK:   {{%.*}} = fcmp ole float %0, 0xC3E0000000000000
-// CHECK:   {{%.*}} = fcmp oge float %0, 0x43F0000000000000
-// CHECK:   {{%.*}} = fptosi float {{%.*}} to i64
-// CHECK:   {{%.*}} = trunc i64 {{%.*}} to i32
-// CHECK:   {{%.*}} = fptoui float {{%.*}} to i64
-// CHECK:   {{%.*}} = trunc i64 {{%.*}} to i32
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 -1, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 0, i32 {{%.*}}
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %2 = fcmp olt float %0, 0.000000e+00
+// CHECK-NEXT:   %3 = fptosi float %0 to i64
+// CHECK-NEXT:   %4 = fptoui float %0 to i64
+// CHECK-NEXT:   %5 = select i1 %2, i64 %3, i64 %4
+// CHECK-NEXT:   %6 = trunc i64 %5 to i32
+// CHECK-NEXT:   %7 = icmp ne i32 %6, %1
+// CHECK-NEXT:   br i1 %7, label %_llgo_1, label %_llgo_2
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   %8 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %8, align 8
+// CHECK-NEXT:   %9 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %8, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %9)
+// CHECK-NEXT:   unreachable
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   ret void
+// CHECK-NEXT: }
 func cvt32Fto32U(a float32, b uint32) {
 	if uint32(a) != b {
 		panic("error")
@@ -57,14 +75,22 @@ func cvt32Fto64F(a float32, b float64) {
 }
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto8"(float %0, i8 %1) {
-// CHECK:   {{%.*}} = fcmp ole float %0, 0xC1E0000000000000
-// CHECK:   {{%.*}} = fcmp oge float %0, 0x41E0000000000000
-// CHECK:   {{%.*}} = fcmp uno float %0, %0
-// CHECK:   {{%.*}} = fptosi float {{%.*}} to i32
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 -2147483648, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 2147483647, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 0, i32 {{%.*}}
-// CHECK:   {{%.*}} = trunc i32 {{%.*}} to i8
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %2 = fptosi float %0 to i64
+// CHECK-NEXT:   %3 = trunc i64 %2 to i8
+// CHECK-NEXT:   %4 = icmp ne i8 %3, %1
+// CHECK-NEXT:   br i1 %4, label %_llgo_1, label %_llgo_2
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %5, align 8
+// CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %5, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %6)
+// CHECK-NEXT:   unreachable
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   ret void
+// CHECK-NEXT: }
 func cvt32Fto8(a float32, b int8) {
 	if int8(a) != b {
 		panic("error")
@@ -72,14 +98,25 @@ func cvt32Fto8(a float32, b int8) {
 }
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto8U"(float %0, i8 %1) {
-// CHECK:   {{%.*}} = fcmp ole float %0, 0xC1E0000000000000
-// CHECK:   {{%.*}} = fcmp oge float %0, 0x41E0000000000000
-// CHECK:   {{%.*}} = fcmp uno float %0, %0
-// CHECK:   {{%.*}} = fptosi float {{%.*}} to i32
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 -2147483648, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 2147483647, i32 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i32 0, i32 {{%.*}}
-// CHECK:   {{%.*}} = trunc i32 {{%.*}} to i8
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %2 = fcmp olt float %0, 0.000000e+00
+// CHECK-NEXT:   %3 = fptosi float %0 to i64
+// CHECK-NEXT:   %4 = fptoui float %0 to i64
+// CHECK-NEXT:   %5 = select i1 %2, i64 %3, i64 %4
+// CHECK-NEXT:   %6 = trunc i64 %5 to i8
+// CHECK-NEXT:   %7 = icmp ne i8 %6, %1
+// CHECK-NEXT:   br i1 %7, label %_llgo_1, label %_llgo_2
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   %8 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %8, align 8
+// CHECK-NEXT:   %9 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %8, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %9)
+// CHECK-NEXT:   unreachable
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   ret void
+// CHECK-NEXT: }
 func cvt32Fto8U(a float32, b uint8) {
 	if uint8(a) != b {
 		panic("error")
@@ -219,13 +256,21 @@ func cvt64to8U(a int, b uint8) {
 }
 
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvtFtoUintptr"(double %0, i64 %1) {
-// CHECK:   {{%.*}} = fcmp olt double %0, 0.000000e+00
-// CHECK:   {{%.*}} = fcmp oge double %0, 0x43F0000000000000
-// CHECK:   {{%.*}} = fcmp uno double %0, %0
-// CHECK:   {{%.*}} = fptoui double {{%.*}} to i64
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i64 0, i64 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i64 -1, i64 {{%.*}}
-// CHECK:   {{%.*}} = select i1 {{%.*}}, i64 0, i64 {{%.*}}
+// CHECK-NEXT: _llgo_0:
+// CHECK-NEXT:   %2 = fptoui double %0 to i64
+// CHECK-NEXT:   %3 = icmp ne i64 %2, %1
+// CHECK-NEXT:   br i1 %3, label %_llgo_1, label %_llgo_2
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %4, align 8
+// CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %4, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %5)
+// CHECK-NEXT:   unreachable
+// CHECK-EMPTY:
+// CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_0
+// CHECK-NEXT:   ret void
+// CHECK-NEXT: }
 func cvtFtoUintptr(a float64, b uintptr) {
 	if uintptr(a) != b {
 		panic("error")
