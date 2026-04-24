@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/goplus/llgo/internal/buildtags"
 	llssa "github.com/goplus/llgo/ssa"
@@ -38,6 +39,13 @@ type cgoDecl struct {
 	cflags  []string
 	ldflags []string
 }
+
+type pkgConfigResult struct {
+	cflags  []string
+	ldflags []string
+}
+
+var pkgConfigCache sync.Map
 
 type cgoPreamble struct {
 	goFile string
@@ -367,6 +375,33 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 // #cgo linux CPPFLAGS: -I/usr/lib/llvm-19/include -D_GNU_SOURCE
 // #cgo CFLAGS: -I/usr/include/python3.12
 // #cgo LDFLAGS: -L/usr/lib/python3.12/config-3.12-x86_64-linux-gnu -lpython3.12
+func cachedPkgConfig(arg string) (pkgConfigResult, error) {
+	key := strings.Join([]string{
+		arg,
+		os.Getenv("PKG_CONFIG"),
+		os.Getenv("PKG_CONFIG_PATH"),
+		os.Getenv("PKG_CONFIG_LIBDIR"),
+		os.Getenv("PATH"),
+	}, "\x00")
+	if cached, ok := pkgConfigCache.Load(key); ok {
+		return cached.(pkgConfigResult), nil
+	}
+	ldflags, err := exec.Command("pkg-config", "--libs", arg).Output()
+	if err != nil {
+		return pkgConfigResult{}, fmt.Errorf("pkg-config: %v", err)
+	}
+	cflags, err := exec.Command("pkg-config", "--cflags", arg).Output()
+	if err != nil {
+		return pkgConfigResult{}, fmt.Errorf("pkg-config: %v", err)
+	}
+	result := pkgConfigResult{
+		cflags:  safesplit.SplitPkgConfigFlags(string(cflags)),
+		ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
+	}
+	actual, _ := pkgConfigCache.LoadOrStore(key, result)
+	return actual.(pkgConfigResult), nil
+}
+
 func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 	idx := strings.Index(line, ":")
 	if idx == -1 {
@@ -398,20 +433,15 @@ func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 
 	switch flag {
 	case "pkg-config":
-		ldflags, e := exec.Command("pkg-config", "--libs", arg).Output()
+		result, e := cachedPkgConfig(arg)
 		if e != nil {
-			err = fmt.Errorf("pkg-config: %v", e)
-			return
-		}
-		cflags, e := exec.Command("pkg-config", "--cflags", arg).Output()
-		if e != nil {
-			err = fmt.Errorf("pkg-config: %v", e)
+			err = e
 			return
 		}
 		cgoDecls = append(cgoDecls, cgoDecl{
 			tag:     tag,
-			cflags:  safesplit.SplitPkgConfigFlags(string(cflags)),
-			ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
+			cflags:  result.cflags,
+			ldflags: result.ldflags,
 		})
 	case "CPPFLAGS", "CFLAGS":
 		cgoDecls = append(cgoDecls, cgoDecl{
