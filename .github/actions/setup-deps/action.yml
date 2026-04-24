@@ -47,15 +47,6 @@ runs:
           llvm_bin="$(brew --prefix "${llvm_formula}")/bin"
           lld_bin="$(brew --prefix "${lld_formula}")/bin"
           echo "${llvm_bin}" >> "$GITHUB_PATH"
-
-          # Print resolved toolchain versions for CI diagnostics.
-          echo "LLVM/LLD versions:"
-          brew list --versions "${llvm_formula}" "${lld_formula}"
-          clang_version="$("${llvm_bin}/clang" --version | head -n 1)"
-          lld_version="$("${lld_bin}/ld.lld" --version | head -n 1)"
-          echo "clang: ${clang_version}"
-          echo "ld.lld: ${lld_version}"
-          echo "linked ld.lld path: $(command -v ld.lld || true)"
         fi
         
         deps=(bdw-gc openssl libffi libuv)
