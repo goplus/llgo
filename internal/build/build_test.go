@@ -90,6 +90,11 @@ func TestBuildPrint(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeBuild})
 }
 
+func TestTest(t *testing.T) {
+	// FIXME(zzy): with builtin package test in a llgo test ./... will cause duplicate symbol error
+	mockRun([]string{"../../cl/_testgo/runtest"}, &Config{Mode: ModeTest})
+}
+
 func TestExtest(t *testing.T) {
 	originalStdout := os.Stdout
 	defer func() { os.Stdout = originalStdout }()
@@ -106,11 +111,11 @@ func TestExtest(t *testing.T) {
 		outputChan <- data.String()
 	}()
 
-	mockRun([]string{"../../cl/_testgo/runextest/foo"}, &Config{Mode: ModeTest})
+	mockRun([]string{"../../cl/_testgo/runextest/..."}, &Config{Mode: ModeTest})
 
 	w.Close()
 	got := <-outputChan
-	expected := "PASS\n"
+	expected := "PASS\nPASS\nPASS\nPASS\n"
 	if got != expected {
 		t.Errorf("Expected output %q, but got %q", expected, got)
 	}
