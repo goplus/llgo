@@ -192,7 +192,6 @@ jobs:
           - macos-latest
           - ubuntu-latest
         llvm: [19]
-        go: ["1.24.2"]
         shard: ["0", "1", "2", "3"]
     runs-on: ${{matrix.os}}
     steps:
