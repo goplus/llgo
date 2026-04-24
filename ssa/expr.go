@@ -500,8 +500,8 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				// LLVM's integer div/rem are undefined on zero divisor, so
 				// we insert an explicit runtime check here and lower through a
 				// safe non-zero divisor so targets like x86 don't trap first.
-				var zero llvm.Value
-				var isZero llvm.Value
+				// safeY carries the zero-safe divisor into the signed overflow
+				// lowering below when both guards are needed.
 				var safeY llvm.Value
 				if (op == token.QUO || op == token.REM) && (kind == vkSigned || kind == vkUnsigned) {
 					needsCheck := true
@@ -509,8 +509,8 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 						needsCheck = rv.ZExtValue() == 0
 					}
 					if needsCheck {
-						zero = llvm.ConstInt(y.ll, 0, false)
-						isZero = llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero)
+						zero := llvm.ConstInt(y.ll, 0, false)
+						isZero := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero)
 						check := Expr{isZero, b.Prog.Bool()}
 						b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), check)
 						safeY = llvm.CreateSelect(b.impl, isZero, llvm.ConstInt(y.ll, 1, false), y.impl)
@@ -527,9 +527,19 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 						needsOverflowCheck = rv.SExtValue() == -1
 					}
 				}
+				var minIntVal uint64
 				if needsOverflowCheck {
 					bits := b.Prog.SizeOf(x.Type) * 8
-					minInt := llvm.ConstInt(x.ll, uint64(1)<<(bits-1), false)
+					if bits == 0 || bits > 64 {
+						panic("unexpected integer bit width")
+					}
+					minIntVal = uint64(1) << (bits - 1)
+					if rv := x.impl.IsAConstantInt(); !rv.IsNil() {
+						needsOverflowCheck = rv.ZExtValue() == minIntVal
+					}
+				}
+				if needsOverflowCheck {
+					minInt := llvm.ConstInt(x.ll, minIntVal, false)
 					negOne := llvm.ConstAllOnes(y.ll)
 					isMinInt := llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, minInt)
 					isNegOne := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, negOne)
