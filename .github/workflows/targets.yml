@@ -22,14 +22,13 @@ jobs:
         os:
           - macos-latest
           - ubuntu-latest
-        llvm: [19]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
-          llvm-version: ${{matrix.llvm}}
+          llvm-version: 19
 
       - name: Set up Go for build
         uses: ./.github/actions/setup-go

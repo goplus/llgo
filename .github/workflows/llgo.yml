@@ -46,7 +46,6 @@ jobs:
           - macos-latest
           - macos-15-intel
           - ubuntu-latest
-        llvm: [19]
         go: ["1.21.13", "1.24.2"]
     runs-on: ${{matrix.os}}
     steps:
@@ -54,7 +53,7 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
-          llvm-version: ${{matrix.llvm}}
+          llvm-version: 19
       - name: Install embedded dependencies
         uses: ./.github/actions/setup-embed-deps
       - name: Download model artifact
@@ -180,7 +179,7 @@ jobs:
       - name: LLDB tests
         if: ${{ startsWith(matrix.os, 'macos') && matrix.os != 'macos-15-intel' }}
         run: |
-          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
+          echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM 19"
           bash _lldb/runtest.sh -v
 
   test:
@@ -191,7 +190,6 @@ jobs:
         os:
           - macos-latest
           - ubuntu-latest
-        llvm: [19]
         shard: ["0", "1", "2", "3"]
     runs-on: ${{matrix.os}}
     steps:
@@ -199,7 +197,7 @@ jobs:
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
-          llvm-version: ${{matrix.llvm}}
+          llvm-version: 19
       - name: Set up Go for build
         uses: ./.github/actions/setup-go
         with:
@@ -250,14 +248,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        llvm: [19]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
-          llvm-version: ${{matrix.llvm}}
+          llvm-version: 19
 
       - name: Set up Go for building llgo
         uses: ./.github/actions/setup-go
@@ -281,14 +278,13 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        llvm: [19]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
       - name: Install dependencies
         uses: ./.github/actions/setup-deps
         with:
-          llvm-version: ${{matrix.llvm}}
+          llvm-version: 19
 
       - name: Set up Go for building llgo
         uses: ./.github/actions/setup-go
