@@ -27,7 +27,7 @@ runs:
         if [[ "${{ inputs.skip-package-update }}" != "true" ]]; then
           sudo apt-get update
         fi
-        sudo apt-get install -y libsdl2-2.0-0
+        sudo apt-get install -y --no-install-recommends libsdl2-2.0-0
 
     - name: Install ESP QEMU toolchains
       shell: bash
