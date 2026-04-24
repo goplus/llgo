@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/goplus/llgo/internal/env"
 	"github.com/goplus/llgo/internal/packages"
@@ -252,12 +253,24 @@ func moduleVersion(mod *gopackages.Module) string {
 	return mod.Version
 }
 
+var llvmVersionCache sync.Map
+
 // getLLVMVersion returns the cached LLVM version or detects it.
 func (c *context) getLLVMVersion() string {
 	if c.llvmVersion != "" {
 		return c.llvmVersion
 	}
+	cc := c.crossCompile.CC
+	if cc == "" {
+		cc = "clang"
+	}
+	if version, ok := llvmVersionCache.Load(cc); ok {
+		c.llvmVersion = version.(string)
+		return c.llvmVersion
+	}
 	c.llvmVersion = detectLLVMVersion(c)
+	actual, _ := llvmVersionCache.LoadOrStore(cc, c.llvmVersion)
+	c.llvmVersion = actual.(string)
 	return c.llvmVersion
 }
 
