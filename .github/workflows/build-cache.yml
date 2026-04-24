@@ -38,21 +38,15 @@ jobs:
           go-version: "1.24.2"
 
       - name: Install wamr (for wasm tests)
-        if: startsWith(matrix.os, 'macos')
         run: |
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            wamr_platform=darwin
+          else
+            wamr_platform=linux
+          fi
           git clone --branch WAMR-2.4.4 --depth 1 https://github.com/bytecodealliance/wasm-micro-runtime.git
-          mkdir wasm-micro-runtime/product-mini/platforms/darwin/build
-          cd wasm-micro-runtime/product-mini/platforms/darwin/build
-          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
-          make -j8
-          echo "$PWD" >> $GITHUB_PATH
-
-      - name: Install wamr (for wasm tests on Linux)
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          git clone --branch WAMR-2.4.4 --depth 1 https://github.com/bytecodealliance/wasm-micro-runtime.git
-          mkdir wasm-micro-runtime/product-mini/platforms/linux/build
-          cd wasm-micro-runtime/product-mini/platforms/linux/build
+          mkdir "wasm-micro-runtime/product-mini/platforms/${wamr_platform}/build"
+          cd "wasm-micro-runtime/product-mini/platforms/${wamr_platform}/build"
           cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
           make -j8
           echo "$PWD" >> $GITHUB_PATH
