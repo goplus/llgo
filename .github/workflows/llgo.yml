@@ -270,11 +270,6 @@ jobs:
           go install ./cmd/llgo
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
-      - name: Set up Go for testing
-        uses: ./.github/actions/setup-go
-        with:
-          go-version: ${{matrix.go}}
-
       - name: Test Hello World with go.mod 1.24
         uses: ./.github/actions/test-helloworld
         with:
