@@ -39,12 +39,6 @@ jobs:
         with:
           skip-package-update: "true"
 
-      - name: Clang information
-        run: |
-          echo $PATH
-          which clang
-          clang --version
-
       - name: Set up Go
         uses: ./.github/actions/setup-go
         with:
