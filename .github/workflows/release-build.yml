@@ -153,6 +153,7 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           install-llvm: false
+          install-demo-deps: false
       - name: Set up Go
         uses: actions/setup-go@v6
         with:

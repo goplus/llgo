@@ -9,6 +9,10 @@ inputs:
     description: "Whether to install LLVM"
     required: false
     default: "true"
+  install-demo-deps:
+    description: "Whether to install optional demo dependencies"
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -58,17 +62,19 @@ runs:
         brew install bdw-gc openssl libffi libuv
         brew link --overwrite libffi
 
-        # Install optional deps for demos.
-        #
-        # NOTE: Keep this list updated as new deps are introduced.
-        opt_deps=(
-          cjson       # for github.com/goplus/lib/c/cjson
-          sqlite      # for github.com/goplus/lib/c/sqlite
-        )
-        brew install "${opt_deps[@]}"
-        
-        brew install python@3.12 || true # for github.com/goplus/lib/py
-        brew link --overwrite python@3.12
+        if [[ "${{ inputs.install-demo-deps }}" == "true" ]]; then
+          # Install optional deps for demos.
+          #
+          # NOTE: Keep this list updated as new deps are introduced.
+          opt_deps=(
+            cjson       # for github.com/goplus/lib/c/cjson
+            sqlite      # for github.com/goplus/lib/c/sqlite
+          )
+          brew install "${opt_deps[@]}"
+
+          brew install python@3.12 || true # for github.com/goplus/lib/py
+          brew link --overwrite python@3.12
+        fi
 
     - name: Install Ubuntu dependencies
       if: runner.os == 'Linux'
@@ -86,13 +92,16 @@ runs:
         fi
         
         # Install common dependencies
-        sudo apt-get install -y pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libcjson-dev libuv1-dev
+        sudo apt-get install -y pkg-config libgc-dev libssl-dev zlib1g-dev libffi-dev libuv1-dev
 
-        # Install optional deps for demos.
-        #
-        # NOTE: Keep this list updated as new deps are introduced.
-        opt_deps=(
-          libsqlite3-dev # for github.com/goplus/lib/c/sqlite
-          python3.12-dev # for github.com/goplus/lib/py
-        )
-        sudo apt-get install -y "${opt_deps[@]}"
+        if [[ "${{ inputs.install-demo-deps }}" == "true" ]]; then
+          # Install optional deps for demos.
+          #
+          # NOTE: Keep this list updated as new deps are introduced.
+          opt_deps=(
+            libcjson-dev   # for github.com/goplus/lib/c/cjson
+            libsqlite3-dev # for github.com/goplus/lib/c/sqlite
+            python3.12-dev # for github.com/goplus/lib/py
+          )
+          sudo apt-get install -y "${opt_deps[@]}"
+        fi
