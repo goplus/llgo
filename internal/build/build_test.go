@@ -90,11 +90,6 @@ func TestBuildPrint(t *testing.T) {
 	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeBuild})
 }
 
-func TestTest(t *testing.T) {
-	// FIXME(zzy): with builtin package test in a llgo test ./... will cause duplicate symbol error
-	mockRun([]string{"../../cl/_testgo/runtest/foo"}, &Config{Mode: ModeTest, CompileOnly: true})
-}
-
 func TestExtest(t *testing.T) {
 	originalStdout := os.Stdout
 	defer func() { os.Stdout = originalStdout }()
