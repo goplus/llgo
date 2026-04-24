@@ -269,8 +269,10 @@ func (c *context) getLLVMVersion() string {
 		return c.llvmVersion
 	}
 	c.llvmVersion = detectLLVMVersion(c)
-	actual, _ := llvmVersionCache.LoadOrStore(cc, c.llvmVersion)
-	c.llvmVersion = actual.(string)
+	if c.llvmVersion != "" {
+		actual, _ := llvmVersionCache.LoadOrStore(cc, c.llvmVersion)
+		c.llvmVersion = actual.(string)
+	}
 	return c.llvmVersion
 }
 
