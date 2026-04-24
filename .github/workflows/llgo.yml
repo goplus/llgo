@@ -225,58 +225,17 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Keep coverage identical to go list ./test/..., but assign packages by
-          # coarse historical runtime weights instead of alphabetical modulo. This
-          # reduces macOS runner wall time by spreading the known slow crypto/net
-          # LLGo tests across shards.
-          pkg_file="$(mktemp)"
-          go list -tags=llgo ./test/... | sort > "$pkg_file"
-          selected=()
+          pkgs=()
           while IFS= read -r pkg; do
-            selected+=("$pkg")
-          done < <(python3 - "$SHARD_INDEX" "$SHARD_TOTAL" "$pkg_file" <<'PY'
-          import heapq
-          import sys
-          
-          shard_index = int(sys.argv[1])
-          shard_total = int(sys.argv[2])
-          with open(sys.argv[3]) as f:
-              packages = [line.strip() for line in f if line.strip()]
-          
-          # Coarse historical package runtimes from CI logs. Only the slowest packages are
-          # weighted; all other packages use weight 1 so new packages are still covered and
-          # assigned deterministically.
-          weights = {
-              "github.com/goplus/llgo/test/std/crypto/ecdsa": 344,
-              "github.com/goplus/llgo/test/std/crypto/tls": 328,
-              "github.com/goplus/llgo/test/std/crypto/elliptic": 278,
-              "github.com/goplus/llgo/test/std/crypto/ecdh": 241,
-              "github.com/goplus/llgo/test/std/crypto/x509": 71,
-              "github.com/goplus/llgo/test/std/crypto/rsa": 55,
-              "github.com/goplus/llgo/test/std/net": 45,
-              "github.com/goplus/llgo/test/std/net/http/cookiejar": 41,
-              "github.com/goplus/llgo/test/go": 39,
-              "github.com/goplus/llgo/test/std/net/http/fcgi": 38,
-              "github.com/goplus/llgo/test/std/expvar": 32,
-              "github.com/goplus/llgo/test": 28,
-              "github.com/goplus/llgo/test/std/net/http": 25,
-              "github.com/goplus/llgo/test/std/bytes": 20,
-          }
-          
-          shards = [(0, i, []) for i in range(shard_total)]
-          heapq.heapify(shards)
-          for pkg in sorted(packages, key=lambda p: (-weights.get(p, 1), p)):
-              total, i, assigned = heapq.heappop(shards)
-              assigned.append(pkg)
-              heapq.heappush(shards, (total + weights.get(pkg, 1), i, assigned))
-          
-          for _, i, assigned in sorted(shards, key=lambda item: item[1]):
-              if i == shard_index:
-                  print("\n".join(sorted(assigned)))
-                  break
-          PY
-          )
-          rm -f "$pkg_file"
+            pkgs+=("${pkg}")
+          done < <(go list -tags=llgo ./test/... | sort)
+
+          selected=()
+          for i in "${!pkgs[@]}"; do
+            if (( i % SHARD_TOTAL == SHARD_INDEX )); then
+              selected+=("${pkgs[$i]}")
+            fi
+          done
 
           echo "Shard: ${SHARD_INDEX}/${SHARD_TOTAL}, selected: ${#selected[@]} package(s)"
           if [ "${#selected[@]}" -eq 0 ]; then
