@@ -1,0 +1,1 @@
+- Consider making LLVM version detection injectable in tests so cross-context cache behavior can be covered without spawning shell helper processes.
