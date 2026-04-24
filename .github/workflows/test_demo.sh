@@ -9,12 +9,6 @@ fi
 
 # llgo run subdirectories under _demo that contain *.go files
 jobs="${LLGO_DEMO_JOBS:-1}"
-if [ "${jobs}" -gt 1 ]; then
-  if [ "${BASH_VERSINFO[0]}" -lt 5 ] || { [ "${BASH_VERSINFO[0]}" -eq 5 ] && [ "${BASH_VERSINFO[1]}" -lt 1 ]; }; then
-    echo "warning: LLGO_DEMO_JOBS=${jobs} requested but bash ${BASH_VERSION} lacks 'wait -n -p'; running sequentially" >&2
-    jobs=1
-  fi
-fi
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 
@@ -298,6 +292,25 @@ else
   active_logs=()
   idx=0
 
+  wait_active() {
+    local slot="$1"
+    local finished_status=0
+    if wait "${active_pids[$slot]}"; then
+      finished_status=0
+    else
+      finished_status=$?
+    fi
+    cat "${active_logs[$slot]}"
+    if [ "$finished_status" -ne 0 ]; then
+      failed=$((failed+1))
+      failed_cases="$failed_cases\n* :x: ${active_dirs[$slot]}"
+    fi
+    unset 'active_pids[slot]' 'active_dirs[slot]' 'active_logs[slot]'
+    active_pids=("${active_pids[@]}")
+    active_dirs=("${active_dirs[@]}")
+    active_logs=("${active_logs[@]}")
+  }
+
   for i in "${!run_dirs[@]}"; do
     d="${run_dirs[$i]}"
     target="${run_targets[$i]}"
@@ -305,56 +318,17 @@ else
     idx=$((idx+1))
     log="$tmp_root/$(printf '%04d' "$idx").log"
     (run_case "$d" "$target") >"$log" 2>&1 &
-    pid=$!
-    active_pids+=("$pid")
+    active_pids+=("$!")
     active_dirs+=("$label")
     active_logs+=("$log")
 
     while [ "${#active_pids[@]}" -ge "$jobs" ]; do
-      finished_pid=""
-      if wait -n -p finished_pid; then
-        finished_status=0
-      else
-        finished_status=$?
-      fi
-      for i in "${!active_pids[@]}"; do
-        if [ "${active_pids[$i]}" = "$finished_pid" ]; then
-          cat "${active_logs[$i]}"
-          if [ "$finished_status" -ne 0 ]; then
-            failed=$((failed+1))
-            failed_cases="$failed_cases\n* :x: ${active_dirs[$i]}"
-          fi
-          unset 'active_pids[i]' 'active_dirs[i]' 'active_logs[i]'
-          active_pids=("${active_pids[@]}")
-          active_dirs=("${active_dirs[@]}")
-          active_logs=("${active_logs[@]}")
-          break
-        fi
-      done
+      wait_active 0
     done
   done
 
   while [ "${#active_pids[@]}" -gt 0 ]; do
-    finished_pid=""
-    if wait -n -p finished_pid; then
-      finished_status=0
-    else
-      finished_status=$?
-    fi
-    for i in "${!active_pids[@]}"; do
-      if [ "${active_pids[$i]}" = "$finished_pid" ]; then
-        cat "${active_logs[$i]}"
-          if [ "$finished_status" -ne 0 ]; then
-            failed=$((failed+1))
-            failed_cases="$failed_cases\n* :x: ${active_dirs[$i]}"
-          fi
-        unset 'active_pids[i]' 'active_dirs[i]' 'active_logs[i]'
-        active_pids=("${active_pids[@]}")
-        active_dirs=("${active_dirs[@]}")
-        active_logs=("${active_logs[@]}")
-        break
-      fi
-    done
+    wait_active 0
   done
 fi
 
