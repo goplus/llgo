@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -355,16 +354,10 @@ func TestCheckDownloadAndExtractLib(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to download and extract lib: %v", err)
 		}
-		cmd := exec.Command("ls", destDir)
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = os.Stdout
-		cmd.Run()
-
 		for name, expectedContent := range files {
 			relPath := strings.TrimPrefix(name, "lib-src/")
 			filePath := filepath.Join(destDir, relPath)
 
-			fmt.Println(filePath, destDir)
 			content, err := os.ReadFile(filePath)
 			if err != nil {
 				t.Errorf("Failed to read extracted file %s: %v", relPath, err)
