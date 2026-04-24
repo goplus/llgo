@@ -14,6 +14,12 @@ runs:
         GO_VERSION="${{ inputs.go-version }}"
         GO_VERSION="${GO_VERSION#go}" # Remove 'go' prefix if present
 
+        if command -v go >/dev/null 2>&1 && go version | grep -q "go${GO_VERSION} "; then
+          echo "Go ${GO_VERSION} already available on PATH; skipping download"
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          exit 0
+        fi
+
         # Determine OS and architecture
         if [[ "$RUNNER_OS" == "macOS" ]]; then
           OS="darwin"
