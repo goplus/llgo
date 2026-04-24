@@ -9,6 +9,10 @@ fi
 
 # llgo run subdirectories under _demo that contain *.go files
 jobs="${LLGO_DEMO_JOBS:-1}"
+supports_wait_n=0
+if [ "${BASH_VERSINFO[0]}" -gt 5 ] || { [ "${BASH_VERSINFO[0]}" -eq 5 ] && [ "${BASH_VERSINFO[1]}" -ge 1 ]; }; then
+  supports_wait_n=1
+fi
 tmp_root="$(mktemp -d)"
 trap 'rm -rf "$tmp_root"' EXIT
 
@@ -311,6 +315,35 @@ else
     active_logs=("${active_logs[@]}")
   }
 
+  wait_one() {
+    if [ "$supports_wait_n" -ne 1 ]; then
+      wait_active 0
+      return
+    fi
+
+    local finished_pid=""
+    local finished_status=0
+    if wait -n -p finished_pid; then
+      finished_status=0
+    else
+      finished_status=$?
+    fi
+    for i in "${!active_pids[@]}"; do
+      if [ "${active_pids[$i]}" = "$finished_pid" ]; then
+        cat "${active_logs[$i]}"
+        if [ "$finished_status" -ne 0 ]; then
+          failed=$((failed+1))
+          failed_cases="$failed_cases\n* :x: ${active_dirs[$i]}"
+        fi
+        unset 'active_pids[i]' 'active_dirs[i]' 'active_logs[i]'
+        active_pids=("${active_pids[@]}")
+        active_dirs=("${active_dirs[@]}")
+        active_logs=("${active_logs[@]}")
+        return
+      fi
+    done
+  }
+
   for i in "${!run_dirs[@]}"; do
     d="${run_dirs[$i]}"
     target="${run_targets[$i]}"
@@ -323,12 +356,12 @@ else
     active_logs+=("$log")
 
     while [ "${#active_pids[@]}" -ge "$jobs" ]; do
-      wait_active 0
+      wait_one
     done
   done
 
   while [ "${#active_pids[@]}" -gt 0 ]; do
-    wait_active 0
+    wait_one
   done
 fi
 
