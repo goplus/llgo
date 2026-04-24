@@ -583,7 +583,6 @@ func TestGetLLVMVersion(t *testing.T) {
 }
 
 func TestGetLLVMVersionCachesAcrossContexts(t *testing.T) {
-	oldCache := llvmVersionCache
 	oldDetect := detectLLVMVersionFunc
 	llvmVersionCache = sync.Map{}
 	detectCalls := 0
@@ -592,7 +591,7 @@ func TestGetLLVMVersionCachesAcrossContexts(t *testing.T) {
 		return "clang version test"
 	}
 	t.Cleanup(func() {
-		llvmVersionCache = oldCache
+		llvmVersionCache = sync.Map{}
 		detectLLVMVersionFunc = oldDetect
 	})
 

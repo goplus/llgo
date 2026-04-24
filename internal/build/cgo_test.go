@@ -67,7 +67,6 @@ func TestParseCgoDeclFlags(t *testing.T) {
 }
 
 func TestPkgConfigCacheReusesResults(t *testing.T) {
-	oldCache := pkgConfigCache
 	oldOutput := pkgConfigOutput
 	pkgConfigCache = sync.Map{}
 	calls := 0
@@ -86,7 +85,7 @@ func TestPkgConfigCacheReusesResults(t *testing.T) {
 		}
 	}
 	t.Cleanup(func() {
-		pkgConfigCache = oldCache
+		pkgConfigCache = sync.Map{}
 		pkgConfigOutput = oldOutput
 	})
 
