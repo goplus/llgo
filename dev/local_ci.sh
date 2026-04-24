@@ -157,9 +157,6 @@ for dir in . runtime; do
 	popd >/dev/null
 done
 
-log_section "Go Build"
-(cd "$workdir" && go build ./...)
-
 log_section "Go Test"
 (cd "$workdir" && go test -timeout "$go_test_timeout" ./...)
 

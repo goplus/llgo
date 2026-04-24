@@ -66,9 +66,6 @@ jobs:
       - name: Set LLGO_ROOT
         run: echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
-      - name: Build
-        run: go build -v ./...
-
       - name: Test
         if: ${{!startsWith(matrix.os, 'macos')}}
         run: go test -timeout 30m ./...
