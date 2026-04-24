@@ -267,13 +267,17 @@ func (c *context) getLLVMVersion() string {
 	if cc == "" {
 		cc = "clang"
 	}
-	if version, ok := llvmVersionCache.Load(cc); ok {
+	cacheKey := cc
+	if path, err := exec.LookPath(cc); err == nil {
+		cacheKey = path
+	}
+	if version, ok := llvmVersionCache.Load(cacheKey); ok {
 		c.llvmVersion = version.(string)
 		return c.llvmVersion
 	}
 	c.llvmVersion = detectLLVMVersionFunc(c)
 	if c.llvmVersion != "" {
-		actual, _ := llvmVersionCache.LoadOrStore(cc, c.llvmVersion)
+		actual, _ := llvmVersionCache.LoadOrStore(cacheKey, c.llvmVersion)
 		c.llvmVersion = actual.(string)
 	}
 	return c.llvmVersion
