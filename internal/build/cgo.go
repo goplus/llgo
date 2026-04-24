@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 
@@ -369,13 +370,14 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 }
 
 func cachedPkgConfig(arg string) (pkgConfigResult, error) {
-	key := strings.Join([]string{
-		arg,
-		os.Getenv("PKG_CONFIG"),
-		os.Getenv("PKG_CONFIG_PATH"),
-		os.Getenv("PKG_CONFIG_LIBDIR"),
-		os.Getenv("PATH"),
-	}, "\x00")
+	keyParts := []string{arg, os.Getenv("PATH")}
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, "PKG_CONFIG") {
+			keyParts = append(keyParts, env)
+		}
+	}
+	sort.Strings(keyParts[2:])
+	key := strings.Join(keyParts, "\x00")
 	if cached, ok := pkgConfigCache.Load(key); ok {
 		return cached.(pkgConfigResult), nil
 	}
