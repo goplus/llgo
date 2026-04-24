@@ -255,6 +255,7 @@ func moduleVersion(mod *gopackages.Module) string {
 
 var (
 	llvmVersionCache      sync.Map
+	llvmCompilerPathCache sync.Map
 	detectLLVMVersionFunc = detectLLVMVersion
 )
 
@@ -267,10 +268,7 @@ func (c *context) getLLVMVersion() string {
 	if cc == "" {
 		cc = "clang"
 	}
-	cacheKey := cc
-	if path, err := exec.LookPath(cc); err == nil {
-		cacheKey = path
-	}
+	cacheKey := llvmVersionCacheKey(cc)
 	if version, ok := llvmVersionCache.Load(cacheKey); ok {
 		c.llvmVersion = version.(string)
 		return c.llvmVersion
@@ -281,6 +279,22 @@ func (c *context) getLLVMVersion() string {
 		c.llvmVersion = actual.(string)
 	}
 	return c.llvmVersion
+}
+
+func llvmVersionCacheKey(cc string) string {
+	if filepath.IsAbs(cc) {
+		return cc
+	}
+	pathKey := cc + "\x00" + os.Getenv("PATH")
+	if cacheKey, ok := llvmCompilerPathCache.Load(pathKey); ok {
+		return cacheKey.(string)
+	}
+	cacheKey := cc
+	if path, err := exec.LookPath(cc); err == nil {
+		cacheKey = path
+	}
+	actual, _ := llvmCompilerPathCache.LoadOrStore(pathKey, cacheKey)
+	return actual.(string)
 }
 
 // detectLLVMVersion detects LLVM version from clang --version.
