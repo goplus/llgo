@@ -284,7 +284,7 @@ echo "Build temp directory: $BUILD_TEMP_DIR"
 # Run native tests
 run_test_suite "native" "llgo build -o $BUILD_TEMP_DIR/buildcache.out -v ." ""
 
-# Run WASM tests - always use iwasm from llgo cache directory
+# Run WASM tests, preferring the llgo cache copy and falling back to PATH.
 # Determine cache directory based on platform
 if [ "$(uname -s)" = "Darwin" ]; then
     LLGO_IWASM_DIR="$HOME/Library/Caches/llgo/bin"
@@ -294,16 +294,20 @@ fi
 
 LLGO_IWASM="$LLGO_IWASM_DIR/iwasm"
 
-# Build iwasm if it doesn't exist in llgo cache
+# Use a preinstalled iwasm from PATH before building one locally.
 if [ ! -f "$LLGO_IWASM" ]; then
-    echo ""
-    echo -e "${YELLOW}iwasm not found in llgo cache, building it...${NC}"
-    if [ -f "$SCRIPT_DIR/../../dev/build_iwasm.sh" ]; then
-        bash "$SCRIPT_DIR/../../dev/build_iwasm.sh"
+    if command -v iwasm >/dev/null 2>&1; then
+        LLGO_IWASM="$(command -v iwasm)"
     else
-        echo -e "${RED}Error: dev/build_iwasm.sh not found${NC}"
-        echo -e "${BLUE}Skipping WASM tests${NC}"
-        LLGO_IWASM=""
+        echo ""
+        echo -e "${YELLOW}iwasm not found in llgo cache or PATH, building it...${NC}"
+        if [ -f "$SCRIPT_DIR/../../dev/build_iwasm.sh" ]; then
+            bash "$SCRIPT_DIR/../../dev/build_iwasm.sh"
+        else
+            echo -e "${RED}Error: dev/build_iwasm.sh not found${NC}"
+            echo -e "${BLUE}Skipping WASM tests${NC}"
+            LLGO_IWASM=""
+        fi
     fi
 fi
 
