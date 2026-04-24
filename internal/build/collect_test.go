@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/goplus/llgo/internal/crosscompile"
@@ -578,6 +579,33 @@ func TestGetLLVMVersion(t *testing.T) {
 	v2 := ctx.getLLVMVersion()
 	if v1 != v2 {
 		t.Error("getLLVMVersion should return cached value")
+	}
+}
+
+func TestGetLLVMVersionCachesAcrossContexts(t *testing.T) {
+	oldCache := llvmVersionCache
+	oldDetect := detectLLVMVersionFunc
+	llvmVersionCache = sync.Map{}
+	detectCalls := 0
+	detectLLVMVersionFunc = func(*context) string {
+		detectCalls++
+		return "clang version test"
+	}
+	t.Cleanup(func() {
+		llvmVersionCache = oldCache
+		detectLLVMVersionFunc = oldDetect
+	})
+
+	ctx1 := &context{crossCompile: crosscompile.Export{CC: "test-clang"}}
+	ctx2 := &context{crossCompile: crosscompile.Export{CC: "test-clang"}}
+	if got := ctx1.getLLVMVersion(); got != "clang version test" {
+		t.Fatalf("first LLVM version = %q, want injected version", got)
+	}
+	if got := ctx2.getLLVMVersion(); got != "clang version test" {
+		t.Fatalf("second LLVM version = %q, want cached injected version", got)
+	}
+	if detectCalls != 1 {
+		t.Fatalf("detectLLVMVersion called %d times, want 1", detectCalls)
 	}
 }
 

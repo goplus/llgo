@@ -253,7 +253,10 @@ func moduleVersion(mod *gopackages.Module) string {
 	return mod.Version
 }
 
-var llvmVersionCache sync.Map
+var (
+	llvmVersionCache      sync.Map
+	detectLLVMVersionFunc = detectLLVMVersion
+)
 
 // getLLVMVersion returns the cached LLVM version or detects it.
 func (c *context) getLLVMVersion() string {
@@ -268,7 +271,7 @@ func (c *context) getLLVMVersion() string {
 		c.llvmVersion = version.(string)
 		return c.llvmVersion
 	}
-	c.llvmVersion = detectLLVMVersion(c)
+	c.llvmVersion = detectLLVMVersionFunc(c)
 	if c.llvmVersion != "" {
 		actual, _ := llvmVersionCache.LoadOrStore(cc, c.llvmVersion)
 		c.llvmVersion = actual.(string)
