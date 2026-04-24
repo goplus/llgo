@@ -567,18 +567,34 @@ func TestSaveToCache_Success(t *testing.T) {
 }
 
 func TestGetLLVMVersion(t *testing.T) {
+	oldDetect := detectLLVMVersionFunc
+	llvmVersionCache = sync.Map{}
+	llvmCompilerPathCache = sync.Map{}
+	detectCalls := 0
+	detectLLVMVersionFunc = func(*context) string {
+		detectCalls++
+		return "clang version test"
+	}
+	t.Cleanup(func() {
+		llvmVersionCache = sync.Map{}
+		llvmCompilerPathCache = sync.Map{}
+		detectLLVMVersionFunc = oldDetect
+	})
+
 	ctx := &context{
 		crossCompile: crosscompile.Export{},
 	}
 
-	// First call should detect version
 	v1 := ctx.getLLVMVersion()
-	// May be empty if clang is not installed, but should not panic
-
-	// Second call should return cached version
 	v2 := ctx.getLLVMVersion()
 	if v1 != v2 {
 		t.Error("getLLVMVersion should return cached value")
+	}
+	if v1 != "clang version test" {
+		t.Fatalf("getLLVMVersion = %q, want injected version", v1)
+	}
+	if detectCalls != 1 {
+		t.Fatalf("detectLLVMVersion called %d times, want 1", detectCalls)
 	}
 }
 
