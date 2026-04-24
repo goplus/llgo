@@ -94,8 +94,12 @@ jobs:
         run: |
           py_deps=(
             numpy # for github.com/goplus/lib/py/numpy
-            torch # for github.com/goplus/lib/py/torch
           )
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            # Keep torch on Linux where ./_demo/py/tensor runs. Current macOS
+            # jobs skip that demo because python3 cannot import the pip3.12 torch.
+            py_deps+=(torch) # for github.com/goplus/lib/py/torch
+          fi
           pip3.12 install --disable-pip-version-check --break-system-packages "${py_deps[@]}"
 
       - name: Set up Go for build
