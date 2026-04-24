@@ -4,8 +4,10 @@
 package build
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -61,6 +63,45 @@ func TestParseCgoDeclFlags(t *testing.T) {
 				t.Fatalf("parseCgoDecl = %#v, want %#v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestPkgConfigCacheReusesResults(t *testing.T) {
+	oldCache := pkgConfigCache
+	oldOutput := pkgConfigOutput
+	pkgConfigCache = sync.Map{}
+	calls := 0
+	pkgConfigOutput = func(arg ...string) ([]byte, error) {
+		calls++
+		if len(arg) != 2 || arg[1] != "python3-embed" {
+			return nil, fmt.Errorf("unexpected pkg-config args: %v", arg)
+		}
+		switch arg[0] {
+		case "--libs":
+			return []byte("-L/usr/lib -lpython3\n"), nil
+		case "--cflags":
+			return []byte("-I/usr/include/python3\n"), nil
+		default:
+			return nil, fmt.Errorf("unexpected pkg-config mode: %v", arg[0])
+		}
+	}
+	t.Cleanup(func() {
+		pkgConfigCache = oldCache
+		pkgConfigOutput = oldOutput
+	})
+
+	for i := 0; i < 2; i++ {
+		decls, err := parseCgoDecl("#cgo pkg-config: python3-embed")
+		if err != nil {
+			t.Fatalf("parseCgoDecl pkg-config failed: %v", err)
+		}
+		want := []cgoDecl{{cflags: []string{"-I/usr/include/python3"}, ldflags: []string{"-L/usr/lib", "-lpython3"}}}
+		if !reflect.DeepEqual(decls, want) {
+			t.Fatalf("parseCgoDecl pkg-config = %#v, want %#v", decls, want)
+		}
+	}
+	if calls != 2 {
+		t.Fatalf("pkg-config output called %d times, want 2", calls)
 	}
 }
 

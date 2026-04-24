@@ -46,7 +46,12 @@ type pkgConfigResult struct {
 	ldflags []string
 }
 
-var pkgConfigCache sync.Map
+var (
+	pkgConfigCache  sync.Map
+	pkgConfigOutput = func(arg ...string) ([]byte, error) {
+		return exec.Command("pkg-config", arg...).Output()
+	}
+)
 
 type cgoPreamble struct {
 	goFile string
@@ -381,11 +386,11 @@ func cachedPkgConfig(arg string) (pkgConfigResult, error) {
 	if cached, ok := pkgConfigCache.Load(key); ok {
 		return cached.(pkgConfigResult), nil
 	}
-	ldflags, err := exec.Command("pkg-config", "--libs", arg).Output()
+	ldflags, err := pkgConfigOutput("--libs", arg)
 	if err != nil {
 		return pkgConfigResult{}, fmt.Errorf("pkg-config: %v", err)
 	}
-	cflags, err := exec.Command("pkg-config", "--cflags", arg).Output()
+	cflags, err := pkgConfigOutput("--cflags", arg)
 	if err != nil {
 		return pkgConfigResult{}, fmt.Errorf("pkg-config: %v", err)
 	}
