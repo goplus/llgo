@@ -550,16 +550,6 @@ func (p *context) atomicCmpXchgOK(b llssa.Builder, args []llssa.Expr) llssa.Expr
 	return b.Extract(ret, 1)
 }
 
-func (p *context) boolToUint8(b llssa.Builder, args []llssa.Expr) llssa.Expr {
-	if len(args) == 1 {
-		retType := p.type_(types.Typ[types.Uint8], llssa.InGo)
-		one := p.prog.IntVal(1, retType)
-		zero := p.prog.Zero(retType)
-		return b.SelectValue(args[0], one, zero)
-	}
-	panic("boolToUint8(b bool) uint8: invalid arguments")
-}
-
 // -----------------------------------------------------------------------------
 
 var llgoInstrs = map[string]int{
@@ -576,7 +566,6 @@ var llgoInstrs = map[string]int{
 	"funcPCABI0":  llgoFuncPCABI0,
 	"skip":        llgoSkip,
 	"syscall":     llgoSyscall,
-	"boolToUint8": llgoBoolToUint8,
 	"pystr":       llgoPyStr,
 	"pyList":      llgoPyList,
 	"pyTuple":     llgoPyTuple,
@@ -951,11 +940,6 @@ func (p *context) callEx(b llssa.Builder, act llssa.DoAction, call *ssa.CallComm
 			}
 		case llgoSyscall:
 			ret = p.syscallIntrinsic(b, args, call.Signature().Results())
-		case llgoBoolToUint8:
-			args := p.compileValues(b, args, kind)
-			ret = b.Do(act, llssa.Nil, func(b llssa.Builder, _ llssa.Expr, args ...llssa.Expr) llssa.Expr {
-				return p.boolToUint8(b, args)
-			}, args...)
 		case llgoUnreachable: // func unreachable()
 			b.Unreachable()
 		case llgoAtomicLoad:
