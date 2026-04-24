@@ -1,2 +1,3 @@
 - Parallel host demo CI (LLGO_DEMO_JOBS=4) caused _demo/go/sync segfault on ubuntu Go 1.21; investigate demo/build-cache concurrency before re-enabling in CI.
 - Consider parallelizing test/buildcache modes (native/wasm/esp32c3) with isolated XDG_CACHE_HOME/LLGO cache roots so cache-clearing tests do not interfere; validate carefully before enabling in CI.
+- Consider caching the build-cache workflow iwasm binary at the llgo cache path keyed by WAMR version/dev/build_iwasm.sh, then skipping the explicit WAMR build step on cache hits.
