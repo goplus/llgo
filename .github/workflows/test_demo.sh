@@ -9,6 +9,16 @@ fi
 
 # llgo run subdirectories under _demo that contain *.go files
 jobs="${LLGO_DEMO_JOBS:-1}"
+case "$jobs" in
+  ''|*[!0-9]*)
+    echo "warning: LLGO_DEMO_JOBS must be a positive integer; running sequentially" >&2
+    jobs=1
+    ;;
+esac
+if [ "$jobs" -lt 1 ]; then
+  echo "warning: LLGO_DEMO_JOBS must be a positive integer; running sequentially" >&2
+  jobs=1
+fi
 supports_wait_n=0
 if [ "${BASH_VERSINFO[0]}" -gt 5 ] || { [ "${BASH_VERSINFO[0]}" -eq 5 ] && [ "${BASH_VERSINFO[1]}" -ge 1 ]; }; then
   supports_wait_n=1
