@@ -92,7 +92,6 @@ runs:
         #
         # NOTE: Keep this list updated as new deps are introduced.
         opt_deps=(
-          libcjson-dev   # for github.com/goplus/lib/c/cjson
           libsqlite3-dev # for github.com/goplus/lib/c/sqlite
           python3.12-dev # for github.com/goplus/lib/py
         )
