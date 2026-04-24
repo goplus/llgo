@@ -32,7 +32,6 @@ runs:
     - name: Install ESP QEMU toolchains
       shell: bash
       run: |
-        chmod +x .github/workflows/install-esp-qemu.sh
         QEMU_DIR=".cache/qemu"
         .github/workflows/install-esp-qemu.sh "$QEMU_DIR"
         qemu_bin="${PWD}/${QEMU_DIR}/bin"
