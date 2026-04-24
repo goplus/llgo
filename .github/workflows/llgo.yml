@@ -135,7 +135,7 @@ jobs:
           ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
           export PKG_CONFIG_PATH=$pcdir:${PKG_CONFIG_PATH}
           export LLGO_FULL_RPATH=true
-          LLGO_DEMO_JOBS=4 bash .github/workflows/test_demo.sh
+          bash .github/workflows/test_demo.sh
 
       - name: Test demos (embedded target)
         run: bash .github/workflows/test_demo.sh --embedded
