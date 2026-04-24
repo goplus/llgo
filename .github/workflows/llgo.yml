@@ -80,7 +80,7 @@ jobs:
           mkdir -p ./_demo/c/cargs/libs
           cd ./_demo/c/cargs/libs
           wget https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/${DEMO_PKG}
-          unzip ${DEMO_PKG}
+          unzip -q ${DEMO_PKG}
 
           # Process pc template files - replace {{.Prefix}} with actual path
           ACTUAL_PREFIX="$(pwd)"
