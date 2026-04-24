@@ -17,7 +17,7 @@ cat > "${POPULATE_LINUX_SYSROOT_SCRIPT}" << EOF
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
-apt-get install -y build-essential zlib1g-dev rsync
+apt-get install -y --no-install-recommends build-essential zlib1g-dev rsync
 
 error() {
 	echo -e "\$1" >&2
