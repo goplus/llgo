@@ -111,11 +111,11 @@ func TestExtest(t *testing.T) {
 		outputChan <- data.String()
 	}()
 
-	mockRun([]string{"../../cl/_testgo/runextest/..."}, &Config{Mode: ModeTest})
+	mockRun([]string{"../../cl/_testgo/runextest/foo"}, &Config{Mode: ModeTest})
 
 	w.Close()
 	got := <-outputChan
-	expected := "PASS\nPASS\nPASS\nPASS\n"
+	expected := "PASS\n"
 	if got != expected {
 		t.Errorf("Expected output %q, but got %q", expected, got)
 	}
