@@ -253,7 +253,8 @@ func TestShouldSkipDarwinDynimportTrampolineAsm(t *testing.T) {
 	}
 	ctx := &context{buildConf: &Config{Goos: "darwin", Goarch: "arm64"}}
 	pkg := &packages.Package{PkgPath: "golang.org/x/sys/unix", Syntax: []*ast.File{file}}
-	if !shouldSkipDarwinDynimportTrampolineAsm(ctx, pkg, "zsyscall_darwin_arm64.s", src) {
+	enabled := shouldCheckDarwinDynimportTrampolineAsm(ctx, pkg)
+	if !shouldSkipDarwinDynimportTrampolineAsm(enabled, "zsyscall_darwin_arm64.s", src) {
 		t.Fatal("expected generated dynimport trampoline asm to be skipped")
 	}
 }
