@@ -80,6 +80,10 @@ var (
 	uniqueMapsMu sync.Mutex
 	uniqueMaps   map[*abi.Type]any
 
+	// Lock ordering:
+	// uniqueMapsMu is never held with cleanupMu during cleanup registration;
+	// cleanup callbacks take cleanupMu before cleanupFuncsMu, then release
+	// cleanupFuncsMu before running per-type map cleanup functions.
 	cleanupMu      sync.Mutex
 	cleanupFuncsMu sync.Mutex
 	cleanupFuncs   []func()

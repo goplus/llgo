@@ -1,3 +1,7 @@
+// Copyright 2025 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 //go:build go1.26
 
 //llgo:skipall
@@ -37,7 +41,7 @@ type entry[K comparable, V any] struct {
 
 // HashTrieMap is a compatibility implementation for llgo.
 // It preserves the zero-value and concurrency semantics expected by sync.Map,
-// but uses a simple mutex-protected Go map instead of the runtime hash trie.
+// but uses a simple mutex-protected slice instead of the runtime hash trie.
 type HashTrieMap[K comparable, V any] struct {
 	// Keep the leading field layout compatible with the upstream type so
 	// imported stdlib code that still selects these fields by index can build.
@@ -176,11 +180,13 @@ func (ht *HashTrieMap[K, V]) snapshot() []hashTrieEntry[K, V] {
 }
 
 func hashTrieValueEqual[V any](a, b V) bool {
+	// Match upstream sync.Map CompareAndSwap/CompareAndDelete behavior:
+	// non-comparable values panic during equality comparison.
 	return any(a) == any(b)
 }
 
 func hashTrieKeyEqual[K comparable](a, b K) bool {
-	return any(a) == any(b)
+	return a == b
 }
 
 func (ht *HashTrieMap[K, V]) findIndex(key K) int {

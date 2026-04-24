@@ -304,11 +304,7 @@ func Do(args []string, conf *Config) ([]Package, error) {
 	if patterns == nil {
 		patterns = []string{"."}
 	}
-	sourcePatchGOROOT, err := env.GOROOTWithEnv(cfg.Env)
-	if err != nil {
-		return nil, err
-	}
-	sourcePatchGoVersion, err := env.GOVERSIONWithEnv(cfg.Env)
+	sourcePatchGOROOT, sourcePatchGoVersion, err := env.GOROOTAndGOVERSIONWithEnv(cfg.Env)
 	if err != nil {
 		return nil, err
 	}

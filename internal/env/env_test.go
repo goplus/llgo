@@ -66,6 +66,19 @@ func TestGOVERSIONWithEnv(t *testing.T) {
 	})
 }
 
+func TestGOROOTAndGOVERSIONWithEnv(t *testing.T) {
+	goroot, goversion, err := GOROOTAndGOVERSIONWithEnv(os.Environ())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if goroot == "" {
+		t.Fatal("GOROOTAndGOVERSIONWithEnv should not return empty GOROOT")
+	}
+	if !strings.HasPrefix(goversion, "go1.") {
+		t.Fatalf("GOROOTAndGOVERSIONWithEnv goversion = %q, want go1.x", goversion)
+	}
+}
+
 func TestLLGoRuntimeDir(t *testing.T) {
 	// Test with valid LLGO_ROOT
 	t.Run("with valid LLGO_ROOT", func(t *testing.T) {

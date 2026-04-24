@@ -609,7 +609,7 @@ func commentSourcePatchSpans(src []byte, spans []sourcePatchSpan) []byte {
 			return 0
 		}
 	})
-	merged := spans[:0]
+	merged := make([]sourcePatchSpan, 0, len(spans))
 	for _, span := range spans {
 		if span.start < 0 {
 			span.start = 0
@@ -736,6 +736,9 @@ func recvPatchKey(expr ast.Expr) string {
 	case *ast.SelectorExpr:
 		return expr.Sel.Name
 	default:
+		// Source patches are expected to use ordinary named receiver types.
+		// Treat unsupported receiver forms as a fail-fast patch authoring error
+		// instead of silently leaving the original declaration active.
 		panic(fmt.Sprintf("unhandled expression type in recvPatchKey: %T", expr))
 	}
 }

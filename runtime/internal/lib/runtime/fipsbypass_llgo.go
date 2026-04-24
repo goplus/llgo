@@ -5,33 +5,27 @@ package runtime
 import (
 	_ "unsafe"
 
-	latomic "github.com/goplus/llgo/runtime/internal/lib/sync/atomic"
+	"github.com/goplus/llgo/runtime/internal/clite/tls"
 )
 
 // llgo does not currently expose runtime.getg in this compatibility layer.
-// Keep a minimal process-wide nesting count so crypto/fips140 can link and
-// enforce bypass scopes without pulling more runtime internals into this tree.
-var fipsBypassCount uint32
+// Its goroutines do not migrate between OS threads, so pthread TLS gives the
+// bypass state the same non-process-wide isolation that crypto/fips140 needs.
+var fipsBypassTLS = tls.Alloc[uint32](nil)
 
 //go:linkname fips140_setBypass crypto/fips140.setBypass
 func fips140_setBypass() {
-	latomic.AddUint32(&fipsBypassCount, 1)
+	fipsBypassTLS.Set(fipsBypassTLS.Get() + 1)
 }
 
 //go:linkname fips140_unsetBypass crypto/fips140.unsetBypass
 func fips140_unsetBypass() {
-	for {
-		n := latomic.LoadUint32(&fipsBypassCount)
-		if n == 0 {
-			return
-		}
-		if latomic.CompareAndSwapUint32(&fipsBypassCount, n, n-1) {
-			return
-		}
+	if n := fipsBypassTLS.Get(); n != 0 {
+		fipsBypassTLS.Set(n - 1)
 	}
 }
 
 //go:linkname fips140_isBypassed crypto/fips140.isBypassed
 func fips140_isBypassed() bool {
-	return latomic.LoadUint32(&fipsBypassCount) != 0
+	return fipsBypassTLS.Get() != 0
 }
