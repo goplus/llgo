@@ -31,6 +31,7 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+          install-demo-deps: false
 
       - name: Set up Go
         uses: ./.github/actions/setup-go

@@ -261,6 +261,7 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+          install-demo-deps: false
 
       - name: Set up Go for building llgo
         uses: ./.github/actions/setup-go
@@ -292,6 +293,7 @@ jobs:
         uses: ./.github/actions/setup-deps
         with:
           llvm-version: ${{matrix.llvm}}
+          install-demo-deps: false
 
       - name: Set up Go for building llgo
         uses: ./.github/actions/setup-go
