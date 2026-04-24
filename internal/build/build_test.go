@@ -85,9 +85,9 @@ func mockRun(args []string, cfg *Config) {
 	}
 }
 
-func TestRun(t *testing.T) {
+func TestBuildPrint(t *testing.T) {
 	t.Parallel()
-	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeRun})
+	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeBuild})
 }
 
 func TestTest(t *testing.T) {
