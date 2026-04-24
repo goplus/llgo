@@ -86,6 +86,7 @@ func mockRun(args []string, cfg *Config) {
 }
 
 func TestRun(t *testing.T) {
+	t.Parallel()
 	mockRun([]string{"../../cl/_testgo/print"}, &Config{Mode: ModeRun})
 }
 
