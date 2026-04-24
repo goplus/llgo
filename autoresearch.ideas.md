@@ -1,0 +1,1 @@
+- Parallel host demo CI (LLGO_DEMO_JOBS=4) caused _demo/go/sync segfault on ubuntu Go 1.21; investigate demo/build-cache concurrency before re-enabling in CI.
