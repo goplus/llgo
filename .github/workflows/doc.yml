@@ -35,20 +35,17 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/install_macos.sh
 
       - name: Install dependencies on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/install_ubuntu.sh
 
       - name: Test doc code blocks
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/run.sh
 
   local_install:
@@ -72,20 +69,17 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/install_macos.sh
 
       - name: Install dependencies on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/install_ubuntu.sh
 
       - name: Install llgo with tools
         run: |
           set -e
-          set -x
           git() {
             if [ "$1" = "clone" ]; then
               # do nothing because we already have the branch
@@ -100,7 +94,6 @@ jobs:
       - name: Test doc code blocks
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/run.sh
 
   local_install_full:
@@ -124,21 +117,18 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/install_macos.sh
 
       - name: Install dependencies on Ubuntu
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/install_ubuntu.sh
           echo "PATH=/usr/lib/llvm-19/bin:$PATH" >> $GITHUB_ENV
 
       - name: Install llgo with tools
         run: |
           set -e
-          set -x
           git() {
             if [ "$1" = "clone" ]; then
               # do nothing because we already have the branch
@@ -153,5 +143,4 @@ jobs:
       - name: Test doc code blocks
         run: |
           set -e
-          set -x
           source doc/_readme/scripts/run.sh
