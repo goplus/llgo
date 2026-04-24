@@ -1,3 +1,8 @@
 - Parallel host demo CI (LLGO_DEMO_JOBS=4) caused _demo/go/sync segfault on ubuntu Go 1.21; investigate demo/build-cache concurrency before re-enabling in CI.
 - Consider parallelizing test/buildcache modes (native/wasm/esp32c3) with isolated XDG_CACHE_HOME/LLGO cache roots so cache-clearing tests do not interfere; validate carefully before enabling in CI.
 - Consider caching the build-cache workflow iwasm binary at the llgo cache path keyed by WAMR version/dev/build_iwasm.sh, then skipping the explicit WAMR build step on cache hits.
+- CI duration focus from latest PR run: prioritize macOS runner-minutes before micro-optimizations. Largest items were macos-15-intel llgo demo jobs (~27-30m each, mostly host+embedded demos), macos go coverage/emulator (~21m), macos llgo test shards (~10-13m each), macos targets build (~12m job, mostly targetsbuild), and macos-15-intel release artifact hello (~8m).
+- Investigate macos-15-intel demo slowness separately from arm64 macos-latest: embedded demos ~11m and host demos ~7-8m on intel versus ~2m/3m on arm64. Possible options: rebalance matrix coverage, move only intel-specific smoke subset to macos-15-intel, or split/check why emulator/demo compile is slow.
+- Analyze macOS coverage job: Test with coverage ~11m plus embedded emulator env ~8m. Look for coverage scope or emulator setup/runtime bottlenecks without reducing asserted coverage.
+- Analyze macOS llgo test shards by package timings from per-package logs; rebalance shards by historical package duration instead of alphabetical modulo if skew persists.
+- Analyze macOS targetsbuild (~10m Build targets step) for duplicate setup/build work between empty and defer modes; optimize only if target coverage remains equivalent.
