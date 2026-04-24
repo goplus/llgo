@@ -368,13 +368,6 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 	return
 }
 
-// Parse cgo directive like:
-// #cgo pkg-config: python3
-// #cgo windows CFLAGS: -IC:/Python312/include
-// #cgo windows LDFLAGS: -LC:/Python312/libs -lpython312
-// #cgo linux CPPFLAGS: -I/usr/lib/llvm-19/include -D_GNU_SOURCE
-// #cgo CFLAGS: -I/usr/include/python3.12
-// #cgo LDFLAGS: -L/usr/lib/python3.12/config-3.12-x86_64-linux-gnu -lpython3.12
 func cachedPkgConfig(arg string) (pkgConfigResult, error) {
 	key := strings.Join([]string{
 		arg,
@@ -402,6 +395,13 @@ func cachedPkgConfig(arg string) (pkgConfigResult, error) {
 	return actual.(pkgConfigResult), nil
 }
 
+// Parse cgo directive like:
+// #cgo pkg-config: python3
+// #cgo windows CFLAGS: -IC:/Python312/include
+// #cgo windows LDFLAGS: -LC:/Python312/libs -lpython312
+// #cgo linux CPPFLAGS: -I/usr/lib/llvm-19/include -D_GNU_SOURCE
+// #cgo CFLAGS: -I/usr/include/python3.12
+// #cgo LDFLAGS: -L/usr/lib/python3.12/config-3.12-x86_64-linux-gnu -lpython3.12
 func parseCgoDecl(line string) (cgoDecls []cgoDecl, err error) {
 	idx := strings.Index(line, ":")
 	if idx == -1 {
