@@ -170,7 +170,6 @@ jobs:
           ARCHIVE=$(ls *.tar.gz | head -n1)
           mkdir -p release-llgo
           tar -xzf "$ARCHIVE" -C release-llgo
-          ls -la release-llgo/
           echo "${{ github.workspace }}/release-llgo/bin/" >> $GITHUB_PATH
 
       - name: Test Hello World
