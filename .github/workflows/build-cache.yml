@@ -60,6 +60,6 @@ jobs:
       - name: Run build cache tests
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            pip3 install --break-system-packages esptool==5.1.0
+            pip3 install --disable-pip-version-check --break-system-packages esptool==5.1.0
           fi
           bash test/buildcache/test.sh
