@@ -242,9 +242,10 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 	}
 	got := string(output)
 	allowed := map[string]struct{}{
-		"100\nch1\nch2\n":   {},
-		"100\nexit\nch1\n":  {},
-		"200\nexit\nexit\n": {},
+		"100\nch1\nch2\n":            {},
+		"100\nexit\nch1\n":           {},
+		"200\nexit\nexit\n":          {},
+		"100\n200\nch1\nch2\nexit\n": {},
 	}
 	if _, ok := allowed[got]; !ok {
 		t.Fatalf("unexpected select output:\n%s", got)
