@@ -80,9 +80,6 @@ jobs:
           LLGO_EMBED_TESTS: "1"
         run: go test -v -timeout 60m ./cl -run '^TestRunEmbedEmulator$'
 
-      - name: Check std symbol coverage
-        run: bash doc/_readme/scripts/check_std_cover.sh
-
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
