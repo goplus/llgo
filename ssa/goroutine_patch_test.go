@@ -1,23 +1,19 @@
+//go:build !llgo
+// +build !llgo
+
 package ssa_test
 
 import (
-	"go/token"
 	"go/types"
 	"strings"
 	"testing"
 
-	"github.com/goplus/gogen/packages"
 	"github.com/goplus/llgo/ssa"
+	"github.com/goplus/llgo/ssa/ssatest"
 )
 
 func TestGoClosureStartupUsesGCManagedMemory(t *testing.T) {
-	prog := ssa.NewProgram(nil)
-	prog.SetRuntime(func() *types.Package {
-		fset := token.NewFileSet()
-		imp := packages.NewImporter(fset)
-		pkg, _ := imp.Import(ssa.PkgRuntime)
-		return pkg
-	})
+	prog := ssatest.NewProgram(t, nil)
 	pkg := prog.NewPackage("bar", "foo/bar")
 
 	ctxFields := []*types.Var{
@@ -45,6 +41,8 @@ func TestGoClosureStartupUsesGCManagedMemory(t *testing.T) {
 	if strings.Contains(ir, "@free") {
 		t.Fatalf("goroutine startup data should not use free:\n%s", ir)
 	}
+	// The closure context and the goroutine startup record both must remain
+	// visible to the runtime GC until the new goroutine consumes them.
 	if got := strings.Count(ir, `"github.com/goplus/llgo/runtime/internal/runtime.AllocU"`); got < 2 {
 		t.Fatalf("expected closure ctx and goroutine startup data to use AllocU, got %d:\n%s", got, ir)
 	}
