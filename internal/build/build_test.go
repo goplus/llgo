@@ -92,7 +92,7 @@ func TestRun(t *testing.T) {
 
 func TestTest(t *testing.T) {
 	// FIXME(zzy): with builtin package test in a llgo test ./... will cause duplicate symbol error
-	mockRun([]string{"../../cl/_testgo/runtest/foo"}, &Config{Mode: ModeTest})
+	mockRun([]string{"../../cl/_testgo/runtest/foo"}, &Config{Mode: ModeTest, CompileOnly: true})
 }
 
 func TestExtest(t *testing.T) {
