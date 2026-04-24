@@ -183,13 +183,11 @@ const (
 )
 
 func TestLdFlagsRewriteVars(t *testing.T) {
-	t.Parallel()
 	buildRewriteBinary(t, false, "build-main", "build-pkg")
 	buildRewriteBinary(t, false, "rerun-main", "rerun-pkg")
 }
 
 func TestLdFlagsRewriteVarsMainAlias(t *testing.T) {
-	t.Parallel()
 	buildRewriteBinary(t, true, "alias-main", "alias-pkg")
 }
 
