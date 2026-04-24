@@ -53,6 +53,13 @@ var (
 	}
 )
 
+func clonePkgConfigResult(result pkgConfigResult) pkgConfigResult {
+	return pkgConfigResult{
+		cflags:  append([]string(nil), result.cflags...),
+		ldflags: append([]string(nil), result.ldflags...),
+	}
+}
+
 type cgoPreamble struct {
 	goFile string
 	src    string
@@ -384,7 +391,7 @@ func cachedPkgConfig(arg string) (pkgConfigResult, error) {
 	sort.Strings(keyParts[2:])
 	key := strings.Join(keyParts, "\x00")
 	if cached, ok := pkgConfigCache.Load(key); ok {
-		return cached.(pkgConfigResult), nil
+		return clonePkgConfigResult(cached.(pkgConfigResult)), nil
 	}
 	ldflags, err := pkgConfigOutput("--libs", arg)
 	if err != nil {
@@ -399,7 +406,7 @@ func cachedPkgConfig(arg string) (pkgConfigResult, error) {
 		ldflags: safesplit.SplitPkgConfigFlags(string(ldflags)),
 	}
 	actual, _ := pkgConfigCache.LoadOrStore(key, result)
-	return actual.(pkgConfigResult), nil
+	return clonePkgConfigResult(actual.(pkgConfigResult)), nil
 }
 
 // Parse cgo directive like:

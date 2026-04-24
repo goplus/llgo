@@ -89,6 +89,7 @@ func TestPkgConfigCacheReusesResults(t *testing.T) {
 		pkgConfigOutput = oldOutput
 	})
 
+	var first []cgoDecl
 	for i := 0; i < 2; i++ {
 		decls, err := parseCgoDecl("#cgo pkg-config: python3-embed")
 		if err != nil {
@@ -97,6 +98,11 @@ func TestPkgConfigCacheReusesResults(t *testing.T) {
 		want := []cgoDecl{{cflags: []string{"-I/usr/include/python3"}, ldflags: []string{"-L/usr/lib", "-lpython3"}}}
 		if !reflect.DeepEqual(decls, want) {
 			t.Fatalf("parseCgoDecl pkg-config = %#v, want %#v", decls, want)
+		}
+		if i == 0 {
+			first = decls
+			first[0].cflags[0] = "mutated"
+			first[0].ldflags[0] = "mutated"
 		}
 	}
 	if calls != 2 {
