@@ -38,7 +38,7 @@ jobs:
 
       - name: Install
         run: |
-          go install ./...
+          go install ./cmd/llgo
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Build targets (empty)
