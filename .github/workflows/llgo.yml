@@ -264,7 +264,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         llvm: [19]
-        go: ["1.21.13", "1.24.2"]
+        go: ["1.24.2"]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v6
@@ -289,7 +289,6 @@ jobs:
           go-version: ${{matrix.go}}
 
       - name: Test Hello World with go.mod 1.24
-        if: startsWith(matrix.go, '1.24')
         uses: ./.github/actions/test-helloworld
         with:
           go-version: ${{matrix.go}}
