@@ -35,12 +35,7 @@ runs:
         chmod +x .github/workflows/install-esp-qemu.sh
         QEMU_DIR=".cache/qemu"
         .github/workflows/install-esp-qemu.sh "$QEMU_DIR"
-        echo "${PWD}/${QEMU_DIR}/bin" >> $GITHUB_PATH
-
-    - name: Verify ESP QEMU installation
-      shell: bash
-      run: |
-        which qemu-system-riscv32
-        which qemu-system-xtensa
-        qemu-system-riscv32 --version
-        qemu-system-xtensa --version
+        qemu_bin="${PWD}/${QEMU_DIR}/bin"
+        echo "$qemu_bin" >> $GITHUB_PATH
+        "$qemu_bin/qemu-system-riscv32" --version
+        "$qemu_bin/qemu-system-xtensa" --version
