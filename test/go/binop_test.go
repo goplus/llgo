@@ -692,6 +692,36 @@ func TestBinOpIntegerDivision(t *testing.T) {
 	}
 }
 
+func TestBinOpSignedMinIntDivisionOverflow(t *testing.T) {
+	minInt := -int(^uint(0)>>1) - 1
+	negOne := -1
+	if got := minInt / negOne; got != minInt {
+		t.Fatalf("minInt / -1 = %d, want %d", got, minInt)
+	}
+	if got := minInt % negOne; got != 0 {
+		t.Fatalf("minInt %% -1 = %d, want 0", got)
+	}
+
+	var minInt8 int8 = -128
+	var negOne8 int8 = -1
+	if got := minInt8 / negOne8; got != minInt8 {
+		t.Fatalf("int8 min / -1 = %d, want %d", got, minInt8)
+	}
+	if got := minInt8 % negOne8; got != 0 {
+		t.Fatalf("int8 min %% -1 = %d, want 0", got)
+	}
+}
+
+func TestBinOpIntegerDivideByZeroPanics(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("division by zero did not panic")
+		}
+	}()
+	zero := 0
+	_ = 1 / zero
+}
+
 // TestBinOpIntegerModulo tests modulo for all integer types
 func TestBinOpIntegerModulo(t *testing.T) {
 	// Typed % Typed

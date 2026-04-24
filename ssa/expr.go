@@ -498,17 +498,58 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 			if llop := mathOpToLLVM[idx]; llop != 0 {
 				// Go requires integer division/modulo by zero to panic.
 				// LLVM's integer div/rem are undefined on zero divisor, so
-				// we insert an explicit runtime check here.
+				// we insert an explicit runtime check here and lower through a
+				// safe non-zero divisor so targets like x86 don't trap first.
+				var zero llvm.Value
+				var isZero llvm.Value
+				var safeY llvm.Value
 				if (op == token.QUO || op == token.REM) && (kind == vkSigned || kind == vkUnsigned) {
 					needsCheck := true
 					if rv := y.impl.IsAConstantInt(); !rv.IsNil() {
 						needsCheck = rv.ZExtValue() == 0
 					}
 					if needsCheck {
-						zero := llvm.ConstInt(y.ll, 0, false)
-						check := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero), b.Prog.Bool()}
+						zero = llvm.ConstInt(y.ll, 0, false)
+						isZero = llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero)
+						check := Expr{isZero, b.Prog.Bool()}
 						b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), check)
+						safeY = llvm.CreateSelect(b.impl, isZero, llvm.ConstInt(y.ll, 1, false), y.impl)
 					}
+				}
+				// On x86/x86_64, signed div/rem of minInt by -1 traps even
+				// though Go defines it to produce quotient=minInt and
+				// remainder=0. Lower through safe operands and select the
+				// Go-defined result for that overflow case.
+				needsOverflowCheck := false
+				if (op == token.QUO || op == token.REM) && kind == vkSigned {
+					needsOverflowCheck = true
+					if rv := y.impl.IsAConstantInt(); !rv.IsNil() {
+						needsOverflowCheck = rv.SExtValue() == -1
+					}
+				}
+				if needsOverflowCheck {
+					bits := b.Prog.SizeOf(x.Type) * 8
+					minInt := llvm.ConstInt(x.ll, uint64(1)<<(bits-1), false)
+					negOne := llvm.ConstAllOnes(y.ll)
+					isMinInt := llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, minInt)
+					isNegOne := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, negOne)
+					overflow := llvm.CreateAnd(b.impl, isMinInt, isNegOne)
+
+					safeX := llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), x.impl)
+					if safeY.IsNil() {
+						safeY = y.impl
+					}
+					safeY = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(y.ll, 1, false), safeY)
+					v := llvm.CreateBinOp(b.impl, llop, safeX, safeY)
+					if op == token.QUO {
+						v = llvm.CreateSelect(b.impl, overflow, x.impl, v)
+					} else {
+						v = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), v)
+					}
+					return Expr{v, x.Type}
+				}
+				if !safeY.IsNil() {
+					return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, safeY), x.Type}
 				}
 				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 			}
