@@ -72,7 +72,7 @@ jobs:
       - name: Test with embedded emulator env
         env:
           LLGO_EMBED_TESTS: "1"
-        run: go test -v -timeout 60m ./cl -run '^TestRunEmbedEmulator$'
+        run: go test -timeout 60m ./cl -run '^TestRunEmbedEmulator$'
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
