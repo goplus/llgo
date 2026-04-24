@@ -44,6 +44,3 @@ runs:
       with:
         path: ${{ inputs.esp-clang-cache-path }}
         key: esp-clang-${{ hashFiles('.github/workflows/download_esp_clang.sh') }}
-    - name: Check file
-      run: tree .sysroot
-      shell: bash
