@@ -21,9 +21,11 @@ runs:
       if: runner.os == 'macOS'
       shell: bash
       env:
+        HOMEBREW_NO_AUTO_UPDATE: 1
         HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
       run: |
-        brew update
+        # GitHub-hosted macOS runners have recent Homebrew metadata; avoid an
+        # explicit update in every CI job to save scarce macOS runner minutes.
         
         # Install LLVM if requested
         if [[ "${{ inputs.install-llvm }}" == "true" ]]; then
