@@ -175,7 +175,7 @@ jobs:
       - name: _xtool build tests
         run: |
           cd _xtool
-          llgo build -v ./...
+          llgo build ./...
 
       - name: Show test result
         run: cat result.md
