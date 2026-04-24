@@ -41,12 +41,8 @@ jobs:
           go install ./cmd/llgo
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
-      - name: Build targets (empty)
+      - name: Build targets
         run: |
           cd _demo/embed/targetsbuild
           bash build.sh empty
-
-      - name: Build targets (defer)
-        run: |
-          cd _demo/embed/targetsbuild
           bash build.sh defer
