@@ -57,6 +57,8 @@ jobs:
           llvm-version: ${{matrix.llvm}}
       - name: Install embedded dependencies
         uses: ./.github/actions/setup-embed-deps
+        with:
+          skip-package-update: "true"
       - name: Download model artifact
         uses: actions/download-artifact@v8
         with:

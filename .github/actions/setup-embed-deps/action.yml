@@ -1,5 +1,10 @@
 name: "Setup Embedded Dependencies"
 description: "Install dependencies required for embedded QEMU tests"
+inputs:
+  skip-package-update:
+    description: "Skip brew/apt package index update when a prior setup step already updated it"
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -10,14 +15,18 @@ runs:
       env:
         HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
       run: |
-        brew update
+        if [[ "${{ inputs.skip-package-update }}" != "true" ]]; then
+          brew update
+        fi
         brew install sdl2
 
     - name: Install Ubuntu embedded dependencies
       if: runner.os == 'Linux'
       shell: bash
       run: |
-        sudo apt-get update
+        if [[ "${{ inputs.skip-package-update }}" != "true" ]]; then
+          sudo apt-get update
+        fi
         sudo apt-get install -y libsdl2-2.0-0
 
     - name: Install ESP QEMU toolchains
