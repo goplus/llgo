@@ -105,7 +105,9 @@ jobs:
 
       - name: Install
         run: |
-          go install ./cmd/llgo
+          # Keep ./... here: this job intentionally validates host package builds
+          # across the OS/LLVM/Go matrix before running the LLGo demo suite.
+          go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Set up Go for testing
@@ -207,7 +209,9 @@ jobs:
 
       - name: Install
         run: |
-          go install ./cmd/llgo
+          # Keep ./... here: this shard job intentionally validates host package
+          # builds before running the LLGo test packages.
+          go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: run llgo test
@@ -267,7 +271,9 @@ jobs:
 
       - name: Install llgo
         run: |
-          go install ./cmd/llgo
+          # Keep ./... here: this smoke job also provides host package build
+          # coverage on both Ubuntu and macOS runners.
+          go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Test Hello World with go.mod 1.24
@@ -302,13 +308,15 @@ jobs:
           git clone --branch WAMR-2.4.4 --depth 1 https://github.com/bytecodealliance/wasm-micro-runtime.git
           mkdir wasm-micro-runtime/product-mini/platforms/darwin/build
           cd wasm-micro-runtime/product-mini/platforms/darwin/build
-          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
+          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
           make -j8
           echo "$PWD" >> $GITHUB_PATH
 
       - name: Install llgo
         run: |
-          go install ./cmd/llgo
+          # Keep ./... here: the cross-compile job doubles as a macOS host
+          # package build coverage point before wasm smoke tests.
+          go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Test Cross Compilation (wasm)

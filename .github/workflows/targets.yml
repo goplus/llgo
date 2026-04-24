@@ -39,7 +39,9 @@ jobs:
 
       - name: Install
         run: |
-          go install ./cmd/llgo
+          # Keep ./... here: targets build coverage should also compile all host
+          # packages in this LLVM setup before embedded target smoke builds.
+          go install ./...
           echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
 
       - name: Build targets
