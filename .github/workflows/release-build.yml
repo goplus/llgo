@@ -51,7 +51,7 @@ jobs:
         run: bash .github/workflows/populate_linux_sysroot.sh
       - name: Create Linux sysroot tarball
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
-        run: tar -czvf .sysroot/linux.tar.gz -C .sysroot linux
+        run: tar -czf .sysroot/linux.tar.gz -C .sysroot linux
       - name: Save Linux sysroot cache
         if: steps.cache-linux-sysroot.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5

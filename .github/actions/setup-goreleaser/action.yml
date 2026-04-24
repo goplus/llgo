@@ -26,7 +26,7 @@ runs:
         path: .sysroot/linux.tar.gz
         key: ${{ inputs.linux-cache-key }}
     - name: Populate Linux sysroot
-      run: tar -xzvf .sysroot/linux.tar.gz -C .sysroot
+      run: tar -xzf .sysroot/linux.tar.gz -C .sysroot
       shell: bash
     - name: Restore ESP Clang cache
       id: cache-esp-clang
