@@ -1,1 +1,3 @@
 - Consider making LLVM version detection injectable in tests so cross-context cache behavior can be covered without spawning shell helper processes.
+- llgo.yml test shard job appears to install demo-only numpy/torch despite ./test/... containing no such imports; benchmark CI setup and consider removing that pip step.
+- llgo.yml test shard matrix currently uses only Go 1.24.2, so the second setup-go for testing may be redundant; verify before removing.
