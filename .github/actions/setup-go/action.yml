@@ -16,11 +16,13 @@ runs:
 
         if command -v go >/dev/null 2>&1 && go version | grep -q "go${GO_VERSION} "; then
           echo "Go ${GO_VERSION} already available on PATH; skipping download"
+          go version
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           exit 0
         fi
         if [ -x /usr/local/go/bin/go ] && /usr/local/go/bin/go version | grep -q "go${GO_VERSION} "; then
           echo "Go ${GO_VERSION} already available in /usr/local/go; skipping download"
+          /usr/local/go/bin/go version
           echo "/usr/local/go/bin" >> $GITHUB_PATH
           echo "$(/usr/local/go/bin/go env GOPATH)/bin" >> $GITHUB_PATH
           exit 0
@@ -61,9 +63,5 @@ runs:
         echo "/usr/local/go/bin" >> $GITHUB_PATH
         echo "$HOME/go/bin" >> $GITHUB_PATH
 
-    - name: Verify Go installation
-      shell: bash
-      run: |
-        # Verify installation
         echo "Verifying Go installation..."
-        go version
+        /usr/local/go/bin/go version
