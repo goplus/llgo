@@ -13,7 +13,12 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
+
+const downloadFileAttempts = 3
+
+var downloadFileRetryDelay = time.Second
 
 // checkDownloadAndExtractWasiSDK downloads and extracts WASI SDK
 func checkDownloadAndExtractWasiSDK(dir string) (wasiSdkRoot string, err error) {
@@ -202,6 +207,25 @@ func downloadAndExtractArchive(url, destDir, description string) error {
 }
 
 func downloadFile(url, filepath string) error {
+	var lastErr error
+	for attempt := 1; attempt <= downloadFileAttempts; attempt++ {
+		if attempt > 1 {
+			time.Sleep(downloadFileRetryDelay)
+		}
+		if err := downloadFileOnce(url, filepath); err != nil {
+			lastErr = err
+			os.Remove(filepath)
+			if attempt < downloadFileAttempts {
+				fmt.Fprintf(os.Stderr, "download failed for %s (attempt %d/%d): %v; retrying...\n", url, attempt, downloadFileAttempts, err)
+			}
+			continue
+		}
+		return nil
+	}
+	return lastErr
+}
+
+func downloadFileOnce(url, filepath string) error {
 	out, err := os.Create(filepath)
 	if err != nil {
 		return err
