@@ -16,9 +16,9 @@ import (
 	"time"
 )
 
-const downloadFileAttempts = 5
+const downloadFileAttempts = 7
 
-var downloadFileRetryDelay = 2 * time.Second
+var downloadFileRetryDelay = 5 * time.Second
 
 // checkDownloadAndExtractWasiSDK downloads and extracts WASI SDK
 func checkDownloadAndExtractWasiSDK(dir string) (wasiSdkRoot string, err error) {
