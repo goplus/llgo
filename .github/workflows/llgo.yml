@@ -290,9 +290,26 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        llvm: [19]
-        go: ["1.21.13", "1.24.2"]
-        target: [esp32, esp32c3-basic]
+        include:
+          - llvm: 19
+            go: "1.21.13"
+            target: esp32
+          - llvm: 19
+            go: "1.21.13"
+            target: esp32c3-basic
+            shard_index: "0"
+            shard_total: "2"
+          - llvm: 19
+            go: "1.21.13"
+            target: esp32c3-basic
+            shard_index: "1"
+            shard_total: "2"
+          - llvm: 19
+            go: "1.24.2"
+            target: esp32
+          - llvm: 19
+            go: "1.24.2"
+            target: esp32c3-basic
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -330,6 +347,8 @@ jobs:
           # low parallelism only helped the Go 1.24 leg in live CI.
           LLGO_DEMO_JOBS: ${{ matrix.go == '1.24.2' && '2' || '1' }}
           LLGO_EMBEDDED_TARGETS: ${{ matrix.target }}
+          LLGO_DEMO_SHARD_INDEX: ${{ matrix.shard_index }}
+          LLGO_DEMO_SHARD_TOTAL: ${{ matrix.shard_total }}
         run: bash .github/workflows/test_demo.sh --embedded
 
   llgo-embedded-smoke-macos-intel:

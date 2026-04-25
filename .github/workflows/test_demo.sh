@@ -268,6 +268,40 @@ else
   done
 fi
 
+if [ -n "${LLGO_DEMO_SHARD_TOTAL:-}" ] || [ -n "${LLGO_DEMO_SHARD_INDEX:-}" ]; then
+  shard_total="${LLGO_DEMO_SHARD_TOTAL:-}"
+  shard_index="${LLGO_DEMO_SHARD_INDEX:-}"
+  case "$shard_total" in
+    ''|*[!0-9]*) echo "LLGO_DEMO_SHARD_TOTAL must be a positive integer" >&2; exit 1 ;;
+  esac
+  case "$shard_index" in
+    ''|*[!0-9]*) echo "LLGO_DEMO_SHARD_INDEX must be a non-negative integer" >&2; exit 1 ;;
+  esac
+  if [ "$shard_total" -lt 1 ]; then
+    echo "LLGO_DEMO_SHARD_TOTAL must be a positive integer" >&2
+    exit 1
+  fi
+  if [ "$shard_index" -ge "$shard_total" ]; then
+    echo "LLGO_DEMO_SHARD_INDEX must be less than LLGO_DEMO_SHARD_TOTAL" >&2
+    exit 1
+  fi
+
+  shard_dirs=()
+  shard_targets=()
+  shard_labels=()
+  for i in "${!run_dirs[@]}"; do
+    if [ $((i % shard_total)) -eq "$shard_index" ]; then
+      shard_dirs+=("${run_dirs[$i]}")
+      shard_targets+=("${run_targets[$i]}")
+      shard_labels+=("${run_labels[$i]}")
+    fi
+  done
+  run_dirs=("${shard_dirs[@]}")
+  run_targets=("${shard_targets[@]}")
+  run_labels=("${shard_labels[@]}")
+  echo "Demo shard: ${shard_index}/${shard_total}, selected: ${#run_dirs[@]} case(s)"
+fi
+
 total="${#run_dirs[@]}"
 failed=0
 failed_cases=""
