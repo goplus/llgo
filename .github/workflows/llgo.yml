@@ -121,6 +121,7 @@ jobs:
           go-version: ${{matrix.go}}
 
       - name: Test demo without RPATH (expect failure)
+        if: ${{ matrix.os != 'macos-15-intel' }}
         run: |
           echo "Testing demo without RPATH (should fail)..."
           export LLGO_FULL_RPATH=false
@@ -133,6 +134,7 @@ jobs:
           fi
 
       - name: Test demos
+        if: ${{ matrix.os != 'macos-15-intel' }}
         run: |
           # TODO(lijie): force python3-embed to be linked with python-3.12-embed
           # Currently, python3-embed is python-3.13-embed, doesn't work with pytorch
@@ -196,6 +198,92 @@ jobs:
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
           bash _lldb/runtest.sh -v
+
+  llgo-host-demos-macos-intel:
+    needs: download-model
+    continue-on-error: true
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        llvm: [19]
+        go: ["1.21.13", "1.24.2"]
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
+      - name: Download model artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: llama2-model
+          path: ./_demo/c/llama2-c/
+      - name: Download platform-specific demo libs
+        run: |
+          DEMO_PKG="cargs_darwin_amd64.zip"
+          mkdir -p ./_demo/c/cargs/libs
+          cd ./_demo/c/cargs/libs
+          wget https://github.com/goplus/llpkg/releases/download/cargs/v1.0.0/${DEMO_PKG}
+          unzip -q ${DEMO_PKG}
+
+          ACTUAL_PREFIX="$(pwd)"
+          for tmpl in lib/pkgconfig/*.pc.tmpl; do
+            pc_file="${tmpl%.tmpl}"
+            sed "s|{{.Prefix}}|${ACTUAL_PREFIX}|g" "$tmpl" > "$pc_file"
+          done
+
+          echo "PKG_CONFIG_PATH=${ACTUAL_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH}" >> $GITHUB_ENV
+      - name: Install further optional dependencies for demos
+        run: |
+          py_deps=(
+            numpy # for github.com/goplus/lib/py/numpy
+          )
+          pip3.12 install --disable-pip-version-check --break-system-packages "${py_deps[@]}"
+
+      - name: Set up Go for build
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
+
+      - name: Install llgo
+        run: |
+          # The main macOS Intel llgo job keeps go install ./... for host package
+          # build coverage. This split job only runs host demos.
+          go install ./cmd/llgo
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Set up Go for testing
+        if: ${{ matrix.go != '1.24.2' }}
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{matrix.go}}
+
+      - name: Test demo without RPATH (expect failure)
+        run: |
+          echo "Testing demo without RPATH (should fail)..."
+          export LLGO_FULL_RPATH=false
+          pkg-config --libs cargs
+          if (cd ./_demo/c/cargs && llgo run .); then
+            echo "ERROR: cargs demo should have failed without RPATH!"
+            exit 1
+          else
+            echo "✓ cargs demo correctly failed without RPATH"
+          fi
+
+      - name: Test demos
+        run: |
+          pcdir=$HOME/pc
+          mkdir -p $pcdir
+          libdir=$(pkg-config --variable=libdir python-3.12-embed)
+          echo "libdir: $libdir"
+          ln -s $libdir/pkgconfig/python-3.12-embed.pc $pcdir/python3-embed.pc
+          export PKG_CONFIG_PATH=$pcdir:${PKG_CONFIG_PATH}
+          export LLGO_FULL_RPATH=true
+          bash .github/workflows/test_demo.sh
+
+      - name: Show test result
+        run: cat result.md
 
   llgo-embedded-macos-intel:
     continue-on-error: true
