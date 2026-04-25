@@ -594,14 +594,19 @@ jobs:
         with:
           go-version: "1.24.2"
 
+      - name: Cache iwasm
+        id: cache-iwasm
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/llgo/bin/iwasm
+          key: ${{ runner.os }}-${{ runner.arch }}-iwasm-WAMR-2.4.4-${{ hashFiles('dev/build_iwasm.sh') }}
+
       - name: Install wamr
-        run: |
-          git clone --branch WAMR-2.4.4 --depth 1 https://github.com/bytecodealliance/wasm-micro-runtime.git
-          mkdir wasm-micro-runtime/product-mini/platforms/darwin/build
-          cd wasm-micro-runtime/product-mini/platforms/darwin/build
-          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
-          make -j8
-          echo "$PWD" >> $GITHUB_PATH
+        if: steps.cache-iwasm.outputs.cache-hit != 'true'
+        run: bash dev/build_iwasm.sh
+
+      - name: Add iwasm to PATH
+        run: echo "$HOME/Library/Caches/llgo/bin" >> $GITHUB_PATH
 
       - name: Install llgo
         run: |
