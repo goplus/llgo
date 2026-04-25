@@ -52,8 +52,11 @@ mkdir -p "$INSTALL_DIR"
 
 for filename in "${PACKAGES[@]}"; do
   url="https://github.com/espressif/qemu/releases/download/${RELEASE_TAG}/${filename}"
+  archive_path="${INSTALL_DIR}/${filename}"
   echo "Downloading: $url"
-  curl -fsSL "$url" | tar -xJ -C "$INSTALL_DIR" --strip-components=1
+  curl --retry 3 --retry-all-errors --retry-delay 2 -fsSL "$url" -o "$archive_path"
+  tar -xJ -f "$archive_path" -C "$INSTALL_DIR" --strip-components=1
+  rm -f "$archive_path"
 done
 
 # Verify installation
