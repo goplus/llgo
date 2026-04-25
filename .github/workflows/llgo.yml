@@ -147,6 +147,12 @@ jobs:
           bash .github/workflows/test_demo.sh
 
       - name: Test demos (embedded target)
+        env:
+          # Host demo parallelism previously exposed a _demo/go/sync segfault on
+          # Ubuntu Go 1.21. Keep host demos sequential; only parallelize embedded
+          # demo builds on the slow macOS Intel runner, where _demo/go/sync is
+          # skipped for the embedded targets.
+          LLGO_DEMO_JOBS: ${{ matrix.os == 'macos-15-intel' && '2' || '1' }}
         run: bash .github/workflows/test_demo.sh --embedded
 
       - name: Test C header generation
