@@ -147,13 +147,12 @@ jobs:
           bash .github/workflows/test_demo.sh
 
       - name: Test demos (embedded target)
+        if: ${{ matrix.os != 'macos-15-intel' }}
         env:
           # Host demo parallelism previously exposed a _demo/go/sync segfault on
-          # Ubuntu Go 1.21. Keep host demos sequential. Only parallelize embedded
-          # demo builds on the slow macOS Intel Go 1.24 leg, where this reduced
-          # runner time; keep the Go 1.21 leg sequential because parallelism made
-          # it slower and more variable in live CI.
-          LLGO_DEMO_JOBS: ${{ matrix.os == 'macos-15-intel' && matrix.go == '1.24.2' && '2' || '1' }}
+          # Ubuntu Go 1.21. Keep host demos sequential. macOS Intel embedded demos
+          # run in a separate job so both host and embedded tasks target <15m.
+          LLGO_DEMO_JOBS: "1"
         run: bash .github/workflows/test_demo.sh --embedded
 
       - name: Test C header generation
@@ -194,6 +193,51 @@ jobs:
         run: |
           echo "Test lldb with llgo plugin on ${{matrix.os}} with LLVM ${{matrix.llvm}}"
           bash _lldb/runtest.sh -v
+
+  llgo-embedded-macos-intel:
+    continue-on-error: true
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        llvm: [19]
+        go: ["1.21.13", "1.24.2"]
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
+          install-demo-deps: false
+      - name: Install embedded dependencies
+        uses: ./.github/actions/setup-embed-deps
+        with:
+          skip-package-update: "true"
+      - name: Set up Go for build
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
+
+      - name: Install llgo
+        run: |
+          # The main macOS Intel llgo job keeps go install ./... for host package
+          # build coverage. This split job only runs embedded demos, so install
+          # the llgo command needed for those tests.
+          go install ./cmd/llgo
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Set up Go for testing
+        if: ${{ matrix.go != '1.24.2' }}
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{matrix.go}}
+
+      - name: Test demos (embedded target)
+        env:
+          # Keep Go 1.21 sequential; low parallelism only helped the Go 1.24 leg
+          # in live CI. Coverage is identical to the embedded step in llgo.
+          LLGO_DEMO_JOBS: ${{ matrix.go == '1.24.2' && '2' || '1' }}
+        run: bash .github/workflows/test_demo.sh --embedded
 
   test:
     continue-on-error: true
