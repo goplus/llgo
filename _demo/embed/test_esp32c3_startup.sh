@@ -76,6 +76,17 @@ run_case_and_compare() {
     return 1
 }
 
+STARTUP_SCOPE="${LLGO_ESP32C3_STARTUP_SCOPE:-all}"
+case "$STARTUP_SCOPE" in
+    all|linker|float) ;;
+    *)
+        echo "✗ FAIL: unsupported LLGO_ESP32C3_STARTUP_SCOPE: $STARTUP_SCOPE"
+        echo "Supported scopes: all, linker, float"
+        exit 1
+        ;;
+esac
+
+if [ "$STARTUP_SCOPE" != "float" ]; then
 # Check if esptool.py is installed
 # esptool.py is required to parse ESP32-C3 BIN file format and verify
 # that constructor-related data is included in the firmware
@@ -226,7 +237,9 @@ else
         exit 1
     fi
 fi
+fi
 
+if [ "$STARTUP_SCOPE" != "linker" ]; then
 echo ""
 echo "=== Test 4: ESP32-C3 float output regressions (temporary) ==="
 pushd "$SCRIPT_DIR" > /dev/null
@@ -234,13 +247,18 @@ run_case_and_compare "./esp32c3/float-1664" $'+5.000000e+00 +8.000000e+00\n1 +2.
 # Mixed Go println + C printf(%f) regression tracking for issue #1723.
 run_case_and_compare "./esp32c3/print-float-1723" $'go 0\nf=1.100000'
 popd > /dev/null
+fi
 
 echo ""
-echo "=== All Tests Passed ==="
-echo "✓ ESP32-C3 uses newlib startup (_start calls __libc_init_array)"
-echo "✓ __init_array_start symbol exists in ELF"
-echo "✓ .init_array payload is correctly handled in BIN (or empty)"
-echo "✓ ESP32-C3 float output regression cases match expected output"
-echo "✓ Constructor function pointers will be correctly flashed to ESP32-C3"
+echo "=== All Tests Passed ($STARTUP_SCOPE) ==="
+if [ "$STARTUP_SCOPE" != "float" ]; then
+    echo "✓ ESP32-C3 uses newlib startup (_start calls __libc_init_array)"
+    echo "✓ __init_array_start symbol exists in ELF"
+    echo "✓ .init_array payload is correctly handled in BIN (or empty)"
+    echo "✓ Constructor function pointers will be correctly flashed to ESP32-C3"
+fi
+if [ "$STARTUP_SCOPE" != "linker" ]; then
+    echo "✓ ESP32-C3 float output regression cases match expected output"
+fi
 
 exit 0

@@ -298,12 +298,17 @@ jobs:
             go: "1.21.13"
             target: esp32c3-basic
             shard_index: "0"
-            shard_total: "2"
+            shard_total: "3"
           - llvm: 19
             go: "1.21.13"
             target: esp32c3-basic
             shard_index: "1"
-            shard_total: "2"
+            shard_total: "3"
+          - llvm: 19
+            go: "1.21.13"
+            target: esp32c3-basic
+            shard_index: "2"
+            shard_total: "3"
           - llvm: 19
             go: "1.24.2"
             target: esp32
@@ -387,7 +392,10 @@ jobs:
             smoke: esp32c3-serial
           - llvm: 19
             go: "1.24.2"
-            smoke: startup
+            smoke: startup-linker
+          - llvm: 19
+            go: "1.24.2"
+            smoke: startup-float
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -446,9 +454,11 @@ jobs:
           ./test-esp-serial-startup.sh
 
       - name: Test ESP32-C3 startup regression
-        if: ${{ matrix.smoke == 'startup' }}
+        if: ${{ startsWith(matrix.smoke, 'startup') }}
+        env:
+          LLGO_ESP32C3_STARTUP_SCOPE: ${{ matrix.smoke == 'startup-linker' && 'linker' || matrix.smoke == 'startup-float' && 'float' || 'all' }}
         run: |
-          echo "Testing ESP32-C3 startup regressions..."
+          echo "Testing ESP32-C3 startup regressions (${LLGO_ESP32C3_STARTUP_SCOPE})..."
           pip3 install --disable-pip-version-check --break-system-packages esptool==5.1.0
           cd _demo/embed
           ./test_esp32c3_startup.sh
