@@ -59,7 +59,7 @@ runs:
 
         # Create temporary directory for download
         TMP_DIR=$(mktemp -d)
-        curl -L "${DOWNLOAD_URL}" -o "${TMP_DIR}/go.tar.gz"
+        curl --retry 5 --retry-all-errors --retry-delay 5 -fL "${DOWNLOAD_URL}" -o "${TMP_DIR}/go.tar.gz"
 
         # Remove existing Go installation if any
         sudo rm -rf /usr/local/go
