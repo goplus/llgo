@@ -38,19 +38,26 @@ jobs:
         with:
           go-version: "1.24.2"
 
+      - name: Cache iwasm
+        id: cache-iwasm
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/llgo/bin/iwasm
+            ~/Library/Caches/llgo/bin/iwasm
+          key: ${{ runner.os }}-${{ runner.arch }}-iwasm-WAMR-2.4.4-${{ hashFiles('dev/build_iwasm.sh') }}
+
       - name: Install wamr (for wasm tests)
+        if: steps.cache-iwasm.outputs.cache-hit != 'true'
+        run: bash dev/build_iwasm.sh
+
+      - name: Add iwasm to PATH
         run: |
           if [[ "${{ runner.os }}" == "macOS" ]]; then
-            wamr_platform=darwin
+            echo "$HOME/Library/Caches/llgo/bin" >> $GITHUB_PATH
           else
-            wamr_platform=linux
+            echo "${XDG_CACHE_HOME:-$HOME/.cache}/llgo/bin" >> $GITHUB_PATH
           fi
-          git clone --branch WAMR-2.4.4 --depth 1 https://github.com/bytecodealliance/wasm-micro-runtime.git
-          mkdir "wasm-micro-runtime/product-mini/platforms/${wamr_platform}/build"
-          cd "wasm-micro-runtime/product-mini/platforms/${wamr_platform}/build"
-          cmake -D WAMR_BUILD_EXCE_HANDLING=1 -D WAMR_BUILD_FAST_INTERP=0 -DWAMR_BUILD_SHARED_MEMORY=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 -DWAMR_BUILD_LIB_PTHREAD=1 -DCMAKE_BUILD_TYPE=Debug -DWAMR_BUILD_DEBUG_INTERP=1 ..
-          make -j8
-          echo "$PWD" >> $GITHUB_PATH
 
       - name: Install llgo (dev mode)
         run: |
