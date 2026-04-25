@@ -82,8 +82,32 @@ run_case() {
         exit 1
     fi
 
-    run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file"
-    run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file"
+    case ",${LLGO_ESP_SERIAL_TARGETS:-esp32c3-basic,esp32}," in
+        *,esp32c3-basic,*) run_emulator_smoke "esp32c3-basic" "ESP32-C3 [$case_name]" "$case_dir" "$expected_file" ;;
+    esac
+    case ",${LLGO_ESP_SERIAL_TARGETS:-esp32c3-basic,esp32}," in
+        *,esp32,*) run_emulator_smoke "esp32" "ESP32 [$case_name]" "$case_dir" "$expected_file" ;;
+    esac
+}
+
+validate_targets() {
+    local targets="${LLGO_ESP_SERIAL_TARGETS:-esp32c3-basic,esp32}"
+    local target
+    IFS=',' read -r -a target_list <<< "$targets"
+    if [ "${#target_list[@]}" -eq 0 ]; then
+        echo "✗ FAIL: LLGO_ESP_SERIAL_TARGETS must not be empty"
+        exit 1
+    fi
+    for target in "${target_list[@]}"; do
+        case "$target" in
+            esp32|esp32c3-basic) ;;
+            *)
+                echo "✗ FAIL: unsupported LLGO_ESP_SERIAL_TARGETS entry: $target"
+                echo "Supported targets: esp32, esp32c3-basic"
+                exit 1
+                ;;
+        esac
+    done
 }
 
 run_all_cases() {
@@ -111,9 +135,10 @@ if [ ! -d "$CASE_ROOT" ]; then
 fi
 
 cd "$SCRIPT_DIR"
+validate_targets
 
 echo ""
-echo "=== ESP Serial Smoke Tests: Emulator Run ==="
+echo "=== ESP Serial Smoke Tests: Emulator Run (${LLGO_ESP_SERIAL_TARGETS:-esp32c3-basic,esp32}) ==="
 run_all_cases
 
 echo ""

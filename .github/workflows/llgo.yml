@@ -339,7 +339,7 @@ jobs:
       matrix:
         llvm: [19]
         go: ["1.21.13", "1.24.2"]
-        smoke: [export, esp]
+        smoke: [export, esp32-serial, esp32c3-serial, startup]
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -377,15 +377,26 @@ jobs:
           cd _demo/embed/export
           ./verify_export.sh
 
-      - name: Test ESP serial smoke (build + emulator)
-        if: ${{ matrix.smoke == 'esp' }}
+      - name: Test ESP32 serial smoke (build + emulator)
+        if: ${{ matrix.smoke == 'esp32-serial' }}
+        env:
+          LLGO_ESP_SERIAL_TARGETS: esp32
         run: |
-          echo "Testing ESP32/ESP32-C3 build + emulator smoke..."
+          echo "Testing ESP32 build + emulator smoke..."
+          cd _demo/embed
+          ./test-esp-serial-startup.sh
+
+      - name: Test ESP32-C3 serial smoke (build + emulator)
+        if: ${{ matrix.smoke == 'esp32c3-serial' }}
+        env:
+          LLGO_ESP_SERIAL_TARGETS: esp32c3-basic
+        run: |
+          echo "Testing ESP32-C3 build + emulator smoke..."
           cd _demo/embed
           ./test-esp-serial-startup.sh
 
       - name: Test ESP32-C3 startup regression
-        if: ${{ matrix.smoke == 'esp' }}
+        if: ${{ matrix.smoke == 'startup' }}
         run: |
           echo "Testing ESP32-C3 startup regressions..."
           pip3 install --disable-pip-version-check --break-system-packages esptool==5.1.0
