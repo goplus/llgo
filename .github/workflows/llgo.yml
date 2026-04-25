@@ -204,6 +204,7 @@ jobs:
       matrix:
         llvm: [19]
         go: ["1.21.13", "1.24.2"]
+        target: [esp32, esp32c3-basic]
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -237,9 +238,10 @@ jobs:
 
       - name: Test demos (embedded target)
         env:
-          # Keep Go 1.21 sequential; low parallelism only helped the Go 1.24 leg
-          # in live CI. Coverage is identical to the embedded step in llgo.
+          # Each split job runs one embedded target. Keep Go 1.21 sequential;
+          # low parallelism only helped the Go 1.24 leg in live CI.
           LLGO_DEMO_JOBS: ${{ matrix.go == '1.24.2' && '2' || '1' }}
+          LLGO_EMBEDDED_TARGETS: ${{ matrix.target }}
         run: bash .github/workflows/test_demo.sh --embedded
 
   llgo-embedded-smoke-macos-intel:

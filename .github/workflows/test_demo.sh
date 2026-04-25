@@ -54,7 +54,13 @@ embedded_targets=()
 emulator=0
 if [ "$mode" = "embedded" ]; then
   emulator=1
-  embedded_targets=(esp32 esp32c3-basic)
+  if [ -n "${LLGO_EMBEDDED_TARGETS:-}" ]; then
+    # Optional space-separated target subset for CI job splitting. Default stays
+    # the full target list so local and existing CI coverage are unchanged.
+    read -r -a embedded_targets <<< "$LLGO_EMBEDDED_TARGETS"
+  else
+    embedded_targets=(esp32 esp32c3-basic)
+  fi
 fi
 
 ignore_esp32=(
