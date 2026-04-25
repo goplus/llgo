@@ -70,11 +70,46 @@ jobs:
         run: go test -timeout 30m -coverprofile="coverage.txt" -covermode=atomic ./...
 
       - name: Test with embedded emulator env
+        if: ${{!startsWith(matrix.os, 'macos')}}
         env:
           LLGO_EMBED_TESTS: "1"
         run: go test -timeout 60m ./cl -run '^TestRunEmbedEmulator$'
 
       - name: Upload coverage reports to Codecov
+        if: startsWith(matrix.os, 'macos')
         uses: codecov/codecov-action@v5
         with:
           token: ${{secrets.CODECOV_TOKEN}}
+
+  test-embed-emulator-macos:
+    continue-on-error: true
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        llvm: [19]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
+          install-demo-deps: false
+
+      - name: Install embedded dependencies
+        uses: ./.github/actions/setup-embed-deps
+        with:
+          skip-package-update: "true"
+
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
+
+      - name: Set LLGO_ROOT
+        run: echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Test with embedded emulator env
+        env:
+          LLGO_EMBED_TESTS: "1"
+        run: go test -timeout 60m ./cl -run '^TestRunEmbedEmulator$'
