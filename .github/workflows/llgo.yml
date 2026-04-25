@@ -251,6 +251,7 @@ jobs:
       matrix:
         llvm: [19]
         go: ["1.21.13", "1.24.2"]
+        smoke: [export, esp]
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -282,18 +283,21 @@ jobs:
           go-version: ${{matrix.go}}
 
       - name: Test export with different symbol names on embedded targets
+        if: ${{ matrix.smoke == 'export' }}
         run: |
           echo "Testing //export with different symbol names on embedded targets..."
           cd _demo/embed/export
           ./verify_export.sh
 
       - name: Test ESP serial smoke (build + emulator)
+        if: ${{ matrix.smoke == 'esp' }}
         run: |
           echo "Testing ESP32/ESP32-C3 build + emulator smoke..."
           cd _demo/embed
           ./test-esp-serial-startup.sh
 
       - name: Test ESP32-C3 startup regression
+        if: ${{ matrix.smoke == 'esp' }}
         run: |
           echo "Testing ESP32-C3 startup regressions..."
           pip3 install --disable-pip-version-check --break-system-packages esptool==5.1.0
