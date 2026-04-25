@@ -205,8 +205,17 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        llvm: [19]
-        go: ["1.21.13", "1.24.2"]
+        include:
+          - llvm: 19
+            go: "1.21.13"
+            shard_index: "0"
+            shard_total: "2"
+          - llvm: 19
+            go: "1.21.13"
+            shard_index: "1"
+            shard_total: "2"
+          - llvm: 19
+            go: "1.24.2"
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -272,6 +281,9 @@ jobs:
           fi
 
       - name: Test demos
+        env:
+          LLGO_DEMO_SHARD_INDEX: ${{ matrix.shard_index || '' }}
+          LLGO_DEMO_SHARD_TOTAL: ${{ matrix.shard_total || '' }}
         run: |
           pcdir=$HOME/pc
           mkdir -p $pcdir
