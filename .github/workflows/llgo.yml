@@ -356,9 +356,38 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        llvm: [19]
-        go: ["1.21.13", "1.24.2"]
-        smoke: [export, esp32-serial, esp32c3-serial, startup]
+        include:
+          - llvm: 19
+            go: "1.21.13"
+            smoke: export
+          - llvm: 19
+            go: "1.21.13"
+            smoke: esp32-serial
+          - llvm: 19
+            go: "1.21.13"
+            smoke: esp32c3-serial
+            case_shard_index: "0"
+            case_shard_total: "2"
+          - llvm: 19
+            go: "1.21.13"
+            smoke: esp32c3-serial
+            case_shard_index: "1"
+            case_shard_total: "2"
+          - llvm: 19
+            go: "1.21.13"
+            smoke: startup
+          - llvm: 19
+            go: "1.24.2"
+            smoke: export
+          - llvm: 19
+            go: "1.24.2"
+            smoke: esp32-serial
+          - llvm: 19
+            go: "1.24.2"
+            smoke: esp32c3-serial
+          - llvm: 19
+            go: "1.24.2"
+            smoke: startup
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v6
@@ -409,6 +438,8 @@ jobs:
         if: ${{ matrix.smoke == 'esp32c3-serial' }}
         env:
           LLGO_ESP_SERIAL_TARGETS: esp32c3-basic
+          LLGO_ESP_SERIAL_CASE_SHARD_INDEX: ${{ matrix.case_shard_index }}
+          LLGO_ESP_SERIAL_CASE_SHARD_TOTAL: ${{ matrix.case_shard_total }}
         run: |
           echo "Testing ESP32-C3 build + emulator smoke..."
           cd _demo/embed

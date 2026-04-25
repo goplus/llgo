@@ -110,20 +110,54 @@ validate_targets() {
     done
 }
 
+validate_case_shard() {
+    if [ -z "${LLGO_ESP_SERIAL_CASE_SHARD_TOTAL:-}" ] && [ -z "${LLGO_ESP_SERIAL_CASE_SHARD_INDEX:-}" ]; then
+        return
+    fi
+    case "${LLGO_ESP_SERIAL_CASE_SHARD_TOTAL:-}" in
+        ''|*[!0-9]*) echo "✗ FAIL: LLGO_ESP_SERIAL_CASE_SHARD_TOTAL must be a positive integer"; exit 1 ;;
+    esac
+    case "${LLGO_ESP_SERIAL_CASE_SHARD_INDEX:-}" in
+        ''|*[!0-9]*) echo "✗ FAIL: LLGO_ESP_SERIAL_CASE_SHARD_INDEX must be a non-negative integer"; exit 1 ;;
+    esac
+    if [ "$LLGO_ESP_SERIAL_CASE_SHARD_TOTAL" -lt 1 ]; then
+        echo "✗ FAIL: LLGO_ESP_SERIAL_CASE_SHARD_TOTAL must be a positive integer"
+        exit 1
+    fi
+    if [ "$LLGO_ESP_SERIAL_CASE_SHARD_INDEX" -ge "$LLGO_ESP_SERIAL_CASE_SHARD_TOTAL" ]; then
+        echo "✗ FAIL: LLGO_ESP_SERIAL_CASE_SHARD_INDEX must be less than LLGO_ESP_SERIAL_CASE_SHARD_TOTAL"
+        exit 1
+    fi
+}
+
 run_all_cases() {
     local found=0
+    local selected=0
     local case_dir
+    local case_index=0
     exec 3< <(find "$CASE_ROOT" -mindepth 1 -maxdepth 1 -type d | sort)
     while IFS= read -r case_dir <&3; do
         if [ -f "$case_dir/main.go" ] && [ -f "$case_dir/expect.txt" ]; then
             found=1
+            if [ -n "${LLGO_ESP_SERIAL_CASE_SHARD_TOTAL:-}" ]; then
+                if [ $((case_index % LLGO_ESP_SERIAL_CASE_SHARD_TOTAL)) -ne "$LLGO_ESP_SERIAL_CASE_SHARD_INDEX" ]; then
+                    case_index=$((case_index + 1))
+                    continue
+                fi
+            fi
+            selected=$((selected + 1))
             run_case "$case_dir"
+            case_index=$((case_index + 1))
         fi
     done
     exec 3<&-
 
     if [ "$found" -eq 0 ]; then
         echo "✗ FAIL: no testcase found under $CASE_ROOT (need main.go + expect.txt)"
+        exit 1
+    fi
+    if [ "$selected" -eq 0 ]; then
+        echo "✗ FAIL: no testcase selected by ESP serial shard"
         exit 1
     fi
 }
@@ -136,9 +170,13 @@ fi
 
 cd "$SCRIPT_DIR"
 validate_targets
+validate_case_shard
 
 echo ""
 echo "=== ESP Serial Smoke Tests: Emulator Run (${LLGO_ESP_SERIAL_TARGETS:-esp32c3-basic,esp32}) ==="
+if [ -n "${LLGO_ESP_SERIAL_CASE_SHARD_TOTAL:-}" ]; then
+    echo "=== Case shard: ${LLGO_ESP_SERIAL_CASE_SHARD_INDEX}/${LLGO_ESP_SERIAL_CASE_SHARD_TOTAL} ==="
+fi
 run_all_cases
 
 echo ""
