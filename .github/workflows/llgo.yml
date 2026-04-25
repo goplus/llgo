@@ -162,18 +162,21 @@ jobs:
           ./test.sh
 
       - name: Test export with different symbol names on embedded targets
+        if: ${{ matrix.os != 'macos-15-intel' }}
         run: |
           echo "Testing //export with different symbol names on embedded targets..."
           cd _demo/embed/export
           ./verify_export.sh
 
       - name: Test ESP serial smoke (build + emulator)
+        if: ${{ matrix.os != 'macos-15-intel' }}
         run: |
           echo "Testing ESP32/ESP32-C3 build + emulator smoke..."
           cd _demo/embed
           ./test-esp-serial-startup.sh
 
       - name: Test ESP32-C3 startup regression
+        if: ${{ matrix.os != 'macos-15-intel' }}
         run: |
           echo "Testing ESP32-C3 startup regressions..."
           pip3 install --disable-pip-version-check --break-system-packages esptool==5.1.0
@@ -238,6 +241,62 @@ jobs:
           # in live CI. Coverage is identical to the embedded step in llgo.
           LLGO_DEMO_JOBS: ${{ matrix.go == '1.24.2' && '2' || '1' }}
         run: bash .github/workflows/test_demo.sh --embedded
+
+  llgo-embedded-smoke-macos-intel:
+    continue-on-error: true
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        llvm: [19]
+        go: ["1.21.13", "1.24.2"]
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: ${{matrix.llvm}}
+          install-demo-deps: false
+      - name: Install embedded dependencies
+        uses: ./.github/actions/setup-embed-deps
+        with:
+          skip-package-update: "true"
+      - name: Set up Go for build
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: "1.24.2"
+
+      - name: Install llgo
+        run: |
+          # The main macOS Intel llgo job keeps go install ./... for host package
+          # build coverage. This split job only runs embedded smoke checks.
+          go install ./cmd/llgo
+          echo "LLGO_ROOT=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+
+      - name: Set up Go for testing
+        if: ${{ matrix.go != '1.24.2' }}
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{matrix.go}}
+
+      - name: Test export with different symbol names on embedded targets
+        run: |
+          echo "Testing //export with different symbol names on embedded targets..."
+          cd _demo/embed/export
+          ./verify_export.sh
+
+      - name: Test ESP serial smoke (build + emulator)
+        run: |
+          echo "Testing ESP32/ESP32-C3 build + emulator smoke..."
+          cd _demo/embed
+          ./test-esp-serial-startup.sh
+
+      - name: Test ESP32-C3 startup regression
+        run: |
+          echo "Testing ESP32-C3 startup regressions..."
+          pip3 install --disable-pip-version-check --break-system-packages esptool==5.1.0
+          cd _demo/embed
+          ./test_esp32c3_startup.sh
 
   test:
     continue-on-error: true
