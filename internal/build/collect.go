@@ -65,7 +65,7 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 	}
 
 	pkg.Manifest = m.Build()
-	pkg.Fingerprint = m.Fingerprint()
+	pkg.Fingerprint = fingerprintManifest(pkg.Manifest)
 	return nil
 }
 

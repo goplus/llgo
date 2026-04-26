@@ -177,7 +177,10 @@ func (m *manifestBuilder) Build() string {
 
 // Fingerprint returns the sha256 hash of the manifest content.
 func (m *manifestBuilder) Fingerprint() string {
-	content := m.Build()
+	return fingerprintManifest(m.Build())
+}
+
+func fingerprintManifest(content string) string {
 	hash := sha256.Sum256([]byte(content))
 	return hex.EncodeToString(hash[:])
 }
