@@ -397,7 +397,16 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 // backward compatibility with existing cache entries.
 func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 	meta := &cacheArchiveMetadata{}
-	if !hasYAMLMetadataSection(content) && !strings.Contains(content, "[Package]\n") {
+	if metadataContent, ok := yamlMetadataSection(content); ok {
+		if data, err := decodeManifest(metadataContent); err == nil {
+			if data.Metadata != nil {
+				meta.LinkArgs = append([]string(nil), data.Metadata.LinkArgs...)
+				meta.NeedRt = data.Metadata.NeedRt
+				meta.NeedPyInit = data.Metadata.NeedPyInit
+			}
+			return meta, nil
+		}
+	} else if !strings.Contains(content, "[Package]\n") {
 		return meta, nil
 	}
 	if data, err := decodeManifest(content); err == nil {
@@ -412,8 +421,26 @@ func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 	return parseManifestMetadataLegacy(content, meta)
 }
 
-func hasYAMLMetadataSection(content string) bool {
-	return strings.HasPrefix(content, "metadata:") || strings.Contains(content, "\nmetadata:")
+func yamlMetadataSection(content string) (string, bool) {
+	start := 0
+	if !strings.HasPrefix(content, "metadata:") {
+		idx := strings.Index(content, "\nmetadata:")
+		if idx < 0 {
+			return "", false
+		}
+		start = idx + 1
+	}
+	end := len(content)
+	searchFrom := start + len("metadata:")
+	for _, marker := range [...]string{"\nenv:", "\ncommon:", "\npackage:", "\ndeps:"} {
+		if idx := strings.Index(content[searchFrom:], marker); idx >= 0 {
+			pos := searchFrom + idx
+			if pos+1 < end {
+				end = pos + 1
+			}
+		}
+	}
+	return content[start:end], true
 }
 
 func parseManifestMetadataLegacy(content string, meta *cacheArchiveMetadata) (*cacheArchiveMetadata, error) {
