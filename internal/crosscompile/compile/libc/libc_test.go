@@ -119,8 +119,8 @@ func TestGetPicolibcCompileConfig(t *testing.T) {
 		}
 
 		// Test files list
-		if len(group.Files) == 0 {
-			t.Error("Expected non-empty files list")
+		if len(group.Files) != 112 {
+			t.Errorf("Expected 112 files, got %d", len(group.Files))
 		} else {
 			// Check a few sample files
 			sampleFiles := []string{
