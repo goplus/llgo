@@ -61,121 +61,37 @@ func compileVerbose(options CompileOptions) bool {
 	return options.Verbose || os.Getenv("LLGO_COMPILE_VERBOSE") != ""
 }
 
-// Compile compiles all source files in the group into a static library archive
-// If the archive already exists, compilation is skipped
-func (g CompileGroup) Compile(
-	outputDir string, options CompileOptions,
-) (err error) {
-	if g.IsCompiled(outputDir) {
-		return
-	}
-	tmpCompileDir, err := os.MkdirTemp("", "compile-group*")
-	if err != nil {
-		return
-	}
-	defer os.RemoveAll(tmpCompileDir)
-
+func groupCompilerConfig(g CompileGroup, options CompileOptions) clang.Config {
 	compileLDFlags := append(slices.Clone(options.LDFLAGS), g.LDFlags...)
 	compileCCFlags := append(slices.Clone(options.CCFLAGS), g.CCFlags...)
 	compileCFFlags := append(slices.Clone(options.CFLAGS), g.CFlags...)
+	return clang.NewConfig(options.CC, compileCCFlags, compileCFFlags, compileLDFlags, options.Linker)
+}
 
-	cfg := clang.NewConfig(options.CC, compileCCFlags, compileCFFlags, compileLDFlags, options.Linker)
-
-	jobs, err := compileJobs()
+func compileOneFile(compiler *clang.Cmd, tmpCompileDir, file string) (objFile string, err error) {
+	tempObjFile, err := os.CreateTemp(tmpCompileDir, fmt.Sprintf("%s*.o", strings.ReplaceAll(file, string(os.PathSeparator), "-")))
 	if err != nil {
-		return err
+		return "", err
 	}
-	if jobs > len(g.Files) {
-		jobs = len(g.Files)
-	}
-	if jobs < 1 {
-		jobs = 1
+	objFile = tempObjFile.Name()
+	if err := tempObjFile.Close(); err != nil {
+		os.Remove(objFile)
+		return "", err
 	}
 
-	objFiles := make([]string, len(g.Files))
+	lang := "c"
+	if filepath.Ext(file) == ".S" {
+		lang = "assembler-with-cpp"
+	}
+	if err := compiler.Compile("-o", objFile, "-x", lang, "-c", file); err != nil {
+		os.Remove(objFile)
+		return "", err
+	}
+	return objFile, nil
+}
 
+func archiveObjects(outputDir string, options CompileOptions, g CompileGroup, objFiles []string) error {
 	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
-	fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", g.OutputFileName, archive)
-
-	compileOne := func(compiler *clang.Cmd, idx int, file string) error {
-		tempObjFile, err := os.CreateTemp(tmpCompileDir, fmt.Sprintf("%s*.o", strings.ReplaceAll(file, string(os.PathSeparator), "-")))
-		if err != nil {
-			return err
-		}
-		objFile := tempObjFile.Name()
-		if err := tempObjFile.Close(); err != nil {
-			return err
-		}
-
-		lang := "c"
-		if filepath.Ext(file) == ".S" {
-			lang = "assembler-with-cpp"
-		}
-		if err := compiler.Compile("-o", objFile, "-x", lang, "-c", file); err != nil {
-			os.Remove(objFile)
-			return err
-		}
-		objFiles[idx] = objFile
-		return nil
-	}
-
-	verbose := compileVerbose(options)
-	if jobs == 1 || len(g.Files) <= 1 {
-		compiler := clang.NewCompiler(cfg)
-		compiler.Verbose = verbose
-		for i, file := range g.Files {
-			if err := compileOne(compiler, i, file); err != nil {
-				return err
-			}
-		}
-	} else {
-		type task struct {
-			idx  int
-			file string
-		}
-		tasks := make(chan task)
-		var wg sync.WaitGroup
-		var errMu sync.Mutex
-		var firstErr error
-		setErr := func(err error) {
-			if err == nil {
-				return
-			}
-			errMu.Lock()
-			if firstErr == nil {
-				firstErr = err
-			}
-			errMu.Unlock()
-		}
-		for worker := 0; worker < jobs; worker++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				compiler := clang.NewCompiler(cfg)
-				compiler.Verbose = verbose
-				for task := range tasks {
-					if err := compileOne(compiler, task.idx, task.file); err != nil {
-						setErr(err)
-					}
-				}
-			}()
-		}
-		for i, file := range g.Files {
-			errMu.Lock()
-			stopped := firstErr != nil
-			errMu.Unlock()
-			if stopped {
-				break
-			}
-			tasks <- task{idx: i, file: file}
-		}
-		close(tasks)
-		wg.Wait()
-		if firstErr != nil {
-			return firstErr
-		}
-	}
-
 	args := []string{"rcs", archive}
 	args = append(args, objFiles...)
 
@@ -186,14 +102,157 @@ func (g CompileGroup) Compile(
 	// TODO(MeteorsLiu): support verbose
 	// cmd.Stdout = os.Stdout
 	// cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	return
+	return cmd.Run()
+}
+
+// Compile compiles all source files in the group into a static library archive.
+// If the archive already exists, compilation is skipped.
+func (g CompileGroup) Compile(outputDir string, options CompileOptions) error {
+	return CompileConfig{Groups: []CompileGroup{g}}.Compile(outputDir, options)
 }
 
 // CompileConfig represents compilation configuration
 type CompileConfig struct {
 	Groups       []CompileGroup
 	ExportCFlags []string
+}
+
+type compileGroupState struct {
+	group CompileGroup
+	cfg   clang.Config
+	tmp   string
+	objs  []string
+	skip  bool
+}
+
+type compileTask struct {
+	group int
+	file  int
+}
+
+// Compile compiles all groups with one shared job budget, then archives each
+// group in configuration order. Source files are independent, so sharing the
+// worker pool removes unnecessary barriers between archive groups while keeping
+// final archive and linker-flag order deterministic.
+func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error {
+	jobs, err := compileJobs()
+	if err != nil {
+		return err
+	}
+	verbose := compileVerbose(options)
+
+	states := make([]compileGroupState, len(cfg.Groups))
+	var tasks []compileTask
+	for i, group := range cfg.Groups {
+		states[i] = compileGroupState{group: group, cfg: groupCompilerConfig(group, options), objs: make([]string, len(group.Files))}
+		if group.IsCompiled(outputDir) {
+			states[i].skip = true
+			continue
+		}
+		tmpCompileDir, err := os.MkdirTemp("", "compile-group*")
+		if err != nil {
+			return err
+		}
+		states[i].tmp = tmpCompileDir
+		defer os.RemoveAll(tmpCompileDir)
+
+		archive := filepath.Join(outputDir, filepath.Base(group.OutputFileName))
+		fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", group.OutputFileName, archive)
+		for j := range group.Files {
+			tasks = append(tasks, compileTask{group: i, file: j})
+		}
+	}
+
+	if len(tasks) > 0 {
+		if jobs > len(tasks) {
+			jobs = len(tasks)
+		}
+		if jobs < 1 {
+			jobs = 1
+		}
+		if jobs == 1 {
+			for _, task := range tasks {
+				state := &states[task.group]
+				compiler := clang.NewCompiler(state.cfg)
+				compiler.Verbose = verbose
+				objFile, err := compileOneFile(compiler, state.tmp, state.group.Files[task.file])
+				if err != nil {
+					return err
+				}
+				state.objs[task.file] = objFile
+			}
+		} else {
+			if err := compileTasks(states, tasks, jobs, verbose); err != nil {
+				return err
+			}
+		}
+	}
+
+	for i := range states {
+		state := &states[i]
+		if state.skip {
+			continue
+		}
+		if err := archiveObjects(outputDir, options, state.group, state.objs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func compileTasks(states []compileGroupState, tasks []compileTask, jobs int, verbose bool) error {
+	taskCh := make(chan compileTask)
+	var wg sync.WaitGroup
+	var errMu sync.Mutex
+	var firstErr error
+	setErr := func(err error) {
+		if err == nil {
+			return
+		}
+		errMu.Lock()
+		if firstErr == nil {
+			firstErr = err
+		}
+		errMu.Unlock()
+	}
+
+	for worker := 0; worker < jobs; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			compilers := make(map[int]*clang.Cmd)
+			for task := range taskCh {
+				state := &states[task.group]
+				compiler := compilers[task.group]
+				if compiler == nil {
+					compiler = clang.NewCompiler(state.cfg)
+					compiler.Verbose = verbose
+					compilers[task.group] = compiler
+				}
+				objFile, err := compileOneFile(compiler, state.tmp, state.group.Files[task.file])
+				if err != nil {
+					setErr(err)
+					continue
+				}
+				state.objs[task.file] = objFile
+			}
+		}()
+	}
+	for _, task := range tasks {
+		errMu.Lock()
+		stopped := firstErr != nil
+		errMu.Unlock()
+		if stopped {
+			break
+		}
+		taskCh <- task
+	}
+	close(taskCh)
+	wg.Wait()
+	if firstErr != nil {
+		return firstErr
+	}
+	return nil
 }
 
 type LibConfig struct {
