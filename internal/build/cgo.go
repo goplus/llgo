@@ -355,6 +355,7 @@ func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []c
 
 func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, decls []cgoDecl, err error) {
 	b := strings.Builder{}
+	b.Grow(len(text) + 64)
 	fline := pos.Line
 	fname := pos.Filename
 	writeCgoLineDirective(&b, fline, fname)
