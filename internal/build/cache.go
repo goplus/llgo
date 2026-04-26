@@ -112,10 +112,28 @@ func isSafeComponent(s string) bool {
 	return true
 }
 
+func isSafePkgPath(pkgPath string) bool {
+	start := 0
+	for i := 0; i <= len(pkgPath); i++ {
+		if i < len(pkgPath) && pkgPath[i] != '/' {
+			continue
+		}
+		segment := pkgPath[start:i]
+		if segment == "" || segment == "." || segment == ".." || !isSafeComponent(segment) {
+			return false
+		}
+		start = i + 1
+	}
+	return true
+}
+
 // sanitizePkgPath converts a package path to a safe directory path
 func sanitizePkgPath(pkgPath string) string {
 	if pkgPath == "" {
 		return "_"
+	}
+	if isSafePkgPath(pkgPath) {
+		return filepath.FromSlash(pkgPath)
 	}
 	segments := strings.Split(pkgPath, "/")
 	for i, segment := range segments {
