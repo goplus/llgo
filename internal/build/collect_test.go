@@ -72,6 +72,9 @@ func TestCollectFingerprint(t *testing.T) {
 	if len(pkg.Fingerprint) != 64 {
 		t.Errorf("fingerprint length = %d, want 64", len(pkg.Fingerprint))
 	}
+	if want := fingerprintManifest(pkg.Manifest); pkg.Fingerprint != want {
+		t.Errorf("fingerprint = %s, want hash of manifest %s", pkg.Fingerprint, want)
+	}
 
 	data, err := decodeManifest(pkg.Manifest)
 	if err != nil {
