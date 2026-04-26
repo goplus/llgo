@@ -359,9 +359,15 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 	fname := pos.Filename
 	writeCgoLineDirective(&b, fline, fname)
 
-	for _, line := range strings.Split(text, "\n") {
+	for start := 0; start <= len(text); {
+		end := strings.IndexByte(text[start:], '\n')
+		if end < 0 {
+			end = len(text)
+		} else {
+			end += start
+		}
 		fline++
-		line = strings.TrimSpace(line)
+		line := strings.TrimSpace(text[start:end])
 		if strings.HasPrefix(line, "#cgo ") {
 			var cgoDecls []cgoDecl
 			cgoDecls, err = parseCgoDecl(line)
@@ -374,6 +380,10 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 			b.WriteString(line)
 			b.WriteString("\n")
 		}
+		if end == len(text) {
+			break
+		}
+		start = end + 1
 	}
 	preamble = cgoPreamble{
 		goFile: pos.Filename,
