@@ -334,7 +334,7 @@ func (c *context) targetTriple() string {
 func targetTriple(goos, goarch, llvmTarget, targetABI string) string {
 	triple := llvmTarget
 	if triple == "" {
-		triple = fmt.Sprintf("%s-%s", goarch, goos)
+		triple = goarch + "-" + goos
 	}
 	if targetABI != "" {
 		triple = triple + "-" + targetABI
