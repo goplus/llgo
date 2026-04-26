@@ -83,7 +83,7 @@ func compileOneFile(compiler *clang.Cmd, tmpCompileDir string, idx int, file str
 
 func archiveObjects(llvmAr, outputDir string, g CompileGroup, objFiles []string) error {
 	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
-	args := []string{"rcs", archive}
+	args := []string{"qcs", archive}
 	args = append(args, objFiles...)
 
 	cmd := exec.Command(llvmAr, args...)
