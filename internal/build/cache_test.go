@@ -49,6 +49,24 @@ func TestSanitizePkgPath(t *testing.T) {
 	}
 }
 
+func TestJoinCachePath(t *testing.T) {
+	sep := string(os.PathSeparator)
+	roots := []string{
+		"",
+		".",
+		filepath.Join(sep, "tmp", "root"),
+		filepath.Join(sep, "tmp", "root") + sep,
+		sep,
+	}
+	for _, root := range roots {
+		got := joinCachePath(root, "target", filepath.Join("pkg", "sub"))
+		want := filepath.Join(root, "target", filepath.Join("pkg", "sub"))
+		if got != want {
+			t.Fatalf("joinCachePath(%q) = %q, want %q", root, got, want)
+		}
+	}
+}
+
 func TestCacheManager_PackagePaths(t *testing.T) {
 	// Override cache root for testing
 	td := t.TempDir()
