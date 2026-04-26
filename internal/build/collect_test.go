@@ -119,6 +119,19 @@ func TestParseManifestMetadata(t *testing.T) {
 		t.Fatalf("yaml metadata parse = %+v", meta)
 	}
 
+	fullYAML := "env:\n    GOOS: linux\n" + content + "deps:\n    - id: example.com/dep\n      version: v1.0.0\n"
+	section, ok := yamlMetadataSection(fullYAML)
+	if !ok {
+		t.Fatal("yamlMetadataSection should find metadata section")
+	}
+	if !strings.Contains(section, "metadata:") || strings.Contains(section, "deps:") {
+		t.Fatalf("metadata section slice = %q", section)
+	}
+	section, ok = yamlMetadataSection(content + "deps:\n    - id: example.com/dep\n")
+	if !ok || !strings.HasPrefix(section, "metadata:") || strings.Contains(section, "deps:") {
+		t.Fatalf("metadata-at-start section slice = %q, %v", section, ok)
+	}
+
 	legacy := "[Package]\nLINK_ARGS = -llegacy -lm\nNEED_RT = true\nNEED_PY_INIT = false\n"
 	meta, err = parseManifestMetadata(legacy)
 	if err != nil {
