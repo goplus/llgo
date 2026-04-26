@@ -40,6 +40,20 @@ func TestGetNewlibESP32Config_LibConfig(t *testing.T) {
 	}
 }
 
+func TestJoinFileList(t *testing.T) {
+	files := "alpha/beta.c\n gamma/delta.S \n"
+	for _, root := range []string{"/tmp/root", "/tmp/root" + string(filepath.Separator)} {
+		got := joinFileList(root, files)
+		want := []string{
+			filepath.Join(root, filepath.FromSlash("alpha/beta.c")),
+			filepath.Join(root, filepath.FromSlash("gamma/delta.S")),
+		}
+		if !slices.Equal(got, want) {
+			t.Fatalf("joinFileList(%q) = %#v, want %#v", root, got, want)
+		}
+	}
+}
+
 func TestGetPicolibcConfig_LibConfig(t *testing.T) {
 	config := GetPicolibcConfig()
 
