@@ -318,12 +318,16 @@ func detectLLVMVersion(ctx *context) string {
 
 // targetTriple returns the target triple for cache directory.
 func (c *context) targetTriple() string {
-	return targetTriple(
+	if c.targetTripleCached != "" {
+		return c.targetTripleCached
+	}
+	c.targetTripleCached = targetTriple(
 		c.buildConf.Goos,
 		c.buildConf.Goarch,
 		c.crossCompile.LLVMTarget,
 		c.crossCompile.TargetABI,
 	)
+	return c.targetTripleCached
 }
 
 // targetTriple returns the target triple string for cache directory
