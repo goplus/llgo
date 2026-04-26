@@ -148,6 +148,7 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 		}
 	}
 
+	archiveJobs := 1
 	if len(tasks) > 0 {
 		jobs, err := compileJobs()
 		if err != nil {
@@ -160,6 +161,7 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 		if jobs < 1 {
 			jobs = 1
 		}
+		archiveJobs = jobs
 		if jobs == 1 {
 			for _, task := range tasks {
 				state := &states[task.group]
@@ -182,13 +184,50 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 		}
 	}
 
+	return archiveGroups(outputDir, options, states, archiveJobs)
+}
+
+func archiveGroups(outputDir string, options CompileOptions, states []compileGroupState, jobs int) error {
+	var groups []int
 	for i := range states {
-		state := &states[i]
-		if state.skip {
-			continue
+		if !states[i].skip {
+			groups = append(groups, i)
 		}
-		if err := archiveObjects(outputDir, options, state.group, state.objs); err != nil {
-			return err
+	}
+	if jobs > len(groups) {
+		jobs = len(groups)
+	}
+	if jobs <= 1 {
+		for _, idx := range groups {
+			state := &states[idx]
+			if err := archiveObjects(outputDir, options, state.group, state.objs); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	groupCh := make(chan int)
+	errs := make([]error, len(states))
+	var wg sync.WaitGroup
+	for worker := 0; worker < jobs; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for idx := range groupCh {
+				state := &states[idx]
+				errs[idx] = archiveObjects(outputDir, options, state.group, state.objs)
+			}
+		}()
+	}
+	for _, idx := range groups {
+		groupCh <- idx
+	}
+	close(groupCh)
+	wg.Wait()
+	for _, idx := range groups {
+		if errs[idx] != nil {
+			return errs[idx]
 		}
 	}
 	return nil
