@@ -5,6 +5,7 @@ package build
 
 import (
 	"fmt"
+	"go/token"
 	"reflect"
 	"strings"
 	"sync"
@@ -63,6 +64,21 @@ func TestParseCgoDeclFlags(t *testing.T) {
 				t.Fatalf("parseCgoDecl = %#v, want %#v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestParseCgoPreambleLineDirectives(t *testing.T) {
+	pos := token.Position{Filename: `/tmp/a "quoted".go`, Line: 7}
+	preamble, decls, err := parseCgoPreamble(pos, "int a;\n#cgo linux CFLAGS: -DTEST\nint b;\n")
+	if err != nil {
+		t.Fatalf("parseCgoPreamble: %v", err)
+	}
+	if len(decls) != 1 || decls[0].tag != "linux" || strings.Join(decls[0].cflags, " ") != "-DTEST" {
+		t.Fatalf("cgo decls = %#v", decls)
+	}
+	want := "#line 7 \"/tmp/a \\\"quoted\\\".go\"\nint a;\n#line 9 \"/tmp/a \\\"quoted\\\".go\"\nint b;\n\n"
+	if preamble.src != want {
+		t.Fatalf("preamble src = %q, want %q", preamble.src, want)
 	}
 }
 
