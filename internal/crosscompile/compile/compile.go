@@ -20,6 +20,7 @@ type CompileOptions struct {
 	CCFLAGS []string
 	CFLAGS  []string
 	LDFLAGS []string
+	Verbose bool // Print individual compiler commands
 }
 
 type CompileGroup struct {
@@ -54,6 +55,10 @@ func compileJobs() (int, error) {
 		return 8, nil
 	}
 	return jobs, nil
+}
+
+func compileVerbose(options CompileOptions) bool {
+	return options.Verbose || os.Getenv("LLGO_COMPILE_VERBOSE") != ""
 }
 
 // Compile compiles all source files in the group into a static library archive
@@ -114,9 +119,10 @@ func (g CompileGroup) Compile(
 		return nil
 	}
 
+	verbose := compileVerbose(options)
 	if jobs == 1 || len(g.Files) <= 1 {
 		compiler := clang.NewCompiler(cfg)
-		compiler.Verbose = true
+		compiler.Verbose = verbose
 		for i, file := range g.Files {
 			if err := compileOne(compiler, i, file); err != nil {
 				return err
@@ -146,7 +152,7 @@ func (g CompileGroup) Compile(
 			go func() {
 				defer wg.Done()
 				compiler := clang.NewCompiler(cfg)
-				compiler.Verbose = true
+				compiler.Verbose = verbose
 				for task := range tasks {
 					if err := compileOne(compiler, task.idx, task.file); err != nil {
 						setErr(err)
