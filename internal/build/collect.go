@@ -647,13 +647,12 @@ func (c *context) saveToCache(pkg *aPackage) error {
 }
 
 func appendManifestMetadata(manifestContent string, meta *manifestMetadata) (string, error) {
-	metaContent, ok := buildSimpleManifestMetadata(meta)
-	if !ok {
-		var err error
-		metaContent, err = buildManifestYAML(manifestData{Metadata: meta})
-		if err != nil {
-			return "", err
-		}
+	if metaLen, ok := simpleManifestMetadataLen(meta); ok {
+		return appendSimpleManifestMetadata(manifestContent, meta, metaLen), nil
+	}
+	metaContent, err := buildManifestYAML(manifestData{Metadata: meta})
+	if err != nil {
+		return "", err
 	}
 	if !strings.HasSuffix(manifestContent, "\n") {
 		manifestContent += "\n"
@@ -665,14 +664,68 @@ func appendManifestMetadata(manifestContent string, meta *manifestMetadata) (str
 	return manifestContent + metaContent, nil
 }
 
-func buildSimpleManifestMetadata(meta *manifestMetadata) (string, bool) {
-	for _, arg := range meta.LinkArgs {
-		if !isSimpleMetadataScalar(arg) {
-			return "", false
-		}
+func appendSimpleManifestMetadata(manifestContent string, meta *manifestMetadata, metaLen int) string {
+	missingNewline := !strings.HasSuffix(manifestContent, "\n")
+	idx := strings.Index(manifestContent, "\ndeps:")
+	if idx >= 0 {
+		idx++
+	}
+
+	finalLen := len(manifestContent) + metaLen
+	if missingNewline {
+		finalLen++
 	}
 	var b strings.Builder
-	b.Grow(64 + len(meta.LinkArgs)*24)
+	b.Grow(finalLen)
+	if idx >= 0 {
+		b.WriteString(manifestContent[:idx])
+		writeSimpleManifestMetadata(&b, meta)
+		b.WriteString(manifestContent[idx:])
+		if missingNewline {
+			b.WriteByte('\n')
+		}
+		return b.String()
+	}
+	b.WriteString(manifestContent)
+	if missingNewline {
+		b.WriteByte('\n')
+	}
+	writeSimpleManifestMetadata(&b, meta)
+	return b.String()
+}
+
+func buildSimpleManifestMetadata(meta *manifestMetadata) (string, bool) {
+	metaLen, ok := simpleManifestMetadataLen(meta)
+	if !ok {
+		return "", false
+	}
+	var b strings.Builder
+	b.Grow(metaLen)
+	writeSimpleManifestMetadata(&b, meta)
+	return b.String(), true
+}
+
+func simpleManifestMetadataLen(meta *manifestMetadata) (int, bool) {
+	metaLen := len("metadata:\n")
+	if len(meta.LinkArgs) > 0 {
+		metaLen += len("    link_args:\n")
+		for _, arg := range meta.LinkArgs {
+			if !isSimpleMetadataScalar(arg) {
+				return 0, false
+			}
+			metaLen += len("        - ") + len(arg) + 1
+		}
+	}
+	if meta.NeedRt {
+		metaLen += len("    need_rt: true\n")
+	}
+	if meta.NeedPyInit {
+		metaLen += len("    need_py_init: true\n")
+	}
+	return metaLen, true
+}
+
+func writeSimpleManifestMetadata(b *strings.Builder, meta *manifestMetadata) {
 	b.WriteString("metadata:\n")
 	if len(meta.LinkArgs) > 0 {
 		b.WriteString("    link_args:\n")
@@ -688,7 +741,6 @@ func buildSimpleManifestMetadata(meta *manifestMetadata) (string, bool) {
 	if meta.NeedPyInit {
 		b.WriteString("    need_py_init: true\n")
 	}
-	return b.String(), true
 }
 
 // copyFileAtomic copies src to dst using a temp file for atomicity.
