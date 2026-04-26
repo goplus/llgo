@@ -81,13 +81,10 @@ func compileOneFile(compiler *clang.Cmd, tmpCompileDir string, idx int, file str
 	return objFile, nil
 }
 
-func archiveObjects(outputDir string, options CompileOptions, g CompileGroup, objFiles []string) error {
+func archiveObjects(llvmAr, outputDir string, g CompileGroup, objFiles []string) error {
 	archive := filepath.Join(outputDir, filepath.Base(g.OutputFileName))
 	args := []string{"rcs", archive}
 	args = append(args, objFiles...)
-
-	ccDir := filepath.Dir(options.CC)
-	llvmAr := filepath.Join(ccDir, "llvm-ar")
 
 	cmd := exec.Command(llvmAr, args...)
 	// TODO(MeteorsLiu): support verbose
@@ -188,6 +185,7 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 }
 
 func archiveGroups(outputDir string, options CompileOptions, states []compileGroupState, jobs int) error {
+	llvmAr := filepath.Join(filepath.Dir(options.CC), "llvm-ar")
 	var groups []int
 	for i := range states {
 		if !states[i].skip {
@@ -200,7 +198,7 @@ func archiveGroups(outputDir string, options CompileOptions, states []compileGro
 	if jobs <= 1 {
 		for _, idx := range groups {
 			state := &states[idx]
-			if err := archiveObjects(outputDir, options, state.group, state.objs); err != nil {
+			if err := archiveObjects(llvmAr, outputDir, state.group, state.objs); err != nil {
 				return err
 			}
 		}
@@ -216,7 +214,7 @@ func archiveGroups(outputDir string, options CompileOptions, states []compileGro
 			defer wg.Done()
 			for idx := range groupCh {
 				state := &states[idx]
-				errs[idx] = archiveObjects(outputDir, options, state.group, state.objs)
+				errs[idx] = archiveObjects(llvmAr, outputDir, state.group, state.objs)
 			}
 		}()
 	}
