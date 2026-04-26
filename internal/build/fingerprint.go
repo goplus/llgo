@@ -24,6 +24,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"unsafe"
 
 	"gopkg.in/yaml.v3"
 )
@@ -181,8 +182,17 @@ func (m *manifestBuilder) Fingerprint() string {
 }
 
 func fingerprintManifest(content string) string {
-	hash := sha256.Sum256([]byte(content))
+	hash := sha256.Sum256(readOnlyStringBytes(content))
 	return hex.EncodeToString(hash[:])
+}
+
+func readOnlyStringBytes(s string) []byte {
+	if s == "" {
+		return nil
+	}
+	// sha256.Sum256 only reads its input. Avoid copying large manifest strings
+	// solely to satisfy the []byte API.
+	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
 func sortDeps(deps []depEntry) []depEntry {
