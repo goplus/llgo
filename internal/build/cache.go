@@ -171,7 +171,7 @@ func readManifest(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(content), nil
+	return readOnlyBytesString(content), nil
 }
 
 // cacheExists checks if a valid cache entry exists

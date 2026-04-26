@@ -195,6 +195,15 @@ func readOnlyStringBytes(s string) []byte {
 	return unsafe.Slice(unsafe.StringData(s), len(s))
 }
 
+func readOnlyBytesString(b []byte) string {
+	if len(b) == 0 {
+		return ""
+	}
+	// The caller must not mutate b after this conversion. This is intended for
+	// freshly allocated read buffers whose contents become immutable manifest text.
+	return unsafe.String(unsafe.SliceData(b), len(b))
+}
+
 func sortDeps(deps []depEntry) []depEntry {
 	if len(deps) == 0 {
 		return nil
