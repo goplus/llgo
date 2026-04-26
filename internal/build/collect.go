@@ -500,25 +500,23 @@ func (c *context) saveToCache(pkg *aPackage) error {
 		return fmt.Errorf("package %s missing manifest for fingerprint %s", pkg.PkgPath, pkg.Fingerprint)
 	}
 
-	data, err := decodeManifest(manifestContent)
-	if err != nil {
-		return fmt.Errorf("decode manifest: %w", err)
-	}
-
 	meta := &manifestMetadata{
 		LinkArgs:   append([]string(nil), pkg.LinkArgs...),
 		NeedRt:     pkg.NeedRt,
 		NeedPyInit: pkg.NeedPyInit,
 	}
-	if len(meta.LinkArgs) == 0 && !meta.NeedRt && !meta.NeedPyInit {
-		data.Metadata = nil
-	} else {
-		data.Metadata = meta
-	}
 
-	manifestWithMeta, err := buildManifestYAML(data)
-	if err != nil {
-		return err
+	manifestWithMeta := manifestContent
+	if len(meta.LinkArgs) > 0 || meta.NeedRt || meta.NeedPyInit {
+		data, err := decodeManifest(manifestContent)
+		if err != nil {
+			return fmt.Errorf("decode manifest: %w", err)
+		}
+		data.Metadata = meta
+		manifestWithMeta, err = buildManifestYAML(data)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Write manifest with metadata
