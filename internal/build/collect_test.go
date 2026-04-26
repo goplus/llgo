@@ -394,6 +394,12 @@ func TestTargetTripleMethod(t *testing.T) {
 			if got != tt.expect {
 				t.Errorf("targetTriple() = %q, want %q", got, tt.expect)
 			}
+			if cached := tt.ctx.targetTriple(); cached != tt.expect {
+				t.Errorf("cached targetTriple() = %q, want %q", cached, tt.expect)
+			}
+			if tt.ctx.targetTripleCached != tt.expect {
+				t.Errorf("targetTripleCached = %q, want %q", tt.ctx.targetTripleCached, tt.expect)
+			}
 		})
 	}
 }
