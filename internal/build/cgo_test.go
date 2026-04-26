@@ -132,6 +132,8 @@ func TestCollectCgoSymbolsStripsPackagePrefix(t *testing.T) {
 		"_cgo_96608f8de8c8_Cfunc_puts",
 		"demo._cgo_123456789abc_C2func_errno",
 		"demo.__cgo_callback",
+		"demo._cgo__Cfunc_bad",
+		"demo._cgo_hash_CXXfunc_bad",
 	}
 
 	got := collectCgoSymbols(externs)
@@ -144,5 +146,16 @@ func TestCollectCgoSymbolsStripsPackagePrefix(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("collectCgoSymbols = %#v, want %#v", got, want)
+	}
+
+	prefix, kind, name, ok := parseCgoExternSymbol("_cgo_hash_Cmacro_FOO")
+	if !ok || prefix != "_cgo_hash_Cmacro_" || kind != "Cmacro" || name != "FOO" {
+		t.Fatalf("parseCgoExternSymbol = %q, %q, %q, %v", prefix, kind, name, ok)
+	}
+	if _, _, _, ok := parseCgoExternSymbol("_cgo__Cfunc_bad"); ok {
+		t.Fatal("parseCgoExternSymbol accepted empty hash")
+	}
+	if _, _, _, ok := parseCgoExternSymbol("_cgo_hash_CXXfunc_bad"); ok {
+		t.Fatal("parseCgoExternSymbol accepted unsupported kind")
 	}
 }
