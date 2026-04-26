@@ -515,12 +515,8 @@ func (c *context) saveToCache(pkg *aPackage) error {
 
 	manifestWithMeta := manifestContent
 	if len(meta.LinkArgs) > 0 || meta.NeedRt || meta.NeedPyInit {
-		data, err := decodeManifest(manifestContent)
-		if err != nil {
-			return fmt.Errorf("decode manifest: %w", err)
-		}
-		data.Metadata = meta
-		manifestWithMeta, err = buildManifestYAML(data)
+		var err error
+		manifestWithMeta, err = appendManifestMetadata(manifestContent, meta)
 		if err != nil {
 			return err
 		}
@@ -532,6 +528,21 @@ func (c *context) saveToCache(pkg *aPackage) error {
 	}
 
 	return nil
+}
+
+func appendManifestMetadata(manifestContent string, meta *manifestMetadata) (string, error) {
+	metaContent, err := buildManifestYAML(manifestData{Metadata: meta})
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(manifestContent, "\n") {
+		manifestContent += "\n"
+	}
+	if idx := strings.Index(manifestContent, "\ndeps:"); idx >= 0 {
+		idx++
+		return manifestContent[:idx] + metaContent + manifestContent[idx:], nil
+	}
+	return manifestContent + metaContent, nil
 }
 
 // copyFileAtomic copies src to dst using a temp file for atomicity.
