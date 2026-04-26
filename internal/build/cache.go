@@ -71,11 +71,22 @@ func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) 
 
 func (cm *cacheManager) packageDir(targetTriple, pkgPath string) string {
 	root := filepath.Clean(cm.root)
-	dir := filepath.Join(root, sanitizeComponent(targetTriple), sanitizePkgPath(pkgPath))
+	dir := joinCachePath(root, sanitizeComponent(targetTriple), sanitizePkgPath(pkgPath))
 	if dir != root && !strings.HasPrefix(dir, root+string(os.PathSeparator)) {
 		dir = filepath.Join(root, "_")
 	}
 	return dir
+}
+
+func joinCachePath(root, first, second string) string {
+	sep := string(os.PathSeparator)
+	if root == "" || root == "." {
+		return first + sep + second
+	}
+	if strings.HasSuffix(root, sep) {
+		return root + first + sep + second
+	}
+	return root + sep + first + sep + second
 }
 
 // sanitizeComponent ensures a single path component is safe.
