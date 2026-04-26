@@ -119,6 +119,21 @@ func TestParseManifestMetadata(t *testing.T) {
 		t.Fatalf("yaml metadata parse = %+v", meta)
 	}
 
+	simpleContent := "env:\n    GOOS: linux\nmetadata:\n    need_rt: true\n    need_py_init: true\n"
+	meta, err = parseManifestMetadata(simpleContent)
+	if err != nil {
+		t.Fatalf("parseManifestMetadata simple metadata: %v", err)
+	}
+	if len(meta.LinkArgs) != 0 || !meta.NeedRt || !meta.NeedPyInit {
+		t.Fatalf("simple metadata parse = %+v", meta)
+	}
+	if simple, ok := parseSimpleManifestMetadata("metadata:\n    need_rt: true\n    need_py_init: false\n"); !ok || !simple.NeedRt || simple.NeedPyInit {
+		t.Fatalf("parseSimpleManifestMetadata = %+v, %v", simple, ok)
+	}
+	if _, ok := parseSimpleManifestMetadata("metadata:\n    link_args:\n        - -lm\n"); ok {
+		t.Fatal("parseSimpleManifestMetadata should defer link_args to YAML parser")
+	}
+
 	fullYAML := "env:\n    GOOS: linux\n" + content + "deps:\n    - id: example.com/dep\n      version: v1.0.0\n"
 	section, ok := yamlMetadataSection(fullYAML)
 	if !ok {

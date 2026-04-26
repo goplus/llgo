@@ -431,6 +431,9 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 	meta := &cacheArchiveMetadata{}
 	if metadataContent, ok := yamlMetadataSection(content); ok {
+		if simpleMeta, ok := parseSimpleManifestMetadata(metadataContent); ok {
+			return simpleMeta, nil
+		}
 		if data, err := decodeManifest(metadataContent); err == nil {
 			if data.Metadata != nil {
 				meta.LinkArgs = append([]string(nil), data.Metadata.LinkArgs...)
@@ -452,6 +455,40 @@ func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 	}
 
 	return parseManifestMetadataLegacy(content, meta)
+}
+
+func parseSimpleManifestMetadata(content string) (*cacheArchiveMetadata, bool) {
+	meta := &cacheArchiveMetadata{}
+	for start := 0; start <= len(content); {
+		end := strings.IndexByte(content[start:], '\n')
+		if end < 0 {
+			end = len(content)
+		} else {
+			end += start
+		}
+		field := strings.TrimSpace(content[start:end])
+		switch field {
+		case "", "metadata:":
+			// Skip.
+		case "need_rt: true":
+			meta.NeedRt = true
+		case "need_rt: false":
+			meta.NeedRt = false
+		case "need_py_init: true":
+			meta.NeedPyInit = true
+		case "need_py_init: false":
+			meta.NeedPyInit = false
+		default:
+			// Link args and quoted/complex YAML scalars are less common and are
+			// delegated to the full YAML parser to preserve exact semantics.
+			return nil, false
+		}
+		if end == len(content) {
+			break
+		}
+		start = end + 1
+	}
+	return meta, true
 }
 
 func yamlMetadataSection(content string) (string, bool) {
