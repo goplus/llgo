@@ -338,12 +338,16 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 }
 
 func dirHasAsmFile(dir string) bool {
-	entries, err := os.ReadDir(dir)
+	f, err := os.Open(dir)
 	if err != nil {
 		return true
 	}
-	for _, entry := range entries {
-		name := entry.Name()
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return true
+	}
+	for _, name := range names {
 		if strings.HasSuffix(name, ".s") || strings.HasSuffix(name, ".S") {
 			return true
 		}
