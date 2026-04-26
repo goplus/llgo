@@ -1,7 +1,7 @@
 package compile
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -42,7 +42,7 @@ func compileJobs() (int, error) {
 	if value := os.Getenv("LLGO_COMPILE_JOBS"); value != "" {
 		jobs, err := strconv.Atoi(value)
 		if err != nil || jobs < 1 {
-			return 0, fmt.Errorf("invalid LLGO_COMPILE_JOBS %q", value)
+			return 0, errors.New("invalid LLGO_COMPILE_JOBS " + strconv.Quote(value))
 		}
 		return jobs, nil
 	}
@@ -142,7 +142,7 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 		defer os.RemoveAll(tmpCompileDir)
 
 		archive := filepath.Join(outputDir, filepath.Base(group.OutputFileName))
-		fmt.Fprintf(os.Stderr, "Start to compile group %s to %s...\n", group.OutputFileName, archive)
+		os.Stderr.WriteString("Start to compile group " + group.OutputFileName + " to " + archive + "...\n")
 		for j := range group.Files {
 			tasks = append(tasks, compileTask{group: i, file: j})
 		}
@@ -255,5 +255,5 @@ type LibConfig struct {
 // String returns a string representation of the library configuration
 // in the format "name-version"
 func (cfg LibConfig) String() string {
-	return fmt.Sprintf("%s-%s", cfg.Name, cfg.Version)
+	return cfg.Name + "-" + cfg.Version
 }
