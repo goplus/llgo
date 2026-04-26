@@ -54,6 +54,27 @@ func TestIsCompiled(t *testing.T) {
 	})
 }
 
+func TestCompileJobs(t *testing.T) {
+	t.Setenv("LLGO_COMPILE_JOBS", "3")
+	jobs, err := compileJobs()
+	if err != nil {
+		t.Fatalf("compileJobs: %v", err)
+	}
+	if jobs != 3 {
+		t.Fatalf("compileJobs = %d, want 3", jobs)
+	}
+
+	t.Setenv("LLGO_COMPILE_JOBS", "0")
+	if _, err := compileJobs(); err == nil {
+		t.Fatal("compileJobs should reject non-positive LLGO_COMPILE_JOBS")
+	}
+
+	t.Setenv("LLGO_COMPILE_JOBS", "bad")
+	if _, err := compileJobs(); err == nil {
+		t.Fatal("compileJobs should reject invalid LLGO_COMPILE_JOBS")
+	}
+}
+
 func TestCompile(t *testing.T) {
 	t.Run("Skip compile", func(t *testing.T) {
 		tmpDir, err := os.MkdirTemp("", "test-compile*")
