@@ -361,16 +361,17 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg.Dir == "" {
 		return nil, nil
 	}
-	// Fast path: if directory has no .s/.S at all, skip `go list`.
-	if !dirHasAsmFile(pkg.Dir) {
-		return nil, nil
-	}
-
 	if ctx.sfilesCache == nil {
 		ctx.sfilesCache = make(map[string][]string)
 	}
 	if v, ok := ctx.sfilesCache[pkg.ID]; ok {
 		return v, nil
+	}
+
+	// Fast path: if directory has no .s/.S at all, skip `go list`.
+	if !dirHasAsmFile(pkg.Dir) {
+		ctx.sfilesCache[pkg.ID] = nil
+		return nil, nil
 	}
 
 	args := []string{"list", "-json"}
