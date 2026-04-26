@@ -88,6 +88,23 @@ func TestCompileJobs(t *testing.T) {
 	}
 }
 
+func TestCompileSkipDoesNotReadJobs(t *testing.T) {
+	tmpDir := t.TempDir()
+	archive := filepath.Join(tmpDir, "exists.a")
+	if err := os.WriteFile(archive, []byte("archive already exists"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LLGO_COMPILE_JOBS", "bad")
+
+	group := CompileGroup{OutputFileName: "exists.a"}
+	if err := group.Compile(tmpDir, CompileOptions{CC: "clang"}); err != nil {
+		t.Fatalf("Compile skipped group with invalid jobs env: %v", err)
+	}
+	if err := (CompileConfig{Groups: []CompileGroup{group}}).Compile(tmpDir, CompileOptions{CC: "clang"}); err != nil {
+		t.Fatalf("CompileConfig skipped group with invalid jobs env: %v", err)
+	}
+}
+
 func TestCompile(t *testing.T) {
 	t.Run("Skip compile", func(t *testing.T) {
 		tmpDir, err := os.MkdirTemp("", "test-compile*")

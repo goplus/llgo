@@ -135,12 +135,6 @@ type compileTask struct {
 // worker pool removes unnecessary barriers between archive groups while keeping
 // final archive and linker-flag order deterministic.
 func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error {
-	jobs, err := compileJobs()
-	if err != nil {
-		return err
-	}
-	verbose := compileVerbose(options)
-
 	states := make([]compileGroupState, len(cfg.Groups))
 	var tasks []compileTask
 	for i, group := range cfg.Groups {
@@ -164,6 +158,11 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 	}
 
 	if len(tasks) > 0 {
+		jobs, err := compileJobs()
+		if err != nil {
+			return err
+		}
+		verbose := compileVerbose(options)
 		if jobs > len(tasks) {
 			jobs = len(tasks)
 		}
