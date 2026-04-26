@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -74,8 +73,6 @@ static void* _Cmalloc(size_t size) {
 }
 `
 )
-
-var cgoExternRE = regexp.MustCompile(`^(_cgo_[^_]+_(C2func|Cfunc|Cmacro)_)(.*)$`)
 
 func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, verbose bool) (llfiles, cgoLdflags []string, err error) {
 	cfiles, preambles, cdecls, err := parseCgo_(pkg, files)
@@ -153,12 +150,10 @@ func collectCgoSymbols(externs []string) map[string]string {
 			// Func pointer vars are looked up in the Go package by their
 			// qualified names, but emitted C globals must use bare _cgo_* names.
 			cgoSymbols[symbolName] = lastPart
-		} else if m := cgoExternRE.FindStringSubmatch(lastPart); len(m) > 0 {
-			prefix := m[1] // _cgo_hash_(Cfunc|Cmacro)_
-			name := m[3]   // remaining part
+		} else if prefix, kind, name, ok := parseCgoExternSymbol(lastPart); ok {
 			cgoSymbols[lastPart] = name
 			// fix missing _cgo_9113e32b6599_Cfunc__Cmalloc
-			if !mallocFix && m[2] == "Cfunc" {
+			if !mallocFix && kind == "Cfunc" {
 				mallocName := prefix + "_Cmalloc"
 				cgoSymbols[mallocName] = "_Cmalloc"
 				mallocFix = true
@@ -166,6 +161,26 @@ func collectCgoSymbols(externs []string) map[string]string {
 		}
 	}
 	return cgoSymbols
+}
+
+func parseCgoExternSymbol(lastPart string) (prefix, kind, name string, ok bool) {
+	if !strings.HasPrefix(lastPart, "_cgo_") {
+		return "", "", "", false
+	}
+	rest := lastPart[len("_cgo_"):]
+	hashEnd := strings.IndexByte(rest, '_')
+	if hashEnd <= 0 {
+		return "", "", "", false
+	}
+	kindStart := len("_cgo_") + hashEnd + 1
+	for _, candidate := range [...]string{"C2func", "Cfunc", "Cmacro"} {
+		marker := candidate + "_"
+		if strings.HasPrefix(lastPart[kindStart:], marker) {
+			prefixEnd := kindStart + len(marker)
+			return lastPart[:prefixEnd], candidate, lastPart[prefixEnd:], true
+		}
+	}
+	return "", "", "", false
 }
 
 // clangASTNode represents a node in clang's AST
