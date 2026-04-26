@@ -64,8 +64,8 @@ func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) 
 	fingerprint = sanitizeComponent(fingerprint)
 	return cachePaths{
 		Dir:      dir,
-		Archive:  filepath.Join(dir, fingerprint+cacheArchiveExt),
-		Manifest: filepath.Join(dir, fingerprint+cacheManifestExt),
+		Archive:  dir + string(os.PathSeparator) + fingerprint + cacheArchiveExt,
+		Manifest: dir + string(os.PathSeparator) + fingerprint + cacheManifestExt,
 	}
 }
 
