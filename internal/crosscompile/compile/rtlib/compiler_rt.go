@@ -1,6 +1,7 @@
 package rtlib
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -10,8 +11,15 @@ import (
 func joinFileList(root, files string) []string {
 	items := strings.Fields(files)
 	paths := make([]string, 0, len(items))
+	prefix := root
+	if prefix != "" {
+		prefix = filepath.Clean(prefix)
+		if !strings.HasSuffix(prefix, string(os.PathSeparator)) {
+			prefix += string(os.PathSeparator)
+		}
+	}
 	for _, item := range items {
-		paths = append(paths, filepath.Join(root, filepath.FromSlash(item)))
+		paths = append(paths, prefix+filepath.FromSlash(item))
 	}
 	return paths
 }
