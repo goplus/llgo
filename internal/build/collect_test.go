@@ -130,8 +130,11 @@ func TestParseManifestMetadata(t *testing.T) {
 	if simple, ok := parseSimpleManifestMetadata("metadata:\n    need_rt: true\n    need_py_init: false\n"); !ok || !simple.NeedRt || simple.NeedPyInit {
 		t.Fatalf("parseSimpleManifestMetadata = %+v, %v", simple, ok)
 	}
-	if _, ok := parseSimpleManifestMetadata("metadata:\n    link_args:\n        - -lm\n"); ok {
-		t.Fatal("parseSimpleManifestMetadata should defer link_args to YAML parser")
+	if simple, ok := parseSimpleManifestMetadata("metadata:\n    link_args:\n        - -lm\n        - -lpthread\n"); !ok || strings.Join(simple.LinkArgs, " ") != "-lm -lpthread" {
+		t.Fatalf("parseSimpleManifestMetadata link_args = %+v, %v", simple, ok)
+	}
+	if _, ok := parseSimpleManifestMetadata("metadata:\n    link_args:\n        - \"-framework CoreFoundation\"\n"); ok {
+		t.Fatal("parseSimpleManifestMetadata should defer quoted link_args to YAML parser")
 	}
 
 	fullYAML := "env:\n    GOOS: linux\n" + content + "deps:\n    - id: example.com/dep\n      version: v1.0.0\n"

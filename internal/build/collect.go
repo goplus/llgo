@@ -459,6 +459,7 @@ func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 
 func parseSimpleManifestMetadata(content string) (*cacheArchiveMetadata, bool) {
 	meta := &cacheArchiveMetadata{}
+	inLinkArgs := false
 	for start := 0; start <= len(content); {
 		end := strings.IndexByte(content[start:], '\n')
 		if end < 0 {
@@ -470,18 +471,32 @@ func parseSimpleManifestMetadata(content string) (*cacheArchiveMetadata, bool) {
 		switch field {
 		case "", "metadata:":
 			// Skip.
+		case "link_args:":
+			inLinkArgs = true
+			if meta.LinkArgs == nil {
+				meta.LinkArgs = make([]string, 0, 4)
+			}
 		case "need_rt: true":
+			inLinkArgs = false
 			meta.NeedRt = true
 		case "need_rt: false":
+			inLinkArgs = false
 			meta.NeedRt = false
 		case "need_py_init: true":
+			inLinkArgs = false
 			meta.NeedPyInit = true
 		case "need_py_init: false":
+			inLinkArgs = false
 			meta.NeedPyInit = false
 		default:
-			// Link args and quoted/complex YAML scalars are less common and are
-			// delegated to the full YAML parser to preserve exact semantics.
-			return nil, false
+			if !inLinkArgs || !strings.HasPrefix(field, "- ") {
+				return nil, false
+			}
+			arg := strings.TrimSpace(field[2:])
+			if !isSimpleMetadataScalar(arg) {
+				return nil, false
+			}
+			meta.LinkArgs = append(meta.LinkArgs, arg)
 		}
 		if end == len(content) {
 			break
@@ -489,6 +504,10 @@ func parseSimpleManifestMetadata(content string) (*cacheArchiveMetadata, bool) {
 		start = end + 1
 	}
 	return meta, true
+}
+
+func isSimpleMetadataScalar(s string) bool {
+	return s != "" && !strings.ContainsAny(s, "\"'{}[],&*!|>@`#\t\r\n")
 }
 
 func yamlMetadataSection(content string) (string, bool) {
