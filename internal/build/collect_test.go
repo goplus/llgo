@@ -552,6 +552,9 @@ func TestSaveToCache_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadManifest: %v", err)
 	}
+	if content != pkg.Manifest {
+		t.Errorf("manifest without metadata should be written unchanged\ngot:\n%s\nwant:\n%s", content, pkg.Manifest)
+	}
 	data, err := decodeManifest(content)
 	if err != nil {
 		t.Fatalf("decodeManifest: %v", err)
