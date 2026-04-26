@@ -507,7 +507,7 @@ func parseSimpleManifestMetadata(content string) (*cacheArchiveMetadata, bool) {
 }
 
 func isSimpleMetadataScalar(s string) bool {
-	return s != "" && !strings.ContainsAny(s, "\"'{}[],&*!|>@`#\t\r\n")
+	return s != "" && !strings.ContainsAny(s, "\"'{}[]&*!|>@`#\t\r\n")
 }
 
 func yamlMetadataSection(content string) (string, bool) {
