@@ -1,7 +1,6 @@
 package libc
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/goplus/llgo/internal/crosscompile/compile"
@@ -26,7 +25,7 @@ func GetPicolibcCompileConfig(baseDir, target string) compile.CompileConfig {
 		},
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: fmt.Sprintf("libc-%s.a", target),
+				OutputFileName: "libc-" + target + ".a",
 				Files: []string{
 					filepath.Join(baseDir, "newlib", "libc", "string", "bcmp.c"),
 					filepath.Join(baseDir, "newlib", "libc", "string", "bcopy.c"),

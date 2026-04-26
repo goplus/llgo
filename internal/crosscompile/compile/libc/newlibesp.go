@@ -1,7 +1,6 @@
 package libc
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -94,7 +93,7 @@ func getNewlibESP32ConfigRISCV(baseDir, target string) compile.CompileConfig {
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: fmt.Sprintf("libsemihost-%s.a", target),
+				OutputFileName: "libsemihost-" + target + ".a",
 				Files: joinFileList(baseDir, `
 libgloss/riscv/semihost-sys_exit.c
 				`),
@@ -108,7 +107,7 @@ libgloss/riscv/semihost-sys_exit.c
 				CCFlags: _libcCCFlags,
 			},
 			{
-				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
+				OutputFileName: "libcrt0-" + target + ".a",
 				Files: joinFileList(baseDir, `
 libgloss/riscv/esp/esp_board.c
 libgloss/riscv/esp/syscalls.c
@@ -126,7 +125,7 @@ libgloss/riscv/esp/crt1-board.S
 				CCFlags: _libcCCFlags,
 			},
 			{
-				OutputFileName: fmt.Sprintf("libgloss-%s.a", target),
+				OutputFileName: "libgloss-" + target + ".a",
 				Files: joinFileList(baseDir, `
 libgloss/libnosys/chown.c
 libgloss/libnosys/close.c
@@ -331,7 +330,7 @@ libgloss/riscv/nanosleep.c
 				CCFlags: _libcCCFlags,
 			},
 			{
-				OutputFileName: fmt.Sprintf("libc-%s.a", target),
+				OutputFileName: "libc-" + target + ".a",
 				Files: joinFileList(libcDir, `
 argz/argz_add.c
 argz/argz_add_sep.c
@@ -1089,7 +1088,7 @@ machine/riscv/ffs.c
 				}),
 			},
 			{
-				OutputFileName: fmt.Sprintf("libm-fbuiltin_fno_math_errno-%s.a", target),
+				OutputFileName: "libm-fbuiltin_fno_math_errno-" + target + ".a",
 				Files: joinFileList(baseDir, `
 newlib/libm/common/acoshl.c
 newlib/libm/common/acosl.c
@@ -1253,7 +1252,7 @@ newlib/libm/common/truncl.c
 				CCFlags: _libcCCFlags,
 			},
 			{
-				OutputFileName: fmt.Sprintf("libm-default-%s.a", target),
+				OutputFileName: "libm-default-" + target + ".a",
 				Files: joinFileList(baseDir, `
 newlib/libm/complex/cabs.c
 newlib/libm/complex/cabsf.c
@@ -1535,7 +1534,7 @@ func getNewlibESP32ConfigXtensa(baseDir, target string) compile.CompileConfig {
 		ExportCFlags: libcIncludeDir,
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: fmt.Sprintf("libcrt0-%s.a", target),
+				OutputFileName: "libcrt0-" + target + ".a",
 				Files: joinFileList(baseDir, `
 libgloss/xtensa/clibrary_init.c
 libgloss/xtensa/syscalls.c
@@ -1559,7 +1558,7 @@ libgloss/xtensa/window-vectors.S
 				CCFlags: _libcCCFlags,
 			},
 			{
-				OutputFileName: fmt.Sprintf("libgloss-%s.a", target),
+				OutputFileName: "libgloss-" + target + ".a",
 				Files: joinFileList(baseDir, `
 libgloss/libnosys/chown.c
 libgloss/libnosys/close.c
@@ -1753,7 +1752,7 @@ libgloss/libnosys/pthread_yield.c
 				CCFlags: _libcCCFlags,
 			},
 			{
-				OutputFileName: fmt.Sprintf("libc-%s.a", target),
+				OutputFileName: "libc-" + target + ".a",
 				Files: joinFileList(libcDir, `
 argz/argz_add.c
 argz/argz_add_sep.c

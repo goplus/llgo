@@ -1,7 +1,6 @@
 package rtlib
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -120,7 +119,7 @@ func GetCompilerRTCompileConfig(baseDir, target string) compile.CompileConfig {
 	return compile.CompileConfig{
 		Groups: []compile.CompileGroup{
 			{
-				OutputFileName: fmt.Sprintf("libclang_builtins-%s.a", target),
+				OutputFileName: "libclang_builtins-" + target + ".a",
 				Files: withPlatformSpecifiedFiles(baseDir, target, joinFileList(baseDir, `
 lib/builtins/absvdi2.c
 lib/builtins/absvsi2.c
