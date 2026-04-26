@@ -610,6 +610,73 @@ func TestSaveToCache_Success(t *testing.T) {
 	}
 }
 
+func TestSaveToCache_WithMetadata(t *testing.T) {
+	td := t.TempDir()
+	oldFunc := cacheRootFunc
+	cacheRootFunc = func() string { return td }
+	defer func() { cacheRootFunc = oldFunc }()
+
+	ctx := &context{
+		conf: &packages.Config{},
+		buildConf: &Config{
+			Goos:   "linux",
+			Goarch: "amd64",
+		},
+		crossCompile: crosscompile.Export{
+			LLVMTarget: "x86_64-unknown-linux-gnu",
+		},
+	}
+
+	objFile, err := os.CreateTemp(td, "test-*.o")
+	if err != nil {
+		t.Fatalf("CreateTemp: %v", err)
+	}
+	objFile.WriteString("fake object file")
+	objFile.Close()
+
+	m := newManifestBuilder()
+	m.env.Goos = "linux"
+	m.pkg.PkgPath = "example.com/metadata"
+	m.deps = append(m.deps, depEntry{ID: "example.com/dep", Version: "v1.0.0"})
+	pkg := &aPackage{
+		Package: &packages.Package{
+			PkgPath: "example.com/metadata",
+			Name:    "metadata",
+		},
+		Fingerprint: "meta123",
+		Manifest:    m.Build(),
+		ObjFiles:    []string{objFile.Name()},
+		LinkArgs:    []string{"-lm", "-lpthread"},
+		NeedRt:      true,
+		NeedPyInit:  true,
+	}
+
+	if err := ctx.saveToCache(pkg); err != nil {
+		t.Fatalf("saveToCache: %v", err)
+	}
+
+	paths := ctx.ensureCacheManager().PackagePaths("x86_64-unknown-linux-gnu", "example.com/metadata", "meta123")
+	content, err := readManifest(paths.Manifest)
+	if err != nil {
+		t.Fatalf("read manifest: %v", err)
+	}
+	metadataIdx := strings.Index(content, "\nmetadata:")
+	depsIdx := strings.Index(content, "\ndeps:")
+	if metadataIdx < 0 {
+		t.Fatalf("manifest should contain metadata section:\n%s", content)
+	}
+	if depsIdx >= 0 && metadataIdx > depsIdx {
+		t.Fatalf("metadata section should be written before deps section:\n%s", content)
+	}
+	meta, err := parseManifestMetadata(content)
+	if err != nil {
+		t.Fatalf("parseManifestMetadata: %v", err)
+	}
+	if strings.Join(meta.LinkArgs, " ") != "-lm -lpthread" || !meta.NeedRt || !meta.NeedPyInit {
+		t.Fatalf("metadata parse = %+v", meta)
+	}
+}
+
 func TestGetLLVMVersion(t *testing.T) {
 	oldDetect := detectLLVMVersionFunc
 	llvmVersionCache = sync.Map{}
