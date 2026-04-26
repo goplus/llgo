@@ -713,6 +713,40 @@ func TestSaveToCache_Success(t *testing.T) {
 	}
 }
 
+func TestAppendManifestMetadataSimple(t *testing.T) {
+	meta := &manifestMetadata{LinkArgs: []string{"-lm", "-Wl,--gc-sections"}, NeedRt: true, NeedPyInit: true}
+
+	withDepsNoTrailingNewline := "env:\n    GOOS: linux\ndeps:\n    - id: example.com/dep"
+	got, err := appendManifestMetadata(withDepsNoTrailingNewline, meta)
+	if err != nil {
+		t.Fatalf("appendManifestMetadata: %v", err)
+	}
+	metadataIdx := strings.Index(got, "\nmetadata:")
+	depsIdx := strings.Index(got, "\ndeps:")
+	if metadataIdx < 0 || depsIdx < 0 || metadataIdx > depsIdx {
+		t.Fatalf("metadata should be inserted before deps:\n%s", got)
+	}
+	if !strings.HasSuffix(got, "\n") {
+		t.Fatalf("missing trailing newline after appending to no-newline manifest: %q", got)
+	}
+	parsed, err := parseManifestMetadata(got)
+	if err != nil {
+		t.Fatalf("parse appended metadata: %v", err)
+	}
+	if strings.Join(parsed.LinkArgs, " ") != "-lm -Wl,--gc-sections" || !parsed.NeedRt || !parsed.NeedPyInit {
+		t.Fatalf("metadata parse = %+v", parsed)
+	}
+
+	withoutDepsNoTrailingNewline := "env:\n    GOOS: linux"
+	got, err = appendManifestMetadata(withoutDepsNoTrailingNewline, meta)
+	if err != nil {
+		t.Fatalf("appendManifestMetadata no deps: %v", err)
+	}
+	if !strings.Contains(got, "GOOS: linux\nmetadata:\n") {
+		t.Fatalf("metadata should be appended after adding separator newline:\n%s", got)
+	}
+}
+
 func TestSaveToCache_WithMetadata(t *testing.T) {
 	td := t.TempDir()
 	oldFunc := cacheRootFunc
