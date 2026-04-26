@@ -647,9 +647,13 @@ func (c *context) saveToCache(pkg *aPackage) error {
 }
 
 func appendManifestMetadata(manifestContent string, meta *manifestMetadata) (string, error) {
-	metaContent, err := buildManifestYAML(manifestData{Metadata: meta})
-	if err != nil {
-		return "", err
+	metaContent, ok := buildSimpleManifestMetadata(meta)
+	if !ok {
+		var err error
+		metaContent, err = buildManifestYAML(manifestData{Metadata: meta})
+		if err != nil {
+			return "", err
+		}
 	}
 	if !strings.HasSuffix(manifestContent, "\n") {
 		manifestContent += "\n"
@@ -659,6 +663,32 @@ func appendManifestMetadata(manifestContent string, meta *manifestMetadata) (str
 		return manifestContent[:idx] + metaContent + manifestContent[idx:], nil
 	}
 	return manifestContent + metaContent, nil
+}
+
+func buildSimpleManifestMetadata(meta *manifestMetadata) (string, bool) {
+	for _, arg := range meta.LinkArgs {
+		if !isSimpleMetadataScalar(arg) {
+			return "", false
+		}
+	}
+	var b strings.Builder
+	b.Grow(64 + len(meta.LinkArgs)*24)
+	b.WriteString("metadata:\n")
+	if len(meta.LinkArgs) > 0 {
+		b.WriteString("    link_args:\n")
+		for _, arg := range meta.LinkArgs {
+			b.WriteString("        - ")
+			b.WriteString(arg)
+			b.WriteByte('\n')
+		}
+	}
+	if meta.NeedRt {
+		b.WriteString("    need_rt: true\n")
+	}
+	if meta.NeedPyInit {
+		b.WriteString("    need_py_init: true\n")
+	}
+	return b.String(), true
 }
 
 // copyFileAtomic copies src to dst using a temp file for atomicity.

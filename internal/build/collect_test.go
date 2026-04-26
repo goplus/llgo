@@ -136,6 +136,12 @@ func TestParseManifestMetadata(t *testing.T) {
 	if _, ok := parseSimpleManifestMetadata("metadata:\n    link_args:\n        - \"-framework CoreFoundation\"\n"); ok {
 		t.Fatal("parseSimpleManifestMetadata should defer quoted link_args to YAML parser")
 	}
+	if simpleYAML, ok := buildSimpleManifestMetadata(&manifestMetadata{LinkArgs: []string{"-lm", "-Wl,--gc-sections"}, NeedRt: true}); !ok || !strings.Contains(simpleYAML, "-Wl,--gc-sections") {
+		t.Fatalf("buildSimpleManifestMetadata = %q, %v", simpleYAML, ok)
+	}
+	if _, ok := buildSimpleManifestMetadata(&manifestMetadata{LinkArgs: []string{"\"quoted\""}}); ok {
+		t.Fatal("buildSimpleManifestMetadata should defer quoted link args to YAML marshaler")
+	}
 
 	fullYAML := "env:\n    GOOS: linux\n" + content + "deps:\n    - id: example.com/dep\n      version: v1.0.0\n"
 	section, ok := yamlMetadataSection(fullYAML)
