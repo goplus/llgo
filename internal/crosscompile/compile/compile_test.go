@@ -252,6 +252,51 @@ func TestCompile(t *testing.T) {
 	})
 }
 
+func TestCompileConfigMultipleGroups(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	writeC := func(name, symbol string) string {
+		path := filepath.Join(tmpDir, name)
+		if err := os.WriteFile(path, []byte("int "+symbol+"(void) { return 1; }\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+
+	cfg := CompileConfig{Groups: []CompileGroup{
+		{OutputFileName: "libone.a", Files: []string{writeC("one.c", "One")}},
+		{OutputFileName: "libtwo.a", Files: []string{writeC("two.c", "Two")}},
+	}}
+	if err := cfg.Compile(tmpDir, CompileOptions{CC: "clang"}); err != nil {
+		t.Fatalf("CompileConfig.Compile: %v", err)
+	}
+
+	for _, tt := range []struct {
+		archive string
+		symbol  string
+	}{
+		{"libone.a", "One"},
+		{"libtwo.a", "Two"},
+	} {
+		archive := filepath.Join(tmpDir, tt.archive)
+		items, err := nm.New("").List(archive)
+		if err != nil {
+			t.Fatalf("nm %s: %v", tt.archive, err)
+		}
+		found := false
+		for _, item := range items {
+			for _, sym := range item.Symbols {
+				if strings.Contains(sym.Name, tt.symbol) {
+					found = true
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("cannot find symbol %s in %s", tt.symbol, tt.archive)
+		}
+	}
+}
+
 func TestLibConfig_String(t *testing.T) {
 	tests := []struct {
 		name     string
