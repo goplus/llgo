@@ -51,8 +51,8 @@ func compileJobs() (int, error) {
 	if jobs < 1 {
 		return 1, nil
 	}
-	if jobs > 8 {
-		return 8, nil
+	if jobs > 16 {
+		return 16, nil
 	}
 	return jobs, nil
 }
