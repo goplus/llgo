@@ -33,8 +33,12 @@ func TestSanitizePkgPath(t *testing.T) {
 		{"github.com/user/repo", filepath.Join("github.com", "user", "repo")},
 		{"example.com/pkg", filepath.Join("example.com", "pkg")},
 		{"simple", "simple"},
+		{"github.com/user/pkg.v2", filepath.Join("github.com", "user", "pkg.v2")},
 		{"", "_"},
 		{"a//b", filepath.Join("a", "_", "b")},
+		{"a/./b", filepath.Join("a", "_", "b")},
+		{"a/../b", filepath.Join("a", "_", "b")},
+		{"a/pkg+plus", filepath.Join("a", sanitizeComponent("pkg+plus"))},
 	}
 
 	for _, tt := range tests {
