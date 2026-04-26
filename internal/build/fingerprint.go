@@ -299,7 +299,9 @@ func digestFilesWithOverlay(paths []string, overlay map[string][]byte) ([]fileDi
 		})
 	}
 
-	sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
+	if len(digests) > 1 {
+		sort.Slice(digests, func(i, j int) bool { return digests[i].Path < digests[j].Path })
+	}
 
 	return digests, nil
 }
