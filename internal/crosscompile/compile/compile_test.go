@@ -54,6 +54,19 @@ func TestIsCompiled(t *testing.T) {
 	})
 }
 
+func TestCompileVerbose(t *testing.T) {
+	if compileVerbose(CompileOptions{}) {
+		t.Fatal("compileVerbose should be false by default")
+	}
+	if !compileVerbose(CompileOptions{Verbose: true}) {
+		t.Fatal("compileVerbose should honor CompileOptions.Verbose")
+	}
+	t.Setenv("LLGO_COMPILE_VERBOSE", "1")
+	if !compileVerbose(CompileOptions{}) {
+		t.Fatal("compileVerbose should honor LLGO_COMPILE_VERBOSE")
+	}
+}
+
 func TestCompileJobs(t *testing.T) {
 	t.Setenv("LLGO_COMPILE_JOBS", "3")
 	jobs, err := compileJobs()
