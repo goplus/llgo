@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/goplus/llgo/internal/clang"
@@ -68,16 +67,8 @@ func groupCompilerConfig(g CompileGroup, options CompileOptions) clang.Config {
 	return clang.NewConfig(options.CC, compileCCFlags, compileCFFlags, compileLDFlags, options.Linker)
 }
 
-func compileOneFile(compiler *clang.Cmd, tmpCompileDir, file string) (objFile string, err error) {
-	tempObjFile, err := os.CreateTemp(tmpCompileDir, fmt.Sprintf("%s*.o", strings.ReplaceAll(file, string(os.PathSeparator), "-")))
-	if err != nil {
-		return "", err
-	}
-	objFile = tempObjFile.Name()
-	if err := tempObjFile.Close(); err != nil {
-		os.Remove(objFile)
-		return "", err
-	}
+func compileOneFile(compiler *clang.Cmd, tmpCompileDir string, idx int, file string) (objFile string, err error) {
+	objFile = filepath.Join(tmpCompileDir, strconv.Itoa(idx)+".o")
 
 	lang := "c"
 	if filepath.Ext(file) == ".S" {
@@ -174,7 +165,7 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 				state := &states[task.group]
 				compiler := clang.NewCompiler(state.cfg)
 				compiler.Verbose = verbose
-				objFile, err := compileOneFile(compiler, state.tmp, state.group.Files[task.file])
+				objFile, err := compileOneFile(compiler, state.tmp, task.file, state.group.Files[task.file])
 				if err != nil {
 					return err
 				}
@@ -228,7 +219,7 @@ func compileTasks(states []compileGroupState, tasks []compileTask, jobs int, ver
 					compiler.Verbose = verbose
 					compilers[task.group] = compiler
 				}
-				objFile, err := compileOneFile(compiler, state.tmp, state.group.Files[task.file])
+				objFile, err := compileOneFile(compiler, state.tmp, task.file, state.group.Files[task.file])
 				if err != nil {
 					setErr(err)
 					continue
