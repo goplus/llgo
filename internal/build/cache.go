@@ -72,7 +72,6 @@ func (cm *cacheManager) PackagePaths(targetTriple, pkgPath, fingerprint string) 
 func (cm *cacheManager) packageDir(targetTriple, pkgPath string) string {
 	root := filepath.Clean(cm.root)
 	dir := filepath.Join(root, sanitizeComponent(targetTriple), sanitizePkgPath(pkgPath))
-	dir = filepath.Clean(dir)
 	if dir != root && !strings.HasPrefix(dir, root+string(os.PathSeparator)) {
 		dir = filepath.Join(root, "_")
 	}
