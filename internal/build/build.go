@@ -568,6 +568,8 @@ type context struct {
 	targetTripleCached string
 	buildTagsRaw       string
 	buildTagsCached    []string
+	envInputsCached    envSection
+	envInputsReady     bool
 
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths

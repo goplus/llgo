@@ -404,6 +404,40 @@ func TestTargetTripleMethod(t *testing.T) {
 	}
 }
 
+func TestCollectEnvInputsCachesPerBuildInputs(t *testing.T) {
+	t.Setenv(llgoTrace, "1")
+	ctx := &context{
+		buildConf:    &Config{Goos: "linux", Goarch: "amd64", CompilerHash: "hash"},
+		crossCompile: crosscompile.Export{LLVMTarget: "x86_64-test"},
+		llvmVersion:  "LLVM test",
+	}
+	m1 := newManifestBuilder()
+	ctx.collectEnvInputs(m1)
+	if !ctx.envInputsReady {
+		t.Fatal("env inputs were not cached")
+	}
+	if m1.env.Goos != "linux" || m1.env.Goarch != "amd64" || m1.env.LlvmTriple != "x86_64-test" || m1.env.LlgoCompilerHash != "hash" || m1.env.LlvmVersion != "LLVM test" {
+		t.Fatalf("unexpected env inputs: %+v", m1.env)
+	}
+	if got := m1.env.Vars[llgoTrace]; got != "1" {
+		t.Fatalf("env var %s = %q, want 1", llgoTrace, got)
+	}
+
+	t.Setenv(llgoTrace, "2")
+	m2 := newManifestBuilder()
+	ctx.collectEnvInputs(m2)
+	if got := m2.env.Vars[llgoTrace]; got != "1" {
+		t.Fatalf("cached env var %s = %q, want original per-build value 1", llgoTrace, got)
+	}
+
+	ctx2 := &context{buildConf: &Config{}, llvmVersion: "LLVM test"}
+	m3 := newManifestBuilder()
+	ctx2.collectEnvInputs(m3)
+	if got := m3.env.Vars[llgoTrace]; got != "2" {
+		t.Fatalf("fresh context env var %s = %q, want 2", llgoTrace, got)
+	}
+}
+
 func TestCollectCommonInputsCachesBuildTags(t *testing.T) {
 	ctx := &context{buildConf: &Config{Tags: "z,a,m", AbiMode: 1}}
 	m1 := newManifestBuilder()

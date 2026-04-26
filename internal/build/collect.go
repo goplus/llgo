@@ -71,15 +71,26 @@ func (c *context) collectFingerprint(pkg *aPackage) error {
 
 // collectEnvInputs collects environment-related inputs.
 func (c *context) collectEnvInputs(m *manifestBuilder) {
-	m.env.Goos = c.buildConf.Goos
-	m.env.Goarch = c.buildConf.Goarch
-	m.env.LlvmTriple = c.crossCompile.LLVMTarget
-	m.env.LlgoVersion = env.Version()
-	m.env.LlgoCompilerHash = c.buildConf.CompilerHash
-	m.env.GoVersion = runtime.Version()
-	m.env.LlvmVersion = c.getLLVMVersion()
+	m.env = c.envInputs()
+}
 
-	// Environment variables that affect build
+func (c *context) envInputs() envSection {
+	if c.envInputsReady {
+		return c.envInputsCached
+	}
+	section := envSection{
+		Goos:             c.buildConf.Goos,
+		Goarch:           c.buildConf.Goarch,
+		LlvmTriple:       c.crossCompile.LLVMTarget,
+		LlgoVersion:      env.Version(),
+		LlgoCompilerHash: c.buildConf.CompilerHash,
+		GoVersion:        runtime.Version(),
+		LlvmVersion:      c.getLLVMVersion(),
+	}
+
+	// Environment variables that affect build. Treat them as per-build inputs:
+	// the build context is created for one invocation, so they only need to be
+	// captured once and can be reused for every package manifest.
 	envVars := []string{
 		llgoDebug,
 		llgoDbgSyms,
@@ -92,9 +103,12 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 	}
 	for _, envVar := range envVars {
 		if v := os.Getenv(envVar); v != "" {
-			m.env.Vars = m.env.Vars.Add(envVar, v)
+			section.Vars = section.Vars.Add(envVar, v)
 		}
 	}
+	c.envInputsCached = section
+	c.envInputsReady = true
+	return section
 }
 
 // collectCommonInputs collects common build configuration inputs.
