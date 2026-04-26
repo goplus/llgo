@@ -404,6 +404,32 @@ func TestTargetTripleMethod(t *testing.T) {
 	}
 }
 
+func TestCollectCommonInputsCachesBuildTags(t *testing.T) {
+	ctx := &context{buildConf: &Config{Tags: "z,a,m", AbiMode: 1}}
+	m1 := newManifestBuilder()
+	ctx.collectCommonInputs(m1)
+	if got := strings.Join(m1.common.BuildTags, ","); got != "a,m,z" {
+		t.Fatalf("BuildTags = %q, want sorted tags", got)
+	}
+	cached := ctx.buildTagsCached
+	if len(cached) != 3 {
+		t.Fatalf("buildTagsCached = %v", cached)
+	}
+
+	m2 := newManifestBuilder()
+	ctx.collectCommonInputs(m2)
+	if len(m2.common.BuildTags) == 0 || &m2.common.BuildTags[0] != &cached[0] {
+		t.Fatalf("collectCommonInputs did not reuse cached build tags")
+	}
+
+	ctx.buildConf.Tags = "b,a"
+	m3 := newManifestBuilder()
+	ctx.collectCommonInputs(m3)
+	if got := strings.Join(m3.common.BuildTags, ","); got != "a,b" {
+		t.Fatalf("BuildTags after config change = %q, want sorted refreshed tags", got)
+	}
+}
+
 func TestEnsureCacheManager(t *testing.T) {
 	ctx := &context{
 		buildConf: &Config{},

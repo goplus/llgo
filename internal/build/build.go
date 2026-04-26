@@ -566,6 +566,8 @@ type context struct {
 	cacheManager       *cacheManager
 	llvmVersion        string
 	targetTripleCached string
+	buildTagsRaw       string
+	buildTagsCached    []string
 
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths

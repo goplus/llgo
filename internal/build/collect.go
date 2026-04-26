@@ -100,8 +100,8 @@ func (c *context) collectEnvInputs(m *manifestBuilder) {
 // collectCommonInputs collects common build configuration inputs.
 func (c *context) collectCommonInputs(m *manifestBuilder) {
 	m.common.AbiMode = fmt.Sprintf("%d", c.buildConf.AbiMode)
-	if c.buildConf.Tags != "" {
-		m.common.BuildTags = strings.Split(c.buildConf.Tags, ",")
+	if buildTags := c.buildTags(); len(buildTags) > 0 {
+		m.common.BuildTags = buildTags
 	}
 	m.common.Target = c.buildConf.Target
 	m.common.TargetABI = c.crossCompile.TargetABI
@@ -237,6 +237,21 @@ func (c *context) dependencyFingerprint(dep *packages.Package) (depEntry, error)
 	}
 	entry.Fingerprint = temp.Fingerprint
 	return entry, nil
+}
+
+func (c *context) buildTags() []string {
+	tags := c.buildConf.Tags
+	if tags == "" {
+		return nil
+	}
+	if c.buildTagsRaw == tags && c.buildTagsCached != nil {
+		return c.buildTagsCached
+	}
+	buildTags := strings.Split(tags, ",")
+	sort.Strings(buildTags)
+	c.buildTagsRaw = tags
+	c.buildTagsCached = buildTags
+	return buildTags
 }
 
 func moduleVersion(mod *gopackages.Module) string {
