@@ -91,6 +91,44 @@ func TestCollectFingerprint(t *testing.T) {
 	}
 }
 
+func TestParseManifestMetadata(t *testing.T) {
+	m := newManifestBuilder()
+	m.env.Goos = "linux"
+	m.pkg.PkgPath = "example.com/lib"
+	meta, err := parseManifestMetadata(m.Build())
+	if err != nil {
+		t.Fatalf("parseManifestMetadata no metadata: %v", err)
+	}
+	if len(meta.LinkArgs) != 0 || meta.NeedRt || meta.NeedPyInit {
+		t.Fatalf("no metadata parse = %+v, want empty", meta)
+	}
+
+	content, err := buildManifestYAML(manifestData{Metadata: &manifestMetadata{
+		LinkArgs:   []string{"-lm", "-lpthread"},
+		NeedRt:     true,
+		NeedPyInit: true,
+	}})
+	if err != nil {
+		t.Fatalf("buildManifestYAML: %v", err)
+	}
+	meta, err = parseManifestMetadata(content)
+	if err != nil {
+		t.Fatalf("parseManifestMetadata yaml metadata: %v", err)
+	}
+	if strings.Join(meta.LinkArgs, " ") != "-lm -lpthread" || !meta.NeedRt || !meta.NeedPyInit {
+		t.Fatalf("yaml metadata parse = %+v", meta)
+	}
+
+	legacy := "[Package]\nLINK_ARGS = -llegacy -lm\nNEED_RT = true\nNEED_PY_INIT = false\n"
+	meta, err = parseManifestMetadata(legacy)
+	if err != nil {
+		t.Fatalf("parseManifestMetadata legacy metadata: %v", err)
+	}
+	if strings.Join(meta.LinkArgs, " ") != "-llegacy -lm" || !meta.NeedRt || meta.NeedPyInit {
+		t.Fatalf("legacy metadata parse = %+v", meta)
+	}
+}
+
 func TestCollectFingerprintDeterminism(t *testing.T) {
 	td := t.TempDir()
 
