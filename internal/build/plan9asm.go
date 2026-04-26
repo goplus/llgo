@@ -337,6 +337,20 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	return !llruntime.HasAltPkg(pkgPath) || llruntime.HasAdditiveAltPkg(pkgPath)
 }
 
+func dirHasAsmFile(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return true
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasSuffix(name, ".s") || strings.HasSuffix(name, ".S") {
+			return true
+		}
+	}
+	return false
+}
+
 func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg == nil || pkg.PkgPath == "" {
 		return nil, nil
@@ -348,12 +362,8 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 		return nil, nil
 	}
 	// Fast path: if directory has no .s/.S at all, skip `go list`.
-	if pkg.Dir != "" {
-		if ss, _ := filepath.Glob(filepath.Join(pkg.Dir, "*.s")); len(ss) == 0 {
-			if ss, _ := filepath.Glob(filepath.Join(pkg.Dir, "*.S")); len(ss) == 0 {
-				return nil, nil
-			}
-		}
+	if !dirHasAsmFile(pkg.Dir) {
+		return nil, nil
 	}
 
 	if ctx.sfilesCache == nil {
