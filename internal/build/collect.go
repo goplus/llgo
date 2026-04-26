@@ -397,6 +397,9 @@ func (c *context) tryLoadFromCache(pkg *aPackage) bool {
 // backward compatibility with existing cache entries.
 func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 	meta := &cacheArchiveMetadata{}
+	if !hasYAMLMetadataSection(content) && !strings.Contains(content, "[Package]\n") {
+		return meta, nil
+	}
 	if data, err := decodeManifest(content); err == nil {
 		if data.Metadata != nil {
 			meta.LinkArgs = append([]string(nil), data.Metadata.LinkArgs...)
@@ -407,6 +410,10 @@ func parseManifestMetadata(content string) (*cacheArchiveMetadata, error) {
 	}
 
 	return parseManifestMetadataLegacy(content, meta)
+}
+
+func hasYAMLMetadataSection(content string) bool {
+	return strings.HasPrefix(content, "metadata:") || strings.Contains(content, "\nmetadata:")
 }
 
 func parseManifestMetadataLegacy(content string, meta *cacheArchiveMetadata) (*cacheArchiveMetadata, error) {
