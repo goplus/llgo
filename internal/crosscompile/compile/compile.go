@@ -171,6 +171,10 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 				}
 				state.objs[task.file] = objFile
 			}
+		} else if group, ok := singleTaskGroup(tasks); ok {
+			if err := compileSingleGroupTasks(&states[group], jobs, verbose); err != nil {
+				return err
+			}
 		} else {
 			if err := compileTasks(states, tasks, jobs, verbose); err != nil {
 				return err
@@ -186,6 +190,68 @@ func (cfg CompileConfig) Compile(outputDir string, options CompileOptions) error
 		if err := archiveObjects(outputDir, options, state.group, state.objs); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func singleTaskGroup(tasks []compileTask) (int, bool) {
+	if len(tasks) == 0 {
+		return 0, false
+	}
+	group := tasks[0].group
+	for _, task := range tasks[1:] {
+		if task.group != group {
+			return 0, false
+		}
+	}
+	return group, true
+}
+
+func compileSingleGroupTasks(state *compileGroupState, jobs int, verbose bool) error {
+	taskCh := make(chan int)
+	var wg sync.WaitGroup
+	var errMu sync.Mutex
+	var firstErr error
+	setErr := func(err error) {
+		if err == nil {
+			return
+		}
+		errMu.Lock()
+		if firstErr == nil {
+			firstErr = err
+		}
+		errMu.Unlock()
+	}
+
+	for worker := 0; worker < jobs; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			compiler := clang.NewCompiler(state.cfg)
+			compiler.Verbose = verbose
+			for idx := range taskCh {
+				objFile, err := compileOneFile(compiler, state.tmp, idx, state.group.Files[idx])
+				if err != nil {
+					setErr(err)
+					continue
+				}
+				state.objs[idx] = objFile
+			}
+		}()
+	}
+	for idx := range state.group.Files {
+		errMu.Lock()
+		stopped := firstErr != nil
+		errMu.Unlock()
+		if stopped {
+			break
+		}
+		taskCh <- idx
+	}
+	close(taskCh)
+	wg.Wait()
+	if firstErr != nil {
+		return firstErr
 	}
 	return nil
 }
