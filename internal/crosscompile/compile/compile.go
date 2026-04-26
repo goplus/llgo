@@ -315,7 +315,7 @@ func compileTasks(states []compileGroupState, tasks []compileTask, jobs int, ver
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			compilers := make(map[int]*clang.Cmd)
+			compilers := make([]*clang.Cmd, len(states))
 			for task := range taskCh {
 				state := &states[task.group]
 				compiler := compilers[task.group]
