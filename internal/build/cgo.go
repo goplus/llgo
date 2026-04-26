@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -356,7 +357,7 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 	b := strings.Builder{}
 	fline := pos.Line
 	fname := pos.Filename
-	b.WriteString(fmt.Sprintf("#line %d %q\n", fline, fname))
+	writeCgoLineDirective(&b, fline, fname)
 
 	for _, line := range strings.Split(text, "\n") {
 		fline++
@@ -368,7 +369,7 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 				return
 			}
 			decls = append(decls, cgoDecls...)
-			b.WriteString(fmt.Sprintf("#line %d %q\n", fline, fname))
+			writeCgoLineDirective(&b, fline, fname)
 		} else {
 			b.WriteString(line)
 			b.WriteString("\n")
@@ -379,6 +380,14 @@ func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, de
 		src:    b.String(),
 	}
 	return
+}
+
+func writeCgoLineDirective(b *strings.Builder, line int, file string) {
+	b.WriteString("#line ")
+	b.WriteString(strconv.Itoa(line))
+	b.WriteByte(' ')
+	b.WriteString(strconv.Quote(file))
+	b.WriteByte('\n')
 }
 
 func cachedPkgConfig(arg string) (pkgConfigResult, error) {
