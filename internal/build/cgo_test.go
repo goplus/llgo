@@ -6,6 +6,8 @@ package build
 import (
 	"fmt"
 	"go/token"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -64,6 +66,41 @@ func TestParseCgoDeclFlags(t *testing.T) {
 				t.Fatalf("parseCgoDecl = %#v, want %#v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestDirCFiles(t *testing.T) {
+	dir := t.TempDir()
+	for name, data := range map[string]string{
+		"b.c":      "int b;",
+		"a.c":      "int a;",
+		"z_test.c": "int test;",
+		"note.txt": "ignored",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(data), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Mkdir(filepath.Join(dir, "sub.c"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{filepath.Join(dir, "a.c"), filepath.Join(dir, "b.c")}
+	got, err := dirCFiles(dir)
+	if err != nil {
+		t.Fatalf("dirCFiles: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("dirCFiles = %#v, want %#v", got, want)
+	}
+
+	t.Chdir(dir)
+	got, err = dirCFiles("")
+	if err != nil {
+		t.Fatalf("dirCFiles empty dir: %v", err)
+	}
+	if !reflect.DeepEqual(got, []string{"a.c", "b.c"}) {
+		t.Fatalf("dirCFiles empty dir = %#v", got)
 	}
 }
 

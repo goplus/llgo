@@ -388,6 +388,9 @@ func dirCFiles(dir string) ([]string, error) {
 		path := name
 		if dir != "" {
 			path = dir + name
+			if !os.IsPathSeparator(dir[len(dir)-1]) {
+				path = dir + string(os.PathSeparator) + name
+			}
 		}
 		if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
 			files = append(files, path)
