@@ -331,7 +331,9 @@ func extractFuncNames(node *clangASTNode, funcNames map[string]bool) {
 }
 
 func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []cgoPreamble, cdecls []cgoDecl, err error) {
-	if len(pkg.CompiledGoFiles) == 0 || len(pkg.OtherFiles) > 0 || len(pkg.IgnoredFiles) > 0 {
+	if metadataCFiles, ok := pkgCFilesFromMetadata(pkg); ok {
+		cfiles = metadataCFiles
+	} else {
 		dirs := make(map[string]none)
 		for _, file := range files {
 			pos := pkg.Fset.Position(file.Name.NamePos)
@@ -369,6 +371,25 @@ func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []c
 		}
 	}
 	return
+}
+
+func pkgCFilesFromMetadata(pkg *aPackage) ([]string, bool) {
+	if len(pkg.CompiledGoFiles) == 0 || len(pkg.IgnoredFiles) > 0 {
+		return nil, false
+	}
+	if len(pkg.OtherFiles) == 0 {
+		return nil, true
+	}
+	var cfiles []string
+	for _, file := range pkg.OtherFiles {
+		if strings.HasSuffix(file, ".c") && !strings.HasSuffix(file, "_test.c") {
+			cfiles = append(cfiles, file)
+		}
+	}
+	if len(cfiles) > 1 {
+		sort.Strings(cfiles)
+	}
+	return cfiles, true
 }
 
 func dirCFiles(dir string) ([]string, error) {
