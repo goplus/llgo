@@ -155,3 +155,37 @@ func (T) Good() {}
 		t.Fatal("imported Good was incorrectly marked nointerface")
 	}
 }
+
+func TestNoInterfaceImportHelpers(t *testing.T) {
+	files := map[string]struct{}{}
+	addImportFile(files, token.NewFileSet(), token.NoPos)
+	if len(files) != 0 {
+		t.Fatalf("addImportFile recorded NoPos: %v", files)
+	}
+
+	addImportFile(files, token.NewFileSet(), token.Pos(10))
+	if len(files) != 0 {
+		t.Fatalf("addImportFile recorded unknown position: %v", files)
+	}
+
+	fset := token.NewFileSet()
+	file := fset.AddFile("p.go", -1, 8)
+	addImportFile(files, fset, file.Pos(0))
+	if _, ok := files["p.go"]; !ok {
+		t.Fatalf("addImportFile did not record p.go: %v", files)
+	}
+
+	if hasNoInterfaceDirective(nil) {
+		t.Fatal("nil doc unexpectedly has go:nointerface")
+	}
+	if hasNoInterfaceDirective(&ast.CommentGroup{List: []*ast.Comment{{Text: "// go:nointerface"}}}) {
+		t.Fatal("spaced directive was incorrectly accepted")
+	}
+
+	prog := llssa.NewProgram(nil)
+	processASTFileNoInterface(prog, "p", nil)
+	c := &context{prog: prog}
+	c.collectImportedNoInterface("p", map[string]struct{}{
+		filepath.Join(t.TempDir(), "missing.go"): {},
+	})
+}

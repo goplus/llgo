@@ -24,3 +24,26 @@ func TestAbiRuntimeMethodsSkipsNoInterface(t *testing.T) {
 		t.Fatalf("runtime methods = %v, want only Good", methods)
 	}
 }
+
+func TestNoInterfaceMethodSetIgnoresEmptyName(t *testing.T) {
+	prog := NewProgram(nil)
+	if prog.hasNoInterfaceMethods() {
+		t.Fatal("new program unexpectedly has nointerface methods")
+	}
+	if prog.IsNoInterfaceMethod("") {
+		t.Fatal("empty nointerface method name was reported as present")
+	}
+	prog.SetNoInterfaceMethod("")
+	if prog.hasNoInterfaceMethods() {
+		t.Fatal("empty nointerface method name was recorded")
+	}
+
+	const methodName = "p.T.Bad"
+	prog.SetNoInterfaceMethod(methodName)
+	if !prog.hasNoInterfaceMethods() {
+		t.Fatal("non-empty nointerface method name was not recorded")
+	}
+	if !prog.IsNoInterfaceMethod(methodName) {
+		t.Fatal("recorded nointerface method name was not found")
+	}
+}
