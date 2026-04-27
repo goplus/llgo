@@ -6,6 +6,7 @@ import (
 	"github.com/goplus/llgo/cmd/internal/compilerhash"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/buildenv"
+	"github.com/goplus/llgo/internal/optlevel"
 )
 
 var OutputFile string
@@ -42,6 +43,7 @@ var SizeFormat string
 var SizeLevel string
 var ForceRebuild bool
 var PrintCommands bool
+var OptLevel optlevel.Level
 
 const DefaultTestTimeout = "10m" // Matches Go's default test timeout
 
@@ -52,6 +54,20 @@ func AddCommonFlags(fs *flag.FlagSet) {
 func AddBuildFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&ForceRebuild, "a", false, "Force rebuilding of packages that are already up-to-date")
 	fs.BoolVar(&PrintCommands, "x", false, "Print the commands")
+	fs.Var(optLevelFlag(optlevel.O0), "O0", "Disable optimizations")
+	fs.Var(optLevelFlag(optlevel.O1), "O1", "Optimize lightly")
+	fs.Var(optLevelFlag(optlevel.O2), "O2", "Optimize for performance")
+	fs.Var(optLevelFlag(optlevel.O3), "O3", "Optimize aggressively")
+	fs.Var(optLevelFlag(optlevel.Os), "Os", "Optimize for size")
+	fs.Var(optLevelFlag(optlevel.Oz), "Oz", "Optimize aggressively for size")
+	fs.Func("O", "Optimization level (0,1,2,3,s,z)", func(val string) error {
+		level, err := optlevel.Parse(val)
+		if err != nil {
+			return err
+		}
+		OptLevel = level
+		return nil
+	})
 	fs.StringVar(&Tags, "tags", "", "Build tags")
 	fs.StringVar(&BuildEnv, "buildenv", "", "Build environment")
 	if buildenv.Dev {
@@ -177,6 +193,7 @@ func UpdateConfig(conf *build.Config) error {
 	conf.Tags = Tags
 	conf.Verbose = Verbose
 	conf.PrintCommands = PrintCommands
+	conf.OptLevel = OptLevel
 	conf.Target = Target
 	conf.Port = Port
 	conf.BaudRate = BaudRate
@@ -234,4 +251,19 @@ func UpdateBuildConfig(conf *build.Config) error {
 	conf.BuildMode = build.BuildMode(BuildMode)
 
 	return nil
+}
+
+type optLevelFlag optlevel.Level
+
+func (f optLevelFlag) String() string {
+	return optlevel.Level(f).Suffix()
+}
+
+func (f optLevelFlag) Set(string) error {
+	OptLevel = optlevel.Level(f)
+	return nil
+}
+
+func (f optLevelFlag) IsBoolFlag() bool {
+	return true
 }
