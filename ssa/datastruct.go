@@ -284,9 +284,6 @@ func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr
 		return prog.Zero(telem)
 	}
 	if ptr.IsNil() {
-		if x.impl.IsConstant() {
-			return Expr{llvm.ConstExtractElement(x.impl, idx.impl), telem}
-		}
 		ptr = b.Alloc(x.Type, false)
 		b.impl.CreateStore(x.impl, ptr.impl)
 	}
