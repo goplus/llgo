@@ -34,7 +34,7 @@ func hi(a any) *c.Char {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
 // CHECK-NEXT:   %3 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %0, 1
-// CHECK-NEXT:   %4 = load i64, ptr %3, align 4
+// CHECK-NEXT:   %4 = load i64, ptr %3, align 8
 // CHECK-NEXT:   %5 = add i64 %4, 1
 // CHECK-NEXT:   ret i64 %5
 // CHECK-EMPTY:
@@ -53,7 +53,7 @@ func incVal(a any) int {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/cl/_testrt/any.hi"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @"*_llgo_int8", ptr @6 })
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
 // CHECK-NEXT:   %2 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %1, 1
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/cl/_testrt/any.incVal"(%"{{.*}}/runtime/internal/runtime.eface" %2)
 // CHECK-NEXT:   %4 = call i32 (ptr, ...) @printf(ptr @5, ptr %0, i64 %3)

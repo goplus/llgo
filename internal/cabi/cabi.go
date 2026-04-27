@@ -606,7 +606,7 @@ func (p *Transformer) transformCallInstr(m llvm.Module, ctx llvm.Context, call l
 		updateCallAttr(instr)
 	}
 	call.ReplaceAllUsesWith(instr)
-	call.RemoveFromParentAsInstruction()
+	call.EraseFromParentAsInstruction()
 	return true
 }
 

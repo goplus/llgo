@@ -26,7 +26,7 @@ type Callback[T any] func(*T)
 func main() {
 	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpfunc.main$1"(ptr %0) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %1 = load i64, ptr %0, align 4
+	// CHECK-NEXT:   %1 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %1)
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 	// CHECK-NEXT:   ret void
@@ -37,7 +37,7 @@ func main() {
 
 	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpfunc.main$2"(ptr %0) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %1 = load i64, ptr %0, align 4
+	// CHECK-NEXT:   %1 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %1)
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 	// CHECK-NEXT:   ret void
@@ -48,7 +48,7 @@ func main() {
 
 	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/tpfunc.main$3"(ptr %0) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %1 = load i64, ptr %0, align 4
+	// CHECK-NEXT:   %1 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %1)
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 	// CHECK-NEXT:   ret void

@@ -29,7 +29,7 @@ type mspan struct {
 // CHECK-NEXT:   store ptr %1, ptr %0, align 8
 // CHECK-NEXT:   %2 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %2, i32 0, i32 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
 // CHECK-NEXT:   %4 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 64)
 // CHECK-NEXT:   %6 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %4, i32 0, i32 0
@@ -38,7 +38,7 @@ type mspan struct {
 // CHECK-NEXT:   %8 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %7, i32 0, i32 0
 // CHECK-NEXT:   %9 = load ptr, ptr %8, align 8
 // CHECK-NEXT:   %10 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %9, i32 0, i32 4
-// CHECK-NEXT:   store i64 200, ptr %10, align 4
+// CHECK-NEXT:   store i64 200, ptr %10, align 8
 // CHECK-NEXT:   %11 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
 // CHECK-NEXT:   %13 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %11, i32 0, i32 2
@@ -55,11 +55,11 @@ type mspan struct {
 // CHECK-NEXT:   %22 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mSpanList", ptr %21, i32 0, i32 1
 // CHECK-NEXT:   %23 = load ptr, ptr %22, align 8
 // CHECK-NEXT:   %24 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %23, i32 0, i32 4
-// CHECK-NEXT:   store i64 300, ptr %24, align 4
+// CHECK-NEXT:   store i64 300, ptr %24, align 8
 // CHECK-NEXT:   %25 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %26 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %25, i32 0, i32 3
 // CHECK-NEXT:   %27 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.minfo", ptr %26, i32 0, i32 1
-// CHECK-NEXT:   store i64 10, ptr %27, align 4
+// CHECK-NEXT:   store i64 10, ptr %27, align 8
 // CHECK-NEXT:   %28 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %29 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %28, i32 0, i32 3
 // CHECK-NEXT:   %30 = load ptr, ptr %0, align 8
@@ -76,24 +76,24 @@ type mspan struct {
 // CHECK-NEXT:   %38 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %37, i32 0, i32 0
 // CHECK-NEXT:   %39 = load ptr, ptr %38, align 8
 // CHECK-NEXT:   %40 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %39, i32 0, i32 4
-// CHECK-NEXT:   %41 = load i64, ptr %40, align 4
+// CHECK-NEXT:   %41 = load i64, ptr %40, align 8
 // CHECK-NEXT:   %42 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %43 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %42, i32 0, i32 2
 // CHECK-NEXT:   %44 = load ptr, ptr %43, align 8
 // CHECK-NEXT:   %45 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mSpanList", ptr %44, i32 0, i32 1
 // CHECK-NEXT:   %46 = load ptr, ptr %45, align 8
 // CHECK-NEXT:   %47 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %46, i32 0, i32 4
-// CHECK-NEXT:   %48 = load i64, ptr %47, align 4
+// CHECK-NEXT:   %48 = load i64, ptr %47, align 8
 // CHECK-NEXT:   %49 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %50 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %49, i32 0, i32 3
 // CHECK-NEXT:   %51 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.minfo", ptr %50, i32 0, i32 1
-// CHECK-NEXT:   %52 = load i64, ptr %51, align 4
+// CHECK-NEXT:   %52 = load i64, ptr %51, align 8
 // CHECK-NEXT:   %53 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %54 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %53, i32 0, i32 3
 // CHECK-NEXT:   %55 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.minfo", ptr %54, i32 0, i32 0
 // CHECK-NEXT:   %56 = load ptr, ptr %55, align 8
 // CHECK-NEXT:   %57 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %56, i32 0, i32 4
-// CHECK-NEXT:   %58 = load i64, ptr %57, align 4
+// CHECK-NEXT:   %58 = load i64, ptr %57, align 8
 // CHECK-NEXT:   %59 = load ptr, ptr %0, align 8
 // CHECK-NEXT:   %60 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %59, i32 0, i32 5
 // CHECK-NEXT:   %61 = load { ptr, ptr }, ptr %60, align 8
@@ -131,7 +131,7 @@ func main() {
 	// CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
 	// CHECK-NEXT:   %4 = load ptr, ptr %3, align 8
 	// CHECK-NEXT:   %5 = getelementptr inbounds %"{{.*}}/cl/_testrt/named.mspan", ptr %4, i32 0, i32 4
-	// CHECK-NEXT:   %6 = load i64, ptr %5, align 4
+	// CHECK-NEXT:   %6 = load i64, ptr %5, align 8
 	// CHECK-NEXT:   %7 = mul i64 %6, %1
 	// CHECK-NEXT:   ret i64 %7
 	// CHECK-NEXT: }

@@ -13,7 +13,7 @@ type I[T interface{}] interface {
 func demo() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 8)
 	// CHECK: getelementptr inbounds %"{{.*}}tpinst.M[int]", ptr %0, i32 0, i32 0
-	// CHECK: store i64 100, ptr %1, align 4
+	// CHECK: store i64 100, ptr %1, align 8
 	// CHECK: call ptr @"{{.*}}NewItab"(ptr @"{{.*}}iface{{.*}}", ptr @"*_llgo_{{.*}}tpinst.M[int]")
 	var v1 I[int] = &M[int]{100}
 
@@ -68,7 +68,7 @@ func main() {
 // CHECK-LABEL: define linkonce i64 @"{{.*}}tpinst.(*M[int]).Value"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}tpinst.M[int]", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:   %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:   ret i64 %2
 func (pt *M[T]) Value() T {
 	return pt.v
@@ -77,7 +77,7 @@ func (pt *M[T]) Value() T {
 // CHECK-LABEL: define linkonce i64 @"{{.*}}tpinst.(*M[int]).value"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}tpinst.M[int]", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:   %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:   ret i64 %2
 func (pt *M[T]) value() T {
 	return pt.v

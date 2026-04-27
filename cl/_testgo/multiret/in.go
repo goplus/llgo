@@ -5,7 +5,7 @@ var a int = 1
 
 // CHECK-LABEL: define { i64, double } @"{{.*}}multiret.foo"(double %0) {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %1 = load i64, ptr @"{{.*}}multiret.a", align 4
+// CHECK-NEXT:   %1 = load i64, ptr @"{{.*}}multiret.a", align 8
 // CHECK-NEXT:   %2 = insertvalue { i64, double } undef, i64 %1, 0
 // CHECK-NEXT:   %3 = insertvalue { i64, double } %2, double %0, 1
 // CHECK-NEXT:   ret { i64, double } %3

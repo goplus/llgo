@@ -44,14 +44,14 @@ func main() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort1a$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -66,7 +66,7 @@ func main() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @1, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -78,8 +78,8 @@ func sort1a() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort1a$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -102,14 +102,14 @@ func sort1a() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort1b$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -124,7 +124,7 @@ func sort1a() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @3, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -136,8 +136,8 @@ func sort1b() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort1b$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -160,14 +160,14 @@ func sort1b() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort2a$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -182,7 +182,7 @@ func sort1b() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @5, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -194,8 +194,8 @@ func sort2a() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort2a$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -218,14 +218,14 @@ func sort2a() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort2b$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -240,7 +240,7 @@ func sort2a() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @7, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -252,8 +252,8 @@ func sort2b() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort2b$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -276,14 +276,14 @@ func sort2b() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort3a$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -298,7 +298,7 @@ func sort2b() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @9, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -310,8 +310,8 @@ func sort3a() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort3a$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -334,14 +334,14 @@ func sort3a() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort3b$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -356,7 +356,7 @@ func sort3a() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @11, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -368,8 +368,8 @@ func sort3b() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort3b$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -392,14 +392,14 @@ func sort3b() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort4a$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -414,7 +414,7 @@ func sort3b() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @13, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -426,8 +426,8 @@ func sort4a() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort4a$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -450,14 +450,14 @@ func sort4a() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort4b$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -472,7 +472,7 @@ func sort4a() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @15, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -484,8 +484,8 @@ func sort4b() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort4b$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -508,14 +508,14 @@ func sort4b() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort5a$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -530,7 +530,7 @@ func sort4b() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @17, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -542,8 +542,8 @@ func sort5a() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort5a$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5
@@ -566,14 +566,14 @@ func sort5a() {
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %1, i64 2
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %1, i64 3
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %1, i64 4
-// CHECK-NEXT:   store i64 100, ptr %2, align 4
-// CHECK-NEXT:   store i64 8, ptr %3, align 4
-// CHECK-NEXT:   store i64 23, ptr %4, align 4
-// CHECK-NEXT:   store i64 2, ptr %5, align 4
-// CHECK-NEXT:   store i64 7, ptr %6, align 4
+// CHECK-NEXT:   store i64 100, ptr %2, align 8
+// CHECK-NEXT:   store i64 8, ptr %3, align 8
+// CHECK-NEXT:   store i64 23, ptr %4, align 8
+// CHECK-NEXT:   store i64 2, ptr %5, align 8
+// CHECK-NEXT:   store i64 7, ptr %6, align 8
 // CHECK-NEXT:   %7 = getelementptr inbounds i64, ptr %1, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %7, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsortfn.sort5b$1")
-// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 4
+// CHECK-NEXT:   %8 = load [5 x i64], ptr %1, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -588,7 +588,7 @@ func sort5a() {
 // CHECK-NEXT:   %14 = or i1 %13, %12
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %14)
 // CHECK-NEXT:   %15 = getelementptr inbounds i64, ptr %1, i64 %10
-// CHECK-NEXT:   %16 = load i64, ptr %15, align 4
+// CHECK-NEXT:   %16 = load i64, ptr %15, align 8
 // CHECK-NEXT:   %17 = call i32 (ptr, ...) @printf(ptr @19, i64 %16)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -600,8 +600,8 @@ func sort5b() {
 	a := [...]int{100, 8, 23, 2, 7}
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort5b$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5

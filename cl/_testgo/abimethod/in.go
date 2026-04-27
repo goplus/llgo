@@ -159,15 +159,15 @@ type T struct {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/_testgo/abimethod.T", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %0, ptr %1, align 4
+// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %1, i32 0, i32 0
-// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 8
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
 
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.(*T).Demo1"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %1 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 4
+// CHECK-NEXT:   %1 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 8
 // CHECK-NEXT:   %2 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %1)
 // CHECK-NEXT:   ret i64 %2
 // CHECK-NEXT: }
@@ -178,7 +178,7 @@ func (t T) Demo1() int {
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.(*T).Demo2"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:  %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:  %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:  %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:  ret i64 %2
 // CHECK-NEXT: }
 func (t *T) Demo2() int {
@@ -188,7 +188,7 @@ func (t *T) Demo2() int {
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.(*T).demo3"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:  %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:  %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:  %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:  ret i64 %2
 // CHECK-NEXT: }
 func (t *T) demo3() int {
@@ -235,8 +235,8 @@ func main() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"*{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %5, 0
@@ -281,8 +281,8 @@ func testAnonymous1() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -329,11 +329,11 @@ func testAnonymous2() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
-// CHECK-NEXT:   %4 = load { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
+// CHECK-NEXT:   %4 = load { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, align 8
 // CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %4, ptr %5, align 4
+// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %4, ptr %5, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"{{.*}}/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
 // CHECK-NEXT:   %7 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %6, 0
 // CHECK-NEXT:   %8 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %7, ptr %5, 1
@@ -375,8 +375,8 @@ func testAnonymous3() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"*{{.*}}/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %5, ptr %0, 1
@@ -418,8 +418,8 @@ func testAnonymous4() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$GIQLduxo5T_xLwYbboAKy8LzikHgsGzb7WxrkOH3Lr4", ptr @"*{{.*}}/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %5, ptr %0, 1
@@ -463,8 +463,8 @@ func testAnonymous5() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -512,8 +512,8 @@ func testAnonymous6() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -587,8 +587,8 @@ func testAnonymous7() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -684,7 +684,7 @@ func testAnonymous8() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @bytes.NewBufferString(%"{{.*}}/runtime/internal/runtime.String" { ptr @26, i64 5 })
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*{{.*}}/_testgo/abimethod.struct$RGW016k7zllXgGPm1CvD5-IBe-9lphOOTCFtYyDGLjY")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
@@ -764,7 +764,7 @@ func testAnonymousBuffer() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_0
 // CHECK-NEXT:   %27 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %22, 1
-// CHECK-NEXT:   %28 = load i64, ptr %27, align 4
+// CHECK-NEXT:   %28 = load i64, ptr %27, align 8
 // CHECK-NEXT:   %29 = icmp ne i64 %28, 100
 // CHECK-NEXT:   br i1 %29, label %_llgo_1, label %_llgo_2
 // CHECK-EMPTY:
@@ -780,7 +780,7 @@ func testAnonymousBuffer() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
 // CHECK-NEXT:   %2 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %1, 1
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %2, ptr %0, align 8
 // CHECK-NEXT:   ret ptr %0
@@ -800,7 +800,7 @@ func testGeneric() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"*_llgo_{{.*}}/_testgo/abimethod.T")
 // CHECK-NEXT:   %3 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %2, 0
 // CHECK-NEXT:   %4 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %3, ptr %0, 1
@@ -838,10 +838,10 @@ func testNamed1() {
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/_testgo/abimethod.T", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
-// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
+// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 8
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %2, ptr %3, align 4
+// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %2, ptr %3, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"_llgo_{{.*}}/_testgo/abimethod.T")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %5, ptr %3, 1
@@ -878,7 +878,7 @@ func testNamed2() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$GIQLduxo5T_xLwYbboAKy8LzikHgsGzb7WxrkOH3Lr4", ptr @"*_llgo_{{.*}}/_testgo/abimethod.T")
 // CHECK-NEXT:   %3 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %2, 0
 // CHECK-NEXT:   %4 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %3, ptr %0, 1
@@ -942,7 +942,7 @@ type I2 interface {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load ptr, ptr %1, align 8
-// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 4
+// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 8
 // CHECK-NEXT:   %4 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %3)
 // CHECK-NEXT:   ret i64 %4
 // CHECK-NEXT: }
@@ -970,7 +970,7 @@ type I2 interface {
 // CHECK-NEXT:   store { i64, ptr } %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
 // CHECK-NEXT:   %3 = load ptr, ptr %2, align 8
-// CHECK-NEXT:   %4 = load %"{{.*}}/_testgo/abimethod.T", ptr %3, align 4
+// CHECK-NEXT:   %4 = load %"{{.*}}/_testgo/abimethod.T", ptr %3, align 8
 // CHECK-NEXT:   %5 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %4)
 // CHECK-NEXT:   ret i64 %5
 // CHECK-NEXT: }
@@ -1001,9 +1001,9 @@ type I2 interface {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca { i64, %"{{.*}}/_testgo/abimethod.T" }, align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %0, ptr %1, align 4
+// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %1, i32 0, i32 1
-// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 4
+// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 8
 // CHECK-NEXT:   %4 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %3)
 // CHECK-NEXT:   ret i64 %4
 // CHECK-NEXT: }
@@ -1011,7 +1011,7 @@ type I2 interface {
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.*struct{m int; {{.*}}/_testgo/abimethod.T}.Demo1"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
-// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %1, align 4
+// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %1, align 8
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %2)
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
