@@ -17,7 +17,6 @@
 package cl
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -35,54 +34,9 @@ import (
 
 // -----------------------------------------------------------------------------
 
-type symInfo struct {
-	file     string
+type importSym struct {
 	fullName string
 	isVar    bool
-}
-
-type pkgSymInfo struct {
-	files map[string][]byte  // file => content
-	syms  map[string]symInfo // name => isVar
-}
-
-func newPkgSymInfo() *pkgSymInfo {
-	return &pkgSymInfo{
-		files: make(map[string][]byte),
-		syms:  make(map[string]symInfo),
-	}
-}
-
-func (p *pkgSymInfo) addSym(fset *token.FileSet, pos token.Pos, fullName, inPkgName string, isVar bool) {
-	f := fset.File(pos)
-	if fp := f.Position(pos); fp.Line > 2 {
-		file := fp.Filename
-		if _, ok := p.files[file]; !ok {
-			b, err := os.ReadFile(file)
-			if err == nil {
-				p.files[file] = b
-			}
-		}
-		p.syms[inPkgName] = symInfo{file, fullName, isVar}
-	}
-}
-
-func (p *pkgSymInfo) initLinknames(ctx *context) {
-	sep := []byte{'\n'}
-	commentPrefix := []byte{'/', '/'}
-	for file, b := range p.files {
-		lines := bytes.Split(b, sep)
-		for _, line := range lines {
-			if bytes.HasPrefix(line, commentPrefix) {
-				ctx.initLinkname(string(line), true, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
-					if sym, ok := p.syms[inPkgName]; ok && file == sym.file {
-						return sym.fullName, sym.isVar, true
-					}
-					return
-				})
-			}
-		}
-	}
 }
 
 // PkgKindOf returns the kind of a package.
@@ -147,16 +101,14 @@ start:
 	i.kind = kind
 	fset := p.fset
 	names := scope.Names()
-	syms := newPkgSymInfo()
-	importFiles := make(map[string]struct{})
+	importFiles := make(map[string]map[string]importSym)
 	for _, name := range names {
 		obj := scope.Lookup(name)
 		switch obj := obj.(type) {
 		case *types.Func:
 			if pos := obj.Pos(); pos != token.NoPos {
 				fullName, inPkgName := typesFuncName(pkgPath, obj)
-				syms.addSym(fset, pos, fullName, inPkgName, false)
-				addImportFile(importFiles, fset, pos)
+				addImportSym(importFiles, fset, pos, fullName, inPkgName, false)
 			}
 		case *types.TypeName:
 			if !obj.IsAlias() {
@@ -164,30 +116,26 @@ start:
 					for i, n := 0, t.NumMethods(); i < n; i++ {
 						fn := t.Method(i)
 						fullName, inPkgName := typesFuncName(pkgPath, fn)
-						syms.addSym(fset, fn.Pos(), fullName, inPkgName, false)
-						addImportFile(importFiles, fset, fn.Pos())
+						addImportSym(importFiles, fset, fn.Pos(), fullName, inPkgName, false)
 					}
 				}
 			}
 		case *types.Var:
 			if pos := obj.Pos(); pos != token.NoPos {
-				syms.addSym(fset, pos, pkgPath+"."+name, name, true)
-				addImportFile(importFiles, fset, pos)
+				addImportSym(importFiles, fset, pos, pkgPath+"."+name, name, true)
 			}
 		}
 	}
-	syms.initLinknames(p)
-	p.collectImportedNoInterface(pkgPath, importFiles)
+	p.collectImportedDirectives(pkgPath, importFiles)
 }
 
 func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	for _, file := range files {
-		processASTFileNoInterface(p.prog, pkgPath, file)
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
-				fullName, inPkgName := astFuncName(pkgPath, decl)
-				if !p.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, true) && cPkg {
+				fullName, inPkgName, hasLinkname := p.processFuncDirectives(pkgPath, decl, true, true)
+				if !hasLinkname && cPkg {
 					// package C (https://github.com/goplus/llgo/issues/1165)
 					if decl.Recv == nil && token.IsExported(inPkgName) {
 						exportName := strings.TrimPrefix(inPkgName, "X")
@@ -198,12 +146,7 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 			case *ast.GenDecl:
 				switch decl.Tok {
 				case token.VAR:
-					if len(decl.Specs) == 1 {
-						if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-							inPkgName := names[0].Name
-							p.processLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true, true)
-						}
-					}
+					p.processVarLinkname(pkgPath, decl, true)
 				case token.CONST:
 					fallthrough
 				case token.TYPE:
@@ -224,6 +167,25 @@ func (p *context) initFiles(pkgPath string, files []*ast.File, cPkg bool) {
 	}
 }
 
+func (p *context) processFuncDirectives(pkgPath string, decl *ast.FuncDecl, allowExport, collectNoInterface bool) (fullName, inPkgName string, hasLinkname bool) {
+	fullName, inPkgName = astFuncName(pkgPath, decl)
+	if collectNoInterface && decl.Recv != nil && hasNoInterfaceDirective(decl.Doc) {
+		p.prog.SetNoInterfaceMethod(fullName)
+	}
+	hasLinkname = p.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, allowExport)
+	return
+}
+
+func (p *context) processVarLinkname(pkgPath string, decl *ast.GenDecl, allowExport bool) {
+	if len(decl.Specs) != 1 {
+		return
+	}
+	if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
+		inPkgName := names[0].Name
+		p.processLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true, allowExport)
+	}
+}
+
 // PreCollectLinknames scans syntax files before SSA compilation and populates
 // prog.Linkname for package-level //go:linkname / //llgo:link declarations.
 // It intentionally ignores //export because there is no package export context
@@ -234,53 +196,59 @@ func PreCollectLinknames(prog llssa.Program, pkgPath string, files []*ast.File) 
 		for _, decl := range file.Decls {
 			switch decl := decl.(type) {
 			case *ast.FuncDecl:
-				fullName, inPkgName := astFuncName(pkgPath, decl)
-				ctx.processLinknameByDoc(decl.Doc, fullName, inPkgName, false, false)
+				ctx.processFuncDirectives(pkgPath, decl, false, false)
 			case *ast.GenDecl:
-				if decl.Tok == token.VAR && len(decl.Specs) == 1 {
-					if names := decl.Specs[0].(*ast.ValueSpec).Names; len(names) == 1 {
-						inPkgName := names[0].Name
-						ctx.processLinknameByDoc(decl.Doc, pkgPath+"."+inPkgName, inPkgName, true, false)
-					}
+				if decl.Tok == token.VAR {
+					ctx.processVarLinkname(pkgPath, decl, false)
 				}
 			}
 		}
 	}
 }
 
-func addImportFile(files map[string]struct{}, fset *token.FileSet, pos token.Pos) {
+func addImportSym(files map[string]map[string]importSym, fset *token.FileSet, pos token.Pos, fullName, inPkgName string, isVar bool) {
 	if pos == token.NoPos {
 		return
 	}
 	if f := fset.File(pos); f != nil {
 		if file := f.Position(pos).Filename; file != "" {
-			files[file] = struct{}{}
+			syms := files[file]
+			if syms == nil {
+				syms = make(map[string]importSym)
+				files[file] = syms
+			}
+			syms[inPkgName] = importSym{fullName: fullName, isVar: isVar}
 		}
 	}
 }
 
-func (p *context) collectImportedNoInterface(pkgPath string, files map[string]struct{}) {
+func (p *context) collectImportedDirectives(pkgPath string, files map[string]map[string]importSym) {
 	fset := token.NewFileSet()
-	for file := range files {
+	for file, syms := range files {
 		parsed, err := parser.ParseFile(fset, file, nil, parser.ParseComments)
 		if err != nil {
 			continue
 		}
-		processASTFileNoInterface(p.prog, pkgPath, parsed)
+		p.collectImportedLinknames(parsed, syms)
+		for _, decl := range parsed.Decls {
+			switch decl := decl.(type) {
+			case *ast.FuncDecl:
+				p.processFuncDirectives(pkgPath, decl, false, true)
+			}
+		}
 	}
 }
 
-func processASTFileNoInterface(prog llssa.Program, pkgPath string, file *ast.File) {
-	if file == nil {
-		return
-	}
-	for _, decl := range file.Decls {
-		fn, ok := decl.(*ast.FuncDecl)
-		if !ok || fn.Recv == nil || !hasNoInterfaceDirective(fn.Doc) {
-			continue
+func (p *context) collectImportedLinknames(file *ast.File, syms map[string]importSym) {
+	for _, group := range file.Comments {
+		for _, comment := range group.List {
+			p.initLinkname(comment.Text, true, func(inPkgName string, isExport bool) (fullName string, isVar, ok bool) {
+				if sym, ok := syms[inPkgName]; ok {
+					return sym.fullName, sym.isVar, true
+				}
+				return
+			})
 		}
-		fullName, _ := astFuncName(pkgPath, fn)
-		prog.SetNoInterfaceMethod(fullName)
 	}
 }
 

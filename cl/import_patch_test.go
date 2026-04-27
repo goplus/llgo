@@ -79,6 +79,17 @@ func TestInitFilesCollectsGoNoInterface(t *testing.T) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "p.go", `package p
 
+//llgo:skip FromImport
+import _ "unsafe"
+
+//llgo:skip FromConst
+const C = 1
+
+//go:generate ignored
+// llgo:skip FromType
+//llgo:skipall
+type U struct{}
+
 type T struct{}
 
 //go:nointerface
@@ -110,12 +121,36 @@ func Plain() {}
 	if prog.IsNoInterfaceMethod(funcNames["Plain"]) {
 		t.Fatal("Plain function was incorrectly marked nointerface")
 	}
+	for _, name := range []string{"FromImport", "FromConst", "FromType"} {
+		if _, ok := c.skips[name]; !ok {
+			t.Fatalf("%s was not collected from llgo:skip", name)
+		}
+	}
+	if !c.skipall {
+		t.Fatal("llgo:skipall was not collected from type doc")
+	}
 }
 
 func TestImportPkgCollectsGoNoInterface(t *testing.T) {
 	src := `package p
 
+import _ "unsafe"
+
 const LLGoPackage = "decl"
+
+//go:linkname Foo c_foo
+
+func Foo()
+
+//llgo:link Bar c_bar
+const marker = 1
+
+func Bar()
+
+// llgo:link Baz c_baz
+type markerType int
+
+func Baz()
 
 type T struct{}
 
@@ -146,6 +181,15 @@ func (T) Good() {}
 	prog := llssa.NewProgram(nil)
 	c := &context{prog: prog, fset: fset}
 	c.importPkg(pkg, &pkgInfo{})
+	if got, ok := prog.Linkname("example.com/p.Foo"); !ok || got != "c_foo" {
+		t.Fatalf("imported Foo linkname = (%q,%v), want (%q,%v)", got, ok, "c_foo", true)
+	}
+	if got, ok := prog.Linkname("example.com/p.Bar"); !ok || got != "c_bar" {
+		t.Fatalf("imported Bar linkname = (%q,%v), want (%q,%v)", got, ok, "c_bar", true)
+	}
+	if got, ok := prog.Linkname("example.com/p.Baz"); !ok || got != "c_baz" {
+		t.Fatalf("imported Baz linkname = (%q,%v), want (%q,%v)", got, ok, "c_baz", true)
+	}
 	badName, _ := typesFuncName(pkg.Path(), methods["Bad"])
 	goodName, _ := typesFuncName(pkg.Path(), methods["Good"])
 	if !prog.IsNoInterfaceMethod(badName) {

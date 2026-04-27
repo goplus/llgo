@@ -58,53 +58,56 @@ type (
 	ParsePkgSyntax(prog, pkg, []*ast.File{file})
 }
 
-func TestPkgSymInfoAddSymAndInitLinknamesCoverage(t *testing.T) {
+func TestCollectImportedDirectivesCoverage(t *testing.T) {
 	dir := t.TempDir()
 	srcPath := filepath.Join(dir, "p.go")
-	src := "package p\n\n//go:linkname Foo c_foo\nfunc Foo()\n"
+	src := `package p
+import _ "unsafe"
+
+//go:linkname Foo c_foo
+
+func Foo()
+
+//llgo:link Bar c_bar
+const marker = 1
+
+func Bar()
+
+// llgo:link Baz c_baz
+type markerType int
+
+func Baz()
+
+type T struct{}
+
+//go:nointerface
+func (T) Bad()
+`
 	if err := os.WriteFile(srcPath, []byte(src), 0o644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, srcPath, src, parser.ParseComments)
-	if err != nil {
-		t.Fatalf("ParseFile failed: %v", err)
-	}
-
-	var fnPos token.Pos
-	for _, decl := range file.Decls {
-		if fn, ok := decl.(*ast.FuncDecl); ok && fn.Name.Name == "Foo" {
-			fnPos = fn.Name.Pos()
-			break
-		}
-	}
-	if fnPos == token.NoPos {
-		t.Fatalf("failed to find Foo position")
-	}
-
-	syms := newPkgSymInfo()
-	syms.addSym(fset, fnPos, "example.com/p.Foo", "Foo", false)
-
-	tf := fset.File(file.Pos())
-	syms.addSym(fset, tf.LineStart(2), "example.com/p.Skip", "Skip", false)
-	if _, ok := syms.syms["Skip"]; ok {
-		t.Fatalf("symbol with line<=2 should be skipped")
-	}
-
-	// cover os.ReadFile error branch inside addSym.
-	ff := fset.AddFile(filepath.Join(dir, "missing.go"), -1, 100)
-	ff.SetLines([]int{0, 10, 20, 30, 40, 50})
-	syms.addSym(fset, ff.LineStart(4), "example.com/p.Miss", "Miss", false)
-	if _, ok := syms.syms["Miss"]; !ok {
-		t.Fatalf("symbol should still be recorded when file read fails")
-	}
-
 	prog := llssa.NewProgram(nil)
 	ctx := &context{prog: prog}
-	syms.initLinknames(ctx)
+	ctx.collectImportedDirectives("example.com/p", map[string]map[string]importSym{
+		srcPath: {
+			"Foo": {fullName: "example.com/p.Foo"},
+			"Bar": {fullName: "example.com/p.Bar"},
+			"Baz": {fullName: "example.com/p.Baz"},
+		},
+		filepath.Join(dir, "bad.go"): nil,
+	})
 	if got, ok := prog.Linkname("example.com/p.Foo"); !ok || got != "c_foo" {
 		t.Fatalf("linkname = (%q,%v), want (%q,%v)", got, ok, "c_foo", true)
+	}
+	if got, ok := prog.Linkname("example.com/p.Bar"); !ok || got != "c_bar" {
+		t.Fatalf("llgo linkname = (%q,%v), want (%q,%v)", got, ok, "c_bar", true)
+	}
+	if got, ok := prog.Linkname("example.com/p.Baz"); !ok || got != "c_baz" {
+		t.Fatalf("spaced llgo linkname = (%q,%v), want (%q,%v)", got, ok, "c_baz", true)
+	}
+	if !prog.IsNoInterfaceMethod("example.com/p.T.Bad") {
+		t.Fatalf("Bad was not marked nointerface")
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -156,6 +157,31 @@ func TestApplySourcePatchForPkg_Cases(t *testing.T) {
 	} {
 		t.Run(caseName, func(t *testing.T) {
 			runSourcePatchCase(t, caseName)
+		})
+	}
+}
+
+func TestParseSourcePatchLLGoSkipDirectives(t *testing.T) {
+	cases := []struct {
+		line        string
+		wantSkipAll bool
+		wantNames   []string
+		wantOK      bool
+	}{
+		{line: "//llgo:skipall", wantSkipAll: true, wantOK: true},
+		{line: "// llgo:skipall", wantSkipAll: true, wantOK: true},
+		{line: "//llgo:skip Drop Keep", wantNames: []string{"Drop", "Keep"}, wantOK: true},
+		{line: "// llgo:skip Drop", wantNames: []string{"Drop"}, wantOK: true},
+		{line: "//go:generate ignored"},
+		{line: "//llgo:link Name C.name"},
+	}
+	for _, tt := range cases {
+		t.Run(tt.line, func(t *testing.T) {
+			gotSkipAll, gotNames, gotOK := parseSourcePatchDirective(tt.line)
+			if gotSkipAll != tt.wantSkipAll || gotOK != tt.wantOK || !slices.Equal(gotNames, tt.wantNames) {
+				t.Fatalf("parseSourcePatchDirective(%q) = (%v,%v,%v), want (%v,%v,%v)",
+					tt.line, gotSkipAll, gotNames, gotOK, tt.wantSkipAll, tt.wantNames, tt.wantOK)
+			}
 		})
 	}
 }
