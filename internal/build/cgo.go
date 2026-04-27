@@ -79,6 +79,9 @@ func buildCgo(ctx *context, pkg *aPackage, files []*ast.File, externs []string, 
 	if err != nil {
 		return
 	}
+	if len(cfiles) == 0 && len(preambles) == 0 && len(cdecls) == 0 {
+		return
+	}
 	tagUsed := make(map[string]bool)
 	for _, cdecl := range cdecls {
 		if cdecl.tag != "" {
