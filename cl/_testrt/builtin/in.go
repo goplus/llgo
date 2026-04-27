@@ -414,46 +414,47 @@ func demo() {
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %154)
 // CHECK-NEXT:   %155 = getelementptr inbounds i8, ptr %152, i64 3
 // CHECK-NEXT:   %156 = load i8, ptr %155, align 1
-// CHECK-NEXT:   %157 = zext i8 %156 to i32
-// CHECK-NEXT:   %158 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromRune"(i32 %157)
+// CHECK-NEXT:   %157 = zext i8 %156 to i64
+// CHECK-NEXT:   %158 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromUint64"(i64 %157)
 // CHECK-NEXT:   %159 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %149, 0
 // CHECK-NEXT:   %160 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %149, 1
 // CHECK-NEXT:   %161 = icmp uge i64 0, %160
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %161)
 // CHECK-NEXT:   %162 = getelementptr inbounds i32, ptr %159, i64 0
 // CHECK-NEXT:   %163 = load i32, ptr %162, align 4
-// CHECK-NEXT:   %164 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromRune"(i32 %163)
+// CHECK-NEXT:   %164 = sext i32 %163 to i64
+// CHECK-NEXT:   %165 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromInt64"(i64 %164)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %150)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %151)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %158)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %164)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %165)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
-// CHECK-NEXT:   %165 = call i1 @"{{.*}}/runtime/internal/runtime.StringEqual"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 })
-// CHECK-NEXT:   %166 = call i1 @"{{.*}}/runtime/internal/runtime.StringEqual"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
+// CHECK-NEXT:   %166 = call i1 @"{{.*}}/runtime/internal/runtime.StringEqual"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 })
 // CHECK-NEXT:   %167 = call i1 @"{{.*}}/runtime/internal/runtime.StringEqual"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
-// CHECK-NEXT:   %168 = xor i1 %167, true
-// CHECK-NEXT:   %169 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
-// CHECK-NEXT:   %170 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 })
-// CHECK-NEXT:   %171 = xor i1 %170, true
-// CHECK-NEXT:   %172 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 })
-// CHECK-NEXT:   %173 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
-// CHECK-NEXT:   %174 = xor i1 %173, true
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %165)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
+// CHECK-NEXT:   %168 = call i1 @"{{.*}}/runtime/internal/runtime.StringEqual"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
+// CHECK-NEXT:   %169 = xor i1 %168, true
+// CHECK-NEXT:   %170 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
+// CHECK-NEXT:   %171 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 })
+// CHECK-NEXT:   %172 = xor i1 %171, true
+// CHECK-NEXT:   %173 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 })
+// CHECK-NEXT:   %174 = call i1 @"{{.*}}/runtime/internal/runtime.StringLess"(%"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 3 }, %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 3 })
+// CHECK-NEXT:   %175 = xor i1 %174, true
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %166)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %168)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %167)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %169)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %171)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %170)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %172)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %174)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %173)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 32)
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintBool"(i1 %175)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
