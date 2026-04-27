@@ -331,18 +331,20 @@ func extractFuncNames(node *clangASTNode, funcNames map[string]bool) {
 }
 
 func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []cgoPreamble, cdecls []cgoDecl, err error) {
-	dirs := make(map[string]none)
-	for _, file := range files {
-		pos := pkg.Fset.Position(file.Name.NamePos)
-		dir, _ := filepath.Split(pos.Filename)
-		dirs[dir] = none{}
-	}
-	for dir := range dirs {
-		matches, err := dirCFiles(dir)
-		if err != nil {
-			continue
+	if len(pkg.CompiledGoFiles) == 0 || len(pkg.OtherFiles) > 0 || len(pkg.IgnoredFiles) > 0 {
+		dirs := make(map[string]none)
+		for _, file := range files {
+			pos := pkg.Fset.Position(file.Name.NamePos)
+			dir, _ := filepath.Split(pos.Filename)
+			dirs[dir] = none{}
 		}
-		cfiles = append(cfiles, matches...)
+		for dir := range dirs {
+			matches, err := dirCFiles(dir)
+			if err != nil {
+				continue
+			}
+			cfiles = append(cfiles, matches...)
+		}
 	}
 
 	for _, file := range files {
