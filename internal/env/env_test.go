@@ -6,6 +6,7 @@ package env
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -62,6 +63,49 @@ func TestGOVERSIONWithEnv(t *testing.T) {
 		}
 		if !strings.HasPrefix(got, "go1.") {
 			t.Fatalf("GOVERSIONWithEnv() = %q, want go1.x", got)
+		}
+	})
+
+	t.Run("with go env failure", func(t *testing.T) {
+		prependFakeGo(t, "echo bad goversion >&2\nexit 2\n")
+		if got, err := GOVERSIONWithEnv(nil); err == nil || got != "" {
+			t.Fatalf("GOVERSIONWithEnv() = %q, %v, want error", got, err)
+		}
+	})
+}
+
+func TestGOROOTAndGOVERSIONWithEnv(t *testing.T) {
+	goroot, goversion, err := GOROOTAndGOVERSIONWithEnv(os.Environ())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if goroot == "" {
+		t.Fatal("GOROOTAndGOVERSIONWithEnv should not return empty GOROOT")
+	}
+	if !strings.HasPrefix(goversion, "go1.") {
+		t.Fatalf("GOROOTAndGOVERSIONWithEnv goversion = %q, want go1.x", goversion)
+	}
+
+	t.Run("with go env failure", func(t *testing.T) {
+		prependFakeGo(t, "echo bad go env >&2\nexit 2\n")
+		goroot, goversion, err := GOROOTAndGOVERSIONWithEnv(nil)
+		if err == nil || goroot != "" || goversion != "" {
+			t.Fatalf("GOROOTAndGOVERSIONWithEnv() = %q, %q, %v, want error", goroot, goversion, err)
+		}
+	})
+}
+
+func TestGoEnvWithEnvErrors(t *testing.T) {
+	t.Run("without variables", func(t *testing.T) {
+		if got, err := GoEnvWithEnv(nil); err == nil || got != nil {
+			t.Fatalf("GoEnvWithEnv() = %v, %v, want error", got, err)
+		}
+	})
+
+	t.Run("wrong output count", func(t *testing.T) {
+		prependFakeGo(t, "echo only-one\n")
+		if got, err := GoEnvWithEnv(nil, "GOROOT", "GOVERSION"); err == nil || got != nil {
+			t.Fatalf("GoEnvWithEnv() = %v, %v, want output count error", got, err)
 		}
 	})
 }
@@ -242,4 +286,17 @@ func appendEnv(base []string, overrides ...string) []string {
 		}
 	}
 	return out
+}
+
+func prependFakeGo(t *testing.T, script string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("fake go shell script is Unix-only")
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "go")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
