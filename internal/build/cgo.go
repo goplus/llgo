@@ -335,18 +335,11 @@ func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []c
 		dirs[dir] = none{}
 	}
 	for dir := range dirs {
-		matches, err := filepath.Glob(filepath.Join(dir, "*.c"))
+		matches, err := dirCFiles(dir)
 		if err != nil {
 			continue
 		}
-		for _, match := range matches {
-			if strings.HasSuffix(match, "_test.c") {
-				continue
-			}
-			if fi, err := os.Stat(match); err == nil && !fi.IsDir() {
-				cfiles = append(cfiles, match)
-			}
-		}
+		cfiles = append(cfiles, matches...)
 	}
 
 	for _, file := range files {
@@ -371,6 +364,39 @@ func parseCgo_(pkg *aPackage, files []*ast.File) (cfiles []string, preambles []c
 		}
 	}
 	return
+}
+
+func dirCFiles(dir string) ([]string, error) {
+	openDir := dir
+	if openDir == "" {
+		openDir = "."
+	}
+	f, err := os.Open(openDir)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return nil, err
+	}
+	var files []string
+	for _, name := range names {
+		if !strings.HasSuffix(name, ".c") || strings.HasSuffix(name, "_test.c") {
+			continue
+		}
+		path := name
+		if dir != "" {
+			path = dir + name
+		}
+		if fi, err := os.Stat(path); err == nil && !fi.IsDir() {
+			files = append(files, path)
+		}
+	}
+	if len(files) > 1 {
+		sort.Strings(files)
+	}
+	return files, nil
 }
 
 func parseCgoPreamble(pos token.Position, text string) (preamble cgoPreamble, decls []cgoDecl, err error) {
