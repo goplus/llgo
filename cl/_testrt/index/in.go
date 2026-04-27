@@ -90,13 +90,13 @@ type S []int
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintInt"(i64 %41)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   %42 = load i8, ptr getelementptr inbounds (i8, ptr @0, i64 2), align 1
-// CHECK-NEXT:   %43 = zext i8 %42 to i32
-// CHECK-NEXT:   %44 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromRune"(i32 %43)
+// CHECK-NEXT:   %43 = zext i8 %42 to i64
+// CHECK-NEXT:   %44 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromUint64"(i64 %43)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %44)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   %45 = load i8, ptr getelementptr inbounds (i8, ptr @0, i64 1), align 1
-// CHECK-NEXT:   %46 = zext i8 %45 to i32
-// CHECK-NEXT:   %47 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromRune"(i32 %46)
+// CHECK-NEXT:   %46 = zext i8 %45 to i64
+// CHECK-NEXT:   %47 = call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/runtime/internal/runtime.StringFromUint64"(i64 %46)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" %47)
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
 // CHECK-NEXT:   %48 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)

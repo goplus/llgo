@@ -898,12 +898,24 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 				}
 			case *types.Basic:
-				if x.Type != b.Prog.Int32() {
-					srcType := x.Type
-					x.Type = b.Prog.Int32()
-					x.impl = castInt(b, x.impl, srcType, b.Prog.Int32())
+				if xtyp.Info()&types.IsInteger == 0 {
+					panic("unreachable: string conversion from non-integer basic type")
 				}
-				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
+				srcType := x.Type
+				var arg Expr
+				var fn string
+				if xtyp.Info()&types.IsUnsigned != 0 {
+					arg.Type = b.Prog.Uint64()
+					fn = "StringFromUint64"
+				} else {
+					arg.Type = b.Prog.Int64()
+					fn = "StringFromInt64"
+				}
+				arg.impl = x.impl
+				if arg.impl.Type() != arg.Type.ll {
+					arg.impl = castInt(b, x.impl, srcType, arg.Type)
+				}
+				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc(fn), arg).impl
 				return
 			}
 		case types.Complex128:
