@@ -5,6 +5,8 @@ package build
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
@@ -12,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/goplus/llgo/internal/packages"
 )
 
 func TestParseCgoDeclFlags(t *testing.T) {
@@ -101,6 +105,56 @@ func TestDirCFiles(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, []string{"a.c", "b.c"}) {
 		t.Fatalf("dirCFiles empty dir = %#v", got)
+	}
+}
+
+func TestParseCgoUsesFileMetadataForCScan(t *testing.T) {
+	dir := t.TempDir()
+	goFile := filepath.Join(dir, "main.go")
+	cFile := filepath.Join(dir, "in.c")
+	if err := os.WriteFile(goFile, []byte("package main\nfunc f() {}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cFile, []byte("int in_c;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, goFile, nil, parser.ParseComments)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := []*ast.File{file}
+
+	// Real package loads request NeedFiles/NeedCompiledGoFiles. If that metadata
+	// says there are no non-Go files, parseCgo_ can trust it and skip a directory
+	// scan on the common no-cgo path.
+	pkg := &aPackage{Package: &packages.Package{Fset: fset, CompiledGoFiles: []string{goFile}}}
+	cfiles, preambles, decls, err := parseCgo_(pkg, files)
+	if err != nil || len(cfiles) != 0 || len(preambles) != 0 || len(decls) != 0 {
+		t.Fatalf("parseCgo_ with no OtherFiles = %v, %v, %v, %v", cfiles, preambles, decls, err)
+	}
+
+	// Synthetic packages without complete file metadata still fall back to the
+	// historical directory scan.
+	pkg = &aPackage{Package: &packages.Package{Fset: fset}}
+	cfiles, _, _, err = parseCgo_(pkg, files)
+	if err != nil {
+		t.Fatalf("parseCgo_ fallback scan: %v", err)
+	}
+	if !reflect.DeepEqual(cfiles, []string{cFile}) {
+		t.Fatalf("parseCgo_ fallback cfiles = %#v, want %#v", cfiles, []string{cFile})
+	}
+
+	// Packages with reported non-Go files remain conservative and scan for C
+	// files so headers or ignored files do not hide adjacent .c sources.
+	pkg = &aPackage{Package: &packages.Package{Fset: fset, CompiledGoFiles: []string{goFile}, OtherFiles: []string{cFile}}}
+	cfiles, _, _, err = parseCgo_(pkg, files)
+	if err != nil {
+		t.Fatalf("parseCgo_ OtherFiles scan: %v", err)
+	}
+	if !reflect.DeepEqual(cfiles, []string{cFile}) {
+		t.Fatalf("parseCgo_ OtherFiles cfiles = %#v, want %#v", cfiles, []string{cFile})
 	}
 }
 
