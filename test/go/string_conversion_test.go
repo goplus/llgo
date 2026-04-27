@@ -63,9 +63,8 @@ func TestStringConversionFromWideIntegers(t *testing.T) {
 	}
 	repoRoot := findStringConversionRepoRoot(t)
 	runStringConversionProbe(t, repoRoot, "go", "run", file)
-	if os.Getenv("LLGO_ROOT") != "" {
-		runStringConversionProbe(t, repoRoot, "go", "run", "./cmd/llgo", "run", file)
-	}
+	t.Setenv("LLGO_ROOT", repoRoot)
+	runStringConversionProbe(t, repoRoot, "go", "run", "./cmd/llgo", "run", file)
 }
 
 func runStringConversionProbe(t *testing.T, dir, name string, args ...string) {
