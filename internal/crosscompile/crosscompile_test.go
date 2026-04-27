@@ -4,10 +4,14 @@
 package crosscompile
 
 import (
+	"errors"
 	"os"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"testing"
+
+	compilepkg "github.com/goplus/llgo/internal/crosscompile/compile"
 )
 
 const (
@@ -16,6 +20,69 @@ const (
 	includePrefix     = "-I"
 	libPrefix         = "-L"
 )
+
+func resetMacOSSysrootForTest(t *testing.T) {
+	t.Helper()
+	macOSSysrootMu.Lock()
+	oldCached := macOSSysrootCached
+	oldLookup := macOSSysrootLookup
+	macOSSysrootCached = ""
+	macOSSysrootMu.Unlock()
+	t.Cleanup(func() {
+		macOSSysrootMu.Lock()
+		macOSSysrootCached = oldCached
+		macOSSysrootLookup = oldLookup
+		macOSSysrootMu.Unlock()
+	})
+}
+
+func TestGetMacOSSysrootCachesSuccess(t *testing.T) {
+	resetMacOSSysrootForTest(t)
+	calls := 0
+	macOSSysrootLookup = func() (string, error) {
+		calls++
+		return "/test/sdk", nil
+	}
+	first, err := getMacOSSysroot()
+	if err != nil {
+		t.Fatalf("first getMacOSSysroot: %v", err)
+	}
+	second, err := getMacOSSysroot()
+	if err != nil {
+		t.Fatalf("second getMacOSSysroot: %v", err)
+	}
+	if first != "/test/sdk" || second != "/test/sdk" {
+		t.Fatalf("sysroots = %q, %q; want cached /test/sdk", first, second)
+	}
+	if calls != 1 {
+		t.Fatalf("lookup calls = %d, want 1", calls)
+	}
+}
+
+func TestGetMacOSSysrootDoesNotCacheErrors(t *testing.T) {
+	resetMacOSSysrootForTest(t)
+	calls := 0
+	macOSSysrootLookup = func() (string, error) {
+		calls++
+		if calls == 1 {
+			return "", errors.New("temporary xcrun failure")
+		}
+		return "/test/sdk", nil
+	}
+	if _, err := getMacOSSysroot(); err == nil {
+		t.Fatal("first getMacOSSysroot succeeded, want error")
+	}
+	got, err := getMacOSSysroot()
+	if err != nil {
+		t.Fatalf("second getMacOSSysroot: %v", err)
+	}
+	if got != "/test/sdk" {
+		t.Fatalf("sysroot = %q, want /test/sdk", got)
+	}
+	if calls != 2 {
+		t.Fatalf("lookup calls = %d, want retry after error", calls)
+	}
+}
 
 func TestUseCrossCompileSDK(t *testing.T) {
 	// Skip long-running tests unless explicitly enabled
@@ -306,6 +373,20 @@ func TestUseTarget(t *testing.T) {
 			t.Logf("Target %s: BuildTags=%v, CFlags=%v, CCFlags=%v, LDFlags=%v",
 				tc.targetName, export.BuildTags, export.CFLAGS, export.CCFLAGS, export.LDFLAGS)
 		})
+	}
+}
+
+func TestCompileWithConfigCompileError(t *testing.T) {
+	tmpDir := t.TempDir()
+	bad := filepath.Join(tmpDir, "bad.c")
+	if err := os.WriteFile(bad, []byte("int bad(void) {\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg := compilepkg.CompileConfig{Groups: []compilepkg.CompileGroup{
+		{OutputFileName: "libbad.a", Files: []string{bad}},
+	}}
+	if _, err := compileWithConfig(cfg, tmpDir, compilepkg.CompileOptions{CC: "clang"}); err == nil {
+		t.Fatal("compileWithConfig should report compile errors")
 	}
 }
 

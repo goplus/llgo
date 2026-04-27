@@ -576,8 +576,13 @@ type context struct {
 	testFail bool
 
 	// Cache related fields
-	cacheManager *cacheManager
-	llvmVersion  string
+	cacheManager       *cacheManager
+	llvmVersion        string
+	targetTripleCached string
+	buildTagsRaw       string
+	buildTagsCached    []string
+	envInputsCached    envSection
+	envInputsReady     bool
 
 	// go list derived file lists (SFiles, etc.)
 	sfilesCache map[string][]string // pkg.ID -> absolute .s/.S file paths
@@ -691,14 +696,16 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 					return err
 				}
 				if !aPkg.CacheHit {
-					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
-						return err
-					}
 					if kind == cl.PkgLinkExtern {
 						appendExternalLinkArgs(ctx, aPkg, param)
 					}
 					if err := ctx.saveToCache(aPkg); err != nil && verbose {
 						fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+					}
+					if aPkg.ArchiveFile == "" {
+						if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+							return err
+						}
 					}
 				}
 			} else {
@@ -726,11 +733,13 @@ func buildAllPkgs(ctx *context, pkgs []*aPackage, verbose bool) ([]*aPackage, er
 			needRuntime = needRuntime || aPkg.NeedRt
 			needPyInit = needPyInit || aPkg.NeedPyInit
 			if !aPkg.CacheHit {
-				if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
-					return err
-				}
 				if err := ctx.saveToCache(aPkg); err != nil && verbose {
 					fmt.Fprintf(os.Stderr, "warning: failed to save cache for %s: %v\n", pkg.PkgPath, err)
+				}
+				if aPkg.ArchiveFile == "" {
+					if err := normalizeToArchive(ctx, aPkg, verbose); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -1297,39 +1306,41 @@ func buildPkg(ctx *context, aPkg *aPackage, verbose bool) error {
 	if err != nil {
 		return fmt.Errorf("build cgo of %v failed: %v", pkgPath, err)
 	}
+	goCgoLdflags, goCgoDynimports := collectGoCgoPragmas(aPkg.Package.Syntax)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, cgoLLFiles...)
 	aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, pkg, printCmds)...)
-	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, printCmds); err != nil {
+	if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, pkg, goCgoDynimports, printCmds); err != nil {
 		return err
 	} else {
 		aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
 	}
-	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.Package.Syntax, printCmds); err != nil {
+	if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, goCgoDynimports, printCmds); err != nil {
 		return err
 	} else {
 		aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
 	}
 	aPkg.LinkArgs = append(aPkg.LinkArgs, cgoLdflags...)
-	aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.Package.Syntax)...)
+	aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLdflags...)
 	if aPkg.AltPkg != nil {
 		altLLFiles, altLdflags, e := buildCgo(ctx, aPkg, aPkg.AltPkg.Syntax, externs, printCmds)
 		if e != nil {
 			return fmt.Errorf("build cgo of %v failed: %v", pkgPath, e)
 		}
+		altGoCgoLdflags, altGoCgoDynimports := collectGoCgoPragmas(aPkg.AltPkg.Syntax)
 		aPkg.ObjFiles = append(aPkg.ObjFiles, altLLFiles...)
 		aPkg.ObjFiles = append(aPkg.ObjFiles, concatPkgLinkFiles(ctx, aPkg.AltPkg.Package, printCmds)...)
-		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, aPkg.AltPkg.Package, printCmds); err != nil {
+		if asmObjFiles, err := compilePkgSFiles(ctx, aPkg, aPkg.AltPkg.Package, altGoCgoDynimports, printCmds); err != nil {
 			return err
 		} else {
 			aPkg.ObjFiles = append(aPkg.ObjFiles, asmObjFiles...)
 		}
-		if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, aPkg.AltPkg.Syntax, printCmds); err != nil {
+		if aliasObjs, err := buildGoCgoAliasObjects(ctx, pkgPath, altGoCgoDynimports, printCmds); err != nil {
 			return err
 		} else {
 			aPkg.ObjFiles = append(aPkg.ObjFiles, aliasObjs...)
 		}
 		aPkg.LinkArgs = append(aPkg.LinkArgs, altLdflags...)
-		aPkg.LinkArgs = append(aPkg.LinkArgs, goCgoLinkArgs(ctx.buildConf.Goos, aPkg.AltPkg.Syntax)...)
+		aPkg.LinkArgs = append(aPkg.LinkArgs, altGoCgoLdflags...)
 	}
 	if pkg.ExportFile != "" {
 		exportFile, err := exportObject(ctx, pkg.PkgPath, pkg.ExportFile, ret)

@@ -26,37 +26,79 @@ func collectGoCgoPragmas(files []*ast.File) (ldflags []string, dynimports []cgoI
 				if c == nil {
 					continue
 				}
-				for _, line := range splitCommentLines(c.Text) {
-					switch {
-					case strings.HasPrefix(line, "go:cgo_ldflag"):
-						rest := strings.TrimSpace(strings.TrimPrefix(line, "go:cgo_ldflag"))
-						for _, tok := range splitDirectiveArgs(rest) {
-							ldflags = append(ldflags, tok)
-						}
-					case strings.HasPrefix(line, "go:cgo_import_dynamic"):
-						rest := strings.TrimSpace(strings.TrimPrefix(line, "go:cgo_import_dynamic"))
-						toks := splitDirectiveArgs(rest)
-						if len(toks) == 0 {
-							continue
-						}
-						local := toks[0]
-						alias := local
-						if len(toks) > 1 && toks[1] != "" {
-							alias = toks[1]
-						}
-						if local == "" || alias == "" || local == alias {
-							continue
-						}
-						dynimports = append(dynimports, cgoImportDynamicDecl{
-							local: local,
-							alias: alias,
-						})
+				if strings.HasPrefix(c.Text, "//go:cgo_") {
+					if dynimports == nil && strings.HasPrefix(c.Text, "//go:cgo_import_dynamic") {
+						dynimports = make([]cgoImportDynamicDecl, 0, len(cg.List))
 					}
+					ldflags, dynimports = collectGoCgoPragmaLine(c.Text[2:], ldflags, dynimports)
+					continue
 				}
+				if !strings.Contains(c.Text, "go:cgo_") {
+					continue
+				}
+				if dynimports == nil && strings.Contains(c.Text, "go:cgo_import_dynamic") {
+					dynimports = make([]cgoImportDynamicDecl, 0, len(cg.List))
+				}
+				forEachCommentLine(c.Text, func(line string) {
+					ldflags, dynimports = collectGoCgoPragmaLine(line, ldflags, dynimports)
+				})
 			}
 		}
 	}
 	return
+}
+
+func collectGoCgoPragmaLine(line string, ldflags []string, dynimports []cgoImportDynamicDecl) ([]string, []cgoImportDynamicDecl) {
+	switch {
+	case strings.HasPrefix(line, "go:cgo_ldflag"):
+		rest := strings.TrimSpace(line[len("go:cgo_ldflag"):])
+		for _, tok := range splitDirectiveArgs(rest) {
+			ldflags = append(ldflags, tok)
+		}
+	case strings.HasPrefix(line, "go:cgo_import_dynamic"):
+		rest := strings.TrimSpace(line[len("go:cgo_import_dynamic"):])
+		local, rest, ok := nextDirectiveArg(rest)
+		if !ok {
+			return ldflags, dynimports
+		}
+		alias := local
+		if next, _, ok := nextDirectiveArg(rest); ok && next != "" {
+			alias = next
+		}
+		if local == "" || alias == "" || local == alias {
+			return ldflags, dynimports
+		}
+		dynimports = append(dynimports, cgoImportDynamicDecl{
+			local: local,
+			alias: alias,
+		})
+	}
+	return ldflags, dynimports
+}
+
+func nextDirectiveArg(s string) (arg string, rest string, ok bool) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "", "", false
+	}
+	end := len(s)
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case ' ', '\t', '\n', '\r':
+			end = i
+			i = len(s)
+		}
+	}
+	arg = s[:end]
+	if len(arg) >= 2 {
+		switch arg[0] {
+		case '`', '\'', '"':
+			if u, err := strconv.Unquote(arg); err == nil {
+				arg = u
+			}
+		}
+	}
+	return arg, s[end:], true
 }
 
 func goCgoLinkArgs(goos string, files []*ast.File) []string {
@@ -64,12 +106,8 @@ func goCgoLinkArgs(goos string, files []*ast.File) []string {
 	return ldflags
 }
 
-func buildGoCgoAliasObjects(ctx *context, pkgPath string, files []*ast.File, verbose bool) ([]string, error) {
-	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Goos != "darwin" {
-		return nil, nil
-	}
-	_, dynimports := collectGoCgoPragmas(files)
-	if len(dynimports) == 0 {
+func buildGoCgoAliasObjects(ctx *context, pkgPath string, dynimports []cgoImportDynamicDecl, verbose bool) ([]string, error) {
+	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Goos != "darwin" || len(dynimports) == 0 {
 		return nil, nil
 	}
 
@@ -183,32 +221,42 @@ func emitDarwinDynimportTrampoline(b *strings.Builder, goarch string, local stri
 	}
 }
 
-func splitCommentLines(text string) []string {
-	lines := strings.Split(text, "\n")
-	out := make([]string, 0, len(lines))
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
+func forEachCommentLine(text string, fn func(string)) {
+	for start := 0; start <= len(text); {
+		end := strings.IndexByte(text[start:], '\n')
+		if end < 0 {
+			end = len(text)
+		} else {
+			end += start
+		}
+		line := strings.TrimSpace(text[start:end])
 		line = strings.TrimPrefix(line, "//")
 		line = strings.TrimPrefix(line, "/*")
 		line = strings.TrimSuffix(line, "*/")
 		line = strings.TrimSpace(strings.TrimPrefix(line, "*"))
 		line = strings.TrimSpace(line)
 		if line != "" {
-			out = append(out, line)
+			fn(line)
 		}
+		if end == len(text) {
+			break
+		}
+		start = end + 1
 	}
-	return out
 }
 
 func splitDirectiveArgs(s string) []string {
-	fields := strings.Fields(strings.TrimSpace(s))
-	out := make([]string, 0, len(fields))
-	for _, f := range fields {
-		if u, err := strconv.Unquote(f); err == nil {
-			out = append(out, u)
-		} else {
-			out = append(out, f)
+	fields := strings.Fields(s)
+	for i, f := range fields {
+		if len(f) < 2 {
+			continue
+		}
+		switch f[0] {
+		case '`', '\'', '"':
+			if u, err := strconv.Unquote(f); err == nil {
+				fields[i] = u
+			}
 		}
 	}
-	return out
+	return fields
 }

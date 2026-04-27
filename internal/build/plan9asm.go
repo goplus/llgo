@@ -23,7 +23,7 @@ import (
 //
 // NOTE: golang.org/x/tools/go/packages.Package does not expose SFiles, so we
 // query `go list -json` here to get the exact filtered set for GOOS/GOARCH.
-func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbose bool) ([]string, error) {
+func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, dynimports []cgoImportDynamicDecl, verbose bool) ([]string, error) {
 	sfiles, err := pkgSFiles(ctx, pkg)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 		return nil, fmt.Errorf("%s: missing types (needed for asm signatures)", pkg.PkgPath)
 	}
 
-	skipDarwinDynimportTrampolines := shouldCheckDarwinDynimportTrampolineAsm(ctx, pkg)
+	skipDarwinDynimportTrampolines := shouldCheckDarwinDynimportTrampolineAsm(ctx, pkg, dynimports)
 	objFiles := make([]string, 0, len(sfiles))
 	for _, sfile := range sfiles {
 		src, err := llplan9asm.ReadFileWithOverlay(ctx.conf.Overlay, sfile)
@@ -136,7 +136,7 @@ func compilePkgSFiles(ctx *context, aPkg *aPackage, pkg *packages.Package, verbo
 	return objFiles, nil
 }
 
-func shouldCheckDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package) bool {
+func shouldCheckDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package, dynimports []cgoImportDynamicDecl) bool {
 	if ctx == nil || ctx.buildConf == nil || ctx.buildConf.Goos != "darwin" {
 		return false
 	}
@@ -146,7 +146,6 @@ func shouldCheckDarwinDynimportTrampolineAsm(ctx *context, pkg *packages.Package
 	if pkg == nil || pkg.PkgPath != "golang.org/x/sys/unix" {
 		return false
 	}
-	_, dynimports := collectGoCgoPragmas(pkg.Syntax)
 	return len(dynimports) != 0
 }
 
@@ -366,6 +365,24 @@ func plan9asmEnabledByDefault(conf *Config, pkgPath string) bool {
 	return !llruntime.HasAltPkg(pkgPath) || llruntime.HasAdditiveAltPkg(pkgPath)
 }
 
+func dirHasAsmFile(dir string) bool {
+	f, err := os.Open(dir)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+	names, err := f.Readdirnames(-1)
+	if err != nil {
+		return true
+	}
+	for _, name := range names {
+		if strings.HasSuffix(name, ".s") || strings.HasSuffix(name, ".S") {
+			return true
+		}
+	}
+	return false
+}
+
 func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg == nil || pkg.PkgPath == "" {
 		return nil, nil
@@ -376,20 +393,17 @@ func pkgSFiles(ctx *context, pkg *packages.Package) ([]string, error) {
 	if pkg.Dir == "" {
 		return nil, nil
 	}
-	// Fast path: if directory has no .s/.S at all, skip `go list`.
-	if pkg.Dir != "" {
-		if ss, _ := filepath.Glob(filepath.Join(pkg.Dir, "*.s")); len(ss) == 0 {
-			if ss, _ := filepath.Glob(filepath.Join(pkg.Dir, "*.S")); len(ss) == 0 {
-				return nil, nil
-			}
-		}
-	}
-
 	if ctx.sfilesCache == nil {
 		ctx.sfilesCache = make(map[string][]string)
 	}
 	if v, ok := ctx.sfilesCache[pkg.ID]; ok {
 		return v, nil
+	}
+
+	// Fast path: if directory has no .s/.S at all, skip `go list`.
+	if !dirHasAsmFile(pkg.Dir) {
+		ctx.sfilesCache[pkg.ID] = nil
+		return nil, nil
 	}
 
 	args := []string{"list", "-json"}
