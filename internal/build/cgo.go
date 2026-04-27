@@ -173,12 +173,17 @@ func parseCgoExternSymbol(lastPart string) (prefix, kind, name string, ok bool) 
 		return "", "", "", false
 	}
 	kindStart := len("_cgo_") + hashEnd + 1
-	for _, candidate := range [...]string{"C2func", "Cfunc", "Cmacro"} {
-		marker := candidate + "_"
-		if strings.HasPrefix(lastPart[kindStart:], marker) {
-			prefixEnd := kindStart + len(marker)
-			return lastPart[:prefixEnd], candidate, lastPart[prefixEnd:], true
-		}
+	suffix := lastPart[kindStart:]
+	switch {
+	case strings.HasPrefix(suffix, "C2func_"):
+		prefixEnd := kindStart + len("C2func_")
+		return lastPart[:prefixEnd], "C2func", lastPart[prefixEnd:], true
+	case strings.HasPrefix(suffix, "Cfunc_"):
+		prefixEnd := kindStart + len("Cfunc_")
+		return lastPart[:prefixEnd], "Cfunc", lastPart[prefixEnd:], true
+	case strings.HasPrefix(suffix, "Cmacro_"):
+		prefixEnd := kindStart + len("Cmacro_")
+		return lastPart[:prefixEnd], "Cmacro", lastPart[prefixEnd:], true
 	}
 	return "", "", "", false
 }
