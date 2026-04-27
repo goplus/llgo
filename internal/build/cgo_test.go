@@ -108,6 +108,36 @@ func TestDirCFiles(t *testing.T) {
 	}
 }
 
+func TestPkgCFilesFromMetadata(t *testing.T) {
+	pkg := &aPackage{Package: &packages.Package{
+		CompiledGoFiles: []string{"main.go"},
+		OtherFiles:      []string{"b.c", "z_test.c", "header.h", "a.c"},
+	}}
+	got, ok := pkgCFilesFromMetadata(pkg)
+	if !ok {
+		t.Fatal("pkgCFilesFromMetadata did not accept complete metadata")
+	}
+	if want := []string{"a.c", "b.c"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("pkgCFilesFromMetadata = %#v, want %#v", got, want)
+	}
+
+	pkg.OtherFiles = []string{"header.h"}
+	got, ok = pkgCFilesFromMetadata(pkg)
+	if !ok || len(got) != 0 {
+		t.Fatalf("pkgCFilesFromMetadata header-only = %#v, %v", got, ok)
+	}
+
+	pkg.IgnoredFiles = []string{"ignored.go"}
+	if _, ok := pkgCFilesFromMetadata(pkg); ok {
+		t.Fatal("pkgCFilesFromMetadata accepted package with ignored files")
+	}
+	pkg.IgnoredFiles = nil
+	pkg.CompiledGoFiles = nil
+	if _, ok := pkgCFilesFromMetadata(pkg); ok {
+		t.Fatal("pkgCFilesFromMetadata accepted package without compiled Go metadata")
+	}
+}
+
 func TestParseCgoUsesFileMetadataForCScan(t *testing.T) {
 	dir := t.TempDir()
 	goFile := filepath.Join(dir, "main.go")
@@ -146,8 +176,7 @@ func TestParseCgoUsesFileMetadataForCScan(t *testing.T) {
 		t.Fatalf("parseCgo_ fallback cfiles = %#v, want %#v", cfiles, []string{cFile})
 	}
 
-	// Packages with reported non-Go files remain conservative and scan for C
-	// files so headers or ignored files do not hide adjacent .c sources.
+	// Packages with reported non-Go files use that metadata directly.
 	pkg = &aPackage{Package: &packages.Package{Fset: fset, CompiledGoFiles: []string{goFile}, OtherFiles: []string{cFile}}}
 	cfiles, _, _, err = parseCgo_(pkg, files)
 	if err != nil {
@@ -155,6 +184,17 @@ func TestParseCgoUsesFileMetadataForCScan(t *testing.T) {
 	}
 	if !reflect.DeepEqual(cfiles, []string{cFile}) {
 		t.Fatalf("parseCgo_ OtherFiles cfiles = %#v, want %#v", cfiles, []string{cFile})
+	}
+
+	// Ignored files can indicate build-configuration-sensitive source selection;
+	// keep the historical scan in that case.
+	pkg = &aPackage{Package: &packages.Package{Fset: fset, CompiledGoFiles: []string{goFile}, IgnoredFiles: []string{filepath.Join(dir, "ignored.go")}}}
+	cfiles, _, _, err = parseCgo_(pkg, files)
+	if err != nil {
+		t.Fatalf("parseCgo_ IgnoredFiles scan: %v", err)
+	}
+	if !reflect.DeepEqual(cfiles, []string{cFile}) {
+		t.Fatalf("parseCgo_ IgnoredFiles cfiles = %#v, want %#v", cfiles, []string{cFile})
 	}
 }
 
