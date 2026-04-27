@@ -10,6 +10,7 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/goplus/llgo/internal/env"
@@ -176,4 +177,18 @@ func TestPreCollectLinknames(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBoolToUint8InvalidArgs(t *testing.T) {
+	ctx := &context{}
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Fatal("boolToUint8 should panic on invalid arguments")
+		}
+		if msg := r.(string); !strings.Contains(msg, "invalid arguments") {
+			t.Fatalf("panic = %q, want invalid arguments", msg)
+		}
+	}()
+	_ = ctx.boolToUint8(nil, []llssa.Expr{})
 }

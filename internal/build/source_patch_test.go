@@ -58,6 +58,61 @@ func TestIterUsesSourcePatchInsteadOfAltPkg(t *testing.T) {
 	}
 }
 
+func TestBuildSourcePatchOverlayForGo126Payloads(t *testing.T) {
+	goroot := t.TempDir()
+	mustWriteFile(t, filepath.Join(goroot, "src", "internal", "sync", "hashtriemap.go"), `package sync
+
+type HashTrieMap[K comparable, V any] struct{}
+`)
+	mustWriteFile(t, filepath.Join(goroot, "src", "internal", "sync", "mutex.go"), `package sync
+
+type Mutex struct{}
+`)
+	mustWriteFile(t, filepath.Join(goroot, "src", "crypto", "internal", "constanttime", "constant_time.go"), `package constanttime
+
+func boolToUint8(bool) uint8
+`)
+
+	overlay, err := buildSourcePatchOverlayForGOROOT(nil, env.LLGoRuntimeDir(), goroot, sourcePatchBuildContext{
+		goos:      runtime.GOOS,
+		goarch:    runtime.GOARCH,
+		goversion: "go1.26.0",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	syncDir := filepath.Join(goroot, "src", "internal", "sync")
+	syncPatch := filepath.Join(syncDir, "z_llgo_patch_hashtriemap.go")
+	if src, ok := overlay[syncPatch]; !ok {
+		t.Fatalf("missing source patch file %s", syncPatch)
+	} else if !strings.Contains(string(src), "type HashTrieMap") {
+		t.Fatalf("source patch file %s does not contain HashTrieMap replacement", syncPatch)
+	}
+	if stdSrc := string(overlay[filepath.Join(syncDir, "hashtriemap.go")]); strings.Contains(stdSrc, "type HashTrieMap") {
+		t.Fatalf("stub overlay for internal/sync still contains HashTrieMap: %s", stdSrc)
+	}
+
+	constanttimeDir := filepath.Join(goroot, "src", "crypto", "internal", "constanttime")
+	constanttimePatch := filepath.Join(constanttimeDir, "z_llgo_patch_constant_time.go")
+	if src, ok := overlay[constanttimePatch]; !ok {
+		t.Fatalf("missing source patch file %s", constanttimePatch)
+	} else if !strings.Contains(string(src), "//go:linkname boolToUint8 llgo.boolToUint8") {
+		t.Fatalf("source patch file %s does not contain boolToUint8 linkname", constanttimePatch)
+	}
+}
+
+func TestGo126PayloadsUseSourcePatchInsteadOfAltPkg(t *testing.T) {
+	for _, pkgPath := range []string{"internal/sync", "crypto/internal/constanttime"} {
+		if !llruntime.HasSourcePatchPkg(pkgPath) {
+			t.Fatalf("%s should be registered as a source patch package", pkgPath)
+		}
+		if llruntime.HasAltPkg(pkgPath) {
+			t.Fatalf("%s should not remain an alt package", pkgPath)
+		}
+	}
+}
+
 func TestSyncAtomicRemainsAltPkg(t *testing.T) {
 	if llruntime.HasSourcePatchPkg("sync/atomic") {
 		t.Fatal("sync/atomic should not be registered as a source patch package")

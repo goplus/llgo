@@ -374,3 +374,40 @@ _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
 }
 `)
 }
+
+func TestIntrinsicBoolToUint8(t *testing.T) {
+	testCompile(t, `package foo
+
+import _ "unsafe"
+
+//go:linkname boolToUint8 llgo.boolToUint8
+func boolToUint8(b bool) uint8
+
+func use(b bool) uint8 {
+	return boolToUint8(b)
+}
+`, `; ModuleID = 'foo'
+source_filename = "foo"
+
+@"foo.init$guard" = global i1 false, align 1
+
+define void @foo.init() {
+_llgo_0:
+  %0 = load i1, ptr @"foo.init$guard", align 1
+  br i1 %0, label %_llgo_2, label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  store i1 true, ptr @"foo.init$guard", align 1
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
+
+define i8 @foo.use(i1 %0) {
+_llgo_0:
+  %1 = select i1 %0, i8 1, i8 0
+  ret i8 %1
+}
+`)
+}

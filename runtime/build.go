@@ -52,5 +52,7 @@ var altPkgs = map[string]altPkgMode{
 }
 
 var sourcePatchPkgs = map[string]struct{}{
-	"iter": {},
+	"crypto/internal/constanttime": {},
+	"internal/sync":                {},
+	"iter":                         {},
 }
