@@ -166,6 +166,22 @@ func StringFromRune(r rune) (s String) {
 	return
 }
 
+func StringFromInt64(r int64) String {
+	if r < 0 || r > maxRune {
+		return StringFromRune(runeError)
+	}
+	// StringFromRune handles surrogate code points by emitting runeError.
+	return StringFromRune(rune(r))
+}
+
+func StringFromUint64(r uint64) String {
+	if r > maxRune {
+		return StringFromRune(runeError)
+	}
+	// StringFromRune handles surrogate code points by emitting runeError.
+	return StringFromRune(rune(r))
+}
+
 func StringEqual(x, y String) bool {
 	if x.len != y.len {
 		return false
