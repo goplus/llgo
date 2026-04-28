@@ -1,0 +1,51 @@
+name: GOROOT
+
+on:
+  push:
+    branches:
+      - "**"
+      - "!dependabot/**"
+      - "!xgopilot/**"
+  pull_request:
+    branches: ["**"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  goroot:
+    name: GOROOT (${{ matrix.os }}, Go ${{ matrix.go-version }}, shard ${{ matrix.shard-index }}/4)
+    continue-on-error: ${{ matrix.go-version != '1.25.0' }}
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        go-version: ["1.24.11", "1.25.0", "1.26.0"]
+        shard-index: ["0", "1", "2", "3"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          llvm-version: 19
+
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Show toolchain versions
+        run: |
+          go version
+          clang --version
+
+      - name: Run GOROOT runner
+        run: |
+          bash dev/test_goroot.sh -- \
+            -directive-mode ci \
+            -shard-index "${{ matrix.shard-index }}" \
+            -shard-total "4"
