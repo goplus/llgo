@@ -36,5 +36,6 @@ func main() {
 		"x": 25,
 		"y": 17,
 	})
-	println("Result:", res2)
+	// the result of asmFull on a comment is undefined, just make sure it can be compiled successfully.
+	_ = res2
 }
