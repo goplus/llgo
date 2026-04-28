@@ -10,7 +10,7 @@ import (
 //llgo:type C
 type Add func(int, int) int
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/funcaddr.add"(i64 %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/funcaddr.add"(i64 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = add i64 %0, %1
 // CHECK-NEXT:   ret i64 %2
@@ -19,7 +19,7 @@ func add(a, b int) int {
 	return a + b
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcaddr.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/funcaddr.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   store ptr @"{{.*}}/cl/_testrt/funcaddr.add", ptr %0, align 8
@@ -43,7 +43,7 @@ func add(a, b int) int {
 // CHECK-NEXT: }
 func main() {
 	var fn Add = add
-	// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/funcaddr.main$1"(i64 %0, i64 %1) {
+	// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/funcaddr.main$1"(i64 %0, i64 %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = add i64 %0, %1
 	// CHECK-NEXT:   ret i64 %2

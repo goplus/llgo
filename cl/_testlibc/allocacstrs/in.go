@@ -3,7 +3,7 @@ package main
 
 import "github.com/goplus/lib/c"
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibc/allocacstrs.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibc/allocacstrs.main"(){{.*}} {
 func main() {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 48)

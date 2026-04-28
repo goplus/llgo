@@ -5,7 +5,7 @@ type T struct {
 	s string
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.T.Invoke"(%"{{.*}}invoke.T" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.T.Invoke"(%"{{.*}}invoke.T" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}invoke.T", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -22,20 +22,20 @@ func (t T) Invoke() int {
 	return 0
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.(*T).Invoke"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.(*T).Invoke"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}invoke.T", ptr %0, align 8
 // CHECK-NEXT:   %2 = call i64 @"{{.*}}invoke.T.Invoke"(%"{{.*}}invoke.T" %1)
 // CHECK-NEXT:   ret i64 %2
 
-// CHECK-LABEL: define void @"{{.*}}invoke.(*T).Method"(ptr %0) {
+// CHECK-LABEL: define void @"{{.*}}invoke.(*T).Method"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret void
 func (t *T) Method() {}
 
 type T1 int
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.T1.Invoke"(i64 %0) {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.T1.Invoke"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}PrintString"(%"{{.*}}String" { ptr @{{[0-9]+}}, i64 7 })
 // CHECK-NEXT:   call void @"{{.*}}PrintByte"(i8 32)
@@ -49,7 +49,7 @@ func (t T1) Invoke() int {
 
 type T2 float64
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.T2.Invoke"(double %0) {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.T2.Invoke"(double %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}PrintString"(%"{{.*}}String" { ptr @{{[0-9]+}}, i64 7 })
 // CHECK-NEXT:   call void @"{{.*}}PrintByte"(i8 32)
@@ -63,7 +63,7 @@ func (t T2) Invoke() int {
 
 type T3 int8
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.(*T3).Invoke"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.(*T3).Invoke"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load i8, ptr %0, align 1
 // CHECK-NEXT:   call void @"{{.*}}PrintString"(%"{{.*}}String" { ptr @{{[0-9]+}}, i64 7 })
@@ -79,7 +79,7 @@ func (t *T3) Invoke() int {
 
 type T4 [1]int
 
-// CHECK-LABEL: define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke"([1 x i64] %0) {
+// CHECK-LABEL: define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T4.Invoke"([1 x i64] %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca [1 x i64], align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -101,7 +101,7 @@ type T5 struct {
 	n int
 }
 
-// CHECK-LABEL: define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0) {
+// CHECK-LABEL: define i64 @"github.com/goplus/llgo/cl/_testgo/invoke.T5.Invoke"(%"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/invoke.T5", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -121,7 +121,7 @@ func (t T5) Invoke() int {
 
 type T6 func() int
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.T6.Invoke"(%"{{.*}}invoke.T6" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.T6.Invoke"(%"{{.*}}invoke.T6" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}invoke.T6" %0, 1
 // CHECK-NEXT:   %2 = extractvalue %"{{.*}}invoke.T6" %0, 0
@@ -144,7 +144,7 @@ func invoke(i I) {
 	println(i.Invoke())
 }
 
-// CHECK-LABEL: define void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %0) {
+// CHECK-LABEL: define void @"{{.*}}invoke.invoke"(%"{{.*}}iface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}IfacePtrData"(%"{{.*}}iface" %0)
 // CHECK-NEXT:   %2 = extractvalue %"{{.*}}iface" %0, 0
@@ -159,7 +159,7 @@ func invoke(i I) {
 // CHECK-NEXT:   call void @"{{.*}}PrintByte"(i8 10)
 // CHECK-NEXT:   ret void
 
-// CHECK-LABEL: define void @"{{.*}}invoke.main"() {
+// CHECK-LABEL: define void @"{{.*}}invoke.main"(){{.*}} {
 func main() {
 	var t = T{"hello"}
 	var t1 = T1(100)
@@ -266,6 +266,6 @@ type M interface {
 	Method()
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}invoke.main$1"() {
+// CHECK-LABEL: define i64 @"{{.*}}invoke.main$1"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret i64 400

@@ -45,7 +45,7 @@ func Use6() uintptr {
 	return r1
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/llgosyscall.Use6X"() {
+// CHECK-LABEL: define i64 @"{{.*}}/llgosyscall.Use6X"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i64 null(i64 1, i64 2, i64 3, i64 4, i64 5, i64 6)
 // CHECK-NEXT:   %1 = icmp eq i64 %0, -1
@@ -65,7 +65,7 @@ func Use6X() uintptr {
 	return r1
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/llgosyscall.UsePtr"() {
+// CHECK-LABEL: define i64 @"{{.*}}/llgosyscall.UsePtr"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i64 null(i64 1, i64 2, i64 3)
 // CHECK-NEXT:   %1 = icmp eq i64 %0, -1
@@ -85,7 +85,7 @@ func UsePtr() uintptr {
 	return r1
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/llgosyscall.UseRaw"() {
+// CHECK-LABEL: define i64 @"{{.*}}/llgosyscall.UseRaw"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i64 null(i64 1, i64 2, i64 3)
 // CHECK-NEXT:   %1 = icmp eq i64 %0, -1

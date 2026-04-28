@@ -29,7 +29,7 @@ const (
 	fracMask = 1<<shift - 1
 )
 
-// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/builtin.Float64frombits"(i64 %0) {
+// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/builtin.Float64frombits"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   store i64 %0, ptr %1, align 8
@@ -39,7 +39,7 @@ const (
 
 func Float64frombits(b uint64) float64 { return *(*float64)(unsafe.Pointer(&b)) }
 
-// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/builtin.Inf"(i64 %0) {
+// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/builtin.Inf"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = icmp sge i64 %0, 0
 // CHECK-NEXT:   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -67,7 +67,7 @@ func Inf(sign int) float64 {
 	return Float64frombits(v)
 }
 
-// CHECK-LABEL: define i1 @"{{.*}}/cl/_testrt/builtin.IsNaN"(double %0) {
+// CHECK-LABEL: define i1 @"{{.*}}/cl/_testrt/builtin.IsNaN"(double %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = fcmp une double %0, %0
 // CHECK-NEXT:   ret i1 %1
@@ -77,7 +77,7 @@ func IsNaN(f float64) (is bool) {
 	return f != f
 }
 
-// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/builtin.NaN"() {
+// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/builtin.NaN"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call double @"{{.*}}/cl/_testrt/builtin.Float64frombits"(i64 9221120237041090561)
 // CHECK-NEXT:   ret double %0
@@ -86,7 +86,7 @@ func IsNaN(f float64) (is bool) {
 // NaN returns an IEEE 754 “not-a-number” value.
 func NaN() float64 { return Float64frombits(uvnan) }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.demo"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.demo"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
@@ -94,7 +94,7 @@ func NaN() float64 { return Float64frombits(uvnan) }
 func demo() {
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 32)
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -477,7 +477,7 @@ func main() {
 	println(data)
 	fns := []func(){}
 
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main$1"() {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main$1"(){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   ret void
 	// CHECK-NEXT: }
@@ -494,7 +494,7 @@ func main() {
 
 	fn1 := demo
 
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main$2"() {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main$2"(){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" { ptr @7, i64 2 })
 	// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
@@ -505,7 +505,7 @@ func main() {
 		println("fn")
 	}
 
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main$3"(ptr %0) {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/builtin.main$3"(ptr %0){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %1 = load { ptr }, ptr %0, align 8
 	// CHECK-NEXT:   %2 = extractvalue { ptr } %1, 0
@@ -535,13 +535,13 @@ func main() {
 	println(s1 == "abc", s1 == s2, s1 != s2, s1 < s2, s1 <= s2, s1 > s2, s1 >= s2)
 }
 
-// CHECK-LABEL: define linkonce void @"__llgo_stub.{{.*}}/cl/_testrt/builtin.main$1"(ptr %0) {
+// CHECK-LABEL: define linkonce void @"__llgo_stub.{{.*}}/cl/_testrt/builtin.main$1"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   tail call void @"{{.*}}/cl/_testrt/builtin.main$1"()
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
+// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = tail call i1 @"{{.*}}/runtime/internal/runtime.memequal64"(ptr %1, ptr %2)
 // CHECK-NEXT:   ret i1 %3

@@ -5,7 +5,7 @@ type Type interface {
 	String() string
 }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testrt/mapclosure.demo"(%"{{.*}}/runtime/internal/runtime.iface" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testrt/mapclosure.demo"(%"{{.*}}/runtime/internal/runtime.iface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.IfacePtrData"(%"{{.*}}/runtime/internal/runtime.iface" %0)
 // CHECK-NEXT:   %2 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %0, 0
@@ -33,7 +33,7 @@ var (
 	list = []func(Type) string{demo}
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/mapclosure.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/mapclosure.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
@@ -85,7 +85,7 @@ func main() {
 	}
 }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testrt/mapclosure.(*typ).String"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testrt/mapclosure.(*typ).String"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/mapclosure.typ", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}/runtime/internal/runtime.String", ptr %1, align 8
@@ -96,7 +96,7 @@ func (t *typ) String() string {
 	return t.s
 }
 
-// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.String" @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/mapclosure.demo"(ptr %0, %"{{.*}}/runtime/internal/runtime.iface" %1) {
+// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.String" @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/mapclosure.demo"(ptr %0, %"{{.*}}/runtime/internal/runtime.iface" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = tail call %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testrt/mapclosure.demo"(%"{{.*}}/runtime/internal/runtime.iface" %1)
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.String" %2

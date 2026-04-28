@@ -76,7 +76,7 @@ func (p *Target) codeGenOptLevel() llvm.CodeGenOptLevel {
 	case optlevel.O2, optlevel.Os, optlevel.Oz:
 		return llvm.CodeGenLevelDefault
 	default:
-		return llvm.CodeGenLevelDefault
+		return llvm.CodeGenLevelNone
 	}
 }
 

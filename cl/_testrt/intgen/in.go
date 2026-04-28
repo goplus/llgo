@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testrt/intgen.genInts"(i64 %0, { ptr, ptr } %1) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testrt/intgen.genInts"(i64 %0, { ptr, ptr } %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = call %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 4)
 // CHECK-NEXT:   %3 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %2, 1
@@ -42,7 +42,7 @@ func genInts(n int, gen func() c.Int) []c.Int {
 	return a
 }
 
-// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/intgen.(*generator).next"(ptr %0) {
+// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/intgen.(*generator).next"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/intgen.generator", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load i32, ptr %1, align 4
@@ -62,7 +62,7 @@ type generator struct {
 	val c.Int
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/intgen.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/intgen.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testrt/intgen.genInts"(i64 5, { ptr, ptr } { ptr @__llgo_stub.rand, ptr null })
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %0, 1
@@ -156,7 +156,7 @@ func main() {
 
 	initVal := c.Int(1)
 	ints := genInts(5, func() c.Int {
-		// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/intgen.main$1"(ptr %0) {
+		// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/intgen.main$1"(ptr %0){{.*}} {
 		// CHECK-NEXT: _llgo_0:
 		// CHECK-NEXT:   %1 = load { ptr }, ptr %0, align 8
 		// CHECK-NEXT:   %2 = extractvalue { ptr } %1, 0
@@ -179,14 +179,14 @@ func main() {
 	for _, v := range genInts(5, g.next) {
 		c.Printf(c.Str("%d\n"), v)
 	}
-	// CHECK-LABEL: define linkonce i32 @__llgo_stub.rand(ptr %0) {
+	// CHECK-LABEL: define linkonce i32 @__llgo_stub.rand(ptr %0){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %1 = tail call i32 @rand()
 	// CHECK-NEXT:   ret i32 %1
 	// CHECK-NEXT: }
 }
 
-// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/intgen.(*generator).next$bound"(ptr %0) {
+// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/intgen.(*generator).next$bound"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load { ptr }, ptr %0, align 8
 // CHECK-NEXT:   %2 = extractvalue { ptr } %1, 0

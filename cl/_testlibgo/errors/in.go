@@ -3,7 +3,7 @@ package main
 
 import "errors"
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/errors.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/errors.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call %"{{.*}}/runtime/internal/runtime.iface" @errors.New(%"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 })
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %0)

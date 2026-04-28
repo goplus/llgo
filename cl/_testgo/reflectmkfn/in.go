@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// CHECK-LABEL: define void @"g{{.*}}/cl/_testgo/reflectmkfn.main"() {
+// CHECK-LABEL: define void @"g{{.*}}/cl/_testgo/reflectmkfn.main"(){{.*}} {
 // CHECK: call %"g{{.*}}/runtime/internal/runtime.iface" @reflect.FuncOf(
 // CHECK: call %reflect.Value @reflect.MakeFunc(
 // CHECK: call %"g{{.*}}/runtime/internal/runtime.eface" @reflect.Value.Interface(
@@ -25,7 +25,7 @@ func main() {
 	}
 }
 
-// CHECK-LABEL: define %"g{{.*}}/runtime/internal/runtime.Slice" @"g{{.*}}/cl/_testgo/reflectmkfn.main$1"(%"g{{.*}}/runtime/internal/runtime.Slice" %0) {
+// CHECK-LABEL: define %"g{{.*}}/runtime/internal/runtime.Slice" @"g{{.*}}/cl/_testgo/reflectmkfn.main$1"(%"g{{.*}}/runtime/internal/runtime.Slice" %0){{.*}} {
 // CHECK: call %"g{{.*}}/runtime/internal/runtime.String" @reflect.Value.String(
 // CHECK: call i64 @reflect.Value.Int(
 // CHECK: call %"g{{.*}}/runtime/internal/runtime.String" @strings.Repeat(

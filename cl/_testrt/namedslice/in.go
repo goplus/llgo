@@ -3,7 +3,7 @@ package main
 
 type MyBytes []byte
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/namedslice.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/namedslice.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %{{[0-9]+}} = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 24)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"__llgo.moduleZeroSizedAlloc$", i64 0, i64 0 }, ptr %{{[0-9]+}}, align 8

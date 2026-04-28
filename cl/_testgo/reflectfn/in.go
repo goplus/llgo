@@ -6,7 +6,7 @@ import (
 	"reflect"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reflectfn.demo"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reflectfn.demo"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintString"(%"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 4 })
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.PrintByte"(i8 10)
@@ -16,7 +16,7 @@ func demo() {
 	println("demo")
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reflectfn.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reflectfn.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   store i64 100, ptr %0, align 8

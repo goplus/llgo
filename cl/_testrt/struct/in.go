@@ -4,7 +4,7 @@ package main
 import "C"
 import _ "unsafe"
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/struct.Foo.Print"(%"{{.*}}/cl/_testrt/struct.Foo" %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/struct.Foo.Print"(%"{{.*}}/cl/_testrt/struct.Foo" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/cl/_testrt/struct.Foo", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -23,7 +23,7 @@ import _ "unsafe"
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/struct.(*Foo).Print"(ptr %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/struct.(*Foo).Print"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}/cl/_testrt/struct.Foo", ptr %0, align 4
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/struct.Foo.Print"(%"{{.*}}/cl/_testrt/struct.Foo" %1)
@@ -38,7 +38,7 @@ func (p Foo) Print() {
 //go:linkname printf C.printf
 func printf(format *int8, __llgo_va_list ...any)
 
-// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/struct._Cgo_ptr"(ptr %0) {
+// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/struct._Cgo_ptr"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret ptr %0
 // CHECK-NEXT: }
@@ -49,7 +49,7 @@ type Foo struct {
 
 var format = [...]int8{'H', 'e', 'l', 'l', 'o', ' ', '%', 'd', '\n', 0}
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/struct.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/struct.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/cl/_testrt/struct.Foo", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)

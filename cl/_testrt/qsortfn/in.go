@@ -8,7 +8,7 @@ import (
 	q "github.com/goplus/llgo/cl/_testrt/qsortfn/qsort"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/qsortfn.sort1a"()
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/qsortfn.sort1b"()
@@ -35,7 +35,7 @@ func main() {
 	sort5b()
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort1a"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort1a"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @0)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -76,7 +76,7 @@ func main() {
 func sort1a() {
 	c.Printf(c.Str("Comp => Comp\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort1a$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort1a$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -93,7 +93,7 @@ func sort1a() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort1b"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort1b"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @2)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -134,7 +134,7 @@ func sort1a() {
 func sort1b() {
 	c.Printf(c.Str("fn => Comp\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort1b$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort1b$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -151,7 +151,7 @@ func sort1b() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort2a"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort2a"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @4)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -192,7 +192,7 @@ func sort1b() {
 func sort2a() {
 	c.Printf(c.Str("Comp => fn\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort2a$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort2a$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -209,7 +209,7 @@ func sort2a() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort2b"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort2b"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @6)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -250,7 +250,7 @@ func sort2a() {
 func sort2b() {
 	c.Printf(c.Str("fn => fn\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort2b$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort2b$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -267,7 +267,7 @@ func sort2b() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort3a"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort3a"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @8)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -308,7 +308,7 @@ func sort2b() {
 func sort3a() {
 	c.Printf(c.Str("qsort.Comp => qsort.Comp\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort3a$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort3a$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -325,7 +325,7 @@ func sort3a() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort3b"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort3b"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @10)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -366,7 +366,7 @@ func sort3a() {
 func sort3b() {
 	c.Printf(c.Str("fn => qsort.Comp\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort3b$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort3b$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -383,7 +383,7 @@ func sort3b() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort4a"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort4a"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @12)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -424,7 +424,7 @@ func sort3b() {
 func sort4a() {
 	c.Printf(c.Str("qsort.Comp => fn\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort4a$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort4a$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -441,7 +441,7 @@ func sort4a() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort4b"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort4b"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @14)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -482,7 +482,7 @@ func sort4a() {
 func sort4b() {
 	c.Printf(c.Str("Comp => qsort.fn\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort4b$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort4b$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -499,7 +499,7 @@ func sort4b() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort5a"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort5a"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @16)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -540,7 +540,7 @@ func sort4b() {
 func sort5a() {
 	c.Printf(c.Str("qsort.Comp => Comp()\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort5a$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort5a$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
@@ -557,7 +557,7 @@ func sort5a() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort5b"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsortfn.sort5b"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i32 (ptr, ...) @printf(ptr @18)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
@@ -598,7 +598,7 @@ func sort5a() {
 func sort5b() {
 	c.Printf(c.Str("Comp => qsort.Comp()\n"))
 	a := [...]int{100, 8, 23, 2, 7}
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort5b$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsortfn.sort5b$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8

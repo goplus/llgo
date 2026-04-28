@@ -22,7 +22,7 @@ type mspan struct {
 	check func(int) int
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/named.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/named.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 64)
@@ -125,7 +125,7 @@ func main() {
 	m.check = func(n int) int {
 		return m.value * n
 	}
-	// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/named.main$1"(ptr %0, i64 %1) {
+	// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/named.main$1"(ptr %0, i64 %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 	// CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0

@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/any.hi"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
+// CHECK-LABEL: define ptr @"{{.*}}/cl/_testrt/any.hi"(%"{{.*}}/runtime/internal/runtime.eface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %0, 0
 // CHECK-NEXT:   %2 = icmp eq ptr %1, @"*_llgo_int8"
@@ -26,7 +26,7 @@ func hi(a any) *c.Char {
 	return a.(*c.Char)
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/any.incVal"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testrt/any.incVal"(%"{{.*}}/runtime/internal/runtime.eface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %0, 0
 // CHECK-NEXT:   %2 = icmp eq ptr %1, @_llgo_int
@@ -49,7 +49,7 @@ func incVal(a any) int {
 	return a.(int) + 1
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/any.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/any.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/cl/_testrt/any.hi"(%"{{.*}}/runtime/internal/runtime.eface" { ptr @"*_llgo_int8", ptr @6 })
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)

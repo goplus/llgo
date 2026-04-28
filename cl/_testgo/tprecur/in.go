@@ -14,7 +14,7 @@ func recursive() {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tprecur.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tprecur.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testgo/tprecur.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -27,13 +27,13 @@ func recursive() {
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tprecur.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tprecur.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testgo/tprecur.recursive"()
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tprecur.recursive"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tprecur.recursive"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call i64 @"{{.*}}/cl/_testgo/tprecur.recur1[{{.*}}/cl/_testgo/tprecur.T.1.0]"(i64 5)
 // CHECK-NEXT:   %1 = icmp ne i64 %0, 110
@@ -74,7 +74,7 @@ func recur2[T Integer](n T) T {
 	return sum + recur1(n-1)
 }
 
-// CHECK-LABEL: define linkonce i64 @"{{.*}}/cl/_testgo/tprecur.recur1[{{.*}}/cl/_testgo/tprecur.T.1.0]"(i64 %0) {
+// CHECK-LABEL: define linkonce i64 @"{{.*}}/cl/_testgo/tprecur.recur1[{{.*}}/cl/_testgo/tprecur.T.1.0]"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = icmp eq i64 %0, 0
 // CHECK-NEXT:   br i1 %1, label %_llgo_1, label %_llgo_3
@@ -93,7 +93,7 @@ func recur2[T Integer](n T) T {
 // CHECK-NEXT:   br i1 %5, label %_llgo_1, label %_llgo_2
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce i64 @"{{.*}}/cl/_testgo/tprecur.recur2[{{.*}}/cl/_testgo/tprecur.T.1.0]"(i64 %0) {
+// CHECK-LABEL: define linkonce i64 @"{{.*}}/cl/_testgo/tprecur.recur2[{{.*}}/cl/_testgo/tprecur.T.1.0]"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/runtime/internal/runtime.MakeSlice"(i64 %0, i64 %0, i64 8)
 // CHECK-NEXT:   %2 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %1, 1

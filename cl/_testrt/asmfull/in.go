@@ -6,7 +6,7 @@ import _ "unsafe"
 //go:linkname asmFull llgo.asm
 func asmFull(instruction string, regs map[string]any) uintptr
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/asmfull.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/asmfull.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void asm sideeffect "nop", ""()
 // CHECK: call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_string]_llgo_any", i64 1)

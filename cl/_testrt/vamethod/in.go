@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/vamethod.CFmt.Printf"(%"{{.*}}/cl/_testrt/vamethod.CFmt" %0, ...) {
+// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/vamethod.CFmt.Printf"(%"{{.*}}/cl/_testrt/vamethod.CFmt" %0, ...){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/cl/_testrt/vamethod.CFmt", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
@@ -18,7 +18,7 @@ import (
 // CHECK-NEXT:   ret i32 %4
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/vamethod.(*CFmt).Printf"(ptr %0, ...) {
+// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/vamethod.(*CFmt).Printf"(ptr %0, ...){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testrt/vamethod.CFmt", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load ptr, ptr %1, align 8
@@ -26,7 +26,7 @@ import (
 // CHECK-NEXT:   ret i32 %3
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/vamethod.(*CFmt).SetFormat"(ptr %0, ptr %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/vamethod.(*CFmt).SetFormat"(ptr %0, ptr %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testrt/vamethod.CFmt", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   store ptr %1, ptr %2, align 8
@@ -54,7 +54,7 @@ type IFmt interface {
 	Printf(__llgo_va_list ...any) c.Int
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/vamethod.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/vamethod.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/vamethod.(*CFmt).SetFormat"(ptr %0, ptr @0)

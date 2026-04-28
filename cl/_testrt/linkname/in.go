@@ -21,7 +21,7 @@ func setInfo(*m, string)
 //go:linkname info github.com/goplus/llgo/cl/_testrt/linkname/linktarget.m.info
 func info(m) string
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/linkname.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/linkname.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/linkname/linktarget.F"(ptr @0, ptr @1, ptr @2, ptr @3)
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/linkname/linktarget.F"(ptr @4, ptr @5, ptr @6, ptr @7)

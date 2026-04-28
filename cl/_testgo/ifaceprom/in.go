@@ -10,7 +10,7 @@ type I interface {
 	two() string
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/ifaceprom.S.one"(%"{{.*}}/cl/_testgo/ifaceprom.S" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/ifaceprom.S.one"(%"{{.*}}/cl/_testgo/ifaceprom.S" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/cl/_testgo/ifaceprom.S", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -29,7 +29,7 @@ type I interface {
 // CHECK-NEXT:   ret i64 %12
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testgo/ifaceprom.S.two"(%"{{.*}}/cl/_testgo/ifaceprom.S" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testgo/ifaceprom.S.two"(%"{{.*}}/cl/_testgo/ifaceprom.S" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/cl/_testgo/ifaceprom.S", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
@@ -53,7 +53,7 @@ type S struct {
 
 type impl struct{}
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/ifaceprom.impl.one"(%"{{.*}}/cl/_testgo/ifaceprom.impl" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/ifaceprom.impl.one"(%"{{.*}}/cl/_testgo/ifaceprom.impl" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret i64 1
 // CHECK-NEXT: }
@@ -61,7 +61,7 @@ func (impl) one() int {
 	return 1
 }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testgo/ifaceprom.impl.two"(%"{{.*}}/cl/_testgo/ifaceprom.impl" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testgo/ifaceprom.impl.two"(%"{{.*}}/cl/_testgo/ifaceprom.impl" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 3 }
 // CHECK-NEXT: }
@@ -69,7 +69,7 @@ func (impl) two() string {
 	return "two"
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/ifaceprom.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/ifaceprom.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/cl/_testgo/ifaceprom.S", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 16, i1 false)

@@ -10,7 +10,7 @@ import (
 //go:linkname qsort C.qsort
 func qsort(base c.Pointer, count, elem uintptr, compar func(a, b c.Pointer) c.Int)
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsort.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/qsort.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 40)
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
@@ -52,7 +52,7 @@ func main() {
 	qsort(c.Pointer(&a[0]), 5, unsafe.Sizeof(0), func(a, b c.Pointer) c.Int {
 		return c.Int(*(*int)(a) - *(*int)(b))
 	})
-	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsort.main$1"(ptr %0, ptr %1) {
+	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsort.main$1"(ptr %0, ptr %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
 	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8

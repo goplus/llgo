@@ -1,13 +1,13 @@
 // LITTEST
 package foo
 
-// CHECK-LABEL: define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"{{.*}}.Bar"() {
+// CHECK-LABEL: define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"{{.*}}.Bar"(){{.*}} {
 // CHECK:   ret %"github.com/goplus/llgo/runtime/internal/runtime.eface"
 func Bar() any {
 	return struct{ V int }{1}
 }
 
-// CHECK-LABEL: define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"{{.*}}.F"() {
+// CHECK-LABEL: define %"github.com/goplus/llgo/runtime/internal/runtime.eface" @"{{.*}}.F"(){{.*}} {
 // CHECK:   ret %"github.com/goplus/llgo/runtime/internal/runtime.eface"
 func F() any {
 	return struct{ v int }{1}

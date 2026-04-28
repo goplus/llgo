@@ -20,7 +20,7 @@ type S struct {
 	v int
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.S.Inc"(%"{{.*}}/cl/_testgo/closureall.S" %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.S.Inc"(%"{{.*}}/cl/_testgo/closureall.S" %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = alloca %"{{.*}}/cl/_testgo/closureall.S", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %2, i8 0, i64 8, i1 false)
@@ -34,7 +34,7 @@ func (s S) Inc(x int) int {
 	return s.v + x
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/closureall.S", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load i64, ptr %2, align 8
@@ -45,14 +45,14 @@ func (s *S) Add(x int) int {
 	return s.v + x
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Inc"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Inc"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load %"{{.*}}/cl/_testgo/closureall.S", ptr %0, align 8
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/cl/_testgo/closureall.S.Inc"(%"{{.*}}/cl/_testgo/closureall.S" %2, i64 %1)
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i32 @"{{.*}}/cl/_testgo/closureall.callCallback"(ptr %0, i32 %1) {
+// CHECK-LABEL: define i32 @"{{.*}}/cl/_testgo/closureall.callCallback"(ptr %0, i32 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = call i32 %0(i32 %1)
 // CHECK-NEXT:   ret i32 %2
@@ -61,7 +61,7 @@ func callCallback(cb CCallback, v c.Int) c.Int {
 	return cb(v)
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.globalAdd"(i64 %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.globalAdd"(i64 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = add i64 %0, %1
 // CHECK-NEXT:   ret i64 %2
@@ -70,7 +70,7 @@ func globalAdd(x, y int) int {
 	return x + y
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/closureall.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/closureall.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeNoFree"()
 // CHECK-NEXT:   %1 = call %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeWithFree"(i64 3)
@@ -147,12 +147,12 @@ func main() {
 	_ = callCallback(cb, 7)
 }
 
-// CHECK-LABEL: define %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeNoFree"() {
+// CHECK-LABEL: define %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeNoFree"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret %"{{.*}}/cl/_testgo/closureall.Fn" { ptr @"__llgo_stub.{{.*}}/cl/_testgo/closureall.makeNoFree$1", ptr null }
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.makeNoFree$1"(i64 %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.makeNoFree$1"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = add i64 %0, 1
 // CHECK-NEXT:   ret i64 %1
@@ -161,7 +161,7 @@ func makeNoFree() Fn {
 	return func(x int) int { return x + 1 }
 }
 
-// CHECK-LABEL: define %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeWithFree"(i64 %0) {
+// CHECK-LABEL: define %"{{.*}}/cl/_testgo/closureall.Fn" @"{{.*}}/cl/_testgo/closureall.makeWithFree"(i64 %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   store i64 %0, ptr %1, align 8
@@ -175,7 +175,7 @@ func makeNoFree() Fn {
 // CHECK-NEXT:   ret %"{{.*}}/cl/_testgo/closureall.Fn" %6
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.makeWithFree$1"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.makeWithFree$1"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 // CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
@@ -187,7 +187,7 @@ func makeWithFree(base int) Fn {
 	return func(x int) int { return x + base }
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add$bound"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add$bound"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 // CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
@@ -195,13 +195,13 @@ func makeWithFree(base int) Fn {
 // CHECK-NEXT:   ret i64 %4
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add$thunk"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add$thunk"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = call i64 @"{{.*}}/cl/_testgo/closureall.(*S).Add"(ptr %0, i64 %1)
 // CHECK-NEXT:   ret i64 %2
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.interface{Add(int) int}.Add$bound"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/closureall.interface{Add(int) int}.Add$bound"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load { %"{{.*}}/runtime/internal/runtime.iface" }, ptr %0, align 8
 // CHECK-NEXT:   %3 = extractvalue { %"{{.*}}/runtime/internal/runtime.iface" } %2, 0
@@ -217,7 +217,7 @@ func makeWithFree(base int) Fn {
 // CHECK-NEXT:   ret i64 %12
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce i64 @"__llgo_stub.{{.*}}/cl/_testgo/closureall.makeNoFree$1"(ptr %0, i64 %1) {
+// CHECK-LABEL: define linkonce i64 @"__llgo_stub.{{.*}}/cl/_testgo/closureall.makeNoFree$1"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = tail call i64 @"{{.*}}/cl/_testgo/closureall.makeNoFree$1"(i64 %1)
 // CHECK-NEXT:   ret i64 %2
