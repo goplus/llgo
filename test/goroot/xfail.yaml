@@ -3792,6 +3792,11 @@ xfails:
     directive: run
     case: goprint.go
     reason: go1.25 goroot run failure on linux/amd64
+  - version: go1.26.0
+    platform: linux/amd64
+    directive: run
+    case: goprint.go
+    reason: go1.26.0 goroot run failure on linux/amd64
   - version: go1.24
     platform: linux/amd64
     directive: run
