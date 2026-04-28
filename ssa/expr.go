@@ -163,7 +163,7 @@ func (p Program) Zero(t Type) Expr {
 		}
 		ret = p.Zero(p.rtType(name)).impl
 	case *types.Map:
-		ret = p.Zero(p.rtType("Map")).impl
+		ret = p.Zero(p.Pointer(p.rtType("Map"))).impl
 	case *types.Tuple:
 		n := u.Len()
 		flds := make([]llvm.Value, n)
