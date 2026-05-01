@@ -1473,7 +1473,11 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 		panic("invalid argument for unsafe.Offsetof: must be a selector expression")
+	case "panic":
+		b.Panic(args[0])
+		return
 	}
+
 	panic("todo: " + fn)
 }
 
