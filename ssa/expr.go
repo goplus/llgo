@@ -163,7 +163,7 @@ func (p Program) Zero(t Type) Expr {
 		}
 		ret = p.Zero(p.rtType(name)).impl
 	case *types.Map:
-		ret = p.Zero(p.rtType("Map")).impl
+		ret = p.Zero(p.Pointer(p.rtType("Map"))).impl
 	case *types.Tuple:
 		n := u.Len()
 		flds := make([]llvm.Value, n)
@@ -488,36 +488,21 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 				)
 				return b.aggregateValue(x.Type, r, i)
 			case token.QUO:
-				d := llvm.CreateBinOp(b.impl, llvm.FAdd, llvm.CreateBinOp(b.impl, llvm.FMul, yr, yr), llvm.CreateBinOp(b.impl, llvm.FMul, yi, yi))
-				zero := llvm.CreateFCmp(b.impl, llvm.FloatOEQ, d, llvm.ConstNull(d.Type()))
-				r := llvm.CreateSelect(b.impl, zero,
-					llvm.CreateBinOp(b.impl, llvm.FDiv, xr, d),
-					llvm.CreateBinOp(b.impl, llvm.FDiv,
-						llvm.CreateBinOp(b.impl, llvm.FAdd,
-							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yr),
-							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yi),
-						),
-						d,
-					),
-				)
-				i := llvm.CreateSelect(b.impl, zero,
-					llvm.CreateBinOp(b.impl, llvm.FDiv, xi, d),
-					llvm.CreateBinOp(b.impl, llvm.FDiv,
-						llvm.CreateBinOp(b.impl, llvm.FSub,
-							llvm.CreateBinOp(b.impl, llvm.FMul, xi, yr),
-							llvm.CreateBinOp(b.impl, llvm.FMul, xr, yi),
-						),
-						d,
-					),
-				)
-				return b.aggregateValue(x.Type, r, i)
+				x128 := b.Convert(b.Prog.Complex128(), x)
+				y128 := b.Convert(b.Prog.Complex128(), y)
+				ret := b.InlineCall(b.Pkg.rtFunc("Complex128Div"), x128, y128)
+				return b.Convert(x.Type, ret)
 			}
 		default:
 			idx := mathOpIdx(op, kind)
 			if llop := mathOpToLLVM[idx]; llop != 0 {
 				// Go requires integer division/modulo by zero to panic.
 				// LLVM's integer div/rem are undefined on zero divisor, so
-				// we insert an explicit runtime check here.
+				// we insert an explicit runtime check here and lower through a
+				// safe non-zero divisor so targets like x86 don't trap first.
+				// safeY carries the zero-safe divisor into the signed overflow
+				// lowering below when both guards are needed.
+				var safeY llvm.Value
 				if (op == token.QUO || op == token.REM) && (kind == vkSigned || kind == vkUnsigned) {
 					needsCheck := true
 					if rv := y.impl.IsAConstantInt(); !rv.IsNil() {
@@ -525,9 +510,56 @@ func (b Builder) BinOp(op token.Token, x, y Expr) Expr {
 					}
 					if needsCheck {
 						zero := llvm.ConstInt(y.ll, 0, false)
-						check := Expr{llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero), b.Prog.Bool()}
+						isZero := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, zero)
+						check := Expr{isZero, b.Prog.Bool()}
 						b.InlineCall(b.Pkg.rtFunc("AssertDivideByZero"), check)
+						safeY = llvm.CreateSelect(b.impl, isZero, llvm.ConstInt(y.ll, 1, false), y.impl)
 					}
+				}
+				// On x86/x86_64, signed div/rem of minInt by -1 traps even
+				// though Go defines it to produce quotient=minInt and
+				// remainder=0. Lower through safe operands and select the
+				// Go-defined result for that overflow case.
+				needsOverflowCheck := false
+				if (op == token.QUO || op == token.REM) && kind == vkSigned {
+					needsOverflowCheck = true
+					if rv := y.impl.IsAConstantInt(); !rv.IsNil() {
+						needsOverflowCheck = rv.SExtValue() == -1
+					}
+				}
+				var minIntVal uint64
+				if needsOverflowCheck {
+					bits := b.Prog.SizeOf(x.Type) * 8
+					if bits == 0 || bits > 64 {
+						panic("unexpected integer bit width")
+					}
+					minIntVal = uint64(1) << (bits - 1)
+					if rv := x.impl.IsAConstantInt(); !rv.IsNil() {
+						needsOverflowCheck = rv.ZExtValue() == minIntVal
+					}
+				}
+				if needsOverflowCheck {
+					minInt := llvm.ConstInt(x.ll, minIntVal, false)
+					negOne := llvm.ConstAllOnes(y.ll)
+					isMinInt := llvm.CreateICmp(b.impl, llvm.IntEQ, x.impl, minInt)
+					isNegOne := llvm.CreateICmp(b.impl, llvm.IntEQ, y.impl, negOne)
+					overflow := llvm.CreateAnd(b.impl, isMinInt, isNegOne)
+
+					safeX := llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), x.impl)
+					if safeY.IsNil() {
+						safeY = y.impl
+					}
+					safeY = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(y.ll, 1, false), safeY)
+					v := llvm.CreateBinOp(b.impl, llop, safeX, safeY)
+					if op == token.QUO {
+						v = llvm.CreateSelect(b.impl, overflow, x.impl, v)
+					} else {
+						v = llvm.CreateSelect(b.impl, overflow, llvm.ConstInt(x.ll, 0, false), v)
+					}
+					return Expr{v, x.Type}
+				}
+				if !safeY.IsNil() {
+					return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, safeY), x.Type}
 				}
 				return Expr{llvm.CreateBinOp(b.impl, llop, x.impl, y.impl), x.Type}
 			}
@@ -866,12 +898,24 @@ func (b Builder) Convert(t Type, x Expr) (ret Expr) {
 					}
 				}
 			case *types.Basic:
-				if x.Type != b.Prog.Int32() {
-					srcType := x.Type
-					x.Type = b.Prog.Int32()
-					x.impl = castInt(b, x.impl, srcType, b.Prog.Int32())
+				if xtyp.Info()&types.IsInteger == 0 {
+					panic("unreachable: string conversion from non-integer basic type")
 				}
-				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc("StringFromRune"), x).impl
+				srcType := x.Type
+				var arg Expr
+				var fn string
+				if xtyp.Info()&types.IsUnsigned != 0 {
+					arg.Type = b.Prog.Uint64()
+					fn = "StringFromUint64"
+				} else {
+					arg.Type = b.Prog.Int64()
+					fn = "StringFromInt64"
+				}
+				arg.impl = x.impl
+				if arg.impl.Type() != arg.Type.ll {
+					arg.impl = castInt(b, x.impl, srcType, arg.Type)
+				}
+				ret.impl = b.InlineCall(b.Func.Pkg.rtFunc(fn), arg).impl
 				return
 			}
 		case types.Complex128:
@@ -1358,6 +1402,8 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 		}
 	case "recover":
 		return b.Recover()
+	case "ssa:deferstack":
+		return b.DeferStack()
 	case "print", "println":
 		return b.PrintEx(fn == "println", args...)
 	case "complex":
@@ -1427,7 +1473,11 @@ func (b Builder) BuiltinCall(fn string, args ...Expr) (ret Expr) {
 			}
 		}
 		panic("invalid argument for unsafe.Offsetof: must be a selector expression")
+	case "panic":
+		b.Panic(args[0])
+		return
 	}
+
 	panic("todo: " + fn)
 }
 

@@ -11,7 +11,7 @@ import (
 // CHECK: @"*{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8" = weak_odr constant { %"{{.*}}/runtime/abi.PtrType", %"{{.*}}/runtime/abi.UncommonType", [3 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -712860747, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 25 }, ptr null }, ptr @"{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8" }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 3, i16 2, i32 24 }, [3 x %"{{.*}}/runtime/abi.Method"] [%"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo1", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo1" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo2", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo2" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @11, i64 49 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.demo3", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.demo3" }] }, align 8
 // CHECK: @"{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8" = weak_odr constant { %"{{.*}}/runtime/abi.StructType", %"{{.*}}/runtime/abi.UncommonType", [3 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.StructType" { %"{{.*}}/runtime/abi.Type" { i64 16, i64 16, i32 235980794, i8 9, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"{{.*}}/runtime/internal/runtime.structequal", ptr @"{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8" }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 25 }, ptr @"*{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8" }, %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8$fields", i64 2, i64 2 } }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 3, i16 2, i32 24 }, [3 x %"{{.*}}/runtime/abi.Method"] [%"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo1", ptr @"{{.*}}/_testgo/abimethod.struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo1" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo2", ptr @"{{.*}}/_testgo/abimethod.struct{m int; *{{.*}}/_testgo/abimethod.T}.Demo2" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @11, i64 49 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.*struct{m int; *{{.*}}/_testgo/abimethod.T}.demo3", ptr @"{{.*}}/_testgo/abimethod.struct{m int; *{{.*}}/_testgo/abimethod.T}.demo3" }] }, align 8
 // CHECK: @"*_llgo_{{.*}}/_testgo/abimethod.T" = weak_odr constant { %"{{.*}}/runtime/abi.PtrType", %"{{.*}}/runtime/abi.UncommonType", [3 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -908752194, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 6 }, ptr null }, ptr @"_llgo_{{.*}}/_testgo/abimethod.T" }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 3, i16 2, i32 24 }, [3 x %"{{.*}}/runtime/abi.Method"] [%"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.(*T).Demo1", ptr @"{{.*}}/_testgo/abimethod.(*T).Demo1" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @9, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.(*T).Demo2", ptr @"{{.*}}/_testgo/abimethod.(*T).Demo2" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @11, i64 49 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.(*T).demo3", ptr @"{{.*}}/_testgo/abimethod.(*T).demo3" }] }, align 8
-// CHECK: @"_llgo_{{.*}}/_testgo/abimethod.T" = weak_odr constant { %"{{.*}}/runtime/abi.StructType", %"{{.*}}/runtime/abi.UncommonType", [1 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.StructType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 0, i32 -666093743, i8 13, i8 8, i8 8, i8 57, { ptr, ptr } { ptr @"{{.*}}/runtime/internal/runtime.structequal", ptr @"_llgo_{{.*}}/_testgo/abimethod.T" }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 6 }, ptr @"*_llgo_{{.*}}/_testgo/abimethod.T" }, %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"{{.*}}/_testgo/abimethod.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U$fields", i64 1, i64 1 } }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 1, i16 1, i32 24 }, [1 x %"{{.*}}/runtime/abi.Method"] [%"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.(*T).Demo1", ptr @"{{.*}}/_testgo/abimethod.T.Demo1" }] }, align 8
+// CHECK: @"_llgo_{{.*}}/_testgo/abimethod.T" = weak_odr constant { %"{{.*}}/runtime/abi.StructType", %"{{.*}}/runtime/abi.UncommonType", [1 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.StructType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 0, i32 -666093743, i8 13, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"{{.*}}/runtime/internal/runtime.structequal", ptr @"_llgo_{{.*}}/_testgo/abimethod.T" }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @5, i64 6 }, ptr @"*_llgo_{{.*}}/_testgo/abimethod.T" }, %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"{{.*}}/_testgo/abimethod.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U$fields", i64 1, i64 1 } }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 1, i16 1, i32 24 }, [1 x %"{{.*}}/runtime/abi.Method"] [%"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @7, i64 5 }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA", ptr @"{{.*}}/_testgo/abimethod.(*T).Demo1", ptr @"{{.*}}/_testgo/abimethod.T.Demo1" }] }, align 8
 // CHECK: @"{{.*}}/_testgo/abimethod.struct$eovYmOhZg4X0zMSsuscSshndnbbAGvB2E3cyG8E7Y4U$fields" = weak_odr constant [1 x %"{{.*}}/runtime/abi.StructField"] [%"{{.*}}/runtime/abi.StructField" { %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 1 }, ptr @_llgo_int, i64 0, %"{{.*}}/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 // CHECK: @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" = weak_odr constant %"{{.*}}/runtime/abi.FuncType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 2131144854, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @8, i64 10 }, ptr @"*_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, %"{{.*}}/runtime/internal/runtime.Slice" zeroinitializer, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA$out", i64 1, i64 1 } }, align 8
 // CHECK: @"*_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 1805835775, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @8, i64 10 }, ptr null }, ptr @"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA" }, align 8
@@ -37,9 +37,9 @@ import (
 // CHECK: @_llgo_bytes.Buffer = weak_odr constant { %"{{.*}}/runtime/abi.StructType", %"{{.*}}/runtime/abi.UncommonType", [0 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.StructType" { %"{{.*}}/runtime/abi.Type" { i64 40, i64 0, i32 661676552, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @29, i64 12 }, ptr @"*_llgo_bytes.Buffer" }, %"{{.*}}/runtime/internal/runtime.String" { ptr @30, i64 5 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"bytes.struct$8M6lRFZ7Fk2XCr2laNI9Y7uQtk2A8VDBrezMuq2Fkuo$fields", i64 3, i64 3 } }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @30, i64 5 }, i16 0, i16 0, i32 24 }, [0 x %"{{.*}}/runtime/abi.Method"] zeroinitializer }, align 8
 // CHECK: @"[]_llgo_uint8" = weak_odr constant %"{{.*}}/runtime/abi.SliceType" { %"{{.*}}/runtime/abi.Type" { i64 24, i64 8, i32 370346748, i8 0, i8 8, i8 8, i8 23, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @32, i64 7 }, ptr @"*[]_llgo_uint8" }, ptr @_llgo_uint8 }, align 8
 // CHECK: @"*[]_llgo_uint8" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -2143776929, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @32, i64 7 }, ptr null }, ptr @"[]_llgo_uint8" }, align 8
-// CHECK: @_llgo_uint8 = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 1, i64 0, i32 269156761, i8 12, i8 1, i8 1, i8 40, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr @"*_llgo_uint8" }, align 8
+// CHECK: @_llgo_uint8 = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 1, i64 0, i32 269156761, i8 12, i8 1, i8 1, i8 8, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr @"*_llgo_uint8" }, align 8
 // CHECK: @"*_llgo_uint8" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 1277858201, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @33, i64 5 }, ptr null }, ptr @_llgo_uint8 }, align 8
-// CHECK: @_llgo_bytes.readOp = weak_odr constant { %"{{.*}}/runtime/abi.Type", %"{{.*}}/runtime/abi.UncommonType", [0 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.Type" { i64 1, i64 0, i32 1507423333, i8 13, i8 1, i8 1, i8 35, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @36, i64 12 }, ptr @"*_llgo_bytes.readOp" }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @30, i64 5 }, i16 0, i16 0, i32 24 }, [0 x %"{{.*}}/runtime/abi.Method"] zeroinitializer }, align 8
+// CHECK: @_llgo_bytes.readOp = weak_odr constant { %"{{.*}}/runtime/abi.Type", %"{{.*}}/runtime/abi.UncommonType", [0 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.Type" { i64 1, i64 0, i32 1507423333, i8 13, i8 1, i8 1, i8 3, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @36, i64 12 }, ptr @"*_llgo_bytes.readOp" }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @30, i64 5 }, i16 0, i16 0, i32 24 }, [0 x %"{{.*}}/runtime/abi.Method"] zeroinitializer }, align 8
 // CHECK: @"*_llgo_bytes.readOp" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 1082688598, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @36, i64 12 }, ptr null }, ptr @_llgo_bytes.readOp }, align 8
 // CHECK: @"bytes.struct$8M6lRFZ7Fk2XCr2laNI9Y7uQtk2A8VDBrezMuq2Fkuo$fields" = weak_odr constant [3 x %"{{.*}}/runtime/abi.StructField"] [%"{{.*}}/runtime/abi.StructField" { %"{{.*}}/runtime/internal/runtime.String" { ptr @31, i64 3 }, ptr @"[]_llgo_uint8", i64 0, %"{{.*}}/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"{{.*}}/runtime/abi.StructField" { %"{{.*}}/runtime/internal/runtime.String" { ptr @34, i64 3 }, ptr @_llgo_int, i64 24, %"{{.*}}/runtime/internal/runtime.String" zeroinitializer, i1 false }, %"{{.*}}/runtime/abi.StructField" { %"{{.*}}/runtime/internal/runtime.String" { ptr @35, i64 8 }, ptr @_llgo_bytes.readOp, i64 32, %"{{.*}}/runtime/internal/runtime.String" zeroinitializer, i1 false }], align 8
 // CHECK: @"_llgo_func$Z_-7GWzB37LCYRTQLsSYmEihg_hqBK8o_GbT88pqnPY" = weak_odr constant %"{{.*}}/runtime/abi.FuncType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -153447421, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @39, i64 14 }, ptr @"*_llgo_func$Z_-7GWzB37LCYRTQLsSYmEihg_hqBK8o_GbT88pqnPY" }, %"{{.*}}/runtime/internal/runtime.Slice" zeroinitializer, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$Z_-7GWzB37LCYRTQLsSYmEihg_hqBK8o_GbT88pqnPY$out", i64 1, i64 1 } }, align 8
@@ -75,12 +75,12 @@ import (
 // CHECK: @"*_llgo_io.Reader" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 760453616, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @58, i64 9 }, ptr null }, ptr @_llgo_io.Reader }, align 8
 // CHECK: @"_llgo_iface$uycIKA3bbxRhudEjW1hHKWKdLqHQsCVy8NdW1bkQmNw$imethods" = weak_odr constant [1 x %"{{.*}}/runtime/abi.Imethod"] [%"{{.*}}/runtime/abi.Imethod" { %"{{.*}}/runtime/internal/runtime.String" { ptr @47, i64 4 }, ptr @"_llgo_func$G2hch9Iy9DrhKKsg70PbL54bK-XSl-1IUUORN17J2Dk" }], align 8
 // CHECK: @"_llgo_func$uVmBDI0DMcrui3Q9y-g_hbtVN8JckQ18V2wmO5_G7A8$in" = weak_odr constant [1 x ptr] [ptr @_llgo_io.Reader], align 8
-// CHECK: @_llgo_int64 = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 8, i64 0, i32 394795202, i8 12, i8 8, i8 8, i8 38, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @59, i64 5 }, ptr @"*_llgo_int64" }, align 8
+// CHECK: @_llgo_int64 = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 8, i64 0, i32 394795202, i8 12, i8 8, i8 8, i8 6, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @59, i64 5 }, ptr @"*_llgo_int64" }, align 8
 // CHECK: @"*_llgo_int64" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -1901231210, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @59, i64 5 }, ptr null }, ptr @_llgo_int64 }, align 8
 // CHECK: @"_llgo_func$uVmBDI0DMcrui3Q9y-g_hbtVN8JckQ18V2wmO5_G7A8$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int64, ptr @_llgo_error], align 8
 // CHECK: @"_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y" = weak_odr constant %"{{.*}}/runtime/abi.FuncType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 1043083527, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @61, i64 26 }, ptr @"*_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y" }, %"{{.*}}/runtime/internal/runtime.Slice" zeroinitializer, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y$out", i64 3, i64 3 } }, align 8
 // CHECK: @"*_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 746645372, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @61, i64 26 }, ptr null }, ptr @"_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y" }, align 8
-// CHECK: @_llgo_int32 = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 4, i64 0, i32 1448558410, i8 12, i8 4, i8 4, i8 37, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal32", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @62, i64 5 }, ptr @"*_llgo_int32" }, align 8
+// CHECK: @_llgo_int32 = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 4, i64 0, i32 1448558410, i8 12, i8 4, i8 4, i8 5, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal32", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @62, i64 5 }, ptr @"*_llgo_int32" }, align 8
 // CHECK: @"*_llgo_int32" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -38689692, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @62, i64 5 }, ptr null }, ptr @_llgo_int32 }, align 8
 // CHECK: @"_llgo_func$q-bw-_pPYBCXnr1TXIF8sOD4fVVzzIlpHqD-A13AB4Y$out" = weak_odr constant [3 x ptr] [ptr @_llgo_int32, ptr @_llgo_int, ptr @_llgo_error], align 8
 // CHECK: @"_llgo_func$TBlCn7YTQdraI1HMiBWmkrqIGG-8UgD1UVyJy62Z_0o" = weak_odr constant %"{{.*}}/runtime/abi.FuncType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 2138446355, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @64, i64 27 }, ptr @"*_llgo_func$TBlCn7YTQdraI1HMiBWmkrqIGG-8UgD1UVyJy62Z_0o" }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$TBlCn7YTQdraI1HMiBWmkrqIGG-8UgD1UVyJy62Z_0o$in", i64 1, i64 1 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$TBlCn7YTQdraI1HMiBWmkrqIGG-8UgD1UVyJy62Z_0o$out", i64 2, i64 2 } }, align 8
@@ -113,7 +113,7 @@ import (
 // CHECK: @"_llgo_func$vSv85k0UY6JWccAc3T-lvdCx9J-4GM-oZC9zGLrxW1M$out" = weak_odr constant [2 x ptr] [ptr @_llgo_int64, ptr @_llgo_error], align 8
 // CHECK: @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk" = weak_odr constant %"{{.*}}/runtime/abi.FuncType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -541022001, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @84, i64 11 }, ptr @"*_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk" }, %"{{.*}}/runtime/internal/runtime.Slice" zeroinitializer, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk$out", i64 1, i64 1 } }, align 8
 // CHECK: @"*_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -367308996, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @84, i64 11 }, ptr null }, ptr @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk" }, align 8
-// CHECK: @_llgo_bool = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 1, i64 0, i32 554183389, i8 12, i8 1, i8 1, i8 33, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @85, i64 4 }, ptr @"*_llgo_bool" }, align 8
+// CHECK: @_llgo_bool = weak_odr constant %"{{.*}}/runtime/abi.Type" { i64 1, i64 0, i32 554183389, i8 12, i8 1, i8 1, i8 1, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @85, i64 4 }, ptr @"*_llgo_bool" }, align 8
 // CHECK: @"*_llgo_bool" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -1896950390, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @85, i64 4 }, ptr null }, ptr @_llgo_bool }, align 8
 // CHECK: @"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk$out" = weak_odr constant [1 x ptr] [ptr @_llgo_bool], align 8
 // CHECK: @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU" = weak_odr constant %"{{.*}}/runtime/abi.FuncType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -1134531106, i8 0, i8 8, i8 8, i8 51, { ptr, ptr } zeroinitializer, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @88, i64 13 }, ptr @"*_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU" }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU$in", i64 1, i64 1 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_func$ekGNsrYBSzltfAjxbl6T8H6Yq8j16wzqS3nDj2xxGMU$out", i64 1, i64 1 } }, align 8
@@ -128,8 +128,10 @@ import (
 // CHECK: @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U" = weak_odr constant %"{{.*}}/runtime/abi.InterfaceType" { %"{{.*}}/runtime/abi.Type" { i64 16, i64 16, i32 -195205541, i8 0, i8 8, i8 8, i8 20, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.interequal", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @94, i64 29 }, ptr @"*_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U" }, %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U$imethods", i64 1, i64 1 } }, align 8
 // CHECK: @"*_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 876051709, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @94, i64 29 }, ptr null }, ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U" }, align 8
 // CHECK: @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U$imethods" = weak_odr constant [1 x %"{{.*}}/runtime/abi.Imethod"] [%"{{.*}}/runtime/abi.Imethod" { %"{{.*}}/runtime/internal/runtime.String" { ptr @67, i64 6 }, ptr @"_llgo_func$zNDVRsWTIpUPKouNUS805RGX--IV9qVK8B31IZbg5to" }], align 8
-// CHECK: @"*_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" = weak_odr constant { %"{{.*}}/runtime/abi.PtrType", %"{{.*}}/runtime/abi.UncommonType", [2 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -1798654480, i8 11, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @96, i64 17 }, ptr null }, ptr @"_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 2, i16 2, i32 24 }, [2 x %"{{.*}}/runtime/abi.Method"] [%"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @103, i64 4 }, ptr @"_llgo_func$oqZ09zjnrQRdlivNw60EomwRoboDQbCk5_Y4MGDpQMQ", ptr @"{{.*}}/_testgo/abimethod.(*Pointer[any]).Load", ptr @"{{.*}}/_testgo/abimethod.(*Pointer[any]).Load" }, %"{{.*}}/runtime/abi.Method" { %"{{.*}}/runtime/internal/runtime.String" { ptr @105, i64 5 }, ptr @"_llgo_func$Y8Pl6IHgSDuynhMRTXPlqFo9zl71SSTuMe0Wi5m8eWw", ptr @"{{.*}}/_testgo/abimethod.(*Pointer[any]).Store", ptr @"{{.*}}/_testgo/abimethod.(*Pointer[any]).Store" }] }, align 8
-// CHECK: @"_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" = weak_odr constant { %"{{.*}}/runtime/abi.StructType", %"{{.*}}/runtime/abi.UncommonType", [0 x %"{{.*}}/runtime/abi.Method"] } { %"{{.*}}/runtime/abi.StructType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 -858197093, i8 5, i8 8, i8 8, i8 25, { ptr, ptr } { ptr @"{{.*}}/runtime/internal/runtime.structequal", ptr @"_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @96, i64 17 }, ptr @"*_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" }, %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, %"{{.*}}/runtime/internal/runtime.Slice" { ptr @"{{.*}}/_testgo/abimethod.struct$WF_Ikp6H-8IyobSlL849gp6AslXPTyT8oKnkzqHD2NA$fields", i64 2, i64 2 } }, %"{{.*}}/runtime/abi.UncommonType" { %"{{.*}}/runtime/internal/runtime.String" { ptr @1, i64 43 }, i16 0, i16 0, i32 24 }, [0 x %"{{.*}}/runtime/abi.Method"] zeroinitializer }, align 8
+// CHECK: @"*_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" = weak_odr constant { %"{{.*}}/runtime/abi.PtrType", %"{{.*}}/runtime/abi.UncommonType", [2 x %"{{.*}}/runtime/abi.Method"] }
+// CHECK: ptr @"{{.*}}/_testgo/abimethod.(*Pointer[any]).Load"
+// CHECK: ptr @"{{.*}}/_testgo/abimethod.(*Pointer[any]).Store"
+// CHECK: @"_llgo_{{.*}}/_testgo/abimethod.Pointer[any]" = weak_odr constant { %"{{.*}}/runtime/abi.StructType", %"{{.*}}/runtime/abi.UncommonType", [0 x %"{{.*}}/runtime/abi.Method"] }
 // CHECK: @"[0]*_llgo_any" = weak_odr constant %"{{.*}}/runtime/abi.ArrayType" { %"{{.*}}/runtime/abi.Type" { i64 0, i64 0, i32 -1235244625, i8 8, i8 8, i8 8, i8 17, { ptr, ptr } { ptr @"{{.*}}/runtime/internal/runtime.arrayequal", ptr @"[0]*_llgo_any" }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @98, i64 16 }, ptr @"*[0]*_llgo_any" }, ptr @"*_llgo_any", ptr @"[]*_llgo_any", i64 0 }, align 8
 // CHECK: @"*[0]*_llgo_any" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 1487017406, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @98, i64 16 }, ptr null }, ptr @"[0]*_llgo_any" }, align 8
 // CHECK: @"*_llgo_any" = weak_odr constant %"{{.*}}/runtime/abi.PtrType" { %"{{.*}}/runtime/abi.Type" { i64 8, i64 8, i32 1741196194, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"{{.*}}/runtime/internal/runtime.String" { ptr @99, i64 12 }, ptr null }, ptr @_llgo_any }, align 8
@@ -157,15 +159,15 @@ type T struct {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"{{.*}}/_testgo/abimethod.T", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %0, ptr %1, align 4
+// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %1, i32 0, i32 0
-// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 8
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
 
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.(*T).Demo1"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
-// CHECK-NEXT:   %1 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 4
+// CHECK-NEXT:   %1 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 8
 // CHECK-NEXT:   %2 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %1)
 // CHECK-NEXT:   ret i64 %2
 // CHECK-NEXT: }
@@ -176,7 +178,7 @@ func (t T) Demo1() int {
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.(*T).Demo2"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:  %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:  %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:  %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:  ret i64 %2
 // CHECK-NEXT: }
 func (t *T) Demo2() int {
@@ -186,7 +188,7 @@ func (t *T) Demo2() int {
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.(*T).demo3"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:  %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:  %2 = load i64, ptr %1, align 4
+// CHECK-NEXT:  %2 = load i64, ptr %1, align 8
 // CHECK-NEXT:  ret i64 %2
 // CHECK-NEXT: }
 func (t *T) demo3() int {
@@ -233,8 +235,8 @@ func main() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"*{{.*}}/_testgo/abimethod.struct$mRfo5gQx8vKF1DvrL24XRoyvI_ttVDcwc1JYMRxWfb8")
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %5, 0
@@ -279,8 +281,8 @@ func testAnonymous1() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -327,11 +329,11 @@ func testAnonymous2() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
-// CHECK-NEXT:   %4 = load { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
+// CHECK-NEXT:   %4 = load { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, align 8
 // CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %4, ptr %5, align 4
+// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %4, ptr %5, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"{{.*}}/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
 // CHECK-NEXT:   %7 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %6, 0
 // CHECK-NEXT:   %8 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %7, ptr %5, 1
@@ -373,8 +375,8 @@ func testAnonymous3() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"*{{.*}}/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %5, ptr %0, 1
@@ -416,8 +418,8 @@ func testAnonymous4() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %2, i32 0, i32 0
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
-// CHECK-NEXT:   store i64 100, ptr %3, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
+// CHECK-NEXT:   store i64 100, ptr %3, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$GIQLduxo5T_xLwYbboAKy8LzikHgsGzb7WxrkOH3Lr4", ptr @"*{{.*}}/_testgo/abimethod.struct$F3FioEGWwXQRUdV6xoxVUEDjRNgBQIpL0XIyBECp088")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
 // CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %5, ptr %0, 1
@@ -461,8 +463,8 @@ func testAnonymous5() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -510,8 +512,8 @@ func testAnonymous6() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -585,8 +587,8 @@ func testAnonymous7() {
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %4 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %3, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %4, align 4
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %4, align 8
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %5 = load { i64, ptr }, ptr %0, align 8
 // CHECK-NEXT:   %6 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
@@ -682,7 +684,7 @@ func testAnonymous8() {
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = call ptr @bytes.NewBufferString(%"{{.*}}/runtime/internal/runtime.String" { ptr @26, i64 5 })
-// CHECK-NEXT:   store i64 10, ptr %1, align 4
+// CHECK-NEXT:   store i64 10, ptr %1, align 8
 // CHECK-NEXT:   store ptr %3, ptr %2, align 8
 // CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$O6rEVxIuA5O1E0KWpQBCgGx26X5gYhJ_nnJnHVL8_7U", ptr @"*{{.*}}/_testgo/abimethod.struct$RGW016k7zllXgGPm1CvD5-IBe-9lphOOTCFtYyDGLjY")
 // CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
@@ -762,7 +764,7 @@ func testAnonymousBuffer() {
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_0
 // CHECK-NEXT:   %27 = extractvalue %"{{.*}}/runtime/internal/runtime.eface" %22, 1
-// CHECK-NEXT:   %28 = ptrtoint ptr %27 to i64
+// CHECK-NEXT:   %28 = load i64, ptr %27, align 8
 // CHECK-NEXT:   %29 = icmp ne i64 %28, 100
 // CHECK-NEXT:   br i1 %29, label %_llgo_1, label %_llgo_2
 // CHECK-EMPTY:
@@ -777,7 +779,10 @@ func testAnonymousBuffer() {
 // CHECK-LABEL: define ptr @"{{.*}}/_testgo/abimethod.testGeneric$1"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr inttoptr (i64 100 to ptr) }, ptr %0, align 8
+// CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
+// CHECK-NEXT:   %2 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %1, 1
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.eface" %2, ptr %0, align 8
 // CHECK-NEXT:   ret ptr %0
 // CHECK-NEXT: }
 func testGeneric() {
@@ -795,7 +800,7 @@ func testGeneric() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"*_llgo_{{.*}}/_testgo/abimethod.T")
 // CHECK-NEXT:   %3 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %2, 0
 // CHECK-NEXT:   %4 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %3, ptr %0, 1
@@ -833,30 +838,30 @@ func testNamed1() {
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/_testgo/abimethod.T", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
-// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 4
-// CHECK-NEXT:   %3 = extractvalue %"{{.*}}/_testgo/abimethod.T" %2, 0
-// CHECK-NEXT:   %4 = inttoptr i64 %3 to ptr
-// CHECK-NEXT:   %5 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"_llgo_{{.*}}/_testgo/abimethod.T")
-// CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %5, 0
-// CHECK-NEXT:   %7 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %6, ptr %4, 1
-// CHECK-NEXT:   %8 = call ptr @"{{.*}}/runtime/internal/runtime.IfacePtrData"(%"{{.*}}/runtime/internal/runtime.iface" %7)
-// CHECK-NEXT:   %9 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %7, 0
-// CHECK-NEXT:   %10 = getelementptr ptr, ptr %9, i64 3
-// CHECK-NEXT:   %11 = load ptr, ptr %10, align 8
-// CHECK-NEXT:   %12 = insertvalue { ptr, ptr } undef, ptr %11, 0
-// CHECK-NEXT:   %13 = insertvalue { ptr, ptr } %12, ptr %8, 1
-// CHECK-NEXT:   %14 = extractvalue { ptr, ptr } %13, 1
-// CHECK-NEXT:   %15 = extractvalue { ptr, ptr } %13, 0
-// CHECK-NEXT:   %16 = call i64 %15(ptr %14)
-// CHECK-NEXT:   %17 = icmp ne i64 %16, 100
-// CHECK-NEXT:   br i1 %17, label %_llgo_1, label %_llgo_2
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
+// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %0, align 8
+// CHECK-NEXT:   %3 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
+// CHECK-NEXT:   store %"{{.*}}/_testgo/abimethod.T" %2, ptr %3, align 8
+// CHECK-NEXT:   %4 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$WkyTd7mXEW0USaC6FIo7OG9IdUUyjAJl_h3PFrMEtHc", ptr @"_llgo_{{.*}}/_testgo/abimethod.T")
+// CHECK-NEXT:   %5 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %4, 0
+// CHECK-NEXT:   %6 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %5, ptr %3, 1
+// CHECK-NEXT:   %7 = call ptr @"{{.*}}/runtime/internal/runtime.IfacePtrData"(%"{{.*}}/runtime/internal/runtime.iface" %6)
+// CHECK-NEXT:   %8 = extractvalue %"{{.*}}/runtime/internal/runtime.iface" %6, 0
+// CHECK-NEXT:   %9 = getelementptr ptr, ptr %8, i64 3
+// CHECK-NEXT:   %10 = load ptr, ptr %9, align 8
+// CHECK-NEXT:   %11 = insertvalue { ptr, ptr } undef, ptr %10, 0
+// CHECK-NEXT:   %12 = insertvalue { ptr, ptr } %11, ptr %7, 1
+// CHECK-NEXT:   %13 = extractvalue { ptr, ptr } %12, 1
+// CHECK-NEXT:   %14 = extractvalue { ptr, ptr } %12, 0
+// CHECK-NEXT:   %15 = call i64 %14(ptr %13)
+// CHECK-NEXT:   %16 = icmp ne i64 %15, 100
+// CHECK-NEXT:   br i1 %16, label %_llgo_1, label %_llgo_2
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
-// CHECK-NEXT:   %18 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @111, i64 16 }, ptr %18, align 8
-// CHECK-NEXT:   %19 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %18, 1
-// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %19)
+// CHECK-NEXT:   %17 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @111, i64 16 }, ptr %17, align 8
+// CHECK-NEXT:   %18 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %17, 1
+// CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %18)
 // CHECK-NEXT:   unreachable
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_0
@@ -873,7 +878,7 @@ func testNamed2() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/_testgo/abimethod.T", ptr %0, i32 0, i32 0
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.NewItab"(ptr @"_llgo_iface$GIQLduxo5T_xLwYbboAKy8LzikHgsGzb7WxrkOH3Lr4", ptr @"*_llgo_{{.*}}/_testgo/abimethod.T")
 // CHECK-NEXT:   %3 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" undef, ptr %2, 0
 // CHECK-NEXT:   %4 = insertvalue %"{{.*}}/runtime/internal/runtime.iface" %3, ptr %0, 1
@@ -937,7 +942,7 @@ type I2 interface {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, ptr }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load ptr, ptr %1, align 8
-// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 4
+// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 8
 // CHECK-NEXT:   %4 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %3)
 // CHECK-NEXT:   ret i64 %4
 // CHECK-NEXT: }
@@ -965,7 +970,7 @@ type I2 interface {
 // CHECK-NEXT:   store { i64, ptr } %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, ptr }, ptr %1, i32 0, i32 1
 // CHECK-NEXT:   %3 = load ptr, ptr %2, align 8
-// CHECK-NEXT:   %4 = load %"{{.*}}/_testgo/abimethod.T", ptr %3, align 4
+// CHECK-NEXT:   %4 = load %"{{.*}}/_testgo/abimethod.T", ptr %3, align 8
 // CHECK-NEXT:   %5 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %4)
 // CHECK-NEXT:   ret i64 %5
 // CHECK-NEXT: }
@@ -996,9 +1001,9 @@ type I2 interface {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca { i64, %"{{.*}}/_testgo/abimethod.T" }, align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %0, ptr %1, align 4
+// CHECK-NEXT:   store { i64, %"{{.*}}/_testgo/abimethod.T" } %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %1, i32 0, i32 1
-// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 4
+// CHECK-NEXT:   %3 = load %"{{.*}}/_testgo/abimethod.T", ptr %2, align 8
 // CHECK-NEXT:   %4 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %3)
 // CHECK-NEXT:   ret i64 %4
 // CHECK-NEXT: }
@@ -1006,7 +1011,7 @@ type I2 interface {
 // CHECK-LABEL: define i64 @"{{.*}}/_testgo/abimethod.*struct{m int; {{.*}}/_testgo/abimethod.T}.Demo1"(ptr %0) {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds { i64, %"{{.*}}/_testgo/abimethod.T" }, ptr %0, i32 0, i32 1
-// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %1, align 4
+// CHECK-NEXT:   %2 = load %"{{.*}}/_testgo/abimethod.T", ptr %1, align 8
 // CHECK-NEXT:   %3 = call i64 @"{{.*}}/_testgo/abimethod.T.Demo1"(%"{{.*}}/_testgo/abimethod.T" %2)
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }

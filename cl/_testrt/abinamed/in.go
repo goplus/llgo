@@ -46,7 +46,7 @@ import (
 // CHECK-NEXT:   %23 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %22, align 8
 // CHECK-NEXT:   %24 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %23, 0
 // CHECK-NEXT:   %25 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %23, 1
-// CHECK-NEXT:   %26 = icmp sge i64 0, %25
+// CHECK-NEXT:   %26 = icmp uge i64 0, %25
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %26)
 // CHECK-NEXT:   %27 = getelementptr inbounds %"{{.*}}/runtime/abi.StructField", ptr %24, i64 0
 // CHECK-NEXT:   %28 = load %"{{.*}}/runtime/abi.StructField", ptr %27, align 8
@@ -62,7 +62,7 @@ import (
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_0
 // CHECK-NEXT:   %36 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @125, i64 13 }, ptr %36, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 13 }, ptr %36, align 8
 // CHECK-NEXT:   %37 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %36, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %37)
 // CHECK-NEXT:   unreachable
@@ -78,7 +78,7 @@ import (
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_3:                                          ; preds = %_llgo_2
 // CHECK-NEXT:   %44 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @126, i64 18 }, ptr %44, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 18 }, ptr %44, align 8
 // CHECK-NEXT:   %45 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %44, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %45)
 // CHECK-NEXT:   unreachable
@@ -93,7 +93,7 @@ import (
 // CHECK-NEXT:   %51 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %50, align 8
 // CHECK-NEXT:   %52 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %51, 0
 // CHECK-NEXT:   %53 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %51, 1
-// CHECK-NEXT:   %54 = icmp sge i64 1, %53
+// CHECK-NEXT:   %54 = icmp uge i64 1, %53
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %54)
 // CHECK-NEXT:   %55 = getelementptr inbounds %"{{.*}}/runtime/abi.StructField", ptr %52, i64 1
 // CHECK-NEXT:   %56 = load %"{{.*}}/runtime/abi.StructField", ptr %55, align 8
@@ -109,7 +109,7 @@ import (
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_5:                                          ; preds = %_llgo_4
 // CHECK-NEXT:   %64 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @127, i64 13 }, ptr %64, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 13 }, ptr %64, align 8
 // CHECK-NEXT:   %65 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %64, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %65)
 // CHECK-NEXT:   unreachable
@@ -125,7 +125,7 @@ import (
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_7:                                          ; preds = %_llgo_6
 // CHECK-NEXT:   %72 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @128, i64 18 }, ptr %72, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 18 }, ptr %72, align 8
 // CHECK-NEXT:   %73 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %72, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %73)
 // CHECK-NEXT:   unreachable
@@ -140,7 +140,7 @@ import (
 // CHECK-NEXT:   %79 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %78, align 8
 // CHECK-NEXT:   %80 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %79, 0
 // CHECK-NEXT:   %81 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %79, 1
-// CHECK-NEXT:   %82 = icmp sge i64 2, %81
+// CHECK-NEXT:   %82 = icmp uge i64 2, %81
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %82)
 // CHECK-NEXT:   %83 = getelementptr inbounds %"{{.*}}/runtime/abi.StructField", ptr %80, i64 2
 // CHECK-NEXT:   %84 = load %"{{.*}}/runtime/abi.StructField", ptr %83, align 8
@@ -154,7 +154,7 @@ import (
 // CHECK-NEXT:   %91 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %90, align 8
 // CHECK-NEXT:   %92 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %91, 0
 // CHECK-NEXT:   %93 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %91, 1
-// CHECK-NEXT:   %94 = icmp sge i64 0, %93
+// CHECK-NEXT:   %94 = icmp uge i64 0, %93
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %94)
 // CHECK-NEXT:   %95 = getelementptr inbounds %"{{.*}}/runtime/abi.StructField", ptr %92, i64 0
 // CHECK-NEXT:   %96 = getelementptr inbounds %"{{.*}}/runtime/abi.StructField", ptr %95, i32 0, i32 1
@@ -164,7 +164,7 @@ import (
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_9:                                          ; preds = %_llgo_8
 // CHECK-NEXT:   %99 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @129, i64 13 }, ptr %99, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 13 }, ptr %99, align 8
 // CHECK-NEXT:   %100 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %99, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %100)
 // CHECK-NEXT:   unreachable
@@ -179,7 +179,7 @@ import (
 // CHECK-NEXT:   %106 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %105, align 8
 // CHECK-NEXT:   %107 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %106, 0
 // CHECK-NEXT:   %108 = extractvalue %"{{.*}}/runtime/internal/runtime.Slice" %106, 1
-// CHECK-NEXT:   %109 = icmp sge i64 3, %108
+// CHECK-NEXT:   %109 = icmp uge i64 3, %108
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %109)
 // CHECK-NEXT:   %110 = getelementptr inbounds %"{{.*}}/runtime/abi.StructField", ptr %107, i64 3
 // CHECK-NEXT:   %111 = load %"{{.*}}/runtime/abi.StructField", ptr %110, align 8
@@ -194,7 +194,7 @@ import (
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_11:                                         ; preds = %_llgo_10
 // CHECK-NEXT:   %118 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @130, i64 13 }, ptr %118, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 13 }, ptr %118, align 8
 // CHECK-NEXT:   %119 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %118, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %119)
 // CHECK-NEXT:   unreachable

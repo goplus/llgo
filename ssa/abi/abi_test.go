@@ -171,6 +171,26 @@ func TestSignature(t *testing.T) {
 	)
 }
 
+func TestClosurePublicFuncType(t *testing.T) {
+	b := newBuilder()
+	pkg := types.NewPackage("github.com/goplus/ssa/abi", "abi_test")
+	inner := types.NewSignature(nil,
+		types.NewTuple(types.NewVar(0, pkg, "", types.Typ[types.Int])),
+		types.NewTuple(types.NewVar(0, pkg, "", types.Typ[types.Bool])),
+		false)
+	closure := types.NewStruct([]*types.Var{
+		types.NewField(0, nil, "$f", inner, false),
+		types.NewField(0, nil, "$data", types.Typ[types.UnsafePointer], false),
+	}, nil)
+	outer := types.NewSignature(nil,
+		types.NewTuple(types.NewVar(0, pkg, "", closure)),
+		nil,
+		false)
+	if got, want := typeString(b, outer), "func(func(int) bool)"; got != want {
+		t.Fatalf("closure parameter string = %q, want %q", got, want)
+	}
+}
+
 type T int
 
 func TestNamed(t *testing.T) {

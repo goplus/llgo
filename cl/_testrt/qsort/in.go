@@ -18,14 +18,14 @@ func qsort(base c.Pointer, count, elem uintptr, compar func(a, b c.Pointer) c.In
 // CHECK-NEXT:   %3 = getelementptr inbounds i64, ptr %0, i64 2
 // CHECK-NEXT:   %4 = getelementptr inbounds i64, ptr %0, i64 3
 // CHECK-NEXT:   %5 = getelementptr inbounds i64, ptr %0, i64 4
-// CHECK-NEXT:   store i64 100, ptr %1, align 4
-// CHECK-NEXT:   store i64 8, ptr %2, align 4
-// CHECK-NEXT:   store i64 23, ptr %3, align 4
-// CHECK-NEXT:   store i64 2, ptr %4, align 4
-// CHECK-NEXT:   store i64 7, ptr %5, align 4
+// CHECK-NEXT:   store i64 100, ptr %1, align 8
+// CHECK-NEXT:   store i64 8, ptr %2, align 8
+// CHECK-NEXT:   store i64 23, ptr %3, align 8
+// CHECK-NEXT:   store i64 2, ptr %4, align 8
+// CHECK-NEXT:   store i64 7, ptr %5, align 8
 // CHECK-NEXT:   %6 = getelementptr inbounds i64, ptr %0, i64 0
 // CHECK-NEXT:   call void @qsort(ptr %6, i64 5, i64 8, ptr @"{{.*}}/cl/_testrt/qsort.main$1")
-// CHECK-NEXT:   %7 = load [5 x i64], ptr %0, align 4
+// CHECK-NEXT:   %7 = load [5 x i64], ptr %0, align 8
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_2, %_llgo_0
@@ -36,11 +36,11 @@ func qsort(base c.Pointer, count, elem uintptr, compar func(a, b c.Pointer) c.In
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_2:                                          ; preds = %_llgo_1
 // CHECK-NEXT:   %11 = icmp slt i64 %9, 0
-// CHECK-NEXT:   %12 = icmp sge i64 %9, 5
+// CHECK-NEXT:   %12 = icmp uge i64 %9, 5
 // CHECK-NEXT:   %13 = or i1 %12, %11
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.AssertIndexRange"(i1 %13)
 // CHECK-NEXT:   %14 = getelementptr inbounds i64, ptr %0, i64 %9
-// CHECK-NEXT:   %15 = load i64, ptr %14, align 4
+// CHECK-NEXT:   %15 = load i64, ptr %14, align 8
 // CHECK-NEXT:   %16 = call i32 (ptr, ...) @printf(ptr @0, i64 %15)
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -54,8 +54,8 @@ func main() {
 	})
 	// CHECK-LABEL: define i32 @"{{.*}}/cl/_testrt/qsort.main$1"(ptr %0, ptr %1) {
 	// CHECK-NEXT: _llgo_0:
-	// CHECK-NEXT:   %2 = load i64, ptr %0, align 4
-	// CHECK-NEXT:   %3 = load i64, ptr %1, align 4
+	// CHECK-NEXT:   %2 = load i64, ptr %0, align 8
+	// CHECK-NEXT:   %3 = load i64, ptr %1, align 8
 	// CHECK-NEXT:   %4 = sub i64 %2, %3
 	// CHECK-NEXT:   %5 = trunc i64 %4 to i32
 	// CHECK-NEXT:   ret i32 %5

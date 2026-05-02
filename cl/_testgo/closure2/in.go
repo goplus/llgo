@@ -4,7 +4,7 @@ package main
 // CHECK-LABEL: define void @"{{.*}}closure2.main"() {
 func main() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 8)
-	// CHECK: store i64 1, ptr %0, align 4
+	// CHECK: store i64 1, ptr %0, align 8
 	// CHECK: call ptr @"{{.*}}AllocU"(i64 8)
 	// CHECK: { ptr @"{{.*}}closure2.main$1", ptr undef }
 	// CHECK: call { ptr, ptr } %5(ptr %4, i64 1)
@@ -26,7 +26,7 @@ func main() {
 			// CHECK-NEXT: _llgo_0:
 			// CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 			// CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
-			// CHECK-NEXT:   %4 = load i64, ptr %3, align 4
+			// CHECK-NEXT:   %4 = load i64, ptr %3, align 8
 			// CHECK-NEXT:   call void @"{{.*}}PrintString"(%"{{.*}}String" { ptr @0, i64 7 })
 			// CHECK-NEXT:   call void @"{{.*}}PrintByte"(i8 32)
 			// CHECK-NEXT:   call void @"{{.*}}PrintInt"(i64 %1)

@@ -140,36 +140,42 @@ func packEface(v Value) any {
 	t := v.typ()
 	var i any
 	e := (*emptyInterface)(unsafe.Pointer(&i))
-	// First, fill in the data portion of the interface.
-	switch {
-	case t.IfaceIndir():
-		if v.flag&flagIndir == 0 {
-			panic("bad indir")
-		}
-		// Value is indirect, and so is the interface we're making.
-		ptr := v.ptr
-		if v.flag&flagAddr != 0 {
-			// TODO: pass safe boolean from valueInterface so
-			// we don't need to copy if safe==true?
-			c := unsafe_New(t)
-			typedmemmove(t, c, ptr)
-			ptr = c
-		}
-		e.word = ptr
-	case v.flag&flagIndir != 0:
-		// Value is indirect, but interface is direct. We need
-		// to load the data at v.ptr into the interface data word.
-		e.word = *(*unsafe.Pointer)(v.ptr)
-	default:
-		// Value is direct, and so is the interface.
-		e.word = v.ptr
-	}
+	e.word = packEfaceData(v)
 	// Now, fill in the type portion. We're very careful here not
 	// to have any operation between the e.word and e.typ assignments
 	// that would let the garbage collector observe the partially-built
 	// interface value.
 	e.typ = t
 	return i
+}
+
+// packEfaceData is a helper that packs the data word as if v were stored in
+// an empty interface. Go 1.26's reflect.TypeAssert refers to it directly.
+func packEfaceData(v Value) unsafe.Pointer {
+	t := v.typ()
+	switch {
+	case t.IfaceIndir():
+		if v.flag&flagIndir == 0 {
+			panic("bad indir")
+		}
+		ptr := v.ptr
+		if v.flag&flagAddr != 0 {
+			c := unsafe_New(t)
+			typedmemmove(t, c, ptr)
+			ptr = c
+		}
+		return ptr
+	case v.flag&flagIndir != 0:
+		return *(*unsafe.Pointer)(v.ptr)
+	default:
+		return v.ptr
+	}
+}
+
+// packIfaceValueIntoEmptyIface is used by Go 1.26's reflect.TypeAssert helpers
+// when reboxing a non-empty interface value into an empty interface.
+func packIfaceValueIntoEmptyIface(v Value) any {
+	return packEface(v)
 }
 
 // unpackEface converts the empty interface i to a Value.
@@ -394,7 +400,7 @@ func (v Value) Bool() bool {
 	if v.kind() != Bool {
 		v.panicNotBool()
 	}
-	if v.flag&flagAddr != 0 {
+	if v.flag&flagIndir != 0 {
 		return *(*bool)(v.ptr)
 	}
 	return uintptr(v.ptr) != 0

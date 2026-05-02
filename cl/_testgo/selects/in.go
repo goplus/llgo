@@ -21,7 +21,7 @@ package main
 // CHECK-NEXT:   %10 = getelementptr inbounds { ptr, ptr, ptr }, ptr %7, i32 0, i32 2
 // CHECK-NEXT:   store ptr %4, ptr %10, align 8
 // CHECK-NEXT:   %11 = insertvalue { ptr, ptr } { ptr @"{{.*}}/cl/_testgo/selects.main$1", ptr undef }, ptr %7, 1
-// CHECK-NEXT:   %12 = call ptr @malloc(i64 16)
+// CHECK-NEXT:   %12 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
 // CHECK-NEXT:   %13 = getelementptr inbounds { { ptr, ptr } }, ptr %12, i32 0, i32 0
 // CHECK-NEXT:   store { ptr, ptr } %11, ptr %13, align 8
 // CHECK-NEXT:   %14 = alloca i8, i64 8, align 1

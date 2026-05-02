@@ -236,7 +236,10 @@ func (b Builder) checkIndex(idx Expr, max Expr) Expr {
 		check = Expr{llvm.CreateICmp(b.impl, llvm.IntSLT, idx.impl, zero), prog.Bool()}
 	}
 	if checkMax {
-		r := Expr{llvm.CreateICmp(b.impl, llvm.IntSGE, idx.impl, max.impl), prog.Bool()}
+		// max is a non-negative len/cap value. Unsigned comparison is valid for
+		// both signed and unsigned indexes, and signed negatives fail as large
+		// unsigned values.
+		r := Expr{llvm.CreateICmp(b.impl, llvm.IntUGE, idx.impl, max.impl), prog.Bool()}
 		if check.IsNil() {
 			check = r
 		} else {
@@ -281,9 +284,6 @@ func (b Builder) Index(x, idx Expr, takeAddr func() (addr Expr, zero bool)) Expr
 		return prog.Zero(telem)
 	}
 	if ptr.IsNil() {
-		if x.impl.IsConstant() {
-			return Expr{llvm.ConstExtractElement(x.impl, idx.impl), telem}
-		}
 		ptr = b.Alloc(x.Type, false)
 		b.impl.CreateStore(x.impl, ptr.impl)
 	}

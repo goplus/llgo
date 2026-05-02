@@ -83,9 +83,9 @@ type T4 [1]int
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca [1 x i64], align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   store [1 x i64] %0, ptr %1, align 4
+// CHECK-NEXT:   store [1 x i64] %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds i64, ptr %1, i64 0
-// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 8
 // CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @4, i64 7 })
 // CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)
@@ -105,9 +105,9 @@ type T5 struct {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/invoke.T5", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %1, i8 0, i64 8, i1 false)
-// CHECK-NEXT:   store %"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0, ptr %1, align 4
+// CHECK-NEXT:   store %"github.com/goplus/llgo/cl/_testgo/invoke.T5" %0, ptr %1, align 8
 // CHECK-NEXT:   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/invoke.T5", ptr %1, i32 0, i32 0
-// CHECK-NEXT:   %3 = load i64, ptr %2, align 4
+// CHECK-NEXT:   %3 = load i64, ptr %2, align 8
 // CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintString"(%"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @5, i64 7 })
 // CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintByte"(i8 32)
 // CHECK-NEXT:   call void @"github.com/goplus/llgo/runtime/internal/runtime.PrintInt"(i64 %3)

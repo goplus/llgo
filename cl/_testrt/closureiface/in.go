@@ -4,7 +4,7 @@ package main
 // CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closureiface.main"() {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
-// CHECK-NEXT:   store i64 200, ptr %0, align 4
+// CHECK-NEXT:   store i64 200, ptr %0, align 8
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
 // CHECK-NEXT:   %2 = getelementptr inbounds { ptr }, ptr %1, i32 0, i32 0
 // CHECK-NEXT:   store ptr %0, ptr %2, align 8
@@ -18,7 +18,7 @@ package main
 // CHECK-EMPTY:
 // CHECK-NEXT: _llgo_1:                                          ; preds = %_llgo_5
 // CHECK-NEXT:   %8 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
-// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @6, i64 5 }, ptr %8, align 8
+// CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @{{.*}}, i64 5 }, ptr %8, align 8
 // CHECK-NEXT:   %9 = insertvalue %"{{.*}}/runtime/internal/runtime.eface" { ptr @_llgo_string, ptr undef }, ptr %8, 1
 // CHECK-NEXT:   call void @"{{.*}}/runtime/internal/runtime.Panic"(%"{{.*}}/runtime/internal/runtime.eface" %9)
 // CHECK-NEXT:   unreachable
@@ -53,7 +53,7 @@ func main() {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 	// CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
-	// CHECK-NEXT:   %4 = load i64, ptr %3, align 4
+	// CHECK-NEXT:   %4 = load i64, ptr %3, align 8
 	// CHECK-NEXT:   %5 = add i64 %4, %1
 	// CHECK-NEXT:   ret i64 %5
 	// CHECK-NEXT: }

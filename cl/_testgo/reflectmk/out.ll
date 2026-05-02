@@ -1,5 +1,7 @@
 ; ModuleID = 'github.com/goplus/llgo/cl/_testgo/reflectmk'
 source_filename = "github.com/goplus/llgo/cl/_testgo/reflectmk"
+target datalayout = "e-m:o-i64:64-i128:128-n32:64-S128-Fn32"
+target triple = "arm64-apple-macosx"
 
 %"github.com/goplus/llgo/runtime/abi.Type" = type { i64, i64, i32, i8, i8, i8, i8, { ptr, ptr }, ptr, %"github.com/goplus/llgo/runtime/internal/runtime.String", ptr }
 %"github.com/goplus/llgo/runtime/internal/runtime.String" = type { ptr, i64 }
@@ -18,7 +20,7 @@ source_filename = "github.com/goplus/llgo/cl/_testgo/reflectmk"
 %reflect.Value = type { ptr, ptr, i64 }
 
 @"github.com/goplus/llgo/cl/_testgo/reflectmk.init$guard" = global i1 false, align 1
-@_llgo_int = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 -25294021, i8 12, i8 8, i8 8, i8 34, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, ptr @"*_llgo_int" }, align 8
+@_llgo_int = weak_odr constant %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 0, i32 -25294021, i8 12, i8 8, i8 8, i8 2, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequal64", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, ptr @"*_llgo_int" }, align 8
 @0 = private unnamed_addr constant [3 x i8] c"int", align 1
 @"*_llgo_int" = weak_odr constant %"github.com/goplus/llgo/runtime/abi.PtrType" { %"github.com/goplus/llgo/runtime/abi.Type" { i64 8, i64 8, i32 -939606833, i8 10, i8 8, i8 8, i8 54, { ptr, ptr } { ptr @"__llgo_stub.github.com/goplus/llgo/runtime/internal/runtime.memequalptr", ptr null }, ptr null, %"github.com/goplus/llgo/runtime/internal/runtime.String" { ptr @0, i64 3 }, ptr null }, ptr @_llgo_int }, align 8
 @1 = private unnamed_addr constant [7 x i8] c"(%v,%v)", align 1
@@ -60,18 +62,20 @@ define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/go
 _llgo_0:
   %1 = alloca %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", align 8
   call void @llvm.memset(ptr %1, i8 0, i64 16, i1 false)
-  store %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point" %0, ptr %1, align 4
+  store %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point" %0, ptr %1, align 8
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %1, i32 0, i32 0
-  %3 = load i64, ptr %2, align 4
+  %3 = load i64, ptr %2, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %1, i32 0, i32 1
-  %5 = load i64, ptr %4, align 4
+  %5 = load i64, ptr %4, align 8
   %6 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 32)
   %7 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %6, i64 0
-  %8 = inttoptr i64 %3 to ptr
+  %8 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store i64 %3, ptr %8, align 8
   %9 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %8, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %9, ptr %7, align 8
   %10 = getelementptr inbounds %"github.com/goplus/llgo/runtime/internal/runtime.eface", ptr %6, i64 1
-  %11 = inttoptr i64 %5 to ptr
+  %11 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64 8)
+  store i64 %5, ptr %11, align 8
   %12 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @_llgo_int, ptr undef }, ptr %11, 1
   store %"github.com/goplus/llgo/runtime/internal/runtime.eface" %12, ptr %10, align 8
   %13 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" undef, ptr %6, 0
@@ -84,15 +88,15 @@ _llgo_0:
 define void @"github.com/goplus/llgo/cl/_testgo/reflectmk.(*Point).Set"(ptr %0, i64 %1, i64 %2) {
 _llgo_0:
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %0, i32 0, i32 0
-  store i64 %1, ptr %3, align 4
+  store i64 %1, ptr %3, align 8
   %4 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %0, i32 0, i32 1
-  store i64 %2, ptr %4, align 4
+  store i64 %2, ptr %4, align 8
   ret void
 }
 
 define %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/reflectmk.(*Point).String"(ptr %0) {
 _llgo_0:
-  %1 = load %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %0, align 4
+  %1 = load %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %0, align 8
   %2 = call %"github.com/goplus/llgo/runtime/internal/runtime.String" @"github.com/goplus/llgo/cl/_testgo/reflectmk.Point.String"(%"github.com/goplus/llgo/cl/_testgo/reflectmk.Point" %1)
   ret %"github.com/goplus/llgo/runtime/internal/runtime.String" %2
 }
@@ -453,15 +457,15 @@ _llgo_20:                                         ; preds = %_llgo_21
   %250 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %251 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %250, i32 0, i32 0
   %252 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %250, i32 0, i32 1
-  store i64 1, ptr %251, align 4
-  store i64 2, ptr %252, align 4
+  store i64 1, ptr %251, align 8
+  store i64 2, ptr %252, align 8
   %253 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr undef }, ptr %250, 1
   %254 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %253)
   %255 = call %reflect.Value @reflect.Value.Method(%reflect.Value %254, i64 1)
   %256 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %255, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %257 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %256, 0
   %258 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %256, 1
-  %259 = icmp sge i64 0, %258
+  %259 = icmp uge i64 0, %258
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %259)
   %260 = getelementptr inbounds %reflect.Value, ptr %257, i64 0
   %261 = load %reflect.Value, ptr %260, align 8
@@ -489,7 +493,7 @@ _llgo_23:                                         ; preds = %_llgo_20
   %272 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %271, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %273 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %272, 0
   %274 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %272, 1
-  %275 = icmp sge i64 0, %274
+  %275 = icmp uge i64 0, %274
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %275)
   %276 = getelementptr inbounds %reflect.Value, ptr %273, i64 0
   %277 = load %reflect.Value, ptr %276, align 8
@@ -516,15 +520,15 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %1, i32 0, i32 0
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %1, i32 0, i32 1
-  store i64 1, ptr %2, align 4
-  store i64 2, ptr %3, align 4
+  store i64 1, ptr %2, align 8
+  store i64 2, ptr %3, align 8
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr undef }, ptr %1, 1
   %5 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %4)
   %6 = call %reflect.Value @reflect.Value.Method(%reflect.Value %5, i64 %0)
   %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %6, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
   %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %10 = icmp sge i64 0, %9
+  %10 = icmp uge i64 0, %9
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
   %11 = getelementptr inbounds %reflect.Value, ptr %8, i64 0
   %12 = load %reflect.Value, ptr %11, align 8
@@ -549,15 +553,15 @@ _llgo_0:
   %1 = call ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocZ"(i64 16)
   %2 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %1, i32 0, i32 0
   %3 = getelementptr inbounds %"github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr %1, i32 0, i32 1
-  store i64 1, ptr %2, align 4
-  store i64 2, ptr %3, align 4
+  store i64 1, ptr %2, align 8
+  store i64 2, ptr %3, align 8
   %4 = insertvalue %"github.com/goplus/llgo/runtime/internal/runtime.eface" { ptr @"*_llgo_github.com/goplus/llgo/cl/_testgo/reflectmk.Point", ptr undef }, ptr %1, 1
   %5 = call %reflect.Value @reflect.ValueOf(%"github.com/goplus/llgo/runtime/internal/runtime.eface" %4)
   %6 = call %reflect.Value @reflect.Value.MethodByName(%reflect.Value %5, %"github.com/goplus/llgo/runtime/internal/runtime.String" %0)
   %7 = call %"github.com/goplus/llgo/runtime/internal/runtime.Slice" @reflect.Value.Call(%reflect.Value %6, %"github.com/goplus/llgo/runtime/internal/runtime.Slice" zeroinitializer)
   %8 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 0
   %9 = extractvalue %"github.com/goplus/llgo/runtime/internal/runtime.Slice" %7, 1
-  %10 = icmp sge i64 0, %9
+  %10 = icmp uge i64 0, %9
   call void @"github.com/goplus/llgo/runtime/internal/runtime.AssertIndexRange"(i1 %10)
   %11 = getelementptr inbounds %reflect.Value, ptr %8, i64 0
   %12 = load %reflect.Value, ptr %11, align 8
@@ -598,6 +602,8 @@ _llgo_0:
   ret i1 %3
 }
 
+declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
+
 declare %"github.com/goplus/llgo/runtime/internal/runtime.String" @fmt.Sprintf(%"github.com/goplus/llgo/runtime/internal/runtime.String", %"github.com/goplus/llgo/runtime/internal/runtime.Slice")
 
 declare void @fmt.init()
@@ -623,8 +629,6 @@ declare %"github.com/goplus/llgo/runtime/internal/runtime.iface" @reflect.ArrayO
 declare i1 @"github.com/goplus/llgo/runtime/internal/runtime.EfaceEqual"(%"github.com/goplus/llgo/runtime/internal/runtime.eface", %"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
 declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.IfaceType"(%"github.com/goplus/llgo/runtime/internal/runtime.iface")
-
-declare ptr @"github.com/goplus/llgo/runtime/internal/runtime.AllocU"(i64)
 
 declare void @"github.com/goplus/llgo/runtime/internal/runtime.Panic"(%"github.com/goplus/llgo/runtime/internal/runtime.eface")
 
@@ -693,7 +697,7 @@ attributes #0 = { nocallback nofree nounwind willreturn memory(argmem: write) }
 !27 = !{!"_llgo_reflect.Type", !"FieldAlign", !"_llgo_func$ETeB8WwW04JEq0ztcm-XPTJtuYvtpkjIsAc0-2NT9zA"}
 !28 = !{!"_llgo_reflect.Type", !"FieldByIndex", !"_llgo_func$LPPtiM49dEPl48CC3WRhXm3YPnfUJEZE_k8Tx3rMuSk"}
 !29 = !{!"_llgo_reflect.Type", !"FieldByName", !"_llgo_func$dEvABJ5r0MMUlf4smWpIDG5dO8AuGklGdNJ1xneL3UM"}
-!30 = !{!"_llgo_reflect.Type", !"FieldByNameFunc", !"_llgo_func$EGeBNdD7KOy92HWVCj7jpfMdAvbvJV3DKYuCcibxHEA"}
+!30 = !{!"_llgo_reflect.Type", !"FieldByNameFunc", !"_llgo_func$xySrXVFC_2LK2oP71R2UryKi6UmdEJUo9k6aQuz4TvI"}
 !31 = !{!"_llgo_reflect.Type", !"Implements", !"_llgo_func$Kxk9fspGkjXcoNWf2ucHG1vOQ5VHxVtYionfm-DnvWE"}
 !32 = !{!"_llgo_reflect.Type", !"In", !"_llgo_func$dPYu3A0LoGTV2Hd8PW4KPw2ITiUSo9q-4Bg9ZrPITnY"}
 !33 = !{!"_llgo_reflect.Type", !"IsVariadic", !"_llgo_func$YHeRw3AOvQtzv982-ZO3Yn8vh3Fx89RM3VvI8E4iKVk"}

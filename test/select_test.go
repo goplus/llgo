@@ -52,3 +52,34 @@ func TestSelectRecvWakesForBlockedUnbufferedSend(t *testing.T) {
 		close(done)
 	}
 }
+
+func TestSelectMixedUnbufferedPeersMakeProgress(t *testing.T) {
+	for i := 0; i < 50; i++ {
+		a := make(chan struct{})
+		b := make(chan struct{})
+		done := make(chan struct{}, 2)
+
+		go func() {
+			select {
+			case <-a:
+			case b <- struct{}{}:
+			}
+			done <- struct{}{}
+		}()
+		go func() {
+			select {
+			case <-b:
+			case a <- struct{}{}:
+			}
+			done <- struct{}{}
+		}()
+
+		for j := 0; j < 2; j++ {
+			select {
+			case <-done:
+			case <-time.After(200 * time.Millisecond):
+				t.Fatalf("iteration %d: mixed unbuffered select peers did not make progress", i)
+			}
+		}
+	}
+}

@@ -48,17 +48,17 @@ type data struct {
 // CHECK-NEXT:   %23 = getelementptr inbounds %"{{.*}}/cl/_testrt/len.data", ptr %19, i32 0, i32 2
 // CHECK-NEXT:   %24 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_string", i64 1)
 // CHECK-NEXT:   %25 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)
-// CHECK-NEXT:   store i64 1, ptr %25, align 4
+// CHECK-NEXT:   store i64 1, ptr %25, align 8
 // CHECK-NEXT:   %26 = call ptr @"{{.*}}/runtime/internal/runtime.MapAssign"(ptr @"map[_llgo_int]_llgo_string", ptr %24, ptr %25)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @16, i64 5 }, ptr %26, align 8
 // CHECK-NEXT:   %27 = getelementptr inbounds %"{{.*}}/cl/_testrt/len.data", ptr %19, i32 0, i32 3
 // CHECK-NEXT:   %28 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 24)
 // CHECK-NEXT:   %29 = getelementptr inbounds i64, ptr %28, i64 0
-// CHECK-NEXT:   store i64 1, ptr %29, align 4
+// CHECK-NEXT:   store i64 1, ptr %29, align 8
 // CHECK-NEXT:   %30 = getelementptr inbounds i64, ptr %28, i64 1
-// CHECK-NEXT:   store i64 2, ptr %30, align 4
+// CHECK-NEXT:   store i64 2, ptr %30, align 8
 // CHECK-NEXT:   %31 = getelementptr inbounds i64, ptr %28, i64 2
-// CHECK-NEXT:   store i64 3, ptr %31, align 4
+// CHECK-NEXT:   store i64 3, ptr %31, align 8
 // CHECK-NEXT:   %32 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" undef, ptr %28, 0
 // CHECK-NEXT:   %33 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %32, i64 3, 1
 // CHECK-NEXT:   %34 = insertvalue %"{{.*}}/runtime/internal/runtime.Slice" %33, i64 3, 2
