@@ -345,6 +345,9 @@ func (p Program) toTuple(typ *types.Tuple) Type {
 */
 
 func (p Program) toType(raw types.Type) Type {
+	if typ, ok := cvtGoSSAOpaqueType(raw); ok {
+		return p.rawType(typ)
+	}
 	typ := rawType{raw}
 	switch t := raw.(type) {
 	case *types.Basic:
@@ -489,9 +492,10 @@ func (p Program) toLLVMFunc(sig *types.Signature) llvm.Type {
 	return llvm.FunctionType(ret, params, hasVArg)
 }
 
-func (p Program) toLLVMFuncPtr(sig *types.Signature) llvm.Type {
-	ft := p.toLLVMFunc(sig)
-	return llvm.PointerType(ft, 0)
+func (p Program) toLLVMFuncPtr(_ *types.Signature) llvm.Type {
+	// LLVM opaque pointers don't retain the pointee function type. Avoid
+	// recursively expanding named function types such as F func(F) F.
+	return p.tyVoidPtr()
 }
 
 func (p Program) retType(raw *types.Signature) Type {
@@ -577,6 +581,11 @@ func namedTypeEquivalent(a, b types.Type) bool {
 		return true
 	}
 	if NameOf(na) != NameOf(nb) {
+		return false
+	}
+	_, sigA := na.Underlying().(*types.Signature)
+	_, sigB := nb.Underlying().(*types.Signature)
+	if sigA || sigB {
 		return false
 	}
 	// go/types may materialize the same package/type in distinct instances

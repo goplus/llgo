@@ -66,7 +66,9 @@ func StringSlice(base String, i, j int) String {
 	if i < base.len {
 		return String{c.Advance(base.data, i), j - i}
 	}
-	return String{nil, 0}
+	// Keep the source base for empty suffix slices to avoid advancing past
+	// the underlying allocation while still preserving a stable non-nil base.
+	return String{base.data, 0}
 }
 
 type StringIter struct {
@@ -162,6 +164,22 @@ func StringFromRune(r rune) (s String) {
 	s.len = n
 	s.data = unsafe.Pointer(&buf[0])
 	return
+}
+
+func StringFromInt64(r int64) String {
+	if r < 0 || r > maxRune {
+		return StringFromRune(runeError)
+	}
+	// StringFromRune handles surrogate code points by emitting runeError.
+	return StringFromRune(rune(r))
+}
+
+func StringFromUint64(r uint64) String {
+	if r > maxRune {
+		return StringFromRune(runeError)
+	}
+	// StringFromRune handles surrogate code points by emitting runeError.
+	return StringFromRune(rune(r))
 }
 
 func StringEqual(x, y String) bool {

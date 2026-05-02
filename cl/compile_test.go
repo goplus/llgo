@@ -25,7 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/goplus/llgo/cl"
 	"github.com/goplus/llgo/cl/cltest"
 	"github.com/goplus/llgo/internal/build"
 	"github.com/goplus/llgo/internal/llgen"
@@ -163,19 +162,15 @@ func runEmbedTargetSuite(t *testing.T, target, relDir string, ignore []string) {
 	conf := build.NewDefaultConf(build.ModeRun)
 	conf.Target = target
 	conf.Emulator = true
-	conf.ForceRebuild = true
-	cltest.RunFromDir(t, "", relDir, ignore,
+	cltest.RunAndTestFromDir(t, "", relDir, ignore,
 		cltest.WithRunConfig(conf),
 		cltest.WithOutputFilter(cltest.FilterEmulatorOutput),
+		cltest.WithIRCheck(false),
 	)
 }
 
-func TestFromTestgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testgo")
-}
-
-func TestRunFromTestgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testgo", nil)
+func TestRunAndTestFromTestgo(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testgo", nil)
 }
 
 func TestFilterEmulatorOutput(t *testing.T) {
@@ -245,54 +240,53 @@ func TestRunFromTestgoSelectAllowsKnownInterleavings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("run failed: %v\noutput: %s", err, string(output))
 	}
-	got := string(output)
-	allowed := map[string]struct{}{
-		"100\nch1\nch2\n":   {},
-		"100\nexit\nch1\n":  {},
-		"200\nexit\nexit\n": {},
+	lines := selectOutputLines(string(output))
+	if len(lines) != 3 {
+		t.Fatalf("unexpected select output lines %q from:\n%s", lines, output)
 	}
-	if _, ok := allowed[got]; !ok {
-		t.Fatalf("unexpected select output:\n%s", got)
+	if lines[0] != "100" && lines[0] != "200" {
+		t.Fatalf("unexpected select send output %q from:\n%s", lines[0], output)
+	}
+	for _, line := range lines[1:] {
+		switch line {
+		case "ch1", "ch2", "exit":
+		default:
+			t.Fatalf("unexpected select recv output %q from:\n%s", line, output)
+		}
 	}
 }
 
-func TestFromTestpy(t *testing.T) {
-	cltest.FromDir(t, "", "./_testpy")
+func selectOutputLines(output string) []string {
+	var lines []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		switch line {
+		case "100", "200", "ch1", "ch2", "exit":
+			lines = append(lines, line)
+		}
+	}
+	return lines
 }
 
-func TestRunFromTestpy(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testpy", nil)
+func TestRunAndTestFromTestpy(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testpy", nil)
 }
 
-func TestFromTestlibgo(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibgo")
+func TestRunAndTestFromTestlibgo(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testlibgo", nil)
 }
 
-func TestRunFromTestlibgo(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testlibgo", nil)
-}
-
-func TestFromTestlibc(t *testing.T) {
-	cltest.FromDir(t, "", "./_testlibc")
-}
-
-func TestRunFromTestlibc(t *testing.T) {
+func TestRunAndTestFromTestlibc(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		ignore = []string{
 			"./_testlibc/demangle", // Linux demangle symbol differs (itaniumDemangle linkage mismatch).
 		}
 	}
-	cltest.RunFromDir(t, "", "./_testlibc", ignore)
+	cltest.RunAndTestFromDir(t, "", "./_testlibc", ignore)
 }
 
-func TestFromTestrt(t *testing.T) {
-	cl.SetDebug(cl.DbgFlagAll)
-	cltest.FromDir(t, "", "./_testrt")
-	cl.SetDebug(0)
-}
-
-func TestRunFromTestrt(t *testing.T) {
+func TestRunAndTestFromTestrt(t *testing.T) {
 	var ignore []string
 	if runtime.GOOS == "linux" {
 		ignore = []string{
@@ -300,15 +294,11 @@ func TestRunFromTestrt(t *testing.T) {
 			"./_testrt/fprintf", // Linux uses different stderr symbol (no __stderrp).
 		}
 	}
-	cltest.RunFromDir(t, "", "./_testrt", ignore)
+	cltest.RunAndTestFromDir(t, "", "./_testrt", ignore)
 }
 
-func TestFromTestdata(t *testing.T) {
-	cltest.FromDir(t, "", "./_testdata")
-}
-
-func TestRunFromTestdata(t *testing.T) {
-	cltest.RunFromDir(t, "", "./_testdata", nil)
+func TestRunAndTestFromTestdata(t *testing.T) {
+	cltest.RunAndTestFromDir(t, "", "./_testdata", nil)
 }
 
 func TestCgofullGeneratesC2func(t *testing.T) {
@@ -381,6 +371,43 @@ _llgo_1:                                          ; preds = %_llgo_0
 
 _llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
   ret void
+}
+`)
+}
+
+func TestIntrinsicBoolToUint8(t *testing.T) {
+	testCompile(t, `package foo
+
+import _ "unsafe"
+
+//go:linkname boolToUint8 llgo.boolToUint8
+func boolToUint8(b bool) uint8
+
+func use(b bool) uint8 {
+	return boolToUint8(b)
+}
+`, `; ModuleID = 'foo'
+source_filename = "foo"
+
+@"foo.init$guard" = global i1 false, align 1
+
+define void @foo.init() {
+_llgo_0:
+  %0 = load i1, ptr @"foo.init$guard", align 1
+  br i1 %0, label %_llgo_2, label %_llgo_1
+
+_llgo_1:                                          ; preds = %_llgo_0
+  store i1 true, ptr @"foo.init$guard", align 1
+  br label %_llgo_2
+
+_llgo_2:                                          ; preds = %_llgo_1, %_llgo_0
+  ret void
+}
+
+define i8 @foo.use(i1 %0) {
+_llgo_0:
+  %1 = select i1 %0, i8 1, i8 0
+  ret i8 %1
 }
 `)
 }

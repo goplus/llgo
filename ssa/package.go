@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"log"
 	"runtime"
 	"strconv"
 	"unsafe"
@@ -52,6 +53,18 @@ var (
 // SetDebug sets debug flags.
 func SetDebug(dbgFlags dbgFlags) {
 	debugInstr = (dbgFlags & DbgFlagInstruction) != 0
+}
+
+func dbgInstrf(format string, args ...any) {
+	if debugInstr {
+		log.Printf(format, args...)
+	}
+}
+
+func dbgInstrln(args ...any) {
+	if debugInstr {
+		log.Println(args...)
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -426,6 +439,8 @@ func (p Program) tyComplex128() llvm.Type {
 // NewPackage creates a new package.
 func (p Program) NewPackage(name, pkgPath string) Package {
 	mod := p.ctx.NewModule(pkgPath)
+	mod.SetDataLayout(p.DataLayout())
+	mod.SetTarget(p.Target().Spec().Triple)
 	// TODO(lijie): enable target output will check module override, but can't
 	// pass the snapshot test, so disable it for now
 	// if p.target.GOARCH != runtime.GOARCH && p.target.GOOS != runtime.GOOS {

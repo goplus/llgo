@@ -38,8 +38,11 @@ type Chan struct {
 	len   int
 	cap   int
 	sops  []*selectOp
+	// sends counts goroutines blocked in unbuffered send, including select-send.
 	sends uint16
-	close bool
+	// selsends is the subset of sends originating from select operations.
+	selsends uint16
+	close    bool
 }
 
 func NewChan(eltSize, cap int) *Chan {
@@ -119,7 +122,7 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 			p.sends++
 			// A blocked unbuffered send must wake select-based receivers so they can
 			// retry ChanTryRecv after observing that a sender is now waiting.
-			if p.sends == 1 {
+			if p.sends == 1 || p.sends-1 == p.selsends {
 				notifyOps(p)
 			}
 			p.cond.Wait(&p.mutex)
@@ -152,11 +155,19 @@ func ChanSend(p *Chan, v unsafe.Pointer, eltSize int) bool {
 }
 
 func ChanTryRecv(p *Chan, v unsafe.Pointer, eltSize int) (recvOK bool, tryOK bool) {
+	return chanTryRecv(p, v, eltSize, true)
+}
+
+func chanTryRecv(p *Chan, v unsafe.Pointer, eltSize int, acceptSelectSend bool) (recvOK bool, tryOK bool) {
 	n := p.cap
 	p.mutex.Lock()
 	if n == 0 {
 		if p.sends == 0 || p.getp == chanHasRecv || p.close {
 			tryOK = p.close
+			p.mutex.Unlock()
+			return
+		}
+		if !acceptSelectSend && p.sends == p.selsends {
 			p.mutex.Unlock()
 			return
 		}
@@ -304,6 +315,8 @@ func TrySelect(ops ...ChanOp) (isel int, recvOK, tryOK bool) {
 func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	selOp := new(selectOp) // TODO(xsw): use c.AllocaNew[selectOp]()
 	selOp.init()
+	sendFirst := selectSendFirst(ops)
+	sendChans := selectSendChans(ops)
 	for _, op := range ops {
 		if op.C == nil {
 			continue
@@ -312,7 +325,7 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	}
 	var tryOK bool
 	for {
-		if isel, recvOK, tryOK = TrySelect(ops...); tryOK {
+		if isel, recvOK, tryOK = trySelect(ops, sendFirst, sendChans); tryOK {
 			break
 		}
 		selOp.wait()
@@ -327,6 +340,85 @@ func Select(ops ...ChanOp) (isel int, recvOK bool) {
 	return
 }
 
+func trySelect(ops []ChanOp, sendFirst bool, sendChans map[*Chan]bool) (isel int, recvOK, tryOK bool) {
+	// Split probing by direction. If sends are probed first, the recv phase must
+	// not accept select-only senders, because this select's own sends already
+	// failed to commit to a peer. If recvs are probed first, they may accept
+	// select-senders because our own sends have not been attempted yet.
+	if sendFirst {
+		if isel, recvOK, tryOK = trySelectDir(ops, true, false, nil); tryOK {
+			return
+		}
+		return trySelectDir(ops, false, false, sendChans)
+	}
+	if isel, recvOK, tryOK = trySelectDir(ops, false, true, sendChans); tryOK {
+		return
+	}
+	return trySelectDir(ops, true, true, nil)
+}
+
+func trySelectDir(ops []ChanOp, send bool, acceptSelectSend bool, sendChans map[*Chan]bool) (isel int, recvOK, tryOK bool) {
+	for isel = range ops {
+		op := ops[isel]
+		if op.C == nil || op.Send != send {
+			continue
+		}
+		if op.Send {
+			if tryOK = ChanTrySend(op.C, op.Val, int(op.Size)); tryOK {
+				return
+			}
+			continue
+		}
+		accept := acceptSelectSend
+		if accept && sendChans[op.C] {
+			accept = false
+		}
+		if recvOK, tryOK = chanTryRecv(op.C, op.Val, int(op.Size), accept); tryOK {
+			return
+		}
+	}
+	return
+}
+
+func selectSendChans(ops []ChanOp) map[*Chan]bool {
+	sendChans := make(map[*Chan]bool)
+	for _, op := range ops {
+		if op.C != nil && op.Send {
+			sendChans[op.C] = true
+		}
+	}
+	return sendChans
+}
+
+func selectSendFirst(ops []ChanOp) bool {
+	const maxUintptr = ^uintptr(0)
+	minRecv := maxUintptr
+	minSend := maxUintptr
+	for _, op := range ops {
+		if op.C == nil {
+			continue
+		}
+		addr := uintptr(unsafe.Pointer(op.C))
+		if op.Send {
+			if addr < minSend {
+				minSend = addr
+			}
+		} else if addr < minRecv {
+			minRecv = addr
+		}
+	}
+	if minSend == maxUintptr {
+		return false
+	}
+	if minRecv == maxUintptr {
+		return true
+	}
+	// Deterministically break mirrored select ties by channel address. Peers
+	// operating on the same channel pair with swapped directions then probe in
+	// opposite orders, allowing at least one side to make progress.
+	return minSend < minRecv
+}
+
 func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	c.mutex.Lock()
 	// Unbuffered channel select support:
@@ -338,6 +430,7 @@ func prepareSelect(c *Chan, selOp *selectOp, isSend bool) {
 	// net.Pipe) to avoid deadlocks.
 	if c.cap == 0 && isSend {
 		c.sends++
+		c.selsends++
 	}
 	c.sops = append(c.sops, selOp)
 	if c.cap == 0 && isSend {
@@ -351,6 +444,7 @@ func endSelect(c *Chan, selOp *selectOp, isSend bool) {
 	c.mutex.Lock()
 	if c.cap == 0 && isSend {
 		c.sends--
+		c.selsends--
 	}
 	for i, op := range c.sops {
 		if op == selOp {
