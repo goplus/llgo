@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/closure.main$1"(i64 100, i64 200)
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
@@ -20,7 +20,7 @@ import (
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 func main() {
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main$1"(i64 %0, i64 %1) {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main$1"(i64 %0, i64 %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = call i32 (ptr, ...) @printf(ptr @0, i64 %0, i64 %1)
 	// CHECK-NEXT:   ret void
@@ -29,7 +29,7 @@ func main() {
 		c.Printf(c.Str("%d %d\n"), n1, n2)
 	}(100, 200)
 
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main$2"(i64 %0, i64 %1) {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main$2"(i64 %0, i64 %1){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %2 = call i32 (ptr, ...) @printf(ptr @1, i64 %0, i64 %1)
 	// CHECK-NEXT:   ret void
@@ -38,7 +38,7 @@ func main() {
 		c.Printf(c.Str("%d %d\n"), n1, n2)
 	}
 
-	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main$3"(ptr %0) {
+	// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/closure.main$3"(ptr %0){{.*}} {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %1 = load { ptr }, ptr %0, align 8
 	// CHECK-NEXT:   %2 = extractvalue { ptr } %1, 0
@@ -54,7 +54,7 @@ func main() {
 	fn2()
 }
 
-// CHECK-LABEL: define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closure.main$2"(ptr %0, i64 %1, i64 %2) {
+// CHECK-LABEL: define linkonce void @"__llgo_stub.github.com/goplus/llgo/cl/_testrt/closure.main$2"(ptr %0, i64 %1, i64 %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   tail call void @"{{.*}}/cl/_testrt/closure.main$2"(i64 %1, i64 %2)
 // CHECK-NEXT:   ret void

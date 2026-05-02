@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/panic.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/panic.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 13 }, ptr %0, align 8

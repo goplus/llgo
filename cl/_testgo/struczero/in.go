@@ -8,7 +8,7 @@ type bar struct {
 	f  float32
 }
 
-// CHECK-LABEL: define { %"{{.*}}foo.Foo", i1 } @"{{.*}}struczero.Bar"(%"{{.*}}eface" %0) {
+// CHECK-LABEL: define { %"{{.*}}foo.Foo", i1 } @"{{.*}}struczero.Bar"(%"{{.*}}eface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}eface" %0, 0
 // CHECK-NEXT:   %2 = icmp eq ptr %1, @"_llgo_{{.*}}foo.Foo"
@@ -30,7 +30,7 @@ func Bar(v any) (ret foo.Foo, ok bool) {
 	return
 }
 
-// CHECK-LABEL: define { %"{{.*}}struczero.bar", i1 } @"{{.*}}struczero.Foo"(%"{{.*}}eface" %0) {
+// CHECK-LABEL: define { %"{{.*}}struczero.bar", i1 } @"{{.*}}struczero.Foo"(%"{{.*}}eface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}eface" %0, 0
 // CHECK-NEXT:   %2 = icmp eq ptr %1, @"_llgo_{{.*}}struczero.bar"
@@ -52,7 +52,7 @@ func Foo(v any) (ret bar, ok bool) {
 	return
 }
 
-// CHECK-LABEL: define void @"{{.*}}struczero.main"() {
+// CHECK-LABEL: define void @"{{.*}}struczero.main"(){{.*}} {
 func main() {
 	// CHECK: call { %"{{.*}}struczero.bar", i1 } @"{{.*}}struczero.Foo"(%"{{.*}}eface" zeroinitializer)
 	// CHECK: call void @"{{.*}}PrintPointer"(ptr %{{[0-9]+}})

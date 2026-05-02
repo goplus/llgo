@@ -6,7 +6,7 @@ import (
 	"unicode"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/strings.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testlibgo/strings.main"(){{.*}} {
 func main() {
 	// CHECK-NEXT: _llgo_0:
 	// CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 32)

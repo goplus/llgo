@@ -455,11 +455,13 @@ func (p Program) NewPackage(name, pkgPath string) Package {
 	pymods := make(map[string]Global)
 	strs := make(map[string]llvm.Value)
 	glbDbgVars := make(map[Expr]bool)
+	nullPointerIsValidAttr := mod.Context().CreateEnumAttribute(llvm.AttributeKindID("null_pointer_is_valid"), 0)
 	// Don't need reset p.needPyInit here
 	// p.needPyInit = false
 	ret := &aPackage{
 		mod: mod, path: pkgPath, Prog: p, vars: gbls, fns: fns,
-		pyobjs: pyobjs, pymods: pymods, strs: strs,
+		nullPointerIsValidAttr: nullPointerIsValidAttr,
+		pyobjs:                 pyobjs, pymods: pymods, strs: strs,
 		di: nil, cu: nil, glbDbgVars: glbDbgVars,
 		export:         make(map[string]string),
 		preserveSyms:   make(map[string]struct{}),
@@ -708,6 +710,8 @@ type aPackage struct {
 	path string
 
 	Prog Program
+
+	nullPointerIsValidAttr llvm.Attribute
 
 	di         diBuilder
 	cu         CompilationUnit

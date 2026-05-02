@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}closure2.main"() {
+// CHECK-LABEL: define void @"{{.*}}closure2.main"(){{.*}} {
 func main() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 8)
 	// CHECK: store i64 1, ptr %0, align 8
@@ -12,7 +12,7 @@ func main() {
 	// CHECK: ret void
 	x := 1
 	f := func(i int) func(int) {
-		// CHECK-LABEL: define { ptr, ptr } @"{{.*}}closure2.main$1"(ptr %0, i64 %1) {
+		// CHECK-LABEL: define { ptr, ptr } @"{{.*}}closure2.main$1"(ptr %0, i64 %1){{.*}} {
 		// CHECK-NEXT: _llgo_0:
 		// CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 		// CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0
@@ -22,7 +22,7 @@ func main() {
 		// CHECK-NEXT:   %6 = insertvalue { ptr, ptr } { ptr @"{{.*}}closure2.main$1$1", ptr undef }, ptr %4, 1
 		// CHECK-NEXT:   ret { ptr, ptr } %6
 		return func(i int) {
-			// CHECK-LABEL: define void @"{{.*}}closure2.main$1$1"(ptr %0, i64 %1) {
+			// CHECK-LABEL: define void @"{{.*}}closure2.main$1$1"(ptr %0, i64 %1){{.*}} {
 			// CHECK-NEXT: _llgo_0:
 			// CHECK-NEXT:   %2 = load { ptr }, ptr %0, align 8
 			// CHECK-NEXT:   %3 = extractvalue { ptr } %2, 0

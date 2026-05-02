@@ -14,7 +14,7 @@ type Base struct {
 }
 
 // CHECK: @0 = private unnamed_addr constant [8 x i8] c"modified", align 1
-// CHECK: define %"{{.*}}.String" @"{{.*}}.(*Base).Name"(ptr %0) {
+// CHECK: define %"{{.*}}.String" @"{{.*}}.(*Base).Name"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}.Base", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}.String", ptr %1, align 8
@@ -24,7 +24,7 @@ func (b *Base) Name() string {
 	return b.name
 }
 
-// CHECK: define void @"{{.*}}.(*Base).setName"(ptr %0, %"{{.*}}.String" %1) {
+// CHECK: define void @"{{.*}}.(*Base).setName"(ptr %0, %"{{.*}}.String" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}.Base", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   store %"{{.*}}.String" %1, ptr %2, align 8
@@ -34,7 +34,7 @@ func (b *Base) setName(name string) {
 	b.name = name
 }
 
-// CHECK: define ptr @"{{.*}}.NewBase"(%"{{.*}}.String" %0) {
+// CHECK: define ptr @"{{.*}}.NewBase"(%"{{.*}}.String" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}.AllocZ"(i64 16)
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}.Base", ptr %1, i32 0, i32 0
@@ -46,7 +46,7 @@ func NewBase(name string) *Base {
 }
 
 // Use calls the unexported method through interface
-// CHECK: define void @"{{.*}}.Use"(%"{{.*}}.iface" %0) {
+// CHECK: define void @"{{.*}}.Use"(%"{{.*}}.iface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}.IfacePtrData"(%"{{.*}}.iface" %0)
 // CHECK-NEXT:   %2 = extractvalue %"{{.*}}.iface" %0, 0

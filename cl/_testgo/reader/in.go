@@ -125,7 +125,7 @@ func WriteString(w Writer, s string) (n int, err error) {
 	return w.Write([]byte(s))
 }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.NopCloser"(%"{{.*}}/runtime/internal/runtime.iface" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.NopCloser"(%"{{.*}}/runtime/internal/runtime.iface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %0)
 // CHECK-NEXT:   %2 = call i1 @"{{.*}}/runtime/internal/runtime.Implements"(ptr @"_llgo_{{.*}}/cl/_testgo/reader.WriterTo", ptr %1)
@@ -199,7 +199,7 @@ func (c nopCloserWriterTo) WriteTo(w Writer) (n int64, err error) {
 	return c.Reader.(WriterTo).WriteTo(w)
 }
 
-// CHECK-LABEL: define { %"{{.*}}/runtime/internal/runtime.Slice", %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.ReadAll"(%"{{.*}}/runtime/internal/runtime.iface" %0) {
+// CHECK-LABEL: define { %"{{.*}}/runtime/internal/runtime.Slice", %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.ReadAll"(%"{{.*}}/runtime/internal/runtime.iface" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 512)
 // CHECK-NEXT:   %2 = call %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/runtime/internal/runtime.NewSlice3"(ptr %1, i64 1, i64 512, i64 0, i64 0, i64 512)
@@ -284,7 +284,7 @@ func (c nopCloserWriterTo) WriteTo(w Writer) (n int64, err error) {
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.WriteString"(%"{{.*}}/runtime/internal/runtime.iface" %0, %"{{.*}}/runtime/internal/runtime.String" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.WriteString"(%"{{.*}}/runtime/internal/runtime.iface" %0, %"{{.*}}/runtime/internal/runtime.String" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = call ptr @"{{.*}}/runtime/internal/runtime.IfaceType"(%"{{.*}}/runtime/internal/runtime.iface" %0)
 // CHECK-NEXT:   %3 = call i1 @"{{.*}}/runtime/internal/runtime.Implements"(ptr @"_llgo_{{.*}}/cl/_testgo/reader.StringWriter", ptr %2)
@@ -498,14 +498,14 @@ type errorString struct {
 	s string
 }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testgo/reader.(*errorString).Error"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.String" @"{{.*}}/cl/_testgo/reader.(*errorString).Error"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.errorString", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}/runtime/internal/runtime.String", ptr %1, align 8
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.String" %2
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reader.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reader.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testgo/reader.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -532,7 +532,7 @@ var (
 	ErrShortWrite = newError("short write")
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reader.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/reader.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 32)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 0
@@ -551,7 +551,7 @@ var (
 // CHECK-NEXT:   ret void
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.newError"(%"{{.*}}/runtime/internal/runtime.String" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.newError"(%"{{.*}}/runtime/internal/runtime.String" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 16)
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.errorString", ptr %1, i32 0, i32 0
@@ -562,7 +562,7 @@ var (
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" %5
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.nopCloser.Close"(%"{{.*}}/cl/_testgo/reader.nopCloser" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.nopCloser.Close"(%"{{.*}}/cl/_testgo/reader.nopCloser" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" zeroinitializer
 // CHECK-NEXT: }
@@ -573,7 +573,7 @@ func main() {
 	println(string(data), err)
 }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloser.Read"(%"{{.*}}/cl/_testgo/reader.nopCloser" %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloser.Read"(%"{{.*}}/cl/_testgo/reader.nopCloser" %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = alloca %"{{.*}}/cl/_testgo/reader.nopCloser", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -596,14 +596,14 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %17
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*nopCloser).Close"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*nopCloser).Close"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}/cl/_testgo/reader.nopCloser", ptr %0, align 8
 // CHECK-NEXT:   %2 = call %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.nopCloser.Close"(%"{{.*}}/cl/_testgo/reader.nopCloser" %1)
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" %2
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*nopCloser).Read"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*nopCloser).Read"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.nopCloser", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load %"{{.*}}/runtime/internal/runtime.iface", ptr %2, align 8
@@ -623,12 +623,12 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %16
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.Close"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.Close"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" zeroinitializer
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.Read"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.Read"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = alloca %"{{.*}}/cl/_testgo/reader.nopCloserWriterTo", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -651,7 +651,7 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %17
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.WriteTo"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %0, %"{{.*}}/runtime/internal/runtime.iface" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.WriteTo"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %0, %"{{.*}}/runtime/internal/runtime.iface" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = alloca %"{{.*}}/cl/_testgo/reader.nopCloserWriterTo", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %2, i8 0, i64 16, i1 false)
@@ -690,14 +690,14 @@ func main() {
 // CHECK-NEXT:   unreachable
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*nopCloserWriterTo).Close"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*nopCloserWriterTo).Close"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = load %"{{.*}}/cl/_testgo/reader.nopCloserWriterTo", ptr %0, align 8
 // CHECK-NEXT:   %2 = call %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.Close"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %1)
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" %2
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*nopCloserWriterTo).Read"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*nopCloserWriterTo).Read"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.nopCloserWriterTo", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load %"{{.*}}/runtime/internal/runtime.iface", ptr %2, align 8
@@ -717,7 +717,7 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %16
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo"(ptr %0, %"{{.*}}/runtime/internal/runtime.iface" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*nopCloserWriterTo).WriteTo"(ptr %0, %"{{.*}}/runtime/internal/runtime.iface" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = load %"{{.*}}/cl/_testgo/reader.nopCloserWriterTo", ptr %0, align 8
 // CHECK-NEXT:   %3 = call { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.nopCloserWriterTo.WriteTo"(%"{{.*}}/cl/_testgo/reader.nopCloserWriterTo" %2, %"{{.*}}/runtime/internal/runtime.iface" %1)
@@ -728,7 +728,7 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %7
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/reader.(*stringReader).Len"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/reader.(*stringReader).Len"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -751,7 +751,7 @@ func main() {
 // CHECK-NEXT:   ret i64 %12
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).Read"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).Read"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %3 = load i64, ptr %2, align 8
@@ -788,7 +788,7 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %25
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).ReadAt"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1, i64 %2) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).ReadAt"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1, i64 %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = icmp slt i64 %2, 0
 // CHECK-NEXT:   br i1 %3, label %_llgo_1, label %_llgo_2
@@ -833,7 +833,7 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %24
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i8, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).ReadByte"(ptr %0) {
+// CHECK-LABEL: define { i8, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).ReadByte"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   store i64 -1, ptr %1, align 8
@@ -873,7 +873,7 @@ func main() {
 // CHECK-NEXT:   ret { i8, %"{{.*}}/runtime/internal/runtime.iface" } %26
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i32, i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).ReadRune"(ptr %0) {
+// CHECK-LABEL: define { i32, i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).ReadRune"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -943,7 +943,7 @@ func main() {
 // CHECK-NEXT:   ret { i32, i64, %"{{.*}}/runtime/internal/runtime.iface" } %48
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).Seek"(ptr %0, i64 %1, i64 %2) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).Seek"(ptr %0, i64 %1, i64 %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   store i64 -1, ptr %3, align 8
@@ -997,7 +997,7 @@ func main() {
 // CHECK-NEXT:   ret { i64, %"{{.*}}/runtime/internal/runtime.iface" } %22
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/reader.(*stringReader).Size"(ptr %0) {
+// CHECK-LABEL: define i64 @"{{.*}}/cl/_testgo/reader.(*stringReader).Size"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}/runtime/internal/runtime.String", ptr %1, align 8
@@ -1005,7 +1005,7 @@ func main() {
 // CHECK-NEXT:   ret i64 %3
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*stringReader).UnreadByte"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*stringReader).UnreadByte"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -1027,7 +1027,7 @@ func main() {
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" zeroinitializer
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*stringReader).UnreadRune"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}/runtime/internal/runtime.iface" @"{{.*}}/cl/_testgo/reader.(*stringReader).UnreadRune"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -1058,7 +1058,7 @@ func main() {
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.iface" zeroinitializer
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).WriteTo"(ptr %0, %"{{.*}}/runtime/internal/runtime.iface" %1) {
+// CHECK-LABEL: define { i64, %"{{.*}}/runtime/internal/runtime.iface" } @"{{.*}}/cl/_testgo/reader.(*stringReader).WriteTo"(ptr %0, %"{{.*}}/runtime/internal/runtime.iface" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/reader.stringReader", ptr %0, i32 0, i32 2
 // CHECK-NEXT:   store i64 -1, ptr %2, align 8
@@ -1126,19 +1126,19 @@ func main() {
 // CHECK-NEXT:   br i1 %39, label %_llgo_5, label %_llgo_6
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2) {
+// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.interequal"(ptr %0, ptr %1, ptr %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = tail call i1 @"{{.*}}/runtime/internal/runtime.interequal"(ptr %1, ptr %2)
 // CHECK-NEXT:   ret i1 %3
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2) {
+// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal8"(ptr %0, ptr %1, ptr %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = tail call i1 @"{{.*}}/runtime/internal/runtime.memequal8"(ptr %1, ptr %2)
 // CHECK-NEXT:   ret i1 %3
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2) {
+// CHECK-LABEL: define linkonce i1 @"__llgo_stub.{{.*}}/runtime/internal/runtime.memequal64"(ptr %0, ptr %1, ptr %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = tail call i1 @"{{.*}}/runtime/internal/runtime.memequal64"(ptr %1, ptr %2)
 // CHECK-NEXT:   ret i1 %3

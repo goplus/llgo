@@ -11,7 +11,7 @@ func cstr(string) *int8
 //go:linkname printf C.printf
 func printf(format *int8, __llgo_va_list ...any)
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cstr.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cstr.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void (ptr, ...) @printf(ptr @0)
 // CHECK-NEXT:   ret void

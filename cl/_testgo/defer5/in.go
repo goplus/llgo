@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}.main"() {
+// CHECK-LABEL: define void @"{{.*}}.main"(){{.*}} {
 func main() {
 	// CHECK: GetThreadDefer
 	// CHECK: blockaddress(@"{{.*}}.main", %_llgo_2)
@@ -25,10 +25,10 @@ func main() {
 	panic("panic in main")
 }
 
-// CHECK-LABEL: define void @"{{.*}}.main$1"() {
+// CHECK-LABEL: define void @"{{.*}}.main$1"(){{.*}} {
 // CHECK: Recover
 // CHECK: PrintString
 // CHECK: PrintByte
-// CHECK-LABEL: define void @"{{.*}}.main$2"() {
+// CHECK-LABEL: define void @"{{.*}}.main$2"(){{.*}} {
 // CHECK: PrintString
 // CHECK: PrintByte

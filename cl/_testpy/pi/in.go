@@ -6,7 +6,7 @@ import (
 	"github.com/goplus/lib/py/math"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/pi.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/pi.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load ptr, ptr @__llgo_py.math, align 8
 // CHECK-NEXT:   %1 = call ptr @PyObject_GetAttrString(ptr %0, ptr @1)

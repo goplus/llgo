@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/lib/py/numpy"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/matrix.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/matrix.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @PyList_New(i64 3)
 // CHECK-NEXT:   %1 = call ptr @PyFloat_FromDouble(double 1.000000e+00)

@@ -8,7 +8,7 @@ type Point struct {
 
 type MyPoint = Point
 
-// CHECK-LABEL: define void @"{{.*}}alias.(*Point).Move"(ptr %0, double %1, double %2) {
+// CHECK-LABEL: define void @"{{.*}}alias.(*Point).Move"(ptr %0, double %1, double %2){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %3 = getelementptr inbounds %"{{.*}}alias.Point", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %4 = load double, ptr %3, align 8
@@ -26,7 +26,7 @@ func (p *MyPoint) Move(dx, dy float64) {
 	p.y += dy
 }
 
-// CHECK-LABEL: define void @"{{.*}}alias.(*Point).Scale"(ptr %0, double %1) {
+// CHECK-LABEL: define void @"{{.*}}alias.(*Point).Scale"(ptr %0, double %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}alias.Point", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load double, ptr %2, align 8
@@ -44,7 +44,7 @@ func (p *Point) Scale(factor float64) {
 	p.y *= factor
 }
 
-// CHECK-LABEL: define void @"{{.*}}alias.main"() {
+// CHECK-LABEL: define void @"{{.*}}alias.main"(){{.*}} {
 func main() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 16)
 	// CHECK: call void @"{{.*}}alias.(*Point).Scale"(ptr %0, double 2.000000e+00)

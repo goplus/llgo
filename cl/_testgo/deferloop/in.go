@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}.main"() {
+// CHECK-LABEL: define void @"{{.*}}.main"(){{.*}} {
 func main() {
 	// CHECK: GetThreadDefer
 	for i := 0; i < 3; i++ {

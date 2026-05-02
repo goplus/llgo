@@ -18,7 +18,7 @@ type u64parts struct {
 	hi uint32
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check32"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check32"(%"{{.*}}/runtime/internal/runtime.eface" %0){{.*}} {
 // CHECK: icmp eq ptr {{.*}}, @_llgo_float32
 // CHECK: load i32, ptr
 // CHECK: icmp ne i32 {{.*}}, 1078530011
@@ -34,7 +34,7 @@ func check32(v any) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check64"(%"{{.*}}/runtime/internal/runtime.eface" %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.check64"(%"{{.*}}/runtime/internal/runtime.eface" %0){{.*}} {
 // CHECK: icmp eq ptr {{.*}}, @_llgo_float64
 // CHECK: load i32, ptr
 // CHECK: icmp ne i32 {{.*}}, 1405670641
@@ -53,7 +53,7 @@ func check64(v any) {
 	}
 }
 
-// CHECK-LABEL: define float @"{{.*}}/cl/_testrt/float2any.f32"() {
+// CHECK-LABEL: define float @"{{.*}}/cl/_testrt/float2any.f32"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret float 0x400921FB60000000
 // CHECK-NEXT: }
@@ -61,7 +61,7 @@ func f32() float32 {
 	return pi
 }
 
-// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/float2any.f64"() {
+// CHECK-LABEL: define double @"{{.*}}/cl/_testrt/float2any.f64"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   ret double 0x400921FB53C8D4F1
 // CHECK-NEXT: }
@@ -69,7 +69,7 @@ func f64() float64 {
 	return pi
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/float2any.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call float @"{{.*}}/cl/_testrt/float2any.f32"()
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 4)

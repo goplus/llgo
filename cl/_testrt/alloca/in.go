@@ -7,7 +7,7 @@ import (
 
 // CHECK-LINE: @0 = private unnamed_addr constant [4 x i8] c"Hi\0A\00", align 1
 // CHECK-LINE: @1 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
-// CHECK-LABEL: define void @"{{.*}}alloca.main"() {
+// CHECK-LABEL: define void @"{{.*}}alloca.main"(){{.*}} {
 func main() {
 	s := c.Str("Hi\n")
 	s2 := c.Alloca(4)

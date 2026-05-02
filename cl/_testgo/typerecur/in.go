@@ -9,7 +9,7 @@ type counter struct {
 	state stateFn
 }
 
-// CHECK-LABEL: define %"{{.*}}typerecur.stateFn" @"{{.*}}typerecur.countState"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}typerecur.stateFn" @"{{.*}}typerecur.countState"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}typerecur.counter", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load i64, ptr %1, align 8
@@ -31,7 +31,7 @@ func countState(c *counter) stateFn {
 	return countState
 }
 
-// CHECK-LABEL: define void @"{{.*}}typerecur.main"() {
+// CHECK-LABEL: define void @"{{.*}}typerecur.main"(){{.*}} {
 func main() {
 	// CHECK: call ptr @"{{.*}}AllocZ"(i64 32)
 	// CHECK: store i64 5, ptr %1, align 8

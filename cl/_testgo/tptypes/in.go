@@ -3,7 +3,7 @@ package main
 
 // CHECK-LINE: @0 = private unnamed_addr constant [5 x i8] c"hello", align 1
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tptypes.init"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tptypes.init"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = load i1, ptr @"{{.*}}/cl/_testgo/tptypes.init$guard", align 1
 // CHECK-NEXT:   br i1 %0, label %_llgo_2, label %_llgo_1
@@ -53,7 +53,7 @@ type (
 	SliceString = Slice[[]string, string]
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tptypes.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testgo/tptypes.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca %"{{.*}}/cl/_testgo/tptypes.Data[int]", align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -202,7 +202,7 @@ func main() {
 	println(v3.Data, v3.Data[0])
 }
 
-// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testgo/tptypes.(*Slice[[]int,int]).Append"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testgo/tptypes.(*Slice[[]int,int]).Append"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/tptypes.Slice[[]int,int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %2, align 8
@@ -216,7 +216,7 @@ func main() {
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.Slice" %9
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testgo/tptypes.(*Slice[[]string,string]).Append"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testgo/tptypes.(*Slice[[]string,string]).Append"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/tptypes.Slice[[]string,string]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %2, align 8
@@ -230,7 +230,7 @@ func main() {
 // CHECK-NEXT:   ret %"{{.*}}/runtime/internal/runtime.Slice" %9
 // CHECK-NEXT: }
 
-// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testgo/tptypes.(*Slice[[]int,int]).Append2"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1) {
+// CHECK-LABEL: define linkonce %"{{.*}}/runtime/internal/runtime.Slice" @"{{.*}}/cl/_testgo/tptypes.(*Slice[[]int,int]).Append2"(ptr %0, %"{{.*}}/runtime/internal/runtime.Slice" %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}/cl/_testgo/tptypes.Slice[[]int,int]", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %3 = load %"{{.*}}/runtime/internal/runtime.Slice", ptr %2, align 8

@@ -4,7 +4,7 @@ package main
 type T string
 type A [2]int
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/typed.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/typed.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 16)
 // CHECK-NEXT:   store %"{{.*}}/runtime/internal/runtime.String" { ptr @0, i64 5 }, ptr %0, align 8

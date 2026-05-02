@@ -7,7 +7,7 @@ import (
 	"github.com/goplus/lib/py/math"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/gcd.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testpy/gcd.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @PyLong_FromLong(i64 60)
 // CHECK-NEXT:   %1 = call ptr @PyLong_FromLong(i64 20)

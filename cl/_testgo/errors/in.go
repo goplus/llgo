@@ -3,7 +3,7 @@ package main
 
 // New returns an error that formats as the given text.
 // Each call to New returns a distinct error value even if the text is identical.
-// CHECK-LABEL: define %"{{.*}}iface" @"{{.*}}errors.New"(%"{{.*}}String" %0) {
+// CHECK-LABEL: define %"{{.*}}iface" @"{{.*}}errors.New"(%"{{.*}}String" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}AllocZ"(i64 16)
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}errors.errorString", ptr %1, i32 0, i32 0
@@ -21,7 +21,7 @@ type errorString struct {
 	s string
 }
 
-// CHECK-LABEL: define %"{{.*}}String" @"{{.*}}errors.(*errorString).Error"(ptr %0) {
+// CHECK-LABEL: define %"{{.*}}String" @"{{.*}}errors.(*errorString).Error"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}errors.errorString", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   %2 = load %"{{.*}}String", ptr %1, align 8
@@ -30,7 +30,7 @@ func (e *errorString) Error() string {
 	return e.s
 }
 
-// CHECK-LABEL: define void @"{{.*}}errors.main"() {
+// CHECK-LABEL: define void @"{{.*}}errors.main"(){{.*}} {
 func main() {
 	// CHECK: call %"{{.*}}iface" @"{{.*}}errors.New"(%"{{.*}}String" { ptr @7, i64 8 })
 	// CHECK: call void @"{{.*}}PrintIface"(%"{{.*}}iface" %0)

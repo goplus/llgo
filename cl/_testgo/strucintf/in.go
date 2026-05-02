@@ -3,7 +3,7 @@ package main
 
 import "github.com/goplus/llgo/cl/_testdata/foo"
 
-// CHECK-LABEL: define %"{{.*}}eface" @"{{.*}}strucintf.Foo"() {
+// CHECK-LABEL: define %"{{.*}}eface" @"{{.*}}strucintf.Foo"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = alloca { i64 }, align 8
 // CHECK-NEXT:   call void @llvm.memset(ptr %0, i8 0, i64 8, i1 false)
@@ -18,7 +18,7 @@ func Foo() any {
 	return struct{ v int }{1}
 }
 
-// CHECK-LABEL: define void @"{{.*}}strucintf.main"() {
+// CHECK-LABEL: define void @"{{.*}}strucintf.main"(){{.*}} {
 func main() {
 	// CHECK: call %"{{.*}}eface" @"{{.*}}strucintf.Foo"()
 	// CHECK: icmp eq ptr %{{[0-9]+}}, @"{{.*}}strucintf.struct{{.*}}"

@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define i64 @"{{.*}}allocinloop.Foo"(%"{{.*}}String" %0) {
+// CHECK-LABEL: define i64 @"{{.*}}allocinloop.Foo"(%"{{.*}}String" %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = extractvalue %"{{.*}}String" %0, 1
 // CHECK-NEXT:   ret i64 %1
@@ -9,7 +9,7 @@ func Foo(s string) int {
 	return len(s)
 }
 
-// CHECK-LABEL: define void @"{{.*}}allocinloop.Test"() {
+// CHECK-LABEL: define void @"{{.*}}allocinloop.Test"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   br label %_llgo_1
 // CHECK-EMPTY:
@@ -37,7 +37,7 @@ func Test() {
 	println(j)
 }
 
-// CHECK-LABEL: define void @"{{.*}}allocinloop.main"() {
+// CHECK-LABEL: define void @"{{.*}}allocinloop.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}allocinloop.Test"()
 // CHECK-NEXT:   ret void

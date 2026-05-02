@@ -14,7 +14,7 @@ type Foo = struct {
 
 var format = [...]int8{'H', 'e', 'l', 'l', 'o', ' ', '%', 'd', '\n', 0}
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/typalias.Print"(ptr %0) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/typalias.Print"(ptr %0){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 1
 // CHECK-NEXT:   %2 = load i1, ptr %1, align 1
@@ -36,7 +36,7 @@ func Print(p *Foo) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/typalias.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/typalias.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = getelementptr inbounds { i32, i1 }, ptr %0, i32 0, i32 0

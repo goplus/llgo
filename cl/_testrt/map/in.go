@@ -5,7 +5,7 @@ import (
 	"github.com/goplus/lib/c"
 )
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/map.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/map.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.MakeMap"(ptr @"map[_llgo_int]_llgo_int", i64 2)
 // CHECK-NEXT:   %1 = call ptr @"{{.*}}/runtime/internal/runtime.AllocU"(i64 8)

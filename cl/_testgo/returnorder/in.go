@@ -7,7 +7,7 @@ type state struct {
 	v int
 }
 
-// CHECK-LABEL: define void @"{{.*}}returnorder.main"() {
+// CHECK-LABEL: define void @"{{.*}}returnorder.main"(){{.*}} {
 func main() {
 	// CHECK: call { %"{{.*}}returnorder.state", i64 } @"{{.*}}returnorder.returnStateAndMut"()
 	// CHECK: extractvalue { %"{{.*}}returnorder.state", i64 } %1, 0
@@ -26,7 +26,7 @@ func main() {
 	println("ok")
 }
 
-// CHECK-LABEL: define { %"{{.*}}returnorder.state", i64 } @"{{.*}}returnorder.returnStateAndMut"() {
+// CHECK-LABEL: define { %"{{.*}}returnorder.state", i64 } @"{{.*}}returnorder.returnStateAndMut"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}AllocZ"(i64 8)
 // CHECK-NEXT:   %1 = getelementptr inbounds %"{{.*}}returnorder.state", ptr %0, i32 0, i32 0
@@ -41,7 +41,7 @@ func returnStateAndMut() (state, int) {
 	return x, x.mutate(2)
 }
 
-// CHECK-LABEL: define i64 @"{{.*}}returnorder.(*state).mutate"(ptr %0, i64 %1) {
+// CHECK-LABEL: define i64 @"{{.*}}returnorder.(*state).mutate"(ptr %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = getelementptr inbounds %"{{.*}}returnorder.state", ptr %0, i32 0, i32 0
 // CHECK-NEXT:   store i64 %1, ptr %2, align 8

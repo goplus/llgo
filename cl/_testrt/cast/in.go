@@ -3,7 +3,7 @@ package main
 
 //"github.com/goplus/lib/c"
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto32"(float %0, i32 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto32"(float %0, i32 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fptosi float %0 to i64
 // CHECK-NEXT:   %3 = trunc i64 %2 to i32
@@ -26,7 +26,7 @@ func cvt32Fto32(a float32, b int32) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto32U"(float %0, i32 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto32U"(float %0, i32 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fcmp olt float %0, 0.000000e+00
 // CHECK-NEXT:   %3 = fptosi float %0 to i64
@@ -52,7 +52,7 @@ func cvt32Fto32U(a float32, b uint32) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto64F"(float %0, double %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto64F"(float %0, double %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fpext float %0 to double
 // CHECK-NEXT:   %3 = fcmp une double %2, %1
@@ -74,7 +74,7 @@ func cvt32Fto64F(a float32, b float64) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto8"(float %0, i8 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto8"(float %0, i8 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fptosi float %0 to i64
 // CHECK-NEXT:   %3 = trunc i64 %2 to i8
@@ -97,7 +97,7 @@ func cvt32Fto8(a float32, b int8) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto8U"(float %0, i8 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32Fto8U"(float %0, i8 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fcmp olt float %0, 0.000000e+00
 // CHECK-NEXT:   %3 = fptosi float %0 to i64
@@ -123,7 +123,7 @@ func cvt32Fto8U(a float32, b uint8) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32to64"(i32 %0, i64 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt32to64"(i32 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = sext i32 %0 to i64
 // CHECK-NEXT:   %3 = icmp ne i64 %2, %1
@@ -145,7 +145,7 @@ func cvt32to64(a int32, b int64) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64Fto32F"(double %0, float %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64Fto32F"(double %0, float %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fptrunc double %0 to float
 // CHECK-NEXT:   %3 = fcmp une float %2, %1
@@ -167,7 +167,7 @@ func cvt64Fto32F(a float64, b float32) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64Uto64F"(i64 %0, double %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64Uto64F"(i64 %0, double %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = uitofp i64 %0 to double
 // CHECK-NEXT:   %3 = fcmp une double %2, %1
@@ -189,7 +189,7 @@ func cvt64Uto64F(a uint64, b float64) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64to64F"(i64 %0, double %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64to64F"(i64 %0, double %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = sitofp i64 %0 to double
 // CHECK-NEXT:   %3 = fcmp une double %2, %1
@@ -211,7 +211,7 @@ func cvt64to64F(a int64, b float64) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64to8"(i64 %0, i8 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64to8"(i64 %0, i8 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = trunc i64 %0 to i8
 // CHECK-NEXT:   %3 = icmp ne i8 %2, %1
@@ -233,7 +233,7 @@ func cvt64to8(a int64, b int8) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64to8U"(i64 %0, i8 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvt64to8U"(i64 %0, i8 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = trunc i64 %0 to i8
 // CHECK-NEXT:   %3 = icmp ne i8 %2, %1
@@ -255,7 +255,7 @@ func cvt64to8U(a int, b uint8) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvtFtoUintptr"(double %0, i64 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvtFtoUintptr"(double %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = fptoui double %0 to i64
 // CHECK-NEXT:   %3 = icmp ne i64 %2, %1
@@ -277,7 +277,7 @@ func cvtFtoUintptr(a float64, b uintptr) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvtUinptr"(i32 %0, i64 %1) {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.cvtUinptr"(i32 %0, i64 %1){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %2 = sext i32 %0 to i64
 // CHECK-NEXT:   %3 = icmp ne i64 %2, %1
@@ -314,7 +314,7 @@ func cvtUinptr(a int32, b uintptr) {
 	}
 }
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/cast.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/cast.cvt64to8"(i64 0, i8 0)
 // CHECK-NEXT:   call void @"{{.*}}/cl/_testrt/cast.cvt64to8"(i64 127, i8 127)

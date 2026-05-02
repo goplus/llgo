@@ -1,7 +1,7 @@
 // LITTEST
 package main
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/slice2array.main"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/slice2array.main"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 4)
 // CHECK-NEXT:   %1 = getelementptr inbounds i8, ptr %0, i64 0

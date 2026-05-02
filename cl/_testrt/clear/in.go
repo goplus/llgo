@@ -1,7 +1,7 @@
 // LITTEST
 package clear
 
-// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/clear.Clear"() {
+// CHECK-LABEL: define void @"{{.*}}/cl/_testrt/clear.Clear"(){{.*}} {
 // CHECK-NEXT: _llgo_0:
 // CHECK-NEXT:   %0 = call ptr @"{{.*}}/runtime/internal/runtime.AllocZ"(i64 32)
 // CHECK-NEXT:   %1 = getelementptr inbounds i64, ptr %0, i64 0
