@@ -15,9 +15,9 @@ require (
 	github.com/qiniu/x v1.17.0
 	github.com/sigurn/crc16 v0.0.0-20240131213347-83fcde1e29d1
 	go.bug.st/serial v1.6.4
+	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/mod v0.27.0
 	golang.org/x/tools v0.36.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
